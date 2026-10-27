@@ -1,0 +1,61 @@
+# Copyright 2026 Firefly Software Foundation & Firefly Software Solutions Inc.
+# SPDX-License-Identifier: Apache-2.0
+site_name: firefly koinon
+site_description: Organizational knowledge, evidence and exploration.
+site_url: https://fireflyframework.github.io/firefly-koinon/
+repo_url: https://github.com/fireflyframework/firefly-koinon
+repo_name: fireflyframework/firefly-koinon
+copyright: Copyright 2026 Firefly Software Foundation & Firefly Software Solutions Inc.
+strict: true
+theme:
+  name: material
+  custom_dir: docs_theme
+  logo: assets/firefly-koinon-lockup.svg
+  favicon: assets/koinon-symbol.svg
+  font: false
+  features: [navigation.sections, navigation.indexes, navigation.top, content.code.copy, search.suggest, search.highlight]
+  palette:
+    - scheme: default
+      primary: custom
+      accent: custom
+      toggle: {icon: material/weather-night, name: Use dark appearance}
+    - scheme: slate
+      primary: custom
+      accent: custom
+      toggle: {icon: material/weather-sunny, name: Use light appearance}
+extra_css: [assets/styles.css]
+extra: {generator: false}
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc: {permalink: true}
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+nav:
+  - Start: index.md
+  - Use koinon:
+      - Library: guides/library.md
+      - Agents and chat: guides/agents.md
+  - Configure:
+      - Administration: guides/administration.md
+      - Profiles and API tokens: operations/profiles-and-tokens.md
+  - Integrate:
+      - Headless API and SDK: guides/headless.md
+      - Embedded components: guides/embedding.md
+  - Understand:
+      - Architecture: concepts/architecture.md
+      - Visual identity: concepts/visual-identity.md
+  - Operate:
+      - Overview: operations/README.md
+      - Local environment: operations/local-deployment.md
+      - Production: operations/production.md
+      - Migrations: operations/migrations.md
+      - Backup and restore: operations/backup-restore.md
+      - Qualification: operations/qualification.md
+  - Apache-2.0: license.md
