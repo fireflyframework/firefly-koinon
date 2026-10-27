@@ -50,11 +50,13 @@ nav:
       - Embedded components: guides/embedding.md
   - Understand:
       - Architecture: concepts/architecture.md
+      - Backend structure: concepts/backend-structure.md
       - Visual identity: concepts/visual-identity.md
   - Operate:
       - Overview: operations/README.md
       - Local environment: operations/local-deployment.md
       - Production: operations/production.md
+      - Configuration and observations: operations/configuration.md
       - Migrations: operations/migrations.md
       - Backup and restore: operations/backup-restore.md
       - Qualification: operations/qualification.md
