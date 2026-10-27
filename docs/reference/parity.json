@@ -1,0 +1,4006 @@
+{
+  "product": "firefly koinon",
+  "version": 2,
+  "meaning": "Every original source-backed capability is retained as a requirement. Copied source and unit tests do not establish integrated parity. Compatibility operations fail closed until qualified.",
+  "features": [
+    {
+      "id": "capability-0001",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/agent/candidates:propose"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "b2c8d31f5cd9ccb90b11198ced11bdad76f7037548a8f4f7cf6e86efa357f56c"
+    },
+    {
+      "id": "capability-0002",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/agent/knowledge/{item_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "a2ea34c35ae2693576eab7ce7ddb0d7b882ffeaca69a89747d1e469308473ad7"
+    },
+    {
+      "id": "capability-0003",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/agent/knowledge/{item_id}/provenance"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "bd7e7192f04db244a37c1d4d194da8ba55d162a34e573d9b8584c1584b459a8f"
+    },
+    {
+      "id": "capability-0004",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/agent/query"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "645564537da349fc25983ffe3fd745a3d952f341b0dc77c6b53a9803b9b06524"
+    },
+    {
+      "id": "capability-0005",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/agent/query/stream"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "3a1eaadf8f9b346ab4599123a22981b35ada3cd7f2c778e116dd2bbfd268705b"
+    },
+    {
+      "id": "capability-0006",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/agent/search"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "792752c287f97386ee62112d68b2793d84c72477129cc2bece50be2fb1ded7b7"
+    },
+    {
+      "id": "capability-0007",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/agent/sources"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "00e0506325be26dbc378a2660e717a30fc78c175b2037675f8b12f47e7c53be2"
+    },
+    {
+      "id": "capability-0008",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/agent/sources/{source_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "427c6b02867d2f2dd0a48e6378f90f7bac299f54a00c36a316ae7d47b8c30293"
+    },
+    {
+      "id": "capability-0009",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "PUT /api/v1/canon/agent/sources/{source_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "d53dc9004eebe1b7dcd2fc27dac913bd8acb1c58cae70408d2507fbab52fb339"
+    },
+    {
+      "id": "capability-0010",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "DELETE /api/v1/canon/agent/sources/{source_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "59f93299c1967710aeab022b3ce651bd444a3ad6519b6e9987cbad1af731fc30"
+    },
+    {
+      "id": "capability-0011",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/agent-tokens"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "9d1e2d7074efa958adbec29eaa052afd7cc6f8cdd603c900111ddbd90d8a2fe1"
+    },
+    {
+      "id": "capability-0012",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/agent-tokens"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "de49d474ded50ff5d4f6dacd59299e7a4f6f990bce085b8ea555d0666cd7311b"
+    },
+    {
+      "id": "capability-0013",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "DELETE /api/v1/canon/agent-tokens/{token_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "280438b3141b99393828ff7cb07f207dff9e77915b0e234c91428a225d76c0b3"
+    },
+    {
+      "id": "capability-0014",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/audit"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "9660fc37cdac545c1afbb2faf216dc339ab346be3aee91c1870711e043d7c996"
+    },
+    {
+      "id": "capability-0015",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/billing"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "2e85bbe3d4a9aae6ae3b01e6b21728a7897b172eb8b387ca9fd1ef448506503d"
+    },
+    {
+      "id": "capability-0016",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/billing/events"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "7806741bbf3e22744d870d0601259641958178f17d1671c7784d8907c4c04c6d"
+    },
+    {
+      "id": "capability-0017",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/billing/summary"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "6b0cd59abac45d3ede72c8433ae42c16312efce9fa71ff7e6c579844bd2c0cd4"
+    },
+    {
+      "id": "capability-0018",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/billing/top"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "2791a994717bbb9edff5a52550976c63e8030efcdf2074d3a707dbf67b0f3fd5"
+    },
+    {
+      "id": "capability-0019",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/billing/by-subject"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "b7c240c607da3158316577d90a6405b28f67773647ab39c44be33e74b72a1e3f"
+    },
+    {
+      "id": "capability-0020",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/billing/latency"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "f05453ef105ba66392aaa6c9282e61480a89e4664adf3f6a78521c426d863f80"
+    },
+    {
+      "id": "capability-0021",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/candidates:propose"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "37671c8d764a07d12d879fe461e324ac78b6e4f7c08f0f2dfe03f4b1ffe5e1a5"
+    },
+    {
+      "id": "capability-0022",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/candidates"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "fb5fdd08a362971fd6ff61183b1c84a44faf29ba8c18be26c7a5babaebec7511"
+    },
+    {
+      "id": "capability-0023",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/candidates/{candidate_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "28329fccdd74ae6b3806a63ee70ea41694c221ff1c483995c2f9eb7a3a67aef6"
+    },
+    {
+      "id": "capability-0024",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/candidates/{candidate_id}:accept"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "7b10b3a8eaa0daa94e9dd67e3f476ae338422c01555680a4c1978d3f71920766"
+    },
+    {
+      "id": "capability-0025",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/candidates/{candidate_id}:reject"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "7d50eda39f67cd90b74e0b8c938ae0ea490f9a0917ca0d804b72f7a02755708c"
+    },
+    {
+      "id": "capability-0026",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/conversations"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "8a97530df036c0ab653a1840517b921165b6cc266482b14bcee50f0603ad63ae"
+    },
+    {
+      "id": "capability-0027",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/conversations/{conversation_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "95bcc04205141f4a0d1cb7495fc47a42f0f4af368c44c19783c308b8f20ff9d7"
+    },
+    {
+      "id": "capability-0028",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/conversations/{conversation_id}/turn"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "695fb07cbd8b9cb58e01753d976b13eb8075ab7e6316b74271617c0f8446f7cc"
+    },
+    {
+      "id": "capability-0029",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/ingest-jobs"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "96c52d935dc4f8865a72fcb0a642d4fa9e90457ab1d88662dfc591f2f132443a"
+    },
+    {
+      "id": "capability-0030",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/ingest-jobs/{job_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "f091e3c1d50f320b34f210707b01493fdb931877d64e00c594390c633e2036c5"
+    },
+    {
+      "id": "capability-0031",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/ingest-jobs/{job_id}/stream"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "43769182e23546ebc6d1551cdd9eefa2cd05dda550ff502de45be7b2adbd2bdb"
+    },
+    {
+      "id": "capability-0032",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/knowledge"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "87c3ef04b3b5cc8fd75c030fff881426af58ec70fad3cbee1a0947fdd715f27a"
+    },
+    {
+      "id": "capability-0033",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/knowledge/{item_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "f38630701a089c286339e4b065c81dfe88b1daa4907c5c73955fdcc726870309"
+    },
+    {
+      "id": "capability-0034",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/knowledge/{item_id}/history"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "15ddba70d5045eef87bb0f6166d8d56b86c3f95ed44f09f88c450dd16c829844"
+    },
+    {
+      "id": "capability-0035",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/knowledge/{item_id}/provenance"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "77968c3539e19536e47fed60e1f233bc417bc9cd6fbe32e32d512305e6bc0b8e"
+    },
+    {
+      "id": "capability-0036",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/knowledge/{item_id}/diff"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "ccc5cc832a7125752b1c0af3981fd7cb6415e5fb54d44242950e85e7376ab977"
+    },
+    {
+      "id": "capability-0037",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/knowledge"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "b366fd0dc8d4aa2b68c767f00e9e12da61b37ae78b790edb6929fb959c6ccbb6"
+    },
+    {
+      "id": "capability-0038",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "PUT /api/v1/canon/knowledge/{item_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "3c2bb3a6e08786abb26841666f96924f0b3d22ce5eb14901a72e4341ba876b63"
+    },
+    {
+      "id": "capability-0039",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/knowledge/{item_id}:supersede"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "fd4acd3df276d6600c3417a36d5202995b485eac8687825723babedbff2f995a"
+    },
+    {
+      "id": "capability-0040",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/knowledge/{item_id}:retire"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "67dfb71b0a0e46bdce22793ec9be4e563a74863a13f0831b808c8c8d96ba97f7"
+    },
+    {
+      "id": "capability-0041",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/knowledge/{item_id}/relations"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "87f02a4e454ed232fdb2fa1ba3c17d9ee5dd60aa22af525c10052c2c0bb04b71"
+    },
+    {
+      "id": "capability-0042",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/knowledge/{item_id}/relations"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "2e50a09ab6c46d7973322578f5d7870a9f316cb5f00f501188310e7a4948cfcb"
+    },
+    {
+      "id": "capability-0043",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "DELETE /api/v1/canon/knowledge/{item_id}/relations/{relation_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "886d176d4704a5c331af844598ba489b4b0c556c6e011627bba4bd1f78725023"
+    },
+    {
+      "id": "capability-0044",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/knowledge:graph"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "7d30a6d14e1cc76c912d277889ea6fe0ded5b28ad538e6a8e6c217558c072ee3"
+    },
+    {
+      "id": "capability-0045",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/knowledge:stale"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "30cdab906673388bdd7b4b440dd0961626335675db06e52dd9fff24605c37a11"
+    },
+    {
+      "id": "capability-0046",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/knowledge:detect-conflicts"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "e73bf6de9a992e82f34df4298024500a43b5aea51e516b681064cc8fbaf23a0a"
+    },
+    {
+      "id": "capability-0047",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/search"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "af92f8ced050f3b4971400232efcad34c8ed1091098d9dd34eff69cd6ee7f112"
+    },
+    {
+      "id": "capability-0048",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/query"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "e0067ece49617d55940ec097e4754ac18c0a541861d3af5762a9631bac6acdc0"
+    },
+    {
+      "id": "capability-0049",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/query/stream"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "ef0f9f78bd590adcd9e26f710a52e2b56e9b27bfde681080be860be090e0d841"
+    },
+    {
+      "id": "capability-0050",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/query/suggest"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "73bc82c75a2c4e28b6f3e3d6aa8f89ae8948aae46807b8ee0b0f739ef3ac451b"
+    },
+    {
+      "id": "capability-0051",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/sources"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "dbad3971c3c138e7eb7032dae795df17d3649aa9607f5d3d1f8033cb646f606b"
+    },
+    {
+      "id": "capability-0052",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/sources/{source_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "330196c8444646e0f72a286ef73daa85760a04e126114d44c940626a0aa66742"
+    },
+    {
+      "id": "capability-0053",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/sources:bulk"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "9dfa418f24a04c3ed3baad95190fe9ae487950cf0eab4e5f012013df48c3c9c1"
+    },
+    {
+      "id": "capability-0054",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "PUT /api/v1/canon/sources/{source_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "11bbe7b33321ca45ace56e61ac4f565c792896b419fb6085e5e73b3a3d527c6c"
+    },
+    {
+      "id": "capability-0055",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "DELETE /api/v1/canon/sources/{source_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "f0031d755ecbd9350c96a8969bb2d878f5556fdb1b557f5b8424d3e3fb490005"
+    },
+    {
+      "id": "capability-0056",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/sources"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "b0988b9774f6f7816fc0bf65653b376928553b145ebd19c3eba035061507e8a4"
+    },
+    {
+      "id": "capability-0057",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/stats"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "922aa26d77a577623f4904270d33c2b35ba0977e8a624a4d0459e100bf8eb30a"
+    },
+    {
+      "id": "capability-0058",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/taxonomy"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "75e0758217c61eba9fd617e919d3491b4d46e71d56eb194731d289220d4b9e20"
+    },
+    {
+      "id": "capability-0059",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/taxonomy/nodes"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "ddbcb8221d43619a5e2fa7ae7f9e342fca9630e2b0636d689080680a8682f213"
+    },
+    {
+      "id": "capability-0060",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/version"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "3d4cd87a339b9971f165b758a2e40f5f3cae3235285d4a898a4e0da610bb7320"
+    },
+    {
+      "id": "capability-0061",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/workspaces"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "ec625d0b24ab5d2d6191fdcb8e6e904e3fcfc4408a46009b7e2d49147eeace3d"
+    },
+    {
+      "id": "capability-0062",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/workspaces"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "7176eddda993420b9c7046fb1c1f0ae3fcb700f33cc6485e2ecb52dc3ca41491"
+    },
+    {
+      "id": "capability-0063",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/canon/workspaces/{workspace_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "6f4e1234fb6e6b8c301d9ddb07ca3238c4f9fab3972172589e0e8a1b9cb7b43d"
+    },
+    {
+      "id": "capability-0064",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "PATCH /api/v1/canon/workspaces/{workspace_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "b1d9f65052f4bbf169671be9e250fa6fd7f6449d424236dc988a231ed822e8a7"
+    },
+    {
+      "id": "capability-0065",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/workspaces/{workspace_id}:close"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "9a2dafd9e596afc62e32188f94544a0f35393c13acea5a2af61fafbd6a79f264"
+    },
+    {
+      "id": "capability-0066",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/canon/workspaces/{workspace_id}:purge"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "a9d0096d0c0223c58b5f72197e00742a2eac52c2e7a22ef3a09160652c435533"
+    },
+    {
+      "id": "capability-0067",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "d6de2fa1ac6bef3f4651a16a3db43b8a1dfbff556f1f93f3283bf0581732181f"
+    },
+    {
+      "id": "capability-0068",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "e4872fe9fb79c40c68cb6b365c5f6702947af23defbb9a865643845dc9bb56f1"
+    },
+    {
+      "id": "capability-0069",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "f5b84769aea9f582169ee641c63120f2c6342de1ace1139c05aebbe0e95c30a3"
+    },
+    {
+      "id": "capability-0070",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "d5936858b1717adabb14c8c1dd04abe8867ce9ef85a9e3fc8fb79fd3cbff1862"
+    },
+    {
+      "id": "capability-0071",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "ef115146e0b6961398673a1af311eb5939cea5b260bc4ba21c356979ec51c155"
+    },
+    {
+      "id": "capability-0072",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "0db6a73153c9bc38c692118f945e7f70caa11ecb84221cdd7ed9335c952405e8"
+    },
+    {
+      "id": "capability-0073",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "a2d606a035ddd15a4283a2f93fa0b7e1bb66cdc1a2028af694ec40f7c4813d5e"
+    },
+    {
+      "id": "capability-0074",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "b8043521ac01c4cd835af4a4585238f562fdfb87c09e3d155b28e814b82a5b58"
+    },
+    {
+      "id": "capability-0075",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "39f21696619dca86e02e1d0bfd2c068379032a51a1d6eec71a6690151c8a4185"
+    },
+    {
+      "id": "capability-0076",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "e8c8d68558f2dce87a958c9899d47ce00a5b177358c49cc40b57fb4d1bc5cacb"
+    },
+    {
+      "id": "capability-0077",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "4e47bf727ed60bfa6484984ac6a90fa6952b4189404e96c5b3115aee1f10b7e0"
+    },
+    {
+      "id": "capability-0078",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "7aadfdfc91cc4632bd38a191a069d8be9c365e38d0d1fcda9c248c61e3b5367c"
+    },
+    {
+      "id": "capability-0079",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "dd832f72da1667347be4b9bf57fe1cb72f83ab47da12b9208a0fce6dadc008b2"
+    },
+    {
+      "id": "capability-0080",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "d73226535d58cce36768a6c258500acef0d499cc8d1697c6e4f112194ca41475"
+    },
+    {
+      "id": "capability-0081",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "ae6faaf51f85657d4fdd202d86fa5a3ef48a1e30931d0ffae7447f0c9d792b38"
+    },
+    {
+      "id": "capability-0082",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "13dbd30877d52dce8c58f6b0d8ede81c561827fc932f11e795a1b8166a3eabcf"
+    },
+    {
+      "id": "capability-0083",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "60c6388e2cc65f880445a9b575e6858fed85ab37de607e25fdd2054607a49698"
+    },
+    {
+      "id": "capability-0084",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "c74a6c05e00bcce3a622795f9933b4e9576fa1f94baab1b1e172dd15fa9419d7"
+    },
+    {
+      "id": "capability-0085",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "8579778f70ffe0bd6d6e489ca0b9bb79c2fc5e2fbc537f157fb50310e3c4402f"
+    },
+    {
+      "id": "capability-0086",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "f940cb7b43bdfeedb5dd2ffd8c7fac67785a77056f504bad83139ea21aaa21ae"
+    },
+    {
+      "id": "capability-0087",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "244ddb27cf7a199e0d6b13eb03c3a1644ce99d32972cfc01190584b7d5f8c07d"
+    },
+    {
+      "id": "capability-0088",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "51fabd2b38ae5f066ad6ab15f69e0975c22e77aef1d91d7f749481b0427895bb"
+    },
+    {
+      "id": "capability-0089",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "5b4bbdb6def8a92578d6ef99f4182e06fc462d19041aa47739ff375c95bc33b1"
+    },
+    {
+      "id": "capability-0090",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "48a91f6ee1ef81e235e276bad19928283c30d341bacd29dabcbfc482532460bf"
+    },
+    {
+      "id": "capability-0091",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "c3c66c428e85124e8115020f0c159d068c54b50816a09a4fad374bd993a61b5a"
+    },
+    {
+      "id": "capability-0092",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "974010ff0644590b9b0fcb50051646eee12b24c55c1db601e4be58769f7a9970"
+    },
+    {
+      "id": "capability-0093",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "f9697bfea3e52d817fd28194fb1a6f11f4bdd8744332d7c4f4f50874e04711dc"
+    },
+    {
+      "id": "capability-0094",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "ec105bb9cf95c54b2a3be03628cef9f38fd9553464c0abe889bbd1803866d46d"
+    },
+    {
+      "id": "capability-0095",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "1958ae25d1dc68a42c2d6dc9c762e1f45dbc928b7f1a00c706b97642514dd260"
+    },
+    {
+      "id": "capability-0096",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "d94c1f7816981cedf52d15c6f0664d53862fb2f4bb230d5a06136e66e86e1997"
+    },
+    {
+      "id": "capability-0097",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "bb99d46d70554733322f32d6951452b48d20ae5f382909ed09e4892026ce8a5a"
+    },
+    {
+      "id": "capability-0098",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "dc9e441af84e5ec7b947c1bdc0a9f6c09119288ffcb532b01aed0896d935b7d5"
+    },
+    {
+      "id": "capability-0099",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "f7cd9676df09d39932a41d6221bce772f17ed03c7df133a34b21f34151c27144"
+    },
+    {
+      "id": "capability-0100",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "6c2294e31371eb7afa11180547762c0f66989ddbe5607fef6359b108194f767e"
+    },
+    {
+      "id": "capability-0101",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "9e1fb257ea22a21f2a905c8df20a939b9e6d95c6265816591587c89c32aa0d45"
+    },
+    {
+      "id": "capability-0102",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "51a4699877e57d035d42c872f48794dd4ca2e1713200f1f655726f9c974ff5ba"
+    },
+    {
+      "id": "capability-0103",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "11f8920fb6b83f6017701bb067e2843ec1af115452aaf80a2041953ce64a5f93"
+    },
+    {
+      "id": "capability-0104",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "3550dabe11d49a2cda214e16a3008c94f75f1d5c0c6587351b46457062e25342"
+    },
+    {
+      "id": "capability-0105",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "1da91202678a1fc7486892b966f2fa4cc7341e96af71d7e081877cf1f314710d"
+    },
+    {
+      "id": "capability-0106",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "168e943ae7aa71091649b7a54ca2d572cbef76e4b12465b62b3026cccef6f108"
+    },
+    {
+      "id": "capability-0107",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "6445d65cc75160b95d04e1cdeb254d1512981a9da842304d73e86808cbc2d5a8"
+    },
+    {
+      "id": "capability-0108",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "00646964c9fa296571647475306849dc18ce4423ac3b636e96a2c23b80b6b481"
+    },
+    {
+      "id": "capability-0109",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "67c15aae7a8ec6992f98a9727dcf0aeb66ffc4d52b4dc3e5524c9fdd7c37a400"
+    },
+    {
+      "id": "capability-0110",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "c728a7aac87466ed906380ddd317b3b3c2c5a050ec22ec72913f795e1255fc14"
+    },
+    {
+      "id": "capability-0111",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "31a99b510db1a4adb434001a56480c91ab33ade9d93a9db2ac7e1ff70e7ca977"
+    },
+    {
+      "id": "capability-0112",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "f397e596a87c45218ebd898ea8dd9cf5e5bc50819bf23f8b9722450daf493f6c"
+    },
+    {
+      "id": "capability-0113",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "33c68d1834e93849d8c13a899dbf5341c0191c83cc78fb85d0d6031526660e7a"
+    },
+    {
+      "id": "capability-0114",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "678e1e3b01c1b3c2b16a595d96ea136b0c6e8370c7e1d364af285f7141398701"
+    },
+    {
+      "id": "capability-0115",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "9f6d5e535d01ee260eda763cd11c5aaa93f04615b85ba527a46346cd6a467f7e"
+    },
+    {
+      "id": "capability-0116",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "ee895291021ec7f0d48638a1b38df27651c6841baf1d5775a1b430f37d8d8ff6"
+    },
+    {
+      "id": "capability-0117",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "d6f8f3e91c8b5271b13ad2f98a0778f32e50f83f491fce68c153e958405a8aba"
+    },
+    {
+      "id": "capability-0118",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "450e9cd486d080950fe13e0fec969efaf1cfa1e5c9950aaa5830c7c6b33a067a"
+    },
+    {
+      "id": "capability-0119",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "5b52d4ab26ade42b9542c89150ea2b08f0622ae14eb05cc7a4f20b0acf637d5c"
+    },
+    {
+      "id": "capability-0120",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "a8090baf68936fb298df8e826d7f2779c8b4a477c925a3819f73f9b36732ed90"
+    },
+    {
+      "id": "capability-0121",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "e90cadd1f6b81484980670c7af935c4b11809f39ac4bee55d8395aa7ddc4f81e"
+    },
+    {
+      "id": "capability-0122",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "aa00713f78dc49ed57050675a34b281b72d51ca8cb8703f494acf04ac9499392"
+    },
+    {
+      "id": "capability-0123",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "8aeaad1be7709f9da752a45d7fdf96a8b7d4745aa669cc1ce82c5f78070113b7"
+    },
+    {
+      "id": "capability-0124",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "8815a41b268b76077f66a91186b1b210b14114de8224f501f840aef988e0bb84"
+    },
+    {
+      "id": "capability-0125",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "0d9eac6cd91b1480cc6c9f80e4744b8d6b3c93b828544d4d1ee73be5e0be3922"
+    },
+    {
+      "id": "capability-0126",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "75eb8c30f893e9f513ab4b5d9e6d7d0fa2dbf71dae82eca34eecb62a1bed903d"
+    },
+    {
+      "id": "capability-0127",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "5d55847e173460a8efe43786bb0965d6b1667ebddd4809322190a8d91e909978"
+    },
+    {
+      "id": "capability-0128",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "18e558bac5d2a47e86aac91c70c78f70069afc497f5f398d26f2ed48c9e2dc63"
+    },
+    {
+      "id": "capability-0129",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "6ecca3657e2beade50e791de34214c94f4a9651815c5470332527d6a92fd957d"
+    },
+    {
+      "id": "capability-0130",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "0629e4966067993955cc6140cdb548b91d6670536cafd569287f1527fafbd1a7"
+    },
+    {
+      "id": "capability-0131",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "785cef84513c4d89655fd6f2cf374b2253d4ebacaf8a6e64569f8bc7bb2c43ce"
+    },
+    {
+      "id": "capability-0132",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "0353f001a7aa9deffb338d0d7210072d971806f9a63802c21fa82057167a6405"
+    },
+    {
+      "id": "capability-0133",
+      "domain": "Document knowledge",
+      "module": "packages/canon",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "342f5e30e1bb6a39cf3dcc8c4637e1303cf272742a6557076f5f1fbde6896a95"
+    },
+    {
+      "id": "capability-0134",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "68a4130410b2f47652721dbac01c1c6d86e47685daae4d3cbf1d0715ce2998f5"
+    },
+    {
+      "id": "capability-0135",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "4631d2502db4c117fcab7b958c46e471ed3ff78de801347df6625c0bc988bc58"
+    },
+    {
+      "id": "capability-0136",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "b76da181b56ee7b22948fc577c9ff63ac15db54462510a8f6004ac928433fd28"
+    },
+    {
+      "id": "capability-0137",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "2440cd31fd1591b962d9f82ad7bb6ba0053fd6f41ddae1687230858974d1ddf1"
+    },
+    {
+      "id": "capability-0138",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "43f43e7af00135620964c3c504880caf00969a3a5b8818b52c29b5a90e38894d"
+    },
+    {
+      "id": "capability-0139",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "ba746fb164789e9315f0cb514af1f55bee986c7811c29179c4b92a07a2ad7e1c"
+    },
+    {
+      "id": "capability-0140",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "8b3469e12451f3784fe408165cc2d4f7b3461a5b04f6704cf3a17b5d6b039fd7"
+    },
+    {
+      "id": "capability-0141",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "938905b7bc931b70375ea437fac82d53bd43b91208ea10556d80641d23efb363"
+    },
+    {
+      "id": "capability-0142",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "a75779e17696009b3e1d99d17db33231175554b868f5825e7a331cf569f8eeba"
+    },
+    {
+      "id": "capability-0143",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "010bd2fc15dc6ae32b5005e811bd1437d7c1679ba1b92b67d1768753f33e3b67"
+    },
+    {
+      "id": "capability-0144",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "96e5fb1ee884359cbcf9e3ecf59fcc307d90d13e384fea379227283ea5d18f3b"
+    },
+    {
+      "id": "capability-0145",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "011ebd5e5be2376adb82e0e445462ad493c0ca33bec8c8ac0c7235b506f60da3"
+    },
+    {
+      "id": "capability-0146",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "25358aeec66f9422c3172a59b54e99cd8968524c6f7e7024d7a1cd6f34387731"
+    },
+    {
+      "id": "capability-0147",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "47098596ec5ef4748d90e0e27767202e2198e956259dbb6b69f059929d975fd9"
+    },
+    {
+      "id": "capability-0148",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "b02f38a9bdc99914654f772dbccca813f5d06bec41a63cf90a0df714c78ee4e3"
+    },
+    {
+      "id": "capability-0149",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "60d94c5edd1fc4f8728f8629636c512ed0b09866c2dbe9bd0d3af264b3ef52ae"
+    },
+    {
+      "id": "capability-0150",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "ac6638a8e8ad892dbd88c02a0cc867b82ebf54aa9847e97ac6329ec160266a12"
+    },
+    {
+      "id": "capability-0151",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "b91cc05803f0219eb98319c1a321049ff1dda41daa73b3dd9633887421155419"
+    },
+    {
+      "id": "capability-0152",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "fe3e4e8dd818ffe7bf62ae8b2d54c1299332e3d6bb08a1be24883fb2c31f807e"
+    },
+    {
+      "id": "capability-0153",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "36c6939dc1e6f8832ce0b4eafe80342b9682a5859400668480f246122cd0e51f"
+    },
+    {
+      "id": "capability-0154",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "ac7c1c2e5dfe4b297036f935a8f39b1f0e98213e27c6a5975701b4a1c17f6768"
+    },
+    {
+      "id": "capability-0155",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "00a704a114ed30f7bbe82d2949409a9e8ead5eae5eba586c20a5817973a7be47"
+    },
+    {
+      "id": "capability-0156",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "8421b8b47692940b7e1483480d0e114ae8128691746a07a374a38a8b18be2391"
+    },
+    {
+      "id": "capability-0157",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "c5ec3467deda2a11f138a42b00b5f44c3fab1176b01e2b162fba2e09d504651c"
+    },
+    {
+      "id": "capability-0158",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "cfbf6211225f5372041ef5622f50c90f3d5b8c955c14482a23bb47f8a7b31061"
+    },
+    {
+      "id": "capability-0159",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "5bc2ff6d89299b84970cdae8507c6a5f9efa25c3c66c06aff8fdd38e966ccb35"
+    },
+    {
+      "id": "capability-0160",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "57df9590e8995a7b76c4cb0243c87ddff15448f2bcb27e92ea77db89d5510845"
+    },
+    {
+      "id": "capability-0161",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "85d1d182daa2547a5b88b189911b9311d019af21b914ba6a2cbfa0bdc8922ec1"
+    },
+    {
+      "id": "capability-0162",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "6a928b60429db85bc928e88a007e8e2d17f8f5fd6fd715111fd7801db8e60ba4"
+    },
+    {
+      "id": "capability-0163",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "01978dd573c6df04ecc6916b214fd1861a7cb07731c12d91306cd145c1005eff"
+    },
+    {
+      "id": "capability-0164",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "db23c20b421ade3a6188b06764a629dde8537041c2a83331b02ef88942c821d2"
+    },
+    {
+      "id": "capability-0165",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "a3cb5e8e3c49aea2debe5a0f13b864afe1f79b7cece097272bcac615a3358284"
+    },
+    {
+      "id": "capability-0166",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "2f8627942863ec16c870006d5a26d1de1193bfee8f54a45eaf45f840c4fddd99"
+    },
+    {
+      "id": "capability-0167",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "876417b4a6fad6ec0bb3881b66d8a637e66b265eb62c328cdadb1da0e9403f61"
+    },
+    {
+      "id": "capability-0168",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "feba0e7d1388e1e26c9d3dad6be3ede0f02a3fdb97601ede80512dad34c951bb"
+    },
+    {
+      "id": "capability-0169",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "30a065e810e0594369ff3730244d7ca6a5f2ad921e37579c7ea25577f75522ed"
+    },
+    {
+      "id": "capability-0170",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "49d6dc19b9adc9acbbf0b4a3ac7c7425ac2d5502ff377276aaa2e4c1b367a91d"
+    },
+    {
+      "id": "capability-0171",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "e3ef70d543560dbaeded86fb8d19f47fd59498bbc136ed264653579b9e998e6e"
+    },
+    {
+      "id": "capability-0172",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "712218d0b4a5216eda164b8f0c937b9ceab433646a8e60d67d7168a2972d9e4b"
+    },
+    {
+      "id": "capability-0173",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "53bb11b0dc760ccff4572a4ae03a4af0a22793b23982948937187cc3e55df6f1"
+    },
+    {
+      "id": "capability-0174",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "c5fc969adca0d3873b594f6f1904fe2c256874568ef74dd0726a99b4d60c8465"
+    },
+    {
+      "id": "capability-0175",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "c56dec86dbad82a3718df4f3a0eb22465de253c416b81aa6eb342274d740af1a"
+    },
+    {
+      "id": "capability-0176",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "3b81a3b4d7aca6364122b439e068cb21c14fc19dba56468ffb9eaafacbec453a"
+    },
+    {
+      "id": "capability-0177",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "c75b0f1afe172a4bcdc77f40922be505249fa9e66699b8d6bbba084c50548cfa"
+    },
+    {
+      "id": "capability-0178",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "9c781171bf2a57e0819775f9a6539b128a07f22d0aa4899190d01315d928bd0d"
+    },
+    {
+      "id": "capability-0179",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "c9a3b52706d958cfab135ecb8114a1378a5d37dea1d6dff2cd9c93dc8dc00dc5"
+    },
+    {
+      "id": "capability-0180",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "1451641ec67c2fcee59fafecae2b811e8002601afdf0448756519e60dfdf3cbc"
+    },
+    {
+      "id": "capability-0181",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "bc236079376d6e4b9801830e0d0cae2005d8571ac54352c90eef84f05fb9452a"
+    },
+    {
+      "id": "capability-0182",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "dcc987ae674ae36441e22851a4089a4e7e848fadfae66c902f88d56dc1e2d421"
+    },
+    {
+      "id": "capability-0183",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "9437b511c7c5d8757e6a29f7a863f2f7ec7465bd3d40f7563dfb192b007e222d"
+    },
+    {
+      "id": "capability-0184",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "9eb447ad1e335170257b127d1b57a5f0e3a55bb323b696abb75422ec0f765f7e"
+    },
+    {
+      "id": "capability-0185",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "a6e1b9f9f905bc5cfd76b8e57d6feea5594f0458ca6f60df32509c9824acf0e6"
+    },
+    {
+      "id": "capability-0186",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "fe417ef4b92fa09eaadf77244a47c3728c80fd40dbfc26f3890a77065de098ae"
+    },
+    {
+      "id": "capability-0187",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "c1cf25bc73a646b4fc50ff766aae01e89abe98877417d104ff970567edc93017"
+    },
+    {
+      "id": "capability-0188",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "62cbca678191a19f658a8d4330f72943e10addf0daed73ec3a601fcbe30914e2"
+    },
+    {
+      "id": "capability-0189",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "0eeab9750e91a1165db9a9dccd372c1d54e79852549179a43d4b71280c68ac9d"
+    },
+    {
+      "id": "capability-0190",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "c6f4eeeb0515246ace03e0702a12d8565b98842dce011659b0bea5a12cf38660"
+    },
+    {
+      "id": "capability-0191",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "2544b52f39316bdc79ef3bf2a32f803fd96e43a3f6208658f01ff67b84603a63"
+    },
+    {
+      "id": "capability-0192",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "1f1a2be76a4ce01e1e7af7f65fa355e89c2a37e04acb05036915f9ddd809739c"
+    },
+    {
+      "id": "capability-0193",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent-tokens"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "7687d2fc4c3f23caecb33039d0c8af02c68c7ddd94e7fdcb341a3c5b8fb318cd"
+    },
+    {
+      "id": "capability-0194",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/agent-tokens"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "7315c61efe65fbd0ac201eba4c905a1071bb2d814e2b7c553fa8bd11cbc30757"
+    },
+    {
+      "id": "capability-0195",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "DELETE /api/v1/structured/agent-tokens/{token_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "44fa47afc1b46f0c3c686caea3ce0f3f75b6177a98ed90b8cc4cc777f2a5e263"
+    },
+    {
+      "id": "capability-0196",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/conversations"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "b924e3f1796e97c524c6236e4c9d0a7a6d2afc08ef6d5544054e3cab326fa029"
+    },
+    {
+      "id": "capability-0197",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/agent/conversations"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "4b9bec944a3ae1a48b3829a0f5a89cee4a94285f7a84853251802f40b7466ad9"
+    },
+    {
+      "id": "capability-0198",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/conversations/{conversation_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "f166a6b3c5e8b4d0beb4990f983d8eb4869f0594224b7eddda166b3196f3200b"
+    },
+    {
+      "id": "capability-0199",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/agent/conversations/{conversation_id}/turn"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "8685d8909891f42062a9621c60855ec082910510a69614e9e918f44e555ce51f"
+    },
+    {
+      "id": "capability-0200",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/datasets"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "f0ffd1e94125bc09bcf39056479c902c1f7f9dcaff9c9d4930da28f701cc36f6"
+    },
+    {
+      "id": "capability-0201",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/datasets/by-name/{name}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "b0fe5ad13c429228e428654d54a9a874dd3ff1501bb876a1af7ae81d67d16eda"
+    },
+    {
+      "id": "capability-0202",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/datasets/{dataset_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "5bc2d854db2c58fd7f73d661ac791aaea7daf18e7e07262ce41a4eb6a52677dd"
+    },
+    {
+      "id": "capability-0203",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/datasets/{dataset_id}/relations"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "a3d502ba82ecbd2ed89622d37dcd9dfb8e4f25f606b4faa64ea01b103be6871b"
+    },
+    {
+      "id": "capability-0204",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/datasets/{dataset_id}/tables"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "185814b4f1447a42522fd8452b41df7908cc9660faa784c31dd53a5abfc7dc34"
+    },
+    {
+      "id": "capability-0205",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/examples"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "e96a150a1c75e2ec4822d265447337d2bb5e020aaa3c8ccdc9ff6978cfddbfe2"
+    },
+    {
+      "id": "capability-0206",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/agent/examples"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "f3402b4230f1b0d1ddec683a0b755ac05f8bb0ffc85cae14b07d2ad748e6d367"
+    },
+    {
+      "id": "capability-0207",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/glossary"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "e2d0db0d27690df189bc1c4e01057d0cfa56f30189de03916938eca9a06b94f3"
+    },
+    {
+      "id": "capability-0208",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/agent/glossary"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "4d5b4bf7c88ff9cdb0a8d4823d663f23cb87fd0e0fc931a866cd7958e7026014"
+    },
+    {
+      "id": "capability-0209",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "DELETE /api/v1/structured/agent/glossary/{term_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "be0c930e9675ba3dccf17bfe74c8a1a74f73d0d97660200a07cadc5238863c71"
+    },
+    {
+      "id": "capability-0210",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/glossary/{term_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "873f4c40cdfc00675fe809566273ff74062f4b8c39a0da42e80823784fc492b1"
+    },
+    {
+      "id": "capability-0211",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "PUT /api/v1/structured/agent/glossary/{term_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "b899c224ca1bd3336291f3ac7fe43bf669f5ce800f402ffe160768199c35b217"
+    },
+    {
+      "id": "capability-0212",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/ingest-jobs"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "6e3b3a5a8d87b94da7559d2daeb6d4acc7a4852b507e101b8d5832554c720177"
+    },
+    {
+      "id": "capability-0213",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/agent/ingest-jobs"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "aa7594582e67d6841d28970c669cc805ba801527191cb553c01430a7dced88e8"
+    },
+    {
+      "id": "capability-0214",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/ingest-jobs/{job_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "5dc57011e7e0a7b01a1c1b8ff950026d61c9450d15df2f3edc8f520f6e3bc3ba"
+    },
+    {
+      "id": "capability-0215",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/ingest-jobs/{job_id}/events"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "53f284aee0e32594ceff77eef225645a7bc350619b4ffe53c061c961ddf61c34"
+    },
+    {
+      "id": "capability-0216",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/ingest-jobs/{job_id}/stream"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "898bede5d4a7cb69dc5208f653c95167a5bdc44340a2c546ea39b71e1ac542a1"
+    },
+    {
+      "id": "capability-0217",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/agent/ingest-jobs/{job_id}:cancel"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "feeb9b9d0b289d59176d83e167e0d3afef17da1822bab98fc7d117e79dbd00c4"
+    },
+    {
+      "id": "capability-0218",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/agent/query"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "cc799527e2d3bf041bb441749063fc5af76896884ddec38374d13c81c8a4cf15"
+    },
+    {
+      "id": "capability-0219",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/agent/query/stream"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "4b5700a78eddd81053fc0cdfb17d333ca1c61edf659f58d95477e339a183b11b"
+    },
+    {
+      "id": "capability-0220",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/agent/query:batch"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "d0365ba08ec22759921be6476b675abedb437c0f96ffee4cf24f4c2bb0a593f5"
+    },
+    {
+      "id": "capability-0221",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/agent/query:explain"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "2ea77a585294bdb56e7de6d1cb2fd4c2a5538109f3ea56833eb79e20a77f7b08"
+    },
+    {
+      "id": "capability-0222",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/agent/query:validate"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "c9d633d333b6db13f498b13aad99496c70b43ab801b8d0aed6156bae8e4636d4"
+    },
+    {
+      "id": "capability-0223",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/schema-objects/{object_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "91017571ca9dfd45048eba5f1cb42a7ad9cc8bc42fc75a8103d9b126c9c3d2cf"
+    },
+    {
+      "id": "capability-0224",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/semantic/dimensions"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "c300ef5476e630e10997e472317062fdc0f4d53aa4adbc6e022ca91582473375"
+    },
+    {
+      "id": "capability-0225",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/agent/semantic/dimensions"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "cf4f1b17d48293362dcde4df4b2938357802fc7b5eab389078e0e589bdb4a070"
+    },
+    {
+      "id": "capability-0226",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/semantic/dimensions/{dimension_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "19000373f30a994c3f906642286cfeef77cf5e811836c5e702740e0ac2d8f84d"
+    },
+    {
+      "id": "capability-0227",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "PUT /api/v1/structured/agent/semantic/dimensions/{dimension_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "499c35971b7bb85516f56e9d478c90c4e39d4350f947075bba31b485256e08b9"
+    },
+    {
+      "id": "capability-0228",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/semantic/dimensions/{dimension_id}/history"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "f9b3ffafd2871522eec208b4dff8848681414d278e39320a96bd25ad16a44b09"
+    },
+    {
+      "id": "capability-0229",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/agent/semantic/dimensions/{dimension_id}:publish"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "7bc77bc387d838afa8d22917107106e05e0e8fa4f27bde78ca1145a1ab2b23de"
+    },
+    {
+      "id": "capability-0230",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/agent/semantic/dimensions/{dimension_id}:retire"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "b467f3cd54d84754c0080d9be8a02f1747b8cd13327a50e838301772a6e6f961"
+    },
+    {
+      "id": "capability-0231",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/semantic/metrics"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "d68b437ddb5867323f23ebb402edd778815c6bcb1de2b96c07dd2816382ce97f"
+    },
+    {
+      "id": "capability-0232",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/agent/semantic/metrics"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "73e5e471dd017c83e52f43d5adcab7396915436f15fa3d595468c4e5ce316cec"
+    },
+    {
+      "id": "capability-0233",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/semantic/metrics/{metric_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "b9a048b477d9f144fd746d8611796a4ed87be1b5f635667e459a0ad04754dbd8"
+    },
+    {
+      "id": "capability-0234",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "PUT /api/v1/structured/agent/semantic/metrics/{metric_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "4f133de8168af62d3ed539af46f304d16e0b2dfcf79d6d21e9663c6d0b7813bc"
+    },
+    {
+      "id": "capability-0235",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/semantic/metrics/{metric_id}/history"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "efe3ff11953f817f6e292c47d7af37fe75b97c79b0d2daeb522b0137da1edf21"
+    },
+    {
+      "id": "capability-0236",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/agent/semantic/metrics/{metric_id}:publish"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "f2bfbe3cd792a07939059dac8fed75e02f35b232950ac981819ee1e98f9e23e4"
+    },
+    {
+      "id": "capability-0237",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/agent/semantic/metrics/{metric_id}:retire"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "38ccf132bd60cc9d2ab77c175a01410f310b34f55cf820465517b3e071784ae0"
+    },
+    {
+      "id": "capability-0238",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/agent/sql:execute"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "227cfb38097689f5bed9e762a938b653e5dd4b30f706484dd6dc0d21ce732e67"
+    },
+    {
+      "id": "capability-0239",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/agent/sql:execute/stream"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "f6a20e3ab8228e21b777d342789516cf08c7e219e293d2e21f52c617d3d02b93"
+    },
+    {
+      "id": "capability-0240",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/tables"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "bb1139998b9540bf30fb53155c1fb5b245463ad4a848d1fd56a0ec46a1ebb1a9"
+    },
+    {
+      "id": "capability-0241",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/tables/by-name/{name}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "0d85d4e5e676c8e30be1d873ab1c8e0f0b4dd73c4e8594b8df70943d09a88b83"
+    },
+    {
+      "id": "capability-0242",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/tables/{table_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "0c368facfa1113cab3f4fe02243171a1c24499aae60414677210dc3cfbe1489b"
+    },
+    {
+      "id": "capability-0243",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/tables/{table_id}/changes"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "57150581a20520bde8a94d9bb8de79cdcdab496c6cdd0f774ab2ef3be5be5901"
+    },
+    {
+      "id": "capability-0244",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/tables/{table_id}/objects"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "e456eb85102a994e5a0b921b363dc538170f4d6c6ceb10ca78cbf65234ce0c3e"
+    },
+    {
+      "id": "capability-0245",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/tables/{table_id}/snapshots"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "eed66ca71ccac681e2f63d72fa41ca1b6cddea9169b829c41c1d5cee498ed599"
+    },
+    {
+      "id": "capability-0246",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/agent/version"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "dd7e6cb64ecc88250b7a027898f336cce0ed69ed8402422ac06e80e99f24ece0"
+    },
+    {
+      "id": "capability-0247",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/audit-events"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "2114e01aa00b6128681076bfa8e1738ef6f11eccc7696da6dd086cc9d1af89a3"
+    },
+    {
+      "id": "capability-0248",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/billing"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "340812b5a51ec1e743ffbad61927ec311c2eaa920de343cc1e0d13c942905732"
+    },
+    {
+      "id": "capability-0249",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/conversations"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "da3ab1c39968bbc0dc68a824d16fc2e0a9720f35df85c6f21988f8a5920576b0"
+    },
+    {
+      "id": "capability-0250",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/conversations"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "e2adc178e3d11571a718411e7b11ad7f37352a4b3070f0549bb74c55e8371084"
+    },
+    {
+      "id": "capability-0251",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/conversations/{conversation_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "fafd488d0081c3b38abd7f5286b7ef4471377e62bff63c6b31c1653e768cd1a3"
+    },
+    {
+      "id": "capability-0252",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/conversations/{conversation_id}/turn"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "de54a5143d7f4a846af5b2bb6f7bca337a2d7111e2fe60b2846284e474db6f29"
+    },
+    {
+      "id": "capability-0253",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/cost-events"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "24fbaa3b6bd96eecfc7e1352146ecb958d1148ebf2c371093101bd696b4e16fd"
+    },
+    {
+      "id": "capability-0254",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/datasets"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "8b81af524f946dea4c52fcdf96c62748f38ad27db73d1f8a5fe8001f68638c5a"
+    },
+    {
+      "id": "capability-0255",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/datasets"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "1c2982dee43ba459e2cdd55d73f6bfb9bd9c68dc6f9d1ba525d252e103ca8550"
+    },
+    {
+      "id": "capability-0256",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/datasets/by-name/{name}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "7df95bc48eeec4730f61018cee76c1b4de4b44c6519e4ee87336245fc92463d1"
+    },
+    {
+      "id": "capability-0257",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "DELETE /api/v1/structured/datasets/{dataset_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "89f59e61678dd11a3142248db1d29d97a63408f52238906b54efa68e225d4597"
+    },
+    {
+      "id": "capability-0258",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/datasets/{dataset_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "f755c42305134b0b0c1aef0464fdb663b7ef07df84a9cf2a508008ff93fcea11"
+    },
+    {
+      "id": "capability-0259",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "PUT /api/v1/structured/datasets/{dataset_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "76354236e563f64bafb1ab439418114ba7aefda0688c282ca6c6c758d59c2ee4"
+    },
+    {
+      "id": "capability-0260",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/datasets/{dataset_id}/files"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "eac9e26c2ef4c6530c75b5866f5f82954c008eb9a034f2c16c8508c2d4fc80af"
+    },
+    {
+      "id": "capability-0261",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/datasets/{dataset_id}/files:async"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "4bb3e7c4e016bdfd5b44f92b4c56372eb787df65b29337350f70ede4bfcac3e7"
+    },
+    {
+      "id": "capability-0262",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/datasets/{dataset_id}/files:bulk"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "58e9e13a1c62de72eb0cf1d78f70bbf76a54066c46f3d6fc0dc509d98b82a3b0"
+    },
+    {
+      "id": "capability-0263",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/datasets/{dataset_id}/relations"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "b846b5a78d646b8a672eeaeedaf48b657858e2ff512957b781a1633767b33139"
+    },
+    {
+      "id": "capability-0264",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/datasets/{dataset_id}/tables"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "0587e196a309cbd8faec3ed7c9d399869fef544a9c9b62733aedc752bf6527c4"
+    },
+    {
+      "id": "capability-0265",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "PUT /api/v1/structured/datasets/{dataset_id}/tables/{table_id}:upload"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "6e32d0fac456b7866a5565ad574460609b86be9703a018f58ce4ffa2cfd97954"
+    },
+    {
+      "id": "capability-0266",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "DELETE /api/v1/structured/datasets/{dataset_id}:purge"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "9faf5220319106ca9e741bdd42e8ce5b9ae334a91c658036b82916bdc4ca1c52"
+    },
+    {
+      "id": "capability-0267",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/examples"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "d5f39191f5470bff873a7409f3134171b4bc0d3d9e85208fed7a364eba7681c4"
+    },
+    {
+      "id": "capability-0268",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/examples"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "46b6957b27474e8c690a98950bae97775c494af05e2b9e16a176deff8d26b70f"
+    },
+    {
+      "id": "capability-0269",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/examples/{example_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "8d6428d05d7afa051bdbecc7260783a4c7b3787b43d60c4bef92f5c93a08df03"
+    },
+    {
+      "id": "capability-0270",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/examples/{example_id}:approve"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "b13a629c205cf58efa28b9e208778c5f571414e2f9d3b6d2dc5d162c510c4d3e"
+    },
+    {
+      "id": "capability-0271",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/examples/{example_id}:reject"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "f553f13cd65f3db7e3aaa1a574a87fad126ef50cbe3784237d01091745f26ede"
+    },
+    {
+      "id": "capability-0272",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/glossary"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "e1396eef54adea0fa289a9c826e023823e261d721c7ce369b61ac7c55f2bc53b"
+    },
+    {
+      "id": "capability-0273",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/glossary"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "c62d43015692b4b715d77f5d8ff260c1d4834037ec576a57ba75fb71dfea085d"
+    },
+    {
+      "id": "capability-0274",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "DELETE /api/v1/structured/glossary/{term_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "ac3abd8e5c856d13a373b78c3dc973f31676a5821e5c442dd68acd34dcf48371"
+    },
+    {
+      "id": "capability-0275",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/glossary/{term_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "55441fde3619a77e0ca22dbb2d0c6705083578b44b669451c42dee4f830b31b4"
+    },
+    {
+      "id": "capability-0276",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "PUT /api/v1/structured/glossary/{term_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "50be244bed11804a20cecd593fdb41b92eaefeffd5368defcf47e073378f1f85"
+    },
+    {
+      "id": "capability-0277",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/ingest-jobs"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "06a3140caa9d78809708122d7fd21dd6b400cb5e058ee83830028087436ca7ca"
+    },
+    {
+      "id": "capability-0278",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/ingest-jobs"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "6b47039ded8252d95de73352d62e49ae79e57f3f69b9c5a988940d425eb3a2d6"
+    },
+    {
+      "id": "capability-0279",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/ingest-jobs/{job_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "e9f7ea140afd5a39265618941f4f6c8c0a5390ef9a97bd0c1f2d9e945bdf4d6e"
+    },
+    {
+      "id": "capability-0280",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/ingest-jobs/{job_id}/callbacks"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "553bb4ae38b8424f869d712e2da3e6b616471705a9613822ca373c9d26c6beea"
+    },
+    {
+      "id": "capability-0281",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/ingest-jobs/{job_id}/events"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "12c70e62ed6a1fe6cd1500bb760e2e3b33f3712d43d376107002c4fcc6345cd4"
+    },
+    {
+      "id": "capability-0282",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/ingest-jobs/{job_id}/stream"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "efdd3bb08be023c99ee1e8ba5ed11c71977fb45c23a1d9759b31f3b3232ac2b0"
+    },
+    {
+      "id": "capability-0283",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/ingest-jobs/{job_id}:cancel"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "2ea916350073437975c68c23b68df3993d2b207c2d836c78458d47481a1d97fc"
+    },
+    {
+      "id": "capability-0284",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/queries"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "32a33e48a3db1e544d86c32be6e6d32698f6b28d56065877421b9c281599ec8b"
+    },
+    {
+      "id": "capability-0285",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/queries/{query_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "9344327855877b0d05316ad388b86e90781a29ddf5820244634e578e4512e088"
+    },
+    {
+      "id": "capability-0286",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/queries/{query_id}/result"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "3b43d64a9b107c01bdc19c1b790a40715e9498180814855c066da9a183319aa1"
+    },
+    {
+      "id": "capability-0287",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/query"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "b3332ca560ef2fdb6fe92b8ddedd0e91cda160e82dc5030f6feb9e2043a3b596"
+    },
+    {
+      "id": "capability-0288",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/query/stream"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "9ae4ff40d1b8169842485dfab18c573482ee286a841acced2c2aa4a93669f08a"
+    },
+    {
+      "id": "capability-0289",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/query:batch"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "b102ff2450c04a1ebf57f336106c93d4b0facf830e5ac1b8b45e9b2e4c34e5cf"
+    },
+    {
+      "id": "capability-0290",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/query:explain"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "9e9931a227faf304f7af07b40ca64af7aff7d898bf117cc620b05c9c7fbbdd96"
+    },
+    {
+      "id": "capability-0291",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/query:validate"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "970afec20c10691ff886653eb4db77ab21bc39790041620f5c72c14be3d5749a"
+    },
+    {
+      "id": "capability-0292",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/relations/{relation_id}:approve"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "796c11bcf3269cd3ef981717a15761cb1ba7a3e4faeacdee4d4e7248dae46d94"
+    },
+    {
+      "id": "capability-0293",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/relations/{relation_id}:reject"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "49498c4349ebdc259d720e498b2b7ec9f5cc67d5988e77c5428b1d8a3e84fa2c"
+    },
+    {
+      "id": "capability-0294",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/schema-changes/{change_id}:confirm"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "fd0edc2787038303a69ef553a5ffb46c7cfc3ad742e5d4daa2d16c280f0650d8"
+    },
+    {
+      "id": "capability-0295",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/schema-objects/{object_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "9ea7d7245f679e2499348c29f5f6de7bcce42c4a6ed4071a31f5530bb5ffe14d"
+    },
+    {
+      "id": "capability-0296",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "PUT /api/v1/structured/schema-objects/{object_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "5ff6edaba847a6f304d34303f3171c9d7f09bfbd5369c72aefbf0c3e833494e3"
+    },
+    {
+      "id": "capability-0297",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/semantic/dimensions"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "f220fbdbb366b2ab028548f26b5b6e64673458c4cd44ceadd9e9ff033ef0e6b4"
+    },
+    {
+      "id": "capability-0298",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/semantic/dimensions"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "a71ad9976c0ab130bbe4cf180302c9829b08cb0ae33d9e8f2eee37681c9818ce"
+    },
+    {
+      "id": "capability-0299",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/semantic/dimensions/{dimension_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "35dfc9d04aaed21c18855a51629f3ee047ea48ba28ba19146fa22c0705be5b89"
+    },
+    {
+      "id": "capability-0300",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "PUT /api/v1/structured/semantic/dimensions/{dimension_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "3179ed2a63f56f4a42adc29c2674e7293a623e7fe1ffbd681dc03e750fc51437"
+    },
+    {
+      "id": "capability-0301",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/semantic/dimensions/{dimension_id}/history"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "c5e816c66a85a4da54d9a5d9560d8a1ff6a31622ce2ee9370c007e3e9ac68054"
+    },
+    {
+      "id": "capability-0302",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/semantic/dimensions/{dimension_id}:publish"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "891fb903075ad9c796fdb0eaf947f3f422141b75d15663f3c3d4b45bbbda5afc"
+    },
+    {
+      "id": "capability-0303",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/semantic/dimensions/{dimension_id}:retire"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "bc5cd74683e983754e700241f3eaf8151184b1d3d3c36f2e9179b79a766592ef"
+    },
+    {
+      "id": "capability-0304",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/semantic/metrics"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "61bf01fcf39634f393031c25401d6da3ba8057f831af75f78cd21ee125a7e3f0"
+    },
+    {
+      "id": "capability-0305",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/semantic/metrics"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "8b4a5d8e928ddd5aec825ba3ce450607e3ac0371c325c0f06244ce0b7f40ea8f"
+    },
+    {
+      "id": "capability-0306",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/semantic/metrics/{metric_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "a65faffd9e548846def48adea09d94388283eb2244bfbef69241026a41c4e936"
+    },
+    {
+      "id": "capability-0307",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "PUT /api/v1/structured/semantic/metrics/{metric_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "a14eaee5ee1be18b487e195852339e8234f9aa3985027aba26d9a996057543ec"
+    },
+    {
+      "id": "capability-0308",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/semantic/metrics/{metric_id}/history"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "e474f9e01ee67abf02b19630950b528e34f462f04583213c22b86680aadab870"
+    },
+    {
+      "id": "capability-0309",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/semantic/metrics/{metric_id}:publish"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "a1871c6d2cbfb30deabe946f74fbbb12a76b1ae5671ac3eb05754f6523e366dd"
+    },
+    {
+      "id": "capability-0310",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/semantic/metrics/{metric_id}:retire"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "d54d76ef85d12e35674c669e94ab988c93b4c23b608b43828acf93028f327bba"
+    },
+    {
+      "id": "capability-0311",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/sql:execute"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "f823c96527126fb3cb9c8eca33bff251379c7ee64e586d2ac30d6632581cfc4b"
+    },
+    {
+      "id": "capability-0312",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/sql:execute/stream"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "e7b36d60c4400edf7e55b38b1a47ab0afe6ddccfb17ebcab401b8e8c32981a53"
+    },
+    {
+      "id": "capability-0313",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/stats"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "780a586a3595ba352e211e2f65157150b01ca42b390fbefe3456af2a638dc056"
+    },
+    {
+      "id": "capability-0314",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/tables"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "733955060cb58a63d1e15147cdcac9bb28736a9e3487cbb9ff63ed1862f8123c"
+    },
+    {
+      "id": "capability-0315",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/tables/by-name/{name}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "309d63441a4840a6845a2bedce806121c25916f157b856be4e98dc04a223aa21"
+    },
+    {
+      "id": "capability-0316",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/tables/{table_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "43f34ad5cc3855b4f5f8b4b5bcfb6527e37c08fd1dbbccab7207c2a38833d387"
+    },
+    {
+      "id": "capability-0317",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/tables/{table_id}/changes"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "fb2f9a849a804ddddbeb699fd2cebe44950c108863d008c59917debe9de06000"
+    },
+    {
+      "id": "capability-0318",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/tables/{table_id}/objects"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "988498024b73177ec632baa6640f185f5da612da0fd817c46fcf0074ec563a9f"
+    },
+    {
+      "id": "capability-0319",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/tables/{table_id}/snapshots"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "cbb928da37ea9eec99de1c05f93528b4fab0644870076ad688d919984ef14f5b"
+    },
+    {
+      "id": "capability-0320",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/tables:derive"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "9288c54069a67e0e1b69340826506baef861b13004e595ad82d0125b174f92db"
+    },
+    {
+      "id": "capability-0321",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/version"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "e07134026b27fd8d12bd811e2f5349a358077cd6df7c7caa1bde5c0b41ffa6db"
+    },
+    {
+      "id": "capability-0322",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/workspaces"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "bb7a1631aa9e439e80a9fa006a89442e47ead4d606e79bc850f50811eb24bb29"
+    },
+    {
+      "id": "capability-0323",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "POST /api/v1/structured/workspaces"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "79d22e018c0a3795871288e15658bb267d8ab04291d843f74af7606f0c7ee005"
+    },
+    {
+      "id": "capability-0324",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/workspaces/by-slug/{slug}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "2b06d7a2ab2d53790455f4f54795e4b26071f1d55689d000c7e932d54b7a08b5"
+    },
+    {
+      "id": "capability-0325",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "GET /api/v1/structured/workspaces/{workspace_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "97080b066c98a0dcd9edfed521de3ddf07577a2dd1f34bfc4df56875490381d1"
+    },
+    {
+      "id": "capability-0326",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "PUT /api/v1/structured/workspaces/{workspace_id}"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "3acfeb40f9362526b1fafd19d6283650e3ba4c8822a8031df28e690ba6426854"
+    },
+    {
+      "id": "capability-0327",
+      "domain": "Structured knowledge",
+      "module": "packages/structured",
+      "category": "capability",
+      "api": [
+        "DELETE /api/v1/structured/workspaces/{workspace_id}:purge"
+      ],
+      "status": "pending_integrated_acceptance",
+      "acceptance_state": "unqualified",
+      "acceptance_test": null,
+      "evidence_sha256": "93c82d0219ead4c1080d0744970dae6e2c400d1fa35d1a71cd5f2ba27d0740cd"
+    }
+  ]
+}

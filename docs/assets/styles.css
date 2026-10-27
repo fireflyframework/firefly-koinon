@@ -1,0 +1,29 @@
+/* Copyright 2026 Firefly Software Foundation & Firefly Software Solutions Inc.
+ * SPDX-License-Identifier: Apache-2.0 */
+@import url('manrope.css');
+:root { --md-text-font: Manrope, sans-serif; --md-code-font: Manrope, sans-serif; --md-primary-fg-color: #10110f; --md-accent-fg-color: #855414; }
+body, input, button, select, textarea { font-family: var(--md-text-font); }
+[data-md-color-scheme='default'] { --md-default-bg-color: #f3f1eb; --md-default-fg-color: #272820; --md-typeset-a-color: #855414; }
+[data-md-color-scheme='slate'] { --md-default-bg-color: #10110f; --md-default-fg-color: #f3f1eb; --md-typeset-a-color: #ffb34a; --md-accent-fg-color: #ffb34a; }
+.md-typeset h1, .md-typeset h2 { letter-spacing: -.035em; font-weight: 600; }
+.md-typeset h1 { color: var(--md-default-fg-color); }
+.md-typeset { line-height: 1.7; }
+.md-typeset table:not([class]) { font-size: .72rem; }
+.md-typeset img { border-radius: .4rem; }
+.md-header__button.md-logo { display: flex; align-items: center; flex-shrink: 0; margin-right: auto; }
+.md-header__button.md-logo img { width: clamp(7rem, 26vw, 10rem); height: 2rem; object-fit: contain; background: transparent; padding: 0; }
+.md-header__title { display: none; }
+.md-nav__title .md-logo img { width: 10rem; height: auto; }
+.md-header__button[for='__drawer'] { order: -1; }
+.mermaid svg, .mermaid svg * { font-family: Manrope, sans-serif !important; }
+.md-typeset code { font-variant-numeric: tabular-nums; }
+.md-copyright { max-width: 100%; }
+.koinon-footer__details { display: flex; align-items: center; flex-wrap: wrap; gap: .25rem .7rem; margin-top: .25rem; }
+.koinon-footer__credit { display: inline-flex; align-items: center; gap: .25rem; }
+.koinon-footer__heart { width: .75rem; height: .75rem; fill: #ffb34a; transform-origin: center; animation: koinon-heartbeat 2.4s ease-in-out infinite; }
+@keyframes koinon-heartbeat { 0%, 28%, 100% { transform: scale(1); } 10%, 20% { transform: scale(1.14); } 15% { transform: scale(1.02); } }
+@media (max-width: 25rem) { .md-header__button { margin-inline: .1rem; padding-inline: .3rem; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0s !important; animation-duration: 0s !important; } }
+[data-md-color-primary='custom'] { --md-primary-fg-color: #10110f; --md-primary-bg-color: #f3f1eb; --md-primary-bg-color--light: #d8d4ca; }
+[data-md-color-accent='custom'] { --md-accent-fg-color: #855414; }
+[data-md-color-scheme='slate'][data-md-color-accent='custom'] { --md-accent-fg-color: #ffb34a; }
