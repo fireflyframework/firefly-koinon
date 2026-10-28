@@ -63,6 +63,12 @@ A private backup restored into a new database with all 99 recorded table counts 
 
 The Library metadata projection passed signed HTTP, current-permission and typed-client regressions plus an independent PostgreSQL rollback exercise. Visible child counts use the same access boundary as the list. Numeric metadata rejects booleans, negative or unsafe values; unknown values remain null. Tags admit recorded strings only and preserve custom display case. The catalog uses four fixed SQL statements per nonempty page and one batched author-profile lookup, independently of page size; authentication and permission checks remain separate. This query-count check does not establish production capacity.
 
+## MCP source checkpoint
+
+The separately frozen MCP checkpoint passed 834 backend tests with 17 explicit infrastructure skips, the configured lint and type checks, 12 deployment tests, strict documentation build and site validation. Tests use the official MCP Python SDK over the application transport. They cover current scoped-token authorization, workspace isolation, revocation, single-use OAuth codes, consent, scope upgrades and immutable source identity in returned evidence. The source migration has not been applied to the retained application services.
+
+The desktop package passed its TypeScript check, six transport tests, official MCPB manifest validation and relocation tests against an owned mock server. Its bundle includes the bridge and dependency licenses; the evidence skill is a separate archive. These are package and protocol observations. No extension was installed in a user's active desktop client, and hosted Claude or ChatGPT linking, real identity-provider consent and live cloud access remain unqualified.
+
 ## Product acceptance still required
 
 The original capability review still contains partial and missing product workflows, including dataset-append recovery/async/bulk intake, the remaining curated lifecycle transitions and semantic authoring. Complete migration parity, external identity-provider acceptance, production capacity, the product release and publication of this source checkpoint remain separate acceptance steps. The original projects must remain available until the replacement has passed those steps.

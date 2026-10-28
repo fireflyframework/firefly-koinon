@@ -1,0 +1,368 @@
+# Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
+import base64
+import hashlib
+import re
+from contextlib import contextmanager
+from copy import copy
+from urllib.parse import parse_qs, urlsplit
+
+import pytest
+from conftest import ISSUER, bearer
+from conftest import client as native_client
+from cryptography.fernet import Fernet
+from pyfly.security.context import SecurityContext
+from pyfly.session.ports.outbound import SessionStore
+
+
+@pytest.fixture
+def oauth(tmp_path, monkeypatch, request):
+    import koinon.app
+
+    original = koinon.app.create_application
+
+    def configured(config):
+        config["koinon"]["mcp"] = {
+            "enabled": True,
+            "public_url": "http://127.0.0.1:18781/mcp",
+            "allowed_hosts": ["testserver"],
+            "oauth": {
+                "enabled": True,
+                "encryption_key": Fernet.generate_key().decode(),
+                "clients": [
+                    {
+                        "client_id": "test-chat-client",
+                        "name": "Test Chat Client",
+                        "redirect_uris": ["https://client.example/callback"],
+                        "scopes": ["catalog:read", "knowledge:search"],
+                    }
+                ],
+            },
+        }
+        return original(config)
+
+    monkeypatch.setattr(koinon.app, "create_application", configured)
+    with contextmanager(native_client.__wrapped__)(tmp_path, monkeypatch, request) as client:
+        context = client.native_app.state.context
+        store = context.get_bean(SessionStore)
+        client.portal.call(
+            store.save,
+            "oauth-browser",
+            {
+                "SECURITY_CONTEXT": SecurityContext(
+                    user_id="admin", attributes={"iss": ISSUER, "sub": "admin"}
+                ),
+            },
+            1800,
+        )
+        client.cookies.set("PYFLY_SESSION", "oauth-browser", domain="testserver.local", path="/")
+        yield client
+
+
+def authorize(client, **overrides):
+    verifier = "v" * 43
+    challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
+    params = {
+        "client_id": "test-chat-client",
+        "redirect_uri": "https://client.example/callback",
+        "response_type": "code",
+        "resource": "http://127.0.0.1:18781/mcp",
+        "scope": "catalog:read",
+        "state": "client-state",
+        "code_challenge": challenge,
+        "code_challenge_method": "S256",
+        **overrides,
+    }
+    return client.get("/oauth2/mcp/authorize", params=params, follow_redirects=False)
+
+
+def consent(client):
+    response = authorize(client)
+    assert response.status_code == 200, response.text
+    request_id = re.search(r'name="request_id" value="([^"]+)"', response.text)[1]
+    return client.post(
+        "/oauth2/mcp/authorize",
+        data={
+            "request_id": request_id,
+            "decision": "allow",
+            "tenant_id": "north",
+            "workspace_id": client.workspace_id,
+            "_csrf": client.cookies.get("XSRF-TOKEN"),
+        },
+        follow_redirects=False,
+    )
+
+
+def exchange(client, code, **overrides):
+    # OAuth backchannel carries no ambient browser authority.
+    cookies = [copy(cookie) for cookie in client.cookies.jar]
+    client.cookies.clear()
+    try:
+        return client.post(
+            "/oauth2/mcp/token",
+            data={
+                "grant_type": "authorization_code",
+                "client_id": "test-chat-client",
+                "code": code,
+                "redirect_uri": "https://client.example/callback",
+                "code_verifier": "v" * 43,
+                "resource": "http://127.0.0.1:18781/mcp",
+                **overrides,
+            },
+        )
+    finally:
+        client.cookies.clear()
+        for cookie in cookies:
+            client.cookies.jar.set_cookie(cookie)
+
+
+def test_code_only_discovery_uses_configured_urls_and_never_claims_registration(oauth):
+    discovery = oauth.get("/.well-known/oauth-protected-resource/mcp")
+    assert "set-cookie" not in discovery.headers
+    resource = discovery.json()
+    assert resource["resource"] == "http://127.0.0.1:18781/mcp"
+    assert resource["scopes_supported"] == ["catalog:read", "knowledge:search"]
+    issuer = resource["authorization_servers"][0]
+    metadata = oauth.get("/.well-known/oauth-authorization-server/oauth2/mcp").json()
+    assert metadata["issuer"] == issuer
+    assert metadata["grant_types_supported"] == ["authorization_code"]
+    assert metadata["code_challenge_methods_supported"] == ["S256"]
+    assert "registration_endpoint" not in metadata
+    assert "client_id_metadata_document_supported" not in metadata
+    assert "testserver" not in str(metadata)
+
+
+def test_consent_code_exchange_and_existing_token_revocation(oauth):
+    page = authorize(oauth)
+    assert "Test Chat Client" in page.text and "Research" in page.text and "catalog:read" in page.text
+    assert "Firefly Software Foundation" in page.text
+    granted = consent(oauth)
+    assert granted.status_code == 302, granted.text
+    query = parse_qs(urlsplit(granted.headers["location"]).query)
+    assert query["state"] == ["client-state"] and query["iss"]
+    response = exchange(oauth, query["code"][0])
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert "refresh_token" not in body
+    opaque = body["access_token"]
+    assert opaque.startswith("koinon_mcp_")
+    assert oauth.get("/api/v1/context", headers={"Authorization": "Bearer " + opaque}).status_code == 401
+    from koinon.mcp_auth.service import McpOAuthService
+
+    service = oauth.native_app.state.context.get_bean(McpOAuthService)
+    canonical = oauth.portal.call(service.canonical_bearer, opaque)
+    assert oauth.get("/api/v1/context", headers={"Authorization": "Bearer " + canonical}).status_code == 200
+    tokens = oauth.get("/api/v1/tokens", headers=bearer()).json()["items"]
+    row = next(item for item in tokens if item["name"] == "MCP: Test Chat Client")
+    assert row["workspace_ids"] == [oauth.workspace_id] and row["scopes"] == ["catalog:read"]
+    assert opaque not in str(tokens) and canonical not in str(tokens)
+    assert oauth.delete("/api/v1/tokens/" + row["id"], headers=bearer()).status_code == 204
+    from pyfly.kernel import UnauthorizedException
+
+    with pytest.raises(UnauthorizedException):
+        oauth.portal.call(service.canonical_bearer, opaque)
+    assert exchange(oauth, query["code"][0]).status_code == 400
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"redirect_uri": "https://attacker.example/callback"},
+        {"resource": "https://other.example/mcp"},
+        {"scope": "members:write"},
+        {"code_challenge_method": "plain"},
+        {"code_challenge": "short"},
+        {"code_challenge": "_" * 43},
+    ],
+)
+def test_untrusted_authorization_requests_never_redirect(oauth, changes):
+    response = authorize(oauth, **changes)
+    assert response.status_code == 400 and "location" not in response.headers
+
+
+def test_consent_requires_browser_session_and_csrf(oauth):
+    assert authorize(oauth, access_token="forbidden").status_code == 400
+    page = authorize(oauth)
+    request_id = re.search(r'name="request_id" value="([^"]+)"', page.text)[1]
+    assert (
+        oauth.post(
+            "/oauth2/mcp/authorize",
+            data={
+                "request_id": request_id,
+                "decision": "allow",
+                "tenant_id": "north",
+                "workspace_id": oauth.workspace_id,
+            },
+        ).status_code
+        == 403
+    )
+    oauth.cookies.clear()
+    assert authorize(oauth).status_code == 302
+    response = oauth.get("/oauth2/mcp/authorize", headers=bearer(), follow_redirects=False)
+    assert response.status_code == 400
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"resource": "https://other.example/mcp"},
+        {"redirect_uri": "https://client.example/other"},
+        {"code_verifier": "x" * 43},
+        {"code_verifier": "short"},
+        {"client_id": "unknown-client"},
+        {"grant_type": "refresh_token"},
+        {"client_secret": "unexpected-secret"},
+    ],
+)
+def test_invalid_exchange_keeps_code_available_for_the_bound_client(oauth, changes):
+    redirect = consent(oauth)
+    code = parse_qs(urlsplit(redirect.headers["location"]).query)["code"][0]
+    response = exchange(oauth, code, **changes)
+    assert response.status_code in {400, 401}
+    assert exchange(oauth, code).status_code == 200
+
+
+def test_consent_is_single_use(oauth):
+    response = authorize(oauth)
+    request_id = re.search(r'name="request_id" value="([^"]+)"', response.text)[1]
+    form = {
+        "request_id": request_id,
+        "decision": "allow",
+        "tenant_id": "north",
+        "workspace_id": oauth.workspace_id,
+        "_csrf": oauth.cookies.get("XSRF-TOKEN"),
+    }
+    assert oauth.post("/oauth2/mcp/authorize", data=form, follow_redirects=False).status_code == 302
+    assert oauth.post("/oauth2/mcp/authorize", data=form, follow_redirects=False).status_code == 400
+
+
+def test_failure_during_token_mint_rolls_back_code_consumption(oauth, monkeypatch):
+    from koinon.catalog.errors import AccessDenied
+    from koinon.tokens.service import PersonalTokenService
+
+    code = parse_qs(urlsplit(consent(oauth).headers["location"]).query)["code"][0]
+    service = oauth.native_app.state.context.get_bean(PersonalTokenService)
+    original = service.create
+
+    async def fail(*args, **kwargs):
+        raise AccessDenied("Membership changed", code="ACCESS_DENIED")
+
+    monkeypatch.setattr(service, "create", fail)
+    assert exchange(oauth, code).status_code == 403
+    monkeypatch.setattr(service, "create", original)
+    assert exchange(oauth, code).status_code == 200
+
+
+def test_encrypted_mcp_token_rejects_resource_expiry_and_removed_clients(oauth):
+    import json
+
+    from pyfly.kernel import UnauthorizedException
+
+    from koinon.mcp_auth.service import MCP_PREFIX, McpOAuthService
+    from koinon.mcp_auth.settings import McpOAuthSettings
+
+    code = parse_qs(urlsplit(consent(oauth).headers["location"]).query)["code"][0]
+    opaque = exchange(oauth, code).json()["access_token"]
+    context = oauth.native_app.state.context
+    service = context.get_bean(McpOAuthService)
+    settings = context.get_bean(McpOAuthSettings)
+    canonical = oauth.portal.call(service.canonical_bearer, opaque)
+    assert oauth.portal.call(service.can_request_scopes, canonical, ("knowledge:search",)) is False
+    assert oauth.portal.call(service.can_request_scopes, opaque, ("knowledge:search",)) is True
+    assert oauth.portal.call(service.can_request_scopes, opaque, ("query:execute",)) is False
+    assert oauth.portal.call(service.can_request_scopes, "invalid", ("knowledge:search",)) is False
+    fernet = Fernet(settings.encryption_key.encode())
+    payload = json.loads(fernet.decrypt(opaque[len(MCP_PREFIX) :].encode()))
+    for key, value in (("aud", "https://other.example/mcp"), ("client_id", "unknown"), ("exp", 0)):
+        invalid = MCP_PREFIX + fernet.encrypt(json.dumps({**payload, key: value}).encode()).decode()
+        with pytest.raises(UnauthorizedException):
+            oauth.portal.call(service.canonical_bearer, invalid)
+    settings.clients[0]["scopes"] = []
+    with pytest.raises(UnauthorizedException):
+        oauth.portal.call(service.canonical_bearer, opaque)
+    settings.clients.clear()
+    with pytest.raises(UnauthorizedException):
+        oauth.portal.call(service.canonical_bearer, opaque)
+
+
+def test_code_expiry_is_rechecked_and_no_plaintext_code_is_persisted(oauth):
+    from datetime import UTC, datetime, timedelta
+
+    from koinon.mcp_auth.repositories import McpAuthorizationRepository
+    from koinon.mcp_auth.service import digest
+
+    code = parse_qs(urlsplit(consent(oauth).headers["location"]).query)["code"][0]
+
+    async def expire():
+        repository = oauth.native_app.state.context.get_bean(McpAuthorizationRepository)
+        row = (await repository.find_all(code_hash=digest(code)))[0]
+        assert code not in str(row.request_json) and code not in str(row.grant_json)
+        assert row.code_hash != code and len(row.code_hash) == 64
+        row.expires_at = datetime.now(UTC) - timedelta(seconds=1)
+        await repository.save(row)
+
+    oauth.portal.call(expire)
+    assert exchange(oauth, code).status_code == 400
+
+
+def test_confidential_client_requires_hashed_secret_and_rejects_bad_secret(oauth):
+    from koinon.mcp_auth.service import digest
+    from koinon.mcp_auth.settings import McpOAuthSettings
+
+    settings = oauth.native_app.state.context.get_bean(McpOAuthSettings)
+    secret = "c" * 48
+    settings.clients[0]["client_secret_hash"] = digest(secret)
+    code = parse_qs(urlsplit(consent(oauth).headers["location"]).query)["code"][0]
+    assert exchange(oauth, code).status_code == 401
+    assert exchange(oauth, code, client_secret="wrong").status_code == 401
+    assert exchange(oauth, code, client_secret=secret).status_code == 200
+
+
+def test_current_membership_revocation_blocks_oauth_canonical_calls(oauth):
+    from koinon.catalog.repositories import MembershipRepository
+    from koinon.mcp_auth.service import McpOAuthService
+
+    code = parse_qs(urlsplit(consent(oauth).headers["location"]).query)["code"][0]
+    opaque = exchange(oauth, code).json()["access_token"]
+    context = oauth.native_app.state.context
+    canonical = oauth.portal.call(context.get_bean(McpOAuthService).canonical_bearer, opaque)
+
+    async def revoke():
+        repository = context.get_bean(MembershipRepository)
+        row = await repository.find_by_id("admin")
+        row.active = False
+        await repository.save(row)
+
+    oauth.portal.call(revoke)
+    response = oauth.get("/api/v1/tenants/north/catalog", headers={"Authorization": "Bearer " + canonical})
+    assert response.status_code == 403
+
+
+def test_concurrent_exchange_issues_one_grant(oauth):
+    import asyncio
+
+    from koinon.mcp_auth.service import McpOAuthService, OAuthError
+    from koinon.tokens.repositories import PersonalTokenRepository
+
+    code = parse_qs(urlsplit(consent(oauth).headers["location"]).query)["code"][0]
+    params = {
+        "grant_type": "authorization_code",
+        "client_id": "test-chat-client",
+        "code": code,
+        "resource": "http://127.0.0.1:18781/mcp",
+        "redirect_uri": "https://client.example/callback",
+        "code_verifier": "v" * 43,
+    }
+    context = oauth.native_app.state.context
+
+    async def compete():
+        service = context.get_bean(McpOAuthService)
+        results = await asyncio.gather(
+            service.exchange(params), service.exchange(params), return_exceptions=True
+        )
+        assert sum(isinstance(result, dict) for result in results) == 1
+        assert sum(isinstance(result, OAuthError) for result in results) == 1
+        rows = await context.get_bean(PersonalTokenRepository).find_all(name="MCP: Test Chat Client")
+        assert len(rows) == 1
+
+    oauth.portal.call(compete)

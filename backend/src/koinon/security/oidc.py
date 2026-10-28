@@ -21,6 +21,7 @@ from pyfly.web.ports.filter import CallNext
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
+from koinon.mcp_auth.service import McpOAuthService
 from koinon.tokens.service import PREFIX, PersonalTokenService
 
 IDENTITY_CLAIMS = ClaimMappings(
@@ -60,12 +61,36 @@ class IdentityTokenValidator(JWKSTokenValidator):
 class ApiBearerFilter(OAuth2ResourceServerFilter):
     """Bearer authority on /api; preserve sessions on browser routes."""
 
-    def __init__(self, validator: JWKSTokenValidator, tokens: PersonalTokenService | None = None):
+    def __init__(self, validator: JWKSTokenValidator, tokens: PersonalTokenService | None = None,
+                 mcp_oauth: McpOAuthService | None = None):
         super().__init__(validator, error_mode="401")
         self.tokens = tokens
+        self.mcp_oauth = mcp_oauth
 
     async def do_filter(self, request: Request, call_next: CallNext) -> Response:
         path = request.url.path
+        if path == "/mcp" or path.startswith("/mcp/"):
+            if request.headers.get("cookie"):
+                return JSONResponse({"code": "MCP_COOKIES_FORBIDDEN"}, status_code=400)
+            token = self._extract_token(request.headers.get("authorization", ""))
+            try:
+                if not token or self.tokens is None or self.mcp_oauth is None:
+                    raise UnauthorizedException("MCP bearer required", code="AUTH_REQUIRED")
+                canonical = await self.mcp_oauth.canonical_bearer(token)
+                context = await self.tokens.authenticate(canonical)
+            except UnauthorizedException:
+                challenge = 'Bearer error="invalid_token"'
+                if self.mcp_oauth is not None and self.mcp_oauth.settings.enabled:
+                    challenge += ', resource_metadata="' + self.mcp_oauth.resource_metadata_url + '"'
+                    challenge += ', scope="catalog:read"'
+                return JSONResponse({"code": "MCP_AUTH_REQUIRED"}, status_code=401,
+                                    headers={"WWW-Authenticate": challenge})
+            request.state.security_context = context
+            request_context = RequestContext.current()
+            if request_context is not None:
+                request_context.security_context = context
+            with SecurityContextHolder.using(context):
+                return await call_next(request)
         if path == "/api" or path.startswith("/api/"):
             token = self._extract_token(request.headers.get("authorization", ""))
             if token and token.startswith(PREFIX):
