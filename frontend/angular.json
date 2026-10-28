@@ -115,7 +115,11 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
-            "tsConfig": "projects/koinon-angular/tsconfig.spec.json"
+            "tsConfig": "projects/koinon-angular/tsconfig.spec.json",
+            "include": [
+              "**/*.spec.ts",
+              "../workbench/**/*.spec.ts"
+            ]
           }
         },
         "lint": {

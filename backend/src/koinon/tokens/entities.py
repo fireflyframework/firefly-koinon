@@ -3,12 +3,26 @@
 from datetime import UTC, datetime
 
 from pyfly.data.relational.sqlalchemy import Base, UtcDateTime
-from sqlalchemy import JSON, ForeignKey, String
+from sqlalchemy import JSON, CheckConstraint, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 
 class PersonalToken(Base):
     __tablename__ = "koinon_personal_tokens"
+    __table_args__ = (
+        CheckConstraint(
+            "(purpose = 'personal' AND authorized_application_id IS NULL) OR "
+            "(purpose = 'application' AND authorized_application_id IS NOT NULL)",
+            name="ck_token_purpose_application",
+        ),
+    )
+    purpose: Mapped[str] = mapped_column(
+        String(24), default="personal", server_default="personal", index=True
+    )
+    authorized_application_id: Mapped[str | None] = mapped_column(
+        ForeignKey("koinon_authorized_applications.id"), nullable=True, index=True
+    )
+
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     subject: Mapped[str] = mapped_column(String(512), index=True)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("lattice_tenants.id"), index=True)

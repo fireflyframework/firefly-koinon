@@ -47,6 +47,7 @@ nav:
   - Configure:
       - Administration: guides/administration.md
       - Profiles and API tokens: operations/profiles-and-tokens.md
+      - Authorized applications: guides/authorized-applications.md
   - Integrate:
       - Headless API and SDK: guides/headless.md
       - API and SDK reference: reference/sdk-api.md
@@ -63,6 +64,7 @@ nav:
       - Local environment: operations/local-deployment.md
       - Production: operations/production.md
       - Configuration and observations: operations/configuration.md
+      - File persistence and storage: operations/storage.md
       - MCP authentication: operations/mcp-authentication.md
       - Migrations: operations/migrations.md
       - Backup and restore: operations/backup-restore.md

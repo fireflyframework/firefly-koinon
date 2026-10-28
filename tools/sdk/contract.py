@@ -18,9 +18,12 @@ root = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(root / "sdk/python/src"))
 from koinon_sdk import contracts, models, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance
 from koinon_sdk.client import KoinonClient
-from koinon_sdk import coordinates, curated, dataset_files
+from koinon_sdk import coordinates, curated, dataset_files, authorized_applications
 
 rows = """
+AuthorizedApplicationController.list|authorized_applications|authorizedApplications.list|-|Page[AuthorizedApplication]
+AuthorizedApplicationController.detail|authorized_application|authorizedApplications.get|-|AuthorizedApplication
+AuthorizedApplicationController.revoke|revoke_authorized_application|authorizedApplications.revoke|-|void
 DatasetFilesController.append|append_dataset_file|dataset.appendFile|DatasetFileUpload|DatasetFileAppendResult
 TableCoordinateController.manifest|table_coordinates|dataset.tableCoordinates|-|TableCoordinateManifest
 TableCoordinateController.cells|table_coordinate_cells|dataset.tableCoordinateCells|CoordinateCellRequest|TableCoordinateSelection
@@ -352,7 +355,7 @@ assert not mapping, mapping
 assert not unmapped, "Canonical API operations awaiting typed SDK mapping: " + ", ".join(unmapped)
 
 classes = {}
-for module in (models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files):
+for module in (models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files, authorized_applications):
     classes.update(
         {
             name: value
@@ -454,6 +457,7 @@ result = {
         "headless": "caller-supplied bearer, fresh per request; renewal owned by caller",
         "browser": "same operation suffix under /bff/api/v1 with native cookie session and CSRF on writes",
         "tokens_management": "interactive verified identity required; PAT cannot mint or manage PATs",
+        "applications_management": "interactive owner identity required; personal tokens and application credentials cannot approve or manage authorizations",
     },
     "semantics": {
         "writes": "no automatic retries; explicit chat client_request_id supports server idempotency",

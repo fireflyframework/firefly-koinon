@@ -61,8 +61,12 @@ class IdentityTokenValidator(JWKSTokenValidator):
 class ApiBearerFilter(OAuth2ResourceServerFilter):
     """Bearer authority on /api; preserve sessions on browser routes."""
 
-    def __init__(self, validator: JWKSTokenValidator, tokens: PersonalTokenService | None = None,
-                 mcp_oauth: McpOAuthService | None = None):
+    def __init__(
+        self,
+        validator: JWKSTokenValidator,
+        tokens: PersonalTokenService | None = None,
+        mcp_oauth: McpOAuthService | None = None,
+    ):
         super().__init__(validator, error_mode="401")
         self.tokens = tokens
         self.mcp_oauth = mcp_oauth
@@ -76,15 +80,15 @@ class ApiBearerFilter(OAuth2ResourceServerFilter):
             try:
                 if not token or self.tokens is None or self.mcp_oauth is None:
                     raise UnauthorizedException("MCP bearer required", code="AUTH_REQUIRED")
-                canonical = await self.mcp_oauth.canonical_bearer(token)
-                context = await self.tokens.authenticate(canonical)
+                context = await self.mcp_oauth.authenticate(token)
             except UnauthorizedException:
                 challenge = 'Bearer error="invalid_token"'
                 if self.mcp_oauth is not None and self.mcp_oauth.settings.enabled:
                     challenge += ', resource_metadata="' + self.mcp_oauth.resource_metadata_url + '"'
                     challenge += ', scope="catalog:read"'
-                return JSONResponse({"code": "MCP_AUTH_REQUIRED"}, status_code=401,
-                                    headers={"WWW-Authenticate": challenge})
+                return JSONResponse(
+                    {"code": "MCP_AUTH_REQUIRED"}, status_code=401, headers={"WWW-Authenticate": challenge}
+                )
             request.state.security_context = context
             request_context = RequestContext.current()
             if request_context is not None:
@@ -97,7 +101,13 @@ class ApiBearerFilter(OAuth2ResourceServerFilter):
                 try:
                     if self.tokens is None:
                         raise UnauthorizedException("API tokens unavailable", code="INVALID_TOKEN")
-                    context = await self.tokens.authenticate(token)
+                    bound = request.scope.get("koinon.mcp.original_bearer")
+                    if bound and self.mcp_oauth is not None:
+                        if await self.mcp_oauth.canonical_bearer(bound) != token:
+                            raise UnauthorizedException("Invalid application dispatch", code="INVALID_TOKEN")
+                        context = await self.mcp_oauth.authenticate(bound)
+                    else:
+                        context = await self.tokens.authenticate(token)
                 except UnauthorizedException:
                     return JSONResponse(
                         {"status": 401, "code": "INVALID_TOKEN", "detail": "API token is invalid or expired"},

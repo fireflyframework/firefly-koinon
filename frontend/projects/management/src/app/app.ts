@@ -1,10 +1,11 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 import { Component, inject, signal } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
-import { KoinonWorkbench } from '@fireflyframework/koinon-angular';
+import { KoinonWorkbench } from '@fireflyframework/koinon-angular/workbench';
 import { SessionService } from './session.service';
 import { PendingInvitation } from './pending-invitation';
 import { PendingShare } from './pending-share';
+import { AccountNavigation } from './account-navigation';
 @Component({
   selector: 'app-root',
   imports: [KoinonWorkbench],
@@ -13,6 +14,10 @@ import { PendingShare } from './pending-share';
     }
     <ffk-workbench
       [managementBaseUrl]="managementBaseUrl"
+      [view]="navigation.view()"
+      (viewChange)="navigation.navigate($event)"
+      [accountSection]="navigation.section()"
+      (accountSectionChange)="$event ? navigation.open($event) : navigation.section.set(null)"
       [tenantId]="entryTenant"
       [sharedConversationId]="share.shareId()"
       (sharedConversationDismissed)="share.clear()"
@@ -44,6 +49,7 @@ export class App {
   readonly session = inject(SessionService);
   readonly invitation = inject(PendingInvitation);
   readonly share = inject(PendingShare);
+  readonly navigation = inject(AccountNavigation);
   readonly entryTenant = this.share.tenantId();
   readonly theme = signal<'light' | 'dark'>(this.initialTheme());
   private initialTheme(): 'light' | 'dark' {

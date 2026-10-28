@@ -1,0 +1,31 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<section class="account-page" aria-labelledby="account-page-title">
+  <nav class="breadcrumb" [attr.aria-label]="'Breadcrumb' | ffkText">
+    <button (click)="libraryRequested.emit()">{{ 'Library' | ffkText }}</button>
+    <ffk-icon name="chevron" />
+    <button (click)="sectionChange.emit('profile')">{{ 'Your account' | ffkText }}</button>
+    <ffk-icon name="chevron" /><span>{{ title() | ffkText }}</span>
+  </nav>
+  <div class="account-layout">
+    <aside>
+      <h2>{{ 'Your account' | ffkText }}</h2>
+      <nav [attr.aria-label]="'Account sections' | ffkText">
+        @for (item of sections; track item.id) {
+          <button
+            [class.active]="section === item.id"
+            [attr.aria-current]="section === item.id ? 'page' : null"
+            (click)="sectionChange.emit(item.id)"
+          >
+            <ffk-icon [name]="item.icon" />{{ item.label | ffkText }}
+          </button>
+        }
+      </nav>
+    </aside>
+    <div class="account-content">
+      <header>
+        <h1 id="account-page-title" tabindex="-1">{{ title() | ffkText }}</h1>
+      </header>
+      <ffk-account-panel [initialTab]="section" [pageMode]="true" />
+    </div>
+  </div>
+</section>

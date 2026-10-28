@@ -10,7 +10,7 @@ authors = [{ name = "Firefly Software Foundation" }]
 dependencies = [
   "firefly-koinon-documents==26.10.0a1",
   "firefly-koinon-structured[file-readers]==26.10.0a1",
-  "pyfly[fastapi,security,data-relational,postgresql,agentic,templates,observability,client]>=26.10.12,<26.11",
+  "pyfly[fastapi,security,data-relational,postgresql,agentic,templates,observability,client]>=26.10.13,<26.11",
   "asyncpg>=0.30",
   "aiosqlite>=0.22",
   "alembic>=1.14",
@@ -25,12 +25,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+storage-s3 = ["boto3>=1.43.116,<2"]
 dev = ["pytest>=8", "pytest-asyncio>=0.24", "pytest-timeout>=2.3", "httpx>=0.28", "ruff>=0.8", "pyright>=1.1", "asgi-lifespan>=2.1"]
 
 [tool.uv.sources]
 firefly-koinon-documents = { path = "../packages/canon", editable = true }
 firefly-koinon-structured = { path = "../packages/structured", editable = true }
-pyfly = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git", rev = "dba0cc6da640d96a8d154f30a7ab355c43810094" }
+pyfly = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git", rev = "d44d5915d76207266c7a2789987b1d613fe36d55" }
 
 [build-system]
 requires = ["hatchling"]

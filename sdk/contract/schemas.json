@@ -839,6 +839,11 @@
         "reason": {
           "title": "Reason",
           "type": "string"
+        },
+        "configured": {
+          "default": false,
+          "title": "Configured",
+          "type": "boolean"
         }
       },
       "required": [
@@ -1314,6 +1319,111 @@
         "display_name"
       ],
       "title": "AuthorSummary",
+      "type": "object"
+    },
+    "AuthorizedApplication": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "client_id": {
+          "title": "Client Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "resource": {
+          "title": "Resource",
+          "type": "string"
+        },
+        "tenant_id": {
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "tenant_name": {
+          "title": "Tenant Name",
+          "type": "string"
+        },
+        "workspace_id": {
+          "title": "Workspace Id",
+          "type": "string"
+        },
+        "workspace_name": {
+          "title": "Workspace Name",
+          "type": "string"
+        },
+        "scopes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Scopes",
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "active",
+            "expired",
+            "revoked"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "connected_at": {
+          "format": "date-time",
+          "title": "Connected At",
+          "type": "string"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        },
+        "last_used_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Last Used At"
+        },
+        "revoked_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Revoked At"
+        }
+      },
+      "required": [
+        "id",
+        "client_id",
+        "name",
+        "resource",
+        "tenant_id",
+        "tenant_name",
+        "workspace_id",
+        "workspace_name",
+        "scopes",
+        "status",
+        "connected_at",
+        "expires_at",
+        "last_used_at",
+        "revoked_at"
+      ],
+      "title": "AuthorizedApplication",
       "type": "object"
     },
     "Capabilities": {
@@ -10602,6 +10712,109 @@
       "title": "Page[AuditEvent]",
       "type": "object"
     },
+    "Page_AuthorizedApplication_": {
+      "additionalProperties": true,
+      "properties": {
+        "summaries": {
+          "additionalProperties": {
+            "$ref": "#/$defs/CatalogSummary"
+          },
+          "title": "Summaries",
+          "type": "object"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page"
+        },
+        "size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Size"
+        },
+        "page_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page Size"
+        },
+        "pages": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pages"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Next Cursor"
+        },
+        "actors": {
+          "additionalProperties": {
+            "$ref": "#/$defs/AuthorSummary"
+          },
+          "title": "Actors",
+          "type": "object"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/AuthorizedApplication"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "total": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Total"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "Page[AuthorizedApplication]",
+      "type": "object"
+    },
     "Page_CatalogEntry_": {
       "additionalProperties": true,
       "properties": {
@@ -17098,6 +17311,9 @@
     "DatasetFileAppendResult": {
       "$ref": "#/$defs/DatasetFileAppendResult"
     },
+    "AuthorizedApplication": {
+      "$ref": "#/$defs/AuthorizedApplication"
+    },
     "Page[AuditEvent]": {
       "$ref": "#/$defs/Page_AuditEvent_"
     },
@@ -17127,6 +17343,9 @@
     },
     "Page[ChatFolder]": {
       "$ref": "#/$defs/Page_ChatFolder_"
+    },
+    "Page[AuthorizedApplication]": {
+      "$ref": "#/$defs/Page_AuthorizedApplication_"
     },
     "Page[KnowledgeConnection]": {
       "$ref": "#/$defs/Page_KnowledgeConnection_"

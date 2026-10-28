@@ -312,6 +312,17 @@ def configure_storage(koinon, value):
             "root": "STRUCTURED_STORAGE_ROOT",
             "presign_ttl_seconds": "STRUCTURED_STORAGE_PRESIGN_TTL_SECONDS",
         },
+        "attachments": {
+            "backend": "ATTACHMENT_STORAGE_BACKEND",
+            "root": "ATTACHMENT_STORAGE_ROOT",
+            "s3_bucket": "ATTACHMENT_STORAGE_S3_BUCKET",
+            "s3_prefix": "ATTACHMENT_STORAGE_S3_PREFIX",
+            "s3_endpoint_url": "ATTACHMENT_STORAGE_S3_ENDPOINT_URL",
+            "s3_region": "ATTACHMENT_STORAGE_S3_REGION",
+            "s3_kms_key_id": "ATTACHMENT_STORAGE_S3_KMS_KEY_ID",
+            "request_timeout_seconds": "ATTACHMENT_STORAGE_REQUEST_TIMEOUT_SECONDS",
+            "max_object_bytes": "ATTACHMENT_STORAGE_MAX_OBJECT_BYTES",
+        },
     }
     for domain, mapping in fields.items():
         for key, alias in mapping.items():
@@ -322,12 +333,20 @@ def configure_storage(koinon, value):
                 selected = boolean(selected, alias)
             elif key == "presign_ttl_seconds":
                 selected = integer(selected, alias, 0, 604800)
+            elif key in {"request_timeout_seconds", "max_object_bytes"}:
+                selected = integer(
+                    selected, alias, 1, 60 if key == "request_timeout_seconds" else 64 * 1024 * 1024
+                )
             else:
                 selected = text(selected, alias)
                 if "\0" in selected:
                     raise ValueError(alias + " contains an invalid character")
             if key == "backend" and selected not in (
-                {"localfs", "s3"} if domain == "documents" else {"local", "s3", "gcs", "azure"}
+                {"localfs", "s3"}
+                if domain == "documents"
+                else {"local", "s3"}
+                if domain == "attachments"
+                else {"local", "s3", "gcs", "azure"}
             ):
                 raise ValueError(alias + " names an unsupported backend")
             if key == "s3_endpoint_url" and selected:

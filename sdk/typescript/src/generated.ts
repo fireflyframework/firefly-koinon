@@ -61,6 +61,7 @@ export interface AttachmentLimits {
 export interface AttachmentObservation {
  "available": boolean | null;
  "reason": string;
+ "configured"?: boolean;
 }
 export interface AttachmentPage {
  "items": Array<AttachmentView>;
@@ -118,6 +119,22 @@ export interface AttachmentView {
  "warnings"?: Array<string>;
 }
 export interface AuditValue {
+}
+export interface AuthorizedApplication {
+ "id": string;
+ "client_id": string;
+ "name": string;
+ "resource": string;
+ "tenant_id": string;
+ "tenant_name": string;
+ "workspace_id": string;
+ "workspace_name": string;
+ "scopes": Array<string>;
+ "status": "active" | "expired" | "revoked";
+ "connected_at": string;
+ "expires_at": string;
+ "last_used_at": string | null;
+ "revoked_at": string | null;
 }
 export interface CatalogProposal {
  "id": string;

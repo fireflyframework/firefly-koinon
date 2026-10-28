@@ -50,6 +50,15 @@ class StatusFilter(PageFilter, total=False):
     status: str
 
 
+class AuthorizedApplicationFilter(TypedDict, total=False):
+    q: str
+    status: Literal["all", "active", "expired", "revoked"]
+    page: int
+    page_size: int
+    sort: Literal["connected_at", "name", "expires_at", "last_used_at"]
+    order: Literal["asc", "desc"]
+
+
 class AgentFilter(StatusFilter, total=False):
     workspace_id: str
     project_id: str

@@ -43,6 +43,10 @@ public final class KoinonClient implements AutoCloseable {
     return new TokensApi(transport);
   }
 
+  public AuthorizedApplicationsApi authorizedApplications() {
+    return new AuthorizedApplicationsApi(transport);
+  }
+
   public CatalogApi catalog(String tenant) {
     return new CatalogApi(transport, tenant);
   }

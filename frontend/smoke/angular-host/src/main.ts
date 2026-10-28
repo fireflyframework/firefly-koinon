@@ -3,7 +3,7 @@
 import { Component, signal } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { FetchTransport, KoinonClient } from '@fireflyframework/koinon-sdk';
-import { KoinonWorkbench, provideKoinonClient } from '@fireflyframework/koinon-angular';
+import { KoinonWorkbench, provideKoinonClient } from '@fireflyframework/koinon-angular/workbench';
 const csrf = () => {
   const part = document.cookie
     .split(';')

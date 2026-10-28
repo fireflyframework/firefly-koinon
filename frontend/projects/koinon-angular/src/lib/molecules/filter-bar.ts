@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { KoinonButton } from '../atoms/button';
-import { KoinonIcon } from '../atoms/icon';
-import { KoinonTextPipe } from '../foundations/i18n';
+import { KoinonButton } from '@fireflyframework/koinon-angular/workbench';
+import { KoinonIcon } from '@fireflyframework/koinon-angular/workbench';
+import { KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench';
 let nextFilterBar = 0;
 @Component({
   selector: 'ffk-filter-bar',

@@ -362,7 +362,7 @@
       "
       [attachments]="files.attachments()"
       [accept]="files.accept()"
-      [hint]="files.error() || files.modelHint()"
+      [hint]="files.error() || files.modelHint() || files.storageHint()"
       (filesSelected)="files.select($event)"
       (attachmentRemoved)="files.remove($event)"
       (attachmentRetried)="files.retry($event)"

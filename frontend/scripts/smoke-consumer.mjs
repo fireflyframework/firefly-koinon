@@ -25,6 +25,7 @@ execFileSync(
 );
 for (const entry of [
   'fireflyframework-koinon-angular',
+  'fireflyframework-koinon-angular-workbench',
   'fireflyframework-koinon-angular-chat',
   'fireflyframework-koinon-angular-chat-page',
   'fireflyframework-koinon-angular-chat-evidence',

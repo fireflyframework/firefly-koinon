@@ -1,0 +1,56 @@
+// Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
+:host,
+.account-menu,
+.account-menu * { box-sizing: border-box; }
+.account-menu {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% - 8px);
+  right: var(--shell-gutter);
+  width: min(280px, calc(100cqw - 32px));
+  max-height: calc(100dvh - 96px);
+  overflow: auto;
+  padding: 8px;
+  border: 1px solid var(--ui-line);
+  border-radius: 12px;
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  box-shadow: 0 12px 32px #10110f1a;
+}
+.account-summary {
+  display: grid;
+  gap: 3px;
+  padding: 8px 10px 12px;
+  overflow-wrap: anywhere;
+}
+.account-summary strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+.account-summary small {
+  font-size: 11px;
+  color: var(--ui-muted);
+}
+.account-menu > button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ui-text);
+  font: 400 12px/1.5 var(--ffk-font, 'Manrope Variable', sans-serif);
+  text-align: left;
+  cursor: pointer;
+}
+.account-menu > button:hover,
+.account-menu > button:focus {
+  background: var(--ui-subtle);
+}
+button:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 3px;
+}

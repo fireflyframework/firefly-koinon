@@ -16,7 +16,7 @@ flowchart LR
 
 Each tool has an explicit schema and fixed endpoint. There is no arbitrary route, URL or HTTP method tool. An in-process ASGI request runs the canonical authentication filters, permission checks, token restrictions, services and error handling. The dispatcher uses a fixed internal authority, excludes browser cookies and client authority headers, follows no redirects and makes no network request. A fresh asynchronous task context isolates nested authentication, request and transaction state from the parent request.
 
-PATs are reauthenticated for every request and canonical operation. MCP OAuth credentials map on the server to an associated canonical scoped credential; the dedicated MCP resource credential is never forwarded to an unrelated API. The canonical operation rechecks current membership and resource restrictions. Revocation and workspace changes take effect without restarting a session.
+PATs are reauthenticated for every request and canonical operation. MCP OAuth credentials map on the server to an associated private application-purpose credential and durable user authorization; the dedicated MCP resource credential is never forwarded to an unrelated API. The canonical operation rechecks current membership and resource restrictions. Revocation and workspace changes take effect without restarting a session. OAuth authorizations belong to the Authorized applications domain; manually created API tokens remain a separate credential workflow.
 
 | Tool | Canonical operation | Result |
 | --- | --- | --- |

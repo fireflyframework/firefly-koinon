@@ -2,7 +2,7 @@
 
 Python, Java and TypeScript expose the same canonical headless API. The table records concrete SDK methods; it does not count browser-only authentication or retained domain routes outside this contract.
 
-This development contract contains 137 operations. Use a bearer token with the required current membership, permissions and resource scope. Personal tokens also enforce their saved expiry and bounds.
+This development contract contains 140 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
 
 [Download the operation manifest](sdk-contract.json). The maintained generator checks source mappings and schemas without starting the backend.
 
@@ -58,6 +58,9 @@ This development contract contains 137 operations. Use a bearer token with the r
 | `POST /api/v1/tenants/{tenant_id}/providers` | `create_provider` | `providers.create` | `client.providers.create` | `ModelProvider` |
 | `PUT /api/v1/tenants/{tenant_id}/providers/{provider_id}` | `update_provider` | `providers.update` | `client.providers.update` | `ModelProvider` |
 | `POST /api/v1/tenants/{tenant_id}/providers/{provider_id}/validate` | `validate_provider` | `providers.validate` | `client.providers.validate` | `ValidationResult` |
+| `GET /api/v1/authorized-applications` | `authorized_applications` | `authorizedApplications.list` | `client.authorizedApplications.list` | `Page[AuthorizedApplication]` |
+| `GET /api/v1/authorized-applications/{application_id}` | `authorized_application` | `authorizedApplications.get` | `client.authorizedApplications.get` | `AuthorizedApplication` |
+| `DELETE /api/v1/authorized-applications/{application_id}` | `revoke_authorized_application` | `authorizedApplications.revoke` | `client.authorizedApplications.revoke` | `void` |
 | `GET /api/v1/tenants/{tenant_id}/identity/providers` | `identity_providers` | `identity.list` | `client.identity.list` | `IdentityProviderPage` |
 | `POST /api/v1/tenants/{tenant_id}/identity/providers` | `create_identity_provider` | `identity.create` | `client.identity.create` | `IdentityProvider` |
 | `GET /api/v1/tenants/{tenant_id}/identity/providers/{provider_id}` | `identity_provider` | `identity.get` | `client.identity.get` | `IdentityProvider` |

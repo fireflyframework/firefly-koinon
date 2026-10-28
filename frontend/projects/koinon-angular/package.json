@@ -14,7 +14,9 @@
   "dependencies": {
     "tslib": "^2.3.0"
   },
-  "sideEffects": false,
+  "sideEffects": [
+    "./fesm2022/fireflyframework-koinon-angular.mjs"
+  ],
   "license": "Apache-2.0",
   "author": "Firefly Software Foundation",
   "peerDependenciesMeta": {

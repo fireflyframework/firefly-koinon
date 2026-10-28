@@ -43,7 +43,7 @@ export class KoinonChatAttachments implements OnDestroy {
     const value = this.capabilities();
     return (
       !!value &&
-      value.storage.available === true &&
+      (value.storage.available === true || value.storage.configured === true) &&
       value.database.available === true &&
       value.extraction.available !== false
     );
@@ -52,11 +52,21 @@ export class KoinonChatAttachments implements OnDestroy {
     if (this.checking()) return 'Checking file availability…';
     const value = this.capabilities();
     if (!value) return 'File uploads are not enabled in this workspace.';
-    if (value.storage.available !== true || value.database.available !== true)
+    if (
+      (value.storage.available !== true && value.storage.configured !== true) ||
+      value.database.available !== true
+    )
       return 'File uploads are not configured. Ask your administrator to enable private file storage.';
     if (value.extraction.available === false)
       return 'File processing is unavailable. Ask your administrator to check the file worker.';
     return '';
+  });
+  readonly storageHint = computed(() => {
+    const storage = this.capabilities()?.storage;
+    if (!this.enabled() || this.checking() || !storage || storage.available === true) return '';
+    return storage.available === false
+      ? 'Private file storage is configured, but the last availability check failed. You can try uploading again.'
+      : 'Private file storage is configured but has not been verified. Your upload will check availability.';
   });
   readonly attachments = computed<ComposerAttachment[]>(() =>
     this.rows().map((row) => ({

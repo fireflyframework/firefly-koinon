@@ -1,7 +1,7 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 import { Component, OnDestroy, signal } from '@angular/core';
-import { KoinonChatComposer, type ComposerAttachment } from '@fireflyframework/koinon-angular/chat';
+import { KoinonChatComposer, type ComposerAttachment } from '@fireflyframework/koinon-angular/chat/page';
 @Component({
   selector: 'ffk-composer-review',
   imports: [KoinonChatComposer],

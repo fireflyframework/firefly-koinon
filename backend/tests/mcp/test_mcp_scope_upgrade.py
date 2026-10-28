@@ -154,22 +154,23 @@ def test_canonical_scope_signal_preserves_role_workspace_and_projection_denials(
         headers=headers,
         json={"workspace_id": oauth_client.workspace_id, "question": "Facts"},
     )
-    assert scope_denied.status_code == 403
-    assert scope_denied.json()["code"] == "TOKEN_INSUFFICIENT_SCOPE"
-    foreign = oauth_client.post(
-        "/api/v1/tenants/south/search",
-        headers=headers,
-        json={"question": "Facts", "workspace_id": oauth_client.workspace_id},
+    assert scope_denied.status_code == 401
+    assert (
+        call(
+            oauth_client,
+            token,
+            "koinon_search",
+            {"tenant_id": "north", "workspace_id": oauth_client.workspace_id, "question": "Facts"},
+        ).json()["result"]["isError"]
+        is True
     )
-    assert foreign.status_code == 403
-    assert foreign.json()["code"] == "ACCESS_DENIED"
     import pytest
     from pyfly.security.context_holder import SecurityContextHolder
 
     from koinon.catalog.errors import AccessDenied
 
     async def projected_denial():
-        context = await service.tokens.authenticate(pat)
+        context = await service.authenticate(token)
         with SecurityContextHolder.using(context):
             await service.catalog.authorize(ISSUER + "|admin", "north", "query:execute")
 

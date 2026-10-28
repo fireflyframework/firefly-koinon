@@ -56,6 +56,7 @@ def oauth(tmp_path, monkeypatch, request):
             1800,
         )
         client.cookies.set("PYFLY_SESSION", "oauth-browser", domain="testserver.local", path="/")
+        client.application_factory = original
         yield client
 
 
@@ -151,12 +152,13 @@ def test_consent_code_exchange_and_existing_token_revocation(oauth):
 
     service = oauth.native_app.state.context.get_bean(McpOAuthService)
     canonical = oauth.portal.call(service.canonical_bearer, opaque)
-    assert oauth.get("/api/v1/context", headers={"Authorization": "Bearer " + canonical}).status_code == 200
+    assert oauth.get("/api/v1/context", headers={"Authorization": "Bearer " + canonical}).status_code == 401
     tokens = oauth.get("/api/v1/tokens", headers=bearer()).json()["items"]
-    row = next(item for item in tokens if item["name"] == "MCP: Test Chat Client")
-    assert row["workspace_ids"] == [oauth.workspace_id] and row["scopes"] == ["catalog:read"]
-    assert opaque not in str(tokens) and canonical not in str(tokens)
-    assert oauth.delete("/api/v1/tokens/" + row["id"], headers=bearer()).status_code == 204
+    assert tokens == []
+    row = oauth.get("/api/v1/authorized-applications", headers=bearer()).json()["items"][0]
+    assert row["workspace_id"] == oauth.workspace_id and row["scopes"] == ["catalog:read"]
+    assert opaque not in str(row) and canonical not in str(row)
+    assert oauth.delete("/api/v1/authorized-applications/" + row["id"], headers=bearer()).status_code == 204
     from pyfly.kernel import UnauthorizedException
 
     with pytest.raises(UnauthorizedException):
@@ -202,6 +204,81 @@ def test_consent_requires_browser_session_and_csrf(oauth):
     assert response.status_code == 400
 
 
+def test_consent_assets_load_with_a_restrictive_same_origin_policy(oauth):
+    page = authorize(oauth)
+    assert page.status_code == 200
+    assert 'rel="stylesheet" href="/oauth2/mcp/style"' in page.text
+    assert "style-src 'self'" in page.headers["content-security-policy"]
+    assert "unsafe-inline" not in page.headers["content-security-policy"]
+    for path, media_type in (("style", "text/css"), ("logo", "image/svg+xml"), ("font", "font/woff2")):
+        response = oauth.get("/oauth2/mcp/" + path)
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith(media_type)
+
+
+def test_consent_keeps_client_and_space_text_inert():
+    from koinon.mcp_auth.http import consent_page
+
+    page = consent_page(
+        'request"<',
+        {"name": '<script>alert("client")</script>', "client_id": "configured-client"},
+        ["catalog:read"],
+        [{"tenant_id": 'tenant"', "workspace_id": "space", "tenant_name": "R&D", "name": "<img src=x>"}],
+        'csrf"<',
+    )
+    assert "<script>" not in page and "<img src=x>" not in page
+    assert "&lt;script&gt;" in page and "R&amp;D" in page
+    assert 'name="request_id" value="request&quot;&lt;"' in page
+    assert 'name="_csrf" value="csrf&quot;&lt;"' in page
+
+
+def test_consent_identifies_the_current_browser_user_and_private_avatar(oauth):
+    import io
+
+    from PIL import Image
+
+    from koinon.profiles.service import ProfileService
+
+    service = oauth.native_app.state.context.get_bean(ProfileService)
+    subject = ISSUER + "|admin"
+    oauth.portal.call(service.update, subject, {"display_name": "Sam Rivera"})
+    content = io.BytesIO()
+    Image.new("RGB", (48, 48), "#ffb34a").save(content, format="PNG")
+    oauth.portal.call(service.set_avatar, subject, content.getvalue())
+    page = authorize(oauth)
+    assert "Sam Rivera" in page.text and "Signed in as" in page.text
+    assert "/oauth2/mcp/avatar" in page.text
+    image = oauth.get("/oauth2/mcp/avatar")
+    assert image.status_code == 200 and image.headers["content-type"].startswith("image/jpeg")
+    assert "no-store" in image.headers["cache-control"]
+    oauth.cookies.clear()
+    assert oauth.get("/oauth2/mcp/avatar", follow_redirects=False).status_code in {401, 403}
+    assert oauth.get("/oauth2/mcp/avatar", headers=bearer()).status_code == 400
+    store = oauth.native_app.state.context.get_bean(SessionStore)
+    oauth.portal.call(
+        store.save,
+        "oauth-viewer",
+        {
+            "SECURITY_CONTEXT": SecurityContext(
+                user_id="viewer",
+                attributes={
+                    "iss": ISSUER,
+                    "sub": "viewer",
+                    "name": "Lee Morgan",
+                    "email": "lee@example.test",
+                    "email_verified": True,
+                },
+            ),
+        },
+        1800,
+    )
+    oauth.cookies.set("PYFLY_SESSION", "oauth-viewer", domain="testserver.local", path="/")
+    assert oauth.get("/oauth2/mcp/avatar?subject=" + subject).status_code == 404
+    other_page = authorize(oauth)
+    assert "Lee Morgan" in other_page.text and "lee@example.test" in other_page.text
+    assert "Sam Rivera" not in other_page.text
+
+
 @pytest.mark.parametrize(
     "changes",
     [
@@ -236,20 +313,40 @@ def test_consent_is_single_use(oauth):
     assert oauth.post("/oauth2/mcp/authorize", data=form, follow_redirects=False).status_code == 400
 
 
+def test_cancel_returns_to_the_registered_client_without_creating_a_credential(oauth):
+    page = authorize(oauth)
+    request_id = re.search(r'name="request_id" value="([^"]+)"', page.text)[1]
+    form = {
+        "request_id": request_id,
+        "decision": "deny",
+        "_csrf": oauth.cookies.get("XSRF-TOKEN"),
+    }
+    response = oauth.post("/oauth2/mcp/authorize", data=form, follow_redirects=False)
+    assert response.status_code == 302
+    target = urlsplit(response.headers["location"])
+    assert target.scheme == "https" and target.netloc == "client.example" and target.path == "/callback"
+    params = parse_qs(target.query)
+    assert params["error"] == ["access_denied"] and params["state"] == ["client-state"]
+    assert "code" not in params
+    tokens = oauth.get("/api/v1/tokens", headers=bearer()).json()["items"]
+    assert not any(token["name"].startswith("MCP:") for token in tokens)
+    assert oauth.post("/oauth2/mcp/authorize", data=form, follow_redirects=False).status_code == 400
+
+
 def test_failure_during_token_mint_rolls_back_code_consumption(oauth, monkeypatch):
     from koinon.catalog.errors import AccessDenied
     from koinon.tokens.service import PersonalTokenService
 
     code = parse_qs(urlsplit(consent(oauth).headers["location"]).query)["code"][0]
     service = oauth.native_app.state.context.get_bean(PersonalTokenService)
-    original = service.create
+    original = service.issue_application
 
     async def fail(*args, **kwargs):
         raise AccessDenied("Membership changed", code="ACCESS_DENIED")
 
-    monkeypatch.setattr(service, "create", fail)
+    monkeypatch.setattr(service, "issue_application", fail)
     assert exchange(oauth, code).status_code == 403
-    monkeypatch.setattr(service, "create", original)
+    monkeypatch.setattr(service, "issue_application", original)
     assert exchange(oauth, code).status_code == 200
 
 
@@ -335,7 +432,21 @@ def test_current_membership_revocation_blocks_oauth_canonical_calls(oauth):
 
     oauth.portal.call(revoke)
     response = oauth.get("/api/v1/tenants/north/catalog", headers={"Authorization": "Bearer " + canonical})
-    assert response.status_code == 403
+    assert response.status_code == 401
+    authorized = oauth.portal.call(context.get_bean(McpOAuthService).authenticate, opaque)
+    import pytest
+    from pyfly.security.context_holder import SecurityContextHolder
+
+    from koinon.catalog.errors import AccessDenied
+
+    async def denied():
+        with SecurityContextHolder.using(authorized):
+            await context.get_bean(McpOAuthService).catalog.authorize(
+                ISSUER + "|admin", "north", "catalog:read", oauth.workspace_id
+            )
+
+    with pytest.raises(AccessDenied):
+        oauth.portal.call(denied)
 
 
 def test_concurrent_exchange_issues_one_grant(oauth):
@@ -362,7 +473,9 @@ def test_concurrent_exchange_issues_one_grant(oauth):
         )
         assert sum(isinstance(result, dict) for result in results) == 1
         assert sum(isinstance(result, OAuthError) for result in results) == 1
-        rows = await context.get_bean(PersonalTokenRepository).find_all(name="MCP: Test Chat Client")
+        rows = await context.get_bean(PersonalTokenRepository).find_all(
+            name="Test Chat Client", purpose="application"
+        )
         assert len(rows) == 1
 
     oauth.portal.call(compete)

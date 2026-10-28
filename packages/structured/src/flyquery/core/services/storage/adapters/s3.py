@@ -16,8 +16,9 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import AsyncIterator
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import urlparse
 
@@ -25,6 +26,9 @@ import aiobotocore.session
 from botocore.config import Config
 
 from flyquery.core.services.storage.object_store import ObjectMeta
+
+logger = logging.getLogger(__name__)
+_PART_BYTES = 5 * 1024 * 1024
 
 
 class S3ObjectStore:
@@ -94,37 +98,56 @@ class S3ObjectStore:
                 size = len(body)
                 await client.put_object(**kwargs)
             else:
-                # Stream via multipart for large bodies
-                init = await client.create_multipart_upload(**kwargs)
-                upload_id = init["UploadId"]
-                parts = []
-                part_n = 1
-                size = 0
-                async for chunk in body:
-                    p = await client.upload_part(
-                        Bucket=self._bucket,
-                        Key=full,
-                        PartNumber=part_n,
-                        UploadId=upload_id,
-                        Body=chunk,
-                    )
-                    parts.append({"ETag": p["ETag"], "PartNumber": part_n})
-                    part_n += 1
-                    size += len(chunk)
-                await client.complete_multipart_upload(
-                    Bucket=self._bucket,
-                    Key=full,
-                    UploadId=upload_id,
-                    MultipartUpload={"Parts": parts},
-                )
+                size = await self._put_stream(client, kwargs, body)
         return ObjectMeta(
             key=key,
             size_bytes=size,
             content_type=content_type,
             etag=None,
-            last_modified=datetime.utcnow(),
+            last_modified=datetime.now(UTC),
             kms_key_uri=kms_key_uri,
         )
+
+    async def _put_stream(self, client, arguments, body):
+        initiated = await client.create_multipart_upload(**arguments)
+        identity = {"Bucket": self._bucket, "Key": arguments["Key"], "UploadId": initiated["UploadId"]}
+        parts, pending = [], bytearray()
+        size = 0
+
+        async def upload(data):
+            if len(parts) >= 10000:
+                raise ValueError("Structured multipart upload exceeds its part limit")
+            number = len(parts) + 1
+            response = await client.upload_part(**identity, PartNumber=number, Body=data)
+            parts.append({"ETag": response["ETag"], "PartNumber": number})
+
+        try:
+            async for chunk in body:
+                if not isinstance(chunk, (bytes, bytearray, memoryview)):
+                    raise TypeError("Structured object streams must yield bytes")
+                size += len(chunk)
+                view = memoryview(chunk)
+                while view:
+                    count = min(_PART_BYTES - len(pending), len(view))
+                    pending.extend(view[:count])
+                    view = view[count:]
+                    if len(pending) == _PART_BYTES:
+                        await upload(bytes(pending))
+                        pending.clear()
+            if pending:
+                await upload(bytes(pending))
+            if not parts:
+                await client.abort_multipart_upload(**identity)
+                await client.put_object(**arguments, Body=b"")
+            else:
+                await client.complete_multipart_upload(**identity, MultipartUpload={"Parts": parts})
+            return size
+        except BaseException:
+            try:
+                await client.abort_multipart_upload(**identity)
+            except Exception:
+                logger.warning("Structured multipart cleanup failed; provider lifecycle cleanup is required")
+            raise
 
     async def get(self, key) -> AsyncIterator[bytes]:
         full = self._full_key(key)

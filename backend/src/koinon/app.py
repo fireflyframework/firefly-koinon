@@ -81,12 +81,14 @@ def create_application(config: dict):
         "koinon.assistants",
         "koinon.profiles",
         "koinon.tokens",
+        "koinon.authorized_applications",
         "koinon.mcp_auth",
         "koinon.operations",
         "koinon.corporate_identity",
         "koinon.evidence",
         "koinon.exports",
         "koinon.sharing",
+        "koinon.storage",
     ):
         scan_package(package, context.container)
     for cls in (
@@ -123,6 +125,7 @@ def create_application(config: dict):
                 "koinon.assistants",
                 "koinon.profiles",
                 "koinon.tokens",
+                "koinon.authorized_applications",
                 "koinon.corporate_identity",
                 "koinon.evidence",
                 "koinon.exports",

@@ -11,8 +11,8 @@ import {
   type RequestOptions,
   type HttpMethod,
 } from '@fireflyframework/koinon-sdk';
-import { KoinonFacade } from '../koinon-facade';
-import { KoinonClientContext } from './client-context';
+import { KoinonFacade } from '@fireflyframework/koinon-angular/workbench';
+import { KoinonClientContext } from '@fireflyframework/koinon-angular/workbench';
 import { KoinonConversationGroups } from './conversation-groups';
 const thread: ChatThread = {
   id: 'thread',

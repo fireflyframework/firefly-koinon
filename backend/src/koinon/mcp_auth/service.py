@@ -14,6 +14,7 @@ from pyfly.container import service
 from pyfly.data import transactional
 from pyfly.kernel import UnauthorizedException
 
+from koinon.authorized_applications.service import AuthorizedApplicationService
 from koinon.catalog.service import CatalogService
 from koinon.mcp.settings import McpSettings
 from koinon.mcp_auth.entities import McpAuthorization
@@ -49,9 +50,11 @@ class McpOAuthService:
         repository: McpAuthorizationRepository,
         tokens: PersonalTokenService,
         catalog: CatalogService,
+        applications: AuthorizedApplicationService,
     ):
         self.settings, self.mcp = settings, mcp
         self.repository, self.tokens, self.catalog = repository, tokens, catalog
+        self.applications = applications
         if settings.enabled and not mcp.enabled:
             raise ValueError("MCP OAuth requires the MCP endpoint to be enabled")
 
@@ -217,7 +220,13 @@ class McpOAuthService:
             "pending",
             status="code",
             code_hash=digest(code),
-            grant_json={"tenant_id": tenant_id, "workspace_ids": [workspace_id]},
+            grant_json={
+                "tenant_id": tenant_id,
+                "workspace_ids": [workspace_id],
+                "name": client["name"],
+                "tenant_name": (await self.catalog.tenant_repository.find_by_id(tenant_id)).name,
+                "workspace_name": space.name,
+            },
             expires_at=datetime.now(UTC) + timedelta(seconds=self.settings.code_ttl_seconds),
         ):
             raise OAuthError()
@@ -259,23 +268,37 @@ class McpOAuthService:
             or not set(original["scope"].split()) <= set(client["scopes"])
         ):
             raise OAuthError("invalid_grant")
+        grant = row.grant_json
+        if (
+            not isinstance(grant, dict)
+            or any(
+                not isinstance(grant.get(key), str) or not grant[key]
+                for key in ("tenant_id", "tenant_name", "workspace_name", "name")
+            )
+            or not isinstance(grant.get("workspace_ids"), list)
+            or len(grant["workspace_ids"]) != 1
+            or not isinstance(grant["workspace_ids"][0], str)
+        ):
+            raise OAuthError("invalid_grant")
         if not await self.repository.transition(row.id, row.subject, "code", status="used"):
             raise OAuthError("invalid_grant")
         expires = datetime.now(UTC) + timedelta(seconds=self.settings.access_ttl_seconds)
-        grant = row.grant_json or {}
-        created = await self.tokens.create(
+        application, created = await self.applications.issue(
             row.subject,
-            {
-                "name": "MCP: " + client["name"],
-                "tenant_id": grant["tenant_id"],
-                "workspace_ids": grant["workspace_ids"],
-                "scopes": original["scope"].split(),
-                "expires_at": expires,
-            },
+            client_id=client["client_id"],
+            name=grant["name"],
+            resource=self.mcp.public_url,
+            tenant_id=grant["tenant_id"],
+            tenant_name=grant["tenant_name"],
+            workspace_id=grant["workspace_ids"][0],
+            workspace_name=grant["workspace_name"],
+            scopes=original["scope"].split(),
+            expires_at=expires,
         )
         payload = json.dumps(
             {
                 "pat": created["token"],
+                "grant_id": application.id,
                 "aud": self.mcp.public_url,
                 "client_id": client["client_id"],
                 "exp": int(expires.timestamp()),
@@ -290,12 +313,11 @@ class McpOAuthService:
             "scope": " ".join(created["scopes"]),
         }
 
-    async def canonical_bearer(self, raw: str) -> str:
+    async def _authenticate(self, raw: str):
         if not isinstance(raw, str) or len(raw) > 8192:
             raise UnauthorizedException("Invalid MCP credential", code="INVALID_TOKEN")
         if raw.startswith(PREFIX):
-            await self.tokens.authenticate(raw)
-            return raw
+            return raw, await self.tokens.authenticate(raw)
         try:
             self.require_enabled()
             if not raw.startswith(MCP_PREFIX):
@@ -314,20 +336,34 @@ class McpOAuthService:
             ):
                 raise ValueError()
             client = self.client(payload.get("client_id", ""))
-            context = await self.tokens.authenticate(payload["pat"])
+            context = await self.tokens.authenticate(
+                payload["pat"], purpose="application", application_id=payload.get("grant_id")
+            )
+            application = await self.applications.repository.find_by_id(payload.get("grant_id"))
+            if (
+                application is None
+                or application.client_id != client["client_id"]
+                or application.resource != payload["aud"]
+            ):
+                raise ValueError()
             grant = context.attributes["koinon_token"]
             if not isinstance(grant, dict) or not set(grant["scopes"]) <= set(client["scopes"]):
                 raise ValueError()
-            return payload["pat"]
+            return payload["pat"], context
         except (ValueError, TypeError, KeyError, InvalidToken, UnicodeError):
             raise UnauthorizedException("Invalid or expired MCP credential", code="INVALID_TOKEN") from None
+
+    async def canonical_bearer(self, raw: str) -> str:
+        return (await self._authenticate(raw))[0]
+
+    async def authenticate(self, raw: str):
+        return (await self._authenticate(raw))[1]
 
     async def can_request_scopes(self, raw: str, required_scopes: tuple[str, ...]) -> bool:
         if not isinstance(raw, str) or not raw.startswith(MCP_PREFIX) or not required_scopes:
             return False
         try:
-            canonical = await self.canonical_bearer(raw)
-            context = await self.tokens.authenticate(canonical)
+            context = await self.authenticate(raw)
             grant = context.attributes["koinon_token"]
             if not isinstance(grant, dict) or set(required_scopes) <= set(grant["scopes"]):
                 return False

@@ -3,72 +3,77 @@
 """Private durable bytes with opaque registered keys and bounded verified reads."""
 
 import hashlib
-import os
-import tempfile
 from pathlib import Path
 from uuid import UUID
 
-from flycanon.core.services.storage.local_fs import LocalFsObjectStore
-from flycanon.core.services.storage.object_store import ObjectTooLargeError
 from pyfly.container import component
 from pyfly.kernel import ConflictException, ServiceUnavailableException
 
 from koinon.knowledge.attachments.settings import AttachmentSettings
-
-
-class AtomicPrivateStore(LocalFsObjectStore):
-    @staticmethod
-    def _write(path: Path, data: bytes) -> None:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = None
-        try:
-            with tempfile.NamedTemporaryFile(dir=path.parent, prefix=".staging-", delete=False) as stream:
-                temporary = Path(stream.name)
-                stream.write(data)
-                stream.flush()
-                os.fsync(stream.fileno())
-            os.replace(temporary, path)
-            for directory in (path.parent, path.parent.parent, path.parent.parent.parent):
-                descriptor = os.open(directory, os.O_RDONLY)
-                try:
-                    os.fsync(descriptor)
-                finally:
-                    os.close(descriptor)
-        finally:
-            if temporary is not None:
-                temporary.unlink(missing_ok=True)
+from koinon.storage.local import LocalBlobStore
+from koinon.storage.ports import BlobStore, BlobTooLargeError, admit
+from koinon.storage.s3 import S3BlobStore
+from koinon.storage.settings import AttachmentStorageProfile
 
 
 @component(name="knowledge.attachments.storage")
 class AttachmentStorage:
-    def __init__(self, settings: AttachmentSettings):
+    def __init__(self, settings: AttachmentSettings, profile: AttachmentStorageProfile | None = None):
         self.settings = settings
-        self.store: AtomicPrivateStore | None = None
+        self.profile = profile or AttachmentStorageProfile()
+        self.store: BlobStore | None = None
+        self._binding: tuple | None = None
 
     def configured(self):
-        if not self.settings.storage_root:
-            raise ServiceUnavailableException(
-                "Configure a dedicated private attachment storage directory",
-                code="ATTACHMENT_STORAGE_REQUIRED",
+        profile = self.profile
+        profile.__post_init__()
+        root = profile.root or self.settings.storage_root
+        if (
+            profile.backend == "local"
+            and profile.root
+            and self.settings.storage_root
+            and (
+                Path(profile.root).expanduser().absolute()
+                != Path(self.settings.storage_root).expanduser().absolute()
             )
-        root = Path(self.settings.storage_root).expanduser()
-        if root.is_symlink():
-            raise ServiceUnavailableException(
-                "Use a private real directory", code="ATTACHMENT_STORAGE_REQUIRED"
-            )
-        root.mkdir(parents=True, exist_ok=True, mode=0o700)
-        if root.stat().st_mode & 0o077:
-            raise ServiceUnavailableException(
-                "The attachment storage directory must have private 0700 permissions",
-                code="ATTACHMENT_STORAGE_REQUIRED",
-            )
-        if not os.access(root, os.R_OK | os.W_OK | os.X_OK):
-            raise ServiceUnavailableException(
-                "The private attachment directory must permit owner read, write and traversal",
-                code="ATTACHMENT_STORAGE_REQUIRED",
-            )
+        ):
+            raise ValueError("Private storage root conflicts with the retained attachment root")
+        binding = (
+            profile.backend,
+            root,
+            profile.s3_bucket,
+            profile.s3_prefix,
+            profile.s3_endpoint_url,
+            profile.s3_region,
+            profile.s3_kms_key_id,
+        )
+        if self._binding is not None and self._binding != binding:
+            raise ValueError("Private storage profile cannot change in a running instance")
         if self.store is None:
-            self.store = AtomicPrivateStore(str(root))
+            if profile.backend == "s3":
+                self.store = S3BlobStore(profile)
+            else:
+                if not root:
+                    raise ServiceUnavailableException(
+                        "Configure a dedicated private attachment storage directory",
+                        code="ATTACHMENT_STORAGE_REQUIRED",
+                    )
+                try:
+                    self.store = LocalBlobStore(root)
+                except OSError as error:
+                    raise ServiceUnavailableException(
+                        "Configure a private real directory with owner read, write and traversal",
+                        code="ATTACHMENT_STORAGE_REQUIRED",
+                    ) from error
+            self._binding = binding
+        if isinstance(self.store, LocalBlobStore):
+            try:
+                self.store.validate_root()
+            except OSError as error:
+                raise ServiceUnavailableException(
+                    "The private storage directory is unavailable or its permissions changed",
+                    code="ATTACHMENT_STORAGE_REQUIRED",
+                ) from error
         return self.store
 
     @staticmethod
@@ -79,18 +84,31 @@ class AttachmentStorage:
         return namespace + "/" + str(UUID(row.id)) + ("/normalized" if normalized else "/original")
 
     async def put(self, row, content: bytes, *, normalized=False):
-        if not content or len(content) > 64 * 1024 * 1024:
+        if not content or len(content) > self.profile.max_object_bytes:
             raise ValueError("Private blob exceeds a supported byte bound")
-        await self.configured().put(self.key(row, normalized), content)
+        expected = hashlib.sha256(content).hexdigest() if normalized else row.sha256
+        if not normalized and len(content) != row.size_bytes:
+            raise ValueError("Private original differs from its admitted size")
+        await admit(
+            self.configured(),
+            self.key(row, normalized),
+            content,
+            sha256=expected,
+            max_bytes=self.profile.max_object_bytes,
+        )
 
     async def read(self, row, *, normalized=False):
         expected_size = row.normalized_size_bytes if normalized else row.size_bytes
         expected_hash = row.normalized_sha256 if normalized else row.sha256
-        if expected_size is None or not 0 < expected_size <= 64 * 1024 * 1024 or not expected_hash:
+        if (
+            expected_size is None
+            or not 0 < expected_size <= self.profile.max_object_bytes
+            or not expected_hash
+        ):
             raise ConflictException("Private original is unavailable", code="ATTACHMENT_ORIGINAL_UNAVAILABLE")
         try:
             content = await self.configured().get_bounded(self.key(row, normalized), expected_size)
-        except ObjectTooLargeError as error:
+        except BlobTooLargeError as error:
             raise ConflictException(
                 "Private file integrity verification failed", code="ATTACHMENT_DIGEST_MISMATCH"
             ) from error
@@ -106,11 +124,7 @@ class AttachmentStorage:
         return content
 
     async def purge(self, row):
+        store = self.configured()
         for normalized in (False, True):
-            await self.configured().delete(self.key(row, normalized))
-        directory = Path(self.settings.storage_root) / self.key(row).rsplit("/", 1)[0]
-        for index, path in enumerate(directory.glob(".staging-*")):
-            if index >= 64:
-                raise OSError("Registered private staging cleanup requires another bounded attempt")
-            if path.is_file() and not path.is_symlink():
-                path.unlink(missing_ok=True)
+            await store.delete(self.key(row, normalized))
+        await store.purge_staging(self.key(row))

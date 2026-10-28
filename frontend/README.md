@@ -18,7 +18,7 @@ For the built app, run `npm run build` and `npm run preview`. The preview also s
 ## Packages
 
 - `projects/management`: deployable standalone app and session integration.
-- `projects/koinon-angular`: partial-compilation Angular library with optional `/chat` and `/settings` entry points, plus focused `/chat/page` and `/chat/evidence` loaders.
+- `projects/koinon-angular`: partial-compilation Angular library with a complete initial `/workbench`, compatible root exports, and optional `/chat` and `/settings` entry points, plus focused `/chat/page` and `/chat/evidence` loaders.
 - `projects/elements`: `<firefly-koinon>` custom-element registration.
 - `smoke/angular-host`: separate Angular application that installs the packed library tarball, without workspace source aliases.
 
@@ -33,9 +33,13 @@ npm run lint
 npm run typecheck
 npm run smoke:consumer
 npm run test:e2e
+npm run check:locale
+npm run check:bundle
 ```
 
 `npm run screenshots` captures responsive review states. Browser tests use controlled HTTP fixtures, which prove frontend contracts and interaction behavior. Integrated authentication, provider execution, and model output need separate live-backend acceptance. A 720-pixel reflow test does not establish actual 200% browser zoom acceptance.
+
+The initial bundle check counts the JavaScript and styles requested by the built management and Elements HTML and enforces the existing 500000-byte warning threshold. `sync:locale` derives Library and panel vocabularies from the canonical Spanish dictionary; builds and tests regenerate them, and `check:locale` detects stale output.
 
 OpenUI uses the official Angular renderer with a registered evidence component library. An artifact identifies an authorized server result; document text, table values, schema, lineage, and citations come from that result. Unsupported components, executable expressions, and mutation actions are rejected. Persisted message cursors support authenticated event replay and retry.
 

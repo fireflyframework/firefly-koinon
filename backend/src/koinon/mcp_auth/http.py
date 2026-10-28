@@ -2,18 +2,19 @@
 # SPDX-License-Identifier: Apache-2.0
 import base64
 import binascii
-from html import escape
 from pathlib import Path
 from urllib.parse import unquote_plus
 
 from pyfly.kernel import UnauthorizedException
 from pyfly.security.context import SecurityContext
 from pyfly.web.adapters.starlette.form_binding import parse_form
-from starlette.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
+from starlette.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 from starlette.routing import Route
 
 from koinon.catalog.errors import AccessDenied
+from koinon.mcp_auth.presentation import ConsentViewer, consent_page
 from koinon.mcp_auth.service import McpOAuthService, OAuthError
+from koinon.profiles.service import ProfileService
 from koinon.security.identity import identity_from_request
 
 HEADERS = {
@@ -106,53 +107,6 @@ def browser_subject(request):
     return identity.subject
 
 
-def consent_page(request_id, client, scopes, choices, csrf):
-    descriptions = {
-        "catalog:read": "Browse knowledge and source details",
-        "knowledge:search": "Search documents",
-        "query:execute": "Run read-only dataset queries",
-        "chat:use": "Ask configured agents questions",
-        "evidence:read": "Inspect answer sources",
-    }
-    scope_list = "".join(
-        f"<li>{escape(descriptions[scope])} <small><code>{escape(scope)}</code></small></li>"
-        for scope in scopes
-    )
-    options = "".join(
-        f'<option value="{escape(choice["tenant_id"])}|{escape(choice["workspace_id"])}">'
-        f"{escape(choice['tenant_name'])} / {escape(choice['name'])}</option>"
-        for choice in choices
-    )
-    return f'''<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1"><title>Connect to koinon</title>
-<style>@font-face{{font-family:Manrope;src:url(/oauth2/mcp/font) format('woff2');font-display:swap}}
-*{{box-sizing:border-box}}
-body{{margin:0;background:#f3f1eb;color:#272820;font:16px/1.6 Manrope,Arial,sans-serif}}
-main{{max-width:680px;margin:8vh auto;padding:32px}}header img{{width:min(100%,280px);height:auto}}
-h1{{font-size:32px;line-height:1.2;letter-spacing:-.04em}}p{{overflow-wrap:anywhere}}
-form{{background:white;border:1px solid #d8d4ca;border-radius:16px;padding:24px;margin-top:24px}}
-select,button{{font:inherit;min-height:48px;border:1px solid #62645b;border-radius:8px;padding:10px 16px}}
-label{{display:block;font-weight:600;margin:20px 0 8px}}select{{width:100%;background:white}}
-button{{cursor:pointer;background:#ffb34a;color:#10110f;margin:24px 12px 0 0;font-weight:600}}
-button.secondary{{background:white}}:focus-visible{{outline:3px solid #855414;outline-offset:4px}}
-code{{overflow-wrap:anywhere}}footer{{margin-top:32px;font-size:13px;color:#62645b}}
-@media(max-width:480px){{main{{margin:16px auto;padding:20px}}form{{padding:18px}}h1{{font-size:28px}}}}
-</style></head><body><main><header>
-<img src="/oauth2/mcp/logo" alt="firefly koinon" width="280" height="36"></header>
-<h1>Connect {escape(client["name"])}</h1>
-<p>This application will act with your current permissions in the space you select.</p>
-<p>Only approve a connection you started. You can revoke it from your API tokens page.</p>
-<form method="post" action="/oauth2/mcp/authorize">
-<input type="hidden" name="request_id" value="{escape(request_id)}">
-<input type="hidden" name="_csrf" value="{escape(csrf)}">
-<label for="context">Organization and space</label>
-<select required id="context" name="context">{options}</select>
-<p>Requested permissions:</p><ul>{scope_list}</ul>
-<button name="decision" value="allow">Allow connection</button>
-<button class="secondary" name="decision" value="deny">Cancel</button></form>
-<footer>© 2026 Firefly Software Foundation · Apache-2.0</footer></main></body></html>'''
-
-
 def install_oauth(app, context):
     app.add_middleware(OAuthProtocolBoundary)
 
@@ -200,13 +154,21 @@ def install_oauth(app, context):
             if request.method == "GET":
                 params = unique_values(request.query_params)
                 request_id, client, scopes, choices = await oauth.begin(subject, params)
+                profile = await context.get_bean(ProfileService).get(subject)
+                claims = request.state.session.get_attribute("SECURITY_CONTEXT").attributes
+                account = claims.get("email") if claims.get("email_verified") is True else None
+                account = account or claims.get("preferred_username") or claims.get("sub")
+                account = account if isinstance(account, str) and account.strip() else "Signed-in account"
+                name = profile["display_name"] or claims.get("name") or account
+                name = name if isinstance(name, str) and name.strip() else account
+                viewer = ConsentViewer(name, account, profile.get("avatar_version"))
                 html = consent_page(
-                    request_id, client, scopes, choices, getattr(request.state, "csrf_token", "")
+                    request_id, client, scopes, choices, getattr(request.state, "csrf_token", ""), viewer
                 )
                 headers = {
                     **HEADERS,
                     "Content-Security-Policy": (
-                        "default-src 'none'; style-src 'unsafe-inline'; font-src 'self'; img-src 'self'; "
+                        "default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; "
                         "form-action 'self'; base-uri 'none'; frame-ancestors 'none'"
                     ),
                 }
@@ -259,6 +221,31 @@ def install_oauth(app, context):
         service().require_enabled()
         return FileResponse(Path(__file__).parent / "assets" / "logo.svg", media_type="image/svg+xml")
 
+    async def logo_dark(request):
+        service().require_enabled()
+        return FileResponse(Path(__file__).parent / "assets" / "logo-dark.svg", media_type="image/svg+xml")
+
+    async def style(request):
+        service().require_enabled()
+        return FileResponse(Path(__file__).parent / "assets" / "consent.css", media_type="text/css")
+
+    async def avatar(request):
+        async def handle():
+            service().require_enabled()
+            try:
+                subject = browser_subject(request)
+            except UnauthorizedException:
+                return JSONResponse({"error": "access_denied"}, status_code=401, headers=HEADERS)
+            from pyfly.kernel import ResourceNotFoundException
+
+            try:
+                image = await context.get_bean(ProfileService).avatar(subject)
+            except ResourceNotFoundException:
+                return Response(status_code=404, headers=HEADERS)
+            return Response(image, media_type="image/jpeg", headers=HEADERS)
+
+        return await respond(handle)
+
     for path, endpoint, methods in (
         ("/.well-known/oauth-protected-resource/mcp", protected_resource, ["GET"]),
         ("/.well-known/oauth-authorization-server/oauth2/mcp", metadata, ["GET"]),
@@ -266,5 +253,8 @@ def install_oauth(app, context):
         ("/oauth2/mcp/token", token, ["POST"]),
         ("/oauth2/mcp/font", font, ["GET"]),
         ("/oauth2/mcp/logo", logo, ["GET"]),
+        ("/oauth2/mcp/logo-dark", logo_dark, ["GET"]),
+        ("/oauth2/mcp/style", style, ["GET"]),
+        ("/oauth2/mcp/avatar", avatar, ["GET"]),
     ):
         app.router.routes.append(Route(path, endpoint, methods=methods))

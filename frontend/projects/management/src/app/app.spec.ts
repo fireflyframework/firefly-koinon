@@ -3,6 +3,7 @@ import { provideHttpClient, withXsrfConfiguration } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { SessionService } from './session.service';
+import { AccountNavigation } from './account-navigation';
 describe('browser session boundary', () => {
   beforeEach(() =>
     TestBed.configureTestingModule({
@@ -17,6 +18,7 @@ describe('browser session boundary', () => {
   afterEach(() => TestBed.inject(HttpTestingController).verify());
   it('posts logout to the native endpoint and waits for server confirmation', async () => {
     const service = TestBed.inject(SessionService);
+    const cleared = vi.spyOn(TestBed.inject(AccountNavigation), 'clearPending');
     const result = service.signOut();
     const request = TestBed.inject(HttpTestingController).expectOne('/logout');
     expect(request.request.method).toBe('POST');
@@ -24,13 +26,16 @@ describe('browser session boundary', () => {
     request.flush(null, { status: 204, statusText: 'No Content' });
     expect(await result).toBe(true);
     expect(service.error()).toBe('');
+    expect(cleared).toHaveBeenCalledOnce();
   });
   it('keeps a failed logout visible instead of claiming the session is gone', async () => {
     const service = TestBed.inject(SessionService);
+    const cleared = vi.spyOn(TestBed.inject(AccountNavigation), 'clearPending');
     const result = service.signOut();
     const request = TestBed.inject(HttpTestingController).expectOne('/logout');
     request.flush({ detail: 'Unavailable' }, { status: 503, statusText: 'Service unavailable' });
     expect(await result).toBe(false);
+    expect(cleared).not.toHaveBeenCalled();
     expect(service.error()).toContain('has not been cleared');
   });
 });

@@ -84,6 +84,10 @@ class CanonicalDispatcher:
             received = 0
 
             async def bounded_app(scope, receive, send):
+                # Server-only ASGI state carries the resource-bound wrapper, never a client header.
+                if raw.startswith("koinon_mcp_"):
+                    scope = {**scope, "koinon.mcp.original_bearer": raw}
+
                 async def bounded_send(message):
                     nonlocal received
                     if message["type"] == "http.response.body":

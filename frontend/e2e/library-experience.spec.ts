@@ -115,6 +115,8 @@ for (const width of [1440, 1024, 390])
       await page.getByRole('button', { name: 'Library', exact: true }).first().click();
     }
     await openLibrary(page);
+    await expect(page.locator('ffk-workbench')).toHaveAttribute('style', /--ffk-font/);
+    await page.evaluate(() => document.fonts.ready);
     if (width === 390) {
       const heading = await page.locator('.library-heading').boundingBox();
       const title = await page
