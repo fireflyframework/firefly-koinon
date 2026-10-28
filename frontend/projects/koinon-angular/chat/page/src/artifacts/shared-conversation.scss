@@ -1,0 +1,105 @@
+/* Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 */
+@use './artifact-panels';
+:host {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  color: var(--ui-text, #272820);
+  font: 400 14px/1.7 var(--ffk-font, Manrope, sans-serif);
+  container-type: inline-size;
+  container-name: koinon-share;
+}
+section {
+  width: 100%;
+  max-width: 800px;
+  box-sizing: border-box;
+  margin: auto;
+  padding: 32px;
+  min-width: 0;
+}
+.snapshot-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.snapshot-header > div {
+  min-width: 0;
+}
+.eyebrow {
+  font-size: 12px;
+  color: var(--ui-muted, #62645b);
+  margin: 0 0 8px;
+}
+h1 {
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+h2 {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+.snapshot-header ffk-button {
+  flex-shrink: 0;
+}
+.snapshot-loading {
+  display: grid;
+  gap: 20px;
+  min-height: 220px;
+}
+.snapshot-policy {
+  color: var(--ui-muted, #62645b);
+  font-size: 13px;
+}
+.snapshot-messages {
+  list-style: none;
+  padding: 0;
+  margin: 28px 0;
+  display: grid;
+  gap: 28px;
+}
+.snapshot-message {
+  min-width: 0;
+}
+.snapshot-message > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.snapshot-message h2 {
+  margin: 0;
+}
+.snapshot-message time,
+.snapshot-message header > span {
+  font-size: 11px;
+  color: var(--ui-muted, #62645b);
+}
+.snapshot-message > p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.notice p:last-child {
+  margin-bottom: 0;
+}
+@container koinon-share (max-width:500px) {
+  section {
+    padding: 20px 16px;
+  }
+  h1 {
+    font-size: 22px;
+  }
+  .snapshot-message > header {
+    align-items: flex-start;
+    gap: 4px;
+    flex-direction: column;
+  }
+}

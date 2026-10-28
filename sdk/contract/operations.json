@@ -1,0 +1,5777 @@
+{
+  "format_version": 1,
+  "copyright": "Copyright 2026 Firefly Software Foundation",
+  "license": "Apache-2.0",
+  "api_prefix": "/api/v1",
+  "status": "Canonical API contract; development snapshot",
+  "canonical_operation_count": 137,
+  "qualified_compatibility_operations": [
+    {
+      "operation": "GlossaryController.list_terms",
+      "method": "GET",
+      "path": "/api/v1/structured/glossary",
+      "source": "backend/src/koinon/knowledge/legacy_read.py",
+      "source_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
+      "native_controller": "GlossaryController",
+      "native_method": "list_terms",
+      "native_source_sha256": "d1837ae24422b157ef03732b03618ca180cf93f5b42b3dcab87512ff8346e4ee",
+      "guard": "backend/src/koinon/knowledge/legacy_read.py",
+      "guard_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
+      "request_schema": null,
+      "response_schema": "GlossaryPage",
+      "sdk_python": "glossary_terms",
+      "sdk_python_agent": false,
+      "sdk_typescript": "structured.glossary.list",
+      "sdk_java": "client.structuredGlossary(tenant,workspace).list",
+      "headers": [
+        "X-Tenant-ID",
+        "X-Workspace-ID"
+      ]
+    },
+    {
+      "operation": "GlossaryController.get_term",
+      "method": "GET",
+      "path": "/api/v1/structured/glossary/{term_id}",
+      "source": "backend/src/koinon/knowledge/legacy_read.py",
+      "source_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
+      "native_controller": "GlossaryController",
+      "native_method": "get_term",
+      "native_source_sha256": "d1837ae24422b157ef03732b03618ca180cf93f5b42b3dcab87512ff8346e4ee",
+      "guard": "backend/src/koinon/knowledge/legacy_read.py",
+      "guard_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
+      "request_schema": null,
+      "response_schema": "GlossaryTermRead",
+      "sdk_python": "glossary_term",
+      "sdk_python_agent": false,
+      "sdk_typescript": "structured.glossary.get",
+      "sdk_java": "client.structuredGlossary(tenant,workspace).get",
+      "headers": [
+        "X-Tenant-ID",
+        "X-Workspace-ID"
+      ]
+    },
+    {
+      "operation": "GlossaryController.create",
+      "method": "POST",
+      "path": "/api/v1/structured/glossary",
+      "source": "backend/src/koinon/knowledge/glossary_writes.py",
+      "source_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
+      "native_controller": "GlossaryController",
+      "native_method": "create",
+      "native_source_sha256": "d1837ae24422b157ef03732b03618ca180cf93f5b42b3dcab87512ff8346e4ee",
+      "guard": "backend/src/koinon/knowledge/glossary_writes.py",
+      "guard_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
+      "request_schema": "GlossaryTermCreate",
+      "response_schema": "GlossaryTermRead",
+      "sdk_python": "create_glossary_term",
+      "sdk_python_agent": false,
+      "sdk_typescript": "structured.glossary.create",
+      "sdk_java": "client.structuredGlossary(tenant,workspace).create",
+      "headers": [
+        "X-Tenant-ID",
+        "X-Workspace-ID"
+      ]
+    },
+    {
+      "operation": "GlossaryController.update",
+      "method": "PUT",
+      "path": "/api/v1/structured/glossary/{term_id}",
+      "source": "backend/src/koinon/knowledge/glossary_writes.py",
+      "source_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
+      "native_controller": "GlossaryController",
+      "native_method": "update",
+      "native_source_sha256": "d1837ae24422b157ef03732b03618ca180cf93f5b42b3dcab87512ff8346e4ee",
+      "guard": "backend/src/koinon/knowledge/glossary_writes.py",
+      "guard_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
+      "request_schema": "GlossaryTermUpdate",
+      "response_schema": "GlossaryTermRead",
+      "sdk_python": "update_glossary_term",
+      "sdk_python_agent": false,
+      "sdk_typescript": "structured.glossary.update",
+      "sdk_java": "client.structuredGlossary(tenant,workspace).update",
+      "headers": [
+        "X-Tenant-ID",
+        "X-Workspace-ID",
+        "If-Match (exact unparsed updated_at string)"
+      ]
+    },
+    {
+      "operation": "GlossaryController.delete",
+      "method": "DELETE",
+      "path": "/api/v1/structured/glossary/{term_id}",
+      "source": "backend/src/koinon/knowledge/glossary_writes.py",
+      "source_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
+      "native_controller": "GlossaryController",
+      "native_method": "delete",
+      "native_source_sha256": "d1837ae24422b157ef03732b03618ca180cf93f5b42b3dcab87512ff8346e4ee",
+      "guard": "backend/src/koinon/knowledge/glossary_writes.py",
+      "guard_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
+      "request_schema": null,
+      "response_schema": "void",
+      "sdk_python": "delete_glossary_term",
+      "sdk_python_agent": false,
+      "sdk_typescript": "structured.glossary.remove",
+      "sdk_java": "client.structuredGlossary(tenant,workspace).remove",
+      "headers": [
+        "X-Tenant-ID",
+        "X-Workspace-ID",
+        "If-Match (exact unparsed updated_at string)"
+      ]
+    },
+    {
+      "operation": "AgentGlossaryController.list_terms",
+      "method": "GET",
+      "path": "/api/v1/structured/agent/glossary",
+      "source": "backend/src/koinon/knowledge/legacy_read.py",
+      "source_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
+      "native_controller": "AgentGlossaryController",
+      "native_method": "list_terms",
+      "native_source_sha256": "977a2e4be797898ffc47d3414e9b22df8965cf699057af6d9b9e4cca60b37738",
+      "guard": "backend/src/koinon/knowledge/legacy_read.py",
+      "guard_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
+      "request_schema": null,
+      "response_schema": "GlossaryPage",
+      "sdk_python": "glossary_terms",
+      "sdk_python_agent": true,
+      "sdk_typescript": "structured.agentGlossary.list",
+      "sdk_java": "client.structuredAgentGlossary(tenant,workspace).list",
+      "headers": [
+        "X-Tenant-ID",
+        "X-Workspace-ID"
+      ]
+    },
+    {
+      "operation": "AgentGlossaryController.get_term",
+      "method": "GET",
+      "path": "/api/v1/structured/agent/glossary/{term_id}",
+      "source": "backend/src/koinon/knowledge/legacy_read.py",
+      "source_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
+      "native_controller": "AgentGlossaryController",
+      "native_method": "get_term",
+      "native_source_sha256": "977a2e4be797898ffc47d3414e9b22df8965cf699057af6d9b9e4cca60b37738",
+      "guard": "backend/src/koinon/knowledge/legacy_read.py",
+      "guard_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
+      "request_schema": null,
+      "response_schema": "GlossaryTermRead",
+      "sdk_python": "glossary_term",
+      "sdk_python_agent": true,
+      "sdk_typescript": "structured.agentGlossary.get",
+      "sdk_java": "client.structuredAgentGlossary(tenant,workspace).get",
+      "headers": [
+        "X-Tenant-ID",
+        "X-Workspace-ID"
+      ]
+    },
+    {
+      "operation": "AgentGlossaryController.create",
+      "method": "POST",
+      "path": "/api/v1/structured/agent/glossary",
+      "source": "backend/src/koinon/knowledge/glossary_writes.py",
+      "source_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
+      "native_controller": "AgentGlossaryController",
+      "native_method": "create",
+      "native_source_sha256": "977a2e4be797898ffc47d3414e9b22df8965cf699057af6d9b9e4cca60b37738",
+      "guard": "backend/src/koinon/knowledge/glossary_writes.py",
+      "guard_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
+      "request_schema": "GlossaryTermCreate",
+      "response_schema": "GlossaryTermRead",
+      "sdk_python": "create_glossary_term",
+      "sdk_python_agent": true,
+      "sdk_typescript": "structured.agentGlossary.create",
+      "sdk_java": "client.structuredAgentGlossary(tenant,workspace).create",
+      "headers": [
+        "X-Tenant-ID",
+        "X-Workspace-ID"
+      ]
+    },
+    {
+      "operation": "AgentGlossaryController.update",
+      "method": "PUT",
+      "path": "/api/v1/structured/agent/glossary/{term_id}",
+      "source": "backend/src/koinon/knowledge/glossary_writes.py",
+      "source_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
+      "native_controller": "AgentGlossaryController",
+      "native_method": "update",
+      "native_source_sha256": "977a2e4be797898ffc47d3414e9b22df8965cf699057af6d9b9e4cca60b37738",
+      "guard": "backend/src/koinon/knowledge/glossary_writes.py",
+      "guard_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
+      "request_schema": "GlossaryTermUpdate",
+      "response_schema": "GlossaryTermRead",
+      "sdk_python": "update_glossary_term",
+      "sdk_python_agent": true,
+      "sdk_typescript": "structured.agentGlossary.update",
+      "sdk_java": "client.structuredAgentGlossary(tenant,workspace).update",
+      "headers": [
+        "X-Tenant-ID",
+        "X-Workspace-ID",
+        "If-Match (exact unparsed updated_at string)"
+      ]
+    },
+    {
+      "operation": "AgentGlossaryController.delete",
+      "method": "DELETE",
+      "path": "/api/v1/structured/agent/glossary/{term_id}",
+      "source": "backend/src/koinon/knowledge/glossary_writes.py",
+      "source_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
+      "native_controller": "AgentGlossaryController",
+      "native_method": "delete",
+      "native_source_sha256": "977a2e4be797898ffc47d3414e9b22df8965cf699057af6d9b9e4cca60b37738",
+      "guard": "backend/src/koinon/knowledge/glossary_writes.py",
+      "guard_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
+      "request_schema": null,
+      "response_schema": "void",
+      "sdk_python": "delete_glossary_term",
+      "sdk_python_agent": true,
+      "sdk_typescript": "structured.agentGlossary.remove",
+      "sdk_java": "client.structuredAgentGlossary(tenant,workspace).remove",
+      "headers": [
+        "X-Tenant-ID",
+        "X-Workspace-ID",
+        "If-Match (exact unparsed updated_at string)"
+      ]
+    }
+  ],
+  "precision": {
+    "safe_integer_limit": 9007199254740991,
+    "exact_decimals": "decimal string",
+    "unsafe_integers": "base10 string",
+    "raw_data": "JSON number|string|boolean|null recursively; never coerce exact strings"
+  },
+  "authentication": {
+    "headless": "caller-supplied bearer, fresh per request; renewal owned by caller",
+    "browser": "same operation suffix under /bff/api/v1 with native cookie session and CSRF on writes",
+    "tokens_management": "interactive verified identity required; PAT cannot mint or manage PATs"
+  },
+  "semantics": {
+    "writes": "no automatic retries; explicit chat client_request_id supports server idempotency",
+    "null": "omitted provider secret preserves, explicit null clears; optional request fields preserve explicit null where server accepts it",
+    "streams": "close/cancel consuming stream releases HTTP response; explicit cancel endpoint cancels durable run; no automatic reconnect",
+    "preconditions": "content writes require current sha256/snapshot_id via If-Match; no forced overwrite helper",
+    "paging": "honor only endpoint-declared query parameters; Page fields optional for items-only endpoints"
+  },
+  "excluded": [
+    {
+      "path": "/auth/me",
+      "reason": "browser session introspection; headless SDK uses verified bearer/profile/context"
+    },
+    {
+      "path": "/health,/ready",
+      "reason": "public operator probes outside versioned API; deployment HTTP checks"
+    },
+    {
+      "path": "/api/v1/canon/**,/api/v1/structured/**",
+      "reason": "Retained routes are excluded except the explicit qualified_compatibility_operations list; operation admission depends on deployment prerequisites and current authority"
+    }
+  ],
+  "operations": [
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/audit",
+      "category": "canonical",
+      "operation": "AuditController.audit",
+      "source": "backend/src/koinon/api/controllers/audit.py",
+      "line": 20,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "q",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "action",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "subject",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "from_date",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "through_date",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "time_zone",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "UTC"
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        },
+        {
+          "name": "sort",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "created_at"
+        },
+        {
+          "name": "order",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "desc"
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "audit",
+      "sdk_typescript": "audit.list",
+      "sdk_java": "client.audit.list",
+      "request_schema": null,
+      "response_schema": "Page[AuditEvent]",
+      "success_status": 200,
+      "source_sha256": "9cd8419bf1a442777ebc0fe3431fe0855c5e07794ef613a934b83fe2aca9f7be",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/catalog",
+      "category": "canonical",
+      "operation": "CatalogController.catalog_list",
+      "source": "backend/src/koinon/api/controllers/catalog.py",
+      "line": 31,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "kind",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "parent_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "project_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "include_archived",
+          "annotation": "QueryParam[bool]",
+          "location": "query",
+          "required": false,
+          "default": false
+        },
+        {
+          "name": "view",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "raw"
+        },
+        {
+          "name": "q",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "status",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 100
+        },
+        {
+          "name": "sort",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "name"
+        },
+        {
+          "name": "order",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "asc"
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "catalog",
+      "sdk_typescript": "catalog.list",
+      "sdk_java": "client.catalog.list",
+      "request_schema": null,
+      "response_schema": "Page[CatalogEntry]",
+      "success_status": 200,
+      "source_sha256": "7f8bf31694fe132fa8cca4f61ca9d2e6ae11be7f13551fc13625fcd7be283a34",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/catalog",
+      "category": "canonical",
+      "operation": "CatalogController.catalog_create",
+      "source": "backend/src/koinon/api/controllers/catalog.py",
+      "line": 71,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[CatalogCreate]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "create",
+      "sdk_typescript": "catalog.create",
+      "sdk_java": "client.catalog.create",
+      "request_schema": "CatalogCreate",
+      "response_schema": "CatalogEntry",
+      "success_status": 201,
+      "source_sha256": "7f8bf31694fe132fa8cca4f61ca9d2e6ae11be7f13551fc13625fcd7be283a34",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/catalog/{entry_id}",
+      "category": "canonical",
+      "operation": "CatalogController.catalog_get",
+      "source": "backend/src/koinon/api/controllers/catalog.py",
+      "line": 80,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "entry_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "get",
+      "sdk_typescript": "catalog.get",
+      "sdk_java": "client.catalog.get",
+      "request_schema": null,
+      "response_schema": "CatalogEntry",
+      "success_status": 200,
+      "source_sha256": "7f8bf31694fe132fa8cca4f61ca9d2e6ae11be7f13551fc13625fcd7be283a34",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/tenants/{tenant_id}/catalog/{entry_id}",
+      "category": "canonical",
+      "operation": "CatalogController.catalog_patch",
+      "source": "backend/src/koinon/api/controllers/catalog.py",
+      "line": 84,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "entry_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[CatalogPatch]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "update",
+      "sdk_typescript": "catalog.update",
+      "sdk_java": "client.catalog.update",
+      "request_schema": "CatalogUpdate",
+      "response_schema": "CatalogEntry",
+      "success_status": 200,
+      "source_sha256": "7f8bf31694fe132fa8cca4f61ca9d2e6ae11be7f13551fc13625fcd7be283a34",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/catalog/{entry_id}/archive",
+      "category": "canonical",
+      "operation": "CatalogController.catalog_archive",
+      "source": "backend/src/koinon/api/controllers/catalog.py",
+      "line": 100,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "entry_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "archive",
+      "sdk_typescript": "catalog.archive",
+      "sdk_java": "client.catalog.archive",
+      "request_schema": null,
+      "response_schema": "CatalogEntry",
+      "success_status": 200,
+      "source_sha256": "7f8bf31694fe132fa8cca4f61ca9d2e6ae11be7f13551fc13625fcd7be283a34",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/catalog/{entry_id}/restore",
+      "category": "canonical",
+      "operation": "CatalogController.catalog_restore",
+      "source": "backend/src/koinon/api/controllers/catalog.py",
+      "line": 108,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "entry_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "restore",
+      "sdk_typescript": "catalog.restore",
+      "sdk_java": "client.catalog.restore",
+      "request_schema": null,
+      "response_schema": "CatalogEntry",
+      "success_status": 200,
+      "source_sha256": "7f8bf31694fe132fa8cca4f61ca9d2e6ae11be7f13551fc13625fcd7be283a34",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/tenants/{tenant_id}/catalog/{entry_id}",
+      "category": "canonical",
+      "operation": "CatalogController.catalog_delete",
+      "source": "backend/src/koinon/api/controllers/catalog.py",
+      "line": 116,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "entry_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "None",
+      "sdk_python": "delete",
+      "sdk_typescript": "catalog.delete",
+      "sdk_java": "client.catalog.delete",
+      "request_schema": null,
+      "response_schema": "void",
+      "success_status": 204,
+      "source_sha256": "7f8bf31694fe132fa8cca4f61ca9d2e6ae11be7f13551fc13625fcd7be283a34",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/context",
+      "category": "canonical",
+      "operation": "ContextController.context",
+      "source": "backend/src/koinon/api/controllers/context.py",
+      "line": 22,
+      "parameters": [],
+      "return_annotation": "dict",
+      "sdk_python": "context",
+      "sdk_typescript": "context",
+      "sdk_java": "client.platform.context",
+      "request_schema": null,
+      "response_schema": "ContextResponse",
+      "success_status": 200,
+      "source_sha256": "9c6689a25659e4187cc99e6794b5c3ac1d42c60b3ed5ebdf166ca1fbf70fb769",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/jobs",
+      "category": "canonical",
+      "operation": "JobController.list",
+      "source": "backend/src/koinon/api/controllers/jobs.py",
+      "line": 18,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "jobs",
+      "sdk_typescript": "jobs.list",
+      "sdk_java": "client.jobs.list",
+      "request_schema": null,
+      "response_schema": "Page[Job]",
+      "success_status": 200,
+      "source_sha256": "75e90625f11cc39dbd6db573da42b2c56386aab328811941c08f08fdbc68edc3",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/jobs/{job_id}",
+      "category": "canonical",
+      "operation": "JobController.get",
+      "source": "backend/src/koinon/api/controllers/jobs.py",
+      "line": 22,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "job_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "job",
+      "sdk_typescript": "jobs.get",
+      "sdk_java": "client.jobs.get",
+      "request_schema": null,
+      "response_schema": "Job",
+      "success_status": 200,
+      "source_sha256": "75e90625f11cc39dbd6db573da42b2c56386aab328811941c08f08fdbc68edc3",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/jobs/{job_id}/cancel",
+      "category": "canonical",
+      "operation": "JobController.cancel",
+      "source": "backend/src/koinon/api/controllers/jobs.py",
+      "line": 26,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "job_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "cancel_job",
+      "sdk_typescript": "jobs.cancel",
+      "sdk_java": "client.jobs.cancel",
+      "request_schema": null,
+      "response_schema": "Job",
+      "success_status": 200,
+      "source_sha256": "75e90625f11cc39dbd6db573da42b2c56386aab328811941c08f08fdbc68edc3",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/members",
+      "category": "canonical",
+      "operation": "MembershipController.members",
+      "source": "backend/src/koinon/api/controllers/memberships.py",
+      "line": 35,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "q",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "role",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "scope",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "all"
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "members",
+      "sdk_typescript": "members.list",
+      "sdk_java": "client.members.list",
+      "request_schema": null,
+      "response_schema": "Page[Membership]",
+      "success_status": 200,
+      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/members",
+      "category": "canonical",
+      "operation": "MembershipController.member_create",
+      "source": "backend/src/koinon/api/controllers/memberships.py",
+      "line": 63,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[MemberCreate]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "add_member",
+      "sdk_typescript": "members.add",
+      "sdk_java": "client.members.add",
+      "request_schema": "MemberInput",
+      "response_schema": "Membership",
+      "success_status": 201,
+      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/tenants/{tenant_id}/members/{member_id}",
+      "category": "canonical",
+      "operation": "MembershipController.member_patch",
+      "source": "backend/src/koinon/api/controllers/memberships.py",
+      "line": 73,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "member_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[MemberPatch]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "update_member",
+      "sdk_typescript": "members.update",
+      "sdk_java": "client.members.update",
+      "request_schema": "MemberUpdate",
+      "response_schema": "Membership",
+      "success_status": 200,
+      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/tenants/{tenant_id}/members/{member_id}",
+      "category": "canonical",
+      "operation": "MembershipController.member_delete",
+      "source": "backend/src/koinon/api/controllers/memberships.py",
+      "line": 90,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "member_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "None",
+      "sdk_python": "remove_member",
+      "sdk_typescript": "members.remove",
+      "sdk_java": "client.members.remove",
+      "request_schema": null,
+      "response_schema": "void",
+      "success_status": 204,
+      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/invitations",
+      "category": "canonical",
+      "operation": "MembershipController.invitations_list",
+      "source": "backend/src/koinon/api/controllers/memberships.py",
+      "line": 96,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "status",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "pending"
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "invitations",
+      "sdk_typescript": "invitations.list",
+      "sdk_java": "client.invitations.list",
+      "request_schema": null,
+      "response_schema": "Page[Invitation]",
+      "success_status": 200,
+      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/invitations",
+      "category": "canonical",
+      "operation": "MembershipController.invitation_create",
+      "source": "backend/src/koinon/api/controllers/memberships.py",
+      "line": 115,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[InvitationInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "create_invitation",
+      "sdk_typescript": "invitations.create",
+      "sdk_java": "client.invitations.create",
+      "request_schema": "InvitationInput",
+      "response_schema": "InvitationCreated",
+      "success_status": 201,
+      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/tenants/{tenant_id}/invitations/{invitation_id}",
+      "category": "canonical",
+      "operation": "MembershipController.invitation_revoke",
+      "source": "backend/src/koinon/api/controllers/memberships.py",
+      "line": 129,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "invitation_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "None",
+      "sdk_python": "revoke_invitation",
+      "sdk_typescript": "invitations.revoke",
+      "sdk_java": "client.invitations.revoke",
+      "request_schema": null,
+      "response_schema": "void",
+      "success_status": 204,
+      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/invitations/inspect",
+      "category": "canonical",
+      "operation": "MembershipController.invitation_inspect",
+      "source": "backend/src/koinon/api/controllers/memberships.py",
+      "line": 135,
+      "parameters": [
+        {
+          "name": "body",
+          "annotation": "Valid[Body[InvitationToken]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "inspect_invitation",
+      "sdk_typescript": "invitations.inspect",
+      "sdk_java": "client.invitationAccess.inspect",
+      "request_schema": "InvitationToken",
+      "response_schema": "InvitationPreview",
+      "success_status": 200,
+      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/invitations/redeem",
+      "category": "canonical",
+      "operation": "MembershipController.invitation_redeem",
+      "source": "backend/src/koinon/api/controllers/memberships.py",
+      "line": 142,
+      "parameters": [
+        {
+          "name": "body",
+          "annotation": "Valid[Body[InvitationToken]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "redeem_invitation",
+      "sdk_typescript": "invitations.redeem",
+      "sdk_java": "client.invitationAccess.redeem",
+      "request_schema": "InvitationToken",
+      "response_schema": "Membership",
+      "success_status": 201,
+      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/agents",
+      "category": "canonical",
+      "operation": "AgentController.agents",
+      "source": "backend/src/koinon/assistants/agent_controller.py",
+      "line": 30,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "q",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        },
+        {
+          "name": "status",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "project_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "sort",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "name"
+        },
+        {
+          "name": "order",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "asc"
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "agents",
+      "sdk_typescript": "agents.list",
+      "sdk_java": "client.agents.list",
+      "request_schema": null,
+      "response_schema": "Page[AgentConfiguration]",
+      "success_status": 200,
+      "source_sha256": "7b2f32abe1a3ef8b5a8bf21950f0ad7ad955219b652f06293febfbe7ec3ff5e9",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/agents",
+      "category": "canonical",
+      "operation": "AgentController.agent_create",
+      "source": "backend/src/koinon/assistants/agent_controller.py",
+      "line": 57,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[AgentInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "create_agent",
+      "sdk_typescript": "agents.create",
+      "sdk_java": "client.agents.create",
+      "request_schema": "AgentInput",
+      "response_schema": "AgentConfiguration",
+      "success_status": 201,
+      "source_sha256": "7b2f32abe1a3ef8b5a8bf21950f0ad7ad955219b652f06293febfbe7ec3ff5e9",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/tenants/{tenant_id}/agents/{agent_id}",
+      "category": "canonical",
+      "operation": "AgentController.agent_update",
+      "source": "backend/src/koinon/assistants/agent_controller.py",
+      "line": 67,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "agent_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[AgentInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "update_agent",
+      "sdk_typescript": "agents.update",
+      "sdk_java": "client.agents.update",
+      "request_schema": "AgentInput",
+      "response_schema": "AgentConfiguration",
+      "success_status": 200,
+      "source_sha256": "7b2f32abe1a3ef8b5a8bf21950f0ad7ad955219b652f06293febfbe7ec3ff5e9",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/agents/{agent_id}/validate",
+      "category": "canonical",
+      "operation": "AgentController.agent_validate",
+      "source": "backend/src/koinon/assistants/agent_controller.py",
+      "line": 78,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "agent_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "validate_agent",
+      "sdk_typescript": "agents.validate",
+      "sdk_java": "client.agents.validate",
+      "request_schema": null,
+      "response_schema": "AgentConfiguration",
+      "success_status": 200,
+      "source_sha256": "7b2f32abe1a3ef8b5a8bf21950f0ad7ad955219b652f06293febfbe7ec3ff5e9",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/chat/threads",
+      "category": "canonical",
+      "operation": "AssistantController.threads",
+      "source": "backend/src/koinon/assistants/controllers.py",
+      "line": 34,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "q",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        },
+        {
+          "name": "sort",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "updated_at"
+        },
+        {
+          "name": "order",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "desc"
+        },
+        {
+          "name": "folder_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "unfiled",
+          "annotation": "QueryParam[bool]",
+          "location": "query",
+          "required": false,
+          "default": false
+        },
+        {
+          "name": "project_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "status",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "active"
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "threads",
+      "sdk_typescript": "chat.threads",
+      "sdk_java": "client.chat.threads",
+      "request_schema": null,
+      "response_schema": "Page[ChatThread]",
+      "success_status": 200,
+      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/chat/threads",
+      "category": "canonical",
+      "operation": "AssistantController.thread_create",
+      "source": "backend/src/koinon/assistants/controllers.py",
+      "line": 65,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ThreadInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "create_thread",
+      "sdk_typescript": "chat.create",
+      "sdk_java": "client.chat.createThread",
+      "request_schema": "ThreadInput",
+      "response_schema": "ChatThread",
+      "success_status": 201,
+      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/messages",
+      "category": "canonical",
+      "operation": "AssistantController.messages",
+      "source": "backend/src/koinon/assistants/controllers.py",
+      "line": 75,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "thread_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "before",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "limit",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 50
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "messages",
+      "sdk_typescript": "chat.messages",
+      "sdk_java": "client.chat.messages",
+      "request_schema": null,
+      "response_schema": "Page[ChatMessage]",
+      "success_status": 200,
+      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/runs",
+      "category": "canonical",
+      "operation": "AssistantController.submit",
+      "source": "backend/src/koinon/assistants/controllers.py",
+      "line": 88,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "thread_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[RunInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "submit_run",
+      "sdk_typescript": "chat.submit",
+      "sdk_java": "client.chat.submit",
+      "request_schema": "RunInput",
+      "response_schema": "ChatRun",
+      "success_status": 202,
+      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/chat/runs/{run_id}/cancel",
+      "category": "canonical",
+      "operation": "AssistantController.cancel",
+      "source": "backend/src/koinon/assistants/controllers.py",
+      "line": 99,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "run_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "cancel_run",
+      "sdk_typescript": "chat.cancel",
+      "sdk_java": "client.chat.cancel",
+      "request_schema": null,
+      "response_schema": "ChatRun",
+      "success_status": 200,
+      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/chat/runs/{run_id}/retry",
+      "category": "canonical",
+      "operation": "AssistantController.retry",
+      "source": "backend/src/koinon/assistants/controllers.py",
+      "line": 103,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "run_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "retry_run",
+      "sdk_typescript": "chat.retry",
+      "sdk_java": "client.chat.retry",
+      "request_schema": null,
+      "response_schema": "ChatRun",
+      "success_status": 202,
+      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/chat/runs/{run_id}/events",
+      "category": "canonical",
+      "operation": "AssistantController.events",
+      "source": "backend/src/koinon/assistants/controllers.py",
+      "line": 107,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "run_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "StreamingResponse",
+      "sdk_python": "events",
+      "sdk_typescript": "chat.events",
+      "sdk_java": "client.chat.events",
+      "request_schema": null,
+      "response_schema": "StreamEvent",
+      "success_status": 200,
+      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
+      "encoding": "text/event-stream",
+      "headers": [
+        "Last-Event-ID (last fully processed opaque event ID)"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/chat/runs/{run_id}/results/{result_id}",
+      "category": "canonical",
+      "operation": "AssistantController.result",
+      "source": "backend/src/koinon/assistants/controllers.py",
+      "line": 160,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "run_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "result_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "result",
+      "sdk_typescript": "chat.result",
+      "sdk_java": "client.chat.result",
+      "request_schema": null,
+      "response_schema": "EvidenceResult",
+      "success_status": 200,
+      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/chat/runs/{run_id}/activity",
+      "category": "canonical",
+      "operation": "AssistantController.activities",
+      "source": "backend/src/koinon/assistants/controllers.py",
+      "line": 168,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "run_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "run_activities",
+      "sdk_typescript": "chat.activities",
+      "sdk_java": "client.chat.activities",
+      "request_schema": null,
+      "response_schema": "Page[ToolActivity]",
+      "success_status": 200,
+      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/chat/runs/{run_id}/audit",
+      "category": "canonical",
+      "operation": "AssistantController.audit",
+      "source": "backend/src/koinon/assistants/controllers.py",
+      "line": 181,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "run_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "run_audit",
+      "sdk_typescript": "chat.audit",
+      "sdk_java": "client.chat.audit",
+      "request_schema": null,
+      "response_schema": "AnswerAudit",
+      "success_status": 200,
+      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/chat/folders",
+      "category": "canonical",
+      "operation": "ChatHistoryController.folders",
+      "source": "backend/src/koinon/assistants/history/controllers.py",
+      "line": 30,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "q",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        },
+        {
+          "name": "parent_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "root_only",
+          "annotation": "QueryParam[bool]",
+          "location": "query",
+          "required": false,
+          "default": false
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "sort",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "name"
+        },
+        {
+          "name": "order",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "asc"
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "folders",
+      "sdk_typescript": "chat.folders.list",
+      "sdk_java": "client.chatFolders.list",
+      "request_schema": null,
+      "response_schema": "Page[ChatFolder]",
+      "success_status": 200,
+      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/chat/folders",
+      "category": "canonical",
+      "operation": "ChatHistoryController.create_folder",
+      "source": "backend/src/koinon/assistants/history/controllers.py",
+      "line": 57,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[FolderCreate]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "create_folder",
+      "sdk_typescript": "chat.folders.create",
+      "sdk_java": "client.chatFolders.create",
+      "request_schema": "FolderCreate",
+      "response_schema": "ChatFolder",
+      "success_status": 201,
+      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/chat/folders/{folder_id}",
+      "category": "canonical",
+      "operation": "ChatHistoryController.folder",
+      "source": "backend/src/koinon/assistants/history/controllers.py",
+      "line": 67,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "folder_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "folder",
+      "sdk_typescript": "chat.folders.get",
+      "sdk_java": "client.chatFolders.get",
+      "request_schema": null,
+      "response_schema": "ChatFolder",
+      "success_status": 200,
+      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/tenants/{tenant_id}/chat/folders/{folder_id}",
+      "category": "canonical",
+      "operation": "ChatHistoryController.patch_folder",
+      "source": "backend/src/koinon/assistants/history/controllers.py",
+      "line": 71,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "folder_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[FolderPatch]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "update_folder",
+      "sdk_typescript": "chat.folders.update",
+      "sdk_java": "client.chatFolders.update",
+      "request_schema": "FolderPatch",
+      "response_schema": "ChatFolder",
+      "success_status": 200,
+      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/tenants/{tenant_id}/chat/folders/{folder_id}",
+      "category": "canonical",
+      "operation": "ChatHistoryController.delete_folder",
+      "source": "backend/src/koinon/assistants/history/controllers.py",
+      "line": 83,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "folder_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "expected_revision",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": true
+        }
+      ],
+      "return_annotation": null,
+      "sdk_python": "delete_folder",
+      "sdk_typescript": "chat.folders.delete",
+      "sdk_java": "client.chatFolders.delete",
+      "request_schema": null,
+      "response_schema": "void",
+      "success_status": 204,
+      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/chat/threads/{thread_id}",
+      "category": "canonical",
+      "operation": "ChatHistoryController.thread",
+      "source": "backend/src/koinon/assistants/history/controllers.py",
+      "line": 95,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "thread_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "thread",
+      "sdk_typescript": "chat.get",
+      "sdk_java": "client.chat.get",
+      "request_schema": null,
+      "response_schema": "ChatThread",
+      "success_status": 200,
+      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/tenants/{tenant_id}/chat/threads/{thread_id}",
+      "category": "canonical",
+      "operation": "ChatHistoryController.patch_thread",
+      "source": "backend/src/koinon/assistants/history/controllers.py",
+      "line": 99,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "thread_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ThreadPatch]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "update_thread",
+      "sdk_typescript": "chat.update",
+      "sdk_java": "client.chat.update",
+      "request_schema": "ThreadPatch",
+      "response_schema": "ChatThread",
+      "success_status": 200,
+      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/title-suggestion",
+      "category": "canonical",
+      "operation": "ChatHistoryController.title_suggestion",
+      "source": "backend/src/koinon/assistants/history/controllers.py",
+      "line": 111,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "thread_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[TitleRequest]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "suggest_title",
+      "sdk_typescript": "chat.suggestTitle",
+      "sdk_java": "client.chat.suggestTitle",
+      "request_schema": "TitleRequest",
+      "response_schema": "TitleSuggestion",
+      "success_status": 200,
+      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/chat/runs/{run_id}/proposals/{proposal_id}",
+      "category": "canonical",
+      "operation": "CatalogProposalController.get",
+      "source": "backend/src/koinon/assistants/proposal_controller.py",
+      "line": 21,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "run_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "proposal_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "proposal",
+      "sdk_typescript": "chat.proposals.get",
+      "sdk_java": "client.chatProposals.get",
+      "request_schema": null,
+      "response_schema": "CatalogProposal",
+      "success_status": 200,
+      "source_sha256": "dcafa41a19361f8692403adc1340b580d06cb8987fe357d0090a4b61774cfcd9",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/chat/runs/{run_id}/proposals/{proposal_id}/confirm",
+      "category": "canonical",
+      "operation": "CatalogProposalController.confirm",
+      "source": "backend/src/koinon/assistants/proposal_controller.py",
+      "line": 29,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "run_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "proposal_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ProposalConfirmation]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "confirm_proposal",
+      "sdk_typescript": "chat.proposals.confirm",
+      "sdk_java": "client.chatProposals.confirm",
+      "request_schema": "ProposalConfirmation",
+      "response_schema": "CatalogProposal",
+      "success_status": 200,
+      "source_sha256": "dcafa41a19361f8692403adc1340b580d06cb8987fe357d0090a4b61774cfcd9",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/chat/runs/{run_id}/proposals/{proposal_id}/cancel",
+      "category": "canonical",
+      "operation": "CatalogProposalController.cancel",
+      "source": "backend/src/koinon/assistants/proposal_controller.py",
+      "line": 44,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "run_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "proposal_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ProposalRevision]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "cancel_proposal",
+      "sdk_typescript": "chat.proposals.cancel",
+      "sdk_java": "client.chatProposals.cancel",
+      "request_schema": "ProposalRevision",
+      "response_schema": "CatalogProposal",
+      "success_status": 200,
+      "source_sha256": "dcafa41a19361f8692403adc1340b580d06cb8987fe357d0090a4b61774cfcd9",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/configuration",
+      "category": "canonical",
+      "operation": "ProviderController.configuration",
+      "source": "backend/src/koinon/assistants/provider_controller.py",
+      "line": 31,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "configuration",
+      "sdk_typescript": "configuration.get",
+      "sdk_java": "client.configuration.get",
+      "request_schema": null,
+      "response_schema": "Configuration",
+      "success_status": 200,
+      "source_sha256": "c881dab3a834eb9f08e82f63aa1bc7dbe8f67d3a6aa23e2bbd2a5aa352ce0491",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/providers",
+      "category": "canonical",
+      "operation": "ProviderController.provider_create",
+      "source": "backend/src/koinon/assistants/provider_controller.py",
+      "line": 39,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ProviderInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "create_provider",
+      "sdk_typescript": "providers.create",
+      "sdk_java": "client.providers.create",
+      "request_schema": "ProviderInput",
+      "response_schema": "ModelProvider",
+      "success_status": 201,
+      "source_sha256": "c881dab3a834eb9f08e82f63aa1bc7dbe8f67d3a6aa23e2bbd2a5aa352ce0491",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/tenants/{tenant_id}/providers/{provider_id}",
+      "category": "canonical",
+      "operation": "ProviderController.provider_update",
+      "source": "backend/src/koinon/assistants/provider_controller.py",
+      "line": 49,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "provider_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ProviderInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "update_provider",
+      "sdk_typescript": "providers.update",
+      "sdk_java": "client.providers.update",
+      "request_schema": "ProviderInput",
+      "response_schema": "ModelProvider",
+      "success_status": 200,
+      "source_sha256": "c881dab3a834eb9f08e82f63aa1bc7dbe8f67d3a6aa23e2bbd2a5aa352ce0491",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/providers/{provider_id}/validate",
+      "category": "canonical",
+      "operation": "ProviderController.provider_validate",
+      "source": "backend/src/koinon/assistants/provider_controller.py",
+      "line": 67,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "provider_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "validate_provider",
+      "sdk_typescript": "providers.validate",
+      "sdk_java": "client.providers.validate",
+      "request_schema": null,
+      "response_schema": "ValidationResult",
+      "success_status": 200,
+      "source_sha256": "c881dab3a834eb9f08e82f63aa1bc7dbe8f67d3a6aa23e2bbd2a5aa352ce0491",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/identity/providers",
+      "category": "canonical",
+      "operation": "CorporateIdentityController.list",
+      "source": "backend/src/koinon/corporate_identity/controllers.py",
+      "line": 49,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "q",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "kind",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "status",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "identity_providers",
+      "sdk_typescript": "identity.list",
+      "sdk_java": "client.identity.list",
+      "request_schema": null,
+      "response_schema": "IdentityProviderPage",
+      "success_status": 200,
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/identity/providers",
+      "category": "canonical",
+      "operation": "CorporateIdentityController.create",
+      "source": "backend/src/koinon/corporate_identity/controllers.py",
+      "line": 70,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[IdentityProviderInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "create_identity_provider",
+      "sdk_typescript": "identity.create",
+      "sdk_java": "client.identity.create",
+      "request_schema": "IdentityProviderInput",
+      "response_schema": "IdentityProvider",
+      "success_status": 201,
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/identity/providers/{provider_id}",
+      "category": "canonical",
+      "operation": "CorporateIdentityController.get",
+      "source": "backend/src/koinon/corporate_identity/controllers.py",
+      "line": 78,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "provider_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "identity_provider",
+      "sdk_typescript": "identity.get",
+      "sdk_java": "client.identity.get",
+      "request_schema": null,
+      "response_schema": "IdentityProvider",
+      "success_status": 200,
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/tenants/{tenant_id}/identity/providers/{provider_id}",
+      "category": "canonical",
+      "operation": "CorporateIdentityController.update",
+      "source": "backend/src/koinon/corporate_identity/controllers.py",
+      "line": 84,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "provider_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[IdentityProviderPatch]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "update_identity_provider",
+      "sdk_typescript": "identity.update",
+      "sdk_java": "client.identity.update",
+      "request_schema": "IdentityProviderPatch",
+      "response_schema": "IdentityProvider",
+      "success_status": 200,
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/test",
+      "category": "canonical",
+      "operation": "CorporateIdentityController.test",
+      "source": "backend/src/koinon/corporate_identity/controllers.py",
+      "line": 96,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "provider_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[IdentityRevision]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "test_identity_provider",
+      "sdk_typescript": "identity.test",
+      "sdk_java": "client.identity.test",
+      "request_schema": "IdentityRevision",
+      "response_schema": "IdentityValidation",
+      "success_status": 201,
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/tests/{validation_id}",
+      "category": "canonical",
+      "operation": "CorporateIdentityController.test_status",
+      "source": "backend/src/koinon/corporate_identity/controllers.py",
+      "line": 110,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "provider_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "validation_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "identity_test_status",
+      "sdk_typescript": "identity.testStatus",
+      "sdk_java": "client.identity.testStatus",
+      "request_schema": null,
+      "response_schema": "IdentityValidation",
+      "success_status": 200,
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/groups",
+      "category": "canonical",
+      "operation": "CorporateIdentityController.groups",
+      "source": "backend/src/koinon/corporate_identity/controllers.py",
+      "line": 122,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "provider_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "q",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "limit",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        },
+        {
+          "name": "after",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "identity_groups",
+      "sdk_typescript": "identity.groups",
+      "sdk_java": "client.identity.groups",
+      "request_schema": null,
+      "response_schema": "IdentityGroupPage",
+      "success_status": 200,
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/mappings",
+      "category": "canonical",
+      "operation": "CorporateIdentityController.mappings",
+      "source": "backend/src/koinon/corporate_identity/controllers.py",
+      "line": 136,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "provider_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "q",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "status",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "all"
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "identity_mappings",
+      "sdk_typescript": "identity.mappings",
+      "sdk_java": "client.identity.mappings",
+      "request_schema": null,
+      "response_schema": "IdentityMappingPage",
+      "success_status": 200,
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/mappings",
+      "category": "canonical",
+      "operation": "CorporateIdentityController.mapping_create",
+      "source": "backend/src/koinon/corporate_identity/controllers.py",
+      "line": 159,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "provider_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[IdentityMappingInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "create_identity_mapping",
+      "sdk_typescript": "identity.createMapping",
+      "sdk_java": "client.identity.createMapping",
+      "request_schema": "IdentityMappingInput",
+      "response_schema": "IdentityMapping",
+      "success_status": 201,
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/mappings/{mapping_id}",
+      "category": "canonical",
+      "operation": "CorporateIdentityController.mapping_update",
+      "source": "backend/src/koinon/corporate_identity/controllers.py",
+      "line": 169,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "provider_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "mapping_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[IdentityMappingInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "update_identity_mapping",
+      "sdk_typescript": "identity.updateMapping",
+      "sdk_java": "client.identity.updateMapping",
+      "request_schema": "IdentityMappingInput",
+      "response_schema": "IdentityMapping",
+      "success_status": 200,
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/mappings/{mapping_id}",
+      "category": "canonical",
+      "operation": "CorporateIdentityController.mapping_remove",
+      "source": "backend/src/koinon/corporate_identity/controllers.py",
+      "line": 182,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "provider_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "mapping_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "expected_revision",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": true
+        }
+      ],
+      "return_annotation": "None",
+      "sdk_python": "remove_identity_mapping",
+      "sdk_typescript": "identity.removeMapping",
+      "sdk_java": "client.identity.removeMapping",
+      "request_schema": null,
+      "response_schema": "void",
+      "success_status": 204,
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/activate",
+      "category": "canonical",
+      "operation": "CorporateIdentityController.activate",
+      "source": "backend/src/koinon/corporate_identity/controllers.py",
+      "line": 195,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "provider_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[IdentityActivation]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "activate_identity_provider",
+      "sdk_typescript": "identity.activate",
+      "sdk_java": "client.identity.activate",
+      "request_schema": "IdentityActivation",
+      "response_schema": "IdentityProvider",
+      "success_status": 200,
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/disable",
+      "category": "canonical",
+      "operation": "CorporateIdentityController.disable",
+      "source": "backend/src/koinon/corporate_identity/controllers.py",
+      "line": 207,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "provider_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[IdentityRevision]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "disable_identity_provider",
+      "sdk_typescript": "identity.disable",
+      "sdk_java": "client.identity.disable",
+      "request_schema": "IdentityRevision",
+      "response_schema": "IdentityProvider",
+      "success_status": 200,
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/evidence/conversations",
+      "category": "canonical",
+      "operation": "EvidenceController.conversation",
+      "source": "backend/src/koinon/evidence/controllers.py",
+      "line": 21,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[MessageSelection]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "conversation_evidence",
+      "sdk_typescript": "evidence.conversation",
+      "sdk_java": "client.evidence.conversation",
+      "request_schema": "MessageSelection",
+      "response_schema": "EvidenceManifest",
+      "success_status": 200,
+      "source_sha256": "95cfd2e582d6f774143d610cb5d9e155819a578a324de1f05a34770ed610fe73",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/exports/reviews",
+      "category": "canonical",
+      "operation": "ExportController.review",
+      "source": "backend/src/koinon/exports/controllers.py",
+      "line": 32,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ExportReviewRequest]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "review_export",
+      "sdk_typescript": "exports.review",
+      "sdk_java": "client.exports.review",
+      "request_schema": "ExportReviewRequest",
+      "response_schema": "ExportReview",
+      "success_status": 201,
+      "source_sha256": "397ef3c46d85f5242b9d086b35e6424e771630aea19a40ddddf146526993deef",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/exports",
+      "category": "canonical",
+      "operation": "ExportController.create",
+      "source": "backend/src/koinon/exports/controllers.py",
+      "line": 41,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ExportCreate]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "create_export",
+      "sdk_typescript": "exports.create",
+      "sdk_java": "client.exports.create",
+      "request_schema": "ExportCreate",
+      "response_schema": "Export",
+      "success_status": 201,
+      "source_sha256": "397ef3c46d85f5242b9d086b35e6424e771630aea19a40ddddf146526993deef",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/exports",
+      "category": "canonical",
+      "operation": "ExportController.list",
+      "source": "backend/src/koinon/exports/controllers.py",
+      "line": 49,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "q",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "status",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "all"
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "exports",
+      "sdk_typescript": "exports.list",
+      "sdk_java": "client.exports.list",
+      "request_schema": null,
+      "response_schema": "ExportPage",
+      "success_status": 200,
+      "source_sha256": "397ef3c46d85f5242b9d086b35e6424e771630aea19a40ddddf146526993deef",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/exports/{export_id}",
+      "category": "canonical",
+      "operation": "ExportController.get",
+      "source": "backend/src/koinon/exports/controllers.py",
+      "line": 70,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "export_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "export",
+      "sdk_typescript": "exports.get",
+      "sdk_java": "client.exports.get",
+      "request_schema": null,
+      "response_schema": "Export",
+      "success_status": 200,
+      "source_sha256": "397ef3c46d85f5242b9d086b35e6424e771630aea19a40ddddf146526993deef",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/exports/{export_id}/download",
+      "category": "canonical",
+      "operation": "ExportController.download",
+      "source": "backend/src/koinon/exports/controllers.py",
+      "line": 76,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "export_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "export_download",
+      "sdk_typescript": "exports.download",
+      "sdk_java": "client.exports.download",
+      "request_schema": null,
+      "response_schema": "BinaryDownload",
+      "success_status": 200,
+      "source_sha256": "397ef3c46d85f5242b9d086b35e6424e771630aea19a40ddddf146526993deef",
+      "encoding": "binary",
+      "headers": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/tenants/{tenant_id}/exports/{export_id}",
+      "category": "canonical",
+      "operation": "ExportController.cancel",
+      "source": "backend/src/koinon/exports/controllers.py",
+      "line": 91,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "export_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "None",
+      "sdk_python": "cancel_export",
+      "sdk_typescript": "exports.cancel",
+      "sdk_java": "client.exports.cancel",
+      "request_schema": null,
+      "response_schema": "void",
+      "success_status": 204,
+      "source_sha256": "397ef3c46d85f5242b9d086b35e6424e771630aea19a40ddddf146526993deef",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/capabilities",
+      "category": "canonical",
+      "operation": "ChatAttachmentsController.capabilities",
+      "source": "backend/src/koinon/knowledge/attachments/controllers.py",
+      "line": 49,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "thread_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "AttachmentCapabilities",
+      "sdk_python": "attachment_capabilities",
+      "sdk_typescript": "chat.attachments.capabilities",
+      "sdk_java": "client.chatAttachments.capabilities",
+      "request_schema": null,
+      "response_schema": "AttachmentCapabilities",
+      "success_status": 200,
+      "source_sha256": "f2a07d34a1db6a0ab35a7550fe5ec47b49bda9879df8289eadc4f8f6074dfe79",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments",
+      "category": "canonical",
+      "operation": "ChatAttachmentsController.upload",
+      "source": "backend/src/koinon/knowledge/attachments/controllers.py",
+      "line": 57,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "thread_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "AttachmentView",
+      "sdk_python": "upload_attachment",
+      "sdk_typescript": "chat.attachments.upload",
+      "sdk_java": "client.chatAttachments.upload",
+      "request_schema": "AttachmentUpload",
+      "response_schema": "AttachmentView",
+      "success_status": 202,
+      "source_sha256": "f2a07d34a1db6a0ab35a7550fe5ec47b49bda9879df8289eadc4f8f6074dfe79",
+      "encoding": "multipart/form-data",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments",
+      "category": "canonical",
+      "operation": "ChatAttachmentsController.list_files",
+      "source": "backend/src/koinon/knowledge/attachments/controllers.py",
+      "line": 98,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "thread_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        },
+        {
+          "name": "q",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "status",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "kind",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "AttachmentPage",
+      "sdk_python": "attachments",
+      "sdk_typescript": "chat.attachments.list",
+      "sdk_java": "client.chatAttachments.list",
+      "request_schema": null,
+      "response_schema": "AttachmentPage",
+      "success_status": 200,
+      "source_sha256": "f2a07d34a1db6a0ab35a7550fe5ec47b49bda9879df8289eadc4f8f6074dfe79",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}",
+      "category": "canonical",
+      "operation": "ChatAttachmentsController.get",
+      "source": "backend/src/koinon/knowledge/attachments/controllers.py",
+      "line": 123,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "thread_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "attachment_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "AttachmentView",
+      "sdk_python": "attachment",
+      "sdk_typescript": "chat.attachments.get",
+      "sdk_java": "client.chatAttachments.get",
+      "request_schema": null,
+      "response_schema": "AttachmentView",
+      "success_status": 200,
+      "source_sha256": "f2a07d34a1db6a0ab35a7550fe5ec47b49bda9879df8289eadc4f8f6074dfe79",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}/original",
+      "category": "canonical",
+      "operation": "ChatAttachmentsController.original",
+      "source": "backend/src/koinon/knowledge/attachments/controllers.py",
+      "line": 131,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "thread_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "attachment_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "attachment_original",
+      "sdk_typescript": "chat.attachments.original",
+      "sdk_java": "client.chatAttachments.original",
+      "request_schema": null,
+      "response_schema": "BinaryDownload",
+      "success_status": 200,
+      "source_sha256": "f2a07d34a1db6a0ab35a7550fe5ec47b49bda9879df8289eadc4f8f6074dfe79",
+      "encoding": "binary",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}/chunks",
+      "category": "canonical",
+      "operation": "ChatAttachmentsController.chunks",
+      "source": "backend/src/koinon/knowledge/attachments/controllers.py",
+      "line": 149,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "thread_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "attachment_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        },
+        {
+          "name": "q",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        }
+      ],
+      "return_annotation": "PrivateChunkPage",
+      "sdk_python": "attachment_chunks",
+      "sdk_typescript": "chat.attachments.chunks",
+      "sdk_java": "client.chatAttachments.chunks",
+      "request_schema": null,
+      "response_schema": "PrivateChunkPage",
+      "success_status": 200,
+      "source_sha256": "f2a07d34a1db6a0ab35a7550fe5ec47b49bda9879df8289eadc4f8f6074dfe79",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}/cancel",
+      "category": "canonical",
+      "operation": "ChatAttachmentsController.cancel",
+      "source": "backend/src/koinon/knowledge/attachments/controllers.py",
+      "line": 172,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "thread_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "attachment_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[AttachmentRevision]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "AttachmentView",
+      "sdk_python": "cancel_attachment",
+      "sdk_typescript": "chat.attachments.cancel",
+      "sdk_java": "client.chatAttachments.cancel",
+      "request_schema": "AttachmentRevision",
+      "response_schema": "AttachmentView",
+      "success_status": 200,
+      "source_sha256": "f2a07d34a1db6a0ab35a7550fe5ec47b49bda9879df8289eadc4f8f6074dfe79",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}/retry",
+      "category": "canonical",
+      "operation": "ChatAttachmentsController.retry",
+      "source": "backend/src/koinon/knowledge/attachments/controllers.py",
+      "line": 190,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "thread_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "attachment_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[AttachmentRevision]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "AttachmentView",
+      "sdk_python": "retry_attachment",
+      "sdk_typescript": "chat.attachments.retry",
+      "sdk_java": "client.chatAttachments.retry",
+      "request_schema": "AttachmentRevision",
+      "response_schema": "AttachmentView",
+      "success_status": 202,
+      "source_sha256": "f2a07d34a1db6a0ab35a7550fe5ec47b49bda9879df8289eadc4f8f6074dfe79",
+      "encoding": "application/json",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}",
+      "category": "canonical",
+      "operation": "ChatAttachmentsController.delete",
+      "source": "backend/src/koinon/knowledge/attachments/controllers.py",
+      "line": 209,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "thread_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "attachment_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "expected_revision",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "remove_attachment",
+      "sdk_typescript": "chat.attachments.remove",
+      "sdk_java": "client.chatAttachments.remove",
+      "request_schema": null,
+      "response_schema": "void",
+      "success_status": 204,
+      "source_sha256": "f2a07d34a1db6a0ab35a7550fe5ec47b49bda9879df8289eadc4f8f6074dfe79",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}/knowledge",
+      "category": "canonical",
+      "operation": "ChatAttachmentsController.knowledge",
+      "source": "backend/src/koinon/knowledge/attachments/controllers.py",
+      "line": 228,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "thread_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "attachment_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[AttachmentPromotionInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "AttachmentPromotionView",
+      "sdk_python": "promote_attachment",
+      "sdk_typescript": "chat.attachments.promote",
+      "sdk_java": "client.chatAttachments.promote",
+      "request_schema": "AttachmentPromotionInput",
+      "response_schema": "AttachmentPromotionView",
+      "success_status": 201,
+      "source_sha256": "f2a07d34a1db6a0ab35a7550fe5ec47b49bda9879df8289eadc4f8f6074dfe79",
+      "encoding": "application/json",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-roles",
+      "category": "canonical",
+      "operation": "KnowledgeConnectionsController.roles",
+      "source": "backend/src/koinon/knowledge/connections/controllers.py",
+      "line": 29,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "knowledge_roles",
+      "sdk_typescript": "knowledgeConnections.roles",
+      "sdk_java": "client.knowledgeConnections.roles",
+      "request_schema": null,
+      "response_schema": "KnowledgeRoles",
+      "success_status": 200,
+      "source_sha256": "98f30985358551a7fa1b1a08e51670f535401a485b435dae3f028c45999c8dc8",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-connections",
+      "category": "canonical",
+      "operation": "KnowledgeConnectionsController.list_connections",
+      "source": "backend/src/koinon/knowledge/connections/controllers.py",
+      "line": 37,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "knowledge_connections",
+      "sdk_typescript": "knowledgeConnections.list",
+      "sdk_java": "client.knowledgeConnections.list",
+      "request_schema": null,
+      "response_schema": "Page[KnowledgeConnection]",
+      "success_status": 200,
+      "source_sha256": "98f30985358551a7fa1b1a08e51670f535401a485b435dae3f028c45999c8dc8",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-connections",
+      "category": "canonical",
+      "operation": "KnowledgeConnectionsController.create",
+      "source": "backend/src/koinon/knowledge/connections/controllers.py",
+      "line": 47,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ConnectionInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "create_knowledge_connection",
+      "sdk_typescript": "knowledgeConnections.create",
+      "sdk_java": "client.knowledgeConnections.create",
+      "request_schema": "KnowledgeConnectionInput",
+      "response_schema": "KnowledgeConnection",
+      "success_status": 201,
+      "source_sha256": "98f30985358551a7fa1b1a08e51670f535401a485b435dae3f028c45999c8dc8",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-connections/{connection_id}",
+      "category": "canonical",
+      "operation": "KnowledgeConnectionsController.update",
+      "source": "backend/src/koinon/knowledge/connections/controllers.py",
+      "line": 55,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "connection_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ConnectionInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "update_knowledge_connection",
+      "sdk_typescript": "knowledgeConnections.update",
+      "sdk_java": "client.knowledgeConnections.update",
+      "request_schema": "KnowledgeConnectionInput",
+      "response_schema": "KnowledgeConnection",
+      "success_status": 200,
+      "source_sha256": "98f30985358551a7fa1b1a08e51670f535401a485b435dae3f028c45999c8dc8",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-connections/{connection_id}",
+      "category": "canonical",
+      "operation": "KnowledgeConnectionsController.get",
+      "source": "backend/src/koinon/knowledge/connections/controllers.py",
+      "line": 67,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "connection_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "knowledge_connection",
+      "sdk_typescript": "knowledgeConnections.get",
+      "sdk_java": "client.knowledgeConnections.get",
+      "request_schema": null,
+      "response_schema": "KnowledgeConnection",
+      "success_status": 200,
+      "source_sha256": "98f30985358551a7fa1b1a08e51670f535401a485b435dae3f028c45999c8dc8",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-connections/{connection_id}",
+      "category": "canonical",
+      "operation": "KnowledgeConnectionsController.delete",
+      "source": "backend/src/koinon/knowledge/connections/controllers.py",
+      "line": 71,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "connection_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "expected_revision",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "delete_knowledge_connection",
+      "sdk_typescript": "knowledgeConnections.remove",
+      "sdk_java": "client.knowledgeConnections.remove",
+      "request_schema": null,
+      "response_schema": "Deleted",
+      "success_status": 200,
+      "source_sha256": "98f30985358551a7fa1b1a08e51670f535401a485b435dae3f028c45999c8dc8",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/sources/upload",
+      "category": "canonical",
+      "operation": "KnowledgeController.upload",
+      "source": "backend/src/koinon/knowledge/controllers.py",
+      "line": 32,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "upload",
+      "sdk_typescript": "sources.uploadFile",
+      "sdk_java": "client.sources.upload",
+      "request_schema": "SourceUpload",
+      "response_schema": "UploadResponse",
+      "success_status": 201,
+      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
+      "encoding": "multipart/form-data",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/search",
+      "category": "canonical",
+      "operation": "KnowledgeController.search",
+      "source": "backend/src/koinon/knowledge/controllers.py",
+      "line": 81,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[SearchInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "search",
+      "sdk_typescript": "search",
+      "sdk_java": "client.knowledge.search",
+      "request_schema": "SearchRequest",
+      "response_schema": "SearchResponse",
+      "success_status": 200,
+      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/query",
+      "category": "canonical",
+      "operation": "KnowledgeController.query",
+      "source": "backend/src/koinon/knowledge/controllers.py",
+      "line": 87,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[QueryInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "query",
+      "sdk_typescript": "query",
+      "sdk_java": "client.knowledge.query",
+      "request_schema": "QueryRequest",
+      "response_schema": "QueryResponse",
+      "success_status": 200,
+      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/datasets/{dataset_id}/schema",
+      "category": "canonical",
+      "operation": "KnowledgeController.schema",
+      "source": "backend/src/koinon/knowledge/controllers.py",
+      "line": 95,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "dataset_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "schema",
+      "sdk_typescript": "dataset.schema",
+      "sdk_java": "client.datasets.schema",
+      "request_schema": null,
+      "response_schema": "DatasetSchema",
+      "success_status": 200,
+      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/lineage",
+      "category": "canonical",
+      "operation": "KnowledgeController.lineage",
+      "source": "backend/src/koinon/knowledge/controllers.py",
+      "line": 99,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "asset_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "lineage",
+      "sdk_typescript": "lineage",
+      "sdk_java": "client.knowledge.lineage",
+      "request_schema": null,
+      "response_schema": "Lineage",
+      "success_status": 200,
+      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/documents/{document_id}/chunks",
+      "category": "canonical",
+      "operation": "KnowledgeController.document_chunks",
+      "source": "backend/src/koinon/knowledge/controllers.py",
+      "line": 105,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "document_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "offset",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "limit",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 50
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "section",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "q",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "document_chunks",
+      "sdk_typescript": "documents.chunks",
+      "sdk_java": "client.documents.chunks",
+      "request_schema": null,
+      "response_schema": "DocumentChunks",
+      "success_status": 200,
+      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/documents/{document_id}/original",
+      "category": "canonical",
+      "operation": "KnowledgeController.document_original",
+      "source": "backend/src/koinon/knowledge/controllers.py",
+      "line": 128,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "document_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "document_download",
+      "sdk_typescript": "documents.download",
+      "sdk_java": "client.documents.original",
+      "request_schema": null,
+      "response_schema": "BinaryDownload",
+      "success_status": 200,
+      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
+      "encoding": "binary",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/documents/{document_id}/reingest",
+      "category": "canonical",
+      "operation": "ContentController.reingest_document",
+      "source": "backend/src/koinon/knowledge/controllers.py",
+      "line": 188,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "document_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[DocumentReingestInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "reingest_document",
+      "sdk_typescript": "documents.reingest",
+      "sdk_java": "client.documents.reingest",
+      "request_schema": "DocumentReingestInput",
+      "response_schema": "ContentUpdate",
+      "success_status": 201,
+      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
+      "encoding": "application/json",
+      "headers": [
+        "If-Match (unquoted digest/snapshot helper argument; quoted wire header)",
+        "X-Koinon-Source-Version (optional UUID paired with extraction)",
+        "X-Koinon-Extraction (optional ingestion UUID paired with source version)"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/reingest",
+      "category": "canonical",
+      "operation": "ContentController.reingest_table",
+      "source": "backend/src/koinon/knowledge/controllers.py",
+      "line": 210,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "dataset_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "table_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[TableReingestInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "reingest_table",
+      "sdk_typescript": "dataset.reingestTable",
+      "sdk_java": "client.datasets.reingestTable",
+      "request_schema": "TableReingestInput",
+      "response_schema": "ContentUpdate",
+      "success_status": 201,
+      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
+      "encoding": "application/json",
+      "headers": [
+        "If-Match (unquoted digest/snapshot helper argument; quoted wire header)"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/documents/{document_id}/content",
+      "category": "canonical",
+      "operation": "ContentController.document",
+      "source": "backend/src/koinon/knowledge/controllers.py",
+      "line": 227,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "document_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "replace_document",
+      "sdk_typescript": "documents.replace",
+      "sdk_java": "client.documents.replace",
+      "request_schema": "DocumentReplacement",
+      "response_schema": "ContentUpdate",
+      "success_status": 201,
+      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
+      "encoding": "multipart/form-data",
+      "headers": [
+        "If-Match (unquoted digest/snapshot helper argument; quoted wire header)",
+        "X-Koinon-Source-Version (optional UUID paired with extraction)",
+        "X-Koinon-Extraction (optional ingestion UUID paired with source version)"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/content",
+      "category": "canonical",
+      "operation": "ContentController.table",
+      "source": "backend/src/koinon/knowledge/controllers.py",
+      "line": 253,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "dataset_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "table_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "replace_table",
+      "sdk_typescript": "dataset.replaceTable",
+      "sdk_java": "client.datasets.replaceTable",
+      "request_schema": "TableReplacement",
+      "response_schema": "ContentUpdate",
+      "success_status": 201,
+      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
+      "encoding": "multipart/form-data",
+      "headers": [
+        "If-Match (unquoted digest/snapshot helper argument; quoted wire header)"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-intents",
+      "category": "canonical",
+      "operation": "CuratedKnowledgeController.preview",
+      "source": "backend/src/koinon/knowledge/curated/controllers.py",
+      "line": 22,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[KnowledgeIntentInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "preview_knowledge",
+      "sdk_typescript": "knowledgeIntents.preview",
+      "sdk_java": "client.knowledgeIntents.preview",
+      "request_schema": "KnowledgeIntentInput",
+      "response_schema": "KnowledgeIntent",
+      "success_status": 201,
+      "source_sha256": "c2b842b54a37b4d6672396ea9a3cc7e30a46fafc6bf8e7cdd8176f01c6618f56",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-intents/{intent_id}",
+      "category": "canonical",
+      "operation": "CuratedKnowledgeController.intent",
+      "source": "backend/src/koinon/knowledge/curated/controllers.py",
+      "line": 33,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "intent_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "knowledge_intent",
+      "sdk_typescript": "knowledgeIntents.get",
+      "sdk_java": "client.knowledgeIntents.get",
+      "request_schema": null,
+      "response_schema": "KnowledgeIntent",
+      "success_status": 200,
+      "source_sha256": "c2b842b54a37b4d6672396ea9a3cc7e30a46fafc6bf8e7cdd8176f01c6618f56",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-intents/{intent_id}/confirm",
+      "category": "canonical",
+      "operation": "CuratedKnowledgeController.confirm",
+      "source": "backend/src/koinon/knowledge/curated/controllers.py",
+      "line": 41,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "intent_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[KnowledgeConfirmation]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "confirm_knowledge",
+      "sdk_typescript": "knowledgeIntents.confirm",
+      "sdk_java": "client.knowledgeIntents.confirm",
+      "request_schema": "KnowledgeConfirmation",
+      "response_schema": "KnowledgeCommitOutcome",
+      "success_status": 200,
+      "source_sha256": "c2b842b54a37b4d6672396ea9a3cc7e30a46fafc6bf8e7cdd8176f01c6618f56",
+      "success_statuses": [
+        200,
+        202
+      ],
+      "encoding": "application/json",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-intents/{intent_id}/cancel",
+      "category": "canonical",
+      "operation": "CuratedKnowledgeController.cancel",
+      "source": "backend/src/koinon/knowledge/curated/controllers.py",
+      "line": 58,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "intent_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[KnowledgeCancellation]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "cancel_knowledge",
+      "sdk_typescript": "knowledgeIntents.cancel",
+      "sdk_java": "client.knowledgeIntents.cancel",
+      "request_schema": "KnowledgeCancellation",
+      "response_schema": "KnowledgeIntent",
+      "success_status": 200,
+      "source_sha256": "c2b842b54a37b4d6672396ea9a3cc7e30a46fafc6bf8e7cdd8176f01c6618f56",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-items",
+      "category": "canonical",
+      "operation": "CuratedKnowledgeController.list",
+      "source": "backend/src/koinon/knowledge/curated/controllers.py",
+      "line": 72,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "project_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "destination_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "q",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "knowledge_items",
+      "sdk_typescript": "knowledgeItems.list",
+      "sdk_java": "client.knowledgeItems.list",
+      "request_schema": null,
+      "response_schema": "KnowledgeItemPage",
+      "success_status": 200,
+      "source_sha256": "c2b842b54a37b4d6672396ea9a3cc7e30a46fafc6bf8e7cdd8176f01c6618f56",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-items/{item_id}",
+      "category": "canonical",
+      "operation": "CuratedKnowledgeController.get",
+      "source": "backend/src/koinon/knowledge/curated/controllers.py",
+      "line": 97,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "item_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "knowledge_item",
+      "sdk_typescript": "knowledgeItems.get",
+      "sdk_java": "client.knowledgeItems.get",
+      "request_schema": null,
+      "response_schema": "KnowledgeItemView",
+      "success_status": 200,
+      "source_sha256": "c2b842b54a37b4d6672396ea9a3cc7e30a46fafc6bf8e7cdd8176f01c6618f56",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-items/{item_id}/versions/{version}",
+      "category": "canonical",
+      "operation": "CuratedKnowledgeController.version",
+      "source": "backend/src/koinon/knowledge/curated/controllers.py",
+      "line": 103,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "item_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "version",
+          "annotation": "PathVar[int]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "knowledge_version",
+      "sdk_typescript": "knowledgeItems.version",
+      "sdk_java": "client.knowledgeItems.version",
+      "request_schema": null,
+      "response_schema": "KnowledgeItemView",
+      "success_status": 200,
+      "source_sha256": "c2b842b54a37b4d6672396ea9a3cc7e30a46fafc6bf8e7cdd8176f01c6618f56",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/datasets/{dataset_id}/files",
+      "category": "canonical",
+      "operation": "DatasetFilesController.append",
+      "source": "backend/src/koinon/knowledge/dataset_append_controller.py",
+      "line": 22,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "dataset_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "append_dataset_file",
+      "sdk_typescript": "dataset.appendFile",
+      "sdk_java": "client.datasets.appendFile",
+      "request_schema": "DatasetFileUpload",
+      "response_schema": "DatasetFileAppendResult",
+      "success_status": 201,
+      "source_sha256": "a0f9332f6af606eb2ac9dee13b363bc1f5c9f6fc312d67b92ac8286164853eb2",
+      "encoding": "multipart/form-data",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-indexes",
+      "category": "canonical",
+      "operation": "KnowledgeIndexesController.list_indexes",
+      "source": "backend/src/koinon/knowledge/indexes/controllers.py",
+      "line": 34,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": true
+        },
+        {
+          "name": "domain",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": true
+        },
+        {
+          "name": "limit",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "status",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "dimensions",
+          "annotation": "QueryParam[int | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "model_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "provider_kind",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "IndexPage",
+      "sdk_python": "knowledge_indexes",
+      "sdk_typescript": "knowledgeIndexes.list",
+      "sdk_java": "client.knowledgeIndexes.list",
+      "request_schema": null,
+      "response_schema": "IndexPage",
+      "success_status": 200,
+      "source_sha256": "290184a3a98ee053c685543baa405ab1b40071f064b1c4f9f6b7831ae4c9b014",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-index-choices",
+      "category": "canonical",
+      "operation": "KnowledgeIndexesController.choices",
+      "source": "backend/src/koinon/knowledge/indexes/controllers.py",
+      "line": 63,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": true
+        },
+        {
+          "name": "domain",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": true
+        },
+        {
+          "name": "limit",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "status",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "dimensions",
+          "annotation": "QueryParam[int | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "model_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "provider_kind",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "NativeIndexPage",
+      "sdk_python": "native_index_choices",
+      "sdk_typescript": "knowledgeIndexes.choices",
+      "sdk_java": "client.knowledgeIndexes.choices",
+      "request_schema": null,
+      "response_schema": "NativeIndexPage",
+      "success_status": 200,
+      "source_sha256": "290184a3a98ee053c685543baa405ab1b40071f064b1c4f9f6b7831ae4c9b014",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-index-choices/{choice_id}",
+      "category": "canonical",
+      "operation": "KnowledgeIndexesController.choice",
+      "source": "backend/src/koinon/knowledge/indexes/controllers.py",
+      "line": 92,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "choice_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": true
+        },
+        {
+          "name": "domain",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": true
+        }
+      ],
+      "return_annotation": "NativeIndexChoice",
+      "sdk_python": "native_index_choice",
+      "sdk_typescript": "knowledgeIndexes.choice",
+      "sdk_java": "client.knowledgeIndexes.choice",
+      "request_schema": null,
+      "response_schema": "NativeIndexChoice",
+      "success_status": 200,
+      "source_sha256": "290184a3a98ee053c685543baa405ab1b40071f064b1c4f9f6b7831ae4c9b014",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-indexes/{index_id}",
+      "category": "canonical",
+      "operation": "KnowledgeIndexesController.get",
+      "source": "backend/src/koinon/knowledge/indexes/controllers.py",
+      "line": 111,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "index_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "KnowledgeIndexView",
+      "sdk_python": "knowledge_index",
+      "sdk_typescript": "knowledgeIndexes.get",
+      "sdk_java": "client.knowledgeIndexes.get",
+      "request_schema": null,
+      "response_schema": "KnowledgeIndexView",
+      "success_status": 200,
+      "source_sha256": "290184a3a98ee053c685543baa405ab1b40071f064b1c4f9f6b7831ae4c9b014",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-indexes/plan",
+      "category": "canonical",
+      "operation": "KnowledgeIndexesController.plan",
+      "source": "backend/src/koinon/knowledge/indexes/controllers.py",
+      "line": 119,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[IndexPlanInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "IndexPlanView",
+      "sdk_python": "plan_knowledge_index",
+      "sdk_typescript": "knowledgeIndexes.plan",
+      "sdk_java": "client.knowledgeIndexes.plan",
+      "request_schema": "IndexPlanInput",
+      "response_schema": "IndexPlanView",
+      "success_status": 200,
+      "source_sha256": "290184a3a98ee053c685543baa405ab1b40071f064b1c4f9f6b7831ae4c9b014",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-indexes",
+      "category": "canonical",
+      "operation": "KnowledgeIndexesController.create",
+      "source": "backend/src/koinon/knowledge/indexes/controllers.py",
+      "line": 127,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[IndexCreateInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "IndexJobView",
+      "sdk_python": "create_knowledge_index",
+      "sdk_typescript": "knowledgeIndexes.create",
+      "sdk_java": "client.knowledgeIndexes.create",
+      "request_schema": "IndexCreateInput",
+      "response_schema": "IndexJobView",
+      "success_status": 202,
+      "source_sha256": "290184a3a98ee053c685543baa405ab1b40071f064b1c4f9f6b7831ae4c9b014",
+      "encoding": "application/json",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-indexes/{index_id}/activate",
+      "category": "canonical",
+      "operation": "KnowledgeIndexesController.activate",
+      "source": "backend/src/koinon/knowledge/indexes/controllers.py",
+      "line": 140,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "index_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[IndexActivateInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "KnowledgeIndexView",
+      "sdk_python": "activate_knowledge_index",
+      "sdk_typescript": "knowledgeIndexes.activate",
+      "sdk_java": "client.knowledgeIndexes.activate",
+      "request_schema": "IndexActivateInput",
+      "response_schema": "KnowledgeIndexView",
+      "success_status": 200,
+      "source_sha256": "290184a3a98ee053c685543baa405ab1b40071f064b1c4f9f6b7831ae4c9b014",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-indexes/{index_id}/cancel",
+      "category": "canonical",
+      "operation": "KnowledgeIndexesController.cancel",
+      "source": "backend/src/koinon/knowledge/indexes/controllers.py",
+      "line": 154,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "index_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[IndexRevisionInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "KnowledgeIndexView",
+      "sdk_python": "cancel_knowledge_index",
+      "sdk_typescript": "knowledgeIndexes.cancel",
+      "sdk_java": "client.knowledgeIndexes.cancel",
+      "request_schema": "IndexRevisionInput",
+      "response_schema": "KnowledgeIndexView",
+      "success_status": 200,
+      "source_sha256": "290184a3a98ee053c685543baa405ab1b40071f064b1c4f9f6b7831ae4c9b014",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-indexes/{index_id}/resume",
+      "category": "canonical",
+      "operation": "KnowledgeIndexesController.resume",
+      "source": "backend/src/koinon/knowledge/indexes/controllers.py",
+      "line": 168,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "index_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[IndexRevisionInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "IndexJobView",
+      "sdk_python": "resume_knowledge_index",
+      "sdk_typescript": "knowledgeIndexes.resume",
+      "sdk_java": "client.knowledgeIndexes.resume",
+      "request_schema": "IndexRevisionInput",
+      "response_schema": "IndexJobView",
+      "success_status": 202,
+      "source_sha256": "290184a3a98ee053c685543baa405ab1b40071f064b1c4f9f6b7831ae4c9b014",
+      "encoding": "application/json",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/provenance",
+      "category": "canonical",
+      "operation": "TableProvenanceController.snapshot",
+      "source": "backend/src/koinon/knowledge/provenance/controllers.py",
+      "line": 19,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "dataset_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "table_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "snapshot_id",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": true
+        }
+      ],
+      "return_annotation": "TableProvenance",
+      "sdk_python": "table_provenance",
+      "sdk_typescript": "dataset.tableProvenance",
+      "sdk_java": "client.datasets.tableProvenance",
+      "request_schema": null,
+      "response_schema": "TableProvenance",
+      "success_status": 200,
+      "source_sha256": "d22e854a45df9bc2164d84e79cf21cc2661989d4114c6bfe6add1f1c877c2bd1",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/snapshots",
+      "category": "canonical",
+      "operation": "TableProvenanceController.history",
+      "source": "backend/src/koinon/knowledge/provenance/controllers.py",
+      "line": 32,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "dataset_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "table_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "TableSnapshotPage",
+      "sdk_python": "table_snapshots",
+      "sdk_typescript": "dataset.tableSnapshots",
+      "sdk_java": "client.datasets.tableSnapshots",
+      "request_schema": null,
+      "response_schema": "TableSnapshotPage",
+      "success_status": 200,
+      "source_sha256": "d22e854a45df9bc2164d84e79cf21cc2661989d4114c6bfe6add1f1c877c2bd1",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates",
+      "category": "canonical",
+      "operation": "TableCoordinateController.manifest",
+      "source": "backend/src/koinon/knowledge/provenance/coordinate_controllers.py",
+      "line": 25,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "dataset_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "table_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "snapshot_id",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": true
+        }
+      ],
+      "return_annotation": "TableCoordinateManifest",
+      "sdk_python": "table_coordinates",
+      "sdk_typescript": "dataset.tableCoordinates",
+      "sdk_java": "client.datasets.tableCoordinates",
+      "request_schema": null,
+      "response_schema": "TableCoordinateManifest",
+      "success_status": 200,
+      "source_sha256": "d759c25229cdf4d1a0f99b628cd660604272935cddb743f5c3b86c5940ab9bc1",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates/cells",
+      "category": "canonical",
+      "operation": "TableCoordinateController.cells",
+      "source": "backend/src/koinon/knowledge/provenance/coordinate_controllers.py",
+      "line": 38,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "dataset_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "table_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[CoordinateCellRequest]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "TableCoordinateSelection",
+      "sdk_python": "table_coordinate_cells",
+      "sdk_typescript": "dataset.tableCoordinateCells",
+      "sdk_java": "client.datasets.tableCoordinateCells",
+      "request_schema": "CoordinateCellRequest",
+      "response_schema": "TableCoordinateSelection",
+      "success_status": 200,
+      "source_sha256": "d759c25229cdf4d1a0f99b628cd660604272935cddb743f5c3b86c5940ab9bc1",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates/rows",
+      "category": "canonical",
+      "operation": "TableCoordinateController.rows",
+      "source": "backend/src/koinon/knowledge/provenance/coordinate_controllers.py",
+      "line": 51,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "dataset_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "table_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "snapshot_id",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": true
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "TableRowRangePage",
+      "sdk_python": "table_coordinate_rows",
+      "sdk_typescript": "dataset.tableCoordinateRows",
+      "sdk_java": "client.datasets.tableCoordinateRows",
+      "request_schema": null,
+      "response_schema": "TableRowRangePage",
+      "success_status": 200,
+      "source_sha256": "d759c25229cdf4d1a0f99b628cd660604272935cddb743f5c3b86c5940ab9bc1",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates/columns",
+      "category": "canonical",
+      "operation": "TableCoordinateController.columns",
+      "source": "backend/src/koinon/knowledge/provenance/coordinate_controllers.py",
+      "line": 72,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "dataset_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "table_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "snapshot_id",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": true
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "TableColumnBindingPage",
+      "sdk_python": "table_coordinate_columns",
+      "sdk_typescript": "dataset.tableCoordinateColumns",
+      "sdk_java": "client.datasets.tableCoordinateColumns",
+      "request_schema": null,
+      "response_schema": "TableColumnBindingPage",
+      "success_status": 200,
+      "source_sha256": "d759c25229cdf4d1a0f99b628cd660604272935cddb743f5c3b86c5940ab9bc1",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/profile",
+      "category": "canonical",
+      "operation": "ProfileController.get",
+      "source": "backend/src/koinon/profiles/controllers.py",
+      "line": 50,
+      "parameters": [],
+      "return_annotation": "dict",
+      "sdk_python": "profile",
+      "sdk_typescript": "profile.get",
+      "sdk_java": "client.profile.get",
+      "request_schema": null,
+      "response_schema": "UserProfile",
+      "success_status": 200,
+      "source_sha256": "9edd084d7930a5e757937bcd579fabc4f163501c49c81d0d76473c2a52db5ecb",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/profile",
+      "category": "canonical",
+      "operation": "ProfileController.update",
+      "source": "backend/src/koinon/profiles/controllers.py",
+      "line": 56,
+      "parameters": [
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ProfileInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "update_profile",
+      "sdk_typescript": "profile.update",
+      "sdk_java": "client.profile.update",
+      "request_schema": "ProfileUpdate",
+      "response_schema": "UserProfile",
+      "success_status": 200,
+      "source_sha256": "9edd084d7930a5e757937bcd579fabc4f163501c49c81d0d76473c2a52db5ecb",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/profile/avatar",
+      "category": "canonical",
+      "operation": "ProfileController.avatar",
+      "source": "backend/src/koinon/profiles/controllers.py",
+      "line": 63,
+      "parameters": [],
+      "return_annotation": "Response",
+      "sdk_python": "avatar_download",
+      "sdk_typescript": "profile.avatarDownload",
+      "sdk_java": "client.profile.avatar",
+      "request_schema": null,
+      "response_schema": "BinaryDownload",
+      "success_status": 200,
+      "source_sha256": "9edd084d7930a5e757937bcd579fabc4f163501c49c81d0d76473c2a52db5ecb",
+      "encoding": "binary",
+      "headers": [
+        "If-None-Match (optional; avatars only)"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/profile/avatar",
+      "category": "canonical",
+      "operation": "ProfileController.set_avatar",
+      "source": "backend/src/koinon/profiles/controllers.py",
+      "line": 68,
+      "parameters": [],
+      "return_annotation": "dict",
+      "sdk_python": "set_avatar",
+      "sdk_typescript": "profile.uploadAvatar",
+      "sdk_java": "client.profile.uploadAvatar",
+      "request_schema": "AvatarUpload",
+      "response_schema": "UserProfile",
+      "success_status": 200,
+      "source_sha256": "9edd084d7930a5e757937bcd579fabc4f163501c49c81d0d76473c2a52db5ecb",
+      "encoding": "image/png|image/jpeg|image/webp",
+      "headers": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/profile/avatar",
+      "category": "canonical",
+      "operation": "ProfileController.delete_avatar",
+      "source": "backend/src/koinon/profiles/controllers.py",
+      "line": 85,
+      "parameters": [],
+      "return_annotation": "dict",
+      "sdk_python": "delete_avatar",
+      "sdk_typescript": "profile.deleteAvatar",
+      "sdk_java": "client.profile.deleteAvatar",
+      "request_schema": null,
+      "response_schema": "UserProfile",
+      "success_status": 200,
+      "source_sha256": "9edd084d7930a5e757937bcd579fabc4f163501c49c81d0d76473c2a52db5ecb",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/people",
+      "category": "canonical",
+      "operation": "ProfileController.people",
+      "source": "backend/src/koinon/profiles/controllers.py",
+      "line": 90,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "q",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "limit",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 20
+        },
+        {
+          "name": "after",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "people",
+      "sdk_typescript": "people.list",
+      "sdk_java": "client.people.list",
+      "request_schema": null,
+      "response_schema": "Page[Person]",
+      "success_status": 200,
+      "source_sha256": "9edd084d7930a5e757937bcd579fabc4f163501c49c81d0d76473c2a52db5ecb",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/people/{profile_id}/avatar",
+      "category": "canonical",
+      "operation": "ProfileController.person_avatar",
+      "source": "backend/src/koinon/profiles/controllers.py",
+      "line": 108,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "profile_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "person_avatar",
+      "sdk_typescript": "people.avatar",
+      "sdk_java": "client.people.avatar",
+      "request_schema": null,
+      "response_schema": "BinaryDownload",
+      "success_status": 200,
+      "source_sha256": "9edd084d7930a5e757937bcd579fabc4f163501c49c81d0d76473c2a52db5ecb",
+      "encoding": "binary",
+      "headers": [
+        "If-None-Match (optional; avatars only)"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/shares/reviews",
+      "category": "canonical",
+      "operation": "ShareController.review",
+      "source": "backend/src/koinon/sharing/controllers.py",
+      "line": 32,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ShareReviewInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "review_share",
+      "sdk_typescript": "shares.review",
+      "sdk_java": "client.shares.review",
+      "request_schema": "ShareReviewInput",
+      "response_schema": "ShareReview",
+      "success_status": 201,
+      "source_sha256": "21b4c891e79bd778f6cda460b19de0604c65905193342c0e16918bc700d95213",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/shares",
+      "category": "canonical",
+      "operation": "ShareController.create",
+      "source": "backend/src/koinon/sharing/controllers.py",
+      "line": 40,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ShareCreate]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "create_share",
+      "sdk_typescript": "shares.create",
+      "sdk_java": "client.shares.create",
+      "request_schema": "ShareCreate",
+      "response_schema": "Share",
+      "success_status": 201,
+      "source_sha256": "21b4c891e79bd778f6cda460b19de0604c65905193342c0e16918bc700d95213",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/shares",
+      "category": "canonical",
+      "operation": "ShareController.list",
+      "source": "backend/src/koinon/sharing/controllers.py",
+      "line": 48,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "q",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "status",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "all"
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "shares",
+      "sdk_typescript": "shares.list",
+      "sdk_java": "client.shares.list",
+      "request_schema": null,
+      "response_schema": "SharePage",
+      "success_status": 200,
+      "source_sha256": "21b4c891e79bd778f6cda460b19de0604c65905193342c0e16918bc700d95213",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/shares/{share_id}",
+      "category": "canonical",
+      "operation": "ShareController.get",
+      "source": "backend/src/koinon/sharing/controllers.py",
+      "line": 69,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "share_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "share",
+      "sdk_typescript": "shares.get",
+      "sdk_java": "client.shares.get",
+      "request_schema": null,
+      "response_schema": "SharedConversation",
+      "success_status": 200,
+      "source_sha256": "21b4c891e79bd778f6cda460b19de0604c65905193342c0e16918bc700d95213",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/tenants/{tenant_id}/shares/{share_id}",
+      "category": "canonical",
+      "operation": "ShareController.revoke",
+      "source": "backend/src/koinon/sharing/controllers.py",
+      "line": 81,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "share_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "None",
+      "sdk_python": "revoke_share",
+      "sdk_typescript": "shares.revoke",
+      "sdk_java": "client.shares.revoke",
+      "request_schema": null,
+      "response_schema": "void",
+      "success_status": 204,
+      "source_sha256": "21b4c891e79bd778f6cda460b19de0604c65905193342c0e16918bc700d95213",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tokens",
+      "category": "canonical",
+      "operation": "PersonalTokenController.list",
+      "source": "backend/src/koinon/tokens/controllers.py",
+      "line": 38,
+      "parameters": [
+        {
+          "name": "q",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "status",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "all"
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        },
+        {
+          "name": "sort",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "created_at"
+        },
+        {
+          "name": "order",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "desc"
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "tokens",
+      "sdk_typescript": "tokens.list",
+      "sdk_java": "client.tokens.list",
+      "request_schema": null,
+      "response_schema": "Page[PersonalToken]",
+      "success_status": 200,
+      "source_sha256": "28820a6b2d6d8ac06c34dfc982ae8156a1e15091279ab5a60fb225d039ca242c",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tokens/scopes",
+      "category": "canonical",
+      "operation": "PersonalTokenController.scopes",
+      "source": "backend/src/koinon/tokens/controllers.py",
+      "line": 59,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "token_scopes",
+      "sdk_typescript": "tokens.scopes",
+      "sdk_java": "client.tokens.scopes",
+      "request_schema": null,
+      "response_schema": "TokenScopeOptions",
+      "success_status": 200,
+      "source_sha256": "28820a6b2d6d8ac06c34dfc982ae8156a1e15091279ab5a60fb225d039ca242c",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tokens",
+      "category": "canonical",
+      "operation": "PersonalTokenController.create",
+      "source": "backend/src/koinon/tokens/controllers.py",
+      "line": 65,
+      "parameters": [
+        {
+          "name": "body",
+          "annotation": "Valid[Body[TokenInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "create_token",
+      "sdk_typescript": "tokens.create",
+      "sdk_java": "client.tokens.create",
+      "request_schema": "TokenInput",
+      "response_schema": "TokenCreated",
+      "success_status": 201,
+      "source_sha256": "28820a6b2d6d8ac06c34dfc982ae8156a1e15091279ab5a60fb225d039ca242c",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/tokens/{token_id}",
+      "category": "canonical",
+      "operation": "PersonalTokenController.revoke",
+      "source": "backend/src/koinon/tokens/controllers.py",
+      "line": 69,
+      "parameters": [
+        {
+          "name": "token_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": null,
+      "sdk_python": "revoke_token",
+      "sdk_typescript": "tokens.revoke",
+      "sdk_java": "client.tokens.revoke",
+      "request_schema": null,
+      "response_schema": "void",
+      "success_status": 204,
+      "source_sha256": "28820a6b2d6d8ac06c34dfc982ae8156a1e15091279ab5a60fb225d039ca242c",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/capabilities",
+      "category": "canonical",
+      "operation": "CapabilitiesController.capabilities",
+      "source": "backend/src/koinon/web/capabilities.py",
+      "line": 63,
+      "parameters": [],
+      "return_annotation": "dict",
+      "sdk_python": "capabilities",
+      "sdk_typescript": "capabilities",
+      "sdk_java": "client.platform.capabilities",
+      "request_schema": null,
+      "response_schema": "Capabilities",
+      "success_status": 200,
+      "source_sha256": "5f02a39db206ee36d79929d37ed7533f7b730a3c618bfc06d03bbce91609eb59",
+      "encoding": "application/json",
+      "headers": []
+    }
+  ]
+}

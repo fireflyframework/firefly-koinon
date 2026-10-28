@@ -1,0 +1,147 @@
+# Copyright 2024-2026 Firefly Software Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""``AuditService`` -- append-only audit + EDA broadcast.
+
+Every mutation in flycanon should call :meth:`AuditService.record`
+exactly once. The service persists the row to ``canon_audit_events``
+through :class:`AuditRepository` and -- best-effort -- publishes the
+same payload on the configured audit topic.
+
+EDA failures are logged but do not abort the mutation: the durable
+record is the audit row in Postgres. Downstream consumers that miss
+the live event can replay from the table.
+"""
+
+from __future__ import annotations
+
+import logging
+from typing import Any
+
+from pyfly.container import service
+from pyfly.eda import EventPublisher
+
+from flycanon.config import CanonSettings
+from flycanon.models.entities.audit_event import AuditEventRow
+from flycanon.models.repositories.audit_repository import AuditRepository
+
+logger = logging.getLogger(__name__)
+
+
+@service(name="canon.AuditService")
+class AuditService:
+    """Persist + publish audit events.
+
+    Marked ``@service`` so pyfly's container auto-discovers it via
+    ``scan_packages`` and resolves its dependencies (including the
+    :class:`EventPublisher` registered by pyfly's
+    ``EdaAutoConfiguration``) at first lookup -- after every
+    auto-configuration has run.
+    """
+
+    def __init__(
+        self,
+        repository: AuditRepository,
+        event_publisher: EventPublisher,
+        settings: CanonSettings,
+    ) -> None:
+        self._repository = repository
+        self._publisher = event_publisher
+        self._settings = settings
+
+    async def record(
+        self,
+        *,
+        event_type: str,
+        subject_kind: str,
+        subject_id: str,
+        tenant_id: str,
+        workspace_id: str,
+        actor: str | None = None,
+        correlation_id: str | None = None,
+        payload: dict[str, Any] | None = None,
+        event_publisher: EventPublisher | None = None,
+    ) -> AuditEventRow:
+        """Append one audit row and broadcast it on ``flycanon.audit``.
+
+        ``tenant_id`` + ``workspace_id`` are required: the
+        ``canon_audit_events`` row carries the scope at the column
+        level so aggregation queries can filter on the indexed columns
+        without unpacking ``payload_json``.
+        """
+        row = AuditEventRow(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            event_type=event_type,
+            subject_kind=subject_kind,
+            subject_id=subject_id,
+            actor=actor,
+            correlation_id=correlation_id,
+            payload_json=dict(payload or {}),
+        )
+        stored = await self._repository.append(row)
+        if event_publisher is None:
+            await self._publish(stored)
+        else:
+            await self._publish(stored, event_publisher=event_publisher)
+        return stored
+
+    async def _publish(self, row: AuditEventRow, event_publisher: EventPublisher | None = None) -> None:
+        if event_publisher is not None:
+            await event_publisher.publish(
+                destination=self._settings.audit_topic,
+                event_type=self._settings.audit_event,
+                payload={
+                    "id": row.id,
+                    "tenant_id": row.tenant_id,
+                    "workspace_id": row.workspace_id,
+                    "event_type": row.event_type,
+                    "subject_kind": row.subject_kind,
+                    "subject_id": row.subject_id,
+                    "actor": row.actor,
+                    "correlation_id": row.correlation_id,
+                    "occurred_at": row.occurred_at.isoformat() if row.occurred_at else None,
+                    "payload": dict(row.payload_json or {}),
+                },
+            )
+            return
+        if self._publisher is None:
+            return
+        try:
+            await self._publisher.publish(  # type: ignore[attr-defined]
+                destination=self._settings.audit_topic,
+                event_type=self._settings.audit_event,
+                payload={
+                    "id": row.id,
+                    "tenant_id": row.tenant_id,
+                    "workspace_id": row.workspace_id,
+                    "event_type": row.event_type,
+                    "subject_kind": row.subject_kind,
+                    "subject_id": row.subject_id,
+                    "actor": row.actor,
+                    "correlation_id": row.correlation_id,
+                    "occurred_at": row.occurred_at.isoformat() if row.occurred_at else None,
+                    "payload": dict(row.payload_json or {}),
+                },
+            )
+        except Exception as exc:
+            # Log + swallow: the durable trail is in Postgres. The
+            # EDA bus is best-effort and consumers can replay from the
+            # table when their projection is behind.
+            logger.warning(
+                "audit publish failed event_type=%s subject_id=%s: %s",
+                row.event_type,
+                row.subject_id,
+                exc,
+            )

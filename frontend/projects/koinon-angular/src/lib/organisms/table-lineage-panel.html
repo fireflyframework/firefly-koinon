@@ -1,0 +1,258 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<ffk-side-panel
+  [open]="!!state.target()"
+  [heading]="'History & lineage' | ffkText"
+  [description]="state.target()?.tableName || ''"
+  (closed)="state.close()"
+>
+  @if (state.target(); as target) {
+    <p class="dataset">
+      <ffk-icon name="table" /><span>{{ target.datasetName }}</span>
+    </p>
+    @if (state.detailOpen()) {
+      <ffk-button class="back" variant="quiet" icon="chevron-left" (click)="state.back()">{{
+        'All versions' | ffkText
+      }}</ffk-button>
+    } @else {
+      <div class="section-heading">
+        <h3>{{ 'Versions' | ffkText }}</h3>
+        <ffk-button
+          variant="quiet"
+          icon="refresh"
+          [label]="'Refresh versions' | ffkText"
+          [disabled]="state.pending()"
+          (click)="state.retry()"
+        />
+      </div>
+      <p class="intro">
+        {{ 'Choose a version to inspect its original source and processing.' | ffkText }}
+      </p>
+    }
+    @if (state.pending()) {
+      <div class="loading" role="status">
+        <ffk-skeleton width="70%" height="12px" [label]="'Loading version history' | ffkText" />
+      </div>
+    } @else if (state.error()) {
+      <div class="error" role="alert">
+        <p>{{ state.error() | ffkText }}</p>
+        <ffk-button (click)="state.retry()">{{ 'Try again' | ffkText }}</ffk-button>
+      </div>
+    } @else if (!state.detailOpen()) {
+      @if (state.history(); as history) {
+        <ol class="versions" [attr.aria-label]="'Table versions' | ffkText">
+          @for (version of history.items; track version.snapshot_id) {
+            <li>
+              <button type="button" (click)="state.selectVersion(version.snapshot_id)">
+                <span class="version-title"
+                  ><strong>{{
+                    version.artifact?.original_filename ||
+                      ('Version' | ffkText) + ' ' + version.snapshot_id.slice(0, 8)
+                  }}</strong>
+                  @if (version.snapshot_id === history.current_snapshot_id) {
+                    <ffk-badge>{{ 'Current' | ffkText }}</ffk-badge>
+                  }
+                </span>
+                <span class="version-meta"
+                  >{{
+                    (version.status === 'not_recorded'
+                      ? 'Original not recorded'
+                      : operation(version.operation)
+                    ) | ffkText
+                  }}
+                  · {{ status(version.snapshot_status) | ffkText }}</span
+                >
+                <span class="version-date">{{
+                  version.recorded_at
+                    ? (version.recorded_at | ffkDate: undefined : 'datetime')
+                    : ('Date not recorded' | ffkText)
+                }}</span>
+                <ffk-icon name="chevron" />
+              </button>
+            </li>
+          } @empty {
+            <li class="empty">{{ 'No versions are available for this table.' | ffkText }}</li>
+          }
+        </ol>
+      }
+    } @else if (state.detail(); as detail) {
+      <div class="version-heading">
+        <h3>{{ 'Selected version' | ffkText }}</h3>
+        @if (state.isCurrent()) {
+          <ffk-badge>{{ 'Current' | ffkText }}</ffk-badge>
+        }
+        <ffk-badge [tone]="detail.snapshot_status === 'FAILED' ? 'attention' : 'neutral'">{{
+          status(detail.snapshot_status) | ffkText
+        }}</ffk-badge>
+      </div>
+      @if (detail.status === 'not_recorded') {
+        <div class="unrecorded">
+          <ffk-icon name="history" />
+          <h4>{{ 'Original not recorded' | ffkText }}</h4>
+          <p>
+            {{
+              'This version has no immutable source record. Its origin cannot be inferred from today’s configuration.'
+                | ffkText
+            }}
+          </p>
+        </div>
+      } @else if (detail.artifact; as artifact) {
+        <section class="source">
+          <h4>{{ 'Original file' | ffkText }}</h4>
+          <div class="file">
+            <ffk-icon name="file" /><strong>{{ artifact.original_filename }}</strong>
+          </div>
+          <dl>
+            <dt>{{ 'Format' | ffkText }}</dt>
+            <dd>{{ artifact.file_format }}</dd>
+            <dt>{{ 'Size' | ffkText }}</dt>
+            <dd>{{ artifact.byte_size | ffkValue }} {{ 'bytes' | ffkText }}</dd>
+            <dt>{{ 'Received' | ffkText }}</dt>
+            <dd>{{ artifact.admitted_at | ffkDate: undefined : 'datetime' }}</dd>
+            @if (detail.sheet_or_json_path) {
+              <dt>{{ 'Sheet or section' | ffkText }}</dt>
+              <dd>{{ detail.sheet_or_json_path }}</dd>
+            }
+            <dt>{{ 'Rows' | ffkText }}</dt>
+            <dd>{{ detail.row_count | ffkValue }}</dd>
+          </dl>
+          <p class="coverage">
+            {{
+              'Source coordinates show any row and column positions recorded for this version.'
+                | ffkText
+            }}
+          </p>
+        </section>
+      }
+      @if (coordinateTarget(); as coordinatesTarget) {
+        <section class="coordinates">
+          <h4>
+            <button
+              class="coordinates-toggle"
+              type="button"
+              [attr.aria-expanded]="coordinatesOpen()"
+              [attr.aria-controls]="'source-coordinates-' + detail.snapshot_id"
+              (click)="coordinatesOpen.set(!coordinatesOpen())"
+            >
+              {{ 'Source coordinates' | ffkText
+              }}<ffk-icon name="chevron" [class.expanded]="coordinatesOpen()" />
+            </button>
+          </h4>
+          @if (coordinatesOpen()) {
+            @defer (on immediate) {
+              <ffk-table-coordinates
+                [target]="coordinatesTarget"
+                [attr.id]="'source-coordinates-' + detail.snapshot_id"
+              />
+            } @loading {
+              <ffk-skeleton
+                width="70%"
+                height="12px"
+                [label]="'Opening source coordinates' | ffkText"
+              />
+            } @error {
+              <p role="alert">
+                {{
+                  'Source coordinates could not be opened. Refresh this page and try again.'
+                    | ffkText
+                }}
+              </p>
+            }
+          }
+        </section>
+      }
+      @if (detail.status === 'recorded') {
+        <section class="processing">
+          <h4>{{ 'Processing history' | ffkText }}</h4>
+          <ol class="steps">
+            @for (step of detail.steps || []; track step.id) {
+              <li>
+                <span class="step-marker" aria-hidden="true">{{ step.ordinal }}</span>
+                <div>
+                  <strong>{{ stepTitle(step) | ffkText }}</strong>
+                  @if (stage(step)) {
+                    <span>{{ stage(step) }}</span>
+                  }
+                  <time [attr.datetime]="step.recorded_at">{{
+                    step.recorded_at | ffkDate: undefined : 'datetime'
+                  }}</time>
+                </div>
+              </li>
+            }
+          </ol>
+        </section>
+      }
+      <details class="technical">
+        <summary>{{ 'Recorded identifiers & hashes' | ffkText }}</summary>
+        <dl>
+          <dt>{{ 'Snapshot' | ffkText }}</dt>
+          <dd>{{ detail.snapshot_id }}</dd>
+          @if (detail.artifact; as artifact) {
+            <dt>{{ 'Original bytes SHA256' | ffkText }}</dt>
+            <dd>{{ artifact.sha256 }}</dd>
+          }
+          @if (detail.parquet_sha256) {
+            <dt>{{ 'Processed data SHA256' | ffkText }}</dt>
+            <dd>{{ detail.parquet_sha256 }}</dd>
+          }
+          @if (detail.schema_sha256) {
+            <dt>{{ 'Schema SHA256' | ffkText }}</dt>
+            <dd>{{ detail.schema_sha256 }}</dd>
+          }
+          @if (detail.predecessor_snapshot_id) {
+            <dt>{{ 'Previous snapshot' | ffkText }}</dt>
+            <dd>{{ detail.predecessor_snapshot_id }}</dd>
+          }
+          @if (detail.run_id) {
+            <dt>{{ 'Processing run' | ffkText }}</dt>
+            <dd>{{ detail.run_id }}</dd>
+          }
+          @if (detail.actor) {
+            <dt>{{ 'Recorded actor' | ffkText }}</dt>
+            <dd>{{ detail.actor }}</dd>
+          }
+          @if (detail.reader_implementation) {
+            <dt>{{ 'Reader' | ffkText }}</dt>
+            <dd>{{ detail.reader_implementation }}</dd>
+          }
+        </dl>
+        @for (step of detail.steps || []; track step.id) {
+          <h5>{{ step.ordinal }}. {{ stepTitle(step) | ffkText }}</h5>
+          <dl>
+            <dt>{{ 'Implementation' | ffkText }}</dt>
+            <dd>{{ step.implementation }}</dd>
+            @if (step.implementation_sha256) {
+              <dt>{{ 'Code SHA256' | ffkText }}</dt>
+              <dd>{{ step.implementation_sha256 }}</dd>
+            }
+            @if (step.input_sha256) {
+              <dt>{{ 'Input SHA256' | ffkText }}</dt>
+              <dd>{{ step.input_sha256 }}</dd>
+            }
+            @if (step.output_sha256) {
+              <dt>{{ 'Output SHA256' | ffkText }}</dt>
+              <dd>{{ step.output_sha256 }}</dd>
+            }
+            @for (parameter of parameters(step); track parameter.label) {
+              <dt>{{ parameter.label | ffkText }}</dt>
+              <dd>{{ parameter.value }}</dd>
+            }
+          </dl>
+        }
+      </details>
+    }
+  }
+  <ng-container ngProjectAs="[panel-footer]">
+    @if (state.history(); as history) {
+      @if (!state.detailOpen() && history.total > 0) {
+        <ffk-pagination
+          panel-footer
+          [page]="history"
+          [label]="'Versions' | ffkText"
+          [showPageSize]="false"
+          [loading]="state.pending()"
+          (pageChanged)="state.goToPage($event)"
+        />
+      }
+    }
+  </ng-container>
+</ffk-side-panel>

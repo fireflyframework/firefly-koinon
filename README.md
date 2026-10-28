@@ -6,7 +6,7 @@ Koinon keeps organizational documents and datasets in one knowledge library. Peo
 
 Development and integrated qualification are in progress. There is no qualified product release yet. Existing installations continue to operate. Migration notices and repository archiving follow verified capability coverage, a tested migration path and a qualified release.
 
-The API and durable workers run independently of the frontend. TypeScript and Python SDKs let Forge and other products add knowledge capabilities without installing Angular. Hosts that need an interface can use the Angular library or encapsulated custom elements.
+The API and durable workers run independently of the frontend. Typed Python, TypeScript and Java SDKs let Forge and other products add knowledge capabilities without installing Angular. Hosts that need an interface can use the Angular library or encapsulated custom elements.
 
 PostgreSQL stores operational state, access grants, conversations and provenance. OIDC handles sign-in; persisted membership and scoped personal tokens control API access. Documents and datasets keep distinct identities and source bindings.
 

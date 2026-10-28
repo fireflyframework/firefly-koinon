@@ -1,0 +1,250 @@
+# Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2024-2026 Firefly Software Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""JSON / JSONL reader with multi-table extraction."""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import re
+import tempfile
+from pathlib import Path
+
+from flyquery.core.services.ingestion.coordinates import (
+    ColumnOrigin,
+    MaterializationCoordinates,
+    RowRange,
+    input_digest,
+)
+from flyquery.core.services.ingestion.reader import (
+    ColumnSchema,
+    MaterialiseResult,
+    ProposedTable,
+    TableExtractionRules,
+)
+
+
+class JsonReader:
+    formats = ("json", "jsonl")
+
+    async def enumerate_tables(self, source_path: str, rules: TableExtractionRules) -> list[ProposedTable]:
+        return await asyncio.to_thread(self._enumerate_sync, source_path, rules)
+
+    async def materialise(
+        self,
+        source_path: str,
+        table: ProposedTable,
+        target_parquet_key: str,
+        *,
+        workspace_locale: str,
+        type_infer_sample_rows: int,
+        max_title_rows: int = 3,
+    ) -> MaterialiseResult:
+        return await asyncio.to_thread(
+            self._materialise_sync,
+            source_path,
+            table,
+            target_parquet_key,
+            type_infer_sample_rows,
+        )
+
+    @staticmethod
+    def _is_jsonl(source_path: str) -> bool:
+        # JSONL has one JSON value per line; JSON has a single root.
+        if source_path.lower().endswith(".jsonl") or source_path.lower().endswith(".ndjson"):
+            return True
+        # Cheap heuristic: read first 1KB, count lines that start with `{`
+        with open(source_path, "rb") as f:
+            head = f.read(1024).decode("utf-8", errors="replace")
+        lines = [ln for ln in head.splitlines() if ln.strip()]
+        return len(lines) > 1 and all(ln.lstrip().startswith("{") for ln in lines[:3])
+
+    @staticmethod
+    def _enumerate_sync(source_path: str, rules: TableExtractionRules) -> list[ProposedTable]:
+        if JsonReader._is_jsonl(source_path):
+            name = Path(source_path).stem
+            return [
+                ProposedTable(
+                    name=re.sub(r"[^A-Za-z0-9_]+", "_", name) or "table",
+                    sheet_or_json_path=None,
+                    n_columns=0,  # filled at materialise
+                    n_rows_estimate=0,
+                )
+            ]
+        # Plain JSON: inspect the root.
+        with open(source_path, encoding="utf-8") as f:
+            doc = json.load(f)
+        if isinstance(doc, list):
+            return [
+                ProposedTable(
+                    name=Path(source_path).stem,
+                    sheet_or_json_path=None,
+                    n_columns=0,
+                    n_rows_estimate=len(doc),
+                )
+            ]
+        if isinstance(doc, dict):
+            paths = set(rules.json_paths) if rules.json_paths else None
+            out: list[ProposedTable] = []
+            for k, v in doc.items():
+                if not isinstance(v, list):
+                    continue
+                if paths is not None and k not in paths:
+                    continue
+                out.append(
+                    ProposedTable(
+                        name=re.sub(r"[^A-Za-z0-9_]+", "_", k) or "table",
+                        sheet_or_json_path=k,
+                        n_columns=0,
+                        n_rows_estimate=len(v),
+                    )
+                )
+            if not out:
+                # Fall through: treat object as a single 1-row table
+                out.append(
+                    ProposedTable(
+                        name=Path(source_path).stem,
+                        sheet_or_json_path=None,
+                        n_columns=len(doc),
+                        n_rows_estimate=1,
+                    )
+                )
+            return out
+        raise ValueError(f"unsupported JSON root type: {type(doc).__name__}")
+
+    @staticmethod
+    def _materialise_sync(
+        source_path: str,
+        table: ProposedTable,
+        target_parquet_key: str,
+        type_infer_sample_rows: int,
+    ) -> MaterialiseResult:
+        import duckdb
+
+        Path(target_parquet_key).parent.mkdir(parents=True, exist_ok=True)
+
+        jsonl = JsonReader._is_jsonl(source_path)
+        if jsonl:
+            with open(source_path, encoding="utf-8") as stream:
+                observed = [json.loads(line) for line in stream if line.strip()]
+            row_kind = "jsonl_record"
+        else:
+            with open(source_path, encoding="utf-8") as stream:
+                original = json.load(stream)
+            selected = original[table.sheet_or_json_path] if table.sheet_or_json_path else original
+            observed = selected if isinstance(selected, list) else [selected]
+            row_kind = "json_array" if isinstance(selected, list) else "single_object"
+        field_names = list(dict.fromkeys(key for row in observed if isinstance(row, dict) for key in row))
+        object_rows = all(isinstance(row, dict) for row in observed)
+        scalar_rows = all(not isinstance(row, dict) for row in observed)
+
+        # If the table corresponds to a single JSON-path inside a top-level
+        # object, extract that array to a temp JSONL.
+        if table.sheet_or_json_path:
+            with open(source_path, encoding="utf-8") as f:
+                doc = json.load(f)
+            arr = doc[table.sheet_or_json_path]
+            with tempfile.NamedTemporaryFile(
+                suffix=".jsonl", mode="w", delete=False, encoding="utf-8"
+            ) as tmp:
+                for row in arr:
+                    tmp.write(json.dumps(row))
+                    tmp.write("\n")
+                tmp_path = tmp.name
+            input_path = tmp_path
+        else:
+            input_path = source_path
+            tmp_path = None
+
+        try:
+            conn = duckdb.connect()
+            try:
+                conn.execute("SET preserve_insertion_order=true")
+                # DuckDB 1.5 requires literal paths in COPY … TO
+                src = input_path.replace("'", "''")
+                tgt = target_parquet_key.replace("'", "''")
+                conn.execute(
+                    f"COPY (SELECT * FROM read_json_auto('{src}', "
+                    f"sample_size={type_infer_sample_rows}, "
+                    f"format='auto')) "
+                    f"TO '{tgt}' (FORMAT PARQUET, COMPRESSION 'snappy')"
+                )
+                rows_ct_row = conn.execute(
+                    "SELECT count(*) FROM read_parquet(?)", [target_parquet_key]
+                ).fetchone()
+                rows_ct = rows_ct_row[0] if rows_ct_row else 0
+                schema = conn.execute(
+                    "SELECT * FROM (DESCRIBE SELECT * FROM read_parquet(?))", [target_parquet_key]
+                ).fetchall()
+                columns = tuple(
+                    ColumnSchema(name=r[0], data_type=r[1], is_nullable=(r[2] == "YES"), position=i)
+                    for i, r in enumerate(schema)
+                )
+            finally:
+                conn.close()
+        finally:
+            if tmp_path:
+                Path(tmp_path).unlink(missing_ok=True)
+
+        byte_size = Path(target_parquet_key).stat().st_size
+        return MaterialiseResult(
+            target_parquet_key=target_parquet_key,
+            parquet_byte_size=byte_size,
+            n_rows_actual=rows_ct,
+            columns=columns,
+            coordinates=MaterializationCoordinates(
+                "jsonl" if jsonl else "json",
+                row_kind,
+                row_kind,
+                input_digest(source_path),
+                rows_ct,
+                len(columns),
+                (RowRange(0, rows_ct, 0),) if rows_ct else (),
+                tuple(
+                    ColumnOrigin(
+                        i,
+                        None,
+                        (col.name,) if object_rows else (),
+                        None,
+                    )
+                    for i, col in enumerate(columns)
+                ),
+                parser_decisions=(
+                    ("row_order", "source_record_order"),
+                    ("format", "auto"),
+                    ("sample_size", type_infer_sample_rows),
+                ),
+                dependencies=(("duckdb", duckdb.__version__),),
+                source_path=(table.sheet_or_json_path,) if table.sheet_or_json_path else (),
+                complete=rows_ct == len(observed)
+                and (
+                    object_rows
+                    and all(col.name in field_names for col in columns)
+                    or scalar_rows
+                    and len(columns) == 1
+                ),
+                reason_code=None
+                if rows_ct == len(observed)
+                and (
+                    object_rows
+                    and all(col.name in field_names for col in columns)
+                    or scalar_rows
+                    and len(columns) == 1
+                )
+                else "AMBIGUOUS_JSON_RECORD_MAPPING",
+            ),
+        )

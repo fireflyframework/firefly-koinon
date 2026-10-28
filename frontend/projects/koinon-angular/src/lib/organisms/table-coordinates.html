@@ -1,0 +1,255 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<section [attr.aria-label]="'Source coordinates' | ffkText">
+  @if (state.error()) {
+    <div class="error" role="alert">
+      <p>{{ state.error() | ffkText }}</p>
+      <ffk-button (click)="state.retry()">{{ 'Try again' | ffkText }}</ffk-button>
+    </div>
+  }
+  @if (state.manifest(); as manifest) {
+    <div class="heading">
+      <strong>{{ format(manifest.source_format, manifest.source_variant) | ffkText }}</strong
+      ><ffk-badge [tone]="manifest.status === 'partial' ? 'attention' : 'neutral'">{{
+        coverage(manifest.status) | ffkText
+      }}</ffk-badge>
+    </div>
+    @if (manifest.status === 'not_recorded') {
+      <p class="help">{{ 'Coordinates were not recorded for this version.' | ffkText }}</p>
+    } @else {
+      @if (manifest.source_sheet) {
+        <p class="sheet">{{ manifest.source_sheet }}</p>
+      }
+      <p class="help">
+        {{
+          (manifest.status === 'complete'
+            ? 'All rows and columns are mapped for this version.'
+            : 'Some source positions were not recorded. Only recorded locations are shown.'
+          ) | ffkText
+        }}
+      </p>
+      <div class="views" role="group" [attr.aria-label]="'Coordinate view' | ffkText">
+        <button
+          type="button"
+          [attr.aria-pressed]="state.tab() === 'rows'"
+          (click)="state.choose('rows')"
+        >
+          {{ 'Rows' | ffkText }}
+        </button>
+        <button
+          type="button"
+          [attr.aria-pressed]="state.tab() === 'columns'"
+          (click)="state.choose('columns')"
+        >
+          {{ 'Columns' | ffkText }}
+        </button>
+        <button
+          type="button"
+          [attr.aria-pressed]="state.tab() === 'cell'"
+          (click)="state.choose('cell')"
+        >
+          {{ 'Locate a cell' | ffkText }}
+        </button>
+      </div>
+      <p class="index-help">
+        {{ 'Rows and columns here start at 1.' | ffkText }}
+        @if (isJson(manifest)) {
+          {{ 'JSON paths keep their original zero-based array positions.' | ffkText }}
+        }
+      </p>
+      @if (state.tab() === 'cell') {
+        @if (!manifest.row_count || !manifest.column_count) {
+          <p class="help" role="status">{{ 'This version has no cells to locate.' | ffkText }}</p>
+        } @else {
+          <form (submit)="locate($event)">
+            <label
+              ><span
+                >{{ 'Processed row' | ffkText }}
+                <small>1–{{ manifest.row_count | ffkValue }}</small></span
+              ><input
+                name="row"
+                type="number"
+                inputmode="numeric"
+                min="1"
+                step="1"
+                [max]="manifest.row_count"
+                [value]="row()"
+                (input)="setPosition('row', $event)"
+                required
+            /></label>
+            <label
+              ><span
+                >{{ 'Processed column' | ffkText }}
+                <small>1–{{ manifest.column_count | ffkValue }}</small></span
+              ><input
+                name="column"
+                type="number"
+                inputmode="numeric"
+                min="1"
+                step="1"
+                [max]="manifest.column_count"
+                [value]="column()"
+                (input)="setPosition('column', $event)"
+                required
+            /></label>
+            <ffk-button
+              type="submit"
+              [loading]="state.pending()"
+              [disabled]="!manifest.row_count || !manifest.column_count"
+              >{{ 'Show original location' | ffkText }}</ffk-button
+            >
+          </form>
+          @if (state.selection(); as selection) {
+            @for (cell of selection.items; track cell.output_column) {
+              <div class="location">
+                <span>{{ 'Original location' | ffkText }}</span
+                ><strong>{{
+                  location(cell, manifest) ?? ('Position not recorded' | ffkText)
+                }}</strong>
+                @if (manifest.row_kind === 'record' || manifest.row_kind === 'jsonl_record') {
+                  <span
+                    >{{ 'Original record' | ffkText }}
+                    {{ number(cell.source_row) ?? ('Position not recorded' | ffkText) }}</span
+                  >
+                }
+                @if (manifest.row_kind === 'record' && cell.source_column !== null) {
+                  <span>{{ 'Original field' | ffkText }} {{ number(cell.source_column) }}</span>
+                }
+                @if (headers(cell)) {
+                  <span>{{ 'Header cells' | ffkText }}: {{ headers(cell) }}</span>
+                }
+              </div>
+            }
+          }
+        }
+      } @else if (state.tab() === 'rows') {
+        @if (state.rowsPage(); as page) {
+          <div class="table-frame" tabindex="0" [attr.aria-label]="'Rows' | ffkText">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">{{ 'Processed rows' | ffkText }}</th>
+                  <th scope="col">{{ originalRows(manifest) | ffkText }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (span of page.items; track span.output_start) {
+                  <tr>
+                    <td>{{ range(span.output_start, span.count) }}</td>
+                    <td>
+                      {{ range(span.source_start, span.count, span.source_stride) }}
+                      @if (span.source_stride !== 1) {
+                        <small>{{ 'Position interval' | ffkText }} {{ span.source_stride }}</small>
+                      }
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="2">{{ 'No row positions were recorded.' | ffkText }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <ffk-pagination
+            [page]="page"
+            [label]="'Rows' | ffkText"
+            [showPageSize]="false"
+            [loading]="state.pending()"
+            (pageChanged)="state.pageRows($event)"
+          />
+        }
+      } @else if (state.tab() === 'columns') {
+        @if (state.columnsPage(); as page) {
+          <div class="table-frame" tabindex="0" [attr.aria-label]="'Columns' | ffkText">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">{{ 'Processed column' | ffkText }}</th>
+                  <th scope="col">{{ 'Original field' | ffkText }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (column of page.items; track column.output_position) {
+                  <tr>
+                    <td>{{ number(column.output_position) }}</td>
+                    <td>
+                      {{ field(column, manifest) ?? ('Position not recorded' | ffkText) }}
+                      @if (headers(column)) {
+                        <small>{{ 'Header cells' | ffkText }}: {{ headers(column) }}</small>
+                      }
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="2">{{ 'No column positions were recorded.' | ffkText }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <ffk-pagination
+            [page]="page"
+            [label]="'Columns' | ffkText"
+            [showPageSize]="false"
+            [loading]="state.pending()"
+            (pageChanged)="state.pageColumns($event)"
+          />
+        }
+      } @else {
+        <p class="help">{{ 'View recorded rows or columns, or locate one cell.' | ffkText }}</p>
+      }
+      <p class="boundary">
+        {{
+          'These locations identify the input to this version, not cells in a query result.'
+            | ffkText
+        }}
+      </p>
+    }
+    <details>
+      <summary>{{ 'Coordinate details' | ffkText }}</summary>
+      <dl>
+        <dt>{{ 'Snapshot' | ffkText }}</dt>
+        <dd>{{ manifest.snapshot_id }}</dd>
+        @if (manifest.input_sha256) {
+          <dt>{{ 'Parser input SHA256' | ffkText }}</dt>
+          <dd>{{ manifest.input_sha256 }}</dd>
+        }
+        @if (manifest.mapping_sha256) {
+          <dt>{{ 'Coordinate map SHA256' | ffkText }}</dt>
+          <dd>{{ manifest.mapping_sha256 }}</dd>
+        }
+        @if (manifest.reason_code) {
+          <dt>{{ 'Partial map reason' | ffkText }}</dt>
+          <dd>{{ manifest.reason_code }}</dd>
+        }
+        @for (option of options(manifest); track option.label) {
+          <dt>{{ option.label | ffkText }}</dt>
+          <dd>{{ option.value | ffkValue }}</dd>
+        }
+        @for (dependency of manifest.dependencies ?? []; track dependency.name) {
+          <dt>{{ dependency.name }}</dt>
+          <dd>{{ dependency.version ?? ('Not recorded' | ffkText) }}</dd>
+        }
+        @if (manifest.rejected_source_rows?.length) {
+          <dt>{{ 'Rejected source positions' | ffkText }}</dt>
+          <dd class="rejected">
+            @for (row of manifest.rejected_source_rows; track row) {
+              <span>{{ number(row) }} </span>
+            }
+          </dd>
+        }
+      </dl>
+      @for (column of state.columnsPage()?.items ?? []; track column.output_position) {
+        @if (column.source_type) {
+          <p>{{ 'Processed column' | ffkText }} {{ number(column.output_position) }}</p>
+          <pre>{{ column.source_type }}</pre>
+        }
+      }
+    </details>
+  }
+  @if (state.pending()) {
+    <div role="status" class="loading">
+      <ffk-skeleton width="75%" height="12px" [label]="'Loading source coordinates' | ffkText" />
+    </div>
+  }
+</section>

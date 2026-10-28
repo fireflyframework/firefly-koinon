@@ -1,0 +1,446 @@
+# Copyright 2026 Firefly Software Foundation
+#
+# Copy to .env (this file is the canonical reference; .env is gitignored).
+# All keys are prefixed with FLYCANON_ so they are easy to grep for and
+# easy to scope per service.
+
+# ----------------------------------------------------------------------------
+# Service
+# ----------------------------------------------------------------------------
+FLYCANON_LOG_LEVEL=INFO
+FLYCANON_PORT=8500
+
+# ----------------------------------------------------------------------------
+# Persistence
+# ----------------------------------------------------------------------------
+# Async-SQLAlchemy URL. asyncpg for Postgres, aiosqlite for SQLite (tests).
+FLYCANON_DATABASE_URL=postgresql+asyncpg://canon:canon@localhost:5432/flycanon
+
+# Run alembic upgrade head on startup (set to "false" in production deploys
+# that prefer migrating as a separate step).
+RUN_MIGRATIONS=true
+
+# ----------------------------------------------------------------------------
+# Queue / EDA
+# ----------------------------------------------------------------------------
+# Choose ``memory`` (single-process dev), ``postgres`` (default -- durable
+# outbox + LISTEN/NOTIFY, no extra broker needed since the service already
+# runs Postgres), ``redis`` (Redis Streams), or ``kafka`` (production
+# fan-out). All adapters live in ``pyfly.eda.adapters``.
+FLYCANON_EDA_ADAPTER=postgres
+FLYCANON_REDIS_URL=redis://localhost:6379/0
+
+# Per-adapter backend selection for the auth rate limiter + replay
+# idempotency store.
+#   auto       -- (default) Redis when FLYCANON_REDIS_URL is set,
+#                 else the in-process implementation.
+#   redis      -- always Redis (errors at first use if Redis is
+#                 unreachable).
+#   in_memory  -- always the in-process variant (per-replica
+#                 buckets / dict; not durable across restarts or
+#                 shared across replicas).
+# In-memory is fine for single-replica dev / test posture; production
+# behind a load balancer MUST use ``redis`` for both so the per-token
+# rate-limit window and the replay cache are shared across replicas.
+FLYCANON_RATE_LIMIT_BACKEND=auto
+FLYCANON_IDEMPOTENCY_BACKEND=auto
+
+# Topics for the lifecycle events flycanon publishes. Downstream services
+# subscribe to these to keep their projections in sync.
+FLYCANON_INGEST_TOPIC=flycanon.ingest
+FLYCANON_KNOWLEDGE_TOPIC=flycanon.knowledge
+FLYCANON_AUDIT_TOPIC=flycanon.audit
+
+# ----------------------------------------------------------------------------
+# Worker concurrency
+# ----------------------------------------------------------------------------
+# The IngestWorker subscribes to four event families (Source*, Knowledge*,
+# Candidate*, audit) and dispatches each delivery through a bounded
+# semaphore so a burst doesn't blow up the async pool or an LLM rate
+# limit. Tune these for the bandwidth of your downstream services.
+#   max_concurrency    -- inflight handler tasks cap.
+#   handler_timeout_s  -- per-handler wall-clock cap (a stuck downstream
+#                         call cannot pin a worker slot indefinitely).
+#   shutdown_grace_s   -- on stop, wait this long for inflight to drain
+#                         before cancelling.
+FLYCANON_WORKER_MAX_CONCURRENCY=8
+FLYCANON_WORKER_HANDLER_TIMEOUT_S=120
+FLYCANON_WORKER_SHUTDOWN_GRACE_S=30
+
+# ----------------------------------------------------------------------------
+# Embeddings + RAG
+# ----------------------------------------------------------------------------
+# Embedding provider, used by the chunk indexer and the query stage.
+# Any fireflyframework-agentic embedder identifier, ``<provider>:<model>``:
+# openai, azure (= azure-openai), cohere, google (= gemini), mistral,
+# voyage, bedrock, ollama.
+#
+# ON AZURE THE SECOND HALF IS THE DEPLOYMENT NAME, NOT THE MODEL NAME.
+# ``azure:text-embedding-3-large`` works only if the deployment happens to
+# be named after the model; ``azure:my-emb-3-large-deploy`` is the general
+# spelling.
+FLYCANON_EMBEDDING_MODEL=openai:text-embedding-3-small
+# The DEFAULT WIDTH FOR NEW EMBEDDING SETS -- no longer a schema lock.
+# Since 26.8.0 canon_chunk_vectors.embedding has no fixed width: each row
+# belongs to an embedding set that records its own model and dimensions,
+# and changing the embedder is ``flycanon reindex``, not a fresh database.
+# Note pgvector will not build an HNSW on a vector column above 2000
+# dimensions; flycanon indexes a wider set as halfvec (full precision in
+# the column, half in the index).
+FLYCANON_EMBEDDING_DIMENSIONS=1536
+# What a per-item embedding failure does. ``false`` (the default since
+# 26.8.0) fails the batch and writes nothing. ``true`` restores the older
+# behaviour of indexing ``[0.0] * dimensions`` for the offending input so
+# one bad chunk never blocks an ingest -- an unrecoverable, unmarked wrong
+# row that the ANN index ranks as equidistant from everything. The reindex
+# path refuses it whatever this says.
+FLYCANON_EMBEDDING_ZERO_VECTOR_ON_FAILURE=false
+
+# ----------------------------------------------------------------------------
+# Azure OpenAI (embeddings, the RLM answer engine, and the RAG answer path)
+# ----------------------------------------------------------------------------
+# Required whenever any ``azure:`` model is configured -- validated at
+# config time, so a missing endpoint fails at boot with a message naming
+# the setting instead of inside the provider SDK on the first ingest.
+# Both credentials fall back to the bare AZURE_* names the Azure SDKs read.
+# ONE set of settings serves all three paths: embeddings, the RLM engine
+# (FLYCANON_RLM_ROOT_MODEL / _SUB_MODEL) and the RAG answer model.
+#
+# NOTE: Claude models are NOT served by Azure OpenAI -- an Azure deployment
+# runs the GPT family. Embeddings and answers stay two independent choices:
+# ``azure:`` on either side now means Azure on that side, and nothing else.
+# FLYCANON_AZURE_OPENAI_ENDPOINT=https://<resource>.openai.azure.com
+# FLYCANON_AZURE_OPENAI_API_VERSION=2026-05-01
+# FLYCANON_AZURE_OPENAI_API_KEY=
+# api_key (default) | managed_identity. The identity path acquires a bearer
+# token through DefaultAzureCredential for the cognitiveservices scope, so
+# no key exists in the environment to leak. Needs ``uv sync --extra azure``.
+# FLYCANON_AZURE_AUTH=api_key
+# Per-deployment USD prices for the Azure ANSWER path, as
+# <deployment>=<per-million-input>/<per-million-output>, comma-separated.
+# Azure rates are per deployment and per agreement and a deployment name
+# carries no model identity, so flycanon cannot infer them. Unset, the
+# Azure answer path counts tokens exactly, records cost 0.00 and warns once
+# per deployment naming this setting. A malformed entry is refused at boot.
+# FLYCANON_AZURE_MODEL_PRICES=my-gpt-5-deployment=1.25/10.00
+
+# Answer model for the RAG query endpoint. Any pydantic-ai provider id.
+# ``azure:<deployment>`` is built from the Azure settings above rather than
+# from pydantic-ai's own bare AZURE_OPENAI_* / OPENAI_API_VERSION contract,
+# so one Azure account is described in one place.
+FLYCANON_ANSWER_MODEL=anthropic:claude-sonnet-4-6
+FLYCANON_ANSWER_FALLBACK_MODEL=openai:gpt-4o
+
+# Output-token budget for every FireflyAgent. Anthropic / OpenAI default
+# to 4096 which silently truncates the consolidator's structured
+# candidate arrays (the model writes a valid prefix, the JSON parser
+# rejects the half-output, and the request returns 0 candidates with
+# input_tokens=4096 in the logs). 8192 is Sonnet 4.6's public ceiling
+# and matches flydocs/flyradar. Bump for models with a higher ceiling
+# (long-output betas, GPT-4o 16k) when needed. The two per-stage
+# overrides let you tune one stage independently of the global default.
+FLYCANON_AGENT_MAX_OUTPUT_TOKENS=8192
+# FLYCANON_CONSOLIDATOR_MAX_OUTPUT_TOKENS=  # default: agent_max_output_tokens
+# FLYCANON_ANSWER_MAX_OUTPUT_TOKENS=        # default: agent_max_output_tokens
+
+# Hybrid retrieval knobs.
+FLYCANON_RETRIEVAL_TOP_K=10
+FLYCANON_RETRIEVAL_PER_QUERY_K=30
+FLYCANON_RETRIEVAL_RRF_K=60
+
+# Optional cross-encoder reranker. Empty = disabled (the default).
+# Set to ``cohere:rerank-multilingual-v3.0`` (needs COHERE_API_KEY)
+# or ``voyageai:rerank-2`` (needs VOYAGEAI_API_KEY) to enable.
+FLYCANON_RERANKER_MODEL=
+FLYCANON_RERANKER_TOP_N=20
+
+# Optional multi-query expansion -- the answer model rewrites the
+# query into N paraphrases, each runs through the retriever, and
+# the result lists are RRF-fused for higher recall. Costs +1 LLM
+# call per /search and /query.
+FLYCANON_QUERY_EXPANSION_ENABLED=false
+FLYCANON_QUERY_EXPANSION_N=3
+
+# ----------------------------------------------------------------------------
+# Answer mode (RLM default / RAG deprecated)
+# ----------------------------------------------------------------------------
+# Selects the engine for the non-streaming /api/v1/query answer path:
+#   rlm  -- (default) the Recursive Language Model engine. A CodeAct REPL
+#           that reasons over whole documents instead of retrieving chunks.
+#   rag  -- the legacy hybrid-retrieval answerer. Opt-in and DEPRECATED:
+#           the dispatcher logs a deprecation warning on every rag-mode
+#           answer and rag will be removed in a future release.
+# Any value other than ``rag`` is normalised to ``rlm``.
+FLYCANON_ANSWER_MODE=rlm
+
+# RLM models, both in ``<provider>:<model>`` form.
+#   root   -- orchestrator model that drives the CodeAct REPL loop AND
+#             produces the final answer (the final(...) tool call, or the
+#             tool-less forced-final turn when the loop runs out of turns).
+#   sub    -- model for the flat llm()/rlm() sub-calls made from REPL code
+#             and for the self-consistency candidate selector.
+# There is no third "answer" model: FLYCANON_RLM_ANSWER_MODEL (26.7.0) was
+# read by nothing and is gone since 26.7.1; a value here is ignored.
+#
+# Two providers are supported, and BOTH settings must name the same one --
+# the engine holds one client, with one endpoint and one credential, so a
+# root on Anthropic with a sub on Azure is refused at boot. Any other
+# prefix is refused at boot too, with the supported list in the message.
+#
+#   anthropic:<model>      reads ANTHROPIC_API_KEY (see below). The request
+#                          is shaped per model generation: Claude 4.6 and
+#                          later (claude-sonnet-5, claude-opus-5, Opus
+#                          4.6/4.7/4.8, Sonnet 4.6) get adaptive thinking
+#                          and no temperature (the API refuses sampling
+#                          knobs on the 5-series); Haiku 4.5 / Sonnet 4.5
+#                          keep the deterministic temperature 0.0.
+#   azure:<deployment>     reads the FLYCANON_AZURE_OPENAI_* settings above.
+#                          The second half is the DEPLOYMENT name, not the
+#                          model name. No sampling knob is ever sent (the
+#                          deployment name does not say whether the model
+#                          behind it refuses temperature) and the budget
+#                          travels as max_completion_tokens.
+#                          FLYCANON_RLM_PROMPT_CACHE does not apply: Azure
+#                          caches long prefixes on its own.
+FLYCANON_RLM_ROOT_MODEL=anthropic:claude-sonnet-4-6
+FLYCANON_RLM_SUB_MODEL=anthropic:claude-sonnet-4-6
+
+# RLM budgets.
+#   max_iters  -- max orchestrator turns before the loop gives up and asks
+#                 for a plain-text answer from the transcript.
+#   sub_budget -- total recursive sub-call budget across one root session.
+#   max_depth  -- how deep rlm(...) may nest before degrading to a flat llm.
+FLYCANON_RLM_MAX_ITERS=8
+FLYCANON_RLM_SUB_BUDGET=12
+FLYCANON_RLM_MAX_DEPTH=1
+
+# Self-consistency guard. RLM is non-deterministic run-to-run on hard
+# multi-fact questions; >1 runs the engine N times in parallel on the
+# non-streaming /api/v1/query path and an LLM selector picks the most-grounded
+# answer, clawing back the variance (RLM's best-of ceiling) at N times the
+# compute. 1 (default) = single run, no self-consistency.
+FLYCANON_RLM_SELF_CONSISTENCY=1
+
+# Mark the large, static RLM system prompt with Anthropic
+# cache_control: ephemeral so it is cached server-side and reused across the
+# many Messages calls one CodeAct session makes (cuts input-token cost +
+# per-call latency). Set false to send it as a plain string (no cache
+# breakpoint).
+FLYCANON_RLM_PROMPT_CACHE=true
+
+# RLM execution sandbox. The RLM REPL execs model-written Python, and the
+# corpus is user-uploaded, so a malicious document can prompt-inject the
+# model. ``subprocess`` (the secure default) runs each turn's code in a
+# child process with a scrubbed environment (no API keys / DB / object-store
+# creds), resource limits (CPU/mem caps, no file writes), and capability-RPC
+# back to the parent for docs/llm/rlm/final -- the child holds no secrets,
+# network, or infrastructure. ``inprocess`` is the explicit opt-out that runs
+# the code in the engine's own restricted exec namespace (dev / trusted use
+# only). Only the exact value ``inprocess`` opts out; anything else resolves
+# to ``subprocess``.
+FLYCANON_RLM_SANDBOX=subprocess
+# Per-turn wall-clock timeout (seconds) for the subprocess sandbox; the child
+# is killed and the turn fails if it is exceeded.
+FLYCANON_RLM_SANDBOX_TIMEOUT_S=30
+
+# ----------------------------------------------------------------------------
+# Object store (RLM document originals)
+# ----------------------------------------------------------------------------
+# RLM reasons over the ORIGINAL document bytes, not the chunk index, so the
+# intake must persist each original to the object store and record its key
+# on the source row. Sources without a stored original are skipped by the
+# RLM corpus builder. Keep FLYCANON_STORE_ORIGINALS=true for RLM to work.
+#
+# Backend: ``localfs`` (default; writes files under a root dir for
+# dev / test) or ``s3`` (requires ``uv sync --extra s3``). AWS credentials
+# for the s3 backend come from the standard environment
+# (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / profiles / instance roles),
+# not from these settings.
+FLYCANON_OBJECT_STORE_BACKEND=localfs
+
+# --- localfs backend (FLYCANON_OBJECT_STORE_BACKEND=localfs) ----------------
+FLYCANON_OBJECT_STORE_LOCALFS_ROOT=./var/objects
+
+# --- s3 backend (FLYCANON_OBJECT_STORE_BACKEND=s3) --------------------------
+# Requires ``uv sync --extra s3``.
+FLYCANON_OBJECT_STORE_S3_BUCKET=
+# Key prefix prepended to every object key within the bucket.
+FLYCANON_OBJECT_STORE_S3_PREFIX=
+# Custom endpoint for MinIO / S3-compatible services; empty = default AWS.
+FLYCANON_OBJECT_STORE_S3_ENDPOINT_URL=
+# Region; empty defers to boto3's standard region resolution.
+FLYCANON_OBJECT_STORE_S3_REGION=
+
+# Whether intake persists the original uploaded bytes to the object store
+# and records the key on the source row. On by default so RLM has a
+# whole-document corpus to reason over; a write failure is best-effort and
+# never fails the ingest.
+FLYCANON_STORE_ORIGINALS=true
+
+# ----------------------------------------------------------------------------
+# Corpus page cache (RLM)
+# ----------------------------------------------------------------------------
+# Shared cache layered over the lazy RLM corpus store: an in-scope filing's
+# original is fetched from the object store + PyMuPDF-extracted at most once
+# per process (in-memory LRU) and once per fleet (shared Redis). Keyed by the
+# source's content_sha256 so a re-ingested source (new bytes -> new sha)
+# misses the stale entry automatically.
+#
+# Backend (mirrors FLYCANON_RATE_LIMIT_BACKEND):
+#   auto   -- (default) Redis when FLYCANON_REDIS_URL is set, else in-memory.
+#   redis  -- always Redis (synchronous client; read from the RLM worker
+#             thread). Use this for multi-replica deployments so a single
+#             fetch on one replica warms the whole fleet.
+#   in_memory -- always the in-process LRU (single-replica / dev posture).
+FLYCANON_CORPUS_CACHE_BACKEND=auto
+# Per-entry TTL in seconds (both backends).
+FLYCANON_CORPUS_CACHE_TTL_S=3600
+# LRU cap for the in-memory backend (the Redis backend uses native EX expiry).
+FLYCANON_CORPUS_CACHE_MAX_ENTRIES=512
+
+# ----------------------------------------------------------------------------
+# PII guardrail
+# ----------------------------------------------------------------------------
+# The intake pipeline scans every payload (and re-ingest payload) for
+# personal data before chunking + embedding. See docs/pii.md.
+#   scanner:
+#     regex     -- default, no dependencies. Email / US SSN / phone /
+#                  credit card / IBAN patterns.
+#     presidio  -- planned, falls back to regex in this build.
+#     disabled  -- skip the scan entirely (dev / fixture replay).
+#   policy:
+#     warn      -- default; index as-is and record findings on the
+#                  source row's metadata.pii_findings.
+#     redact    -- rewrite each hit as [REDACTED:<KIND>] before
+#                  chunking + indexing; metadata still records the
+#                  original spans.
+#     reject    -- fail the intake with RFC 7807 ``pii_violation``
+#                  (HTTP 422) and findings[].
+FLYCANON_PII_SCANNER=regex
+FLYCANON_PII_POLICY=warn
+
+# ----------------------------------------------------------------------------
+# Vector store
+# ----------------------------------------------------------------------------
+# Backend selector for the DENSE half. ``pgvector`` (the default) keeps an
+# HNSW index in the canonical Postgres (extension ``vector`` required). The
+# canonical store already runs Postgres, so co-locating the vector
+# projection means one operational service, not two. The docker-compose
+# stack uses the ``pgvector/pgvector:pg16`` image so the ``vector``
+# extension is ready out of the box. The BM25 channel always rides on a
+# ``tsvector`` + GIN index in the same Postgres regardless of the dense
+# backend.
+#
+# Selects the DENSE backend only: ``pgvector`` (default, co-located +
+# RLS-isolated), ``qdrant``, or ``chroma`` (the latter two use the
+# adapters that ship in fireflyframework-agentic; install the matching
+# extra -- ``uv sync --extra qdrant`` / ``--extra chroma``). Isolation is
+# enforced per (tenant_id, workspace_id) for every backend.
+FLYCANON_VECTOR_STORE=pgvector
+
+# --- pgvector backend (FLYCANON_VECTOR_STORE=pgvector) ----------------------
+FLYCANON_PGVECTOR_TABLE=canon_chunk_vectors
+FLYCANON_PGVECTOR_HNSW_M=16
+FLYCANON_PGVECTOR_HNSW_EF_CONSTRUCTION=64
+# ``hnsw.ef_search`` set per query (higher = better recall, more latency).
+FLYCANON_PGVECTOR_HNSW_EF_SEARCH=200
+
+# --- qdrant backend (FLYCANON_VECTOR_STORE=qdrant) --------------------------
+# Requires ``uv sync --extra qdrant``. Self-hosted or Qdrant Cloud.
+FLYCANON_QDRANT_URL=http://localhost:6333
+# FLYCANON_QDRANT_API_KEY=
+FLYCANON_QDRANT_COLLECTION=canon_vectors
+
+# --- chroma backend (FLYCANON_VECTOR_STORE=chroma) --------------------------
+# Requires ``uv sync --extra chroma``. Empty host = in-process ephemeral
+# client (dev/test); set it for a Chroma server.
+FLYCANON_CHROMA_HOST=
+FLYCANON_CHROMA_PORT=8000
+FLYCANON_CHROMA_COLLECTION=canon_vectors
+
+# ----------------------------------------------------------------------------
+# Ingestion
+# ----------------------------------------------------------------------------
+# Chunker knobs.
+FLYCANON_CHUNK_SIZE_TOKENS=1200
+FLYCANON_CHUNK_OVERLAP_TOKENS=150
+FLYCANON_CHUNK_STRATEGY=paragraph
+
+# Max bytes accepted in a single source submission (after upload).
+FLYCANON_MAX_BYTES=33554432
+
+# ----------------------------------------------------------------------------
+# Binary normalisation
+# ----------------------------------------------------------------------------
+# Master kill-switch for the binary normaliser. ``false`` bypasses
+# image / archive / email / Office handling and feeds raw bytes
+# directly to the loader registry -- useful when the caller already
+# normalises upstream.
+FLYCANON_BINARY_NORMALIZE_ENABLED=true
+# Max depth + max files for archive / email expansion. Defends
+# against zip-bomb style fan-out.
+FLYCANON_BINARY_MAX_RECURSION_DEPTH=4
+FLYCANON_BINARY_MAX_EXPANDED_FILES=50
+# Office converter: ``none`` (default; native per-format loaders --
+# python-docx / openpyxl / python-pptx / odfpy / striprtf),
+# ``gotenberg`` (HTTP sidecar), or ``libreoffice`` (in-container
+# subprocess).
+FLYCANON_OFFICE_CONVERTER=none
+FLYCANON_GOTENBERG_URL=http://gotenberg:3000
+FLYCANON_GOTENBERG_TIMEOUT_S=60
+FLYCANON_BINARY_LIBREOFFICE_PATH=soffice
+FLYCANON_BINARY_LIBREOFFICE_TIMEOUT_S=60
+# Tesseract OCR language. ``+``-joined ISO 639-2/B codes. The runtime
+# image ships ``spa``, ``eng``, ``fra``, ``deu``, ``ita``, ``por``,
+# ``cat``; extend the Dockerfile to add more.
+FLYCANON_OCR_LANG=eng+spa
+
+# ----------------------------------------------------------------------------
+# Provider credentials -- pulled from the standard env vars. Set only
+# the ones you need. ANTHROPIC_API_KEY is REQUIRED at runtime whenever the
+# RLM models above are on ``anthropic:`` (the default): the engine calls
+# the Anthropic Messages API directly. On ``azure:`` it is not read at all
+# and the Azure settings above are what the engine authenticates with.
+# ----------------------------------------------------------------------------
+# OPENAI_API_KEY=
+# ANTHROPIC_API_KEY=
+
+# ----------------------------------------------------------------------------
+# Security
+# ----------------------------------------------------------------------------
+# Static platform API keys, comma-separated. When set, every /api/v1/*
+# route (except GET /api/v1/version) and the admin dashboard require
+# ``X-API-Key: <key>`` or ``Authorization: ApiKey <key>``; agent-tier
+# requests carrying X-Agent-Token are exempt. EMPTY = the user tier is
+# OPEN to anyone who can reach the port (the boot log warns). Set it on
+# every deployment other tenants can reach. Several keys let you rotate.
+FLYCANON_API_KEYS=
+
+# Shared secret for the ``X-Flycanon-Signature`` HMAC-SHA256 header on
+# async-ingest callback webhooks (?callback_url=). Empty = unsigned
+# callbacks (the boot log warns). Same value on api and worker.
+FLYCANON_WEBHOOK_SECRET=
+
+# Outbound host policy for ``uri`` fetches and ``callback_url``:
+# loopback, private (RFC 1918 / ULA), link-local (169.254/16 -- the
+# cloud metadata range) and reserved addresses are refused, literal or
+# via DNS, on every redirect hop. ``true`` lifts the denylist for a dev
+# stack whose origins and hooks live on the same private network. Never
+# on a host tenants can reach.
+FLYCANON_URL_FETCH_ALLOW_PRIVATE=false
+
+# DSN of the BYPASSRLS role (flycanon_admin) for the tenant-wide
+# GET /api/v1/workspaces listing. Empty = reuse FLYCANON_DATABASE_URL,
+# which under the flycanon_app role limits the listing to the caller's
+# own workspace. See docs/deployment.md "RLS roles".
+FLYCANON_ADMIN_DATABASE_URL=
+
+# The admin dashboard API requires authentication (a valid platform
+# key). ``false`` opens it -- loopback development only.
+FLYCANON_ADMIN_REQUIRE_AUTH=true
+
+# Postgres-outbox consumer group. Leave unset: the API defaults to
+# ``flycanon-api`` and ``flycanon worker`` to ``flycanon-workers``. Both
+# processes on ONE group share -- and steal from -- one cursor, and
+# async ingest jobs stay queued forever.
+# FLYCANON_EDA_GROUP=

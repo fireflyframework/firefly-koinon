@@ -1,0 +1,811 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<div class="settings-grid">
+  <nav class="settings-navigation" [attr.aria-label]="'Settings sections' | ffkText">
+    <header>
+      <h1>{{ 'Settings' | ffkText }}</h1>
+      <p>{{ f.tenant()?.name }}</p>
+    </header>
+    @for (group of groups; track group.id) {
+      @if (tabsFor(group).length) {
+        <section [attr.aria-label]="group.label | ffkText">
+          <h2>{{ group.label | ffkText }}</h2>
+          @for (tab of tabsFor(group); track tab.id) {
+            <button
+              [class.active]="section() === tab.id"
+              [attr.aria-current]="section() === tab.id ? 'page' : null"
+              (click)="openSection(tab.id)"
+            >
+              <ffk-icon [name]="tab.icon" /><span>{{ tab.label | ffkText }}</span>
+            </button>
+          }
+        </section>
+      }
+    }
+  </nav>
+  <div class="mobile-settings-navigation">
+    <h1>{{ 'Settings' | ffkText }}</h1>
+    <label
+      >{{ 'Settings section' | ffkText
+      }}<select
+        [attr.aria-label]="'Settings section' | ffkText"
+        [ngModel]="section()"
+        (ngModelChange)="openSection($event)"
+      >
+        @for (group of groups; track group.id) {
+          @if (tabsFor(group).length) {
+            <optgroup [label]="group.label | ffkText">
+              @for (tab of tabsFor(group); track tab.id) {
+                <option [value]="tab.id">{{ tab.label | ffkText }}</option>
+              }
+            </optgroup>
+          }
+        }
+      </select></label
+    >
+  </div>
+  <section
+    class="settings-content"
+    [attr.aria-busy]="c.pending() || f.pending()"
+    [attr.aria-label]="'Settings content' | ffkText"
+  >
+    @if (c.pending()) {
+      <div class="settings-loading"><ffk-skeleton width="58%" height="3px" label="Working" /></div>
+    }
+    @if (c.error()) {
+      <div class="error" role="alert">
+        <ffk-icon name="alert" /><span>{{ c.error() | ffkText }}</span>
+      </div>
+    }
+    @if (formError()) {
+      <div class="error" role="alert">{{ formError() | ffkText }}</div>
+    }
+    @if (c.notice()) {
+      <p class="notice" role="status">{{ c.notice() | ffkText }}</p>
+    }
+    @if (!editor()) {
+      @if (section() === 'providers') {
+        <header class="section-heading">
+          <div>
+            <h2>{{ 'Providers' | ffkText }}</h2>
+            <p>{{ 'Connect the models your agents will use.' | ffkText }}</p>
+          </div>
+          <ffk-button
+            variant="primary"
+            icon="plus"
+            [disabled]="c.pending() || !c.configuration()"
+            (click)="beginProvider()"
+            >{{ 'Connect a model' | ffkText }}</ffk-button
+          >
+        </header>
+        @for (check of c.configuration()?.checks || []; track check.id) {
+          @if (check.status !== 'passed') {
+            <p class="setup-notice"><ffk-icon name="alert" />{{ check.message }}</p>
+          }
+        }
+        <ffk-search-field
+          [value]="providerQuery()"
+          (valueChange)="providerQuery.set($event)"
+          [label]="'Filter providers' | ffkText"
+          [actionLabel]="'Filter providers' | ffkText"
+          [placeholder]="'Filter providers by name' | ffkText"
+        />
+        <div class="provider-list">
+          @for (provider of providers(); track provider.id) {
+            <article>
+              <div>
+                <h3>{{ provider.name }}</h3>
+                <p>{{ provider.kind }} · {{ provider.model_ids.join(', ') }}</p>
+                <details class="capability-details">
+                  <summary>{{ 'Model capabilities' | ffkText }}</summary>
+                  <p>
+                    {{
+                      'Model discovery does not verify generation, streaming or tool use.' | ffkText
+                    }}
+                  </p>
+                  <div
+                    class="table-wrap"
+                    tabindex="0"
+                    [attr.aria-label]="'Model capabilities' | ffkText"
+                  >
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>{{ 'Model' | ffkText }}</th>
+                          <th>{{ 'Generation' | ffkText }}</th>
+                          <th>{{ 'Streaming' | ffkText }}</th>
+                          <th>{{ 'Tools' | ffkText }}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (model of provider.model_capabilities || []; track model.model_id) {
+                          <tr>
+                            <td>{{ model.model_id }}</td>
+                            <td>{{ capabilityLabel(model.chat) | ffkText }}</td>
+                            <td>{{ capabilityLabel(model.streaming) | ffkText }}</td>
+                            <td>{{ capabilityLabel(model.tools) | ffkText }}</td>
+                          </tr>
+                        } @empty {
+                          <tr>
+                            <td colspan="4">
+                              {{ 'Capabilities have not been checked.' | ffkText }}
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+              </div>
+              <ffk-badge [tone]="generationVerified(provider) ? 'ready' : 'neutral'">{{
+                providerLabel(provider) | ffkText
+              }}</ffk-badge
+              ><ffk-button variant="quiet" (click)="beginProvider(provider)">{{
+                'Edit' | ffkText
+              }}</ffk-button>
+            </article>
+          } @empty {
+            @if (!c.pending() && !c.error()) {
+              <div class="empty">
+                <ffk-icon name="spark" />
+                <h3>{{ 'No model providers' | ffkText }}</h3>
+                <p>
+                  {{
+                    'Connect a provider, then check that its selected models are available.'
+                      | ffkText
+                  }}
+                </p>
+              </div>
+            }
+          }
+        </div>
+      }
+      @if (section() === 'models') {
+        @defer (on immediate) {
+          <ffk-knowledge-models [configuration]="c.configuration()" />
+        } @loading {
+          <ffk-skeleton width="60%" height="12px" [label]="'Opening settings section' | ffkText" />
+        } @error {
+          <p role="alert">
+            {{ 'This section could not be opened. Refresh this page and try again.' | ffkText }}
+          </p>
+        }
+      }
+      @if (section() === 'agents') {
+        <header class="section-heading">
+          <div>
+            <h2>{{ 'Agents' | ffkText }}</h2>
+            <p>{{ 'Choose the models, tools and knowledge available to each agent.' | ffkText }}</p>
+          </div>
+          <ffk-button
+            variant="primary"
+            icon="plus"
+            [disabled]="!usableProviders().length || c.pending()"
+            (click)="beginAgent()"
+            >{{ 'Create an agent' | ffkText }}</ffk-button
+          >
+        </header>
+        @if (!usableProviders().length) {
+          <div class="setup-notice">
+            <ffk-icon name="alert" /><span>{{
+              'Check a model provider before creating an agent.' | ffkText
+            }}</span
+            ><ffk-button variant="quiet" (click)="openSection('providers')">{{
+              'Review providers' | ffkText
+            }}</ffk-button>
+          </div>
+        }
+        @if (c.agents().total !== undefined) {
+          <ffk-search-field
+            [value]="agentQuery"
+            (valueChange)="agentQuery = $event"
+            [label]="'Filter agents' | ffkText"
+            [actionLabel]="'Apply agent filter' | ffkText"
+            [placeholder]="'Filter agents by name' | ffkText"
+            (searchSubmitted)="c.loadAgents({ q: $event, page: 1 })"
+          />
+        }
+        <div class="agent-list">
+          @for (agent of c.agents().items; track agent.id) {
+            <article>
+              <div>
+                <h3>{{ agent.name }}</h3>
+                <p>{{ agent.description || 'No description yet.' }}</p>
+                <small>{{ agent.model_id }}</small>
+              </div>
+              <ffk-badge
+                [tone]="
+                  agent.status === 'ready'
+                    ? 'ready'
+                    : agent.status === 'unverified'
+                      ? 'neutral'
+                      : 'attention'
+                "
+                >{{ status(agent.status) | ffkText }}</ffk-badge
+              ><ffk-button variant="quiet" (click)="beginAgent(agent)">{{
+                'Edit' | ffkText
+              }}</ffk-button>
+              @if (canRun(agent)) {
+                <ffk-button (click)="actions?.chat(agent.id)">{{
+                  (agent.status === 'ready' ? 'Open chat' : 'Try agent') | ffkText
+                }}</ffk-button>
+              }
+            </article>
+          } @empty {
+            @if (!c.pending() && !c.error()) {
+              <div class="empty">
+                <ffk-icon name="chat" />
+                <h3>{{ 'No agents in this view' | ffkText }}</h3>
+                <p>{{ 'Create an agent after checking its model provider.' | ffkText }}</p>
+              </div>
+            }
+          }
+        </div>
+        <ffk-pagination
+          [page]="c.agents()"
+          [label]="'Agents' | ffkText"
+          [loading]="c.pending()"
+          (pageChanged)="c.loadAgents({ page: $event })"
+          (sizeChanged)="c.loadAgents({ page_size: $event, page: 1 })"
+        />
+      }
+    }
+    @if (editor() === 'provider') {
+      <header class="section-heading">
+        <div>
+          <span class="eyebrow"
+            >{{ 'Provider setup' | ffkText }} · {{ step() }} {{ 'of' | ffkText }} 3</span
+          >
+          <h2>{{ providerRecord()?.name || ('Connect a model' | ffkText) }}</h2>
+          @if (step() === 2) {
+            <p class="selected-provider">
+              {{ 'Provider type:' | ffkText }} {{ selectedType()?.name }}
+            </p>
+          }
+        </div>
+        @if (step() === 2 && !providerRecord()) {
+          <ffk-button variant="quiet" icon="chevron-left" (click)="backProvider()">{{
+            'Back' | ffkText
+          }}</ffk-button>
+        } @else {
+          <ffk-button variant="quiet" (click)="finish()">{{ 'Cancel' | ffkText }}</ffk-button>
+        }
+      </header>
+      @if (step() === 1) {
+        <p class="intro">{{ 'Choose a provider supported by this deployment.' | ffkText }}</p>
+        <div class="provider-types">
+          @for (type of c.configuration()?.provider_types || []; track type.id) {
+            <ffk-button (click)="chooseProvider(type.id)">{{ type.name }}</ffk-button>
+          } @empty {
+            <p>
+              {{
+                'No provider types are available. Ask the deployment administrator to check its configuration.'
+                  | ffkText
+              }}
+            </p>
+          }
+        </div>
+      }
+      @if (step() === 2) {
+        <form class="configuration-form" (ngSubmit)="saveProvider()">
+          @for (field of selectedType()?.fields || []; track field.name) {
+            @if (field.type === 'select') {
+              <label class="select-field" [for]="'provider-' + field.name"
+                >{{ field.label | ffkText
+                }}<select
+                  [id]="'provider-' + field.name"
+                  [name]="field.name"
+                  [ngModel]="providerValues[field.name] || ''"
+                  (ngModelChange)="providerValues[field.name] = $event"
+                  [attr.aria-invalid]="providerFieldErrors()[field.name] ? true : null"
+                >
+                  @for (option of field.options || []; track option.value) {
+                    <option [value]="option.value">{{ apiLabel(option.label) | ffkText }}</option>
+                  }
+                </select>
+                @if (providerFieldErrors()[field.name]) {
+                  <small class="field-error">{{
+                    providerFieldErrors()[field.name] | ffkText
+                  }}</small>
+                }
+              </label>
+            } @else {
+              <ffk-form-field
+                [inputId]="'provider-' + field.name"
+                [label]="field.label"
+                [value]="providerValues[field.name] || ''"
+                (valueChange)="providerValues[field.name] = $event"
+                [multiline]="field.type === 'string_list'"
+                [type]="
+                  field.type === 'secret' ? 'password' : field.type === 'url' ? 'url' : 'text'
+                "
+                [required]="requiredField(field)"
+                [disabled]="field.type === 'secret' && removeProviderSecret"
+                [error]="providerFieldErrors()[field.name] || ''"
+                [hint]="fieldHint(field)"
+              />
+            }
+          }
+          @if (providerRecord()?.secret_configured) {
+            <label class="check-field"
+              ><input
+                type="checkbox"
+                name="remove-secret"
+                [(ngModel)]="removeProviderSecret"
+              /><span>{{ 'Remove the current API key' | ffkText }}</span></label
+            >
+            @if (removeProviderSecret) {
+              <p class="setup-notice">
+                {{ 'Removing the key may stop agents that use this provider.' | ffkText }}
+              </p>
+            }
+          }
+          <label class="check-field"
+            ><input type="checkbox" name="provider-enabled" [(ngModel)]="providerEnabled" /><span>{{
+              'Enable this provider' | ffkText
+            }}</span></label
+          >
+          <div class="form-actions">
+            <ffk-button variant="quiet" (click)="finish()">{{ 'Cancel' | ffkText }}</ffk-button
+            ><ffk-button type="submit" variant="primary" [loading]="c.pending()">{{
+              'Save provider' | ffkText
+            }}</ffk-button>
+          </div>
+        </form>
+      }
+      @if (step() === 3) {
+        <section class="check-panel">
+          <h3>{{ 'Check the connection' | ffkText }}</h3>
+          <p>
+            {{
+              'The settings are saved. Discover available models, then check an agent before using it.'
+                | ffkText
+            }}
+          </p>
+          <ffk-badge
+            [tone]="providerRecord() && generationVerified(providerRecord()!) ? 'ready' : 'neutral'"
+            >{{ providerLabel(providerRecord()!) | ffkText }}</ffk-badge
+          >
+          <ul class="checks">
+            @for (
+              check of c.validation()?.checks || providerRecord()?.checks || [];
+              track check.id
+            ) {
+              <li>
+                <ffk-icon [name]="check.status === 'passed' ? 'check' : 'alert'" /><span>{{
+                  check.message
+                }}</span>
+              </li>
+            }
+          </ul>
+          <div class="form-actions">
+            <ffk-button [loading]="c.pending()" (click)="checkProvider()">{{
+              'Check connection' | ffkText
+            }}</ffk-button
+            ><ffk-button variant="primary" (click)="finish()">{{ 'Done' | ffkText }}</ffk-button>
+          </div>
+        </section>
+      }
+    }
+    @if (editor() === 'agent') {
+      <header class="section-heading">
+        <div>
+          <span class="eyebrow">{{ 'Agent setup' | ffkText }}</span>
+          <h2>{{ agentRecord()?.name || ('Create an agent' | ffkText) }}</h2>
+        </div>
+        <ffk-button variant="quiet" (click)="finish()">{{ 'Cancel' | ffkText }}</ffk-button>
+      </header>
+      @if (step() === 2) {
+        <form class="configuration-form" (ngSubmit)="saveAgent()">
+          <ffk-form-field
+            inputId="agent-name"
+            [label]="'Agent name' | ffkText"
+            [value]="agentName"
+            (valueChange)="agentName = $event"
+            required
+          /><ffk-form-field
+            inputId="agent-description"
+            [label]="'Description' | ffkText"
+            [value]="agentDescription"
+            (valueChange)="agentDescription = $event"
+            multiline
+          />
+          <div class="form-grid">
+            <label
+              >{{ 'Model provider' | ffkText
+              }}<select
+                name="agent-provider"
+                [attr.aria-label]="'Model provider' | ffkText"
+                [(ngModel)]="agentProvider"
+                (ngModelChange)="agentModel = ''; resetModelOptions()"
+                required
+              >
+                <option value="" disabled>{{ 'Choose a provider' | ffkText }}</option>
+                @for (provider of usableProviders(); track provider.id) {
+                  <option [value]="provider.id">{{ provider.name }}</option>
+                }
+              </select></label
+            ><label
+              >{{ 'Model' | ffkText
+              }}<select
+                name="agent-model"
+                [attr.aria-label]="'Model' | ffkText"
+                [(ngModel)]="agentModel"
+                (ngModelChange)="resetModelOptions()"
+                [disabled]="!agentProvider"
+                required
+              >
+                <option value="" disabled>{{ 'Choose a model' | ffkText }}</option>
+                @for (model of models(); track model) {
+                  <option [value]="model">{{ model }}</option>
+                }
+              </select></label
+            >
+          </div>
+          <fieldset>
+            <legend>{{ 'Knowledge tools' | ffkText }}</legend>
+            @for (tool of tools; track tool.id) {
+              <label class="tool-choice"
+                ><input
+                  type="checkbox"
+                  [name]="tool.id"
+                  [attr.aria-label]="tool.name | ffkText"
+                  [attr.aria-describedby]="'tool-description-' + tool.id"
+                  [checked]="agentTools.includes(tool.id)"
+                  (change)="toggleTool(tool.id, $any($event.target).checked)"
+                /><span
+                  ><strong>{{ tool.name | ffkText }}</strong
+                  ><small [id]="'tool-description-' + tool.id">{{
+                    tool.description | ffkText
+                  }}</small></span
+                ></label
+              >
+            }
+          </fieldset>
+          <div class="scope-field">
+            <div>
+              <span>{{ 'Knowledge scope' | ffkText }}</span
+              ><strong>{{ scopeName() }}</strong
+              ><small>{{ 'Each person’s access limits what the agent can read.' | ffkText }}</small>
+            </div>
+            <ffk-button variant="quiet" (click)="scopePicker.set(!scopePicker())">{{
+              'Choose scope' | ffkText
+            }}</ffk-button>
+          </div>
+          @if (scopePicker()) {
+            <div class="scope-picker">
+              <ffk-folder-tree
+                [entries]="f.entries()"
+                [currentId]="
+                  agentScope.collection_id || agentScope.project_id || agentScope.workspace_id || ''
+                "
+                [contextKey]="f.tenantId()"
+                [loadChildren]="loadTreeChildren"
+                [error]="f.error()"
+                (selected)="useScope($event)"
+              />
+            </div>
+          }
+          @if (c.configuration()?.model_options_schema) {
+            <details class="advanced-options">
+              <summary #advancedOptions>{{ 'Advanced model options' | ffkText }}</summary>
+              <p>
+                {{
+                  'Only options supported by the selected model API are shown. Changing the model resets these options.'
+                    | ffkText
+                }}
+              </p>
+              @defer (on interaction(advancedOptions)) {
+                <ffk-model-options-form
+                  [fields]="modelOptionFields()"
+                  [values]="modelOptionValues"
+                  [errors]="modelOptionErrors()"
+                  (valuesChanged)="modelOptionValues = $event"
+                />
+              } @loading {
+                <ffk-skeleton
+                  width="60%"
+                  height="12px"
+                  [label]="'Opening settings section' | ffkText"
+                />
+              } @error {
+                <p role="alert">
+                  {{
+                    'This section could not be opened. Refresh this page and try again.' | ffkText
+                  }}
+                </p>
+              }
+            </details>
+          }
+          <ffk-form-field
+            inputId="agent-instructions"
+            [label]="'Instructions' | ffkText"
+            [value]="agentInstructions"
+            (valueChange)="agentInstructions = $event"
+            multiline
+            [hint]="'Describe what this agent should help your team do.' | ffkText"
+          /><label class="check-field"
+            ><input type="checkbox" name="agent-enabled" [(ngModel)]="agentEnabled" /><span>{{
+              'Enable this agent' | ffkText
+            }}</span></label
+          >
+          <div class="form-actions">
+            <ffk-button variant="quiet" (click)="finish()">{{ 'Cancel' | ffkText }}</ffk-button
+            ><ffk-button type="submit" variant="primary" [loading]="c.pending()">{{
+              'Save agent' | ffkText
+            }}</ffk-button>
+          </div>
+        </form>
+      }
+      @if (step() === 3) {
+        <section class="check-panel">
+          <h3>{{ 'Check the agent' | ffkText }}</h3>
+          <p>{{ 'Check its model and knowledge tools before your team uses it.' | ffkText }}</p>
+          <ffk-badge
+            [tone]="
+              agentRecord()?.status === 'ready'
+                ? 'ready'
+                : agentRecord()?.status === 'unverified'
+                  ? 'neutral'
+                  : 'attention'
+            "
+            >{{ status(agentRecord()?.status || 'needs_setup') | ffkText }}</ffk-badge
+          >
+          <ul class="checks">
+            @for (check of agentRecord()?.checks || []; track check.id) {
+              <li>
+                <ffk-icon [name]="check.status === 'passed' ? 'check' : 'alert'" /><span>{{
+                  check.message
+                }}</span>
+              </li>
+            }
+          </ul>
+          <div class="form-actions">
+            <ffk-button [loading]="c.pending()" (click)="checkAgent()">{{
+              'Check agent' | ffkText
+            }}</ffk-button>
+            @if (canRun(agentRecord())) {
+              <ffk-button variant="primary" (click)="actions?.chat(agentRecord()!.id)">{{
+                (agentRecord()?.status === 'ready' ? 'Open chat' : 'Try agent') | ffkText
+              }}</ffk-button>
+            }
+            <ffk-button variant="quiet" (click)="finish()">{{ 'Done' | ffkText }}</ffk-button>
+          </div>
+        </section>
+      }
+    }
+    @if (!editor() && section() === 'sources') {
+      <header class="section-heading">
+        <div>
+          <h2>{{ 'Sources & connections' | ffkText }}</h2>
+          <p>{{ 'Review the sources connected to your knowledge.' | ffkText }}</p>
+        </div>
+        <ffk-button variant="primary" icon="upload" (click)="actions?.addKnowledge?.()">{{
+          'Add files' | ffkText
+        }}</ffk-button>
+      </header>
+      <ffk-search-field
+        [value]="sourceQuery"
+        (valueChange)="sourceQuery = $event"
+        [label]="'Filter sources' | ffkText"
+        [actionLabel]="'Apply source filter' | ffkText"
+        [placeholder]="'Filter sources by name' | ffkText"
+        (searchSubmitted)="loadSources(1)"
+      />
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>{{ 'Source' | ffkText }}</th>
+              <th>{{ 'Status' | ffkText }}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (source of sources().items; track source.id) {
+              <tr>
+                <td>{{ source.name }}</td>
+                <td>
+                  <ffk-badge>{{ status(source.status) | ffkText }}</ffk-badge>
+                </td>
+                <td>
+                  <ffk-button variant="quiet" (click)="actions?.resource?.(source.id)">{{
+                    'Details' | ffkText
+                  }}</ffk-button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="3">
+                  <p class="empty-text">
+                    {{
+                      'No sources in this view. Add files from Library to get started.' | ffkText
+                    }}
+                  </p>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <ffk-pagination
+        [page]="sources()"
+        [label]="'Sources' | ffkText"
+        (pageChanged)="loadSources($event)"
+      />
+      <section class="connection-section">
+        <h3>{{ 'Connections' | ffkText }}</h3>
+        <p>
+          {{
+            'File uploads are available in Library. Contact your deployment administrator to add another source.'
+              | ffkText
+          }}
+        </p>
+      </section>
+    }
+    @if (!editor() && section() === 'people') {
+      <ffk-people-access [invitationBaseUrl]="actions?.invitationBaseUrl?.() ?? ''" />
+    }
+    @if (!editor() && section() === 'storage') {
+      <header class="section-heading">
+        <div>
+          <h2>{{ 'Storage & indexing' | ffkText }}</h2>
+          <p>
+            {{
+              'Check the storage and indexing services available to your organization.' | ffkText
+            }}
+          </p>
+        </div>
+        <ffk-button variant="quiet" icon="refresh" [disabled]="c.pending()" (click)="c.load()">{{
+          'Refresh' | ffkText
+        }}</ffk-button>
+      </header>
+      @defer (on immediate) {
+        <ffk-deployment-panel
+          [deployment]="c.configuration()?.deployment"
+          [workspaceNames]="workspaceNames()"
+        />
+      } @loading {
+        <ffk-skeleton width="60%" height="12px" [label]="'Opening settings section' | ffkText" />
+      } @error {
+        <p role="alert">
+          {{ 'This section could not be opened. Refresh this page and try again.' | ffkText }}
+        </p>
+      }
+    }
+    @if (!editor() && section() === 'audit') {
+      <ffk-audit-panel [resource]="actions?.resource" />
+    }
+    @if (!editor() && section() === 'operations') {
+      <header class="section-heading">
+        <div>
+          <h2>{{ 'Operations' | ffkText }}</h2>
+          <p>{{ 'Review processing work that needs attention.' | ffkText }}</p>
+        </div>
+        <ffk-button variant="quiet" icon="refresh" (click)="f.loadJobs()">{{
+          'Refresh' | ffkText
+        }}</ffk-button>
+      </header>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>{{ 'Activity' | ffkText }}</th>
+              <th>{{ 'Status' | ffkText }}</th>
+              <th>{{ 'Progress' | ffkText }}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (job of f.jobs(); track job.id) {
+              <tr>
+                <td>
+                  {{ status(job.kind) | ffkText }}
+                  @if (job.error) {
+                    <p class="job-error">{{ job.error }}</p>
+                  }
+                </td>
+                <td>
+                  <ffk-badge
+                    [tone]="job.status.toLowerCase() === 'failed' ? 'attention' : 'neutral'"
+                    >{{ status(job.status) | ffkText }}</ffk-badge
+                  >
+                </td>
+                <td>{{ job.progress | ffkValue }}%</td>
+                <td>
+                  @if (['queued', 'pending', 'running'].includes(job.status.toLowerCase())) {
+                    <ffk-button variant="quiet" (click)="f.cancelJob(job.id)">{{
+                      'Stop' | ffkText
+                    }}</ffk-button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              @if (!f.error()) {
+                <tr>
+                  <td colspan="4">{{ 'No processing jobs were returned.' | ffkText }}</td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    @if (!editor() && section() === 'providers') {
+      <details class="connection-section">
+        <summary>{{ 'Deployment model connections' | ffkText }}</summary>
+        <p>
+          {{
+            'Deployment connections are managed by your administrator. Use Knowledge models to assign providers to knowledge roles.'
+              | ffkText
+          }}
+        </p>
+        @for (connection of c.configuration()?.connections || []; track connection.id) {
+          <article class="service-row">
+            <div>
+              <h3>{{ connectionLabel(connection) | ffkText }}</h3>
+              <p>
+                {{ connection.provider }}
+                @if (connection.model_id) {
+                  · {{ connection.model_id }}
+                }
+              </p>
+              <p>{{ connection.reason }}</p>
+            </div>
+            <ffk-badge [tone]="connection.available === true ? 'ready' : 'neutral'">{{
+              (connection.available === true
+                ? 'Available'
+                : connection.available === false
+                  ? 'Needs attention'
+                  : 'Not checked'
+              ) | ffkText
+            }}</ffk-badge>
+          </article>
+        } @empty {
+          <p>{{ 'No deployment model connections were returned.' | ffkText }}</p>
+        }
+      </details>
+      @if (c.configuration()?.framework_providers?.length) {
+        <details class="connection-section">
+          <summary>{{ 'Framework provider support' | ffkText }}</summary>
+          <p>{{ 'Only providers exposed by this deployment can be configured here.' | ffkText }}</p>
+          <div
+            class="table-wrap"
+            tabindex="0"
+            [attr.aria-label]="'Framework provider support' | ffkText"
+          >
+            <table>
+              <thead>
+                <tr>
+                  <th>{{ 'Provider' | ffkText }}</th>
+                  <th>{{ 'Availability' | ffkText }}</th>
+                  <th>{{ 'Details' | ffkText }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (provider of c.configuration()?.framework_providers || []; track provider.id) {
+                  <tr>
+                    <td>{{ provider.id }}</td>
+                    <td>
+                      {{
+                        (provider.exposed
+                          ? 'Configurable here'
+                          : provider.native_supported
+                            ? 'Deployment setup required'
+                            : 'Not available'
+                        ) | ffkText
+                      }}
+                    </td>
+                    <td>
+                      {{ provider.reason }}<code>{{ provider.model_class }}</code>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </details>
+      }
+    }
+  </section>
+</div>

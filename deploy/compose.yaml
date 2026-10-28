@@ -1,0 +1,67 @@
+# Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
+name: firefly-koinon-local
+services:
+  postgres:
+    build:
+      context: .
+      dockerfile: docker/postgres.Dockerfile
+    environment:
+      POSTGRES_USER: koinon_migrator
+      POSTGRES_DB: koinon
+      POSTGRES_PASSWORD_FILE: /run/secrets/database_admin_password
+    ports: ["127.0.0.1:18783:5432"]
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/01-keycloak.sh:/docker-entrypoint-initdb.d/01-keycloak.sh:ro
+    secrets: [database_admin_password, keycloak_database_password]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U koinon_migrator -d koinon"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    mem_limit: 512m
+  redis:
+    image: redis:8.2.3-bookworm
+    entrypoint: ["/bin/sh", "/opt/koinon/start.sh"]
+    ports: ["127.0.0.1:18787:6379"]
+    volumes: ["redis-data:/data", "./redis/start.sh:/opt/koinon/start.sh:ro"]
+    secrets: [redis_password]
+    mem_limit: 192m
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    entrypoint: ["/bin/sh", "/opt/koinon/start.sh"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: koinon_keycloak
+      KC_BOOTSTRAP_ADMIN_USERNAME: local-admin
+      KC_HTTP_PORT: 8080
+      KC_HOSTNAME: http://127.0.0.1:18784
+      KC_HEALTH_ENABLED: "true"
+      JAVA_OPTS_KC_HEAP: "-Xms128m -Xmx512m"
+      JAVA_OPTS_APPEND: "-XX:ActiveProcessorCount=2"
+    ports: ["127.0.0.1:18784:8080"]
+    depends_on:
+      postgres: {condition: service_healthy}
+    volumes:
+      - ./keycloak/start.sh:/opt/koinon/start.sh:ro
+      - ./keycloak/koinon-realm.template.json:/opt/keycloak/data/import/koinon-realm.json:ro
+    secrets: [keycloak_database_password, keycloak_admin_password, demo_password, oidc_client_secret]
+    mem_limit: 768m
+secrets:
+  database_admin_password:
+    file: ${KOINON_SECRETS_DIR:?}/database_admin_password
+  keycloak_database_password:
+    file: ${KOINON_SECRETS_DIR:?}/keycloak_database_password
+  keycloak_admin_password:
+    file: ${KOINON_SECRETS_DIR:?}/keycloak_admin_password
+  redis_password:
+    file: ${KOINON_SECRETS_DIR:?}/redis_password
+  demo_password:
+    file: ${KOINON_SECRETS_DIR:?}/demo_password
+  oidc_client_secret:
+    file: ${KOINON_SECRETS_DIR:?}/oidc_client_secret
+volumes:
+  postgres-data:
+  redis-data:

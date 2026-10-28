@@ -1,0 +1,113 @@
+/* Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 */
+:host {
+  display: block;
+  min-width: 0;
+  container-type: inline-size;
+  container-name: koinon-filters;
+  --filter-space-small: 8px;
+  --filter-space-medium: 16px;
+  --filter-space-large: 24px;
+}
+.filter-bar {
+  min-width: 0;
+  background: var(--ui-subtle, var(--ui-hover, #efede6));
+  border-radius: 12px;
+  padding: var(--filter-space-large);
+}
+.main,
+.expanded,
+.chips {
+  min-width: 0;
+}
+.toolbar,
+.actions,
+.active {
+  display: flex;
+  align-items: center;
+  gap: var(--filter-space-small);
+  flex-wrap: wrap;
+}
+.toolbar {
+  justify-content: space-between;
+  margin-top: var(--filter-space-medium);
+}
+.actions {
+  margin-left: auto;
+  justify-content: flex-end;
+}
+.expanded {
+  padding-top: var(--filter-space-large);
+}
+.active {
+  margin-top: var(--filter-space-medium);
+  justify-content: space-between;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--filter-space-small);
+}
+.count {
+  font-size: 11px;
+  background: var(--ui-surface);
+  border-radius: 12px;
+  padding: 1px 6px;
+  margin-left: 6px;
+}
+.draft {
+  margin: 12px 0 0;
+  color: var(--ui-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+@container koinon-filters (max-width:440px) {
+  .filter-bar {
+    padding: var(--filter-space-medium);
+  }
+  .toolbar {
+    gap: 12px;
+  }
+  .actions {
+    gap: 4px;
+  }
+  .expanded {
+    padding-top: var(--filter-space-medium);
+  }
+  .active {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 4px;
+  border: 0;
+  background: transparent;
+  color: var(--ui-text);
+  font: 600 13px var(--ffk-font, sans-serif);
+  cursor: pointer;
+  border-radius: 6px;
+}
+.toggle:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 3px;
+}
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+.footer .draft {
+  margin: 0;
+  flex: 1;
+  min-width: 160px;
+}
+.footer .actions {
+  margin-left: auto;
+}

@@ -1,0 +1,45 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>firefly koinon custom element</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      body {
+        font: 16px system-ui;
+        margin: 0;
+      }
+      header {
+        padding: 18px;
+        border-bottom: 1px solid #aaa;
+      }
+      header h1 {
+        font-size: 18px;
+        margin: 0;
+      }
+      header p {
+        font-size: 13px;
+        max-width: 70ch;
+      }
+      firefly-koinon {
+        display: block;
+      }
+      button {
+        background: magenta !important;
+        color: lime !important;
+        font-size: 30px !important;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Non-Angular host</h1>
+      <p>
+        This page demonstrates the packaged custom element. The host provides a scoped client; the
+        element owns no global router, authentication or CSS.
+      </p>
+    </header>
+    <firefly-koinon brand-base="/elements/assets/brand"></firefly-koinon>
+  </body>
+</html>

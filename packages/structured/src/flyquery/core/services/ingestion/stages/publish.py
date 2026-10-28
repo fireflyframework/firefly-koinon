@@ -1,0 +1,107 @@
+# Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2024-2026 Firefly Software Foundation
+# Modifications Copyright 2026 Firefly Software Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Stage 10 — publish: atomic snapshot READY swap + EDA event.
+
+Single transaction:
+1. UPDATE flyquery_schema_snapshots SET status='READY'
+2. UPDATE flyquery_tables SET current_snapshot_id + updated_at
+3. Publish flyquery.schema.updated via IngestPublisher (stub in Phase B)
+"""
+
+from __future__ import annotations
+
+import logging
+import uuid
+
+import sqlalchemy as sa
+from pyfly.data.transaction import infrastructure_unit
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from flyquery.core.eda.ingest_publisher import IngestPublisher, SchemaUpdatedEvent
+from flyquery.core.services.ingestion import lineage
+
+logger = logging.getLogger(__name__)
+
+
+async def run_publish(
+    *,
+    tenant_id: str,
+    workspace_id: uuid.UUID,
+    dataset_id: uuid.UUID,
+    table_id: uuid.UUID,
+    snapshot_id: uuid.UUID,
+    n_columns: int,
+    n_rows_actual: int,
+    publisher: IngestPublisher,
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    """Execute Stage 10: atomic READY swap + EDA publish."""
+    # --- Atomic transaction: flip snapshot + table ---
+    async with infrastructure_unit(session_factory) as s:
+        await lineage.emit(
+            "publish",
+            session=s,
+            snapshot_id=snapshot_id,
+            table_id=table_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            dataset_id=dataset_id,
+        )
+        await s.execute(
+            sa.text(
+                "UPDATE flyquery_schema_snapshots SET status = 'READY' "
+                "WHERE id = :sid AND tenant_id = :tenant"
+            ),
+            {"sid": snapshot_id, "tenant": tenant_id},
+        )
+        await s.execute(
+            sa.text(
+                "UPDATE flyquery_tables "
+                "SET current_snapshot_id = :sid, updated_at = now() "
+                "WHERE id = :tid AND tenant_id = :tenant"
+            ),
+            {"sid": snapshot_id, "tid": table_id, "tenant": tenant_id},
+        )
+
+        await lineage.emit(
+            "published",
+            session=s,
+            snapshot_id=snapshot_id,
+            table_id=table_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            dataset_id=dataset_id,
+        )
+
+    # --- EDA publish ---
+    event = SchemaUpdatedEvent(
+        tenant_id=tenant_id,
+        workspace_id=str(workspace_id),
+        dataset_id=str(dataset_id),
+        table_id=str(table_id),
+        snapshot_id=str(snapshot_id),
+        n_columns=n_columns,
+        n_rows_actual=n_rows_actual,
+    )
+    await publisher.publish_schema_updated(event)
+
+    logger.info(
+        "stage=publish snapshot_id=%s table_id=%s status=READY",
+        snapshot_id,
+        table_id,
+    )

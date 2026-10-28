@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "canonical_source": {
+    "repository": "https://github.com/fireflyframework/flycanon",
+    "revision": "aa2486ac98bf2bb92f0187ac30ca80900fae8abd",
+    "builder_sha256": "4859aa020705b651fbc94e703f8fb4785767f80b79ceb9db1b4c5a058940948b",
+    "observability_module_exists": false,
+    "existing_rlm_cache_switch": "FLYCANON_RLM_PROMPT_CACHE"
+  },
+  "variants": {
+    "src/flyquery/core/agents/builder.py": {
+      "sha256": "e20130adf3f28ac9683ed898517109975a37f990deb998a556db96ee7056e92e",
+      "rationale": "The current canon factory preserves Azure model resolution and has different settings. flyquery retains its own model factory and adds the tested instruction-only prompt-cache policy; full-file parity with canon is not asserted. Native koinon migration: imports use pyfly.agentic; the builder requires the ApplicationContext-owned AgentFactory bound through structured settings. Original hash is retained as upstream_sha256. Local Ollama structured outputs use native JSON Schema response mode instead of relying on an output tool call; non-local provider behavior is retained. Reviewed request-local connection migration: explicit borrowed native models/options/output modes replace private defaults only in required product scopes; missing or foreign scopes fail closed, stage budgets remain bounded, incompatible reasoning clamps fail visibly, and standalone configured behavior remains unchanged. The pinned upstream and historical normalized baselines are unchanged. Borrowed connections use a request-local copy of the public native runtime configuration with default_temperature disabled, so omitted or forbidden sampling options cannot be reintroduced by deployment defaults. Reviewed immutable constructor provenance: record the actual constructed agent role, public model class/API/output mode, and instruction/effective-setting hashes against the request-local selected assignment revisions. Unsupported encodings remain explicitly incomplete; no mutable configuration backfill or provider-internal identity is claimed. Constructor and isolation regressions qualify this variant; historical baseline pins remain unchanged. Foundation-only attribution updates the file pin; the executable syntax tree and historical baseline pins are unchanged.",
+      "upstream_sha256": "f213fff74c37c1b5fe7c0a14f3b55439064531b9086e5d45b1c125d6254063c7"
+    },
+    "src/flyquery/core/observability/__init__.py": {
+      "sha256": "f555f0242c520b6fce7046ed23319ec9985d431f2818d444f1a1d1c5aa0adb38",
+      "rationale": "Canon at the referenced release has no generic core/observability module. flyquery owns its per-construction FLYQUERY_PROMPT_CACHE switch, adds no user/tool cache flags or shared OpenAI routing key, and relies on Agentic logging/observability defaults. Native koinon migration: imports use pyfly.agentic; the builder requires the ApplicationContext-owned AgentFactory bound through structured settings. Original hash is retained as upstream_sha256.",
+      "upstream_sha256": "1458f4346d80dff5a13873153645836d1043f232c0c1872a1be010b0a4d3c02a"
+    },
+    "src/flyquery/web/conventions/db.py": {
+      "sha256": "42c36899ac06bf7e6c1c9edc064fb395d9e06810c831bee08f287d5e78b714df",
+      "historical_normalized_sha256": "705f5c81bc3eea64743349a08b5203b3682e4bfbecd6445769e64f73ea9e5560",
+      "rationale": "Native Data migration preserves the SQLAlchemy GUC hook implementation and updates its documentation: runtime workers now bind explicit tenant/workspace context under a NOBYPASSRLS named datasource; only provisioning and workspace-ID enumeration use the separate admin datasource. The previous cross-workspace bypass assumption no longer applies. Original historical normalized pin remains unchanged in lockstep_pins.json. Foundation-only attribution updates the file pin; the executable syntax tree and historical baseline pins are unchanged."
+    }
+  }
+}

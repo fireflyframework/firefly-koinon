@@ -1,0 +1,513 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<header class="sidebar-header">
+  <ffk-button
+    variant="quiet"
+    icon="plus"
+    [disabled]="busy || !s.canUse()"
+    [label]="'New conversation' | ffkText"
+    (click)="startNew()"
+    >{{ 'New' | ffkText }}</ffk-button
+  >
+  <div class="header-actions">
+    <button
+      type="button"
+      class="icon-button"
+      [attr.aria-label]="'Conversation options' | ffkText"
+      [attr.aria-expanded]="menu()?.kind === 'global'"
+      (click)="openMenu($event, 'global')"
+    >
+      ⋯
+    </button>
+    @if (closable) {
+      <button
+        type="button"
+        class="icon-button"
+        [attr.aria-label]="'Close conversations' | ffkText"
+        (click)="closeRequested.emit()"
+      >
+        <ffk-icon name="close" />
+      </button>
+    }
+  </div>
+</header>
+@if (menu()?.kind === 'global') {
+  <div
+    class="context-menu global-menu"
+    role="menu" tabindex="-1"
+    [attr.aria-label]="'Conversation options' | ffkText"
+    (keydown)="menuKeys($event)"
+  >
+    <button type="button" role="menuitem" [disabled]="!s.canUse()" (click)="begin('create-folder')">
+      {{ 'New folder' | ffkText }}</button
+    ><button
+      type="button"
+      role="menuitem"
+      (click)="status(s.status() === 'active' ? 'archived' : 'active')"
+    >
+      {{
+        (s.status() === 'active' ? 'Archived conversations' : 'Active conversations') | ffkText
+      }}</button
+    ><button type="button" role="menuitem" (click)="closeMenu(); refresh()">
+      {{ 'Refresh' | ffkText }}
+    </button>
+  </div>
+}
+@if (s.selectedFolder(); as destinationFolder) {
+  <button
+    type="button"
+    class="destination"
+    [attr.aria-label]="('Clear folder selection' | ffkText) + ' · ' + destinationFolder.name"
+    (click)="s.selectedFolder.set(null)"
+  >
+    <ffk-icon name="folder" /><span>{{ destinationFolder.name }}</span
+    ><ffk-icon name="close" />
+  </button>
+}
+<div class="search">
+  <ffk-search-field
+    [value]="query"
+    [label]="'Search conversations' | ffkText"
+    [placeholder]="'Search' | ffkText"
+    [actionLabel]="'Search' | ffkText"
+    (valueChange)="search($event)"
+    (searchSubmitted)="submitSearch()"
+  />
+</div>
+<div class="sidebar-scroll" [attr.aria-label]="'Your conversations' | ffkText">
+  @if (!s.canUse()) {
+    <p class="empty">{{ 'Choose an authorized space to use conversations.' | ffkText }}</p>
+  } @else if (s.searchView()) {
+    <header class="group-title">
+      <h3>
+        {{ (s.status() === 'archived' ? 'Archived conversations' : 'Search results') | ffkText }}
+      </h3>
+      @if (s.status() === 'archived') {
+        <button type="button" class="text-button" (click)="status('active')">
+          {{ 'Back to active' | ffkText }}
+        </button>
+      }
+    </header>
+    @if (s.results().pending && s.results().page === 0) {
+      <ng-container [ngTemplateOutlet]="loading" />
+    }
+    @if (s.results().error) {
+      <ng-container [ngTemplateOutlet]="failed" [ngTemplateOutletContext]="{ retry: 'search' }" />
+    }
+    <ng-container
+      [ngTemplateOutlet]="threadRows"
+      [ngTemplateOutletContext]="{ items: s.results().items, tree: false, parentId: '', level: 0 }"
+    />
+    @if (
+      s.results().page > 0 &&
+      !s.results().pending &&
+      !s.results().error &&
+      !s.results().items.length
+    ) {
+      <p class="empty">{{ 'No conversations match these filters.' | ffkText }}</p>
+    }
+    @if (s.results().page < (s.results().pages ?? 0)) {
+      <ffk-button variant="quiet" [disabled]="s.results().pending" (click)="more('results')">{{
+        'More conversations' | ffkText
+      }}</ffk-button>
+    }
+  } @else {
+    <header class="group-title">
+      <h3>{{ 'Recent' | ffkText }}</h3>
+    </header>
+    @if (s.recent().pending && s.recent().page === 0) {
+      <ng-container [ngTemplateOutlet]="loading" />
+    }
+    @if (s.recent().error) {
+      <ng-container [ngTemplateOutlet]="failed" [ngTemplateOutletContext]="{ retry: 'recent' }" />
+    }
+    <ng-container
+      [ngTemplateOutlet]="threadRows"
+      [ngTemplateOutletContext]="{ items: s.recent().items, tree: false, parentId: '', level: 0 }"
+    />
+    @if (
+      s.recent().page > 0 && !s.recent().pending && !s.recent().error && !s.recent().items.length
+    ) {
+      <p class="empty">{{ 'No unfiled conversations yet.' | ffkText }}</p>
+    }
+    @if (s.recent().page < (s.recent().pages ?? 0)) {
+      <ffk-button variant="quiet" [disabled]="s.recent().pending" (click)="more('recent')">{{
+        'More conversations' | ffkText
+      }}</ffk-button>
+    }
+    <header class="group-title folders-heading">
+      <h3>{{ 'Folders' | ffkText }}</h3>
+      <button
+        type="button"
+        class="icon-button small"
+        [attr.aria-label]="'New folder' | ffkText"
+        (click)="begin('create-folder')"
+      >
+        <ffk-icon name="plus" />
+      </button>
+    </header>
+    @if (s.roots().pending && s.roots().page === 0) {
+      <ng-container [ngTemplateOutlet]="loading" />
+    }
+    @if (s.roots().error) {
+      <ng-container [ngTemplateOutlet]="failed" [ngTemplateOutletContext]="{ retry: 'folders' }" />
+    }
+    <div role="tree" [attr.aria-label]="'Conversation folders' | ffkText">
+      <ng-container
+        [ngTemplateOutlet]="folderTree"
+        [ngTemplateOutletContext]="{ $implicit: s.roots().items, level: 1 }"
+      />
+    </div>
+    @if (s.roots().page > 0 && !s.roots().pending && !s.roots().error && !s.roots().items.length) {
+      <p class="empty">{{ 'Create a folder to organize your conversations.' | ffkText }}</p>
+    }
+    @if (s.roots().page < (s.roots().pages ?? 0)) {
+      <ffk-button variant="quiet" [disabled]="s.roots().pending" (click)="more('folders')">{{
+        'More folders' | ffkText
+      }}</ffk-button>
+    }
+  }
+</div>
+<ng-template #loading
+  ><div class="loading">
+    <ffk-skeleton height="32px" [label]="'Loading conversations' | ffkText" /><ffk-skeleton
+      height="32px"
+      [label]="'Loading conversations' | ffkText"
+    /></div
+></ng-template>
+<ng-template #failed let-retry="retry"
+  ><div class="error" role="alert">
+    <p>{{ 'Conversations could not be loaded.' | ffkText }}</p>
+    <ffk-button variant="quiet" (click)="retryGroup(retry)">{{ 'Try again' | ffkText }}</ffk-button>
+  </div></ng-template
+>
+<ng-template
+  #threadRows
+  let-items="items"
+  let-tree="tree"
+  let-parentId="parentId"
+  let-level="level"
+>
+  @for (thread of items; track thread.id) {
+    <div class="conversation" [class.active]="activeId() === thread.id">
+      <div class="item-row">
+        <button
+          type="button"
+          class="item-name thread-name" [disabled]="busy"
+          [attr.role]="tree ? 'treeitem' : null"
+          [attr.aria-level]="tree ? level : null"
+          [attr.aria-selected]="tree ? activeId()===thread.id : null"
+          [attr.aria-current]="activeId() === thread.id ? 'page' : null"
+          [attr.data-tree-key]="tree ? 'thread:' + thread.id : null"
+          [attr.data-parent-id]="tree ? parentId : null"
+          (keydown)="tree && treeKeys($event, null)"
+          (click)="selectThread(thread)"
+          [title]="thread.title"
+        >
+          <span>{{ thread.title }}</span></button
+        ><button
+          type="button"
+          class="icon-button small item-menu"
+          [attr.aria-label]="('Conversation actions' | ffkText) + ' · ' + thread.title"
+          [attr.aria-expanded]="menu()?.kind === 'thread' && menu()?.id === thread.id"
+          (click)="openMenu($event, 'thread', thread.id)"
+        >
+          ⋯
+        </button>
+      </div>
+      @if (menu()?.kind === 'thread' && menu()?.id === thread.id) {
+        <div
+          class="context-menu"
+          role="menu" tabindex="-1"
+          [attr.aria-label]="'Conversation actions' | ffkText"
+          (keydown)="menuKeys($event)"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            [disabled]="threadBusy() || s.mutating()"
+            (click)="begin('rename-thread', null, thread)"
+          >
+            {{ 'Rename' | ffkText }}</button
+          ><button
+            type="button"
+            role="menuitem"
+            [disabled]="threadBusy() || s.mutating()"
+            (click)="begin('move-thread', null, thread)"
+          >
+            {{ 'Move to folder' | ffkText }}
+          </button>
+          @if (thread.archived_at) {
+            <button
+              type="button"
+              role="menuitem"
+              [disabled]="busy||s.mutating()"
+              (click)="restore(thread)"
+            >
+              {{ 'Restore conversation' | ffkText }}
+            </button>
+          } @else {
+            <button
+              type="button"
+              role="menuitem"
+              [disabled]="threadBusy() || s.mutating()"
+              (click)="begin('archive-thread', null, thread)"
+            >
+              {{ 'Archive conversation' | ffkText }}
+            </button>
+          }
+        </div>
+      }
+    </div>
+  }
+</ng-template>
+<ng-template #folderTree let-folders let-level="level">
+  @for (folder of folders; track folder.id) {
+    @if (s.branches().get(folder.id); as branch) {
+      <div class="folder-node">
+        <div class="item-row">
+          <button
+            type="button"
+            class="item-name folder-name"
+            role="treeitem" [attr.aria-selected]="s.selectedFolder()?.id===folder.id"
+            [attr.aria-level]="level"
+            [attr.aria-expanded]="branch.expanded"
+            [attr.aria-controls]="branch.expanded ? 'conversation-folder-' + folder.id : null"
+            [attr.data-tree-key]="'folder:' + folder.id"
+            [attr.data-parent-id]="folder.parent_id"
+            (keydown)="treeKeys($event, folder)"
+            (click)="toggle(folder)"
+          >
+            <ffk-icon [name]="branch.expanded ? 'down' : 'chevron'" /><ffk-icon
+              name="folder"
+            /><span>{{ folder.name }}</span></button
+          ><button
+            type="button"
+            class="icon-button small item-menu"
+            [attr.aria-label]="('Folder actions' | ffkText) + ' · ' + folder.name"
+            [attr.aria-expanded]="menu()?.kind === 'folder' && menu()?.id === folder.id"
+            (click)="openMenu($event, 'folder', folder.id)"
+          >
+            ⋯
+          </button>
+        </div>
+        @if (menu()?.kind === 'folder' && menu()?.id === folder.id) {
+          <div
+            class="context-menu"
+            role="menu" tabindex="-1"
+            [attr.aria-label]="'Folder actions' | ffkText"
+            (keydown)="menuKeys($event)"
+          >
+            <button type="button" role="menuitem" (click)="begin('create-folder', folder)">
+              {{ 'New folder' | ffkText }}</button
+            ><button type="button" role="menuitem" (click)="begin('rename-folder', folder)">
+              {{ 'Rename' | ffkText }}</button
+            ><button type="button" role="menuitem" (click)="begin('delete-folder', folder)">
+              {{ 'Remove folder' | ffkText }}
+            </button>
+          </div>
+        }
+        @if (branch.expanded) {
+          <div role="group" [id]="'conversation-folder-' + folder.id" class="folder-contents">
+            @if (branch.children.pending || branch.threads.pending) {
+              <ffk-skeleton height="3px" [label]="'Loading conversations' | ffkText" />
+            }
+            @if (branch.children.error || branch.threads.error) {
+              <div class="error" role="alert">
+                <p>{{ 'This folder could not be loaded.' | ffkText }}</p>
+                <ffk-button variant="quiet" (click)="reloadFolder(folder)">{{
+                  'Try again' | ffkText
+                }}</ffk-button>
+              </div>
+            }
+            <ng-container
+              [ngTemplateOutlet]="folderTree"
+              [ngTemplateOutletContext]="{ $implicit: branch.children.items, level: level + 1 }"
+            />
+            <ng-container
+              [ngTemplateOutlet]="threadRows"
+              [ngTemplateOutletContext]="{
+                items: branch.threads.items,
+                tree: true,
+                parentId: folder.id,
+                level: level + 1,
+              }"
+            />
+            @if (
+              branch.children.page > 0 &&
+              branch.threads.page > 0 &&
+              !branch.children.pending &&
+              !branch.threads.pending &&
+              !branch.children.error &&
+              !branch.threads.error &&
+              !branch.children.items.length &&
+              !branch.threads.items.length
+            ) {
+              <p class="empty compact">{{ 'No conversations in this folder yet.' | ffkText }}</p>
+            }
+            @if (branch.children.page < (branch.children.pages ?? 0)) {
+              <ffk-button
+                variant="quiet"
+                [disabled]="branch.children.pending"
+                (click)="more('children', folder)"
+                >{{ 'More folders' | ffkText }}</ffk-button
+              >
+            }
+            @if (branch.threads.page < (branch.threads.pages ?? 0)) {
+              <ffk-button
+                variant="quiet"
+                [disabled]="branch.threads.pending"
+                (click)="more('threads', folder)"
+                >{{ 'More conversations' | ffkText }}</ffk-button
+              >
+            }
+          </div>
+        }
+      </div>
+    }
+  }
+</ng-template>
+<ffk-side-panel [open]="!!edit()" [heading]="heading() | ffkText" (closed)="closeEdit()">
+  @if (edit(); as form) {
+    <form (ngSubmit)="save()">
+      @if (
+        form.kind === 'create-folder' ||
+        form.kind === 'rename-folder' ||
+        form.kind === 'rename-thread'
+      ) {
+        <label class="field"
+          >{{ (form.kind === 'rename-thread' ? 'Conversation title' : 'Folder name') | ffkText
+          }}<input name="name" [(ngModel)]="formName" maxlength="160" required autocomplete="off"
+        /></label>
+        @if (form.kind === 'create-folder') {
+          <p class="help">
+            {{
+              'Folders organize your private conversations without granting knowledge access.'
+                | ffkText
+            }}
+          </p>
+          @if (form.folder) {
+            <p class="help">
+              {{ 'Inside' | ffkText }}: <strong>{{ form.folder.name }}</strong>
+            </p>
+          }
+        }
+        @if (
+          form.kind === 'rename-thread' && allowAiTitle && titleAgentId && !form.thread?.archived_at
+        ) {
+          <ffk-button
+            variant="quiet"
+            [loading]="s.suggesting()"
+            [disabled]="s.mutating()"
+            (click)="suggest()"
+            >{{ 'Suggest a title' | ffkText }}</ffk-button
+          >
+          @if (suggestion(); as proposed) {
+            <section class="proposal">
+              <h3>{{ 'Suggested title' | ffkText }}</h3>
+              <p>{{ proposed.title }}</p>
+              <ffk-button variant="quiet" (click)="useSuggestion()">{{
+                'Use suggestion' | ffkText
+              }}</ffk-button
+              ><small>{{ 'Review the title, then save your changes.' | ffkText }}</small>
+            </section>
+          }
+        }
+      }
+      @if (form.kind === 'move-thread') {
+        <p class="help">
+          {{ 'Moving a conversation does not change its knowledge scope.' | ffkText }}
+        </p>
+        <ffk-search-field
+          [value]="folderQuery"
+          [label]="'Find a folder' | ffkText"
+          [placeholder]="'Find a folder' | ffkText"
+          (valueChange)="folderQuery = $event"
+          (searchSubmitted)="lookupFolders()"
+        />
+        <div class="folder-picker" role="group" [attr.aria-label]="'Destination folder' | ffkText">
+          <button
+            type="button"
+            [class.selected]="destination() === null"
+            (click)="destination.set(null)"
+          >
+            <ffk-icon name="history" /><span>{{ 'Recent (no folder)' | ffkText }}</span>
+            @if (destination() === null) {
+              <ffk-icon name="check" />
+            }
+          </button>
+          @for (folder of s.picker().items; track folder.id) {
+            <button
+              type="button"
+              [class.selected]="destination()?.id === folder.id"
+              [disabled]="!!form.thread && !s.canMove(form.thread, folder)"
+              (click)="destination.set(folder)"
+            >
+              <ffk-icon name="folder" /><span
+                >{{ folder.name }}
+                @if (form.thread && !s.canMove(form.thread, folder)) {
+                  <small>{{ 'Different knowledge scope' | ffkText }}</small>
+                }
+              </span>
+              @if (destination()?.id === folder.id) {
+                <ffk-icon name="check" />
+              }
+            </button>
+          }
+        </div>
+        @if (s.picker().pending) {
+          <ffk-skeleton height="3px" [label]="'Loading folders' | ffkText" />
+        }
+        @if (s.picker().error) {
+          <p class="error" role="alert">{{ 'Folders could not be loaded.' | ffkText }}</p>
+          <ffk-button variant="quiet" (click)="lookupFolders()">{{
+            'Try again' | ffkText
+          }}</ffk-button>
+        }
+        @if (s.picker().page < (s.picker().pages ?? 0)) {
+          <ffk-button variant="quiet" (click)="more('picker')">{{
+            'More folders' | ffkText
+          }}</ffk-button>
+        }
+      }
+      @if (form.kind === 'delete-folder') {
+        <p>
+          {{ 'Remove this folder?' | ffkText }} <strong>{{ form.folder?.name }}</strong>
+        </p>
+        <p class="help">
+          {{ 'Conversations are kept in Recent. Nested folders move up one level.' | ffkText }}
+        </p>
+      }
+      @if (form.kind === 'archive-thread') {
+        <p>
+          {{ 'Archive this conversation?' | ffkText }} <strong>{{ form.thread?.title }}</strong>
+        </p>
+        <p class="help">
+          {{ 'Your conversation is kept. Restore it from Archived conversations.' | ffkText }}
+        </p>
+      }
+      @if (s.error()) {
+        <div class="error" role="alert">
+          <p>{{ errorHelp() | ffkText }}</p>
+          <ffk-button variant="quiet" (click)="reloadEdit()">{{
+            'Reload and review' | ffkText
+          }}</ffk-button>
+        </div>
+      }
+      @if (formError()) {
+        <p class="error" role="alert">{{ formError() | ffkText }}</p>
+      }
+      <footer class="form-actions">
+        <ffk-button variant="quiet" [disabled]="s.mutating()" (click)="panelClose()">{{
+          'Cancel' | ffkText
+        }}</ffk-button
+        ><ffk-button
+          type="submit"
+          [variant]="form.kind === 'delete-folder' ? 'danger' : 'primary'"
+          [loading]="s.mutating()"
+          [disabled]="!canSave()"
+          >{{ saveLabel() | ffkText }}</ffk-button
+        >
+      </footer>
+    </form>
+  }
+</ffk-side-panel>

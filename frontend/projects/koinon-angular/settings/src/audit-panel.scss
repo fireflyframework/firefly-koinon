@@ -1,0 +1,464 @@
+/* Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 */
+:host {
+  container-type: inline-size;
+  container-name: koinon-audit;
+  display: block;
+  min-width: 0;
+  color: var(--ui-text);
+  font: 400 13px/1.6 var(--ffk-font, 'Manrope Variable', sans-serif);
+  --audit-gap: 24px;
+}
+.heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: var(--audit-gap);
+}
+.heading h2 {
+  margin: 0;
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -0.8px;
+}
+.heading p {
+  margin: 6px 0 0;
+  color: var(--ui-muted);
+}
+.search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 190px);
+  gap: 16px;
+  align-items: end;
+}
+.search ffk-search-field {
+  min-width: 0;
+}
+label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+input,
+select {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--ui-line);
+  border-radius: 7px;
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  padding: 9px 10px;
+  font: 400 13px var(--ffk-font, sans-serif);
+}
+input:focus-visible,
+select:focus-visible,
+summary:focus-visible,
+button:focus-visible,
+.table-wrap:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 3px;
+}
+.fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.time-zone {
+  font-size: 12px;
+  color: var(--ui-muted);
+  margin: 12px 0 0;
+}
+.filter-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 36px;
+  border: 1px solid var(--ui-line);
+  border-radius: 20px;
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  padding: 6px 10px;
+  font: 400 12px var(--ffk-font, sans-serif);
+  cursor: pointer;
+}
+.filter-chip > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.filter-chip strong {
+  font-weight: 600;
+}
+.filter-chip ffk-icon {
+  width: 13px;
+  flex-shrink: 0;
+}
+.results {
+  margin-top: 32px;
+}
+.results-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.results-heading h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+}
+.results-heading > span {
+  font-size: 12px;
+  color: var(--ui-muted);
+}
+.error {
+  padding: 16px;
+  border-left: 3px solid var(--ui-danger, #b34032);
+  margin: 16px 0;
+  background: var(--ui-surface);
+  overflow-wrap: anywhere;
+}
+.error h3 {
+  margin: 0;
+  font-size: 14px;
+}
+.loading {
+  display: grid;
+  gap: 12px;
+  padding: 16px 0;
+}
+.table-wrap {
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+  overflow: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+th {
+  text-align: left;
+  padding: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ui-muted);
+  border-bottom: 1px solid var(--ui-line);
+}
+th:first-child {
+  width: 44%;
+}
+th:nth-child(2) {
+  width: 30%;
+}
+td {
+  padding: 16px 12px;
+  border-bottom: 1px solid var(--ui-line);
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+tr.selected {
+  background: var(--ui-hover);
+}
+.event-open {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.action-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+.event-target {
+  font-size: 12px;
+  color: var(--ui-muted);
+}
+.event-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--ui-accent);
+  margin-top: 4px;
+}
+.event-hint ffk-icon {
+  width: 12px;
+  height: 12px;
+}
+.recorded {
+  font-size: 12px;
+  color: var(--ui-muted);
+}
+.person {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.person > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.avatar {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--ui-hover);
+  font-size: 10px;
+  font-weight: 600;
+  overflow: hidden;
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.avatar.large {
+  width: 44px;
+  height: 44px;
+  font-size: 13px;
+}
+.empty {
+  padding: 40px 16px;
+  text-align: center;
+}
+.empty h3 {
+  font-size: 15px;
+  margin: 0;
+}
+.empty p {
+  color: var(--ui-muted);
+}
+.detail-person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.detail-person > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.detail-person strong {
+  font-size: 15px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.eyebrow,
+dt {
+  color: var(--ui-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+.detail-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0 0 32px;
+}
+.detail-facts > div {
+  min-width: 0;
+}
+dd {
+  margin: 5px 0 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.observed {
+  margin: 0 0 24px;
+}
+.observed h3 {
+  font-size: 14px;
+  margin: 0 0 16px;
+  font-weight: 600;
+}
+.observed dl {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+}
+.observed dl > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 16px;
+  align-items: start;
+}
+.observed dd {
+  margin: 0;
+}
+.advanced {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--ui-line);
+}
+.advanced summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--ui-muted);
+  width: fit-content;
+}
+.advanced dl {
+  display: grid;
+  gap: 4px;
+  margin: 20px 0;
+}
+.advanced dt {
+  margin-top: 12px;
+}
+.advanced h4 {
+  font-size: 12px;
+  font-weight: 600;
+  margin: 24px 0 8px;
+}
+code,
+pre {
+  font: 400 11px/1.7 var(--ffk-font, sans-serif);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+pre {
+  padding: 16px;
+  background: var(--ui-hover);
+  border-radius: 8px;
+  margin: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+@container koinon-audit (max-width:600px) {
+  :host {
+    --audit-gap: 20px;
+  }
+  .heading {
+    gap: 12px;
+  }
+  .heading h2 {
+    font-size: 23px;
+  }
+  .search {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .search > label {
+    max-width: none;
+  }
+  .fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .fields > label:first-child {
+    grid-column: 1/-1;
+  }
+  .results {
+    margin-top: 24px;
+  }
+  table,
+  tbody {
+    display: block;
+  }
+  thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 130px);
+    border-bottom: 1px solid var(--ui-line);
+    padding: 16px 0;
+    gap: 12px;
+  }
+  td {
+    min-width: 0;
+    padding: 0;
+    border: 0;
+  }
+  td:first-child {
+    grid-column: 1/-1;
+  }
+  .event-open {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 12px;
+    width: 100%;
+  }
+  .event-target {
+    grid-column: 1;
+  }
+  .event-hint {
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+    align-self: center;
+  }
+  .recorded {
+    grid-column: 2;
+    text-align: right;
+    align-self: center;
+  }
+  .person {
+    min-height: 44px;
+  }
+  .empty {
+    grid-column: 1/-1;
+    padding: 24px 8px;
+  }
+}
+@container koinon-side-panel (max-width:380px) {
+  .detail-facts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+  .observed dl > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}
+
+.event-label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}

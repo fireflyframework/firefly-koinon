@@ -1,0 +1,5241 @@
+{
+  "definition_count": 253,
+  "excluded_definitions": [
+    "AttachmentUpload",
+    "AvatarUpload",
+    "BinaryDownload",
+    "DatasetFileUpload",
+    "DocumentReplacement",
+    "JsonValue",
+    "SourceUpload",
+    "TableReplacement"
+  ],
+  "fixtures": {
+    "AddKnowledge": {
+      "expected_revision": 1,
+      "action": "add",
+      "mode": "document",
+      "workspace_id": "workspace_id-value",
+      "project_id": "project_id-value",
+      "parent_id": "parent_id-value"
+    },
+    "AgentConfiguration": {
+      "model_settings": {
+        "example": {
+          "decimal": "12345678901234567890.12345678901234567890",
+          "integer": "9007199254740993"
+        }
+      },
+      "input_modalities": [
+        "text"
+      ],
+      "input_modality_policy": "input_modality_policy-value",
+      "model_options_supported": [
+        "model_options_supported-value"
+      ],
+      "api": "chat",
+      "model_class": "OpenAIChatModel",
+      "model_options": {
+        "max_tokens": 64,
+        "temperature": 0.25,
+        "top_p": 0.25,
+        "top_k": 1,
+        "seed": 1,
+        "stop_sequences": [
+          "stop_sequences-value"
+        ],
+        "request_timeout": 0.25,
+        "reasoning": "none",
+        "reasoning_budget_tokens": 1024,
+        "parallel_tool_calls": false,
+        "store_responses": false,
+        "output_verbosity": "low"
+      },
+      "configured": false,
+      "can_run": false,
+      "dependencies": [
+        {
+          "id": "id-value",
+          "ownership": "deployment",
+          "read_only": true,
+          "provider": "provider-value",
+          "model_id": "model_id-value",
+          "configured": false,
+          "available": false,
+          "status": "passed",
+          "reason": "reason-value"
+        }
+      ],
+      "id": "id-value",
+      "name": "name-value",
+      "description": "description-value",
+      "provider_id": "provider_id-value",
+      "model_id": "model_id-value",
+      "tools": [
+        "search_knowledge"
+      ],
+      "scope": {
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "collection_id": "collection_id-value",
+        "asset_ids": [
+          "asset_ids-value"
+        ]
+      },
+      "instructions": "instructions-value",
+      "enabled": false,
+      "revision": 1,
+      "status": "ready",
+      "checks": [
+        {
+          "model_id": "model_id-value",
+          "capability": "chat",
+          "supported": false,
+          "verified": false,
+          "options_key": "options_key-value",
+          "observed_at": "2026-10-27T12:34:56Z",
+          "id": "id-value",
+          "status": "passed",
+          "message": "message-value"
+        }
+      ]
+    },
+    "AgentInput": {
+      "model_options": {
+        "max_tokens": 64,
+        "temperature": 0.25,
+        "top_p": 0.25,
+        "top_k": 1,
+        "seed": 1,
+        "stop_sequences": [
+          "stop_sequences-value"
+        ],
+        "request_timeout": 0.25,
+        "reasoning": "none",
+        "reasoning_budget_tokens": 1024,
+        "parallel_tool_calls": false,
+        "store_responses": false,
+        "output_verbosity": "low"
+      },
+      "name": "name-value",
+      "description": "description-value",
+      "provider_id": "provider_id-value",
+      "model_id": "model_id-value",
+      "tools": [
+        "search_knowledge"
+      ],
+      "scope": {
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "collection_id": "collection_id-value",
+        "asset_ids": [
+          "asset_ids-value"
+        ]
+      },
+      "instructions": "instructions-value",
+      "enabled": false
+    },
+    "AgentUsage": {
+      "agent": "agent-value",
+      "model": "model-value",
+      "input_tokens": 1,
+      "output_tokens": 1,
+      "total_tokens": 1,
+      "cost_usd": 0.25,
+      "latency_ms": 0.25,
+      "calls": 1
+    },
+    "AgenticCapability": {
+      "configured": false,
+      "verified": false
+    },
+    "AnswerAudit": {
+      "run_id": "run_id-value",
+      "provenance_status": "recorded",
+      "source_provenance_complete": false,
+      "generations": [
+        {
+          "id": "id-value",
+          "start_sequence": 1,
+          "agent_id": "agent_id-value",
+          "agent_revision": 1,
+          "provider_id": "provider_id-value",
+          "provider_revision": 1,
+          "provider_kind": "ollama",
+          "model_id": "model_id-value",
+          "model_class": "model_class-value",
+          "api": "chat",
+          "started_at": "2026-10-27T12:34:56Z",
+          "finished_at": "2026-10-27T12:34:56Z",
+          "status": "started"
+        }
+      ],
+      "sources": [
+        {
+          "id": "id-value",
+          "asset_id": "asset_id-value",
+          "source_id": "source_id-value",
+          "title": "title-value",
+          "kind": "document",
+          "knowledge_item_id": "knowledge_item_id-value",
+          "knowledge_version_id": "knowledge_version_id-value",
+          "knowledge_version": 1,
+          "source_version_id": "source_version_id-value",
+          "extraction_id": "extraction_id-value",
+          "source_part_id": "source_part_id-value",
+          "source_part_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "recorded_page": 1,
+          "page_basis": "recorded_loader",
+          "used_revision": "used_revision-value",
+          "snapshot_id": "snapshot_id-value",
+          "query_id": "query_id-value",
+          "chunk_id": "chunk_id-value",
+          "page": 1,
+          "section": "section-value",
+          "quote": "quote-value",
+          "current_revision": "current_revision-value",
+          "availability": "available"
+        }
+      ],
+      "private_files": [
+        {
+          "id": "id-value",
+          "filename": "filename-value",
+          "media_type": "media_type-value",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "used_revision": 1,
+          "availability": "available"
+        }
+      ],
+      "native_reads": [
+        {
+          "result_id": "result_id-value",
+          "generation_id": "generation_id-value",
+          "stage": "stage-value",
+          "domain": "documents",
+          "tenant_id": "tenant_id-value",
+          "workspace_id": "workspace_id-value",
+          "entity_id": "entity_id-value",
+          "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "source_ids": [
+            "source_ids-value"
+          ],
+          "snapshot_ids": [
+            "snapshot_ids-value"
+          ],
+          "engine": "engine-value",
+          "database": "database-value",
+          "catalog": "catalog-value",
+          "schema": "schema-value",
+          "read_kind": "indexed_document",
+          "origin": {
+            "original_filename": "original_filename-value",
+            "sheet_or_json_path": "sheet_or_json_path-value",
+            "connection_id": "connection_id-value",
+            "connection_name": "connection_name-value",
+            "database": "database-value",
+            "schema": "schema-value",
+            "table": "table-value"
+          },
+          "source_version_id": "source_version_id-value",
+          "extraction_id": "extraction_id-value",
+          "knowledge_item_id": "knowledge_item_id-value",
+          "knowledge_version_id": "knowledge_version_id-value",
+          "knowledge_version": 1
+        }
+      ],
+      "sql_attempts": [
+        {
+          "result_id": "result_id-value",
+          "generation_id": "generation_id-value",
+          "ordinal": 1,
+          "stage": "stage-value",
+          "statement_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "statement": "statement-value",
+          "classification": "classification-value",
+          "outcome": "outcome-value",
+          "executed": false,
+          "snapshot_pins": {
+            "example": "snapshot_pins-value"
+          },
+          "row_count": 1,
+          "truncated": false,
+          "reason_code": "reason_code-value",
+          "engine": "engine-value",
+          "database": "database-value",
+          "catalog": "catalog-value",
+          "schema": "schema-value",
+          "execution_kind": "imported_snapshot",
+          "dataset_id": "dataset_id-value",
+          "native_dataset_id": "native_dataset_id-value",
+          "tables": [
+            {
+              "table_id": "table_id-value",
+              "table_name": "table_name-value",
+              "snapshot_id": "snapshot_id-value"
+            }
+          ]
+        }
+      ]
+    },
+    "AnswerPolicy": {
+      "outcome": "grounded",
+      "code": "code-value",
+      "reason": "reason-value"
+    },
+    "AttachmentCapabilities": {
+      "storage": {
+        "available": false,
+        "reason": "reason-value"
+      },
+      "database": {
+        "available": false,
+        "reason": "reason-value"
+      },
+      "extraction": {
+        "available": false,
+        "reason": "reason-value"
+      },
+      "limits": {
+        "max_file_bytes": 1,
+        "max_image_bytes": 1,
+        "max_selected": 1,
+        "max_thread_files": 1,
+        "max_thread_bytes": 1,
+        "max_model_text_chars": 1,
+        "max_model_binary_bytes": 1,
+        "extraction_timeout_seconds": 1,
+        "ttl_seconds": 1
+      },
+      "formats": [
+        {
+          "kind": "document",
+          "media_type": "media_type-value",
+          "extensions": [
+            "extensions-value"
+          ],
+          "extraction": {
+            "available": false,
+            "reason": "reason-value"
+          }
+        }
+      ],
+      "promotion": {
+        "ready_attachment": false,
+        "ingest_write": false,
+        "catalog_write": false,
+        "document_sha256": false,
+        "document_chunk_invalidation_acknowledgement": false,
+        "table_snapshot_id": false
+      }
+    },
+    "AttachmentEvidence": {
+      "attachments": [
+        {
+          "id": "id-value",
+          "filename": "filename-value",
+          "media_type": "media_type-value",
+          "sha256": "sha256-value",
+          "revision": 1,
+          "complete": false,
+          "chunk_ids": [
+            "chunk_ids-value"
+          ],
+          "total_chunks": 1,
+          "warnings": [
+            "warnings-value"
+          ]
+        }
+      ]
+    },
+    "AttachmentEvidenceItem": {
+      "id": "id-value",
+      "filename": "filename-value",
+      "media_type": "media_type-value",
+      "sha256": "sha256-value",
+      "revision": 1,
+      "complete": false,
+      "chunk_ids": [
+        "chunk_ids-value"
+      ],
+      "total_chunks": 1,
+      "warnings": [
+        "warnings-value"
+      ]
+    },
+    "AttachmentFormat": {
+      "kind": "document",
+      "media_type": "media_type-value",
+      "extensions": [
+        "extensions-value"
+      ],
+      "extraction": {
+        "available": false,
+        "reason": "reason-value"
+      }
+    },
+    "AttachmentHistorySummary": {
+      "id": "id-value",
+      "filename": "filename-value",
+      "media_type": "media_type-value",
+      "kind": "document",
+      "size_bytes": 1,
+      "sha256": "sha256-value",
+      "status": "storing",
+      "revision": 1,
+      "expires_at": "2026-10-27T12:34:56Z",
+      "available": false
+    },
+    "AttachmentLimits": {
+      "max_file_bytes": 1,
+      "max_image_bytes": 1,
+      "max_selected": 1,
+      "max_thread_files": 1,
+      "max_thread_bytes": 1,
+      "max_model_text_chars": 1,
+      "max_model_binary_bytes": 1,
+      "extraction_timeout_seconds": 1,
+      "ttl_seconds": 1
+    },
+    "AttachmentObservation": {
+      "available": false,
+      "reason": "reason-value"
+    },
+    "AttachmentPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "thread_id": "thread_id-value",
+          "filename": "filename-value",
+          "media_type": "media_type-value",
+          "kind": "document",
+          "size_bytes": 1,
+          "sha256": "sha256-value",
+          "status": "storing",
+          "revision": 1,
+          "created_at": "2026-10-27T12:34:56Z",
+          "expires_at": "2026-10-27T12:34:56Z",
+          "page_count": 1,
+          "chunk_count": 1,
+          "progress": {
+            "status": "storing",
+            "percent": 1,
+            "attempts": 1
+          },
+          "error_code": "error_code-value",
+          "error": "error-value",
+          "warnings": [
+            "warnings-value"
+          ]
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "AttachmentProgress": {
+      "status": "storing",
+      "percent": 1,
+      "attempts": 1
+    },
+    "AttachmentPromotionInput": {
+      "expected_revision": 1,
+      "action": "add",
+      "mode": "document",
+      "workspace_id": "workspace_id-value",
+      "project_id": "project_id-value",
+      "parent_id": "parent_id-value"
+    },
+    "AttachmentPromotionRequirements": {
+      "ready_attachment": false,
+      "ingest_write": false,
+      "catalog_write": false,
+      "document_sha256": false,
+      "document_chunk_invalidation_acknowledgement": false,
+      "table_snapshot_id": false
+    },
+    "AttachmentPromotionView": {
+      "promotion_id": "promotion_id-value",
+      "attachment_id": "attachment_id-value",
+      "action": "add",
+      "source": {
+        "id": "id-value",
+        "tenant_id": "tenant_id-value",
+        "kind": "kind-value",
+        "name": "name-value",
+        "parent_id": "parent_id-value",
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "description": "description-value",
+        "status": "status-value",
+        "created_by": "created_by-value",
+        "updated_by": "updated_by-value",
+        "metadata": {
+          "example": {
+            "decimal": "12345678901234567890.12345678901234567890",
+            "integer": "9007199254740993"
+          }
+        },
+        "created_at": "2026-10-27T12:34:56Z",
+        "updated_at": "2026-10-27T12:34:56Z"
+      },
+      "assets": [
+        {
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "kind": "kind-value",
+          "name": "name-value",
+          "parent_id": "parent_id-value",
+          "workspace_id": "workspace_id-value",
+          "project_id": "project_id-value",
+          "description": "description-value",
+          "status": "status-value",
+          "created_by": "created_by-value",
+          "updated_by": "updated_by-value",
+          "metadata": {
+            "example": {
+              "decimal": "12345678901234567890.12345678901234567890",
+              "integer": "9007199254740993"
+            }
+          },
+          "created_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "asset": {
+        "id": "id-value",
+        "tenant_id": "tenant_id-value",
+        "kind": "kind-value",
+        "name": "name-value",
+        "parent_id": "parent_id-value",
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "description": "description-value",
+        "status": "status-value",
+        "created_by": "created_by-value",
+        "updated_by": "updated_by-value",
+        "metadata": {
+          "example": {
+            "decimal": "12345678901234567890.12345678901234567890",
+            "integer": "9007199254740993"
+          }
+        },
+        "created_at": "2026-10-27T12:34:56Z",
+        "updated_at": "2026-10-27T12:34:56Z"
+      },
+      "table": {
+        "id": "id-value",
+        "tenant_id": "tenant_id-value",
+        "kind": "kind-value",
+        "name": "name-value",
+        "parent_id": "parent_id-value",
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "description": "description-value",
+        "status": "status-value",
+        "created_by": "created_by-value",
+        "updated_by": "updated_by-value",
+        "metadata": {
+          "example": {
+            "decimal": "12345678901234567890.12345678901234567890",
+            "integer": "9007199254740993"
+          }
+        },
+        "created_at": "2026-10-27T12:34:56Z",
+        "updated_at": "2026-10-27T12:34:56Z"
+      },
+      "version": {
+        "id": "id-value",
+        "tenant_id": "tenant_id-value",
+        "kind": "kind-value",
+        "name": "name-value",
+        "parent_id": "parent_id-value",
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "description": "description-value",
+        "status": "status-value",
+        "created_by": "created_by-value",
+        "updated_by": "updated_by-value",
+        "metadata": {
+          "example": {
+            "decimal": "12345678901234567890.12345678901234567890",
+            "integer": "9007199254740993"
+          }
+        },
+        "created_at": "2026-10-27T12:34:56Z",
+        "updated_at": "2026-10-27T12:34:56Z"
+      },
+      "effects": {
+        "example": {
+          "decimal": "12345678901234567890.12345678901234567890",
+          "integer": "9007199254740993"
+        }
+      }
+    },
+    "AttachmentRevision": {
+      "expected_revision": 1
+    },
+    "AttachmentView": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "thread_id": "thread_id-value",
+      "filename": "filename-value",
+      "media_type": "media_type-value",
+      "kind": "document",
+      "size_bytes": 1,
+      "sha256": "sha256-value",
+      "status": "storing",
+      "revision": 1,
+      "created_at": "2026-10-27T12:34:56Z",
+      "expires_at": "2026-10-27T12:34:56Z",
+      "page_count": 1,
+      "chunk_count": 1,
+      "progress": {
+        "status": "storing",
+        "percent": 1,
+        "attempts": 1
+      },
+      "error_code": "error_code-value",
+      "error": "error-value",
+      "warnings": [
+        "warnings-value"
+      ]
+    },
+    "AuditEvent": {
+      "id": "id-value",
+      "subject": "subject-value",
+      "action": "action-value",
+      "resource_id": "resource_id-value",
+      "details": {
+        "example": {
+          "decimal": "12345678901234567890.12345678901234567890",
+          "integer": "9007199254740993"
+        }
+      },
+      "created_at": "2026-10-27T12:34:56Z"
+    },
+    "AuditValue": {},
+    "AuthorSummary": {
+      "subject": "subject-value",
+      "display_name": "display_name-value",
+      "avatar_data_url": "avatar_data_url-value",
+      "avatar_version": "avatar_version-value"
+    },
+    "Capabilities": {
+      "attachments": {
+        "storage": {
+          "available": false,
+          "reason": "reason-value"
+        },
+        "database": {
+          "available": false,
+          "reason": "reason-value"
+        },
+        "extraction": {
+          "available": false,
+          "reason": "reason-value"
+        },
+        "limits": {
+          "max_file_bytes": 1,
+          "max_image_bytes": 1,
+          "max_selected": 1,
+          "max_thread_files": 1,
+          "max_thread_bytes": 1,
+          "max_model_text_chars": 1,
+          "max_model_binary_bytes": 1,
+          "extraction_timeout_seconds": 1,
+          "ttl_seconds": 1
+        },
+        "formats": [
+          {
+            "kind": "document",
+            "media_type": "media_type-value",
+            "extensions": [
+              "extensions-value"
+            ],
+            "extraction": {
+              "available": false,
+              "reason": "reason-value"
+            }
+          }
+        ],
+        "promotion": {
+          "ready_attachment": false,
+          "ingest_write": false,
+          "catalog_write": false,
+          "document_sha256": false,
+          "document_chunk_invalidation_acknowledgement": false,
+          "table_snapshot_id": false
+        }
+      },
+      "catalog": {
+        "ready": false
+      },
+      "agentic": {
+        "configured": false,
+        "verified": false
+      },
+      "domains": {
+        "example": {
+          "installed": false,
+          "registered": false,
+          "beans": 1,
+          "qualified": false,
+          "reason": "reason-value"
+        }
+      },
+      "providers": [
+        {
+          "id": "id-value",
+          "name": "name-value",
+          "kind": "kind-value",
+          "configured": false,
+          "available": false,
+          "reason": "reason-value",
+          "capabilities": [
+            "capabilities-value"
+          ]
+        }
+      ],
+      "features": [
+        {
+          "id": "id-value",
+          "name": "name-value",
+          "available": false,
+          "reason": "reason-value"
+        }
+      ]
+    },
+    "CapabilityState": {
+      "supported": false,
+      "verified": false
+    },
+    "CatalogCapability": {
+      "ready": false
+    },
+    "CatalogCreate": {
+      "kind": "kind-value",
+      "name": "name-value",
+      "parent_id": "parent_id-value",
+      "description": "description-value",
+      "metadata": {
+        "example": {
+          "decimal": "12345678901234567890.12345678901234567890",
+          "integer": "9007199254740993"
+        }
+      }
+    },
+    "CatalogEntry": {
+      "created_by": "created_by-value",
+      "updated_by": "updated_by-value",
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "kind": "kind-value",
+      "name": "name-value",
+      "parent_id": "parent_id-value",
+      "workspace_id": "workspace_id-value",
+      "project_id": "project_id-value",
+      "description": "description-value",
+      "status": "status-value",
+      "metadata": {
+        "example": {
+          "decimal": "12345678901234567890.12345678901234567890",
+          "integer": "9007199254740993"
+        }
+      },
+      "created_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z"
+    },
+    "CatalogProposal": {
+      "id": "id-value",
+      "run_id": "run_id-value",
+      "kind": "catalog",
+      "status": "pending",
+      "revision": 1,
+      "asset_id": "asset_id-value",
+      "before": {
+        "name": "name-value",
+        "description": "description-value"
+      },
+      "changes": {
+        "name": "name-value",
+        "description": "description-value"
+      },
+      "expected_catalog_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "created_at": "2026-10-27T12:34:56Z",
+      "applied_at": "2026-10-27T12:34:56Z",
+      "cancelled_at": "2026-10-27T12:34:56Z"
+    },
+    "CatalogProposalBefore": {
+      "name": "name-value",
+      "description": "description-value"
+    },
+    "CatalogProposalPatch": {
+      "name": "name-value",
+      "description": "description-value"
+    },
+    "CatalogUpdate": {
+      "name": "name-value",
+      "description": "description-value",
+      "metadata": {
+        "example": {
+          "decimal": "12345678901234567890.12345678901234567890",
+          "integer": "9007199254740993"
+        }
+      }
+    },
+    "ChatEventData": {
+      "proposal_update": {
+        "id": "id-value",
+        "status": "applied",
+        "revision": 2
+      },
+      "tool_activity": {
+        "call_id": "call_id-value",
+        "tool_name": "search_knowledge",
+        "status": "queued",
+        "occurred_at": "occurred_at-value",
+        "started_at": "started_at-value",
+        "finished_at": "finished_at-value",
+        "duration_ms": 1,
+        "summary": "summary-value",
+        "result_id": "result_id-value"
+      },
+      "answer_policy": {
+        "outcome": "grounded",
+        "code": "code-value",
+        "reason": "reason-value"
+      },
+      "presentation": {
+        "locale": "locale-value",
+        "time_zone": "time_zone-value",
+        "response_language": "response_language-value"
+      },
+      "text": "text-value",
+      "stage": "stage-value",
+      "message": "message-value",
+      "status": "queued",
+      "code": "code-value",
+      "message_id": "message_id-value",
+      "artifact": {
+        "id": "id-value",
+        "kind": "openui",
+        "language": "language-value",
+        "complete": false,
+        "run_id": "run_id-value"
+      },
+      "citation": {
+        "document_id": "document_id-value",
+        "chunk_id": "chunk_id-value",
+        "section": "section-value",
+        "url": "url-value",
+        "id": "id-value",
+        "source_id": "source_id-value",
+        "asset_id": "asset_id-value",
+        "title": "title-value",
+        "text": "text-value",
+        "page": 1
+      }
+    },
+    "ChatFolder": {
+      "id": "id-value",
+      "name": "name-value",
+      "parent_id": "parent_id-value",
+      "scope": {
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "collection_id": "collection_id-value",
+        "asset_ids": [
+          "asset_ids-value"
+        ]
+      },
+      "revision": 1,
+      "conversation_count": 1,
+      "created_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z"
+    },
+    "ChatMessage": {
+      "tool_activities": [
+        {
+          "call_id": "call_id-value",
+          "tool_name": "search_knowledge",
+          "status": "queued",
+          "occurred_at": "occurred_at-value",
+          "started_at": "started_at-value",
+          "finished_at": "finished_at-value",
+          "duration_ms": 1,
+          "summary": "summary-value",
+          "result_id": "result_id-value"
+        }
+      ],
+      "tool_activity_count": 1,
+      "tool_activity_has_more": false,
+      "attachments": [
+        {
+          "id": "id-value",
+          "filename": "filename-value",
+          "media_type": "media_type-value",
+          "kind": "document",
+          "size_bytes": 1,
+          "sha256": "sha256-value",
+          "status": "storing",
+          "revision": 1,
+          "expires_at": "2026-10-27T12:34:56Z",
+          "available": false
+        }
+      ],
+      "answer_policy": {
+        "outcome": "grounded",
+        "code": "code-value",
+        "reason": "reason-value"
+      },
+      "presentation": {
+        "locale": "locale-value",
+        "time_zone": "time_zone-value",
+        "response_language": "response_language-value"
+      },
+      "event_cursor": "event_cursor-value",
+      "id": "id-value",
+      "run_id": "run_id-value",
+      "role": "user",
+      "text": "text-value",
+      "status": "queued",
+      "citations": [
+        {
+          "document_id": "document_id-value",
+          "chunk_id": "chunk_id-value",
+          "section": "section-value",
+          "url": "url-value",
+          "id": "id-value",
+          "source_id": "source_id-value",
+          "asset_id": "asset_id-value",
+          "title": "title-value",
+          "text": "text-value",
+          "page": 1
+        }
+      ],
+      "artifacts": [
+        {
+          "id": "id-value",
+          "kind": "openui",
+          "language": "language-value",
+          "complete": false,
+          "run_id": "run_id-value"
+        }
+      ],
+      "created_at": "2026-10-27T12:34:56Z"
+    },
+    "ChatRun": {
+      "event_cursor": "event_cursor-value",
+      "run_id": "run_id-value",
+      "message_id": "message_id-value",
+      "status": "queued"
+    },
+    "ChatThread": {
+      "revision": 1,
+      "title_source": "default",
+      "folder_id": "folder_id-value",
+      "archived_at": "archived_at-value",
+      "id": "id-value",
+      "title": "title-value",
+      "scope": {
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "collection_id": "collection_id-value",
+        "asset_ids": [
+          "asset_ids-value"
+        ]
+      },
+      "created_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z"
+    },
+    "Citation": {
+      "document_id": "document_id-value",
+      "chunk_id": "chunk_id-value",
+      "section": "section-value",
+      "url": "url-value",
+      "id": "id-value",
+      "source_id": "source_id-value",
+      "asset_id": "asset_id-value",
+      "title": "title-value",
+      "text": "text-value",
+      "page": 1
+    },
+    "ClarificationFrame": {
+      "questions": [
+        "questions-value"
+      ],
+      "reasons": [
+        "reasons-value"
+      ]
+    },
+    "Column": {
+      "id": "id-value",
+      "name": "name-value",
+      "data_type": "data_type-value",
+      "description": "description-value",
+      "pii_tag": "pii_tag-value"
+    },
+    "CommittedKnowledge": {
+      "status": "committed",
+      "receipt": {
+        "operation_id": "operation_id-value",
+        "intent_id": "intent_id-value",
+        "intent_revision": 1,
+        "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "item_id": "item_id-value",
+        "native_item_id": "native_item_id-value",
+        "native_version_id": "native_version_id-value",
+        "version": 1,
+        "serving_version": 1,
+        "action": "create_draft",
+        "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "committed_at": "2026-10-27T12:34:56Z",
+        "retrieval_state": "not_published",
+        "reason": "reason-value"
+      }
+    },
+    "Configuration": {
+      "framework_providers": [
+        {
+          "id": "id-value",
+          "native_supported": false,
+          "exposed": false,
+          "kind": "kind-value",
+          "api": "api-value",
+          "model_class": "model_class-value",
+          "reason": "reason-value"
+        }
+      ],
+      "model_options_schema": {
+        "example": {
+          "decimal": "12345678901234567890.12345678901234567890",
+          "integer": "9007199254740993"
+        }
+      },
+      "deployment": {
+        "ownership": "deployment",
+        "read_only": true,
+        "datasources": [
+          {
+            "configured": false,
+            "available": false,
+            "status": "passed",
+            "observed_at": "2026-10-27T12:34:56Z",
+            "reason": "reason-value",
+            "id": "id-value",
+            "kind": "database",
+            "driver": "driver-value",
+            "pool": {
+              "size": 1,
+              "max_overflow": 1,
+              "timeout": 0.25,
+              "recycle": 1,
+              "pre_ping": false
+            },
+            "pool_usage": {
+              "size": 1,
+              "checked_out": 1,
+              "overflow": 1
+            },
+            "role_policy": {
+              "configured": false,
+              "available": false,
+              "status": "passed",
+              "observed_at": "2026-10-27T12:34:56Z",
+              "reason": "reason-value",
+              "superuser": false,
+              "bypass_rls": false
+            }
+          }
+        ],
+        "storage": [
+          {
+            "configured": false,
+            "available": false,
+            "status": "passed",
+            "observed_at": "2026-10-27T12:34:56Z",
+            "reason": "reason-value",
+            "ownership": "deployment",
+            "read_only": true,
+            "id": "documents",
+            "backend": "backend-value",
+            "store_originals": false
+          }
+        ],
+        "indexes": [
+          {
+            "configured": false,
+            "available": false,
+            "status": "passed",
+            "observed_at": "2026-10-27T12:34:56Z",
+            "reason": "reason-value",
+            "id": "id-value",
+            "workspace_id": "workspace_id-value",
+            "vector_extension": false,
+            "embedding_sets": 1,
+            "physical_indexes": 1
+          }
+        ],
+        "metrics": {
+          "configured": false,
+          "available": false,
+          "status": "passed",
+          "observed_at": "2026-10-27T12:34:56Z",
+          "reason": "reason-value",
+          "exporter_configured": false,
+          "names": [
+            "names-value"
+          ]
+        },
+        "limits": {
+          "worker_concurrency": 1,
+          "max_queued_per_subject": 1,
+          "job_lease_seconds": 1,
+          "max_index_workspaces": 1
+        }
+      },
+      "providers": [
+        {
+          "native_adapter": {
+            "ownership": "deployment",
+            "read_only": true,
+            "model_class": "model_class-value",
+            "provider_identity": "provider_identity-value",
+            "profile_status": "unverified",
+            "reason": "reason-value"
+          },
+          "api": "chat",
+          "model_class": "OpenAIChatModel",
+          "configured": false,
+          "connected": false,
+          "discovered": false,
+          "model_capabilities": [
+            {
+              "image_input": {
+                "supported": false,
+                "verified": false
+              },
+              "audio_input": {
+                "supported": false,
+                "verified": false
+              },
+              "option_fields": [
+                "option_fields-value"
+              ],
+              "model_id": "model_id-value",
+              "chat": {
+                "supported": false,
+                "verified": false
+              },
+              "streaming": {
+                "supported": false,
+                "verified": false
+              },
+              "tools": {
+                "supported": false,
+                "verified": false
+              },
+              "observed_tools": [
+                "observed_tools-value"
+              ]
+            }
+          ],
+          "configuration_ownership": "tenant",
+          "credential_ownership": "tenant",
+          "ambient_credentials": false,
+          "id": "id-value",
+          "name": "name-value",
+          "kind": "ollama",
+          "base_url": "base_url-value",
+          "model_ids": [
+            "model_ids-value"
+          ],
+          "enabled": false,
+          "revision": 1,
+          "secret_configured": false,
+          "validated": false,
+          "checks": [
+            {
+              "model_id": "model_id-value",
+              "capability": "chat",
+              "supported": false,
+              "verified": false,
+              "options_key": "options_key-value",
+              "observed_at": "2026-10-27T12:34:56Z",
+              "id": "id-value",
+              "status": "passed",
+              "message": "message-value"
+            }
+          ]
+        }
+      ],
+      "provider_types": [
+        {
+          "id": "id-value",
+          "name": "name-value",
+          "fields": [
+            {
+              "options": [
+                {
+                  "value": "value-value",
+                  "label": "label-value"
+                }
+              ],
+              "name": "name-value",
+              "label": "label-value",
+              "type": "text",
+              "required": false,
+              "write_only": false,
+              "default": "default-value"
+            }
+          ]
+        }
+      ],
+      "connections": [
+        {
+          "id": "id-value",
+          "ownership": "deployment",
+          "read_only": true,
+          "provider": "provider-value",
+          "model_id": "model_id-value",
+          "configured": false,
+          "available": false,
+          "status": "passed",
+          "reason": "reason-value"
+        }
+      ],
+      "checks": [
+        {
+          "model_id": "model_id-value",
+          "capability": "chat",
+          "supported": false,
+          "verified": false,
+          "options_key": "options_key-value",
+          "observed_at": "2026-10-27T12:34:56Z",
+          "id": "id-value",
+          "status": "passed",
+          "message": "message-value"
+        }
+      ]
+    },
+    "ConnectionPool": {
+      "size": 1,
+      "max_overflow": 1,
+      "timeout": 0.25,
+      "recycle": 1,
+      "pre_ping": false
+    },
+    "ContentEffects": {
+      "unchanged": false,
+      "affected_asset_ids": [
+        "affected_asset_ids-value"
+      ],
+      "snapshot_id": "snapshot_id-value",
+      "file_id": "file_id-value",
+      "historical_snapshots_preserved": false,
+      "citation_rows_preserved": false,
+      "previous_chunk_ids_invalidated": false
+    },
+    "ContentUpdate": {
+      "asset": {
+        "created_by": "created_by-value",
+        "updated_by": "updated_by-value",
+        "id": "id-value",
+        "tenant_id": "tenant_id-value",
+        "kind": "kind-value",
+        "name": "name-value",
+        "parent_id": "parent_id-value",
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "description": "description-value",
+        "status": "status-value",
+        "metadata": {
+          "example": {
+            "decimal": "12345678901234567890.12345678901234567890",
+            "integer": "9007199254740993"
+          }
+        },
+        "created_at": "2026-10-27T12:34:56Z",
+        "updated_at": "2026-10-27T12:34:56Z"
+      },
+      "source": {
+        "created_by": "created_by-value",
+        "updated_by": "updated_by-value",
+        "id": "id-value",
+        "tenant_id": "tenant_id-value",
+        "kind": "kind-value",
+        "name": "name-value",
+        "parent_id": "parent_id-value",
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "description": "description-value",
+        "status": "status-value",
+        "metadata": {
+          "example": {
+            "decimal": "12345678901234567890.12345678901234567890",
+            "integer": "9007199254740993"
+          }
+        },
+        "created_at": "2026-10-27T12:34:56Z",
+        "updated_at": "2026-10-27T12:34:56Z"
+      },
+      "table": {
+        "created_by": "created_by-value",
+        "updated_by": "updated_by-value",
+        "id": "id-value",
+        "tenant_id": "tenant_id-value",
+        "kind": "kind-value",
+        "name": "name-value",
+        "parent_id": "parent_id-value",
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "description": "description-value",
+        "status": "status-value",
+        "metadata": {
+          "example": {
+            "decimal": "12345678901234567890.12345678901234567890",
+            "integer": "9007199254740993"
+          }
+        },
+        "created_at": "2026-10-27T12:34:56Z",
+        "updated_at": "2026-10-27T12:34:56Z"
+      },
+      "version": {
+        "created_by": "created_by-value",
+        "updated_by": "updated_by-value",
+        "id": "id-value",
+        "tenant_id": "tenant_id-value",
+        "kind": "kind-value",
+        "name": "name-value",
+        "parent_id": "parent_id-value",
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "description": "description-value",
+        "status": "status-value",
+        "metadata": {
+          "example": {
+            "decimal": "12345678901234567890.12345678901234567890",
+            "integer": "9007199254740993"
+          }
+        },
+        "created_at": "2026-10-27T12:34:56Z",
+        "updated_at": "2026-10-27T12:34:56Z"
+      },
+      "effects": {
+        "unchanged": false,
+        "affected_asset_ids": [
+          "affected_asset_ids-value"
+        ],
+        "snapshot_id": "snapshot_id-value",
+        "file_id": "file_id-value",
+        "historical_snapshots_preserved": false,
+        "citation_rows_preserved": false,
+        "previous_chunk_ids_invalidated": false
+      }
+    },
+    "ContextResponse": {
+      "workspace_permissions": {
+        "example": [
+          "workspace_permissions-value"
+        ]
+      },
+      "subject": "subject-value",
+      "tenants": [
+        {
+          "id": "id-value",
+          "name": "name-value",
+          "roles": [
+            "roles-value"
+          ],
+          "permissions": [
+            "permissions-value"
+          ]
+        }
+      ],
+      "memberships": [
+        {
+          "managed": false,
+          "origin": "manual",
+          "source_id": "source_id-value",
+          "source_name": "source_name-value",
+          "expires_at": "2026-10-27T12:34:56Z",
+          "id": "id-value",
+          "subject": "subject-value",
+          "tenant_id": "tenant_id-value",
+          "workspace_id": "workspace_id-value",
+          "role": "viewer",
+          "active": false
+        }
+      ],
+      "workspaces": [
+        {
+          "created_by": "created_by-value",
+          "updated_by": "updated_by-value",
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "kind": "kind-value",
+          "name": "name-value",
+          "parent_id": "parent_id-value",
+          "workspace_id": "workspace_id-value",
+          "project_id": "project_id-value",
+          "description": "description-value",
+          "status": "status-value",
+          "metadata": {
+            "example": {
+              "decimal": "12345678901234567890.12345678901234567890",
+              "integer": "9007199254740993"
+            }
+          },
+          "created_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z"
+        }
+      ]
+    },
+    "ConversationExportInput": {
+      "thread_id": "thread_id-value",
+      "message_ids": [
+        "message_ids-value"
+      ],
+      "kind": "conversation",
+      "format": "markdown",
+      "include_evidence": false
+    },
+    "ConversationMessage": {
+      "id": "id-value",
+      "role": "user",
+      "text": "text-value",
+      "status": "completed",
+      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "private_derived": false,
+      "source_ids": [
+        "source_ids-value"
+      ],
+      "result_ids": [
+        "result_ids-value"
+      ],
+      "created_at": "2026-10-27T12:34:56Z",
+      "presentation": {
+        "locale": "locale-value",
+        "time_zone": "time_zone-value",
+        "response_language": "response_language-value"
+      }
+    },
+    "ConversationOrigin": {
+      "kind": "conversation",
+      "thread_id": "thread_id-value",
+      "message_ids": [
+        "message_ids-value"
+      ]
+    },
+    "ConversationSnapshot": {
+      "thread_id": "thread_id-value",
+      "tenant_id": "tenant_id-value",
+      "owner_subject": "owner_subject-value",
+      "title": "title-value",
+      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "messages": [
+        {
+          "id": "id-value",
+          "role": "user",
+          "text": "text-value",
+          "status": "completed",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "private_derived": false,
+          "source_ids": [
+            "source_ids-value"
+          ],
+          "result_ids": [
+            "result_ids-value"
+          ],
+          "created_at": "2026-10-27T12:34:56Z",
+          "presentation": {
+            "locale": "locale-value",
+            "time_zone": "time_zone-value",
+            "response_language": "response_language-value"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "id-value",
+          "asset_id": "asset_id-value",
+          "source_id": "source_id-value",
+          "title": "title-value",
+          "kind": "document",
+          "knowledge_item_id": "knowledge_item_id-value",
+          "knowledge_version_id": "knowledge_version_id-value",
+          "knowledge_version": 1,
+          "source_version_id": "source_version_id-value",
+          "extraction_id": "extraction_id-value",
+          "source_part_id": "source_part_id-value",
+          "source_part_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "recorded_page": 1,
+          "page_basis": "recorded_loader",
+          "used_revision": "used_revision-value",
+          "snapshot_id": "snapshot_id-value",
+          "query_id": "query_id-value",
+          "chunk_id": "chunk_id-value",
+          "page": 1,
+          "section": "section-value",
+          "quote": "quote-value",
+          "current_revision": "current_revision-value",
+          "availability": "available"
+        }
+      ],
+      "source_manifest_complete": false,
+      "originating_token_ids": [
+        "originating_token_ids-value"
+      ]
+    },
+    "CoordinateCellPosition": {
+      "row": 1,
+      "column": 1
+    },
+    "CoordinateCellRequest": {
+      "snapshot_id": "snapshot_id-value",
+      "cells": [
+        {
+          "row": 1,
+          "column": 1
+        }
+      ]
+    },
+    "CoordinateColumnBinding": {
+      "output_position": 1,
+      "source_field_index": 1,
+      "source_path": [
+        "source_path-value"
+      ],
+      "source_type": "source_type-value",
+      "header_cells": [
+        {
+          "row": 1,
+          "column": 1
+        }
+      ]
+    },
+    "CoordinateDependency": {
+      "name": "name-value",
+      "version": "version-value"
+    },
+    "CoordinateHeaderCell": {
+      "row": 1,
+      "column": 1
+    },
+    "CoordinatePage": {
+      "manifest": {
+        "dataset_id": "dataset_id-value",
+        "table_id": "table_id-value",
+        "native_dataset_id": "native_dataset_id-value",
+        "native_table_id": "native_table_id-value",
+        "snapshot_id": "snapshot_id-value",
+        "status": "complete",
+        "index_base": 1,
+        "row_count": 1,
+        "column_count": 1,
+        "artifact_id": "artifact_id-value",
+        "run_id": "run_id-value",
+        "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "mapping_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "source_format": "source_format-value",
+        "source_variant": "source_variant-value",
+        "row_kind": "record",
+        "source_sheet": "source_sheet-value",
+        "source_path": [
+          "source_path-value"
+        ],
+        "parser_decisions": [
+          {
+            "name": "name-value",
+            "value": "value-value"
+          }
+        ],
+        "dependencies": [
+          {
+            "name": "name-value",
+            "version": "version-value"
+          }
+        ],
+        "reason_code": "reason_code-value",
+        "rejected_source_rows": [
+          1
+        ]
+      },
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1,
+      "has_next": false,
+      "has_previous": false
+    },
+    "CoordinateParserDecision": {
+      "name": "name-value",
+      "value": "value-value"
+    },
+    "CoordinateRowRange": {
+      "output_start": 1,
+      "count": 1,
+      "source_start": 1,
+      "source_stride": 1
+    },
+    "CoordinateSourceCell": {
+      "output_row": 1,
+      "output_column": 1,
+      "source_row": 1,
+      "source_column": 1,
+      "source_path": [
+        "source_path-value"
+      ],
+      "header_cells": [
+        {
+          "row": 1,
+          "column": 1
+        }
+      ],
+      "source_type": "source_type-value"
+    },
+    "DatasetFileAppendResult": {
+      "dataset_id": "dataset_id-value",
+      "file_version_id": "file_version_id-value",
+      "filename": "filename-value",
+      "sha256": "sha256-value",
+      "byte_size": 1,
+      "table_ids": [
+        "table_ids-value"
+      ],
+      "status": "ready"
+    },
+    "DatasetSchema": {
+      "tables": [
+        {
+          "sheet_or_json_path": "sheet_or_json_path-value",
+          "id": "id-value",
+          "name": "name-value",
+          "snapshot_id": "snapshot_id-value",
+          "columns": [
+            {
+              "id": "id-value",
+              "name": "name-value",
+              "data_type": "data_type-value",
+              "description": "description-value",
+              "pii_tag": "pii_tag-value"
+            }
+          ]
+        }
+      ]
+    },
+    "Deleted": {
+      "deleted": false
+    },
+    "DeploymentConfiguration": {
+      "ownership": "deployment",
+      "read_only": true,
+      "datasources": [
+        {
+          "configured": false,
+          "available": false,
+          "status": "passed",
+          "observed_at": "2026-10-27T12:34:56Z",
+          "reason": "reason-value",
+          "id": "id-value",
+          "kind": "database",
+          "driver": "driver-value",
+          "pool": {
+            "size": 1,
+            "max_overflow": 1,
+            "timeout": 0.25,
+            "recycle": 1,
+            "pre_ping": false
+          },
+          "pool_usage": {
+            "size": 1,
+            "checked_out": 1,
+            "overflow": 1
+          },
+          "role_policy": {
+            "configured": false,
+            "available": false,
+            "status": "passed",
+            "observed_at": "2026-10-27T12:34:56Z",
+            "reason": "reason-value",
+            "superuser": false,
+            "bypass_rls": false
+          }
+        }
+      ],
+      "storage": [
+        {
+          "configured": false,
+          "available": false,
+          "status": "passed",
+          "observed_at": "2026-10-27T12:34:56Z",
+          "reason": "reason-value",
+          "ownership": "deployment",
+          "read_only": true,
+          "id": "documents",
+          "backend": "backend-value",
+          "store_originals": false
+        }
+      ],
+      "indexes": [
+        {
+          "configured": false,
+          "available": false,
+          "status": "passed",
+          "observed_at": "2026-10-27T12:34:56Z",
+          "reason": "reason-value",
+          "id": "id-value",
+          "workspace_id": "workspace_id-value",
+          "vector_extension": false,
+          "embedding_sets": 1,
+          "physical_indexes": 1
+        }
+      ],
+      "metrics": {
+        "configured": false,
+        "available": false,
+        "status": "passed",
+        "observed_at": "2026-10-27T12:34:56Z",
+        "reason": "reason-value",
+        "exporter_configured": false,
+        "names": [
+          "names-value"
+        ]
+      },
+      "limits": {
+        "worker_concurrency": 1,
+        "max_queued_per_subject": 1,
+        "job_lease_seconds": 1,
+        "max_index_workspaces": 1
+      }
+    },
+    "DeploymentDatasource": {
+      "configured": false,
+      "available": false,
+      "status": "passed",
+      "observed_at": "2026-10-27T12:34:56Z",
+      "reason": "reason-value",
+      "id": "id-value",
+      "kind": "database",
+      "driver": "driver-value",
+      "pool": {
+        "size": 1,
+        "max_overflow": 1,
+        "timeout": 0.25,
+        "recycle": 1,
+        "pre_ping": false
+      },
+      "pool_usage": {
+        "size": 1,
+        "checked_out": 1,
+        "overflow": 1
+      },
+      "role_policy": {
+        "configured": false,
+        "available": false,
+        "status": "passed",
+        "observed_at": "2026-10-27T12:34:56Z",
+        "reason": "reason-value",
+        "superuser": false,
+        "bypass_rls": false
+      }
+    },
+    "DeploymentIndex": {
+      "configured": false,
+      "available": false,
+      "status": "passed",
+      "observed_at": "2026-10-27T12:34:56Z",
+      "reason": "reason-value",
+      "id": "id-value",
+      "workspace_id": "workspace_id-value",
+      "vector_extension": false,
+      "embedding_sets": 1,
+      "physical_indexes": 1
+    },
+    "DeploymentStorage": {
+      "configured": false,
+      "available": false,
+      "status": "passed",
+      "observed_at": "2026-10-27T12:34:56Z",
+      "reason": "reason-value",
+      "ownership": "deployment",
+      "read_only": true,
+      "id": "documents",
+      "backend": "backend-value",
+      "store_originals": false
+    },
+    "DocumentChunk": {
+      "id": "id-value",
+      "index": 1,
+      "total_chunks": 1,
+      "text": "text-value",
+      "char_start": 1,
+      "char_end": 1,
+      "page": 1,
+      "section_path": "section_path-value",
+      "embedding_model": "embedding_model-value"
+    },
+    "DocumentChunks": {
+      "document_id": "document_id-value",
+      "source_id": "source_id-value",
+      "native_source_id": "native_source_id-value",
+      "source_version_id": "source_version_id-value",
+      "extraction_id": "extraction_id-value",
+      "items": [
+        {
+          "id": "id-value",
+          "index": 1,
+          "total_chunks": 1,
+          "text": "text-value",
+          "char_start": 1,
+          "char_end": 1,
+          "page": 1,
+          "section_path": "section_path-value",
+          "embedding_model": "embedding_model-value"
+        }
+      ],
+      "offset": 1,
+      "limit": 1,
+      "total": 1,
+      "next_offset": 1
+    },
+    "DocumentEvidence": {
+      "kind": "document_passage",
+      "source": {
+        "id": "id-value",
+        "asset_id": "asset_id-value",
+        "source_id": "source_id-value",
+        "title": "title-value",
+        "kind": "document",
+        "knowledge_item_id": "knowledge_item_id-value",
+        "knowledge_version_id": "knowledge_version_id-value",
+        "knowledge_version": 1,
+        "source_version_id": "source_version_id-value",
+        "extraction_id": "extraction_id-value",
+        "source_part_id": "source_part_id-value",
+        "source_part_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "recorded_page": 1,
+        "page_basis": "recorded_loader",
+        "used_revision": "used_revision-value",
+        "snapshot_id": "snapshot_id-value",
+        "query_id": "query_id-value",
+        "chunk_id": "chunk_id-value",
+        "page": 1,
+        "section": "section-value",
+        "quote": "quote-value",
+        "current_revision": "current_revision-value",
+        "availability": "available"
+      }
+    },
+    "DocumentReingestInput": {
+      "acknowledge_chunk_invalidation": false
+    },
+    "DomainCapability": {
+      "installed": false,
+      "registered": false,
+      "beans": 1,
+      "qualified": false,
+      "reason": "reason-value"
+    },
+    "EntraCredential": {
+      "kind": "entra",
+      "secret": "secret-value",
+      "directory_secret": "directory_secret-value"
+    },
+    "EntraSettings": {
+      "kind": "entra",
+      "tenant_id": "tenant_id-value",
+      "client_id": "client_id-value",
+      "directory_client_id": "directory_client_id-value",
+      "membership_mode": "direct"
+    },
+    "EvidenceManifest": {
+      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "sources": [
+        {
+          "id": "id-value",
+          "asset_id": "asset_id-value",
+          "source_id": "source_id-value",
+          "title": "title-value",
+          "kind": "document",
+          "knowledge_item_id": "knowledge_item_id-value",
+          "knowledge_version_id": "knowledge_version_id-value",
+          "knowledge_version": 1,
+          "source_version_id": "source_version_id-value",
+          "extraction_id": "extraction_id-value",
+          "source_part_id": "source_part_id-value",
+          "source_part_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "recorded_page": 1,
+          "page_basis": "recorded_loader",
+          "used_revision": "used_revision-value",
+          "snapshot_id": "snapshot_id-value",
+          "query_id": "query_id-value",
+          "chunk_id": "chunk_id-value",
+          "page": 1,
+          "section": "section-value",
+          "quote": "quote-value",
+          "current_revision": "current_revision-value",
+          "availability": "available"
+        }
+      ],
+      "complete": false,
+      "omissions": [
+        "omissions-value"
+      ]
+    },
+    "EvidencePresentation": {
+      "locale": "locale-value",
+      "time_zone": "time_zone-value",
+      "response_language": "response_language-value"
+    },
+    "EvidenceResult": {
+      "id": "evidence-1",
+      "run_id": "run-1",
+      "kind": "search",
+      "data": {
+        "hits": [
+          {
+            "id": "id-value",
+            "title": "title-value",
+            "text": "text-value",
+            "asset_id": "asset_id-value",
+            "source_id": "source_id-value",
+            "score": 0.25,
+            "citations": [
+              {
+                "document_id": "document_id-value",
+                "chunk_id": "chunk_id-value",
+                "section": "section-value",
+                "url": "url-value",
+                "id": "id-value",
+                "source_id": "source_id-value",
+                "asset_id": "asset_id-value",
+                "title": "title-value",
+                "text": "text-value",
+                "page": 1
+              }
+            ]
+          }
+        ],
+        "answer": "answer-value",
+        "citations": [
+          {
+            "document_id": "document_id-value",
+            "chunk_id": "chunk_id-value",
+            "section": "section-value",
+            "url": "url-value",
+            "id": "id-value",
+            "source_id": "source_id-value",
+            "asset_id": "asset_id-value",
+            "title": "title-value",
+            "text": "text-value",
+            "page": 1
+          }
+        ]
+      }
+    },
+    "Export": {
+      "id": "id-value",
+      "kind": "conversation",
+      "format": "markdown",
+      "title": "title-value",
+      "status": "ready",
+      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "completeness": "selected_messages",
+      "row_count": 1,
+      "truncated": false,
+      "created_at": "2026-10-27T12:34:56Z",
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "ExportCreate": {
+      "review_id": "review_id-value",
+      "expected_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "ExportPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "kind": "conversation",
+          "format": "markdown",
+          "title": "title-value",
+          "status": "ready",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "completeness": "selected_messages",
+          "row_count": 1,
+          "truncated": false,
+          "created_at": "2026-10-27T12:34:56Z",
+          "expires_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "ExportReview": {
+      "id": "id-value",
+      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "kind": "conversation",
+      "format": "markdown",
+      "title": "title-value",
+      "message_count": 1,
+      "source_count": 1,
+      "row_count": 1,
+      "row_cap": 1,
+      "truncated": false,
+      "completeness": "selected_messages",
+      "messages": [
+        {
+          "id": "id-value",
+          "role": "user",
+          "text": "text-value",
+          "status": "completed",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "private_derived": false,
+          "source_ids": [
+            "source_ids-value"
+          ],
+          "result_ids": [
+            "result_ids-value"
+          ],
+          "created_at": "2026-10-27T12:34:56Z",
+          "presentation": {
+            "locale": "locale-value",
+            "time_zone": "time_zone-value",
+            "response_language": "response_language-value"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "id-value",
+          "asset_id": "asset_id-value",
+          "source_id": "source_id-value",
+          "title": "title-value",
+          "kind": "document",
+          "knowledge_item_id": "knowledge_item_id-value",
+          "knowledge_version_id": "knowledge_version_id-value",
+          "knowledge_version": 1,
+          "source_version_id": "source_version_id-value",
+          "extraction_id": "extraction_id-value",
+          "source_part_id": "source_part_id-value",
+          "source_part_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "recorded_page": 1,
+          "page_basis": "recorded_loader",
+          "used_revision": "used_revision-value",
+          "snapshot_id": "snapshot_id-value",
+          "query_id": "query_id-value",
+          "chunk_id": "chunk_id-value",
+          "page": 1,
+          "section": "section-value",
+          "quote": "quote-value",
+          "current_revision": "current_revision-value",
+          "availability": "available"
+        }
+      ],
+      "source_manifest_complete": false,
+      "result": {
+        "query_id": "query_id-value",
+        "asset_id": "asset_id-value",
+        "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "row_count": 1,
+        "row_cap": 1,
+        "truncated": false,
+        "completeness": "bounded",
+        "byte_size": 1,
+        "columns": [
+          {
+            "name": "name-value",
+            "data_type": "data_type-value"
+          }
+        ],
+        "snapshot_ids": [
+          "snapshot_ids-value"
+        ],
+        "snapshot_manifest_complete": false,
+        "expires_at": "2026-10-27T12:34:56Z"
+      },
+      "omissions": [
+        "omissions-value"
+      ],
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "ExportReviewRequest": {
+      "thread_id": "thread_id-value",
+      "message_ids": [
+        "message_ids-value"
+      ],
+      "kind": "conversation",
+      "format": "markdown",
+      "include_evidence": false
+    },
+    "FeatureCapability": {
+      "id": "id-value",
+      "name": "name-value",
+      "available": false,
+      "reason": "reason-value"
+    },
+    "FieldOption": {
+      "value": "value-value",
+      "label": "label-value"
+    },
+    "FieldSchema": {
+      "options": [
+        {
+          "value": "value-value",
+          "label": "label-value"
+        }
+      ],
+      "name": "name-value",
+      "label": "label-value",
+      "type": "text",
+      "required": false,
+      "write_only": false,
+      "default": "default-value"
+    },
+    "FolderCreate": {
+      "name": "name-value",
+      "parent_id": "parent_id-value",
+      "scope": {
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "collection_id": "collection_id-value",
+        "asset_ids": [
+          "asset_ids-value"
+        ]
+      }
+    },
+    "FolderPatch": {
+      "expected_revision": 1,
+      "name": "name-value",
+      "parent_id": "parent_id-value"
+    },
+    "Frozen": {},
+    "GenerationReceipt": {
+      "id": "id-value",
+      "start_sequence": 1,
+      "agent_id": "agent_id-value",
+      "agent_revision": 1,
+      "provider_id": "provider_id-value",
+      "provider_revision": 1,
+      "provider_kind": "ollama",
+      "model_id": "model_id-value",
+      "model_class": "model_class-value",
+      "api": "chat",
+      "started_at": "2026-10-27T12:34:56Z",
+      "finished_at": "2026-10-27T12:34:56Z",
+      "status": "started"
+    },
+    "GlossaryPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "workspace_id": "workspace_id-value",
+          "term": "term-value",
+          "definition": "definition-value",
+          "synonyms_json": [
+            "synonyms_json-value"
+          ],
+          "tags_json": [
+            "tags_json-value"
+          ],
+          "related_columns_json": [
+            "related_columns_json-value"
+          ],
+          "related_metrics_json": [
+            "related_metrics_json-value"
+          ],
+          "created_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "total": 1,
+      "limit": 1,
+      "offset": 1,
+      "has_more": false
+    },
+    "GlossaryTermCreate": {
+      "term": "term-value",
+      "definition": "definition-value",
+      "synonyms": [
+        "synonyms-value"
+      ],
+      "tags": [
+        "tags-value"
+      ],
+      "related_columns": [
+        "related_columns-value"
+      ],
+      "related_metrics": [
+        "related_metrics-value"
+      ]
+    },
+    "GlossaryTermRead": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "workspace_id": "workspace_id-value",
+      "term": "term-value",
+      "definition": "definition-value",
+      "synonyms_json": [
+        "synonyms_json-value"
+      ],
+      "tags_json": [
+        "tags_json-value"
+      ],
+      "related_columns_json": [
+        "related_columns_json-value"
+      ],
+      "related_metrics_json": [
+        "related_metrics_json-value"
+      ],
+      "created_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z"
+    },
+    "GlossaryTermUpdate": {
+      "definition": "definition-value",
+      "synonyms": [
+        "synonyms-value"
+      ],
+      "tags": [
+        "tags-value"
+      ],
+      "related_columns": [
+        "related_columns-value"
+      ],
+      "related_metrics": [
+        "related_metrics-value"
+      ]
+    },
+    "GoogleCredential": {
+      "kind": "google_workspace",
+      "secret": "secret-value",
+      "service_account_email": "service_account_email-value",
+      "private_key": "private_key-value",
+      "private_key_id": "private_key_id-value",
+      "delegated_admin": "delegated_admin-value"
+    },
+    "GoogleWorkspaceSettings": {
+      "kind": "google_workspace",
+      "client_id": "client_id-value",
+      "hosted_domains": [
+        "hosted_domains-value"
+      ],
+      "customer_id": "customer_id-value",
+      "membership_mode": "direct"
+    },
+    "IdentityActivation": {
+      "expected_revision": 1,
+      "validation_id": "validation_id-value"
+    },
+    "IdentityCheck": {
+      "id": "id-value",
+      "status": "unconfigured",
+      "message": "message-value",
+      "supported": false,
+      "verified": false,
+      "available": false,
+      "observed_at": "2026-10-27T12:34:56Z"
+    },
+    "IdentityGroup": {
+      "id": "id-value",
+      "provider_id": "provider_id-value",
+      "name": "name-value",
+      "path": "path-value",
+      "membership_mode": "direct"
+    },
+    "IdentityGroupPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "provider_id": "provider_id-value",
+          "name": "name-value",
+          "path": "path-value",
+          "membership_mode": "direct"
+        }
+      ],
+      "next_cursor": "next_cursor-value"
+    },
+    "IdentityMapping": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "provider_id": "provider_id-value",
+      "group_id": "group_id-value",
+      "group_name": "group_name-value",
+      "role": "viewer",
+      "workspace_id": "workspace_id-value",
+      "enabled": false,
+      "revision": 1
+    },
+    "IdentityMappingInput": {
+      "group_id": "group_id-value",
+      "role": "viewer",
+      "workspace_id": "workspace_id-value",
+      "enabled": false,
+      "expected_revision": 1
+    },
+    "IdentityMappingPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "provider_id": "provider_id-value",
+          "group_id": "group_id-value",
+          "group_name": "group_name-value",
+          "role": "viewer",
+          "workspace_id": "workspace_id-value",
+          "enabled": false,
+          "revision": 1
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "IdentityProvider": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "kind": "keycloak",
+      "name": "name-value",
+      "canonical_issuer": "canonical_issuer-value",
+      "broker_alias": "broker_alias-value",
+      "ownership": "deployment",
+      "revision": 1,
+      "policy_revision": 1,
+      "status": "draft",
+      "credential_configured": false,
+      "settings": {
+        "kind": "keycloak",
+        "issuer": "issuer-value",
+        "client_id": "client_id-value",
+        "directory_client_id": "directory_client_id-value",
+        "membership_mode": "direct"
+      },
+      "checks": [
+        {
+          "id": "id-value",
+          "status": "unconfigured",
+          "message": "message-value",
+          "supported": false,
+          "verified": false,
+          "available": false,
+          "observed_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "capabilities": [
+        "capabilities-value"
+      ],
+      "observed_at": "2026-10-27T12:34:56Z",
+      "created_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z",
+      "created_by": "created_by-value",
+      "updated_by": "updated_by-value"
+    },
+    "IdentityProviderInput": {
+      "kind": "keycloak",
+      "name": "name-value",
+      "broker_alias": "broker_alias-value",
+      "settings": {
+        "kind": "keycloak",
+        "issuer": "issuer-value",
+        "client_id": "client_id-value",
+        "directory_client_id": "directory_client_id-value",
+        "membership_mode": "direct"
+      },
+      "credential": {
+        "kind": "keycloak",
+        "secret": "secret-value",
+        "directory_secret": "directory_secret-value"
+      },
+      "credential_reference": "credential_reference-value"
+    },
+    "IdentityProviderPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "kind": "keycloak",
+          "name": "name-value",
+          "canonical_issuer": "canonical_issuer-value",
+          "broker_alias": "broker_alias-value",
+          "ownership": "deployment",
+          "revision": 1,
+          "policy_revision": 1,
+          "status": "draft",
+          "credential_configured": false,
+          "settings": {
+            "kind": "keycloak",
+            "issuer": "issuer-value",
+            "client_id": "client_id-value",
+            "directory_client_id": "directory_client_id-value",
+            "membership_mode": "direct"
+          },
+          "checks": [
+            {
+              "id": "id-value",
+              "status": "unconfigured",
+              "message": "message-value",
+              "supported": false,
+              "verified": false,
+              "available": false,
+              "observed_at": "2026-10-27T12:34:56Z"
+            }
+          ],
+          "capabilities": [
+            "capabilities-value"
+          ],
+          "observed_at": "2026-10-27T12:34:56Z",
+          "created_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z",
+          "created_by": "created_by-value",
+          "updated_by": "updated_by-value"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "IdentityProviderPatch": {
+      "expected_revision": 1,
+      "name": "name-value",
+      "settings": {
+        "kind": "keycloak",
+        "issuer": "issuer-value",
+        "client_id": "client_id-value",
+        "directory_client_id": "directory_client_id-value",
+        "membership_mode": "direct"
+      },
+      "credential": {
+        "kind": "keycloak",
+        "secret": "secret-value",
+        "directory_secret": "directory_secret-value"
+      },
+      "credential_reference": "credential_reference-value"
+    },
+    "IdentityRevision": {
+      "expected_revision": 1
+    },
+    "IdentityValidation": {
+      "id": "id-value",
+      "candidate_revision": 1,
+      "expires_at": "2026-10-27T12:34:56Z",
+      "checks": [
+        {
+          "id": "id-value",
+          "status": "unconfigured",
+          "message": "message-value",
+          "supported": false,
+          "verified": false,
+          "available": false,
+          "observed_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "status": "pending",
+      "authorization_url": "authorization_url-value"
+    },
+    "IndexActivateInput": {
+      "expected_revision": 1,
+      "expected_active_id": "expected_active_id-value",
+      "expected_connection_revision": 1,
+      "recovery": "finish"
+    },
+    "IndexCreateInput": {
+      "workspace_id": "workspace_id-value",
+      "domain": "documents",
+      "provider_id": "provider_id-value",
+      "model_id": "model_id-value",
+      "expected_dimensions": 64,
+      "expected_active_id": "expected_active_id-value",
+      "expected_connection_revision": 1,
+      "batch_size": 1
+    },
+    "IndexJobView": {
+      "index": {
+        "id": "id-value",
+        "tenant_id": "tenant_id-value",
+        "workspace_id": "workspace_id-value",
+        "domain": "documents",
+        "native_id": "native_id-value",
+        "space_id": "space_id-value",
+        "provider_kind": "provider_kind-value",
+        "model_id": "model_id-value",
+        "dimensions": 1,
+        "storage_dimensions": 1,
+        "status": "status-value",
+        "active": false,
+        "revision": 1,
+        "job_id": "job_id-value",
+        "chunk_count": 1,
+        "vector_count": 1,
+        "indexed": false,
+        "qualification": "qualification-value",
+        "recovery_required": false,
+        "native_status": "native_status-value",
+        "provider_id": "provider_id-value",
+        "created_by": "created_by-value",
+        "updated_by": "updated_by-value",
+        "previous_space_id": "previous_space_id-value",
+        "created_at": "2026-10-27T12:34:56Z",
+        "ready_at": "ready_at-value",
+        "activated_at": "activated_at-value",
+        "retired_at": "retired_at-value",
+        "error_code": "error_code-value",
+        "error": "error-value"
+      },
+      "job_id": "job_id-value"
+    },
+    "IndexPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "workspace_id": "workspace_id-value",
+          "domain": "documents",
+          "native_id": "native_id-value",
+          "space_id": "space_id-value",
+          "provider_kind": "provider_kind-value",
+          "model_id": "model_id-value",
+          "dimensions": 1,
+          "storage_dimensions": 1,
+          "status": "status-value",
+          "active": false,
+          "revision": 1,
+          "job_id": "job_id-value",
+          "chunk_count": 1,
+          "vector_count": 1,
+          "indexed": false,
+          "qualification": "qualification-value",
+          "recovery_required": false,
+          "native_status": "native_status-value",
+          "provider_id": "provider_id-value",
+          "created_by": "created_by-value",
+          "updated_by": "updated_by-value",
+          "previous_space_id": "previous_space_id-value",
+          "created_at": "2026-10-27T12:34:56Z",
+          "ready_at": "ready_at-value",
+          "activated_at": "activated_at-value",
+          "retired_at": "retired_at-value",
+          "error_code": "error_code-value",
+          "error": "error-value"
+        }
+      ],
+      "total": 1,
+      "limit": 1,
+      "offset": 1
+    },
+    "IndexPlanInput": {
+      "workspace_id": "workspace_id-value",
+      "domain": "documents",
+      "provider_id": "provider_id-value",
+      "model_id": "model_id-value",
+      "expected_dimensions": 64
+    },
+    "IndexPlanView": {
+      "tenant_id": "tenant_id-value",
+      "workspace_id": "workspace_id-value",
+      "domain": "documents",
+      "provider_id": "provider_id-value",
+      "provider_kind": "provider_kind-value",
+      "provider_revision": 1,
+      "model_id": "model_id-value",
+      "dimensions": 1,
+      "storage_dimensions": 1,
+      "qualification": "qualification-value",
+      "expected_connection_revision": 1,
+      "active_space_id": "active_space_id-value",
+      "active_index_id": "active_index_id-value",
+      "chunk_count": 1,
+      "warnings": [
+        "warnings-value"
+      ]
+    },
+    "IndexRevisionInput": {
+      "expected_revision": 1
+    },
+    "Input": {},
+    "Invitation": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "workspace_id": "workspace_id-value",
+      "role": "viewer",
+      "label": "label-value",
+      "created_by": "created_by-value",
+      "created_at": "2026-10-27T12:34:56Z",
+      "expires_at": "2026-10-27T12:34:56Z",
+      "status": "pending",
+      "accepted_at": "accepted_at-value",
+      "accepted_by": "accepted_by-value"
+    },
+    "InvitationCreated": {
+      "invitation": {
+        "id": "id-value",
+        "tenant_id": "tenant_id-value",
+        "workspace_id": "workspace_id-value",
+        "role": "viewer",
+        "label": "label-value",
+        "created_by": "created_by-value",
+        "created_at": "2026-10-27T12:34:56Z",
+        "expires_at": "2026-10-27T12:34:56Z",
+        "status": "pending",
+        "accepted_at": "accepted_at-value",
+        "accepted_by": "accepted_by-value"
+      },
+      "token": "token-value"
+    },
+    "InvitationInput": {
+      "role": "viewer",
+      "workspace_id": "workspace_id-value",
+      "expires_in_hours": 1,
+      "label": "label-value"
+    },
+    "InvitationPreview": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "tenant_name": "tenant_name-value",
+      "workspace_id": "workspace_id-value",
+      "workspace_name": "workspace_name-value",
+      "role": "viewer",
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "InvitationToken": {
+      "token": "token-value"
+    },
+    "Job": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "resource_id": "resource_id-value",
+      "kind": "kind-value",
+      "status": "status-value",
+      "attempts": 1,
+      "max_attempts": 1,
+      "progress": 1,
+      "error": "error-value",
+      "result": {
+        "example": {
+          "decimal": "12345678901234567890.12345678901234567890",
+          "integer": "9007199254740993"
+        }
+      },
+      "created_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z"
+    },
+    "KeycloakCredential": {
+      "kind": "keycloak",
+      "secret": "secret-value",
+      "directory_secret": "directory_secret-value"
+    },
+    "KeycloakSettings": {
+      "kind": "keycloak",
+      "issuer": "issuer-value",
+      "client_id": "client_id-value",
+      "directory_client_id": "directory_client_id-value",
+      "membership_mode": "direct"
+    },
+    "KnowledgeCancellation": {
+      "expected_revision": 1
+    },
+    "KnowledgeCommitReceipt": {
+      "operation_id": "operation_id-value",
+      "intent_id": "intent_id-value",
+      "intent_revision": 1,
+      "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "item_id": "item_id-value",
+      "native_item_id": "native_item_id-value",
+      "native_version_id": "native_version_id-value",
+      "version": 1,
+      "serving_version": 1,
+      "action": "create_draft",
+      "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "evidence_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "committed_at": "2026-10-27T12:34:56Z",
+      "retrieval_state": "not_published",
+      "reason": "reason-value"
+    },
+    "KnowledgeConfirmation": {
+      "confirm": true,
+      "expected_revision": 1,
+      "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "KnowledgeConnection": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "workspace_id": "workspace_id-value",
+      "domain": "documents",
+      "role": "role-value",
+      "mode": "provider",
+      "provider_id": "provider_id-value",
+      "model_id": "model_id-value",
+      "model_options": {
+        "example": {
+          "decimal": "12345678901234567890.12345678901234567890",
+          "integer": "9007199254740993"
+        }
+      },
+      "dimensions": 1,
+      "storage_dimensions": 1,
+      "space_id": "space_id-value",
+      "embedding_fingerprint": "embedding_fingerprint-value",
+      "enabled": false,
+      "revision": 1,
+      "created_by": "created_by-value",
+      "updated_by": "updated_by-value",
+      "created_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z"
+    },
+    "KnowledgeConnectionInput": {
+      "domain": "documents",
+      "role": "role-value",
+      "workspace_id": "workspace_id-value",
+      "mode": "provider",
+      "provider_id": "provider_id-value",
+      "model_id": "model_id-value",
+      "model_options": {
+        "max_tokens": 64,
+        "temperature": 0.25,
+        "top_p": 0.25,
+        "top_k": 1,
+        "seed": 1,
+        "stop_sequences": [
+          "stop_sequences-value"
+        ],
+        "request_timeout": 0.25,
+        "reasoning": "none",
+        "reasoning_budget_tokens": 1024,
+        "parallel_tool_calls": false,
+        "store_responses": false,
+        "output_verbosity": "low"
+      },
+      "dimensions": 1,
+      "storage_dimensions": 1,
+      "space_id": "space_id-value",
+      "enabled": false,
+      "expected_revision": 1
+    },
+    "KnowledgeContent": {
+      "title": "title-value",
+      "body": "body-value",
+      "summary": "summary-value",
+      "domain": "legal",
+      "tags": [
+        "tags-value"
+      ]
+    },
+    "KnowledgeDestination": {
+      "id": "id-value",
+      "workspace_id": "workspace_id-value",
+      "project_id": "project_id-value",
+      "name": "name-value",
+      "ancestry_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "KnowledgeIndexView": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "workspace_id": "workspace_id-value",
+      "domain": "documents",
+      "native_id": "native_id-value",
+      "space_id": "space_id-value",
+      "provider_kind": "provider_kind-value",
+      "model_id": "model_id-value",
+      "dimensions": 1,
+      "storage_dimensions": 1,
+      "status": "status-value",
+      "active": false,
+      "revision": 1,
+      "job_id": "job_id-value",
+      "chunk_count": 1,
+      "vector_count": 1,
+      "indexed": false,
+      "qualification": "qualification-value",
+      "recovery_required": false,
+      "native_status": "native_status-value",
+      "provider_id": "provider_id-value",
+      "created_by": "created_by-value",
+      "updated_by": "updated_by-value",
+      "previous_space_id": "previous_space_id-value",
+      "created_at": "2026-10-27T12:34:56Z",
+      "ready_at": "ready_at-value",
+      "activated_at": "activated_at-value",
+      "retired_at": "retired_at-value",
+      "error_code": "error_code-value",
+      "error": "error-value"
+    },
+    "KnowledgeIntent": {
+      "id": "id-value",
+      "revision": 1,
+      "tenant_id": "tenant_id-value",
+      "owner_subject": "owner_subject-value",
+      "action": "create_draft",
+      "destination": {
+        "id": "id-value",
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "name": "name-value",
+        "ancestry_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "target_item_id": "target_item_id-value",
+      "expected_version": 1,
+      "before": {
+        "title": "title-value",
+        "body": "body-value",
+        "summary": "summary-value",
+        "domain": "legal",
+        "tags": [
+          "tags-value"
+        ]
+      },
+      "after": {
+        "title": "title-value",
+        "body": "body-value",
+        "summary": "summary-value",
+        "domain": "legal",
+        "tags": [
+          "tags-value"
+        ]
+      },
+      "evidence": [
+        {
+          "kind": "user_statement",
+          "text": "text-value",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "author_subject": "author_subject-value",
+          "recorded_at": "2026-10-27T12:34:56Z",
+          "authority": "user_authored"
+        }
+      ],
+      "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "status": "preview",
+      "created_at": "2026-10-27T12:34:56Z",
+      "expires_at": "2026-10-27T12:34:56Z",
+      "receipt": {
+        "operation_id": "operation_id-value",
+        "intent_id": "intent_id-value",
+        "intent_revision": 1,
+        "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "item_id": "item_id-value",
+        "native_item_id": "native_item_id-value",
+        "native_version_id": "native_version_id-value",
+        "version": 1,
+        "serving_version": 1,
+        "action": "create_draft",
+        "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "committed_at": "2026-10-27T12:34:56Z",
+        "retrieval_state": "not_published",
+        "reason": "reason-value"
+      }
+    },
+    "KnowledgeIntentInput": {
+      "action": "create_draft",
+      "destination_id": "destination_id-value",
+      "target_item_id": "target_item_id-value",
+      "expected_version": 1,
+      "content": {
+        "title": "title-value",
+        "body": "body-value",
+        "summary": "summary-value",
+        "domain": "legal",
+        "tags": [
+          "tags-value"
+        ]
+      },
+      "origin": {
+        "kind": "user_statement"
+      }
+    },
+    "KnowledgeItemPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "workspace_id": "workspace_id-value",
+          "project_id": "project_id-value",
+          "destination_id": "destination_id-value",
+          "title": "title-value",
+          "summary": "summary-value",
+          "head_version": 1,
+          "serving_version": 1
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1,
+      "has_next": false,
+      "has_previous": false
+    },
+    "KnowledgeItemSummary": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "workspace_id": "workspace_id-value",
+      "project_id": "project_id-value",
+      "destination_id": "destination_id-value",
+      "title": "title-value",
+      "summary": "summary-value",
+      "head_version": 1,
+      "serving_version": 1
+    },
+    "KnowledgeItemView": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "workspace_id": "workspace_id-value",
+      "project_id": "project_id-value",
+      "destination_id": "destination_id-value",
+      "head_version": 1,
+      "serving_version": 1,
+      "selected_version": {
+        "item_id": "item_id-value",
+        "version": 1,
+        "version_id": "version_id-value",
+        "publication": "draft",
+        "serving": false,
+        "content": {
+          "title": "title-value",
+          "body": "body-value",
+          "summary": "summary-value",
+          "domain": "legal",
+          "tags": [
+            "tags-value"
+          ]
+        },
+        "evidence": [
+          {
+            "kind": "user_statement",
+            "text": "text-value",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "author_subject": "author_subject-value",
+            "recorded_at": "2026-10-27T12:34:56Z",
+            "authority": "user_authored"
+          }
+        ],
+        "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "operation_id": "operation_id-value",
+        "author_subject": "author_subject-value",
+        "committed_at": "2026-10-27T12:34:56Z"
+      }
+    },
+    "KnowledgeProvider": {
+      "id": "id-value",
+      "name": "name-value",
+      "kind": "ollama",
+      "api": "chat",
+      "model_ids": [
+        "model_ids-value"
+      ],
+      "enabled": false
+    },
+    "KnowledgeRole": {
+      "id": "id-value",
+      "domain": "documents",
+      "label": "label-value",
+      "kind": "embedding",
+      "purposes": [
+        "purposes-value"
+      ],
+      "supports_current_agent": false,
+      "compatible_index_required": false,
+      "assignment": "tenant",
+      "status": "needs_setup",
+      "runtime_qualification": "not_run"
+    },
+    "KnowledgeRoles": {
+      "roles": [
+        {
+          "id": "id-value",
+          "domain": "documents",
+          "label": "label-value",
+          "kind": "embedding",
+          "purposes": [
+            "purposes-value"
+          ],
+          "supports_current_agent": false,
+          "compatible_index_required": false,
+          "assignment": "tenant",
+          "status": "needs_setup",
+          "runtime_qualification": "not_run"
+        }
+      ],
+      "model_options_schema": {
+        "example": {
+          "decimal": "12345678901234567890.12345678901234567890",
+          "integer": "9007199254740993"
+        }
+      },
+      "providers": [
+        {
+          "id": "id-value",
+          "name": "name-value",
+          "kind": "ollama",
+          "api": "chat",
+          "model_ids": [
+            "model_ids-value"
+          ],
+          "enabled": false
+        }
+      ]
+    },
+    "KnowledgeScope": {
+      "workspace_id": "workspace_id-value",
+      "project_id": "project_id-value",
+      "collection_id": "collection_id-value",
+      "asset_ids": [
+        "asset_ids-value"
+      ]
+    },
+    "KnowledgeVersionView": {
+      "item_id": "item_id-value",
+      "version": 1,
+      "version_id": "version_id-value",
+      "publication": "draft",
+      "serving": false,
+      "content": {
+        "title": "title-value",
+        "body": "body-value",
+        "summary": "summary-value",
+        "domain": "legal",
+        "tags": [
+          "tags-value"
+        ]
+      },
+      "evidence": [
+        {
+          "kind": "user_statement",
+          "text": "text-value",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "author_subject": "author_subject-value",
+          "recorded_at": "2026-10-27T12:34:56Z",
+          "authority": "user_authored"
+        }
+      ],
+      "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "evidence_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "operation_id": "operation_id-value",
+      "author_subject": "author_subject-value",
+      "committed_at": "2026-10-27T12:34:56Z"
+    },
+    "Lineage": {
+      "nodes": [
+        {
+          "id": "id-value",
+          "label": "label-value",
+          "kind": "kind-value"
+        }
+      ],
+      "edges": [
+        {
+          "source": "source-value",
+          "target": "target-value",
+          "label": "label-value"
+        }
+      ]
+    },
+    "LineageEdge": {
+      "source": "source-value",
+      "target": "target-value",
+      "label": "label-value"
+    },
+    "LineageNode": {
+      "id": "id-value",
+      "label": "label-value",
+      "kind": "kind-value"
+    },
+    "MemberInput": {
+      "subject": "subject-value",
+      "role": "viewer",
+      "workspace_id": "workspace_id-value"
+    },
+    "MemberUpdate": {
+      "role": "viewer",
+      "active": false
+    },
+    "Membership": {
+      "managed": false,
+      "origin": "manual",
+      "source_id": "source_id-value",
+      "source_name": "source_name-value",
+      "expires_at": "2026-10-27T12:34:56Z",
+      "id": "id-value",
+      "subject": "subject-value",
+      "tenant_id": "tenant_id-value",
+      "workspace_id": "workspace_id-value",
+      "role": "viewer",
+      "active": false
+    },
+    "MessageSelection": {
+      "thread_id": "thread_id-value",
+      "message_ids": [
+        "message_ids-value"
+      ]
+    },
+    "MetricsObservation": {
+      "configured": false,
+      "available": false,
+      "status": "passed",
+      "observed_at": "2026-10-27T12:34:56Z",
+      "reason": "reason-value",
+      "exporter_configured": false,
+      "names": [
+        "names-value"
+      ]
+    },
+    "ModelCapability": {
+      "image_input": {
+        "supported": false,
+        "verified": false
+      },
+      "audio_input": {
+        "supported": false,
+        "verified": false
+      },
+      "option_fields": [
+        "option_fields-value"
+      ],
+      "model_id": "model_id-value",
+      "chat": {
+        "supported": false,
+        "verified": false
+      },
+      "streaming": {
+        "supported": false,
+        "verified": false
+      },
+      "tools": {
+        "supported": false,
+        "verified": false
+      },
+      "observed_tools": [
+        "observed_tools-value"
+      ]
+    },
+    "ModelConnection": {
+      "id": "id-value",
+      "ownership": "deployment",
+      "read_only": true,
+      "provider": "provider-value",
+      "model_id": "model_id-value",
+      "configured": false,
+      "available": false,
+      "status": "passed",
+      "reason": "reason-value"
+    },
+    "ModelParameters": {
+      "max_tokens": 64,
+      "temperature": 0.25,
+      "top_p": 0.25,
+      "top_k": 1,
+      "seed": 1,
+      "stop_sequences": [
+        "stop_sequences-value"
+      ],
+      "request_timeout": 0.25,
+      "reasoning": "none",
+      "reasoning_budget_tokens": 1024,
+      "parallel_tool_calls": false,
+      "store_responses": false,
+      "output_verbosity": "low"
+    },
+    "ModelProvider": {
+      "native_adapter": {
+        "ownership": "deployment",
+        "read_only": true,
+        "model_class": "model_class-value",
+        "provider_identity": "provider_identity-value",
+        "profile_status": "unverified",
+        "reason": "reason-value"
+      },
+      "api": "chat",
+      "model_class": "OpenAIChatModel",
+      "configured": false,
+      "connected": false,
+      "discovered": false,
+      "model_capabilities": [
+        {
+          "image_input": {
+            "supported": false,
+            "verified": false
+          },
+          "audio_input": {
+            "supported": false,
+            "verified": false
+          },
+          "option_fields": [
+            "option_fields-value"
+          ],
+          "model_id": "model_id-value",
+          "chat": {
+            "supported": false,
+            "verified": false
+          },
+          "streaming": {
+            "supported": false,
+            "verified": false
+          },
+          "tools": {
+            "supported": false,
+            "verified": false
+          },
+          "observed_tools": [
+            "observed_tools-value"
+          ]
+        }
+      ],
+      "configuration_ownership": "tenant",
+      "credential_ownership": "tenant",
+      "ambient_credentials": false,
+      "id": "id-value",
+      "name": "name-value",
+      "kind": "ollama",
+      "base_url": "base_url-value",
+      "model_ids": [
+        "model_ids-value"
+      ],
+      "enabled": false,
+      "revision": 1,
+      "secret_configured": false,
+      "validated": false,
+      "checks": [
+        {
+          "model_id": "model_id-value",
+          "capability": "chat",
+          "supported": false,
+          "verified": false,
+          "options_key": "options_key-value",
+          "observed_at": "2026-10-27T12:34:56Z",
+          "id": "id-value",
+          "status": "passed",
+          "message": "message-value"
+        }
+      ]
+    },
+    "NativeAdapter": {
+      "ownership": "deployment",
+      "read_only": true,
+      "model_class": "model_class-value",
+      "provider_identity": "provider_identity-value",
+      "profile_status": "unverified",
+      "reason": "reason-value"
+    },
+    "NativeIndexChoice": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "workspace_id": "workspace_id-value",
+      "domain": "documents",
+      "native_id": "native_id-value",
+      "space_id": "space_id-value",
+      "provider_kind": "provider_kind-value",
+      "model_id": "model_id-value",
+      "dimensions": 1,
+      "storage_dimensions": 1,
+      "status": "status-value",
+      "active": false,
+      "chunk_count": 1,
+      "vector_count": 1,
+      "indexed": false,
+      "qualification": "qualification-value",
+      "managed_id": "managed_id-value",
+      "created_at": "2026-10-27T12:34:56Z",
+      "ready_at": "ready_at-value",
+      "activated_at": "activated_at-value",
+      "retired_at": "retired_at-value"
+    },
+    "NativeIndexPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "workspace_id": "workspace_id-value",
+          "domain": "documents",
+          "native_id": "native_id-value",
+          "space_id": "space_id-value",
+          "provider_kind": "provider_kind-value",
+          "model_id": "model_id-value",
+          "dimensions": 1,
+          "storage_dimensions": 1,
+          "status": "status-value",
+          "active": false,
+          "chunk_count": 1,
+          "vector_count": 1,
+          "indexed": false,
+          "qualification": "qualification-value",
+          "managed_id": "managed_id-value",
+          "created_at": "2026-10-27T12:34:56Z",
+          "ready_at": "ready_at-value",
+          "activated_at": "activated_at-value",
+          "retired_at": "retired_at-value"
+        }
+      ],
+      "total": 1,
+      "limit": 1,
+      "offset": 1
+    },
+    "NativeReadOrigin": {
+      "original_filename": "original_filename-value",
+      "sheet_or_json_path": "sheet_or_json_path-value",
+      "connection_id": "connection_id-value",
+      "connection_name": "connection_name-value",
+      "database": "database-value",
+      "schema": "schema-value",
+      "table": "table-value"
+    },
+    "NativeReadReceipt": {
+      "result_id": "result_id-value",
+      "generation_id": "generation_id-value",
+      "stage": "stage-value",
+      "domain": "documents",
+      "tenant_id": "tenant_id-value",
+      "workspace_id": "workspace_id-value",
+      "entity_id": "entity_id-value",
+      "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "source_ids": [
+        "source_ids-value"
+      ],
+      "snapshot_ids": [
+        "snapshot_ids-value"
+      ],
+      "engine": "engine-value",
+      "database": "database-value",
+      "catalog": "catalog-value",
+      "schema": "schema-value",
+      "read_kind": "indexed_document",
+      "origin": {
+        "original_filename": "original_filename-value",
+        "sheet_or_json_path": "sheet_or_json_path-value",
+        "connection_id": "connection_id-value",
+        "connection_name": "connection_name-value",
+        "database": "database-value",
+        "schema": "schema-value",
+        "table": "table-value"
+      },
+      "source_version_id": "source_version_id-value",
+      "extraction_id": "extraction_id-value",
+      "knowledge_item_id": "knowledge_item_id-value",
+      "knowledge_version_id": "knowledge_version_id-value",
+      "knowledge_version": 1
+    },
+    "NativeTableSnapshot": {
+      "table_id": "table_id-value",
+      "table_name": "table_name-value",
+      "snapshot_id": "snapshot_id-value"
+    },
+    "OpenUIArtifact": {
+      "id": "id-value",
+      "kind": "openui",
+      "language": "language-value",
+      "complete": false,
+      "run_id": "run_id-value"
+    },
+    "OperationalLimits": {
+      "worker_concurrency": 1,
+      "max_queued_per_subject": 1,
+      "job_lease_seconds": 1,
+      "max_index_workspaces": 1
+    },
+    "OperationalObservation": {
+      "configured": false,
+      "available": false,
+      "status": "passed",
+      "observed_at": "2026-10-27T12:34:56Z",
+      "reason": "reason-value"
+    },
+    "Page": {
+      "page": 1,
+      "size": 1,
+      "page_size": 1,
+      "pages": 1,
+      "next_cursor": "next_cursor-value",
+      "actors": {
+        "example": {
+          "subject": "subject-value",
+          "display_name": "display_name-value",
+          "avatar_data_url": "avatar_data_url-value",
+          "avatar_version": "avatar_version-value"
+        }
+      },
+      "items": [
+        {
+          "decimal": "12345678901234567890.12345678901234567890"
+        }
+      ],
+      "total": 1
+    },
+    "Page_AgentConfiguration_": {
+      "page": 1,
+      "size": 1,
+      "page_size": 1,
+      "pages": 1,
+      "next_cursor": "next_cursor-value",
+      "actors": {
+        "example": {
+          "subject": "subject-value",
+          "display_name": "display_name-value",
+          "avatar_data_url": "avatar_data_url-value",
+          "avatar_version": "avatar_version-value"
+        }
+      },
+      "items": [
+        {
+          "model_settings": {
+            "example": {
+              "decimal": "12345678901234567890.12345678901234567890",
+              "integer": "9007199254740993"
+            }
+          },
+          "input_modalities": [
+            "text"
+          ],
+          "input_modality_policy": "input_modality_policy-value",
+          "model_options_supported": [
+            "model_options_supported-value"
+          ],
+          "api": "chat",
+          "model_class": "OpenAIChatModel",
+          "model_options": {
+            "max_tokens": 64,
+            "temperature": 0.25,
+            "top_p": 0.25,
+            "top_k": 1,
+            "seed": 1,
+            "stop_sequences": [
+              "stop_sequences-value"
+            ],
+            "request_timeout": 0.25,
+            "reasoning": "none",
+            "reasoning_budget_tokens": 1024,
+            "parallel_tool_calls": false,
+            "store_responses": false,
+            "output_verbosity": "low"
+          },
+          "configured": false,
+          "can_run": false,
+          "dependencies": [
+            {
+              "id": "id-value",
+              "ownership": "deployment",
+              "read_only": true,
+              "provider": "provider-value",
+              "model_id": "model_id-value",
+              "configured": false,
+              "available": false,
+              "status": "passed",
+              "reason": "reason-value"
+            }
+          ],
+          "id": "id-value",
+          "name": "name-value",
+          "description": "description-value",
+          "provider_id": "provider_id-value",
+          "model_id": "model_id-value",
+          "tools": [
+            "search_knowledge"
+          ],
+          "scope": {
+            "workspace_id": "workspace_id-value",
+            "project_id": "project_id-value",
+            "collection_id": "collection_id-value",
+            "asset_ids": [
+              "asset_ids-value"
+            ]
+          },
+          "instructions": "instructions-value",
+          "enabled": false,
+          "revision": 1,
+          "status": "ready",
+          "checks": [
+            {
+              "model_id": "model_id-value",
+              "capability": "chat",
+              "supported": false,
+              "verified": false,
+              "options_key": "options_key-value",
+              "observed_at": "2026-10-27T12:34:56Z",
+              "id": "id-value",
+              "status": "passed",
+              "message": "message-value"
+            }
+          ]
+        }
+      ],
+      "total": 1
+    },
+    "Page_AuditEvent_": {
+      "page": 1,
+      "size": 1,
+      "page_size": 1,
+      "pages": 1,
+      "next_cursor": "next_cursor-value",
+      "actors": {
+        "example": {
+          "subject": "subject-value",
+          "display_name": "display_name-value",
+          "avatar_data_url": "avatar_data_url-value",
+          "avatar_version": "avatar_version-value"
+        }
+      },
+      "items": [
+        {
+          "id": "id-value",
+          "subject": "subject-value",
+          "action": "action-value",
+          "resource_id": "resource_id-value",
+          "details": {
+            "example": {
+              "decimal": "12345678901234567890.12345678901234567890",
+              "integer": "9007199254740993"
+            }
+          },
+          "created_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "total": 1
+    },
+    "Page_CatalogEntry_": {
+      "page": 1,
+      "size": 1,
+      "page_size": 1,
+      "pages": 1,
+      "next_cursor": "next_cursor-value",
+      "actors": {
+        "example": {
+          "subject": "subject-value",
+          "display_name": "display_name-value",
+          "avatar_data_url": "avatar_data_url-value",
+          "avatar_version": "avatar_version-value"
+        }
+      },
+      "items": [
+        {
+          "created_by": "created_by-value",
+          "updated_by": "updated_by-value",
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "kind": "kind-value",
+          "name": "name-value",
+          "parent_id": "parent_id-value",
+          "workspace_id": "workspace_id-value",
+          "project_id": "project_id-value",
+          "description": "description-value",
+          "status": "status-value",
+          "metadata": {
+            "example": {
+              "decimal": "12345678901234567890.12345678901234567890",
+              "integer": "9007199254740993"
+            }
+          },
+          "created_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "total": 1
+    },
+    "Page_ChatFolder_": {
+      "page": 1,
+      "size": 1,
+      "page_size": 1,
+      "pages": 1,
+      "next_cursor": "next_cursor-value",
+      "actors": {
+        "example": {
+          "subject": "subject-value",
+          "display_name": "display_name-value",
+          "avatar_data_url": "avatar_data_url-value",
+          "avatar_version": "avatar_version-value"
+        }
+      },
+      "items": [
+        {
+          "id": "id-value",
+          "name": "name-value",
+          "parent_id": "parent_id-value",
+          "scope": {
+            "workspace_id": "workspace_id-value",
+            "project_id": "project_id-value",
+            "collection_id": "collection_id-value",
+            "asset_ids": [
+              "asset_ids-value"
+            ]
+          },
+          "revision": 1,
+          "conversation_count": 1,
+          "created_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "total": 1
+    },
+    "Page_ChatMessage_": {
+      "page": 1,
+      "size": 1,
+      "page_size": 1,
+      "pages": 1,
+      "next_cursor": "next_cursor-value",
+      "actors": {
+        "example": {
+          "subject": "subject-value",
+          "display_name": "display_name-value",
+          "avatar_data_url": "avatar_data_url-value",
+          "avatar_version": "avatar_version-value"
+        }
+      },
+      "items": [
+        {
+          "tool_activities": [
+            {
+              "call_id": "call_id-value",
+              "tool_name": "search_knowledge",
+              "status": "queued",
+              "occurred_at": "occurred_at-value",
+              "started_at": "started_at-value",
+              "finished_at": "finished_at-value",
+              "duration_ms": 1,
+              "summary": "summary-value",
+              "result_id": "result_id-value"
+            }
+          ],
+          "tool_activity_count": 1,
+          "tool_activity_has_more": false,
+          "attachments": [
+            {
+              "id": "id-value",
+              "filename": "filename-value",
+              "media_type": "media_type-value",
+              "kind": "document",
+              "size_bytes": 1,
+              "sha256": "sha256-value",
+              "status": "storing",
+              "revision": 1,
+              "expires_at": "2026-10-27T12:34:56Z",
+              "available": false
+            }
+          ],
+          "answer_policy": {
+            "outcome": "grounded",
+            "code": "code-value",
+            "reason": "reason-value"
+          },
+          "presentation": {
+            "locale": "locale-value",
+            "time_zone": "time_zone-value",
+            "response_language": "response_language-value"
+          },
+          "event_cursor": "event_cursor-value",
+          "id": "id-value",
+          "run_id": "run_id-value",
+          "role": "user",
+          "text": "text-value",
+          "status": "queued",
+          "citations": [
+            {
+              "document_id": "document_id-value",
+              "chunk_id": "chunk_id-value",
+              "section": "section-value",
+              "url": "url-value",
+              "id": "id-value",
+              "source_id": "source_id-value",
+              "asset_id": "asset_id-value",
+              "title": "title-value",
+              "text": "text-value",
+              "page": 1
+            }
+          ],
+          "artifacts": [
+            {
+              "id": "id-value",
+              "kind": "openui",
+              "language": "language-value",
+              "complete": false,
+              "run_id": "run_id-value"
+            }
+          ],
+          "created_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "total": 1
+    },
+    "Page_ChatThread_": {
+      "page": 1,
+      "size": 1,
+      "page_size": 1,
+      "pages": 1,
+      "next_cursor": "next_cursor-value",
+      "actors": {
+        "example": {
+          "subject": "subject-value",
+          "display_name": "display_name-value",
+          "avatar_data_url": "avatar_data_url-value",
+          "avatar_version": "avatar_version-value"
+        }
+      },
+      "items": [
+        {
+          "revision": 1,
+          "title_source": "default",
+          "folder_id": "folder_id-value",
+          "archived_at": "archived_at-value",
+          "id": "id-value",
+          "title": "title-value",
+          "scope": {
+            "workspace_id": "workspace_id-value",
+            "project_id": "project_id-value",
+            "collection_id": "collection_id-value",
+            "asset_ids": [
+              "asset_ids-value"
+            ]
+          },
+          "created_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "total": 1
+    },
+    "Page_Invitation_": {
+      "page": 1,
+      "size": 1,
+      "page_size": 1,
+      "pages": 1,
+      "next_cursor": "next_cursor-value",
+      "actors": {
+        "example": {
+          "subject": "subject-value",
+          "display_name": "display_name-value",
+          "avatar_data_url": "avatar_data_url-value",
+          "avatar_version": "avatar_version-value"
+        }
+      },
+      "items": [
+        {
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "workspace_id": "workspace_id-value",
+          "role": "viewer",
+          "label": "label-value",
+          "created_by": "created_by-value",
+          "created_at": "2026-10-27T12:34:56Z",
+          "expires_at": "2026-10-27T12:34:56Z",
+          "status": "pending",
+          "accepted_at": "accepted_at-value",
+          "accepted_by": "accepted_by-value"
+        }
+      ],
+      "total": 1
+    },
+    "Page_Job_": {
+      "page": 1,
+      "size": 1,
+      "page_size": 1,
+      "pages": 1,
+      "next_cursor": "next_cursor-value",
+      "actors": {
+        "example": {
+          "subject": "subject-value",
+          "display_name": "display_name-value",
+          "avatar_data_url": "avatar_data_url-value",
+          "avatar_version": "avatar_version-value"
+        }
+      },
+      "items": [
+        {
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "resource_id": "resource_id-value",
+          "kind": "kind-value",
+          "status": "status-value",
+          "attempts": 1,
+          "max_attempts": 1,
+          "progress": 1,
+          "error": "error-value",
+          "result": {
+            "example": {
+              "decimal": "12345678901234567890.12345678901234567890",
+              "integer": "9007199254740993"
+            }
+          },
+          "created_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "total": 1
+    },
+    "Page_KnowledgeConnection_": {
+      "page": 1,
+      "size": 1,
+      "page_size": 1,
+      "pages": 1,
+      "next_cursor": "next_cursor-value",
+      "actors": {
+        "example": {
+          "subject": "subject-value",
+          "display_name": "display_name-value",
+          "avatar_data_url": "avatar_data_url-value",
+          "avatar_version": "avatar_version-value"
+        }
+      },
+      "items": [
+        {
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "workspace_id": "workspace_id-value",
+          "domain": "documents",
+          "role": "role-value",
+          "mode": "provider",
+          "provider_id": "provider_id-value",
+          "model_id": "model_id-value",
+          "model_options": {
+            "example": {
+              "decimal": "12345678901234567890.12345678901234567890",
+              "integer": "9007199254740993"
+            }
+          },
+          "dimensions": 1,
+          "storage_dimensions": 1,
+          "space_id": "space_id-value",
+          "embedding_fingerprint": "embedding_fingerprint-value",
+          "enabled": false,
+          "revision": 1,
+          "created_by": "created_by-value",
+          "updated_by": "updated_by-value",
+          "created_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "total": 1
+    },
+    "Page_Membership_": {
+      "page": 1,
+      "size": 1,
+      "page_size": 1,
+      "pages": 1,
+      "next_cursor": "next_cursor-value",
+      "actors": {
+        "example": {
+          "subject": "subject-value",
+          "display_name": "display_name-value",
+          "avatar_data_url": "avatar_data_url-value",
+          "avatar_version": "avatar_version-value"
+        }
+      },
+      "items": [
+        {
+          "managed": false,
+          "origin": "manual",
+          "source_id": "source_id-value",
+          "source_name": "source_name-value",
+          "expires_at": "2026-10-27T12:34:56Z",
+          "id": "id-value",
+          "subject": "subject-value",
+          "tenant_id": "tenant_id-value",
+          "workspace_id": "workspace_id-value",
+          "role": "viewer",
+          "active": false
+        }
+      ],
+      "total": 1
+    },
+    "Page_Person_": {
+      "page": 1,
+      "size": 1,
+      "page_size": 1,
+      "pages": 1,
+      "next_cursor": "next_cursor-value",
+      "actors": {
+        "example": {
+          "subject": "subject-value",
+          "display_name": "display_name-value",
+          "avatar_data_url": "avatar_data_url-value",
+          "avatar_version": "avatar_version-value"
+        }
+      },
+      "items": [
+        {
+          "profile_id": "profile_id-value",
+          "subject": "subject-value",
+          "display_name": "display_name-value",
+          "avatar_url": "avatar_url-value",
+          "avatar_version": "avatar_version-value"
+        }
+      ],
+      "total": 1
+    },
+    "Page_PersonalToken_": {
+      "page": 1,
+      "size": 1,
+      "page_size": 1,
+      "pages": 1,
+      "next_cursor": "next_cursor-value",
+      "actors": {
+        "example": {
+          "subject": "subject-value",
+          "display_name": "display_name-value",
+          "avatar_data_url": "avatar_data_url-value",
+          "avatar_version": "avatar_version-value"
+        }
+      },
+      "items": [
+        {
+          "id": "id-value",
+          "name": "name-value",
+          "tenant_id": "tenant_id-value",
+          "prefix": "prefix-value",
+          "scopes": [
+            "scopes-value"
+          ],
+          "workspace_ids": [
+            "workspace_ids-value"
+          ],
+          "asset_ids": [
+            "asset_ids-value"
+          ],
+          "expires_at": "2026-10-27T12:34:56Z",
+          "revoked_at": "2026-10-27T12:34:56Z",
+          "last_used_at": "2026-10-27T12:34:56Z",
+          "created_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "total": 1
+    },
+    "Page_ToolActivity_": {
+      "page": 1,
+      "size": 1,
+      "page_size": 1,
+      "pages": 1,
+      "next_cursor": "next_cursor-value",
+      "actors": {
+        "example": {
+          "subject": "subject-value",
+          "display_name": "display_name-value",
+          "avatar_data_url": "avatar_data_url-value",
+          "avatar_version": "avatar_version-value"
+        }
+      },
+      "items": [
+        {
+          "call_id": "call_id-value",
+          "tool_name": "search_knowledge",
+          "status": "queued",
+          "occurred_at": "occurred_at-value",
+          "started_at": "started_at-value",
+          "finished_at": "finished_at-value",
+          "duration_ms": 1,
+          "summary": "summary-value",
+          "result_id": "result_id-value"
+        }
+      ],
+      "total": 1
+    },
+    "PendingKnowledgeCommit": {
+      "status": "pending",
+      "operation_id": "operation_id-value",
+      "intent_id": "intent_id-value",
+      "reason": "commit_outcome_unresolved"
+    },
+    "Person": {
+      "profile_id": "profile_id-value",
+      "subject": "subject-value",
+      "display_name": "display_name-value",
+      "avatar_url": "avatar_url-value",
+      "avatar_version": "avatar_version-value"
+    },
+    "PersonalToken": {
+      "id": "id-value",
+      "name": "name-value",
+      "tenant_id": "tenant_id-value",
+      "prefix": "prefix-value",
+      "scopes": [
+        "scopes-value"
+      ],
+      "workspace_ids": [
+        "workspace_ids-value"
+      ],
+      "asset_ids": [
+        "asset_ids-value"
+      ],
+      "expires_at": "2026-10-27T12:34:56Z",
+      "revoked_at": "2026-10-27T12:34:56Z",
+      "last_used_at": "2026-10-27T12:34:56Z",
+      "created_at": "2026-10-27T12:34:56Z"
+    },
+    "PoolUsage": {
+      "size": 1,
+      "checked_out": 1,
+      "overflow": 1
+    },
+    "Presentation": {
+      "locale": "locale-value",
+      "time_zone": "time_zone-value",
+      "response_language": "response_language-value"
+    },
+    "PrivateChunkPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "attachment_id": "attachment_id-value",
+          "index": 1,
+          "text": "text-value",
+          "page": 1,
+          "section_path": [
+            "section_path-value"
+          ],
+          "char_start": 1,
+          "char_end": 1,
+          "offset_basis": "normalized_text_code_points",
+          "sha256": "sha256-value"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "PrivateChunkView": {
+      "id": "id-value",
+      "attachment_id": "attachment_id-value",
+      "index": 1,
+      "text": "text-value",
+      "page": 1,
+      "section_path": [
+        "section_path-value"
+      ],
+      "char_start": 1,
+      "char_end": 1,
+      "offset_basis": "normalized_text_code_points",
+      "sha256": "sha256-value"
+    },
+    "PrivateFileReceipt": {
+      "id": "id-value",
+      "filename": "filename-value",
+      "media_type": "media_type-value",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "used_revision": 1,
+      "availability": "available"
+    },
+    "ProfileUpdate": {
+      "display_name": "display_name-value",
+      "locale": "locale-value",
+      "time_zone": "time_zone-value",
+      "response_language": "response_language-value"
+    },
+    "PromotedCatalogEntry": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "kind": "kind-value",
+      "name": "name-value",
+      "parent_id": "parent_id-value",
+      "workspace_id": "workspace_id-value",
+      "project_id": "project_id-value",
+      "description": "description-value",
+      "status": "status-value",
+      "created_by": "created_by-value",
+      "updated_by": "updated_by-value",
+      "metadata": {
+        "example": {
+          "decimal": "12345678901234567890.12345678901234567890",
+          "integer": "9007199254740993"
+        }
+      },
+      "created_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z"
+    },
+    "ProposalConfirmation": {
+      "confirm": true,
+      "expected_revision": 1
+    },
+    "ProposalRevision": {
+      "expected_revision": 1
+    },
+    "ProposalUpdate": {
+      "id": "id-value",
+      "status": "applied",
+      "revision": 2
+    },
+    "ProvenanceArtifact": {
+      "id": "id-value",
+      "original_filename": "original_filename-value",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "byte_size": 1,
+      "file_format": "file_format-value",
+      "compression": "compression-value",
+      "actor": "actor-value",
+      "admitted_at": "2026-10-27T12:34:56Z"
+    },
+    "ProvenanceTransformStep": {
+      "id": "id-value",
+      "ordinal": 1,
+      "kind": "kind-value",
+      "implementation": "implementation-value",
+      "implementation_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "output_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "parameters": {
+        "example": {
+          "decimal": "12345678901234567890.12345678901234567890",
+          "integer": "9007199254740993"
+        }
+      },
+      "actor": "actor-value",
+      "recorded_at": "2026-10-27T12:34:56Z"
+    },
+    "ProviderCapability": {
+      "id": "id-value",
+      "name": "name-value",
+      "kind": "kind-value",
+      "configured": false,
+      "available": false,
+      "reason": "reason-value",
+      "capabilities": [
+        "capabilities-value"
+      ]
+    },
+    "ProviderInput": {
+      "api": "chat",
+      "name": "name-value",
+      "kind": "ollama",
+      "base_url": "base_url-value",
+      "model_ids": [
+        "model_ids-value"
+      ],
+      "secret": "secret-value",
+      "enabled": false
+    },
+    "ProviderSupport": {
+      "id": "id-value",
+      "native_supported": false,
+      "exposed": false,
+      "kind": "kind-value",
+      "api": "api-value",
+      "model_class": "model_class-value",
+      "reason": "reason-value"
+    },
+    "ProviderType": {
+      "id": "id-value",
+      "name": "name-value",
+      "fields": [
+        {
+          "options": [
+            {
+              "value": "value-value",
+              "label": "label-value"
+            }
+          ],
+          "name": "name-value",
+          "label": "label-value",
+          "type": "text",
+          "required": false,
+          "write_only": false,
+          "default": "default-value"
+        }
+      ]
+    },
+    "QueryRequest": {
+      "dataset_id": "dataset_id-value",
+      "question": "question-value",
+      "conversation_id": "conversation_id-value",
+      "sql": "sql-value"
+    },
+    "QueryResponse": {
+      "query_id": "query_id-value",
+      "sql": "sql-value",
+      "execution_status": "OK",
+      "preview": [
+        {
+          "example": {
+            "decimal": "12345678901234567890.12345678901234567890",
+            "integer": "9007199254740993"
+          }
+        }
+      ],
+      "row_count": 1,
+      "elapsed_ms": 1,
+      "truncated": false,
+      "chart_hint": "line",
+      "explanation": "explanation-value",
+      "clarification": {
+        "questions": [
+          "questions-value"
+        ],
+        "reasons": [
+          "reasons-value"
+        ]
+      },
+      "grounded_summary": {
+        "example": {
+          "decimal": "12345678901234567890.12345678901234567890",
+          "integer": "9007199254740993"
+        }
+      },
+      "usage": {
+        "total_input_tokens": 1,
+        "total_output_tokens": 1,
+        "total_tokens": 1,
+        "total_cost_usd": 0.25,
+        "total_latency_ms": 0.25,
+        "by_agent": [
+          {
+            "agent": "agent-value",
+            "model": "model-value",
+            "input_tokens": 1,
+            "output_tokens": 1,
+            "total_tokens": 1,
+            "cost_usd": 0.25,
+            "latency_ms": 0.25,
+            "calls": 1
+          }
+        ]
+      },
+      "snapshot_pins": {
+        "example": "snapshot_pins-value"
+      }
+    },
+    "QueryResultExportInput": {
+      "kind": "query_result",
+      "dataset_id": "dataset_id-value",
+      "query_id": "query_id-value",
+      "format": "parquet",
+      "csv_mode": "spreadsheet_safe"
+    },
+    "ReplaceDocument": {
+      "expected_source_version_id": "expected_source_version_id-value",
+      "expected_extraction_id": "expected_extraction_id-value",
+      "expected_revision": 1,
+      "action": "replace_document",
+      "document_id": "document_id-value",
+      "expected_sha256": "expected_sha256-value",
+      "acknowledge_chunk_invalidation": false
+    },
+    "ReplaceTable": {
+      "expected_revision": 1,
+      "action": "replace_table",
+      "dataset_id": "dataset_id-value",
+      "table_id": "table_id-value",
+      "expected_snapshot_id": "expected_snapshot_id-value"
+    },
+    "ResultColumn": {
+      "name": "name-value",
+      "data_type": "data_type-value"
+    },
+    "RoleObservation": {
+      "configured": false,
+      "available": false,
+      "status": "passed",
+      "observed_at": "2026-10-27T12:34:56Z",
+      "reason": "reason-value",
+      "superuser": false,
+      "bypass_rls": false
+    },
+    "RunInput": {
+      "attachment_ids": [
+        "attachment_ids-value"
+      ],
+      "agent_id": "agent_id-value",
+      "message": "message-value",
+      "scope": {
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "collection_id": "collection_id-value",
+        "asset_ids": [
+          "asset_ids-value"
+        ]
+      },
+      "client_request_id": "client_request_id-value"
+    },
+    "SchemaTable": {
+      "sheet_or_json_path": "sheet_or_json_path-value",
+      "id": "id-value",
+      "name": "name-value",
+      "snapshot_id": "snapshot_id-value",
+      "columns": [
+        {
+          "id": "id-value",
+          "name": "name-value",
+          "data_type": "data_type-value",
+          "description": "description-value",
+          "pii_tag": "pii_tag-value"
+        }
+      ]
+    },
+    "SearchHit": {
+      "id": "id-value",
+      "title": "title-value",
+      "text": "text-value",
+      "asset_id": "asset_id-value",
+      "source_id": "source_id-value",
+      "score": 0.25,
+      "citations": [
+        {
+          "document_id": "document_id-value",
+          "chunk_id": "chunk_id-value",
+          "section": "section-value",
+          "url": "url-value",
+          "id": "id-value",
+          "source_id": "source_id-value",
+          "asset_id": "asset_id-value",
+          "title": "title-value",
+          "text": "text-value",
+          "page": 1
+        }
+      ]
+    },
+    "SearchRequest": {
+      "question": "question-value",
+      "workspace_id": "workspace_id-value",
+      "project_id": "project_id-value",
+      "collection_id": "collection_id-value",
+      "asset_ids": [
+        "asset_ids-value"
+      ],
+      "limit": 1,
+      "answer": false
+    },
+    "SearchResponse": {
+      "hits": [
+        {
+          "id": "id-value",
+          "title": "title-value",
+          "text": "text-value",
+          "asset_id": "asset_id-value",
+          "source_id": "source_id-value",
+          "score": 0.25,
+          "citations": [
+            {
+              "document_id": "document_id-value",
+              "chunk_id": "chunk_id-value",
+              "section": "section-value",
+              "url": "url-value",
+              "id": "id-value",
+              "source_id": "source_id-value",
+              "asset_id": "asset_id-value",
+              "title": "title-value",
+              "text": "text-value",
+              "page": 1
+            }
+          ]
+        }
+      ],
+      "answer": "answer-value",
+      "citations": [
+        {
+          "document_id": "document_id-value",
+          "chunk_id": "chunk_id-value",
+          "section": "section-value",
+          "url": "url-value",
+          "id": "id-value",
+          "source_id": "source_id-value",
+          "asset_id": "asset_id-value",
+          "title": "title-value",
+          "text": "text-value",
+          "page": 1
+        }
+      ]
+    },
+    "SetupCheck": {
+      "model_id": "model_id-value",
+      "capability": "chat",
+      "supported": false,
+      "verified": false,
+      "options_key": "options_key-value",
+      "observed_at": "2026-10-27T12:34:56Z",
+      "id": "id-value",
+      "status": "passed",
+      "message": "message-value"
+    },
+    "Share": {
+      "id": "id-value",
+      "title": "title-value",
+      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "status": "active",
+      "recipient_policy": "organization_current_acl",
+      "created_at": "2026-10-27T12:34:56Z",
+      "expires_at": "2026-10-27T12:34:56Z",
+      "revoked_at": "2026-10-27T12:34:56Z"
+    },
+    "ShareCreate": {
+      "review_id": "review_id-value",
+      "expected_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "expires_in_hours": 1,
+      "recipient_policy": "organization_current_acl"
+    },
+    "SharePage": {
+      "items": [
+        {
+          "id": "id-value",
+          "title": "title-value",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "status": "active",
+          "recipient_policy": "organization_current_acl",
+          "created_at": "2026-10-27T12:34:56Z",
+          "expires_at": "2026-10-27T12:34:56Z",
+          "revoked_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "ShareReview": {
+      "id": "id-value",
+      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "title": "title-value",
+      "message_count": 1,
+      "source_count": 1,
+      "messages": [
+        {
+          "id": "id-value",
+          "role": "user",
+          "text": "text-value",
+          "status": "completed",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "private_derived": false,
+          "source_ids": [
+            "source_ids-value"
+          ],
+          "result_ids": [
+            "result_ids-value"
+          ],
+          "created_at": "2026-10-27T12:34:56Z",
+          "presentation": {
+            "locale": "locale-value",
+            "time_zone": "time_zone-value",
+            "response_language": "response_language-value"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "id-value",
+          "asset_id": "asset_id-value",
+          "source_id": "source_id-value",
+          "title": "title-value",
+          "kind": "document",
+          "knowledge_item_id": "knowledge_item_id-value",
+          "knowledge_version_id": "knowledge_version_id-value",
+          "knowledge_version": 1,
+          "source_version_id": "source_version_id-value",
+          "extraction_id": "extraction_id-value",
+          "source_part_id": "source_part_id-value",
+          "source_part_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "recorded_page": 1,
+          "page_basis": "recorded_loader",
+          "used_revision": "used_revision-value",
+          "snapshot_id": "snapshot_id-value",
+          "query_id": "query_id-value",
+          "chunk_id": "chunk_id-value",
+          "page": 1,
+          "section": "section-value",
+          "quote": "quote-value",
+          "current_revision": "current_revision-value",
+          "availability": "available"
+        }
+      ],
+      "source_manifest_complete": false,
+      "recipient_policy": "organization_current_acl",
+      "omissions": [
+        "omissions-value"
+      ],
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "ShareReviewInput": {
+      "thread_id": "thread_id-value",
+      "message_ids": [
+        "message_ids-value"
+      ]
+    },
+    "SharedConversation": {
+      "share": {
+        "id": "id-value",
+        "title": "title-value",
+        "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "status": "active",
+        "recipient_policy": "organization_current_acl",
+        "created_at": "2026-10-27T12:34:56Z",
+        "expires_at": "2026-10-27T12:34:56Z",
+        "revoked_at": "2026-10-27T12:34:56Z"
+      },
+      "messages": [
+        {
+          "id": "id-value",
+          "role": "user",
+          "text": "text-value",
+          "status": "completed",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "private_derived": false,
+          "source_ids": [
+            "source_ids-value"
+          ],
+          "result_ids": [
+            "result_ids-value"
+          ],
+          "created_at": "2026-10-27T12:34:56Z",
+          "presentation": {
+            "locale": "locale-value",
+            "time_zone": "time_zone-value",
+            "response_language": "response_language-value"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "id-value",
+          "asset_id": "asset_id-value",
+          "source_id": "source_id-value",
+          "title": "title-value",
+          "kind": "document",
+          "knowledge_item_id": "knowledge_item_id-value",
+          "knowledge_version_id": "knowledge_version_id-value",
+          "knowledge_version": 1,
+          "source_version_id": "source_version_id-value",
+          "extraction_id": "extraction_id-value",
+          "source_part_id": "source_part_id-value",
+          "source_part_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "recorded_page": 1,
+          "page_basis": "recorded_loader",
+          "used_revision": "used_revision-value",
+          "snapshot_id": "snapshot_id-value",
+          "query_id": "query_id-value",
+          "chunk_id": "chunk_id-value",
+          "page": 1,
+          "section": "section-value",
+          "quote": "quote-value",
+          "current_revision": "current_revision-value",
+          "availability": "available"
+        }
+      ],
+      "source_manifest_complete": false
+    },
+    "SourceReference": {
+      "id": "id-value",
+      "asset_id": "asset_id-value",
+      "source_id": "source_id-value",
+      "title": "title-value",
+      "kind": "document",
+      "knowledge_item_id": "knowledge_item_id-value",
+      "knowledge_version_id": "knowledge_version_id-value",
+      "knowledge_version": 1,
+      "source_version_id": "source_version_id-value",
+      "extraction_id": "extraction_id-value",
+      "source_part_id": "source_part_id-value",
+      "source_part_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "recorded_page": 1,
+      "page_basis": "recorded_loader",
+      "used_revision": "used_revision-value",
+      "snapshot_id": "snapshot_id-value",
+      "query_id": "query_id-value",
+      "chunk_id": "chunk_id-value",
+      "page": 1,
+      "section": "section-value",
+      "quote": "quote-value",
+      "current_revision": "current_revision-value",
+      "availability": "available"
+    },
+    "SqlAttemptReceipt": {
+      "result_id": "result_id-value",
+      "generation_id": "generation_id-value",
+      "ordinal": 1,
+      "stage": "stage-value",
+      "statement_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "statement": "statement-value",
+      "classification": "classification-value",
+      "outcome": "outcome-value",
+      "executed": false,
+      "snapshot_pins": {
+        "example": "snapshot_pins-value"
+      },
+      "row_count": 1,
+      "truncated": false,
+      "reason_code": "reason_code-value",
+      "engine": "engine-value",
+      "database": "database-value",
+      "catalog": "catalog-value",
+      "schema": "schema-value",
+      "execution_kind": "imported_snapshot",
+      "dataset_id": "dataset_id-value",
+      "native_dataset_id": "native_dataset_id-value",
+      "tables": [
+        {
+          "table_id": "table_id-value",
+          "table_name": "table_name-value",
+          "snapshot_id": "snapshot_id-value"
+        }
+      ]
+    },
+    "StoredResult": {
+      "query_id": "query_id-value",
+      "asset_id": "asset_id-value",
+      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "row_count": 1,
+      "row_cap": 1,
+      "truncated": false,
+      "completeness": "bounded",
+      "byte_size": 1,
+      "columns": [
+        {
+          "name": "name-value",
+          "data_type": "data_type-value"
+        }
+      ],
+      "snapshot_ids": [
+        "snapshot_ids-value"
+      ],
+      "snapshot_manifest_complete": false,
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "StreamEvent": {
+      "id": "id-value",
+      "type": "type-value",
+      "data": {
+        "proposal_update": {
+          "id": "id-value",
+          "status": "applied",
+          "revision": 2
+        },
+        "tool_activity": {
+          "call_id": "call_id-value",
+          "tool_name": "search_knowledge",
+          "status": "queued",
+          "occurred_at": "occurred_at-value",
+          "started_at": "started_at-value",
+          "finished_at": "finished_at-value",
+          "duration_ms": 1,
+          "summary": "summary-value",
+          "result_id": "result_id-value"
+        },
+        "answer_policy": {
+          "outcome": "grounded",
+          "code": "code-value",
+          "reason": "reason-value"
+        },
+        "presentation": {
+          "locale": "locale-value",
+          "time_zone": "time_zone-value",
+          "response_language": "response_language-value"
+        },
+        "text": "text-value",
+        "stage": "stage-value",
+        "message": "message-value",
+        "status": "queued",
+        "code": "code-value",
+        "message_id": "message_id-value",
+        "artifact": {
+          "id": "id-value",
+          "kind": "openui",
+          "language": "language-value",
+          "complete": false,
+          "run_id": "run_id-value"
+        },
+        "citation": {
+          "document_id": "document_id-value",
+          "chunk_id": "chunk_id-value",
+          "section": "section-value",
+          "url": "url-value",
+          "id": "id-value",
+          "source_id": "source_id-value",
+          "asset_id": "asset_id-value",
+          "title": "title-value",
+          "text": "text-value",
+          "page": 1
+        }
+      }
+    },
+    "StructuredEvidence": {
+      "kind": "structured_snapshot",
+      "source": {
+        "id": "id-value",
+        "asset_id": "asset_id-value",
+        "source_id": "source_id-value",
+        "title": "title-value",
+        "kind": "document",
+        "knowledge_item_id": "knowledge_item_id-value",
+        "knowledge_version_id": "knowledge_version_id-value",
+        "knowledge_version": 1,
+        "source_version_id": "source_version_id-value",
+        "extraction_id": "extraction_id-value",
+        "source_part_id": "source_part_id-value",
+        "source_part_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "recorded_page": 1,
+        "page_basis": "recorded_loader",
+        "used_revision": "used_revision-value",
+        "snapshot_id": "snapshot_id-value",
+        "query_id": "query_id-value",
+        "chunk_id": "chunk_id-value",
+        "page": 1,
+        "section": "section-value",
+        "quote": "quote-value",
+        "current_revision": "current_revision-value",
+        "availability": "available"
+      }
+    },
+    "TableColumnBindingPage": {
+      "manifest": {
+        "dataset_id": "dataset_id-value",
+        "table_id": "table_id-value",
+        "native_dataset_id": "native_dataset_id-value",
+        "native_table_id": "native_table_id-value",
+        "snapshot_id": "snapshot_id-value",
+        "status": "complete",
+        "index_base": 1,
+        "row_count": 1,
+        "column_count": 1,
+        "artifact_id": "artifact_id-value",
+        "run_id": "run_id-value",
+        "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "mapping_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "source_format": "source_format-value",
+        "source_variant": "source_variant-value",
+        "row_kind": "record",
+        "source_sheet": "source_sheet-value",
+        "source_path": [
+          "source_path-value"
+        ],
+        "parser_decisions": [
+          {
+            "name": "name-value",
+            "value": "value-value"
+          }
+        ],
+        "dependencies": [
+          {
+            "name": "name-value",
+            "version": "version-value"
+          }
+        ],
+        "reason_code": "reason_code-value",
+        "rejected_source_rows": [
+          1
+        ]
+      },
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1,
+      "has_next": false,
+      "has_previous": false,
+      "items": [
+        {
+          "output_position": 1,
+          "source_field_index": 1,
+          "source_path": [
+            "source_path-value"
+          ],
+          "source_type": "source_type-value",
+          "header_cells": [
+            {
+              "row": 1,
+              "column": 1
+            }
+          ]
+        }
+      ]
+    },
+    "TableCoordinateManifest": {
+      "dataset_id": "dataset_id-value",
+      "table_id": "table_id-value",
+      "native_dataset_id": "native_dataset_id-value",
+      "native_table_id": "native_table_id-value",
+      "snapshot_id": "snapshot_id-value",
+      "status": "complete",
+      "index_base": 1,
+      "row_count": 1,
+      "column_count": 1,
+      "artifact_id": "artifact_id-value",
+      "run_id": "run_id-value",
+      "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "mapping_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "source_format": "source_format-value",
+      "source_variant": "source_variant-value",
+      "row_kind": "record",
+      "source_sheet": "source_sheet-value",
+      "source_path": [
+        "source_path-value"
+      ],
+      "parser_decisions": [
+        {
+          "name": "name-value",
+          "value": "value-value"
+        }
+      ],
+      "dependencies": [
+        {
+          "name": "name-value",
+          "version": "version-value"
+        }
+      ],
+      "reason_code": "reason_code-value",
+      "rejected_source_rows": [
+        1
+      ]
+    },
+    "TableCoordinateSelection": {
+      "manifest": {
+        "dataset_id": "dataset_id-value",
+        "table_id": "table_id-value",
+        "native_dataset_id": "native_dataset_id-value",
+        "native_table_id": "native_table_id-value",
+        "snapshot_id": "snapshot_id-value",
+        "status": "complete",
+        "index_base": 1,
+        "row_count": 1,
+        "column_count": 1,
+        "artifact_id": "artifact_id-value",
+        "run_id": "run_id-value",
+        "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "mapping_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "source_format": "source_format-value",
+        "source_variant": "source_variant-value",
+        "row_kind": "record",
+        "source_sheet": "source_sheet-value",
+        "source_path": [
+          "source_path-value"
+        ],
+        "parser_decisions": [
+          {
+            "name": "name-value",
+            "value": "value-value"
+          }
+        ],
+        "dependencies": [
+          {
+            "name": "name-value",
+            "version": "version-value"
+          }
+        ],
+        "reason_code": "reason_code-value",
+        "rejected_source_rows": [
+          1
+        ]
+      },
+      "items": [
+        {
+          "output_row": 1,
+          "output_column": 1,
+          "source_row": 1,
+          "source_column": 1,
+          "source_path": [
+            "source_path-value"
+          ],
+          "header_cells": [
+            {
+              "row": 1,
+              "column": 1
+            }
+          ],
+          "source_type": "source_type-value"
+        }
+      ]
+    },
+    "TableProvenance": {
+      "dataset_id": "dataset_id-value",
+      "table_id": "table_id-value",
+      "native_dataset_id": "native_dataset_id-value",
+      "native_table_id": "native_table_id-value",
+      "snapshot_id": "snapshot_id-value",
+      "status": "recorded",
+      "snapshot_status": "PARTIAL",
+      "level": "file_section",
+      "operation": "upload",
+      "predecessor_snapshot_id": "predecessor_snapshot_id-value",
+      "artifact": {
+        "id": "id-value",
+        "original_filename": "original_filename-value",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "byte_size": 1,
+        "file_format": "file_format-value",
+        "compression": "compression-value",
+        "actor": "actor-value",
+        "admitted_at": "2026-10-27T12:34:56Z"
+      },
+      "sheet_or_json_path": "sheet_or_json_path-value",
+      "table_label": "table_label-value",
+      "parquet_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "parquet_byte_size": 1,
+      "schema_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "row_count": 1,
+      "actor": "actor-value",
+      "recorded_at": "2026-10-27T12:34:56Z",
+      "run_id": "run_id-value",
+      "reader_implementation": "reader_implementation-value",
+      "reader_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "parser_parameters": {
+        "example": {
+          "decimal": "12345678901234567890.12345678901234567890",
+          "integer": "9007199254740993"
+        }
+      },
+      "steps": [
+        {
+          "id": "id-value",
+          "ordinal": 1,
+          "kind": "kind-value",
+          "implementation": "implementation-value",
+          "implementation_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "output_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "parameters": {
+            "example": {
+              "decimal": "12345678901234567890.12345678901234567890",
+              "integer": "9007199254740993"
+            }
+          },
+          "actor": "actor-value",
+          "recorded_at": "2026-10-27T12:34:56Z"
+        }
+      ]
+    },
+    "TableReingestInput": {},
+    "TableRowRangePage": {
+      "manifest": {
+        "dataset_id": "dataset_id-value",
+        "table_id": "table_id-value",
+        "native_dataset_id": "native_dataset_id-value",
+        "native_table_id": "native_table_id-value",
+        "snapshot_id": "snapshot_id-value",
+        "status": "complete",
+        "index_base": 1,
+        "row_count": 1,
+        "column_count": 1,
+        "artifact_id": "artifact_id-value",
+        "run_id": "run_id-value",
+        "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "mapping_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "source_format": "source_format-value",
+        "source_variant": "source_variant-value",
+        "row_kind": "record",
+        "source_sheet": "source_sheet-value",
+        "source_path": [
+          "source_path-value"
+        ],
+        "parser_decisions": [
+          {
+            "name": "name-value",
+            "value": "value-value"
+          }
+        ],
+        "dependencies": [
+          {
+            "name": "name-value",
+            "version": "version-value"
+          }
+        ],
+        "reason_code": "reason_code-value",
+        "rejected_source_rows": [
+          1
+        ]
+      },
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1,
+      "has_next": false,
+      "has_previous": false,
+      "items": [
+        {
+          "output_start": 1,
+          "count": 1,
+          "source_start": 1,
+          "source_stride": 1
+        }
+      ]
+    },
+    "TableSnapshotPage": {
+      "items": [
+        {
+          "dataset_id": "dataset_id-value",
+          "table_id": "table_id-value",
+          "native_dataset_id": "native_dataset_id-value",
+          "native_table_id": "native_table_id-value",
+          "snapshot_id": "snapshot_id-value",
+          "status": "recorded",
+          "snapshot_status": "PARTIAL",
+          "level": "file_section",
+          "operation": "upload",
+          "predecessor_snapshot_id": "predecessor_snapshot_id-value",
+          "artifact": {
+            "id": "id-value",
+            "original_filename": "original_filename-value",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "byte_size": 1,
+            "file_format": "file_format-value",
+            "compression": "compression-value",
+            "actor": "actor-value",
+            "admitted_at": "2026-10-27T12:34:56Z"
+          },
+          "sheet_or_json_path": "sheet_or_json_path-value",
+          "table_label": "table_label-value",
+          "parquet_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "parquet_byte_size": 1,
+          "schema_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "row_count": 1,
+          "actor": "actor-value",
+          "recorded_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1,
+      "has_next": false,
+      "has_previous": false,
+      "current_snapshot_id": "current_snapshot_id-value"
+    },
+    "TableSnapshotSummary": {
+      "dataset_id": "dataset_id-value",
+      "table_id": "table_id-value",
+      "native_dataset_id": "native_dataset_id-value",
+      "native_table_id": "native_table_id-value",
+      "snapshot_id": "snapshot_id-value",
+      "status": "recorded",
+      "snapshot_status": "PARTIAL",
+      "level": "file_section",
+      "operation": "upload",
+      "predecessor_snapshot_id": "predecessor_snapshot_id-value",
+      "artifact": {
+        "id": "id-value",
+        "original_filename": "original_filename-value",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "byte_size": 1,
+        "file_format": "file_format-value",
+        "compression": "compression-value",
+        "actor": "actor-value",
+        "admitted_at": "2026-10-27T12:34:56Z"
+      },
+      "sheet_or_json_path": "sheet_or_json_path-value",
+      "table_label": "table_label-value",
+      "parquet_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "parquet_byte_size": 1,
+      "schema_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "row_count": 1,
+      "actor": "actor-value",
+      "recorded_at": "2026-10-27T12:34:56Z"
+    },
+    "TenantContext": {
+      "id": "id-value",
+      "name": "name-value",
+      "roles": [
+        "roles-value"
+      ],
+      "permissions": [
+        "permissions-value"
+      ]
+    },
+    "ThreadInput": {
+      "folder_id": "folder_id-value",
+      "title": "title-value",
+      "scope": {
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "collection_id": "collection_id-value",
+        "asset_ids": [
+          "asset_ids-value"
+        ]
+      }
+    },
+    "ThreadPatch": {
+      "expected_revision": 1,
+      "title": "title-value",
+      "folder_id": "folder_id-value",
+      "archived": false
+    },
+    "TitleRequest": {
+      "agent_id": "agent_id-value",
+      "expected_revision": 1
+    },
+    "TitleSuggestion": {
+      "title": "title-value",
+      "based_on_revision": 1
+    },
+    "TokenCreated": {
+      "id": "id-value",
+      "name": "name-value",
+      "tenant_id": "tenant_id-value",
+      "prefix": "prefix-value",
+      "scopes": [
+        "scopes-value"
+      ],
+      "workspace_ids": [
+        "workspace_ids-value"
+      ],
+      "asset_ids": [
+        "asset_ids-value"
+      ],
+      "expires_at": "2026-10-27T12:34:56Z",
+      "revoked_at": "2026-10-27T12:34:56Z",
+      "last_used_at": "2026-10-27T12:34:56Z",
+      "created_at": "2026-10-27T12:34:56Z",
+      "token": "token-value"
+    },
+    "TokenInput": {
+      "name": "name-value",
+      "tenant_id": "tenant_id-value",
+      "scopes": [
+        "scopes-value"
+      ],
+      "expires_at": "2026-10-27T12:34:56Z",
+      "workspace_ids": [
+        "workspace_ids-value"
+      ],
+      "asset_ids": [
+        "asset_ids-value"
+      ]
+    },
+    "TokenScope": {
+      "id": "id-value",
+      "name": "name-value",
+      "dependencies": [
+        "dependencies-value"
+      ]
+    },
+    "TokenScopeOptions": {
+      "items": [
+        {
+          "id": "id-value",
+          "name": "name-value",
+          "dependencies": [
+            "dependencies-value"
+          ]
+        }
+      ],
+      "max_lifetime_days": 1,
+      "max_active_per_user": 1
+    },
+    "ToolActivity": {
+      "call_id": "call_id-value",
+      "tool_name": "search_knowledge",
+      "status": "queued",
+      "occurred_at": "occurred_at-value",
+      "started_at": "started_at-value",
+      "finished_at": "finished_at-value",
+      "duration_ms": 1,
+      "summary": "summary-value",
+      "result_id": "result_id-value"
+    },
+    "UploadResponse": {
+      "source": {
+        "created_by": "created_by-value",
+        "updated_by": "updated_by-value",
+        "id": "id-value",
+        "tenant_id": "tenant_id-value",
+        "kind": "kind-value",
+        "name": "name-value",
+        "parent_id": "parent_id-value",
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "description": "description-value",
+        "status": "status-value",
+        "metadata": {
+          "example": {
+            "decimal": "12345678901234567890.12345678901234567890",
+            "integer": "9007199254740993"
+          }
+        },
+        "created_at": "2026-10-27T12:34:56Z",
+        "updated_at": "2026-10-27T12:34:56Z"
+      },
+      "assets": [
+        {
+          "created_by": "created_by-value",
+          "updated_by": "updated_by-value",
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "kind": "kind-value",
+          "name": "name-value",
+          "parent_id": "parent_id-value",
+          "workspace_id": "workspace_id-value",
+          "project_id": "project_id-value",
+          "description": "description-value",
+          "status": "status-value",
+          "metadata": {
+            "example": {
+              "decimal": "12345678901234567890.12345678901234567890",
+              "integer": "9007199254740993"
+            }
+          },
+          "created_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "job_id": "job_id-value"
+    },
+    "UsageSummary": {
+      "total_input_tokens": 1,
+      "total_output_tokens": 1,
+      "total_tokens": 1,
+      "total_cost_usd": 0.25,
+      "total_latency_ms": 0.25,
+      "by_agent": [
+        {
+          "agent": "agent-value",
+          "model": "model-value",
+          "input_tokens": 1,
+          "output_tokens": 1,
+          "total_tokens": 1,
+          "cost_usd": 0.25,
+          "latency_ms": 0.25,
+          "calls": 1
+        }
+      ]
+    },
+    "UserProfile": {
+      "subject": "subject-value",
+      "display_name": "display_name-value",
+      "locale": "locale-value",
+      "time_zone": "time_zone-value",
+      "response_language": "response_language-value",
+      "avatar_url": "avatar_url-value",
+      "avatar_version": "avatar_version-value"
+    },
+    "UserStatementEvidence": {
+      "kind": "user_statement",
+      "text": "text-value",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "author_subject": "author_subject-value",
+      "recorded_at": "2026-10-27T12:34:56Z",
+      "authority": "user_authored"
+    },
+    "UserStatementOrigin": {
+      "kind": "user_statement"
+    },
+    "ValidationResult": {
+      "connected": false,
+      "discovered": false,
+      "provider_id": "provider_id-value",
+      "revision": 1,
+      "status": "ready",
+      "checks": [
+        {
+          "model_id": "model_id-value",
+          "capability": "chat",
+          "supported": false,
+          "verified": false,
+          "options_key": "options_key-value",
+          "observed_at": "2026-10-27T12:34:56Z",
+          "id": "id-value",
+          "status": "passed",
+          "message": "message-value"
+        }
+      ]
+    },
+    "KnowledgeCommitOutcome": {
+      "status": "committed",
+      "receipt": {
+        "operation_id": "operation_id-value",
+        "intent_id": "intent_id-value",
+        "intent_revision": 1,
+        "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "item_id": "item_id-value",
+        "native_item_id": "native_item_id-value",
+        "native_version_id": "native_version_id-value",
+        "version": 1,
+        "serving_version": 1,
+        "action": "create_draft",
+        "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "committed_at": "2026-10-27T12:34:56Z",
+        "retrieval_state": "not_published",
+        "reason": "reason-value"
+      }
+    }
+  }
+}

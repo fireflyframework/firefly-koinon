@@ -1,0 +1,291 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<header class="heading">
+  <div>
+    <h2>{{ 'Audit' | ffkText }}</h2>
+    <p>{{ 'Review recorded activity in your organization.' | ffkText }}</p>
+  </div>
+  <ffk-button variant="quiet" icon="refresh" [disabled]="service.pending()" (click)="refresh()">{{
+    'Refresh' | ffkText
+  }}</ffk-button>
+</header>
+<ffk-filter-bar
+  [expanded]="expanded()"
+  (expandedChange)="expanded.set($event)"
+  [draftChanges]="draftChanged()"
+  [activeCount]="chips().length"
+  [loading]="service.pending()"
+  (applyRequested)="apply()"
+  (resetRequested)="resetDraft()"
+  (clearRequested)="clear()"
+>
+  <div filterMain class="search">
+    <ffk-search-field
+      [value]="query"
+      [label]="'Search audit activity' | ffkText"
+      [placeholder]="'Search audit activity' | ffkText"
+      [actionLabel]="'Search' | ffkText"
+      (valueChange)="query = $event"
+      (searchSubmitted)="apply()"
+    /><label
+      >{{ 'Sort by' | ffkText
+      }}<select [attr.aria-label]="'Sort by' | ffkText" name="sort" [(ngModel)]="sort">
+        <option value="newest">{{ 'Newest first' | ffkText }}</option>
+        <option value="oldest">{{ 'Oldest first' | ffkText }}</option>
+        <option value="action">{{ 'Action' | ffkText }}</option>
+      </select></label
+    >
+  </div>
+  <div filterFields>
+    <div class="fields">
+      <label
+        >{{ 'Action' | ffkText
+        }}<select [attr.aria-label]="'Action' | ffkText" name="action" [(ngModel)]="action">
+          <option value="">{{ 'All actions' | ffkText }}</option>
+          @for (option of actions; track option[0]) {
+            <option [value]="option[0]">{{ option[1] | ffkText }}</option>
+          }
+        </select></label
+      ><label
+        >{{ 'From date' | ffkText
+        }}<input
+          type="date"
+          [attr.aria-label]="'From date' | ffkText"
+          name="from"
+          [(ngModel)]="from"
+          [max]="through || '9999-12-31'" /></label
+      ><label
+        >{{ 'Through date' | ffkText
+        }}<input
+          type="date"
+          [attr.aria-label]="'Through date' | ffkText"
+          name="through"
+          [(ngModel)]="through"
+          [min]="from || '0001-01-01'"
+      /></label>
+    </div>
+    <p class="time-zone">
+      {{ 'Dates use your profile time zone.' | ffkText }} · {{ i18n.preferences().time_zone }}
+    </p>
+  </div>
+  <div filterChips class="filter-chips">
+    @for (chip of chips(); track chip.id) {
+      <button
+        type="button"
+        class="filter-chip"
+        [attr.aria-label]="
+          ('Remove filter' | ffkText) +
+          ' · ' +
+          (chip.label | ffkText) +
+          ': ' +
+          (chip.id === 'action' ? (actionName(chip.value) | ffkText) : (chip.value | ffkText))
+        "
+        (click)="removeChip(chip.id)"
+      >
+        <span
+          >{{ chip.label | ffkText }}:
+          <strong>{{
+            chip.id === 'action' ? (actionName(chip.value) | ffkText) : (chip.value | ffkText)
+          }}</strong></span
+        ><ffk-icon name="close" />
+      </button>
+    }
+  </div>
+</ffk-filter-bar>
+@if (validation()) {
+  <p class="error" role="alert">{{ validation() | ffkText }}</p>
+}
+@if (service.error(); as error) {
+  <section class="error" role="alert">
+    <h3>{{ 'Audit activity could not be loaded.' | ffkText }}</h3>
+    <p>{{ errorHelp() | ffkText }}</p>
+    @if (service.page()) {
+      <p>{{ 'The list has not updated.' | ffkText }}</p>
+    }
+    <details>
+      <summary>{{ 'Error details' | ffkText }}</summary>
+      <p>{{ error.message }}</p>
+    </details>
+    <ffk-button (click)="refresh()">{{ 'Try again' | ffkText }}</ffk-button>
+  </section>
+}
+<section class="results" [attr.aria-busy]="service.pending()">
+  <header class="results-heading">
+    <h3>{{ 'Recorded activity' | ffkText }}</h3>
+    @if (service.page(); as page) {
+      <span>{{ i18n.value(page.total, 'INTEGER') }} {{ 'events' | ffkText }}</span>
+    }
+  </header>
+  @if (service.pending()) {
+    @if (service.page()) {
+      <ffk-skeleton height="3px" [label]="'Updating audit activity' | ffkText" />
+    } @else {
+      <div class="loading" aria-live="polite">
+        <ffk-skeleton height="52px" [label]="'Loading audit activity' | ffkText" /><ffk-skeleton
+          height="52px"
+          [label]="'Loading audit activity' | ffkText"
+        /><ffk-skeleton height="52px" [label]="'Loading audit activity' | ffkText" />
+      </div>
+    }
+  }
+  @if (service.page(); as page) {
+    <div
+      class="table-wrap"
+      tabindex="0"
+      role="region"
+      [attr.aria-label]="'Audit activity' | ffkText"
+    >
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">{{ 'Action' | ffkText }}</th>
+            <th scope="col">{{ 'Person' | ffkText }}</th>
+            <th scope="col">{{ 'Recorded' | ffkText }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (event of page.items; track event.id) {
+            <tr [class.selected]="selected()?.id === event.id">
+              <td>
+                <button
+                  type="button"
+                  class="event-open"
+                  [disabled]="service.pending()"
+                  [attr.aria-label]="
+                    ('View details' | ffkText) + ' · ' + (actionName(event.action) | ffkText)
+                  "
+                  (click)="openDetails(event)"
+                >
+                  <span class="event-label"
+                    ><span class="action-name">{{ actionName(event.action) | ffkText }}</span>
+                    @if (observedTarget(event); as target) {
+                      <span class="event-target">{{ target }}</span>
+                    }
+                  </span>
+                  <span class="event-hint"
+                    >{{ 'Details' | ffkText }}<ffk-icon name="chevron"
+                  /></span>
+                </button>
+              </td>
+              <td>
+                <button
+                  type="button"
+                  class="person"
+                  [disabled]="service.pending()"
+                  [attr.aria-label]="
+                    ('Filter by person' | ffkText) + ' · ' + personName(event.subject)
+                  "
+                  (click)="filterPerson(event)"
+                >
+                  <span class="avatar" aria-hidden="true">
+                    @if (avatar(event.subject); as photo) {
+                      <img [src]="photo" alt="" />
+                    } @else {
+                      {{ initials(event.subject) }}
+                    }</span
+                  ><span>{{ personName(event.subject) }}</span>
+                </button>
+              </td>
+              <td class="recorded" [title]="event.created_at">
+                {{ event.created_at | ffkDate: undefined : 'datetime' }}
+              </td>
+            </tr>
+          } @empty {
+            @if (!service.pending() && !service.error()) {
+              <tr>
+                <td colspan="3" class="empty">
+                  <h3>{{ 'No audit activity matches these filters.' | ffkText }}</h3>
+                  <p>{{ 'Try another name, action or date range.' | ffkText }}</p>
+                  @if (hasFilters()) {
+                    <ffk-button (click)="clear()">{{ 'Clear filters' | ffkText }}</ffk-button>
+                  }
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    <ffk-pagination
+      [page]="page"
+      label="Audit activity"
+      [loading]="service.pending() || !!service.error()"
+      (pageChanged)="load($event)"
+      (sizeChanged)="load(1, $event)"
+    />
+  }
+</section>
+<ffk-side-panel
+  [open]="!!selected()"
+  [heading]="selected() ? (actionName(selected()!.action) | ffkText) : ('Details' | ffkText)"
+  [description]="'Recorded activity' | ffkText"
+  (closed)="closeDetails()"
+>
+  @if (selected(); as event) {
+    <section class="detail-person">
+      <span class="avatar large" aria-hidden="true">
+        @if (selectedActor()?.avatar; as photo) {
+          <img [src]="photo" alt="" />
+        } @else {
+          {{ initials(event.subject) }}
+        }
+      </span>
+      <div>
+        <span class="eyebrow">{{ 'Person' | ffkText }}</span
+        ><strong>{{ selectedActor()?.name }}</strong>
+      </div>
+    </section>
+    <dl class="detail-facts">
+      <div>
+        <dt>{{ 'Recorded' | ffkText }}</dt>
+        <dd [title]="event.created_at">{{ event.created_at | ffkDate: undefined : 'datetime' }}</dd>
+      </div>
+      <div>
+        <dt>{{ 'Target' | ffkText }}</dt>
+        <dd>{{ targetName(event) }}</dd>
+      </div>
+    </dl>
+    @if (details(event).length) {
+      <section class="observed">
+        <h3>{{ 'Recorded fields' | ffkText }}</h3>
+        <dl>
+          @for (detail of details(event); track detail[0]) {
+            <div>
+              <dt>{{ label(detail[0]) | ffkText }}</dt>
+              <dd>{{ detailValue(detail[0], detail[1]) | ffkValue }}</dd>
+            </div>
+          }
+        </dl>
+      </section>
+    }
+    @if (canOpen(event)) {
+      <ffk-button icon="folder" (click)="openKnowledge(event)">{{
+        'Open knowledge' | ffkText
+      }}</ffk-button>
+    }
+    <details class="advanced">
+      <summary>{{ 'Technical details' | ffkText }}</summary>
+      <dl>
+        <dt>{{ 'Action reference' | ffkText }}</dt>
+        <dd>
+          <code>{{ event.action }}</code>
+        </dd>
+        <dt>{{ 'Recorded time' | ffkText }}</dt>
+        <dd>
+          <code>{{ event.created_at }}</code>
+        </dd>
+        @if (event.resource_id) {
+          <dt>{{ 'Resource reference' | ffkText }}</dt>
+          <dd>
+            <code>{{ event.resource_id }}</code>
+          </dd>
+        }
+        <dt>{{ 'Event reference' | ffkText }}</dt>
+        <dd>
+          <code>{{ event.id }}</code>
+        </dd>
+      </dl>
+      <h4>{{ 'Raw recorded fields' | ffkText }}</h4>
+      <pre>{{ rawDetails(event) }}</pre>
+    </details>
+  }
+</ffk-side-panel>

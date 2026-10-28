@@ -1,0 +1,185 @@
+# Copyright 2024-2026 Firefly Software Foundation
+# Modifications Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Async repository for :class:`SourceRow`."""
+
+from __future__ import annotations
+
+from collections.abc import Sequence
+from contextlib import asynccontextmanager
+from typing import Any
+
+from pyfly.data.transaction import infrastructure_unit
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
+
+from flycanon.models.entities.source import SourceRow
+from flycanon.models.repositories._engine import build_session_factory
+
+
+class SourceRepository:
+    """Async repository for ``canon_sources``."""
+
+    def __init__(
+        self,
+        session_factory: async_sessionmaker[AsyncSession],
+        *,
+        engine: AsyncEngine | None = None,
+    ) -> None:
+        self._session_factory = session_factory
+        self._engine = engine
+
+    @property
+    def session_factory(self) -> async_sessionmaker[AsyncSession]:
+        """Registry-owned factory for product transaction composition."""
+        return self._session_factory
+
+    @property
+    def engine(self) -> AsyncEngine | None:
+        """Underlying ``AsyncEngine``. Used by the actuator health probe."""
+        return self._engine
+
+    @classmethod
+    def from_url(cls, database_url: str, *, echo: bool = False) -> SourceRepository:
+        factory, engine = build_session_factory(database_url, echo=echo)
+        return cls(factory, engine=engine)
+
+    @asynccontextmanager
+    async def session(self):
+        """Open a session for callers that need to compose multiple operations."""
+        async with infrastructure_unit(self._session_factory) as session:
+            yield session
+
+    async def get(
+        self,
+        source_id: str,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> SourceRow | None:
+        """Look up one source, scoped to ``(tenant_id, workspace_id)``.
+
+        The scope kwargs are MANDATORY. A row living in a different
+        workspace (same tenant) returns ``None`` instead of leaking to
+        the caller.
+
+        Worker code that walks the table without a request scope must
+        use :meth:`get_across_workspaces` explicitly.
+        """
+        async with infrastructure_unit(self._session_factory) as session:
+            result = await session.execute(
+                select(SourceRow).where(
+                    SourceRow.id == source_id,
+                    SourceRow.tenant_id == tenant_id,
+                    SourceRow.workspace_id == workspace_id,
+                )
+            )
+            return result.scalars().first()
+
+    async def get_across_workspaces(self, source_id: str) -> SourceRow | None:
+        """Cross-workspace lookup -- TRUSTED-CONTEXT callers only.
+
+        Used by workers / sweepers that operate without a request
+        scope (the row's own scope columns provide it ex post), backed
+        by a Postgres BYPASSRLS role.
+
+        Do NOT call from request-scoped code paths.
+        """
+        async with infrastructure_unit(self._session_factory) as session:
+            return await session.get(SourceRow, source_id)
+
+    async def get_many(self, source_ids: Sequence[str]) -> list[SourceRow]:
+        """Batch lookup -- used by the retrieval hydration step to
+        enrich every chunk hit with its source filename / title /
+        kind without N+1 round-trips.
+        """
+        ids = list(source_ids)
+        if not ids:
+            return []
+        async with infrastructure_unit(self._session_factory) as session:
+            result = await session.execute(select(SourceRow).where(SourceRow.id.in_(ids)))
+            return list(result.scalars().all())
+
+    async def get_by_content_sha256(
+        self,
+        content_sha256: str,
+        *,
+        tenant_id: str | None = None,
+        workspace_id: str | None = None,
+    ) -> SourceRow | None:
+        async with infrastructure_unit(self._session_factory) as session:
+            query = select(SourceRow).where(SourceRow.content_sha256 == content_sha256)
+            if tenant_id is not None:
+                query = query.where(SourceRow.tenant_id == tenant_id)
+            if workspace_id is not None:
+                query = query.where(SourceRow.workspace_id == workspace_id)
+            result = await session.execute(query)
+            return result.scalars().first()
+
+    async def list_sources(
+        self,
+        *,
+        statuses: Sequence[str] | None = None,
+        kinds: Sequence[str] | None = None,
+        limit: int = 50,
+        offset: int = 0,
+        tenant_id: str | None = None,
+        workspace_id: str | None = None,
+    ) -> tuple[list[SourceRow], int]:
+        conditions: list[Any] = []
+        if statuses:
+            conditions.append(SourceRow.status.in_(list(statuses)))
+        if kinds:
+            conditions.append(SourceRow.kind.in_(list(kinds)))
+        if tenant_id:
+            conditions.append(SourceRow.tenant_id == tenant_id)
+        if workspace_id:
+            conditions.append(SourceRow.workspace_id == workspace_id)
+
+        async with infrastructure_unit(self._session_factory) as session:
+            stmt = select(SourceRow)
+            if conditions:
+                stmt = stmt.where(*conditions)
+            stmt = stmt.order_by(SourceRow.created_at.desc()).limit(limit).offset(offset)
+            rows = list((await session.execute(stmt)).scalars().all())
+
+            count_stmt = select(func.count()).select_from(SourceRow)
+            if conditions:
+                count_stmt = count_stmt.where(*conditions)
+            total = int((await session.execute(count_stmt)).scalar() or 0)
+            return rows, total
+
+    async def add(self, row: SourceRow) -> SourceRow:
+        async with self.session() as session:
+            session.add(row)
+            await session.flush()
+            await session.refresh(row)
+            return row
+
+    async def update(self, row: SourceRow) -> SourceRow:
+        async with self.session() as session:
+            merged = await session.merge(row)
+            await session.flush()
+            return merged
+
+    async def delete(self, row: SourceRow) -> None:
+        """Delete one source row. The caller resolves the row via
+        :meth:`get` first so the ``(tenant_id, workspace_id)`` scope
+        check has already run before anything is removed.
+        """
+        async with self.session() as session:
+            merged = await session.merge(row)
+            await session.delete(merged)

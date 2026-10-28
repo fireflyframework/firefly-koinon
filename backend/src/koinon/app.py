@@ -1,0 +1,160 @@
+# Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
+"""One native context for catalog, security, jobs and retained knowledge domains."""
+
+import importlib.util
+from contextlib import asynccontextmanager
+from copy import deepcopy
+from json import JSONDecodeError
+
+from pydantic import ValidationError
+from pyfly.container.scanner import scan_package
+from pyfly.context import ApplicationContext
+from pyfly.core import Config, pyfly_application
+from pyfly.kernel.exceptions import PyFlyException
+from pyfly.web.adapters.fastapi.app import create_app
+from pyfly.web.adapters.starlette.errors import global_exception_handler
+
+from koinon import __version__
+from koinon.api.controllers.audit import AuditController
+from koinon.api.controllers.catalog import CatalogController
+from koinon.api.controllers.context import ContextController
+from koinon.api.controllers.jobs import JobController
+from koinon.api.controllers.memberships import MembershipController
+from koinon.configuration import ApplicationConfiguration
+from koinon.security.configuration import SecurityConfiguration, native_security_defaults
+from koinon.security.controllers import AuthController
+from koinon.security.settings import OidcSettings
+from koinon.web.capabilities import CapabilitiesController, CapabilityRegistry, HealthController
+from koinon.web.domain_errors import register_domain_problems
+from koinon.web.legacy_security import LegacyMembershipFilter, LegacyOperationPolicies
+from koinon.web.projection import register_controller, register_optional_domain
+
+
+@pyfly_application(name="firefly koinon", version=__version__, scan_packages=["koinon.catalog"])
+class KoinonApplication:
+    """Compatibility bootstrap for native Data slices."""
+
+
+def merge_configuration(base: dict, overlay: dict) -> dict:
+    result = deepcopy(base)
+    for key, value in overlay.items():
+        result[key] = (
+            merge_configuration(result[key], value)
+            if isinstance(result.get(key), dict) and isinstance(value, dict)
+            else deepcopy(value)
+        )
+    return result
+
+
+def create_application(config: dict):
+    settings = Config(config).bind(OidcSettings)
+    defaults = {
+        "koinon": {"knowledge": {"require_connections": True}},
+        "pyfly": {
+            "cqrs": {"enabled": True},
+            "agentic": {"enabled": True},
+            "eda": {"provider": "memory"},
+            "aop": {"enabled": True},
+            "web": {"actuator": {"enabled": False}, "problem-details": {"enabled": True}},
+        },
+    }
+    native_defaults = native_security_defaults(settings)
+    values = merge_configuration(merge_configuration(defaults, native_defaults), config)
+    mandatory = deepcopy(native_defaults)
+    mandatory["pyfly"]["session"].pop("store")
+    mandatory["pyfly"]["session"].pop("postgres")
+    mandatory["pyfly"]["session"].pop("concurrency")
+    values = merge_configuration(values, mandatory)
+    context = ApplicationContext(Config(values))
+    registry = CapabilityRegistry()
+    context.container.register_instance(CapabilityRegistry, registry)
+    context.container.register_instance(LegacyOperationPolicies, LegacyOperationPolicies())
+    for package in (
+        "koinon.catalog",
+        "koinon.jobs",
+        "koinon.assistants",
+        "koinon.profiles",
+        "koinon.tokens",
+        "koinon.operations",
+        "koinon.corporate_identity",
+        "koinon.evidence",
+        "koinon.exports",
+        "koinon.sharing",
+    ):
+        scan_package(package, context.container)
+    for cls in (
+        ApplicationConfiguration,
+        SecurityConfiguration,
+        AuthController,
+        HealthController,
+        LegacyMembershipFilter,
+    ):
+        context.register_bean(cls)
+    for cls in (
+        ContextController,
+        CatalogController,
+        MembershipController,
+        AuditController,
+        JobController,
+        CapabilitiesController,
+    ):
+        register_controller(context, cls)
+    if (
+        Config(values).get("koinon.knowledge.enabled", True)
+        and importlib.util.find_spec("koinon.knowledge") is not None
+    ):
+        scan_package("koinon.knowledge", context.container)
+        for cls in list(context.container.registered_types()):
+            if cls.__module__.startswith("koinon.knowledge") and getattr(cls, "__pyfly_stereotype__", "") in (
+                "controller",
+                "rest_controller",
+            ):
+                register_controller(context, cls)
+    for cls in list(context.container.registered_types()):
+        if cls.__module__.startswith(
+            (
+                "koinon.assistants",
+                "koinon.profiles",
+                "koinon.tokens",
+                "koinon.corporate_identity",
+                "koinon.evidence",
+                "koinon.exports",
+                "koinon.sharing",
+            )
+        ) and getattr(cls, "__pyfly_stereotype__", "") in ("controller", "rest_controller"):
+            register_controller(context, cls)
+    legacy_enabled = Config(values).get("koinon.legacy.enabled", True)
+    for package, domain in (("flycanon", "canon"), ("flyquery", "structured")):
+        registry.domains[domain] = (
+            register_optional_domain(context, package, domain)
+            if legacy_enabled
+            else {
+                "installed": importlib.util.find_spec(package) is not None,
+                "registered": False,
+                "reason": "Optional domain is disabled",
+            }
+        )
+
+    @asynccontextmanager
+    async def lifespan(app):
+        await context.start()
+        try:
+            yield
+        finally:
+            await context.stop()
+
+    app = create_app(
+        title="firefly koinon",
+        version=__version__,
+        context=context,
+        lifespan=lifespan,
+        docs_enabled=False,
+        actuator_enabled=False,
+    )
+    for exception in (PyFlyException, ValidationError, JSONDecodeError):
+        app.add_exception_handler(exception, global_exception_handler)
+    register_domain_problems(app)
+    app.state.context = context
+    app.state.capability_registry = registry
+    return app

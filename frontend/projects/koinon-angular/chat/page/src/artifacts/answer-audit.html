@@ -1,0 +1,862 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<ffk-side-panel [open]="open" [heading]="'Answer audit' | ffkText" (closed)="close()">
+  @if (message; as answer) {
+    <div class="audit-tabs" role="tablist" [attr.aria-label]="'Audit sections' | ffkText">
+      @for (item of tabs; track item) {
+        <button
+          type="button"
+          role="tab"
+          [id]="tabId(item)"
+          [attr.aria-controls]="panelId(item)"
+          [attr.aria-selected]="tab() === item"
+          [attr.tabindex]="tab() === item ? 0 : -1"
+          (click)="tab.set(item)"
+          (keydown)="tabKeys($event, $index)"
+        >
+          {{ tabTitle(item) | ffkText }}
+        </button>
+      }
+    </div>
+    <section
+      class="audit-tab-panel"
+      role="tabpanel"
+      [id]="panelId('overview')"
+      [attr.aria-labelledby]="tabId('overview')"
+      [hidden]="tab() !== 'overview'"
+      tabindex="0"
+    >
+      <div class="audit-meta">
+        <span>{{ status(answer.status) | ffkText }}</span
+        ><time [attr.datetime]="answer.created_at" [title]="answer.created_at">{{
+          answer.created_at | ffkDate: undefined : 'datetime'
+        }}</time>
+      </div>
+      <h3 class="outcome">{{ outcome() | ffkText }}</h3>
+      @if (answer.answer_policy?.reason) {
+        <p class="policy-reason">{{ answer.answer_policy.reason }}</p>
+      } @else {
+        <p class="help">
+          {{ 'An answer policy explanation is not available in this record.' | ffkText }}
+        </p>
+      }
+      <h4 class="overview-heading">{{ 'Recorded generation' | ffkText }}</h4>
+      @if (state.auditPending()) {
+        <ffk-skeleton height="3px" [label]="'Loading answer provenance' | ffkText" />
+      }
+      @if (state.auditError()) {
+        <div class="error" role="alert">
+          <p>{{ state.auditError() | ffkText }}</p>
+          <ffk-button variant="quiet" (click)="retryAudit()">{{
+            'Try again' | ffkText
+          }}</ffk-button>
+        </div>
+      }
+      @for (generation of state.audit()?.generations ?? []; track generation.id) {
+        <details class="generation-record">
+          <summary>
+            <strong>{{ generation.model_id }}</strong
+            ><span
+              >{{ provider(generation.provider_kind) }} ·
+              {{ generationStatus(generation.status) | ffkText }}</span
+            >
+          </summary>
+          <dl class="references">
+            <dt>{{ 'Agent revision' | ffkText }}</dt>
+            <dd>
+              {{ generation.agent_revision | ffkValue: 'integer' }}
+              <code>{{ generation.agent_id }}</code>
+            </dd>
+            <dt>{{ 'Provider revision' | ffkText }}</dt>
+            <dd>
+              {{ generation.provider_revision | ffkValue: 'integer' }}
+              <code>{{ generation.provider_id }}</code>
+            </dd>
+            <dt>{{ 'Provider API' | ffkText }}</dt>
+            <dd>{{ generation.api }}</dd>
+            <dt>{{ 'Native model class' | ffkText }}</dt>
+            <dd>
+              <code>{{ generation.model_class }}</code>
+            </dd>
+            <dt>{{ 'Started' | ffkText }}</dt>
+            <dd>
+              <time [attr.datetime]="generation.started_at">{{
+                generation.started_at | ffkDate: undefined : 'datetime'
+              }}</time>
+            </dd>
+            <dt>{{ 'Finished' | ffkText }}</dt>
+            <dd>
+              @if (generation.finished_at) {
+                <time [attr.datetime]="generation.finished_at">{{
+                  generation.finished_at | ffkDate: undefined : 'datetime'
+                }}</time>
+              } @else {
+                {{ 'Not recorded' | ffkText }}
+              }
+            </dd>
+          </dl>
+        </details>
+      } @empty {
+        @if (!state.auditPending() && !state.auditError()) {
+          <p class="help">
+            {{ 'Generation details were not recorded for this answer.' | ffkText }}
+          </p>
+        }
+      }
+      <h4 class="overview-heading">{{ 'Source coverage' | ffkText }}</h4>
+      @if (state.audit() || state.manifest()) {
+        <p>
+          {{ 'Recorded sources' | ffkText }}: {{ state.sources().length | ffkValue: 'integer' }}
+        </p>
+      }
+      @if (state.audit()?.private_files?.length) {
+        <p>
+          {{ 'Private file receipts' | ffkText }}:
+          {{ state.audit()?.private_files?.length | ffkValue: 'integer' }}
+        </p>
+      }
+      @if (sourceComplete() === false) {
+        <p class="help">{{ 'Source provenance is incomplete.' | ffkText }}</p>
+      } @else if (sourceComplete() === null && !state.auditPending() && !state.manifestPending()) {
+        <p class="help">{{ 'Source coverage was not recorded.' | ffkText }}</p>
+      }
+      @if (fallbackCitations().length) {
+        <p class="help">
+          {{ 'Recorded citations' | ffkText }}:
+          {{ fallbackCitations().length | ffkValue: 'integer' }} ·
+          {{ 'Revisions unverified' | ffkText }}
+        </p>
+      }
+      <h4 class="overview-heading">{{ 'Recorded limits' | ffkText }}</h4>
+      @for (omission of state.manifest()?.omissions ?? []; track $index) {
+        <p class="help">{{ omission | ffkText }}</p>
+      }
+      @if (!answer.run_id) {
+        <p class="help">{{ 'Execution trace is unavailable for this answer.' | ffkText }}</p>
+      } @else if (state.activity(); as activity) {
+        <p>{{ 'Recorded tools' | ffkText }}: {{ activity.total | ffkValue: 'integer' }}</p>
+      }
+      @if (query(); as result) {
+        <p class="help">
+          {{
+            (result.truncated === true
+              ? 'The recorded query returned a capped result.'
+              : result.truncated === false
+                ? 'Execution was not truncated.'
+                : 'Execution truncation was not recorded.'
+            ) | ffkText
+          }}
+        </p>
+      }
+      <p class="help">
+        {{ 'Tool results load when you select View result in Execution.' | ffkText }}
+      </p>
+    </section>
+    <section
+      class="audit-tab-panel"
+      role="tabpanel"
+      [id]="panelId('sources')"
+      [attr.aria-labelledby]="tabId('sources')"
+      [hidden]="tab() !== 'sources'"
+      tabindex="0"
+    >
+      @if (state.auditPending() || state.manifestPending()) {
+        <ffk-skeleton height="3px" [label]="'Loading sources' | ffkText" />
+      }
+      @if (state.manifestError() && !state.audit()) {
+        <div class="error" role="alert">
+          <p>{{ state.manifestError() | ffkText }}</p>
+          <ffk-button variant="quiet" (click)="retrySources()">{{
+            'Try again' | ffkText
+          }}</ffk-button>
+        </div>
+      }
+      @if (
+        !state.auditPending() &&
+        !state.manifestPending() &&
+        !state.auditError() &&
+        !state.sources().length &&
+        !state.audit()?.private_files?.length &&
+        !fallbackCitations().length
+      ) {
+        <p class="help">
+          {{
+            (sourceComplete() === true
+              ? 'No sources were recorded for this selection.'
+              : 'Source provenance is unavailable.'
+            ) | ffkText
+          }}
+        </p>
+      }
+      @if (state.auditError()) {
+        <div class="error" role="alert">
+          <p>{{ state.auditError() | ffkText }}</p>
+          <ffk-button variant="quiet" (click)="retryAudit()">{{
+            'Try again' | ffkText
+          }}</ffk-button>
+        </div>
+      }
+      @if (state.sources().length) {
+        <ul class="source-options">
+          @for (source of state.sources(); track source.id) {
+            <li>
+              <button
+                type="button"
+                [attr.aria-pressed]="sourceId() === source.id"
+                (click)="selectSource(source.id)"
+              >
+                <span>{{ source.title }}</span
+                ><small>{{ sourceState(source) | ffkText }}</small>
+              </button>
+            </li>
+          }
+        </ul>
+        @if (selectedSource(); as source) {
+          <article class="source-detail">
+            <h3>{{ source.title }}</h3>
+            @if (source.page || source.section) {
+              <p class="location">
+                @if (source.page) {
+                  {{ 'Page' | ffkText }} {{ source.page | ffkValue: 'integer' }}
+                }
+                @if (source.section) {
+                  <span>{{ source.section }}</span>
+                }
+              </p>
+            }
+            @if (source.quote) {
+              <blockquote>{{ source.quote }}</blockquote>
+            } @else {
+              <p class="help">{{ 'Passage text is not available in this record.' | ffkText }}</p>
+            }
+            @if (source.page_basis === 'recorded_loader' && source.recorded_page) {
+              <p class="location">
+                {{ 'Recorded page' | ffkText }} {{ source.recorded_page | ffkValue: 'integer' }}
+              </p>
+              <p class="help">
+                {{ 'Page numbering belongs to the recorded document view.' | ffkText }}
+              </p>
+            }
+            @if (source.knowledge_version) {
+              <dl class="references">
+                <dt>{{ 'Knowledge version' | ffkText }}</dt>
+                <dd>{{ source.knowledge_version | ffkValue: 'integer' }}</dd>
+              </dl>
+            }
+            <details class="technical-references">
+              <summary>{{ 'Technical references' | ffkText }}</summary>
+              <dl class="references">
+                <dt>{{ 'Entity reference' | ffkText }}</dt>
+                <dd>
+                  <code>{{ source.asset_id }}</code>
+                </dd>
+                <dt>{{ revisionLabel(source) | ffkText }}</dt>
+                <dd>
+                  <code>{{ source.used_revision || ('Not recorded' | ffkText) }}</code>
+                </dd>
+                <dt>{{ currentRevisionLabel(source) | ffkText }}</dt>
+                <dd>
+                  <code>{{ source.current_revision || ('Not verified' | ffkText) }}</code>
+                </dd>
+                @if (source.snapshot_id) {
+                  <dt>{{ 'Table snapshot' | ffkText }}</dt>
+                  <dd>
+                    <code>{{ source.snapshot_id }}</code>
+                  </dd>
+                }
+                @if (source.source_version_id) {
+                  <dt>{{ 'Source version' | ffkText }}</dt>
+                  <dd>
+                    <code>{{ source.source_version_id }}</code>
+                  </dd>
+                  <dt>{{ 'Extraction reference' | ffkText }}</dt>
+                  <dd>
+                    <code>{{ source.extraction_id }}</code>
+                  </dd>
+                  <dt>{{ 'Passage reference' | ffkText }}</dt>
+                  <dd>
+                    <code>{{ source.source_part_id }}</code>
+                  </dd>
+                }
+                @if (source.knowledge_version_id) {
+                  <dt>{{ 'Knowledge version reference' | ffkText }}</dt>
+                  <dd>
+                    <code>{{ source.knowledge_version_id }}</code>
+                  </dd>
+                }
+                @for (origin of sourceOrigins(source); track $index) {
+                  @if (origin?.connection_id; as reference) {
+                    <dt>{{ 'Connection reference' | ffkText }}</dt>
+                    <dd>
+                      <code>{{ reference }}</code>
+                    </dd>
+                  }
+                }
+              </dl>
+            </details>
+            <ffk-button variant="quiet" (click)="resourceRequested.emit(source.asset_id)">{{
+              'Open source' | ffkText
+            }}</ffk-button>
+            @if (source.kind === 'knowledge_version') {
+              <p class="help">
+                {{
+                  'The recorded knowledge version retains its evidence and publication history.'
+                    | ffkText
+                }}
+              </p>
+            } @else {
+              @for (origin of sourceOrigins(source); track $index) {
+                <ffk-recorded-origin [origin]="origin" />
+              } @empty {
+                <ffk-recorded-origin [origin]="null" />
+              }
+            }
+          </article>
+        } @else if (state.sources().length) {
+          <p class="help">
+            {{ 'Select a source to inspect its recorded passage and revision.' | ffkText }}
+          </p>
+        }
+        @if (sourceComplete() === false) {
+          <p class="help">{{ 'Source provenance is incomplete.' | ffkText }}</p>
+        }
+      }
+      @if (state.audit()?.private_files?.length) {
+        <h4 class="overview-heading">{{ 'Private file receipts' | ffkText }}</h4>
+        <ul class="source-options">
+          @for (file of state.audit()?.private_files ?? []; track file.id) {
+            <li>
+              <button
+                type="button"
+                [attr.aria-pressed]="privateId() === file.id"
+                (click)="selectPrivate(file.id)"
+              >
+                <span>{{ file.filename }}</span
+                ><small>{{ privateAvailability(file.availability) | ffkText }}</small>
+              </button>
+            </li>
+          }
+        </ul>
+        @if (selectedPrivate(); as file) {
+          <article class="source-detail">
+            <h3>{{ file.filename }}</h3>
+            <dl class="references">
+              <dt>{{ 'Media type' | ffkText }}</dt>
+              <dd>{{ file.media_type }}</dd>
+              <dt>{{ 'Used revision' | ffkText }}</dt>
+              <dd>{{ file.used_revision | ffkValue: 'integer' }}</dd>
+              <dt>{{ 'Current availability' | ffkText }}</dt>
+              <dd>{{ privateAvailability(file.availability) | ffkText }}</dd>
+            </dl>
+            <details class="technical-references">
+              <summary>{{ 'Technical references' | ffkText }}</summary>
+              <dl class="references">
+                <dt>{{ 'File fingerprint' | ffkText }}</dt>
+                <dd>
+                  <code>{{ file.sha256 }}</code>
+                </dd>
+                <dt>{{ 'Entity reference' | ffkText }}</dt>
+                <dd>
+                  <code>{{ file.id }}</code>
+                </dd>
+              </dl>
+            </details>
+            <p class="help">
+              {{
+                'This receipt records the file used at the time. It does not include file contents.'
+                  | ffkText
+              }}
+            </p>
+          </article>
+        }
+      }
+      @if (fallbackCitations().length) {
+        <h4>{{ 'Recorded citations' | ffkText }}</h4>
+        <p class="help">
+          {{ 'Source revisions are not verified by these recorded citations.' | ffkText }}
+        </p>
+        <ul class="source-options">
+          @for (citation of fallbackCitations(); track $index) {
+            <li>
+              <button
+                type="button"
+                [attr.aria-pressed]="citationIndex() === $index"
+                (click)="selectCitation($index)"
+              >
+                <span>{{ citation.title || ('Recorded citation' | ffkText) }}</span
+                ><small>{{ 'Unverified revision' | ffkText }}</small>
+              </button>
+            </li>
+          }
+        </ul>
+        @if (selectedCitation(); as citation) {
+          <article class="source-detail">
+            <h3>{{ citation.title || ('Recorded citation' | ffkText) }}</h3>
+            @if (citation.text) {
+              <blockquote>{{ citation.text }}</blockquote>
+            }
+            <ffk-button variant="quiet" (click)="citationSelected.emit(citation)">{{
+              'Open recorded citation' | ffkText
+            }}</ffk-button>
+          </article>
+        }
+      }
+    </section>
+    <section
+      class="audit-tab-panel"
+      role="tabpanel"
+      [id]="panelId('execution')"
+      [attr.aria-labelledby]="tabId('execution')"
+      [hidden]="tab() !== 'execution'"
+      tabindex="0"
+    >
+      <!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+
+      @if (state.audit()?.sql_attempts?.length) {
+        <h3 class="receipt-heading">{{ 'SQL attempts' | ffkText }}</h3>
+        <ol class="receipt-list">
+          @for (attempt of state.audit()?.sql_attempts ?? []; track $index) {
+            <li>
+              <button
+                class="receipt-toggle"
+                type="button"
+                [attr.aria-expanded]="attemptIndex() === $index"
+                [attr.aria-controls]="receiptId('sql', $index)"
+                (click)="selectAttempt($index)"
+              >
+                <strong
+                  >{{ (attempt.executed ? 'Executed SQL' : 'Recorded SQL') | ffkText }} ·
+                  {{ attempt.ordinal | ffkValue: 'integer' }}</strong
+                ><span>{{ (attempt.executed ? 'Executed' : 'Not executed') | ffkText }}</span>
+              </button>
+              @if (attemptIndex() === $index) {
+                <section
+                  class="receipt-detail"
+                  [id]="receiptId('sql', $index)"
+                  [attr.aria-label]="'SQL attempt details' | ffkText"
+                >
+                  @if (attempt.statement) {
+                    <ffk-code-block
+                      [code]="attempt.statement"
+                      [label]="attempt.executed ? 'Executed SQL' : 'Recorded SQL'"
+                    />
+                  } @else {
+                    <p class="help">{{ 'No SQL is available in this result.' | ffkText }}</p>
+                  }
+                  <h4 class="receipt-subheading">{{ 'Execution location' | ffkText }}</h4>
+                  <dl class="references execution-location">
+                    <dt>{{ 'Dataset' | ffkText }}</dt>
+                    <dd>
+                      @if (datasetTitle(attempt); as title) {
+                        {{ title }}
+                      } @else {
+                        {{ 'Not recorded' | ffkText }}
+                      }
+                    </dd>
+                    <dt>{{ 'Execution kind' | ffkText }}</dt>
+                    <dd>{{ executionKind(attempt.execution_kind) | ffkText }}</dd>
+                    <dt>{{ 'Engine' | ffkText }}</dt>
+                    <dd>{{ attempt.engine || ('Not recorded' | ffkText) }}</dd>
+                    <dt>{{ 'Database' | ffkText }}</dt>
+                    <dd>{{ attempt.database || ('Not recorded' | ffkText) }}</dd>
+                    <dt>{{ 'Catalog' | ffkText }}</dt>
+                    <dd>{{ attempt.catalog || ('Not recorded' | ffkText) }}</dd>
+                    <dt>{{ 'Schema' | ffkText }}</dt>
+                    <dd>{{ attempt.schema || ('Not recorded' | ffkText) }}</dd>
+                  </dl>
+                  @if (attempt.execution_kind === 'imported_snapshot') {
+                    <p class="help">{{ 'This SQL ran against imported snapshots.' | ffkText }}</p>
+                  }
+                  @if (attempt.tables?.length) {
+                    <h4 class="receipt-subheading">{{ 'Recorded table snapshots' | ffkText }}</h4>
+                    <ul class="table-snapshots">
+                      @for (table of attempt.tables; track $index) {
+                        <li>
+                          <strong>{{ table.table_name }}</strong>
+                        </li>
+                      }
+                    </ul>
+                  }
+                  <section
+                    class="sql-lineage"
+                    [attr.aria-label]="'Recorded source lineage' | ffkText"
+                  >
+                    @for (origin of sqlOrigins(attempt); track $index) {
+                      <ffk-recorded-origin heading="Recorded source lineage" [origin]="origin" />
+                    } @empty {
+                      <ffk-recorded-origin heading="Recorded source lineage" [origin]="null" />
+                    }
+                    <p class="help">{{ 'Recorded with this query result.' | ffkText }}</p>
+                  </section>
+                  <dl class="references">
+                    <dt>{{ 'Outcome' | ffkText }}</dt>
+                    <dd>{{ attempt.outcome }}</dd>
+                    <dt>{{ 'Stage' | ffkText }}</dt>
+                    <dd>{{ attempt.stage }}</dd>
+                    <dt>{{ 'Classification' | ffkText }}</dt>
+                    <dd>{{ attempt.classification || ('Not recorded' | ffkText) }}</dd>
+                    <dt>{{ 'Reason code' | ffkText }}</dt>
+                    <dd>{{ attempt.reason_code || ('Not recorded' | ffkText) }}</dd>
+                    <dt>{{ 'Recorded execution rows' | ffkText }}</dt>
+                    <dd>
+                      {{
+                        attempt.row_count === null || attempt.row_count === undefined
+                          ? ('Not recorded' | ffkText)
+                          : (attempt.row_count | ffkValue: 'integer')
+                      }}
+                    </dd>
+                    <dt>{{ 'Result truncated' | ffkText }}</dt>
+                    <dd>
+                      {{
+                        (attempt.truncated === true
+                          ? 'Yes'
+                          : attempt.truncated === false
+                            ? 'No'
+                            : 'Not recorded'
+                        ) | ffkText
+                      }}
+                    </dd>
+                  </dl>
+                  <details class="technical-references">
+                    <summary>{{ 'Technical references' | ffkText }}</summary>
+                    <dl class="references">
+                      <dt>{{ 'Dataset reference' | ffkText }}</dt>
+                      <dd>
+                        <code>{{ attempt.dataset_id || ('Not recorded' | ffkText) }}</code>
+                      </dd>
+                      <dt>{{ 'Native dataset reference' | ffkText }}</dt>
+                      <dd>
+                        <code>{{ attempt.native_dataset_id || ('Not recorded' | ffkText) }}</code>
+                      </dd>
+                      <dt>{{ 'Statement fingerprint' | ffkText }}</dt>
+                      <dd>
+                        <code>{{ attempt.statement_sha256 }}</code>
+                      </dd>
+                      @for (origin of sqlOrigins(attempt); track $index) {
+                        @if (origin.connection_id; as reference) {
+                          <dt>{{ 'Connection reference' | ffkText }}</dt>
+                          <dd>
+                            <code>{{ reference }}</code>
+                          </dd>
+                        }
+                      }
+                    </dl>
+                    @for (table of attempt.tables ?? []; track $index) {
+                      <h4>{{ table.table_name }}</h4>
+                      <dl class="references">
+                        <dt>{{ 'Table reference' | ffkText }}</dt>
+                        <dd>
+                          <code>{{ table.table_id }}</code>
+                        </dd>
+                        <dt>{{ 'Snapshot reference' | ffkText }}</dt>
+                        <dd>
+                          <code>{{ table.snapshot_id }}</code>
+                        </dd>
+                      </dl>
+                    }
+                    @if (pins(attempt.snapshot_pins, attempt.tables).length) {
+                      <h4>{{ 'Snapshot pins' | ffkText }}</h4>
+                      <dl class="references">
+                        @for (pin of pins(attempt.snapshot_pins, attempt.tables); track pin[0]) {
+                          <dt>
+                            <code>{{ pin[0] }}</code>
+                          </dt>
+                          <dd>
+                            <code>{{ pin[1] }}</code>
+                          </dd>
+                        }
+                      </dl>
+                    }
+                  </details>
+                </section>
+              }
+            </li>
+          }
+        </ol>
+      }
+      @if (state.audit()?.native_reads?.length) {
+        <h3 class="receipt-heading">{{ 'Native reads' | ffkText }}</h3>
+        <ol class="receipt-list">
+          @for (read of state.audit()?.native_reads ?? []; track $index) {
+            <li>
+              <button
+                class="receipt-toggle"
+                type="button"
+                [attr.aria-expanded]="readIndex() === $index"
+                [attr.aria-controls]="receiptId('read', $index)"
+                (click)="selectRead($index)"
+              >
+                <strong>
+                  @if (readTitle(read); as title) {
+                    {{ title }}
+                  } @else {
+                    {{ readDomain(read.domain) | ffkText }}
+                  }</strong
+                ><span>
+                  @if (readTitle(read)) {
+                    {{ readDomain(read.domain) | ffkText }}
+                    ·
+                  }
+                  {{ read.stage }}</span
+                >
+              </button>
+              @if (readIndex() === $index) {
+                <section
+                  class="receipt-detail"
+                  [id]="receiptId('read', $index)"
+                  [attr.aria-label]="'Native read details' | ffkText"
+                >
+                  <h4 class="receipt-subheading">{{ 'Read location' | ffkText }}</h4>
+                  <dl class="references read-location">
+                    <dt>{{ 'Read kind' | ffkText }}</dt>
+                    <dd>{{ readKind(read.read_kind) | ffkText }}</dd>
+                    @if (
+                      read.domain === 'structured' ||
+                      read.engine ||
+                      read.database ||
+                      read.catalog ||
+                      read.schema
+                    ) {
+                      <dt>{{ 'Engine' | ffkText }}</dt>
+                      <dd>{{ read.engine || ('Not recorded' | ffkText) }}</dd>
+                      <dt>{{ 'Database' | ffkText }}</dt>
+                      <dd>{{ read.database || ('Not recorded' | ffkText) }}</dd>
+                      <dt>{{ 'Catalog' | ffkText }}</dt>
+                      <dd>{{ read.catalog || ('Not recorded' | ffkText) }}</dd>
+                      <dt>{{ 'Schema' | ffkText }}</dt>
+                      <dd>{{ read.schema || ('Not recorded' | ffkText) }}</dd>
+                    }
+                  </dl>
+                  @if (read.domain === 'knowledge') {
+                    <p class="help">
+                      {{
+                        'The recorded knowledge version retains its evidence and publication history.'
+                          | ffkText
+                      }}
+                    </p>
+                  } @else {
+                    <ffk-recorded-origin [origin]="read.origin" />
+                  }
+                  <details class="technical-references">
+                    <summary>{{ 'Technical references' | ffkText }}</summary>
+                    <h4 class="receipt-subheading">{{ 'Read fingerprint' | ffkText }}</h4>
+                    <dl class="references">
+                      <dt>{{ 'Entity reference' | ffkText }}</dt>
+                      <dd>
+                        <code>{{ read.entity_id }}</code>
+                      </dd>
+                      <dt>{{ 'Content fingerprint' | ffkText }}</dt>
+                      <dd>
+                        <code>{{ read.content_sha256 }}</code>
+                      </dd>
+                      @if (read.source_version_id) {
+                        <dt>{{ 'Source version' | ffkText }}</dt>
+                        <dd>
+                          <code>{{ read.source_version_id }}</code>
+                        </dd>
+                        <dt>{{ 'Extraction reference' | ffkText }}</dt>
+                        <dd>
+                          <code>{{ read.extraction_id }}</code>
+                        </dd>
+                      }
+                      @if (read.knowledge_version_id) {
+                        <dt>{{ 'Knowledge version' | ffkText }}</dt>
+                        <dd>{{ read.knowledge_version | ffkValue: 'integer' }}</dd>
+                        <dt>{{ 'Knowledge version reference' | ffkText }}</dt>
+                        <dd>
+                          <code>{{ read.knowledge_version_id }}</code>
+                        </dd>
+                      }
+                      @if (read.origin?.connection_id; as reference) {
+                        <dt>{{ 'Connection reference' | ffkText }}</dt>
+                        <dd>
+                          <code>{{ reference }}</code>
+                        </dd>
+                      }
+                    </dl>
+                    @if (read.source_ids?.length) {
+                      <h4>{{ 'Recorded source references' | ffkText }}</h4>
+                      <ul class="reference-list">
+                        @for (id of read.source_ids; track $index) {
+                          <li>
+                            <code>{{ id }}</code>
+                          </li>
+                        }
+                      </ul>
+                    }
+                    @if (read.snapshot_ids?.length) {
+                      <h4>{{ 'Recorded snapshot references' | ffkText }}</h4>
+                      <ul class="reference-list">
+                        @for (id of read.snapshot_ids; track $index) {
+                          <li>
+                            <code>{{ id }}</code>
+                          </li>
+                        }
+                      </ul>
+                    }
+                  </details>
+                </section>
+              }
+            </li>
+          }
+        </ol>
+      }
+      <header class="section-heading">
+        <h3>{{ 'Recorded tools' | ffkText }}</h3>
+        @if (state.activity(); as page) {
+          <span>{{ page.total | ffkValue: 'integer' }}</span>
+        }
+      </header>
+      @if (!answer.run_id) {
+        <p class="notice">{{ 'Execution trace is unavailable for this answer.' | ffkText }}</p>
+      } @else {
+        @if (state.activityPending()) {
+          <ffk-skeleton height="3px" [label]="'Loading tool activity…' | ffkText" />
+        }
+        @if (state.activityError()) {
+          <div class="error" role="alert">
+            <p>{{ state.activityError() | ffkText }}</p>
+            <ffk-button variant="quiet" (click)="retryActivity()">{{
+              'Try again' | ffkText
+            }}</ffk-button>
+          </div>
+        }
+        @if (state.activity(); as page) {
+          <ol class="tool-list" [attr.aria-busy]="state.activityPending()">
+            @for (row of page.items; track row.call_id) {
+              <li>
+                <header>
+                  <h4>{{ tool(row.tool_name) | ffkText }}</h4>
+                  <span class="state">{{ status(row.status) | ffkText }}</span>
+                </header>
+                <div class="tool-time">
+                  <time [attr.datetime]="row.occurred_at">{{
+                    row.occurred_at | ffkDate: undefined : 'datetime'
+                  }}</time>
+                  @if (row.duration_ms !== undefined) {
+                    <span>{{ row.duration_ms | ffkValue: 'integer' }} ms</span>
+                  }
+                </div>
+                @if (row.summary) {
+                  <p>{{ row.summary }}</p>
+                } @else {
+                  <p class="help">{{ 'Summary not recorded' | ffkText }}</p>
+                }
+                @if (row.result_id) {
+                  <button
+                    class="result-toggle"
+                    type="button"
+                    [disabled]="state.activityPending()"
+                    [attr.aria-expanded]="state.selected()?.call_id === row.call_id"
+                    [attr.aria-controls]="resultId($index)"
+                    (click)="select(row)"
+                  >
+                    {{
+                      (state.selected()?.call_id === row.call_id ? 'Hide result' : 'View result')
+                        | ffkText
+                    }}
+                  </button>
+                }
+                @if (state.selected()?.call_id === row.call_id) {
+                  <section
+                    class="tool-result"
+                    [id]="resultId($index)"
+                    role="region"
+                    [attr.aria-label]="
+                      ('Recorded result' | ffkText) + ' · ' + (tool(row.tool_name) | ffkText)
+                    "
+                  >
+                    @defer (on immediate) {
+                      <ffk-openui-artifact
+                        mode="audit"
+                        [artifact]="state.artifact()"
+                        [runId]="answer.run_id || ''"
+                        [contextKey]="state.contextKey()"
+                        [resolver]="state.resolve"
+                        [presentation]="answer.presentation"
+                        (resourceSelected)="resourceRequested.emit($event)"
+                        (citationSelected)="citationSelected.emit($event)"
+                      />
+                    } @loading {
+                      <ffk-skeleton
+                        width="60%"
+                        height="12px"
+                        [label]="'Opening answer evidence' | ffkText"
+                      />
+                    } @error {
+                      <p role="alert">
+                        {{
+                          'Answer evidence could not be opened. Refresh this page and try again.'
+                            | ffkText
+                        }}
+                      </p>
+                    }
+                    @if (state.resultError()) {
+                      <ffk-button variant="quiet" (click)="state.retryResult()">{{
+                        'Try again' | ffkText
+                      }}</ffk-button>
+                    }
+                    @if (query(); as result) {
+                      <dl class="result-observations">
+                        <dt>{{ 'Recorded execution rows' | ffkText }}</dt>
+                        <dd>
+                          {{
+                            result.row_count === null || result.row_count === undefined
+                              ? ('Not recorded' | ffkText)
+                              : (result.row_count | ffkValue: 'integer')
+                          }}
+                        </dd>
+                        <dt>{{ 'Returned preview rows' | ffkText }}</dt>
+                        <dd>
+                          {{
+                            result.preview === null || result.preview === undefined
+                              ? ('Not recorded' | ffkText)
+                              : (result.preview.length | ffkValue: 'integer')
+                          }}
+                        </dd>
+                        <dt>{{ 'Execution truncated' | ffkText }}</dt>
+                        <dd>
+                          {{
+                            (result.truncated === true
+                              ? 'Yes'
+                              : result.truncated === false
+                                ? 'No'
+                                : 'Not recorded'
+                            ) | ffkText
+                          }}
+                        </dd>
+                        <dt>{{ 'Execution row cap' | ffkText }}</dt>
+                        <dd>{{ 'Not recorded' | ffkText }}</dd>
+                      </dl>
+                    }
+                  </section>
+                }
+              </li>
+            } @empty {
+              <li class="help">{{ 'No tool activity was recorded for this run.' | ffkText }}</li>
+            }
+          </ol>
+          @if ((page.pages ?? 0) > 1) {
+            <nav class="paging" [attr.aria-label]="'Tool activity pages' | ffkText">
+              <ffk-button
+                variant="quiet"
+                [disabled]="state.activityPending() || (page.page ?? 1) <= 1"
+                (click)="loadPage((state.activity()?.page ?? 1) - 1)"
+                >{{ 'Previous' | ffkText }}</ffk-button
+              ><span
+                >{{ 'Page' | ffkText }} {{ page.page | ffkValue: 'integer' }} /
+                {{ page.pages | ffkValue: 'integer' }}</span
+              ><ffk-button
+                variant="quiet"
+                [disabled]="state.activityPending() || (page.page ?? 1) >= (page.pages ?? 0)"
+                (click)="loadPage((state.activity()?.page ?? 1) + 1)"
+                >{{ 'Next' | ffkText }}</ffk-button
+              >
+            </nav>
+          }
+        }
+      }
+    </section>
+  } @else {
+    <p class="help">{{ 'Choose an answer to inspect its recorded activity.' | ffkText }}</p>
+  }
+</ffk-side-panel>

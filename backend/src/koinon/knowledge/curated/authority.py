@@ -1,0 +1,193 @@
+# Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
+import hashlib
+import json
+from datetime import UTC, datetime
+
+from pyfly.container import Provider, service
+from pyfly.kernel import ConflictException, ServiceUnavailableException
+from pyfly.security.context import SecurityContext
+from pyfly.security.context_holder import SecurityContextHolder
+
+from koinon.catalog.errors import AccessDenied
+from koinon.catalog.service import PARENTS, CatalogService
+from koinon.evidence.ports import ConversationSnapshotPort, SourceResolverPort, WriteSourceResolverPort
+from koinon.knowledge.curated.dtos import (
+    ConversationOrigin,
+    DocumentEvidence,
+    KnowledgeDestination,
+    StructuredEvidence,
+    UserStatementEvidence,
+)
+
+
+def digest(value) -> str:
+    return hashlib.sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode()
+    ).hexdigest()
+
+
+@service(name="knowledge.curated.authority")
+class CuratedAuthority:
+    def __init__(
+        self,
+        catalog: CatalogService,
+        snapshots: Provider[ConversationSnapshotPort | None],
+        sources: Provider[SourceResolverPort | None],
+    ):
+        self.catalog, self.snapshots, self.sources = catalog, snapshots, sources
+
+    async def destination(self, subject, tenant_id, identifier, *, write=True):
+        chain, seen, current = [], set(), identifier
+        while current is not None:
+            if current in seen or len(seen) >= 16:
+                raise AccessDenied(
+                    "Select a valid knowledge destination", code="INVALID_KNOWLEDGE_DESTINATION"
+                )
+            seen.add(current)
+            row = await self.catalog.get(subject, tenant_id, current)
+            if row.status == "archived":
+                raise AccessDenied("Knowledge destination is archived", code="RESOURCE_ARCHIVED")
+            chain.append(row)
+            current = row.parent_id
+        if [row.kind for row in chain] not in (
+            ["collection", "project", "workspace"],
+            ["corpus", "project", "workspace"],
+        ):
+            raise AccessDenied("Choose a collection or corpus", code="INVALID_KNOWLEDGE_DESTINATION")
+        workspace, project = chain[-1], chain[-2]
+        for index, row in enumerate(chain):
+            parent = chain[index + 1] if index + 1 < len(chain) else None
+            if (
+                row.workspace_id != workspace.id
+                or (parent.kind if parent else None) not in PARENTS[row.kind]
+                or (row.kind != "workspace" and row.project_id != project.id)
+            ):
+                raise AccessDenied(
+                    "Knowledge destination ancestry is invalid", code="INVALID_KNOWLEDGE_DESTINATION"
+                )
+        if write:
+            for permission in ("catalog:write", "ingest:write"):
+                await self.catalog.authorize(subject, tenant_id, permission, workspace.id)
+        if self.catalog.restriction:
+            await self.catalog.restriction.resource(subject, chain[0], write=write)
+        return KnowledgeDestination(
+            id=identifier,
+            workspace_id=workspace.id,
+            project_id=project.id,
+            name=chain[0].name,
+            ancestry_digest=digest(
+                [(row.id, row.kind, row.parent_id, row.status, row.updated_at.isoformat()) for row in chain]
+            ),
+        )
+
+    async def observe(self, subject, tenant_id, request, recorded_at):
+        context = SecurityContextHolder.get_context()
+        token = context.attributes.get("koinon_token_id") if context else None
+        origins = {token} if token else set()
+        if not isinstance(request.origin, ConversationOrigin):
+            return (
+                UserStatementEvidence(
+                    text=request.content.body,
+                    sha256=hashlib.sha256(request.content.body.encode()).hexdigest(),
+                    author_subject=subject,
+                    recorded_at=recorded_at,
+                ),
+            ), tuple(sorted(origins))
+        snapshots = self.snapshots.get()
+        if snapshots is None:
+            raise ServiceUnavailableException(
+                "Conversation provenance is unavailable", code="KNOWLEDGE_PROVENANCE_UNAVAILABLE"
+            )
+        snapshot = await snapshots.snapshot(
+            subject, tenant_id, request.origin.thread_id, list(request.origin.message_ids)
+        )
+        if (
+            snapshot.owner_subject != subject
+            or snapshot.tenant_id != tenant_id
+            or not snapshot.source_manifest_complete
+            or any(message.private_derived for message in snapshot.messages)
+            or not snapshot.sources
+        ):
+            raise AccessDenied(
+                "Select complete shared evidence or explicitly author your own statement",
+                code="KNOWLEDGE_PROVENANCE_REQUIRED",
+            )
+        if any(source.kind == "knowledge_version" for source in snapshot.sources):
+            raise ServiceUnavailableException(
+                "Deriving repository knowledge from a published knowledge version "
+                "requires qualified transitive provenance",
+                code="CURATED_DERIVATION_UNQUALIFIED",
+            )
+        evidence = tuple(
+            DocumentEvidence(source=source)
+            if source.kind == "document"
+            else StructuredEvidence(source=source)
+            for source in snapshot.sources
+        )
+        origins.update(snapshot.originating_token_ids)
+        await self.evidence(subject, tenant_id, evidence)
+        return evidence, tuple(sorted(origins))
+
+    async def evidence(self, subject, tenant_id, evidence, *, exact=True):
+        sources = tuple(
+            value.source for value in evidence if isinstance(value, DocumentEvidence | StructuredEvidence)
+        )
+        if not sources:
+            return
+        for source in sources:
+            entry = await self.catalog.get(subject, tenant_id, source.asset_id)
+            if exact:
+                permission = "knowledge:search" if source.kind == "document" else "query:execute"
+                await self.catalog.authorize(subject, tenant_id, permission, entry.workspace_id)
+        resolver = self.sources.get()
+        if resolver is None:
+            raise ServiceUnavailableException(
+                "Exact source validation is unavailable", code="KNOWLEDGE_PROVENANCE_UNAVAILABLE"
+            )
+        resolve = resolver.resolve
+        if exact and any(source.source_part_id for source in sources):
+            if not isinstance(resolver, WriteSourceResolverPort):
+                raise ServiceUnavailableException(
+                    "Current source revision locking is unavailable", code="KNOWLEDGE_PROVENANCE_UNAVAILABLE"
+                )
+            resolve = resolver.resolve_for_write
+        resolved = await resolve(subject, tenant_id, sources)
+        if len(resolved) != len(sources) or any(
+            current.id != used.id
+            or current.used_revision != used.used_revision
+            or exact
+            and (current.availability != "available" or current.current_revision != used.used_revision)
+            for used, current in zip(sources, resolved, strict=True)
+        ):
+            raise ConflictException(
+                "A source changed or is unavailable; review a new preview", code="KNOWLEDGE_SOURCE_CHANGED"
+            )
+
+    async def origins(self, subject, tenant_id, destination_id, evidence, token_ids, *, write_token_ids=()):
+        if not token_ids:
+            return
+        restriction = self.catalog.restriction
+        if restriction is None:
+            raise ServiceUnavailableException(
+                "Originating authority validation is unavailable", code="TOKEN_AUTHORITY_UNAVAILABLE"
+            )
+        for identifier in token_ids:
+            token = await restriction.tokens.find_by_id(identifier)
+            if (
+                token is None
+                or token.subject != subject
+                or token.tenant_id != tenant_id
+                or token.revoked_at is not None
+                or token.expires_at <= datetime.now(UTC)
+            ):
+                raise AccessDenied("The originating authority is no longer valid", code="TOKEN_UNAVAILABLE")
+            issuer, _, sub = subject.partition("|")
+            with SecurityContextHolder.using(
+                SecurityContext(
+                    user_id=sub, attributes={"iss": issuer, "sub": sub, "koinon_token_id": identifier}
+                )
+            ):
+                if identifier in write_token_ids:
+                    await self.destination(subject, tenant_id, destination_id)
+                await self.evidence(subject, tenant_id, evidence)

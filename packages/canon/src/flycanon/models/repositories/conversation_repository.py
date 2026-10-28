@@ -1,0 +1,137 @@
+# Copyright 2024-2026 Firefly Software Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Async repository for ``canon_conversations`` + their turns."""
+
+from __future__ import annotations
+
+from contextlib import asynccontextmanager
+
+from pyfly.data.transaction import infrastructure_unit
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
+
+from flycanon.models.entities.conversation import ConversationRow, ConversationTurnRow
+from flycanon.models.repositories._engine import build_session_factory
+
+
+class ConversationRepository:
+    def __init__(
+        self,
+        session_factory: async_sessionmaker[AsyncSession],
+        *,
+        engine: AsyncEngine | None = None,
+    ) -> None:
+        self._session_factory = session_factory
+        self._engine = engine
+
+    @property
+    def engine(self) -> AsyncEngine | None:
+        return self._engine
+
+    @classmethod
+    def from_url(cls, database_url: str, *, echo: bool = False) -> ConversationRepository:
+        factory, engine = build_session_factory(database_url, echo=echo)
+        return cls(factory, engine=engine)
+
+    @asynccontextmanager
+    async def session(self):
+        async with infrastructure_unit(self._session_factory) as session:
+            yield session
+
+    # ------------------------------------------------------------------
+    # Conversations
+    # ------------------------------------------------------------------
+
+    async def add(self, row: ConversationRow) -> ConversationRow:
+        async with self.session() as session:
+            session.add(row)
+            await session.flush()
+            await session.refresh(row)
+            return row
+
+    async def get(
+        self,
+        conversation_id: str,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> ConversationRow | None:
+        """Look up one conversation, scoped to ``(tenant_id, workspace_id)``.
+
+        Scope kwargs are MANDATORY. A conversation living in a
+        different workspace (same tenant) returns ``None`` instead of
+        leaking.
+        """
+        async with infrastructure_unit(self._session_factory) as session:
+            result = await session.execute(
+                select(ConversationRow).where(
+                    ConversationRow.id == conversation_id,
+                    ConversationRow.tenant_id == tenant_id,
+                    ConversationRow.workspace_id == workspace_id,
+                )
+            )
+            return result.scalars().first()
+
+    async def update(self, row: ConversationRow) -> ConversationRow:
+        async with self.session() as session:
+            merged = await session.merge(row)
+            await session.flush()
+            return merged
+
+    # ------------------------------------------------------------------
+    # Turns
+    # ------------------------------------------------------------------
+
+    async def add_turn(self, row: ConversationTurnRow) -> ConversationTurnRow:
+        async with self.session() as session:
+            session.add(row)
+            await session.flush()
+            await session.refresh(row)
+            return row
+
+    async def list_turns(
+        self,
+        conversation_id: str,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> list[ConversationTurnRow]:
+        """Return turns for ``conversation_id``, scoped to ``(tenant, workspace)``.
+
+        Scope kwargs are MANDATORY. Turns belonging to a conversation
+        owned by a different workspace (same tenant) return an empty
+        list.
+        """
+        async with infrastructure_unit(self._session_factory) as session:
+            result = await session.execute(
+                select(ConversationTurnRow)
+                .where(
+                    ConversationTurnRow.conversation_id == conversation_id,
+                    ConversationTurnRow.tenant_id == tenant_id,
+                    ConversationTurnRow.workspace_id == workspace_id,
+                )
+                .order_by(ConversationTurnRow.turn_index.asc())
+            )
+            return list(result.scalars().all())
+
+    async def next_turn_index(self, conversation_id: str) -> int:
+        async with infrastructure_unit(self._session_factory) as session:
+            current = await session.execute(
+                select(func.max(ConversationTurnRow.turn_index)).where(
+                    ConversationTurnRow.conversation_id == conversation_id
+                )
+            )
+            value = current.scalar()
+            return (int(value) + 1) if value is not None else 1

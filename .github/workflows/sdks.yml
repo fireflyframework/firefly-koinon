@@ -1,0 +1,101 @@
+# Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
+name: Headless SDKs
+
+on:
+  push:
+    branches: [main]
+    paths: ["sdk/**", "tools/sdk/**", "backend/src/koinon/**", ".github/workflows/sdks.yml"]
+  pull_request:
+    paths: ["sdk/**", "tools/sdk/**", "backend/src/koinon/**", ".github/workflows/sdks.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install standalone SDK and tools
+        run: python -m pip install 'sdk/python[dev]' build
+      - name: Verify shared contract has not drifted
+        run: |
+          python tools/sdk/contract.py --check
+          python tools/sdk/docs.py --check
+      - name: Lint, check types and run source tests
+        working-directory: sdk/python
+        run: |
+          python -m ruff check src tests
+          python -m pyright src
+          python -m pytest -q
+      - name: Build and test installed wheel outside source tree
+        run: |
+          python -m build sdk/python
+          python -m pip install --force-reinstall sdk/python/dist/*.whl
+          sdk_check_dir=$(mktemp -d)
+          mkdir -p "$sdk_check_dir/sdk/python"
+          cp -R sdk/python/tests "$sdk_check_dir/sdk/python/tests"
+          cp -R sdk/contract "$sdk_check_dir/sdk/contract"
+          cd "$sdk_check_dir"
+          python -m pytest -q -o asyncio_mode=auto sdk/python/tests
+
+  typescript:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["22", "24"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: sdk/typescript/package-lock.json
+      - name: Install standalone SDK tools
+        working-directory: sdk/typescript
+        run: npm ci --ignore-scripts
+      - name: Check types and run source tests
+        working-directory: sdk/typescript
+        run: |
+          npm run typecheck
+          npm test
+      - name: Test installed npm package outside source tree
+        working-directory: sdk/typescript
+        run: |
+          sdk_archive=$(npm pack --silent)
+          node ../../tools/sdk/check_npm_consumer.mjs "$sdk_archive"
+
+  java:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ["21", "25"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+          cache-dependency-path: sdk/java/pom.xml
+      - name: Compile, test and package standalone Java SDK
+        run: mvn --batch-mode --no-transfer-progress -f sdk/java/pom.xml verify
+      - name: Compile an external consumer against the JAR
+        run: python3 tools/sdk/check_java_consumer.py

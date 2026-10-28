@@ -1,0 +1,146 @@
+# Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
+version: '3'
+
+env:
+  PYTHONPATH: src
+  FLYQUERY_DATABASE_URL: 'postgresql+asyncpg://flyquery:flyquery@localhost:5552/flyquery'
+  FLYQUERY_DATABASE_URL_ADMIN: 'postgresql+psycopg://flyquery_admin:flyquery_admin@localhost:5552/flyquery'
+  FLYQUERY_REDIS_URL: 'redis://localhost:6552/0'
+
+tasks:
+  default:
+    cmds:
+      - task --list
+
+  dev:
+    desc: Start local Postgres + Redis + MinIO
+    cmds:
+      - docker compose up -d postgres redis minio
+
+  dev:down:
+    desc: Tear down local stack
+    cmds:
+      - docker compose down -v
+
+  install:
+    desc: Sync dependencies via uv
+    cmds:
+      - uv venv
+      - uv lock --check
+      - uv sync --frozen --extra dev --extra s3 --extra file-readers
+
+  migrate:
+    desc: Run alembic migrations (admin role)
+    cmds:
+      - uv run alembic upgrade head
+
+  migrate:new:
+    desc: 'Generate a new alembic migration; usage: task migrate:new -- "<message>"'
+    cmds:
+      - uv run alembic revision -m "{{.CLI_ARGS}}"
+
+  serve:
+    desc: Run the dev server with reload
+    cmds:
+      - uv run uvicorn flyquery.main:app --host 0.0.0.0 --port 8520 --reload
+
+  lint:
+    desc: ruff + pyright
+    cmds:
+      - uv run ruff check src tests
+      - uv run ruff format --check src tests
+      - uv run pyright
+
+  fmt:
+    desc: Apply ruff formatting
+    cmds:
+      - uv run ruff format src tests
+      - uv run ruff check --fix src tests
+
+  test:unit:
+    desc: Unit tests (no containers)
+    cmds:
+      - uv run pytest tests/unit -m 'not integration'
+
+  test:integration:
+    desc: Integration tests (testcontainers)
+    cmds:
+      - uv run pytest tests/integration -m integration
+
+  test:all:
+    desc: All tests
+    cmds:
+      - task: test:unit
+      - task: test:integration
+
+  lockstep:
+    desc: Verify historical source baselines and reviewed service variants
+    cmds:
+      - uv run python scripts/check_lockstep.py
+
+  openapi:
+    desc: Refresh openapi.json snapshot (run after route changes) — alias for openapi-snapshot
+    cmds:
+      - task: openapi-snapshot
+
+  openapi-snapshot:
+    desc: Snapshot the current OpenAPI spec to openapi.json
+    cmds:
+      - uv run python scripts/openapi_snapshot.py
+
+  sdk:all:
+    desc: Refresh openapi.json snapshot and regenerate both SDKs
+    cmds:
+      - task: openapi-snapshot
+      - task: sdk:python
+      - task: sdk:java
+
+  sdk:python:
+    desc: Regenerate the Python SDK from openapi.json
+    cmds:
+      # NOTE: pyproject.toml metadata (authors, description, urls) is
+      # preserved across regeneration by .openapi-generator-ignore.
+      # Only packageVersion + library are passed as additional-properties;
+      # multi-word values are hand-curated in pyproject.toml.
+      #
+      # IMPORTANT: prune the generated api/ + models/ + docs/ trees
+      # FIRST so files for OpenAPI tags that have since been split or
+      # renamed (eg. SchemaApi -> SchemaChangesApi + SchemaObjectsApi)
+      # don't accumulate. .openapi-generator-ignore preserves the
+      # hand-curated README + pyproject + LICENSE + examples/.
+      - rm -rf sdks/python/flyquery_sdk/api
+      - rm -rf sdks/python/flyquery_sdk/models
+      - rm -rf sdks/python/docs
+      - npx -y @openapitools/openapi-generator-cli generate
+          -i openapi.json
+          -g python
+          -o sdks/python
+          --package-name flyquery_sdk
+          --additional-properties=packageVersion=26.10.4,projectName=flyquery-sdk,library=asyncio
+          --skip-validate-spec
+      - cd sdks/python && uv pip install --system --quiet . || true
+
+  sdk:java:
+    desc: Regenerate the Java SDK from openapi.json (Java 25 + Spring Boot 3.5.9 + WebFlux)
+    cmds:
+      # Remove stale package trees from earlier generator runs (older
+      # versions used org.* / io.* package roots) AND the current
+      # api/ + model/ + docs/ trees so renamed/split tags don't leave
+      # zombie classes behind.
+      - rm -rf sdks/java/src/main/java/org sdks/java/src/main/java/io
+      - rm -rf sdks/java/src/main/java/com/firefly/flyquery/api
+      - rm -rf sdks/java/src/main/java/com/firefly/flyquery/model
+      - rm -rf sdks/java/src/test/java/com/firefly/flyquery/api
+      - rm -rf sdks/java/src/test/java/com/firefly/flyquery/model
+      - rm -rf sdks/java/docs sdks/java/api
+      - npx -y @openapitools/openapi-generator-cli generate
+          -i openapi.json
+          -g java
+          -o sdks/java
+          --package-name com.firefly.flyquery
+          --invoker-package com.firefly.flyquery
+          --api-package com.firefly.flyquery.api
+          --model-package com.firefly.flyquery.model
+          --additional-properties=artifactId=flyquery-sdk,groupId=com.firefly,artifactVersion=26.10.4,library=webclient,dateLibrary=java8,java8=true,useJakartaEe=true
+          --skip-validate-spec

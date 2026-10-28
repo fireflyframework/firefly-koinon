@@ -1,0 +1,166 @@
+# Copyright 2024-2026 Firefly Software Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Async repository for :class:`KnowledgeRelationRow`."""
+
+from __future__ import annotations
+
+from collections.abc import Sequence
+from contextlib import asynccontextmanager
+
+from pyfly.data.transaction import infrastructure_unit
+from sqlalchemy import delete, or_, select
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
+
+from flycanon.models.entities.knowledge_relation import KnowledgeRelationRow
+from flycanon.models.repositories._engine import build_session_factory
+
+
+class RelationRepository:
+    """Owns ``canon_knowledge_relations``."""
+
+    def __init__(
+        self,
+        session_factory: async_sessionmaker[AsyncSession],
+        *,
+        engine: AsyncEngine | None = None,
+    ) -> None:
+        self._session_factory = session_factory
+        self._engine = engine
+
+    @property
+    def engine(self) -> AsyncEngine | None:
+        return self._engine
+
+    @classmethod
+    def from_url(cls, database_url: str, *, echo: bool = False) -> RelationRepository:
+        factory, engine = build_session_factory(database_url, echo=echo)
+        return cls(factory, engine=engine)
+
+    @asynccontextmanager
+    async def session(self):
+        async with infrastructure_unit(self._session_factory) as session:
+            yield session
+
+    async def add(self, row: KnowledgeRelationRow) -> KnowledgeRelationRow:
+        async with self.session() as session:
+            session.add(row)
+            await session.flush()
+            await session.refresh(row)
+            return row
+
+    async def get(
+        self,
+        relation_id: str,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> KnowledgeRelationRow | None:
+        """Look up one relation, scoped to ``(tenant_id, workspace_id)``.
+
+        Scope kwargs are MANDATORY. A relation owned
+        by a different workspace (same tenant) returns ``None``
+        instead of leaking.
+        """
+        async with infrastructure_unit(self._session_factory) as session:
+            result = await session.execute(
+                select(KnowledgeRelationRow).where(
+                    KnowledgeRelationRow.id == relation_id,
+                    KnowledgeRelationRow.tenant_id == tenant_id,
+                    KnowledgeRelationRow.workspace_id == workspace_id,
+                )
+            )
+            return result.scalars().first()
+
+    async def delete(
+        self,
+        relation_id: str,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> bool:
+        """Drop one relation by id, scoped to ``(tenant, workspace)``.
+
+        Returns ``True`` when a row was deleted. A relation outside
+        the caller's scope returns ``False``.
+        """
+        async with self.session() as session:
+            result = await session.execute(
+                delete(KnowledgeRelationRow).where(
+                    KnowledgeRelationRow.id == relation_id,
+                    KnowledgeRelationRow.tenant_id == tenant_id,
+                    KnowledgeRelationRow.workspace_id == workspace_id,
+                )
+            )
+            rowcount = getattr(result, "rowcount", 0) or 0
+            return rowcount > 0
+
+    async def list_for_item(
+        self,
+        item_id: str,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        direction: str = "both",
+    ) -> list[KnowledgeRelationRow]:
+        """Return relations touching ``item_id`` within ``(tenant, workspace)``.
+
+        Scope kwargs are MANDATORY. Cross-workspace relations are
+        filtered out -- the caller only sees edges rooted in their own
+        workspace.
+
+        ``direction``:
+            - ``out``  -- relations where ``from_item_id == item_id``
+            - ``in``   -- relations where ``to_item_id == item_id``
+            - ``both`` (default) -- both sides
+        """
+        async with infrastructure_unit(self._session_factory) as session:
+            if direction == "out":
+                cond = KnowledgeRelationRow.from_item_id == item_id
+            elif direction == "in":
+                cond = KnowledgeRelationRow.to_item_id == item_id
+            else:
+                cond = or_(
+                    KnowledgeRelationRow.from_item_id == item_id,
+                    KnowledgeRelationRow.to_item_id == item_id,
+                )
+            result = await session.execute(
+                select(KnowledgeRelationRow)
+                .where(
+                    cond,
+                    KnowledgeRelationRow.tenant_id == tenant_id,
+                    KnowledgeRelationRow.workspace_id == workspace_id,
+                )
+                .order_by(KnowledgeRelationRow.created_at.asc())
+            )
+            return list(result.scalars().all())
+
+    async def list_all(
+        self,
+        *,
+        from_item_ids: Sequence[str] | None = None,
+        to_item_ids: Sequence[str] | None = None,
+        kinds: Sequence[str] | None = None,
+    ) -> list[KnowledgeRelationRow]:
+        """Bulk listing used by the graph-viz endpoint."""
+        async with infrastructure_unit(self._session_factory) as session:
+            stmt = select(KnowledgeRelationRow)
+            if from_item_ids:
+                stmt = stmt.where(KnowledgeRelationRow.from_item_id.in_(list(from_item_ids)))
+            if to_item_ids:
+                stmt = stmt.where(KnowledgeRelationRow.to_item_id.in_(list(to_item_ids)))
+            if kinds:
+                stmt = stmt.where(KnowledgeRelationRow.kind.in_(list(kinds)))
+            result = await session.execute(stmt.order_by(KnowledgeRelationRow.created_at.asc()))
+            return list(result.scalars().all())
