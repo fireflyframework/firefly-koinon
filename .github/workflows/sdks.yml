@@ -48,7 +48,7 @@ jobs:
           cp -R sdk/python/tests "$sdk_check_dir/sdk/python/tests"
           cp -R sdk/contract "$sdk_check_dir/sdk/contract"
           cd "$sdk_check_dir"
-          python -m pytest -q sdk/python/tests
+          python -m pytest -q -o asyncio_mode=auto sdk/python/tests
 
   typescript:
     runs-on: ubuntu-latest

@@ -47,14 +47,18 @@ import inspect
 import os
 import uuid
 from collections.abc import Iterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 import pytest
 import sqlalchemy as sa
 from alembic import command
 from alembic.config import Config
+from pyfly.core import Config as NativeConfig
+from pyfly.data.relational.datasource_registry import DataSourceRegistry
 
 from flycanon.core.services.retrieval.postgres_corpus import PostgresCorpus
+from flycanon.data import TenantGucCustomizer
 
 # ---------------------------------------------------------------------------
 # Layer 1 -- always-on signature checks
@@ -82,6 +86,40 @@ class TestPublicSurfaceSignatures:
         sig = inspect.signature(PostgresCorpus.bm25_search)
         assert "top_k" in sig.parameters
         assert sig.parameters["top_k"].kind == inspect.Parameter.KEYWORD_ONLY
+
+
+@asynccontextmanager
+async def _corpus(database_url: str):
+    registry = DataSourceRegistry.for_config(
+        NativeConfig({"pyfly": {"data": {"relational": {"url": database_url}}}})
+    )
+    # Native customization keeps read units transactional instead of fast
+    # autocommit, so transaction-local GUCs survive until the corpus query.
+    registry.add_customizer(TenantGucCustomizer(registry.primary.name), datasource=registry.primary.name)
+    corpus = None
+    try:
+        corpus = PostgresCorpus(datasource=registry.primary)
+        yield corpus
+    finally:
+        try:
+            if corpus is not None:
+                await corpus.close()
+        finally:
+            await registry.close()
+
+
+@pytest.mark.asyncio
+async def test_native_registry_owns_corpus_engine_lifetime(tmp_path: Path) -> None:
+    disposed = []
+    async with _corpus(f"sqlite+aiosqlite:///{tmp_path / 'corpus.db'}") as corpus:
+        await corpus.initialise()
+        engine = await corpus._ensure_engine()
+        sa.event.listen(engine.sync_engine, "engine_disposed", lambda engine: disposed.append(engine))
+        await corpus.close()
+        assert disposed == []
+        async with engine.connect() as connection:
+            assert await connection.scalar(sa.text("SELECT 1")) == 1
+    assert disposed == [engine.sync_engine]
 
 
 # ---------------------------------------------------------------------------
@@ -241,8 +279,7 @@ async def test_bm25_search_isolates_workspace(postgres_url: str) -> None:
         workspace_id="ws-b",
     )
 
-    corpus = PostgresCorpus(database_url=postgres_url)
-    try:
+    async with _corpus(postgres_url) as corpus:
         # Query ws-a -- only chunk-a should come back.
         hits_a = await corpus.bm25_search("alpha", top_k=10, tenant_id="acme", workspace_id="ws-a")
         assert {h.chunk_id for h in hits_a} == {chunk_a}
@@ -254,8 +291,6 @@ async def test_bm25_search_isolates_workspace(postgres_url: str) -> None:
         # Query a workspace with no rows -- empty.
         hits_c = await corpus.bm25_search("alpha", top_k=10, tenant_id="acme", workspace_id="ws-c")
         assert hits_c == []
-    finally:
-        await corpus.close()
 
 
 @pytest.mark.skipif(
@@ -277,13 +312,10 @@ async def test_bm25_search_isolates_tenant(postgres_url: str) -> None:
         workspace_id="ws-a",
     )
 
-    corpus = PostgresCorpus(database_url=postgres_url)
-    try:
+    async with _corpus(postgres_url) as corpus:
         # Foreign tenant + same workspace_id slug -> empty.
         hits = await corpus.bm25_search("alpha", top_k=10, tenant_id="bcorp", workspace_id="ws-a")
         assert hits == []
-    finally:
-        await corpus.close()
 
 
 @pytest.mark.skipif(
@@ -320,8 +352,7 @@ async def test_get_chunks_respects_scope(postgres_url: str) -> None:
         workspace_id="ws-b",
     )
 
-    corpus = PostgresCorpus(database_url=postgres_url)
-    try:
+    async with _corpus(postgres_url) as corpus:
         # Ask for BOTH ids from ws-a's scope -- only chunk_a comes back.
         rows = await corpus.get_chunks([chunk_a, chunk_b], tenant_id="acme", workspace_id="ws-a")
         assert {r.chunk_id for r in rows} == {chunk_a}
@@ -329,8 +360,6 @@ async def test_get_chunks_respects_scope(postgres_url: str) -> None:
         # Foreign tenant -- empty even for an id that exists.
         rows_foreign = await corpus.get_chunks([chunk_a], tenant_id="bcorp", workspace_id="ws-a")
         assert rows_foreign == []
-    finally:
-        await corpus.close()
 
 
 # ---------------------------------------------------------------------------
@@ -340,8 +369,9 @@ async def test_get_chunks_respects_scope(postgres_url: str) -> None:
 # ran on a bare Core connection where the ORM's ``after_begin`` listener
 # never fires, and under FORCE RLS the BM25 channel returned zero rows for a
 # ``flycanon_app``-shaped role (found by the dworkers programme on
-# 2026-09-17). These tests mint that role and prove the corpus binds
-# ``app.tenant_id`` / ``app.workspace_id`` itself.
+# 2026-09-17). These tests mint that role and use a test-owned native
+# datasource registry to prove the corpus binds ``app.tenant_id`` /
+# ``app.workspace_id`` itself.
 # ---------------------------------------------------------------------------
 
 
@@ -411,8 +441,7 @@ async def test_bm25_search_returns_rows_under_a_non_bypass_role(postgres_url: st
         workspace_id="ws-rls",
     )
 
-    corpus = PostgresCorpus(database_url=_as_app_role(postgres_url))
-    try:
+    async with _corpus(_as_app_role(postgres_url)) as corpus:
         hits = await corpus.bm25_search("allowance abroad", top_k=10, tenant_id="acme", workspace_id="ws-rls")
         assert [h.chunk_id for h in hits] == [chunk_id]
         assert hits[0].doc_id == source_id  # the JOIN on canon_sources passed RLS too
@@ -427,8 +456,6 @@ async def test_bm25_search_returns_rows_under_a_non_bypass_role(postgres_url: st
             == []
         )
         assert await corpus.get_chunks([chunk_id], tenant_id="bcorp", workspace_id="ws-rls") == []
-    finally:
-        await corpus.close()
 
 
 @pytest.mark.skipif(
