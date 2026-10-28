@@ -1,6 +1,6 @@
 {
   "format_version": 1,
-  "copyright": "Copyright 2026 Firefly Software Foundation & Firefly Software Solutions Inc.",
+  "copyright": "Copyright 2026 Firefly Software Foundation",
   "license": "Apache-2.0",
   "api_prefix": "/api/v1",
   "status": "Canonical API contract; development snapshot",

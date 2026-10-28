@@ -1,4 +1,4 @@
-# Copyright 2026 Firefly Software Foundation & Firefly Software Solutions Inc.
+# Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
 """Check generated documentation links, branding and local font assets."""
 
@@ -14,10 +14,16 @@ class Page(HTMLParser):
         self.links: list[str] = []
         self.anchors: set[str] = set()
         self.logo = False
+        self.copyright = ""
+        self.copyright_depth = 0
         self.feed(source)
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = dict(attrs)
+        if tag == "div" and (
+            self.copyright_depth or "md-copyright__highlight" in (values.get("class") or "").split()
+        ):
+            self.copyright_depth += 1
         if values.get("id"):
             self.anchors.add(values["id"] or "")
         attribute = "href" if tag == "a" else "src" if tag in {"img", "script"} else None
@@ -28,6 +34,14 @@ class Page(HTMLParser):
         if tag == "img" and values.get("alt") == "firefly and koinon":
             self.logo = True
 
+    def handle_data(self, data: str) -> None:
+        if self.copyright_depth:
+            self.copyright += data
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "div" and self.copyright_depth:
+            self.copyright_depth -= 1
+
 
 def check(root: Path) -> list[str]:
     pages = {path.resolve(): Page(path.read_text()) for path in root.rglob("*.html")}
@@ -37,6 +51,8 @@ def check(root: Path) -> list[str]:
     for path, page in pages.items():
         if not page.logo:
             failures.append(f"{path.relative_to(root)}: family lockup is missing")
+        if " ".join(page.copyright.split()) != "Copyright 2026 Firefly Software Foundation":
+            failures.append(f"{path.relative_to(root)}: foundation copyright footer is missing or incorrect")
         for link in page.links:
             url = urlsplit(link)
             if url.scheme or url.netloc:
@@ -63,4 +79,4 @@ if __name__ == "__main__":
     errors = check(site)
     if errors:
         raise SystemExit("\n".join(errors))
-    print("Documentation links, family lockup and local Manrope assets verified.")
+    print("Documentation links, Foundation footer, family lockup and local Manrope assets verified.")

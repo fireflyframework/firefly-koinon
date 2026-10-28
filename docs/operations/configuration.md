@@ -37,4 +37,4 @@ With default five-source pools, one process permits eleven pooled connections an
 
 Document storage aliases are `KOINON_DOCUMENT_STORAGE_BACKEND`, `ROOT`, `S3_BUCKET`, `S3_PREFIX`, `S3_ENDPOINT_URL`, `S3_REGION` with the same prefix, plus `KOINON_DOCUMENT_STORE_ORIGINALS`. Structured storage aliases are `KOINON_STRUCTURED_STORAGE_BACKEND`, `ROOT` and `PRESIGN_TTL_SECONDS`. These override only the approved storage fields in the native module settings. They cannot change database credentials. Remote endpoints require HTTPS outside explicitly configured loopback development.
 
-Copyright 2026 Firefly Software Foundation & Firefly Software Solutions Inc. Licensed under Apache-2.0. Made with <3.
+Copyright 2026 Firefly Software Foundation. Licensed under Apache-2.0. Made with <3.

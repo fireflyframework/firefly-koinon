@@ -51,4 +51,4 @@ The current curated implementation explicitly blocks sharing/export and further 
 
 The original capability review still contains partial and missing product workflows, including dataset append, curated knowledge lifecycle and semantic authoring. Complete migration parity, external identity-provider acceptance, production capacity, the product release and documentation publication remain separate acceptance steps. The original projects must remain available until the replacement has passed those steps.
 
-Copyright 2026 Firefly Software Foundation & Firefly Software Solutions Inc. Licensed under Apache-2.0. Made with <3.
+Copyright 2026 Firefly Software Foundation. Licensed under Apache-2.0. Made with <3.

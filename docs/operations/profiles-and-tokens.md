@@ -12,4 +12,4 @@ The token secret is returned once at creation. Store it in a secret manager; lis
 
 Profile scopes are separate: a search-only token cannot read or change the owner's profile. `profile:write` includes profile read. Directory operations additionally enforce tenant/workspace bounds. SDK token callbacks can supply either an OIDC access token or a personal token and are reread for each request. The SDK never retries writes automatically.
 
-Copyright 2026 Firefly Software Foundation & Firefly Software Solutions Inc. Licensed under Apache-2.0. Made with <3.
+Copyright 2026 Firefly Software Foundation. Licensed under Apache-2.0. Made with <3.

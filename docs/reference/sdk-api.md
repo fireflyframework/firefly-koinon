@@ -172,4 +172,4 @@ Content writes require the caller's current revision. Optional avatar conditiona
 
 Known fields have named DTOs and typed values. Opaque business JSON preserves null, booleans, numbers and exact strings recursively. A successful SDK build or contract test does not qualify a configured model provider or a production deployment.
 
-Copyright 2026 Firefly Software Foundation & Firefly Software Solutions Inc. SPDX-License-Identifier: Apache-2.0
+Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0

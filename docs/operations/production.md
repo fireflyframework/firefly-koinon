@@ -14,4 +14,4 @@ Run `/ready` probes against the real database. Use `/health` only for process li
 
 Before serving traffic, verify migrations, role flags, tenant isolation, membership revocation, valid/wrong-audience token behavior, CSRF, shared-session logout, storage persistence and a restore drill using deployment credentials. Back up the identity database/configuration separately. The local fixture realm and `start-dev` mode are unsuitable for production.
 
-Copyright 2026 Firefly Software Foundation & Firefly Software Solutions Inc. Licensed under Apache-2.0. Made with <3.
+Copyright 2026 Firefly Software Foundation. Licensed under Apache-2.0. Made with <3.

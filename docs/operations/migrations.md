@@ -22,4 +22,4 @@ Document index provisioning is a product-only extension in `packages/canon/migra
 
 The registration table is excluded from ordinary document DML grants. Its runtime role has no registration or provisioning-function privileges. The control role receives registration SELECT/INSERT and the narrow function EXECUTE; UPDATE/DELETE remain denied. Re-run the reviewed role-provisioning command after migrations to establish this boundary.
 
-Copyright 2026 Firefly Software Foundation & Firefly Software Solutions Inc. Licensed under Apache-2.0. Made with <3.
+Copyright 2026 Firefly Software Foundation. Licensed under Apache-2.0. Made with <3.

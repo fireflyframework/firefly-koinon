@@ -15,4 +15,4 @@ Back up blob/object storage and its versioning policy consistently with metadata
 
 A local drill restored the owned application archive into a new database and checked all three revision histories plus two fictional tenants. A second drill included native revision `koinon_0003_assistants` and both current knowledge heads. Repeat the drill after release/schema changes. Do not restore over a retained deployment to test recovery.
 
-Copyright 2026 Firefly Software Foundation & Firefly Software Solutions Inc. Licensed under Apache-2.0. Made with <3.
+Copyright 2026 Firefly Software Foundation. Licensed under Apache-2.0. Made with <3.
