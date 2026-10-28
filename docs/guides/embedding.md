@@ -23,6 +23,26 @@ flowchart LR
 
 An embedded component must not take over the host router, create a global authentication session, change the host theme or persist an unrestricted token. Components receive explicit context and report events. Visual styles stay inside the component boundary; design tokens allow intentional theming. The host decides where a selected document, citation or query result opens.
 
+## Open a focused chat
+
+Set `view="chat"` and `[showNavigation]="false"` on `ffk-workbench` when the host owns the product navigation. Enable the optional `KOINON_CHAT_LOADER` provider. The same inputs are properties on the `firefly-koinon` custom element. `viewChange` reports navigation requests to the host; the component does not change its URL.
+
+`navigationCollapsed` controls the conversation sidebar. Listen to `navigationCollapsedChange` to keep the host's preference in sync. The boundary chevron keeps history available when collapsed. Files use the injected client and the current tenant, subject and conversation; selecting a file does not publish it to the organization Library. The backend reports available formats and processing prerequisites, and each message explicitly selects its attachment IDs.
+
+The command palette uses the injected client and current catalog scope. Its keyboard shortcut, **Command/Ctrl+K**, operates only while focus is inside the workbench. Resource searches use bounded server pages and discard responses after the subject, client or selected context changes. The palette does not register a page-wide shortcut in the host.
+
+## Open reviewed shared messages
+
+Enable `KOINON_SHARED_CONVERSATION_LOADER` with a lazy import of `KoinonSharedConversation` from the Chat entry point. Pass the reviewed reference through `sharedConversationId`, select its organization through `tenantId`, and clear the reference when `sharedConversationDismissed` fires. The same properties and event are available on the custom element. The host retains control of its route and login redirect.
+
+The management application accepts `#share=<reference>&tenant=<organization>`, removes those fields from the address, and retains only the reference for up to an hour across sign-in. A reference grants no access: opening the saved messages checks current recipient, owner, source and originating-token authority. The reader shows the reviewed text and verified source manifest; it does not resolve the owner's private chat artifacts.
+
+## Brand assets and fonts
+
+Serve the supplied brand assets at a trusted HTTP(S) base and pass that location through the component's `brandBase` input. The default is `/assets/brand`. Include the canonical logos and `fonts/manrope-latin-wght-normal.woff2`; copying only the SVGs leaves the embedded text without Manrope.
+
+The component loads the variable font at weights 200–800 with a private family name and applies it inside its own boundary. Instances share a per-document asset cache and release their font reference on teardown. The host does not need a global font stylesheet, and its body typography stays unchanged. Cross-origin assets need the appropriate font CORS response and deployment CSP permission. Verify the font response and loaded font face in a clean host; a computed font-family declaration alone does not establish that the bytes loaded.
+
 The SDK accepts a `KoinonTransport`. The default fetch transport supports API-relative paths, typed JSON, FormData, cancellation and problem details. Hosts can inject their own transport to reuse existing request tracing, authentication and renewal logic. A component never receives a client secret.
 
 Use a same-origin BFF session for browser cookie authentication. Reads use the native session; writes also provide the current decoded XSRF cookie value. API clients use a short-lived bearer token and the bearer API prefix. The server keeps these authorities separate and rechecks persisted membership on every protected operation. Embedding across origins requires an explicit deployment design for CORS and browser cookies; enabling arbitrary origins is not a substitute for that design.

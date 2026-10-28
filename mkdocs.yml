@@ -41,12 +41,15 @@ nav:
   - Start: index.md
   - Use koinon:
       - Library: guides/library.md
+      - Versions and lineage: guides/lineage.md
       - Agents and chat: guides/agents.md
+      - Exports, sharing and sources: guides/exports-sharing.md
   - Configure:
       - Administration: guides/administration.md
       - Profiles and API tokens: operations/profiles-and-tokens.md
   - Integrate:
       - Headless API and SDK: guides/headless.md
+      - API and SDK reference: reference/sdk-api.md
       - Embedded components: guides/embedding.md
   - Understand:
       - Architecture: concepts/architecture.md

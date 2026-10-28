@@ -26,6 +26,14 @@ Body text uses weight 400. Navigation and headings use stronger weights from the
 
 The appearance control switches between light and dark reading surfaces. Keyboard focus, search and the navigation drawer remain available at mobile widths. The footer carries the copyright holders, Apache License 2.0 and a small animated heart. Reduced-motion preferences disable its animation and interface transitions.
 
+## Product layout and component boundaries
+
+The product keeps primary destinations in the top navigation. Chat has one contextual sidebar for conversations and folders; organization, theme and account controls stay in the header. The knowledge search field belongs to Library. On narrow screens, primary navigation and conversation history use separate drawers with keyboard focus management.
+
+A one-line composer is 44px high with desktop controls; touch controls keep 44px targets. It grows for multiline input and file previews. Amber marks the enabled send action, while disabled controls use neutral colors. The chat reading column uses the canonical 760px token. Tables keep exports in their footer, and evidence panels share the same spacing and border tokens.
+
+The workbench's layout helpers use `workbench-` class names. Component-local empty, error and field states must not inherit a parent component's panel layout. Keep reusable component styles scoped to the component, and share tokens rather than global utility selectors with visual side effects. Review integrated states as well as isolated component previews: an isolated preview cannot reveal style collisions inside the workbench.
+
 ## Maintain the site
 
 Run these commands from the repository root:

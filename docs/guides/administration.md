@@ -23,6 +23,28 @@ The administrator owns people, access and organization policy. The operator conf
 
 Memberships can apply organization-wide or to an authorized space. The last organization administrator cannot be removed. Revocation is checked on subsequent protected operations, including existing sessions. An operator cannot grant membership or change identity authority.
 
+## Invite someone or change access
+
+In **People & access**, search existing people by name before assigning a role. Choose the organization or a workspace as the scope. Filters and pages come from the server; changing the scope or filters returns to the first page. A person may hold several roles, so removing one assignment may leave access through another.
+
+For someone new, create an invitation link with a role, scope and expiry. The default lifetime is 24 hours; the maximum is seven days. Copy the private link when it is created: its secret is shown once. No email is sent and no identity-provider account is provisioned. The recipient must sign in through the configured identity provider and explicitly accept. An invitation cannot replace an existing assignment in that scope. Revoking the link prevents redemption; after redemption, manage the resulting role assignment separately.
+
+## Corporate access
+
+Corporate connections preserve the deployment's canonical issuer and subject. Keycloak can broker an external directory while preserving those identities. Matching email addresses never merge accounts or grant access.
+
+An explicit group mapping associates a directory group with a product role and optional workspace. Directory-managed grants remain separate from manual roles. Edit the mapping or upstream group to change a managed grant; manual membership operations cannot change it. Keep a manual organization administrator for recovery.
+
+Connection activation requires a fresh sign-in by the initiating administrator, a complete authorized directory observation and the protected broker configuration. A saved connection or discovered group is insufficient. Changes invalidate the proof; disabling a connection removes its managed authority immediately. Normal group changes take effect when the bounded observation expires and refreshes. Failed or incomplete refreshes cannot retain expired managed access.
+
+Corporate management screens and external Entra ID/Google Workspace activation are still under qualification. The current native Keycloak proof uses an isolated local realm. Deployment operators must supply directory permissions, encryption material and approved provider origins before activating a real connection.
+
+## Knowledge model assignments
+
+Providers and agents are separate from the model roles used by document and dataset processing. In **Knowledge models**, choose an organization default or an explicit workspace override, then assign the role described by the server. A disabled workspace override blocks fallback to the organization default.
+
+Generative roles may use the current chat agent only when the role descriptor permits it and the operation has an active agent context. Embedding roles require an explicit provider, model, dimensions and approved existing space. Do not guess an embedding space or substitute a different model for indexed knowledge. An incompatible change requires reindexing; removing and recreating an assignment does not bypass that requirement.
+
 ## Connections and parameters
 
 Settings should present prerequisites and observed states. Model credentials are write-only; responses report whether they are configured. They are encrypted using an external master key and never stored in browser settings. Provider addresses require a deployment-managed host allowlist.
