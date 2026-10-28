@@ -1,0 +1,120 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<dialog
+  tabindex="-1"
+  #dialog
+  [attr.aria-labelledby]="id + '-heading'"
+  [attr.aria-describedby]="id + '-scope'"
+  [cdkTrapFocus]="visible()"
+  (cancel)="cancel($event)"
+  (keydown)="keydown($event)"
+  (click)="backdrop($event)"
+>
+  <h2 class="sr-only" [id]="id + '-heading'">{{ copy().heading }}</h2>
+  <header>
+    <ffk-icon name="search" />
+    <input
+      #queryInput
+      type="text"
+      role="combobox"
+      autocomplete="off"
+      spellcheck="false"
+      maxlength="255"
+      [attr.aria-label]="copy().placeholder"
+      [placeholder]="copy().placeholder"
+      [value]="search.query()"
+      (input)="search.setQuery(queryInput.value)"
+      [attr.aria-expanded]="visible()"
+      [attr.aria-controls]="id + '-results'"
+      [attr.aria-activedescendant]="activeId()"
+      aria-autocomplete="list"
+    />
+    <button class="close" type="button" [attr.aria-label]="'Close' | ffkText" (click)="dismiss()">
+      <ffk-icon name="close" />
+    </button>
+  </header>
+  <p class="scope" [id]="id + '-scope'"><ffk-icon name="folder" />{{ search.scopeLabel() }}</p>
+  <div class="results" [attr.aria-busy]="search.pending()">
+    <div role="listbox" [id]="id + '-results'" [attr.aria-label]="copy().results">
+      @for (option of options(); track option.key; let index = $index) {
+        @if (
+          option.kind !== 'search' && (index === 0 || options()[index - 1].kind !== option.kind)
+        ) {
+          <p class="category" role="presentation">{{ category(option) }}</p>
+        }
+        <button
+          type="button"
+          role="option"
+          tabindex="-1"
+          class="option"
+          [class.search-option]="option.kind === 'search'"
+          [id]="id + '-option-' + index"
+          [attr.data-kind]="option.kind"
+          [attr.aria-selected]="active() === index"
+          [attr.aria-disabled]="!enabled(option)"
+          [disabled]="!enabled(option)"
+          (mouseenter)="enabled(option) && active.set(index)"
+          (click)="choose(option)"
+        >
+          <span class="glyph"><ffk-icon [name]="icon(option)" /></span>
+          <span class="option-copy"
+            ><span class="title">{{ title(option) }}</span>
+            @if (description(option)) {
+              <span class="description">{{ description(option) }}</span>
+            }
+          </span>
+          <ffk-icon name="chevron" class="destination" />
+        </button>
+      }
+    </div>
+    <div class="feedback" aria-live="polite" role="status">
+      @if (search.pending()) {
+        <p>{{ copy().loading }}</p>
+      } @else if (search.error()) {
+        <p class="error">{{ search.error() }}</p>
+        <button type="button" (click)="search.retry()">{{ 'Retry' | ffkText }}</button>
+      } @else if (!search.canSearch()) {
+        <p>{{ search.requiresSignIn() ? copy().signIn : copy().unavailable }}</p>
+      } @else if (!search.query().trim()) {
+        <p>{{ copy().prompt }}</p>
+      } @else if (!search.page().items.length) {
+        <p>{{ copy().empty }}</p>
+      }
+    </div>
+  </div>
+  <footer>
+    <span class="keyboard-hint"
+      ><kbd>↑</kbd><kbd>↓</kbd>{{ copy().navigate }}<kbd>↵</kbd>{{ copy().select }}</span
+    >
+    @if (search.page().page !== undefined && (search.page().pages ?? 0) > 0) {
+      <nav [attr.aria-label]="copy().resources">
+        <span class="page-label"
+          >{{ 'Page' | ffkText }} {{ search.page().page }} / {{ search.page().pages }}
+          @if (search.page().total !== undefined) {
+            <span class="total">
+              · {{ search.page().total }}
+              {{ copy().results.toLocaleLowerCase(i18n.preferences().locale) }}</span
+            >
+          }
+        </span>
+        <button
+          type="button"
+          data-page="previous"
+          [attr.aria-label]="'Previous page' | ffkText"
+          [disabled]="search.pending() || (search.page().page ?? 1) <= 1"
+          (click)="search.goToPage((search.page().page ?? 1) - 1)"
+        >
+          <ffk-icon name="chevron-left" />
+        </button>
+        <button
+          type="button"
+          data-page="next"
+          [attr.aria-label]="'Next page' | ffkText"
+          [disabled]="search.pending() || (search.page().page ?? 1) >= (search.page().pages ?? 0)"
+          (click)="search.goToPage((search.page().page ?? 1) + 1)"
+        >
+          <ffk-icon name="chevron" />
+        </button>
+      </nav>
+    }
+  </footer>
+</dialog>

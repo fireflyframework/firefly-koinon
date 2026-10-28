@@ -1,0 +1,23 @@
+# Canon bounded context
+
+The `firefly-koinon-documents` package retains the `flycanon` import for compatibility. The composing application owns the server, authentication, membership checks, migrations and native pyfly lifecycle. `flycanon.integration.canon_metadata()` exposes business table metadata without starting a server. Controller suffixes remain unchanged; the root application projects its canon prefix.
+
+Original source: flycanon commit `11a9a566e81d355458c831a30f3f05bc6409e62f`, package 26.10.6. `provenance/upstream-tests` retains original tests byte for byte; `provenance/source.json` records digests. Active tests port native namespaces, construction/mock seams and native exception expectations.
+
+Enable `pyfly.agentic.enabled`; scan `flycanon.core` and `flycanon.web.controllers`. All component/factory bean names carry `canon.`. `CanonSettings` receives context-owned `AgentFactory` and `DataSourceRegistry`; no second Agentic runtime is created. Configure native datasources `canon` and `canon_admin`, or set `FLYCANON_DATASOURCE_NAME` and `FLYCANON_ADMIN_DATASOURCE_NAME`. Repositories and lexical retrieval join native `infrastructure_unit`; borrowed engines are never disposed by canon. API roles require non-BYPASSRLS policies; admin/worker cross-workspace operations need explicitly privileged datasource configuration and tenant predicates.
+
+The set-aware vector adapter borrows native Data transactions, retaining widths, partial HNSW, active sets, reindex/rollback and scoped deletion. Missing extension/table/policy prerequisites fail actionably; validation does not silently repair missing RLS. Production agent idempotency/rate limiting require `FLYCANON_REDIS_URL`; Chroma requires a server. `FLYCANON_ALLOW_IN_MEMORY_ADAPTERS=true` is an explicit isolated development/test switch. A page cache can be process-local because it is rebuildable, not authoritative idempotency/job state.
+
+Historical migration 0016 now imports frozen PyFly 26.9.4 outbox DDL from `flycanon.migration_compat` because native pyfly removed the original private constants. Root migrations must separately include native `framework_metadata`; migration of undelivered historical outbox events into the new delivery model is not yet qualified.
+
+The upstream baseline passed 1,230 server tests, 61 Python SDK tests and 62 Java SDK tests. Five Docker/Postgres tests were skipped. Native migration adds factory/namespace/datasource/transaction/durable-adapter/typed-error/RLS tests. Current integrated counts belong in the root verification report. Unit tests do not establish live provider, PostgreSQL/pgvector/Redis/S3 or full product acceptance.
+
+Pending audit findings include stale detection using a removed chunk embedding property, default RLM privacy/original normalization parity, historical delivery migration and Java SDK route drift. The root must authorize identity and every ancestor before legacy domain methods; selection headers alone confer no authority.
+
+Native `TenantGucCustomizer` participates in the datasource after-begin SPI, retaining tenant/workspace `SET LOCAL` state throughout real readonly transactions. This fixed a live lexical-search failure caused by the native AUTOCOMMIT fast path. Runtime uses the non-bypass datasource; original required HNSW indexes were provisioned by migration authority without granting runtime DDL.
+
+Thin YAML prompt adapters retain strict undefined-variable and whitespace behavior while native prompt rendering remains authoritative. Local structured outputs use native JSON-schema transport. The optional native RLM bridge reuses context-owned models and the retained CodeAct protocol; local models that return text instead of the required evidence tool fail actionably. Existing small local models have not passed the RLM citation journey. This is separate from the positive local retrieval-answer journey.
+
+Original-byte persistence now records a separate original SHA256/byte count because normalized extraction digests can differ. Local and S3 object adapters provide bounded reads without loading oversized objects in full; the common original attachment verifies size and digest. A legacy source without original metadata can be returned only when its original bytes match the retained source digest. No storage keys are exposed by the common document read API.
+
+Actual Keycloak HTTP qualification exposed a hardcoded default-scope taxonomy seed. Request handlers now seed/list only their verified workspace, and parent attachment checks explicit tenant/workspace predicates. Original standalone defaults remain for explicit compatibility construction. Source provenance and the frozen original tests remain unchanged.

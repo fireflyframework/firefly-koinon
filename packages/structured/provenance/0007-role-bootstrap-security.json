@@ -1,0 +1,7 @@
+{
+  "file": "migrations/versions/0007_rls.py",
+  "upstream_commit": "20b8d704171209dadbc3e21668f5439d2336e9ea",
+  "upstream_sha256": "6e21f72378c7d7ef2860507ea38eca4e6789205397463f06e14736cdbd94d7ae",
+  "patched_sha256": "768110cdcaeaef8dfd26d1244dfb7ff998ea1a4ad67d3f39099ecf7e4ac25525",
+  "change": "Role creation is NOLOGIN with no embedded password; provision generated runtime credentials separately. Existing roles are not altered by this migration."
+}

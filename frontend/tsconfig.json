@@ -1,0 +1,51 @@
+/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
+/* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitOverride": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "paths": {
+      "@fireflyframework/koinon-angular": ["./dist/koinon-angular"],
+      "@fireflyframework/koinon-angular/chat": ["./dist/koinon-angular/chat"],
+      "@fireflyframework/koinon-angular/chat/page": ["./dist/koinon-angular/chat/page"],
+      "@fireflyframework/koinon-angular/chat/evidence": ["./dist/koinon-angular/chat/evidence"],
+      "@fireflyframework/koinon-angular/settings": ["./dist/koinon-angular/settings"]
+    },
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "ES2022",
+    "module": "preserve"
+  },
+  "angularCompilerOptions": {
+    "enableI18nLegacyMessageIdFormat": false,
+    "strictTemplates": true,
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true
+  },
+  "files": [],
+  "references": [
+    {
+      "path": "./projects/management/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/management/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/koinon-angular/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/koinon-angular/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/elements/tsconfig.app.json"
+    }
+  ]
+}

@@ -1,0 +1,215 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+@if (pending() && context.mode() === 'audit') {
+  <div class="waiting">
+    <ffk-skeleton
+      width="75%"
+      height="12px"
+      [label]="'Loading source evidence' | ffkText"
+    /><ffk-skeleton width="50%" height="12px" />
+  </div>
+} @else if (error()) {
+  <p class="evidence-error" role="status"><ffk-icon name="alert" />{{ error() }}</p>
+} @else if (result() && visible()) {
+  <article class="evidence-block" [class.query-panel]="!!query() && context.mode() === 'answer'">
+    @if (result()?.kind === 'proposal') {
+      <ffk-catalog-proposal
+        [runId]="result()!.run_id"
+        [resultId]="result()!.id"
+        (resourceRequested)="context.resourceRequested.emit($event)"
+      />
+    }
+    @if (query(); as query) {
+      @if (context.mode() === 'answer') {
+        <header>
+          <ffk-icon name="table" />
+          <h3>{{ 'Query results' | ffkText }}</h3>
+          <ffk-badge>{{ queryOutcome(query) | ffkText }}</ffk-badge>
+        </header>
+        @if (canChart()) {
+          <div class="result-view" role="group" [attr.aria-label]="'Result view' | ffkText">
+            <button
+              type="button"
+              [attr.aria-pressed]="selectedQueryView() === 'table'"
+              (click)="selectedQueryView.set('table')"
+            >
+              <ffk-icon name="table" />{{ 'Table' | ffkText }}
+            </button>
+            <button
+              type="button"
+              [attr.aria-pressed]="selectedQueryView() === 'chart'"
+              (click)="selectedQueryView.set('chart')"
+            >
+              <ffk-icon name="chart" />{{ 'Chart' | ffkText }}
+            </button>
+          </div>
+        }
+        @if (canChart() && selectedQueryView() === 'chart') {
+          <ffk-result-chart
+            [presentation]="context.presentation()"
+            [rows]="queryRows(query)"
+            [kind]="chartKind(query)"
+            [framed]="false"
+          />
+        } @else {
+          <ffk-evidence-table
+            [presentation]="context.presentation()"
+            [rows]="queryRows(query)"
+            [label]="'Canonical query result' | ffkText"
+            [framed]="false"
+          />
+        }
+      } @else {
+        <div class="audit-query-header">
+          <h4>{{ sqlLabel(query) | ffkText }}</h4>
+          <ffk-badge>{{ queryOutcome(query) | ffkText }}</ffk-badge>
+        </div>
+        @if (query.sql) {
+          <ffk-code-block [code]="query.sql" [label]="sqlLabel(query)" />
+        } @else {
+          <p class="description">{{ 'No SQL is available in this result.' | ffkText }}</p>
+        }
+        @if (query.explanation) {
+          <p class="description">{{ query.explanation }}</p>
+        }
+        @if (query.preview?.length) {
+          <details>
+            <summary>{{ 'Returned data preview' | ffkText }}</summary>
+            <ffk-evidence-table
+              [presentation]="context.presentation()"
+              [rows]="queryRows(query)"
+              [label]="'Canonical query result' | ffkText"
+              [framed]="false"
+            />
+          </details>
+        }
+      }
+      @if (query.truncated) {
+        <p class="result-meta">{{ 'Result truncated' | ffkText }}</p>
+      }
+    }
+    @if (schema(); as schema) {
+      <header>
+        <ffk-icon name="table" />
+        <h3>{{ 'Dataset schema' | ffkText }}</h3>
+      </header>
+      @for (table of schema.tables; track table.id) {
+        <section class="schema-table">
+          <h4>{{ table.name }}</h4>
+          <ffk-evidence-table
+            [presentation]="context.presentation()"
+            [rows]="schemaRows(table.columns)"
+            [label]="'Columns in ' + table.name"
+          />
+        </section>
+      } @empty {
+        <p class="description">No tables were returned for this dataset.</p>
+      }
+    }
+    @if (search(); as search) {
+      <header>
+        <ffk-icon name="file" />
+        <h3>{{ 'Source evidence' | ffkText }}</h3>
+      </header>
+      @if (view === 'table') {
+        <ffk-evidence-table
+          [presentation]="context.presentation()"
+          [rows]="searchRows()"
+          [label]="'Canonical search results' | ffkText"
+        />
+      } @else if (view !== 'citations') {
+        @for (hit of search.hits; track hit.id) {
+          <section class="document-preview">
+            <h4>{{ hit.title }}</h4>
+            <blockquote>{{ hit.text }}</blockquote>
+            <ffk-button
+              variant="quiet"
+              icon="file"
+              (click)="context.resourceRequested.emit(hit.asset_id)"
+              >{{ 'Open document' | ffkText }}</ffk-button
+            >
+          </section>
+        } @empty {
+          <p class="description">No matching source passages were returned.</p>
+        }
+      }
+    }
+    @if (lineage(); as lineage) {
+      <header>
+        <ffk-icon name="lineage" />
+        <h3>{{ 'Knowledge lineage' | ffkText }}</h3>
+      </header>
+      @if (view === 'table') {
+        <ffk-evidence-table
+          [presentation]="context.presentation()"
+          [rows]="lineageRows()"
+          [label]="'Canonical lineage relationships' | ffkText"
+        />
+      } @else {
+        <div class="lineage">
+          @for (edge of lineage.edges; track $index) {
+            <div>
+              <span>{{ nodeLabel(edge.source) }}</span
+              ><ffk-icon name="chevron" /><span>{{ nodeLabel(edge.target) }}</span>
+              @if (edge.label) {
+                <small>{{ edge.label }}</small>
+              }
+            </div>
+          } @empty {
+            <p class="description">No relationships have been recorded.</p>
+          }
+        </div>
+      }
+    }
+    @if (attachmentEvidence(); as evidence) {
+      <header>
+        <ffk-icon name="paperclip" />
+        <h3>{{ 'Attached files used' | ffkText }}</h3>
+      </header>
+      <ul class="private-evidence">
+        @for (file of evidence.attachments; track file.id) {
+          <li>
+            <ffk-icon [name]="file.media_type.startsWith('image/') ? 'image' : 'file'" />
+            <div>
+              <strong>{{ file.filename }}</strong>
+              <small
+                >{{
+                  (file.media_type.startsWith('image/')
+                    ? 'Image used'
+                    : file.complete
+                      ? 'Full extracted text'
+                      : 'Selected passages'
+                  ) | ffkText
+                }}
+                @if (
+                  !file.media_type.startsWith('image/') && !file.complete && file.total_chunks > 0
+                ) {
+                  <span>
+                    · {{ file.chunk_ids.length }} / {{ file.total_chunks }}
+                    {{ 'passages' | ffkText }}</span
+                  >
+                }
+              </small>
+              @for (warning of file.warnings; track $index) {
+                <p>{{ warning }}</p>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    }
+    @if (citations().length && context.mode() === 'audit') {
+      <section class="citations" [attr.aria-label]="'Citations' | ffkText">
+        @for (citation of citations(); track $index) {
+          <ffk-button variant="quiet" icon="file" (click)="context.citationRequested.emit(citation)"
+            >{{ citation.title || 'Source evidence' }}
+            @if (citation.page) {
+              · p. {{ citation.page }}
+            }
+          </ffk-button>
+        }
+      </section>
+    } @else if (view === 'citations') {
+      <p class="description">{{ 'No citations were returned with this evidence.' | ffkText }}</p>
+    }
+  </article>
+}

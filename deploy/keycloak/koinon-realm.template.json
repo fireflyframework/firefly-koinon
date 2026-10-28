@@ -1,0 +1,137 @@
+{
+  "realm": "koinon",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "rememberMe": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 28800,
+  "clients": [
+    {
+      "clientId": "koinon-browser",
+      "name": "firefly koinon local browser",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${KOINON_OIDC_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://127.0.0.1:18781/login/oauth2/code/koinon"
+      ],
+      "webOrigins": [
+        "http://127.0.0.1:18782"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "koinon-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "koinon-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "koinon-api",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "bearerOnly": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false
+    }
+  ],
+  "users": [
+    {
+      "id": "8c85d9a1-6168-4fb0-ae11-1b8a41227a01",
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "admin@koinon.example",
+      "firstName": "Admin",
+      "lastName": "Local fixture",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KOINON_DEMO_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "8c85d9a1-6168-4fb0-ae11-1b8a41227a02",
+      "username": "analyst",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "analyst@koinon.example",
+      "firstName": "Analyst",
+      "lastName": "Local fixture",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KOINON_DEMO_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "8c85d9a1-6168-4fb0-ae11-1b8a41227a03",
+      "username": "editor",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "editor@koinon.example",
+      "firstName": "Editor",
+      "lastName": "Local fixture",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KOINON_DEMO_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "8c85d9a1-6168-4fb0-ae11-1b8a41227a04",
+      "username": "viewer",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "viewer@koinon.example",
+      "firstName": "Viewer",
+      "lastName": "Local fixture",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KOINON_DEMO_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "8c85d9a1-6168-4fb0-ae11-1b8a41227a05",
+      "username": "outsider",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "outsider@koinon.example",
+      "firstName": "Outsider",
+      "lastName": "Local fixture",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KOINON_DEMO_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

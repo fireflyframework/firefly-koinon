@@ -1,0 +1,288 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<nav class="account-tabs" [attr.aria-label]="'Account sections' | ffkText">
+  <button
+    [disabled]="initializing() || account.pending()"
+    [class.active]="tab() === 'profile'"
+    [attr.aria-current]="tab() === 'profile' ? 'page' : null"
+    (click)="showTab('profile')"
+  >
+    {{ 'Profile & preferences' | ffkText }}</button
+  ><button
+    [disabled]="initializing() || account.pending()"
+    [class.active]="tab() === 'tokens'"
+    [attr.aria-current]="tab() === 'tokens' ? 'page' : null"
+    (click)="showTab('tokens')"
+  >
+    {{ 'API tokens' | ffkText }}
+  </button>
+</nav>
+@if (account.error()) {
+  <p role="alert" class="error">{{ account.error() | ffkText }}</p>
+}
+@if (formError()) {
+  <p role="alert" class="error">{{ formError() | ffkText }}</p>
+}
+@if (account.notice()) {
+  <p role="status" class="notice">{{ account.notice() | ffkText }}</p>
+}
+@if (tab() === 'profile') {
+  @if (account.profile()) {
+    <div class="photo">
+      <div class="avatar">
+        @if (account.avatar()) {
+          <img [src]="account.avatar()" [alt]="'Profile photo' | ffkText" />
+        } @else {
+          <span>{{ initials() }}</span>
+        }
+      </div>
+      <div>
+        <label class="photo-picker"
+          >{{ 'Choose photo' | ffkText
+          }}<input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            [disabled]="account.pending()"
+            [attr.aria-label]="'Choose photo' | ffkText"
+            (change)="avatarChanged($event)"
+        /></label>
+        <p>{{ 'PNG, JPEG or WebP. Maximum 2 MiB.' | ffkText }}</p>
+        @if (account.profile()?.avatar_version) {
+          <ffk-button
+            variant="quiet"
+            [disabled]="account.pending()"
+            (click)="account.removeAvatar()"
+            >{{ 'Remove photo' | ffkText }}</ffk-button
+          >
+        }
+      </div>
+    </div>
+    <form (ngSubmit)="save()">
+      <ffk-form-field
+        inputId="profile-name"
+        [label]="'Display name' | ffkText"
+        [value]="name"
+        (valueChange)="name = $event"
+        [disabled]="account.pending()"
+        required
+      />
+      <div class="preference-grid">
+        <label
+          >{{ 'Interface language' | ffkText
+          }}<select name="locale" [(ngModel)]="locale" [disabled]="account.pending()">
+            <option value="en-US">English (United States)</option>
+            <option value="en-GB">English (United Kingdom)</option>
+            <option value="es-ES">Español (España)</option>
+            <option value="es-MX">Español (México)</option>
+            <option value="es-CO">Español (Colombia)</option>
+            <option value="es-AR">Español (Argentina)</option>
+            @if (!['en-US', 'en-GB', 'es-ES', 'es-MX', 'es-CO', 'es-AR'].includes(locale)) {
+              <option [value]="locale">{{ locale }}</option>
+            }
+          </select></label
+        ><label
+          >{{ 'Time zone' | ffkText
+          }}<select name="time_zone" [(ngModel)]="timeZone" [disabled]="account.pending()">
+            @for (zone of timeZones; track zone) {
+              <option [value]="zone">{{ zone.replaceAll('_', ' ') }}</option>
+            }
+          </select></label
+        ><label
+          >{{ 'Response language' | ffkText
+          }}<select
+            name="response_language"
+            [(ngModel)]="responseLanguage"
+            [disabled]="account.pending()"
+          >
+            <option value="en">{{ 'English' | ffkText }}</option>
+            <option value="es">{{ 'Spanish' | ffkText }}</option>
+            @if (!['en', 'es'].includes(responseLanguage)) {
+              <option [value]="responseLanguage">{{ responseLanguage }}</option>
+            }
+          </select></label
+        >
+      </div>
+      <p class="help">
+        {{
+          'Dates and numbers use your preferences. Downloaded data keeps its original values.'
+            | ffkText
+        }}
+      </p>
+      <div class="actions">
+        <ffk-button type="submit" variant="primary" [loading]="account.pending()">{{
+          'Save preferences' | ffkText
+        }}</ffk-button>
+      </div>
+    </form>
+  } @else {
+    <div class="empty">
+      <p>
+        {{
+          account.pending()
+            ? ('Loading profile' | ffkText)
+            : ('Your profile could not be loaded.' | ffkText)
+        }}
+      </p>
+      <ffk-button [disabled]="account.pending()" (click)="account.load()">{{
+        'Retry' | ffkText
+      }}</ffk-button>
+    </div>
+  }
+} @else {
+  <p class="help">
+    {{ 'Tokens let your applications use the API with the permissions you choose.' | ffkText }}
+  </p>
+  @if (secret()) {
+    <section class="secret-panel">
+      <h3>{{ 'Copy this token now. It will not be shown again.' | ffkText }}</h3>
+      <textarea
+        readonly
+        rows="3"
+        [attr.aria-label]="'New API token' | ffkText"
+        [value]="secret()"
+        spellcheck="false"
+      ></textarea>
+      <div class="actions">
+        <ffk-button icon="copy" (click)="copyToken()">{{ 'Copy token' | ffkText }}</ffk-button
+        ><ffk-button variant="primary" (click)="clearSecret()">{{ 'Done' | ffkText }}</ffk-button>
+      </div>
+      @if (copied()) {
+        <p role="status">{{ 'Token copied.' | ffkText }}</p>
+      }
+    </section>
+  } @else if (creating()) {
+    <form (ngSubmit)="createToken()">
+      <ffk-form-field
+        inputId="token-name"
+        [label]="'Token name' | ffkText"
+        [value]="tokenName"
+        (valueChange)="tokenName = $event"
+        required
+      /><label
+        >{{ 'Expires' | ffkText }} (UTC)<input
+          type="date"
+          name="expires"
+          [(ngModel)]="expiryDate"
+          required
+      /></label>
+      @if (f.workspaceId()) {
+        <label class="check"
+          ><input type="checkbox" name="workspace" [(ngModel)]="workspaceBound" /><span
+            >{{ 'Limit to current workspace' | ffkText }} · {{ workspaceName() }}</span
+          ></label
+        >
+      }
+      @if (selectedAsset(); as asset) {
+        <label class="check"
+          ><input type="checkbox" name="asset" [(ngModel)]="assetBound" /><span
+            >{{ 'Limit to selected file' | ffkText }} · {{ asset.name }}</span
+          ></label
+        >
+      }
+      <fieldset>
+        <legend>{{ 'Permissions' | ffkText }}</legend>
+        @for (scope of account.tokenScopes()?.items; track scope.id) {
+          <label class="check"
+            ><input
+              type="checkbox"
+              [checked]="scopeIds.includes(scope.id)"
+              [disabled]="requiredScope(scope.id)"
+              (change)="toggleScope(scope.id, $any($event.target).checked)"
+            /><span>{{ scope.name | ffkText }}</span></label
+          >
+        }
+      </fieldset>
+      <p class="help">
+        {{
+          'Permissions are limited by your current access. Dependent permissions are selected together.'
+            | ffkText
+        }}
+      </p>
+      <div class="actions">
+        <ffk-button variant="quiet" (click)="creating.set(false)">{{
+          'Cancel' | ffkText
+        }}</ffk-button
+        ><ffk-button variant="primary" type="submit" [loading]="account.pending()">{{
+          'Create a token' | ffkText
+        }}</ffk-button>
+      </div>
+    </form>
+  } @else {
+    <div class="token-toolbar">
+      @if (account.tokens().total !== undefined) {
+        <form (ngSubmit)="account.loadTokens({ q: tokenQuery, page: 1 })">
+          <input
+            type="search"
+            name="filter"
+            [attr.aria-label]="'Filter tokens' | ffkText"
+            [placeholder]="'Filter tokens' | ffkText"
+            [(ngModel)]="tokenQuery"
+          /><ffk-button
+            type="submit"
+            variant="quiet"
+            icon="search"
+            [label]="'Apply filter' | ffkText"
+          />
+        </form>
+      }
+      <ffk-button
+        variant="primary"
+        [disabled]="!account.tokenScopes() || account.pending()"
+        (click)="beginToken()"
+        >{{ 'Create a token' | ffkText }}</ffk-button
+      >
+    </div>
+    <div class="token-list">
+      @for (token of account.tokens().items; track token.id) {
+        <article>
+          <div>
+            <strong>{{ token.name }}</strong>
+            <p>{{ tenantName(token.tenant_id) }}</p>
+            <p [title]="token.expires_at">
+              {{ 'Expires' | ffkText }} {{ token.expires_at | ffkDate }} ·
+              <code>{{ token.prefix }}…</code>
+            </p>
+            <details>
+              <summary>{{ 'Permissions' | ffkText }}</summary>
+              <ul>
+                @for (scope of token.scopes; track scope) {
+                  <li>{{ scope }}</li>
+                }
+              </ul>
+            </details>
+          </div>
+          @if (token.revoked_at) {
+            <span>{{ 'Revoked' | ffkText }}</span>
+          } @else if (revoking() === token.id) {
+            <div class="revoke-confirm">
+              <p>{{ 'Applications using this token will lose access.' | ffkText }}</p>
+              <ffk-button variant="quiet" (click)="revoking.set('')">{{
+                'Cancel' | ffkText
+              }}</ffk-button
+              ><ffk-button
+                variant="danger"
+                [disabled]="account.pending()"
+                (click)="revoke(token.id)"
+                >{{ 'Revoke' | ffkText }}</ffk-button
+              >
+            </div>
+          } @else {
+            <ffk-button variant="quiet" (click)="revoking.set(token.id)">{{
+              'Revoke' | ffkText
+            }}</ffk-button>
+          }
+        </article>
+      } @empty {
+        <p class="empty">
+          {{ account.pending() ? ('Loading tokens' | ffkText) : ('No active tokens' | ffkText) }}
+        </p>
+      }
+    </div>
+    <ffk-pagination
+      [page]="account.tokens()"
+      [label]="'Tokens' | ffkText"
+      [loading]="account.pending()"
+      (pageChanged)="account.loadTokens({ page: $event })"
+      (sizeChanged)="account.loadTokens({ page_size: $event, page: 1 })"
+    />
+  }
+}

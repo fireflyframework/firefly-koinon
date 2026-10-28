@@ -4,19 +4,19 @@
   "license": "Apache-2.0",
   "api_prefix": "/api/v1",
   "status": "Canonical API contract; development snapshot",
-  "canonical_operation_count": 136,
+  "canonical_operation_count": 137,
   "qualified_compatibility_operations": [
     {
       "operation": "GlossaryController.list_terms",
       "method": "GET",
       "path": "/api/v1/structured/glossary",
       "source": "backend/src/koinon/knowledge/legacy_read.py",
-      "source_sha256": "53fe0c0c572dfb38eb5690d7a2121f86fe7e7dbe1bb566e10460b069f096691d",
+      "source_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
       "native_controller": "GlossaryController",
       "native_method": "list_terms",
-      "native_source_sha256": "7a61f0f22dd1013d9aca12663264e4b46e75946cf137e605a75c87f6a00b4c9d",
+      "native_source_sha256": "d1837ae24422b157ef03732b03618ca180cf93f5b42b3dcab87512ff8346e4ee",
       "guard": "backend/src/koinon/knowledge/legacy_read.py",
-      "guard_sha256": "53fe0c0c572dfb38eb5690d7a2121f86fe7e7dbe1bb566e10460b069f096691d",
+      "guard_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
       "request_schema": null,
       "response_schema": "GlossaryPage",
       "sdk_python": "glossary_terms",
@@ -33,12 +33,12 @@
       "method": "GET",
       "path": "/api/v1/structured/glossary/{term_id}",
       "source": "backend/src/koinon/knowledge/legacy_read.py",
-      "source_sha256": "53fe0c0c572dfb38eb5690d7a2121f86fe7e7dbe1bb566e10460b069f096691d",
+      "source_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
       "native_controller": "GlossaryController",
       "native_method": "get_term",
-      "native_source_sha256": "7a61f0f22dd1013d9aca12663264e4b46e75946cf137e605a75c87f6a00b4c9d",
+      "native_source_sha256": "d1837ae24422b157ef03732b03618ca180cf93f5b42b3dcab87512ff8346e4ee",
       "guard": "backend/src/koinon/knowledge/legacy_read.py",
-      "guard_sha256": "53fe0c0c572dfb38eb5690d7a2121f86fe7e7dbe1bb566e10460b069f096691d",
+      "guard_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
       "request_schema": null,
       "response_schema": "GlossaryTermRead",
       "sdk_python": "glossary_term",
@@ -55,12 +55,12 @@
       "method": "POST",
       "path": "/api/v1/structured/glossary",
       "source": "backend/src/koinon/knowledge/glossary_writes.py",
-      "source_sha256": "6348bac89be63e2cec847e1ecc04a4cf03deed1746d0fbb135494ab416424749",
+      "source_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
       "native_controller": "GlossaryController",
       "native_method": "create",
-      "native_source_sha256": "7a61f0f22dd1013d9aca12663264e4b46e75946cf137e605a75c87f6a00b4c9d",
+      "native_source_sha256": "d1837ae24422b157ef03732b03618ca180cf93f5b42b3dcab87512ff8346e4ee",
       "guard": "backend/src/koinon/knowledge/glossary_writes.py",
-      "guard_sha256": "6348bac89be63e2cec847e1ecc04a4cf03deed1746d0fbb135494ab416424749",
+      "guard_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
       "request_schema": "GlossaryTermCreate",
       "response_schema": "GlossaryTermRead",
       "sdk_python": "create_glossary_term",
@@ -77,12 +77,12 @@
       "method": "PUT",
       "path": "/api/v1/structured/glossary/{term_id}",
       "source": "backend/src/koinon/knowledge/glossary_writes.py",
-      "source_sha256": "6348bac89be63e2cec847e1ecc04a4cf03deed1746d0fbb135494ab416424749",
+      "source_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
       "native_controller": "GlossaryController",
       "native_method": "update",
-      "native_source_sha256": "7a61f0f22dd1013d9aca12663264e4b46e75946cf137e605a75c87f6a00b4c9d",
+      "native_source_sha256": "d1837ae24422b157ef03732b03618ca180cf93f5b42b3dcab87512ff8346e4ee",
       "guard": "backend/src/koinon/knowledge/glossary_writes.py",
-      "guard_sha256": "6348bac89be63e2cec847e1ecc04a4cf03deed1746d0fbb135494ab416424749",
+      "guard_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
       "request_schema": "GlossaryTermUpdate",
       "response_schema": "GlossaryTermRead",
       "sdk_python": "update_glossary_term",
@@ -100,12 +100,12 @@
       "method": "DELETE",
       "path": "/api/v1/structured/glossary/{term_id}",
       "source": "backend/src/koinon/knowledge/glossary_writes.py",
-      "source_sha256": "6348bac89be63e2cec847e1ecc04a4cf03deed1746d0fbb135494ab416424749",
+      "source_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
       "native_controller": "GlossaryController",
       "native_method": "delete",
-      "native_source_sha256": "7a61f0f22dd1013d9aca12663264e4b46e75946cf137e605a75c87f6a00b4c9d",
+      "native_source_sha256": "d1837ae24422b157ef03732b03618ca180cf93f5b42b3dcab87512ff8346e4ee",
       "guard": "backend/src/koinon/knowledge/glossary_writes.py",
-      "guard_sha256": "6348bac89be63e2cec847e1ecc04a4cf03deed1746d0fbb135494ab416424749",
+      "guard_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
       "request_schema": null,
       "response_schema": "void",
       "sdk_python": "delete_glossary_term",
@@ -123,12 +123,12 @@
       "method": "GET",
       "path": "/api/v1/structured/agent/glossary",
       "source": "backend/src/koinon/knowledge/legacy_read.py",
-      "source_sha256": "53fe0c0c572dfb38eb5690d7a2121f86fe7e7dbe1bb566e10460b069f096691d",
+      "source_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
       "native_controller": "AgentGlossaryController",
       "native_method": "list_terms",
-      "native_source_sha256": "365a379c5779433f81804785ef5e62620f4a7b238d04d5ca7371c2f6c5203b24",
+      "native_source_sha256": "977a2e4be797898ffc47d3414e9b22df8965cf699057af6d9b9e4cca60b37738",
       "guard": "backend/src/koinon/knowledge/legacy_read.py",
-      "guard_sha256": "53fe0c0c572dfb38eb5690d7a2121f86fe7e7dbe1bb566e10460b069f096691d",
+      "guard_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
       "request_schema": null,
       "response_schema": "GlossaryPage",
       "sdk_python": "glossary_terms",
@@ -145,12 +145,12 @@
       "method": "GET",
       "path": "/api/v1/structured/agent/glossary/{term_id}",
       "source": "backend/src/koinon/knowledge/legacy_read.py",
-      "source_sha256": "53fe0c0c572dfb38eb5690d7a2121f86fe7e7dbe1bb566e10460b069f096691d",
+      "source_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
       "native_controller": "AgentGlossaryController",
       "native_method": "get_term",
-      "native_source_sha256": "365a379c5779433f81804785ef5e62620f4a7b238d04d5ca7371c2f6c5203b24",
+      "native_source_sha256": "977a2e4be797898ffc47d3414e9b22df8965cf699057af6d9b9e4cca60b37738",
       "guard": "backend/src/koinon/knowledge/legacy_read.py",
-      "guard_sha256": "53fe0c0c572dfb38eb5690d7a2121f86fe7e7dbe1bb566e10460b069f096691d",
+      "guard_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
       "request_schema": null,
       "response_schema": "GlossaryTermRead",
       "sdk_python": "glossary_term",
@@ -167,12 +167,12 @@
       "method": "POST",
       "path": "/api/v1/structured/agent/glossary",
       "source": "backend/src/koinon/knowledge/glossary_writes.py",
-      "source_sha256": "6348bac89be63e2cec847e1ecc04a4cf03deed1746d0fbb135494ab416424749",
+      "source_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
       "native_controller": "AgentGlossaryController",
       "native_method": "create",
-      "native_source_sha256": "365a379c5779433f81804785ef5e62620f4a7b238d04d5ca7371c2f6c5203b24",
+      "native_source_sha256": "977a2e4be797898ffc47d3414e9b22df8965cf699057af6d9b9e4cca60b37738",
       "guard": "backend/src/koinon/knowledge/glossary_writes.py",
-      "guard_sha256": "6348bac89be63e2cec847e1ecc04a4cf03deed1746d0fbb135494ab416424749",
+      "guard_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
       "request_schema": "GlossaryTermCreate",
       "response_schema": "GlossaryTermRead",
       "sdk_python": "create_glossary_term",
@@ -189,12 +189,12 @@
       "method": "PUT",
       "path": "/api/v1/structured/agent/glossary/{term_id}",
       "source": "backend/src/koinon/knowledge/glossary_writes.py",
-      "source_sha256": "6348bac89be63e2cec847e1ecc04a4cf03deed1746d0fbb135494ab416424749",
+      "source_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
       "native_controller": "AgentGlossaryController",
       "native_method": "update",
-      "native_source_sha256": "365a379c5779433f81804785ef5e62620f4a7b238d04d5ca7371c2f6c5203b24",
+      "native_source_sha256": "977a2e4be797898ffc47d3414e9b22df8965cf699057af6d9b9e4cca60b37738",
       "guard": "backend/src/koinon/knowledge/glossary_writes.py",
-      "guard_sha256": "6348bac89be63e2cec847e1ecc04a4cf03deed1746d0fbb135494ab416424749",
+      "guard_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
       "request_schema": "GlossaryTermUpdate",
       "response_schema": "GlossaryTermRead",
       "sdk_python": "update_glossary_term",
@@ -212,12 +212,12 @@
       "method": "DELETE",
       "path": "/api/v1/structured/agent/glossary/{term_id}",
       "source": "backend/src/koinon/knowledge/glossary_writes.py",
-      "source_sha256": "6348bac89be63e2cec847e1ecc04a4cf03deed1746d0fbb135494ab416424749",
+      "source_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
       "native_controller": "AgentGlossaryController",
       "native_method": "delete",
-      "native_source_sha256": "365a379c5779433f81804785ef5e62620f4a7b238d04d5ca7371c2f6c5203b24",
+      "native_source_sha256": "977a2e4be797898ffc47d3414e9b22df8965cf699057af6d9b9e4cca60b37738",
       "guard": "backend/src/koinon/knowledge/glossary_writes.py",
-      "guard_sha256": "6348bac89be63e2cec847e1ecc04a4cf03deed1746d0fbb135494ab416424749",
+      "guard_sha256": "e6e57973fa41fecab5101da905ceee447bfa3f12fde19d3649e9da35db5aa4fc",
       "request_schema": null,
       "response_schema": "void",
       "sdk_python": "delete_glossary_term",
@@ -356,7 +356,7 @@
       "request_schema": null,
       "response_schema": "Page[AuditEvent]",
       "success_status": 200,
-      "source_sha256": "94e2c86f4b41f6b092f687d92cd8829bf9d8d16d935b5ac8de3e66f5f89504eb",
+      "source_sha256": "9cd8419bf1a442777ebc0fe3431fe0855c5e07794ef613a934b83fe2aca9f7be",
       "encoding": "application/json",
       "headers": []
     },
@@ -466,7 +466,7 @@
       "request_schema": null,
       "response_schema": "Page[CatalogEntry]",
       "success_status": 200,
-      "source_sha256": "2fbac7621725f820c3d5aafd813f17789c383db9f2ea4502475edbd9227c32c0",
+      "source_sha256": "7f8bf31694fe132fa8cca4f61ca9d2e6ae11be7f13551fc13625fcd7be283a34",
       "encoding": "application/json",
       "headers": []
     },
@@ -498,7 +498,7 @@
       "request_schema": "CatalogCreate",
       "response_schema": "CatalogEntry",
       "success_status": 201,
-      "source_sha256": "2fbac7621725f820c3d5aafd813f17789c383db9f2ea4502475edbd9227c32c0",
+      "source_sha256": "7f8bf31694fe132fa8cca4f61ca9d2e6ae11be7f13551fc13625fcd7be283a34",
       "encoding": "application/json",
       "headers": []
     },
@@ -530,7 +530,7 @@
       "request_schema": null,
       "response_schema": "CatalogEntry",
       "success_status": 200,
-      "source_sha256": "2fbac7621725f820c3d5aafd813f17789c383db9f2ea4502475edbd9227c32c0",
+      "source_sha256": "7f8bf31694fe132fa8cca4f61ca9d2e6ae11be7f13551fc13625fcd7be283a34",
       "encoding": "application/json",
       "headers": []
     },
@@ -568,7 +568,7 @@
       "request_schema": "CatalogUpdate",
       "response_schema": "CatalogEntry",
       "success_status": 200,
-      "source_sha256": "2fbac7621725f820c3d5aafd813f17789c383db9f2ea4502475edbd9227c32c0",
+      "source_sha256": "7f8bf31694fe132fa8cca4f61ca9d2e6ae11be7f13551fc13625fcd7be283a34",
       "encoding": "application/json",
       "headers": []
     },
@@ -600,7 +600,7 @@
       "request_schema": null,
       "response_schema": "CatalogEntry",
       "success_status": 200,
-      "source_sha256": "2fbac7621725f820c3d5aafd813f17789c383db9f2ea4502475edbd9227c32c0",
+      "source_sha256": "7f8bf31694fe132fa8cca4f61ca9d2e6ae11be7f13551fc13625fcd7be283a34",
       "encoding": "application/json",
       "headers": []
     },
@@ -632,7 +632,7 @@
       "request_schema": null,
       "response_schema": "CatalogEntry",
       "success_status": 200,
-      "source_sha256": "2fbac7621725f820c3d5aafd813f17789c383db9f2ea4502475edbd9227c32c0",
+      "source_sha256": "7f8bf31694fe132fa8cca4f61ca9d2e6ae11be7f13551fc13625fcd7be283a34",
       "encoding": "application/json",
       "headers": []
     },
@@ -664,7 +664,7 @@
       "request_schema": null,
       "response_schema": "void",
       "success_status": 204,
-      "source_sha256": "2fbac7621725f820c3d5aafd813f17789c383db9f2ea4502475edbd9227c32c0",
+      "source_sha256": "7f8bf31694fe132fa8cca4f61ca9d2e6ae11be7f13551fc13625fcd7be283a34",
       "encoding": "application/json",
       "headers": []
     },
@@ -683,7 +683,7 @@
       "request_schema": null,
       "response_schema": "ContextResponse",
       "success_status": 200,
-      "source_sha256": "0f15c995900287bd12548518eca47c480bb0bd36008fe0ba2d02d0616b05f951",
+      "source_sha256": "9c6689a25659e4187cc99e6794b5c3ac1d42c60b3ed5ebdf166ca1fbf70fb769",
       "encoding": "application/json",
       "headers": []
     },
@@ -709,7 +709,7 @@
       "request_schema": null,
       "response_schema": "Page[Job]",
       "success_status": 200,
-      "source_sha256": "7aa93dcbcd74e66cdc2ce7acf59081af894f5c1da9023844e62268fc3e473e97",
+      "source_sha256": "75e90625f11cc39dbd6db573da42b2c56386aab328811941c08f08fdbc68edc3",
       "encoding": "application/json",
       "headers": []
     },
@@ -741,7 +741,7 @@
       "request_schema": null,
       "response_schema": "Job",
       "success_status": 200,
-      "source_sha256": "7aa93dcbcd74e66cdc2ce7acf59081af894f5c1da9023844e62268fc3e473e97",
+      "source_sha256": "75e90625f11cc39dbd6db573da42b2c56386aab328811941c08f08fdbc68edc3",
       "encoding": "application/json",
       "headers": []
     },
@@ -773,7 +773,7 @@
       "request_schema": null,
       "response_schema": "Job",
       "success_status": 200,
-      "source_sha256": "7aa93dcbcd74e66cdc2ce7acf59081af894f5c1da9023844e62268fc3e473e97",
+      "source_sha256": "75e90625f11cc39dbd6db573da42b2c56386aab328811941c08f08fdbc68edc3",
       "encoding": "application/json",
       "headers": []
     },
@@ -841,7 +841,7 @@
       "request_schema": null,
       "response_schema": "Page[Membership]",
       "success_status": 200,
-      "source_sha256": "78068ebf161aed7f324ef8c2b7bdfab542c4aef3ebe2fd0237b0f38c8701e248",
+      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
       "encoding": "application/json",
       "headers": []
     },
@@ -873,7 +873,7 @@
       "request_schema": "MemberInput",
       "response_schema": "Membership",
       "success_status": 201,
-      "source_sha256": "78068ebf161aed7f324ef8c2b7bdfab542c4aef3ebe2fd0237b0f38c8701e248",
+      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
       "encoding": "application/json",
       "headers": []
     },
@@ -911,7 +911,7 @@
       "request_schema": "MemberUpdate",
       "response_schema": "Membership",
       "success_status": 200,
-      "source_sha256": "78068ebf161aed7f324ef8c2b7bdfab542c4aef3ebe2fd0237b0f38c8701e248",
+      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
       "encoding": "application/json",
       "headers": []
     },
@@ -943,7 +943,7 @@
       "request_schema": null,
       "response_schema": "void",
       "success_status": 204,
-      "source_sha256": "78068ebf161aed7f324ef8c2b7bdfab542c4aef3ebe2fd0237b0f38c8701e248",
+      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
       "encoding": "application/json",
       "headers": []
     },
@@ -997,7 +997,7 @@
       "request_schema": null,
       "response_schema": "Page[Invitation]",
       "success_status": 200,
-      "source_sha256": "78068ebf161aed7f324ef8c2b7bdfab542c4aef3ebe2fd0237b0f38c8701e248",
+      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
       "encoding": "application/json",
       "headers": []
     },
@@ -1029,7 +1029,7 @@
       "request_schema": "InvitationInput",
       "response_schema": "InvitationCreated",
       "success_status": 201,
-      "source_sha256": "78068ebf161aed7f324ef8c2b7bdfab542c4aef3ebe2fd0237b0f38c8701e248",
+      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
       "encoding": "application/json",
       "headers": []
     },
@@ -1061,7 +1061,7 @@
       "request_schema": null,
       "response_schema": "void",
       "success_status": 204,
-      "source_sha256": "78068ebf161aed7f324ef8c2b7bdfab542c4aef3ebe2fd0237b0f38c8701e248",
+      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
       "encoding": "application/json",
       "headers": []
     },
@@ -1087,7 +1087,7 @@
       "request_schema": "InvitationToken",
       "response_schema": "InvitationPreview",
       "success_status": 200,
-      "source_sha256": "78068ebf161aed7f324ef8c2b7bdfab542c4aef3ebe2fd0237b0f38c8701e248",
+      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
       "encoding": "application/json",
       "headers": []
     },
@@ -1113,7 +1113,7 @@
       "request_schema": "InvitationToken",
       "response_schema": "Membership",
       "success_status": 201,
-      "source_sha256": "78068ebf161aed7f324ef8c2b7bdfab542c4aef3ebe2fd0237b0f38c8701e248",
+      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
       "encoding": "application/json",
       "headers": []
     },
@@ -1195,7 +1195,7 @@
       "request_schema": null,
       "response_schema": "Page[AgentConfiguration]",
       "success_status": 200,
-      "source_sha256": "a48d014095e064a192ec6ede3d8f8d3cd7bc607d87479c84c6c958b94c4f40d3",
+      "source_sha256": "7b2f32abe1a3ef8b5a8bf21950f0ad7ad955219b652f06293febfbe7ec3ff5e9",
       "encoding": "application/json",
       "headers": []
     },
@@ -1227,7 +1227,7 @@
       "request_schema": "AgentInput",
       "response_schema": "AgentConfiguration",
       "success_status": 201,
-      "source_sha256": "a48d014095e064a192ec6ede3d8f8d3cd7bc607d87479c84c6c958b94c4f40d3",
+      "source_sha256": "7b2f32abe1a3ef8b5a8bf21950f0ad7ad955219b652f06293febfbe7ec3ff5e9",
       "encoding": "application/json",
       "headers": []
     },
@@ -1265,7 +1265,7 @@
       "request_schema": "AgentInput",
       "response_schema": "AgentConfiguration",
       "success_status": 200,
-      "source_sha256": "a48d014095e064a192ec6ede3d8f8d3cd7bc607d87479c84c6c958b94c4f40d3",
+      "source_sha256": "7b2f32abe1a3ef8b5a8bf21950f0ad7ad955219b652f06293febfbe7ec3ff5e9",
       "encoding": "application/json",
       "headers": []
     },
@@ -1297,7 +1297,7 @@
       "request_schema": null,
       "response_schema": "AgentConfiguration",
       "success_status": 200,
-      "source_sha256": "a48d014095e064a192ec6ede3d8f8d3cd7bc607d87479c84c6c958b94c4f40d3",
+      "source_sha256": "7b2f32abe1a3ef8b5a8bf21950f0ad7ad955219b652f06293febfbe7ec3ff5e9",
       "encoding": "application/json",
       "headers": []
     },
@@ -1393,7 +1393,7 @@
       "request_schema": null,
       "response_schema": "Page[ChatThread]",
       "success_status": 200,
-      "source_sha256": "5dc592f21b58e946e6193255d62e19304abbf4f4bb2b3c935266547ac3571ca4",
+      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
       "encoding": "application/json",
       "headers": []
     },
@@ -1425,7 +1425,7 @@
       "request_schema": "ThreadInput",
       "response_schema": "ChatThread",
       "success_status": 201,
-      "source_sha256": "5dc592f21b58e946e6193255d62e19304abbf4f4bb2b3c935266547ac3571ca4",
+      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
       "encoding": "application/json",
       "headers": []
     },
@@ -1471,7 +1471,7 @@
       "request_schema": null,
       "response_schema": "Page[ChatMessage]",
       "success_status": 200,
-      "source_sha256": "5dc592f21b58e946e6193255d62e19304abbf4f4bb2b3c935266547ac3571ca4",
+      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
       "encoding": "application/json",
       "headers": []
     },
@@ -1509,7 +1509,7 @@
       "request_schema": "RunInput",
       "response_schema": "ChatRun",
       "success_status": 202,
-      "source_sha256": "5dc592f21b58e946e6193255d62e19304abbf4f4bb2b3c935266547ac3571ca4",
+      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
       "encoding": "application/json",
       "headers": []
     },
@@ -1541,7 +1541,7 @@
       "request_schema": null,
       "response_schema": "ChatRun",
       "success_status": 200,
-      "source_sha256": "5dc592f21b58e946e6193255d62e19304abbf4f4bb2b3c935266547ac3571ca4",
+      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
       "encoding": "application/json",
       "headers": []
     },
@@ -1573,7 +1573,7 @@
       "request_schema": null,
       "response_schema": "ChatRun",
       "success_status": 202,
-      "source_sha256": "5dc592f21b58e946e6193255d62e19304abbf4f4bb2b3c935266547ac3571ca4",
+      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
       "encoding": "application/json",
       "headers": []
     },
@@ -1605,7 +1605,7 @@
       "request_schema": null,
       "response_schema": "StreamEvent",
       "success_status": 200,
-      "source_sha256": "5dc592f21b58e946e6193255d62e19304abbf4f4bb2b3c935266547ac3571ca4",
+      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
       "encoding": "text/event-stream",
       "headers": [
         "Last-Event-ID (last fully processed opaque event ID)"
@@ -1645,7 +1645,7 @@
       "request_schema": null,
       "response_schema": "EvidenceResult",
       "success_status": 200,
-      "source_sha256": "5dc592f21b58e946e6193255d62e19304abbf4f4bb2b3c935266547ac3571ca4",
+      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
       "encoding": "application/json",
       "headers": []
     },
@@ -1691,7 +1691,7 @@
       "request_schema": null,
       "response_schema": "Page[ToolActivity]",
       "success_status": 200,
-      "source_sha256": "5dc592f21b58e946e6193255d62e19304abbf4f4bb2b3c935266547ac3571ca4",
+      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
       "encoding": "application/json",
       "headers": []
     },
@@ -1723,7 +1723,7 @@
       "request_schema": null,
       "response_schema": "AnswerAudit",
       "success_status": 200,
-      "source_sha256": "5dc592f21b58e946e6193255d62e19304abbf4f4bb2b3c935266547ac3571ca4",
+      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
       "encoding": "application/json",
       "headers": []
     },
@@ -1805,7 +1805,7 @@
       "request_schema": null,
       "response_schema": "Page[ChatFolder]",
       "success_status": 200,
-      "source_sha256": "1f48e23708e873f4d77b7aef6b19220779122a38ecff37cc35d42c8beb03c439",
+      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
       "encoding": "application/json",
       "headers": []
     },
@@ -1837,7 +1837,7 @@
       "request_schema": "FolderCreate",
       "response_schema": "ChatFolder",
       "success_status": 201,
-      "source_sha256": "1f48e23708e873f4d77b7aef6b19220779122a38ecff37cc35d42c8beb03c439",
+      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
       "encoding": "application/json",
       "headers": []
     },
@@ -1869,7 +1869,7 @@
       "request_schema": null,
       "response_schema": "ChatFolder",
       "success_status": 200,
-      "source_sha256": "1f48e23708e873f4d77b7aef6b19220779122a38ecff37cc35d42c8beb03c439",
+      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
       "encoding": "application/json",
       "headers": []
     },
@@ -1907,7 +1907,7 @@
       "request_schema": "FolderPatch",
       "response_schema": "ChatFolder",
       "success_status": 200,
-      "source_sha256": "1f48e23708e873f4d77b7aef6b19220779122a38ecff37cc35d42c8beb03c439",
+      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
       "encoding": "application/json",
       "headers": []
     },
@@ -1945,7 +1945,7 @@
       "request_schema": null,
       "response_schema": "void",
       "success_status": 204,
-      "source_sha256": "1f48e23708e873f4d77b7aef6b19220779122a38ecff37cc35d42c8beb03c439",
+      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
       "encoding": "application/json",
       "headers": []
     },
@@ -1977,7 +1977,7 @@
       "request_schema": null,
       "response_schema": "ChatThread",
       "success_status": 200,
-      "source_sha256": "1f48e23708e873f4d77b7aef6b19220779122a38ecff37cc35d42c8beb03c439",
+      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
       "encoding": "application/json",
       "headers": []
     },
@@ -2015,7 +2015,7 @@
       "request_schema": "ThreadPatch",
       "response_schema": "ChatThread",
       "success_status": 200,
-      "source_sha256": "1f48e23708e873f4d77b7aef6b19220779122a38ecff37cc35d42c8beb03c439",
+      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
       "encoding": "application/json",
       "headers": []
     },
@@ -2053,7 +2053,7 @@
       "request_schema": "TitleRequest",
       "response_schema": "TitleSuggestion",
       "success_status": 200,
-      "source_sha256": "1f48e23708e873f4d77b7aef6b19220779122a38ecff37cc35d42c8beb03c439",
+      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
       "encoding": "application/json",
       "headers": []
     },
@@ -2091,7 +2091,7 @@
       "request_schema": null,
       "response_schema": "CatalogProposal",
       "success_status": 200,
-      "source_sha256": "a4dd2cac278db6dba057272abc47d0316d32232a85701ece8a8c71fea4145864",
+      "source_sha256": "dcafa41a19361f8692403adc1340b580d06cb8987fe357d0090a4b61774cfcd9",
       "encoding": "application/json",
       "headers": []
     },
@@ -2135,7 +2135,7 @@
       "request_schema": "ProposalConfirmation",
       "response_schema": "CatalogProposal",
       "success_status": 200,
-      "source_sha256": "a4dd2cac278db6dba057272abc47d0316d32232a85701ece8a8c71fea4145864",
+      "source_sha256": "dcafa41a19361f8692403adc1340b580d06cb8987fe357d0090a4b61774cfcd9",
       "encoding": "application/json",
       "headers": []
     },
@@ -2179,7 +2179,7 @@
       "request_schema": "ProposalRevision",
       "response_schema": "CatalogProposal",
       "success_status": 200,
-      "source_sha256": "a4dd2cac278db6dba057272abc47d0316d32232a85701ece8a8c71fea4145864",
+      "source_sha256": "dcafa41a19361f8692403adc1340b580d06cb8987fe357d0090a4b61774cfcd9",
       "encoding": "application/json",
       "headers": []
     },
@@ -2205,7 +2205,7 @@
       "request_schema": null,
       "response_schema": "Configuration",
       "success_status": 200,
-      "source_sha256": "24064183288409805dfa06391b5884e4ad2a3ebc3ac1d90497a03f8cfe3183cb",
+      "source_sha256": "c881dab3a834eb9f08e82f63aa1bc7dbe8f67d3a6aa23e2bbd2a5aa352ce0491",
       "encoding": "application/json",
       "headers": []
     },
@@ -2237,7 +2237,7 @@
       "request_schema": "ProviderInput",
       "response_schema": "ModelProvider",
       "success_status": 201,
-      "source_sha256": "24064183288409805dfa06391b5884e4ad2a3ebc3ac1d90497a03f8cfe3183cb",
+      "source_sha256": "c881dab3a834eb9f08e82f63aa1bc7dbe8f67d3a6aa23e2bbd2a5aa352ce0491",
       "encoding": "application/json",
       "headers": []
     },
@@ -2275,7 +2275,7 @@
       "request_schema": "ProviderInput",
       "response_schema": "ModelProvider",
       "success_status": 200,
-      "source_sha256": "24064183288409805dfa06391b5884e4ad2a3ebc3ac1d90497a03f8cfe3183cb",
+      "source_sha256": "c881dab3a834eb9f08e82f63aa1bc7dbe8f67d3a6aa23e2bbd2a5aa352ce0491",
       "encoding": "application/json",
       "headers": []
     },
@@ -2307,7 +2307,7 @@
       "request_schema": null,
       "response_schema": "ValidationResult",
       "success_status": 200,
-      "source_sha256": "24064183288409805dfa06391b5884e4ad2a3ebc3ac1d90497a03f8cfe3183cb",
+      "source_sha256": "c881dab3a834eb9f08e82f63aa1bc7dbe8f67d3a6aa23e2bbd2a5aa352ce0491",
       "encoding": "application/json",
       "headers": []
     },
@@ -2368,7 +2368,7 @@
       "request_schema": null,
       "response_schema": "IdentityProviderPage",
       "success_status": 200,
-      "source_sha256": "8760ebe044fa314ec965b8b20e0ab3a782bc5b1dc64a6cbf618aed6ad9c9ed5b",
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
       "encoding": "application/json",
       "headers": []
     },
@@ -2400,7 +2400,7 @@
       "request_schema": "IdentityProviderInput",
       "response_schema": "IdentityProvider",
       "success_status": 201,
-      "source_sha256": "8760ebe044fa314ec965b8b20e0ab3a782bc5b1dc64a6cbf618aed6ad9c9ed5b",
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
       "encoding": "application/json",
       "headers": []
     },
@@ -2432,7 +2432,7 @@
       "request_schema": null,
       "response_schema": "IdentityProvider",
       "success_status": 200,
-      "source_sha256": "8760ebe044fa314ec965b8b20e0ab3a782bc5b1dc64a6cbf618aed6ad9c9ed5b",
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
       "encoding": "application/json",
       "headers": []
     },
@@ -2470,7 +2470,7 @@
       "request_schema": "IdentityProviderPatch",
       "response_schema": "IdentityProvider",
       "success_status": 200,
-      "source_sha256": "8760ebe044fa314ec965b8b20e0ab3a782bc5b1dc64a6cbf618aed6ad9c9ed5b",
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
       "encoding": "application/json",
       "headers": []
     },
@@ -2508,7 +2508,7 @@
       "request_schema": "IdentityRevision",
       "response_schema": "IdentityValidation",
       "success_status": 201,
-      "source_sha256": "8760ebe044fa314ec965b8b20e0ab3a782bc5b1dc64a6cbf618aed6ad9c9ed5b",
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
       "encoding": "application/json",
       "headers": []
     },
@@ -2546,7 +2546,7 @@
       "request_schema": null,
       "response_schema": "IdentityValidation",
       "success_status": 200,
-      "source_sha256": "8760ebe044fa314ec965b8b20e0ab3a782bc5b1dc64a6cbf618aed6ad9c9ed5b",
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
       "encoding": "application/json",
       "headers": []
     },
@@ -2599,7 +2599,7 @@
       "request_schema": null,
       "response_schema": "IdentityGroupPage",
       "success_status": 200,
-      "source_sha256": "8760ebe044fa314ec965b8b20e0ab3a782bc5b1dc64a6cbf618aed6ad9c9ed5b",
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
       "encoding": "application/json",
       "headers": []
     },
@@ -2666,7 +2666,7 @@
       "request_schema": null,
       "response_schema": "IdentityMappingPage",
       "success_status": 200,
-      "source_sha256": "8760ebe044fa314ec965b8b20e0ab3a782bc5b1dc64a6cbf618aed6ad9c9ed5b",
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
       "encoding": "application/json",
       "headers": []
     },
@@ -2704,7 +2704,7 @@
       "request_schema": "IdentityMappingInput",
       "response_schema": "IdentityMapping",
       "success_status": 201,
-      "source_sha256": "8760ebe044fa314ec965b8b20e0ab3a782bc5b1dc64a6cbf618aed6ad9c9ed5b",
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
       "encoding": "application/json",
       "headers": []
     },
@@ -2748,7 +2748,7 @@
       "request_schema": "IdentityMappingInput",
       "response_schema": "IdentityMapping",
       "success_status": 200,
-      "source_sha256": "8760ebe044fa314ec965b8b20e0ab3a782bc5b1dc64a6cbf618aed6ad9c9ed5b",
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
       "encoding": "application/json",
       "headers": []
     },
@@ -2792,7 +2792,7 @@
       "request_schema": null,
       "response_schema": "void",
       "success_status": 204,
-      "source_sha256": "8760ebe044fa314ec965b8b20e0ab3a782bc5b1dc64a6cbf618aed6ad9c9ed5b",
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
       "encoding": "application/json",
       "headers": []
     },
@@ -2830,7 +2830,7 @@
       "request_schema": "IdentityActivation",
       "response_schema": "IdentityProvider",
       "success_status": 200,
-      "source_sha256": "8760ebe044fa314ec965b8b20e0ab3a782bc5b1dc64a6cbf618aed6ad9c9ed5b",
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
       "encoding": "application/json",
       "headers": []
     },
@@ -2868,7 +2868,7 @@
       "request_schema": "IdentityRevision",
       "response_schema": "IdentityProvider",
       "success_status": 200,
-      "source_sha256": "8760ebe044fa314ec965b8b20e0ab3a782bc5b1dc64a6cbf618aed6ad9c9ed5b",
+      "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
       "encoding": "application/json",
       "headers": []
     },
@@ -2900,7 +2900,7 @@
       "request_schema": "MessageSelection",
       "response_schema": "EvidenceManifest",
       "success_status": 200,
-      "source_sha256": "f81c49675e381974a922286f33bfe75f5154961db47b0dedfae2f33b186ad90e",
+      "source_sha256": "95cfd2e582d6f774143d610cb5d9e155819a578a324de1f05a34770ed610fe73",
       "encoding": "application/json",
       "headers": []
     },
@@ -2932,7 +2932,7 @@
       "request_schema": "ExportReviewRequest",
       "response_schema": "ExportReview",
       "success_status": 201,
-      "source_sha256": "b87a32c2305c14473f367c2374645af828fba99bd5b99c624742c3510c2d6c31",
+      "source_sha256": "397ef3c46d85f5242b9d086b35e6424e771630aea19a40ddddf146526993deef",
       "encoding": "application/json",
       "headers": []
     },
@@ -2964,7 +2964,7 @@
       "request_schema": "ExportCreate",
       "response_schema": "Export",
       "success_status": 201,
-      "source_sha256": "b87a32c2305c14473f367c2374645af828fba99bd5b99c624742c3510c2d6c31",
+      "source_sha256": "397ef3c46d85f5242b9d086b35e6424e771630aea19a40ddddf146526993deef",
       "encoding": "application/json",
       "headers": []
     },
@@ -3018,7 +3018,7 @@
       "request_schema": null,
       "response_schema": "ExportPage",
       "success_status": 200,
-      "source_sha256": "b87a32c2305c14473f367c2374645af828fba99bd5b99c624742c3510c2d6c31",
+      "source_sha256": "397ef3c46d85f5242b9d086b35e6424e771630aea19a40ddddf146526993deef",
       "encoding": "application/json",
       "headers": []
     },
@@ -3050,7 +3050,7 @@
       "request_schema": null,
       "response_schema": "Export",
       "success_status": 200,
-      "source_sha256": "b87a32c2305c14473f367c2374645af828fba99bd5b99c624742c3510c2d6c31",
+      "source_sha256": "397ef3c46d85f5242b9d086b35e6424e771630aea19a40ddddf146526993deef",
       "encoding": "application/json",
       "headers": []
     },
@@ -3082,7 +3082,7 @@
       "request_schema": null,
       "response_schema": "BinaryDownload",
       "success_status": 200,
-      "source_sha256": "b87a32c2305c14473f367c2374645af828fba99bd5b99c624742c3510c2d6c31",
+      "source_sha256": "397ef3c46d85f5242b9d086b35e6424e771630aea19a40ddddf146526993deef",
       "encoding": "binary",
       "headers": []
     },
@@ -3114,7 +3114,7 @@
       "request_schema": null,
       "response_schema": "void",
       "success_status": 204,
-      "source_sha256": "b87a32c2305c14473f367c2374645af828fba99bd5b99c624742c3510c2d6c31",
+      "source_sha256": "397ef3c46d85f5242b9d086b35e6424e771630aea19a40ddddf146526993deef",
       "encoding": "application/json",
       "headers": []
     },
@@ -3146,7 +3146,7 @@
       "request_schema": null,
       "response_schema": "AttachmentCapabilities",
       "success_status": 200,
-      "source_sha256": "dca4473f39f98a5e24f4717c18df637b5ae747304f52a0ecc91fc98977f4fda2",
+      "source_sha256": "f2a07d34a1db6a0ab35a7550fe5ec47b49bda9879df8289eadc4f8f6074dfe79",
       "encoding": "application/json",
       "headers": []
     },
@@ -3178,7 +3178,7 @@
       "request_schema": "AttachmentUpload",
       "response_schema": "AttachmentView",
       "success_status": 202,
-      "source_sha256": "dca4473f39f98a5e24f4717c18df637b5ae747304f52a0ecc91fc98977f4fda2",
+      "source_sha256": "f2a07d34a1db6a0ab35a7550fe5ec47b49bda9879df8289eadc4f8f6074dfe79",
       "encoding": "multipart/form-data",
       "headers": [
         "Idempotency-Key (required; caller-supplied stable operation key)"
@@ -3247,7 +3247,7 @@
       "request_schema": null,
       "response_schema": "AttachmentPage",
       "success_status": 200,
-      "source_sha256": "dca4473f39f98a5e24f4717c18df637b5ae747304f52a0ecc91fc98977f4fda2",
+      "source_sha256": "f2a07d34a1db6a0ab35a7550fe5ec47b49bda9879df8289eadc4f8f6074dfe79",
       "encoding": "application/json",
       "headers": []
     },
@@ -3285,7 +3285,7 @@
       "request_schema": null,
       "response_schema": "AttachmentView",
       "success_status": 200,
-      "source_sha256": "dca4473f39f98a5e24f4717c18df637b5ae747304f52a0ecc91fc98977f4fda2",
+      "source_sha256": "f2a07d34a1db6a0ab35a7550fe5ec47b49bda9879df8289eadc4f8f6074dfe79",
       "encoding": "application/json",
       "headers": []
     },
@@ -3323,7 +3323,7 @@
       "request_schema": null,
       "response_schema": "BinaryDownload",
       "success_status": 200,
-      "source_sha256": "dca4473f39f98a5e24f4717c18df637b5ae747304f52a0ecc91fc98977f4fda2",
+      "source_sha256": "f2a07d34a1db6a0ab35a7550fe5ec47b49bda9879df8289eadc4f8f6074dfe79",
       "encoding": "binary",
       "headers": []
     },
@@ -3382,7 +3382,7 @@
       "request_schema": null,
       "response_schema": "PrivateChunkPage",
       "success_status": 200,
-      "source_sha256": "dca4473f39f98a5e24f4717c18df637b5ae747304f52a0ecc91fc98977f4fda2",
+      "source_sha256": "f2a07d34a1db6a0ab35a7550fe5ec47b49bda9879df8289eadc4f8f6074dfe79",
       "encoding": "application/json",
       "headers": []
     },
@@ -3426,7 +3426,7 @@
       "request_schema": "AttachmentRevision",
       "response_schema": "AttachmentView",
       "success_status": 200,
-      "source_sha256": "dca4473f39f98a5e24f4717c18df637b5ae747304f52a0ecc91fc98977f4fda2",
+      "source_sha256": "f2a07d34a1db6a0ab35a7550fe5ec47b49bda9879df8289eadc4f8f6074dfe79",
       "encoding": "application/json",
       "headers": []
     },
@@ -3470,7 +3470,7 @@
       "request_schema": "AttachmentRevision",
       "response_schema": "AttachmentView",
       "success_status": 202,
-      "source_sha256": "dca4473f39f98a5e24f4717c18df637b5ae747304f52a0ecc91fc98977f4fda2",
+      "source_sha256": "f2a07d34a1db6a0ab35a7550fe5ec47b49bda9879df8289eadc4f8f6074dfe79",
       "encoding": "application/json",
       "headers": [
         "Idempotency-Key (required; caller-supplied stable operation key)"
@@ -3516,7 +3516,7 @@
       "request_schema": null,
       "response_schema": "void",
       "success_status": 204,
-      "source_sha256": "dca4473f39f98a5e24f4717c18df637b5ae747304f52a0ecc91fc98977f4fda2",
+      "source_sha256": "f2a07d34a1db6a0ab35a7550fe5ec47b49bda9879df8289eadc4f8f6074dfe79",
       "encoding": "application/json",
       "headers": []
     },
@@ -3560,7 +3560,7 @@
       "request_schema": "AttachmentPromotionInput",
       "response_schema": "AttachmentPromotionView",
       "success_status": 201,
-      "source_sha256": "dca4473f39f98a5e24f4717c18df637b5ae747304f52a0ecc91fc98977f4fda2",
+      "source_sha256": "f2a07d34a1db6a0ab35a7550fe5ec47b49bda9879df8289eadc4f8f6074dfe79",
       "encoding": "application/json",
       "headers": [
         "Idempotency-Key (required; caller-supplied stable operation key)"
@@ -3595,7 +3595,7 @@
       "request_schema": null,
       "response_schema": "KnowledgeRoles",
       "success_status": 200,
-      "source_sha256": "b7e95c91fb922c58de3be713ea0ab19ada34413e92e013b94c396772489335ec",
+      "source_sha256": "98f30985358551a7fa1b1a08e51670f535401a485b435dae3f028c45999c8dc8",
       "encoding": "application/json",
       "headers": []
     },
@@ -3628,7 +3628,7 @@
       "request_schema": null,
       "response_schema": "Page[KnowledgeConnection]",
       "success_status": 200,
-      "source_sha256": "b7e95c91fb922c58de3be713ea0ab19ada34413e92e013b94c396772489335ec",
+      "source_sha256": "98f30985358551a7fa1b1a08e51670f535401a485b435dae3f028c45999c8dc8",
       "encoding": "application/json",
       "headers": []
     },
@@ -3660,7 +3660,7 @@
       "request_schema": "KnowledgeConnectionInput",
       "response_schema": "KnowledgeConnection",
       "success_status": 201,
-      "source_sha256": "b7e95c91fb922c58de3be713ea0ab19ada34413e92e013b94c396772489335ec",
+      "source_sha256": "98f30985358551a7fa1b1a08e51670f535401a485b435dae3f028c45999c8dc8",
       "encoding": "application/json",
       "headers": []
     },
@@ -3698,7 +3698,7 @@
       "request_schema": "KnowledgeConnectionInput",
       "response_schema": "KnowledgeConnection",
       "success_status": 200,
-      "source_sha256": "b7e95c91fb922c58de3be713ea0ab19ada34413e92e013b94c396772489335ec",
+      "source_sha256": "98f30985358551a7fa1b1a08e51670f535401a485b435dae3f028c45999c8dc8",
       "encoding": "application/json",
       "headers": []
     },
@@ -3730,7 +3730,7 @@
       "request_schema": null,
       "response_schema": "KnowledgeConnection",
       "success_status": 200,
-      "source_sha256": "b7e95c91fb922c58de3be713ea0ab19ada34413e92e013b94c396772489335ec",
+      "source_sha256": "98f30985358551a7fa1b1a08e51670f535401a485b435dae3f028c45999c8dc8",
       "encoding": "application/json",
       "headers": []
     },
@@ -3768,7 +3768,7 @@
       "request_schema": null,
       "response_schema": "Deleted",
       "success_status": 200,
-      "source_sha256": "b7e95c91fb922c58de3be713ea0ab19ada34413e92e013b94c396772489335ec",
+      "source_sha256": "98f30985358551a7fa1b1a08e51670f535401a485b435dae3f028c45999c8dc8",
       "encoding": "application/json",
       "headers": []
     },
@@ -3794,7 +3794,7 @@
       "request_schema": "SourceUpload",
       "response_schema": "UploadResponse",
       "success_status": 201,
-      "source_sha256": "180eaf66c2d64a789d531f17469a1264515524efa5ca2a3e0ae84f93cbadca13",
+      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
       "encoding": "multipart/form-data",
       "headers": []
     },
@@ -3826,7 +3826,7 @@
       "request_schema": "SearchRequest",
       "response_schema": "SearchResponse",
       "success_status": 200,
-      "source_sha256": "180eaf66c2d64a789d531f17469a1264515524efa5ca2a3e0ae84f93cbadca13",
+      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
       "encoding": "application/json",
       "headers": []
     },
@@ -3858,7 +3858,7 @@
       "request_schema": "QueryRequest",
       "response_schema": "QueryResponse",
       "success_status": 200,
-      "source_sha256": "180eaf66c2d64a789d531f17469a1264515524efa5ca2a3e0ae84f93cbadca13",
+      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
       "encoding": "application/json",
       "headers": []
     },
@@ -3890,7 +3890,7 @@
       "request_schema": null,
       "response_schema": "DatasetSchema",
       "success_status": 200,
-      "source_sha256": "180eaf66c2d64a789d531f17469a1264515524efa5ca2a3e0ae84f93cbadca13",
+      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
       "encoding": "application/json",
       "headers": []
     },
@@ -3923,7 +3923,7 @@
       "request_schema": null,
       "response_schema": "Lineage",
       "success_status": 200,
-      "source_sha256": "180eaf66c2d64a789d531f17469a1264515524efa5ca2a3e0ae84f93cbadca13",
+      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
       "encoding": "application/json",
       "headers": []
     },
@@ -3990,7 +3990,7 @@
       "request_schema": null,
       "response_schema": "DocumentChunks",
       "success_status": 200,
-      "source_sha256": "180eaf66c2d64a789d531f17469a1264515524efa5ca2a3e0ae84f93cbadca13",
+      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
       "encoding": "application/json",
       "headers": []
     },
@@ -4022,7 +4022,7 @@
       "request_schema": null,
       "response_schema": "BinaryDownload",
       "success_status": 200,
-      "source_sha256": "180eaf66c2d64a789d531f17469a1264515524efa5ca2a3e0ae84f93cbadca13",
+      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
       "encoding": "binary",
       "headers": []
     },
@@ -4060,7 +4060,7 @@
       "request_schema": "DocumentReingestInput",
       "response_schema": "ContentUpdate",
       "success_status": 201,
-      "source_sha256": "180eaf66c2d64a789d531f17469a1264515524efa5ca2a3e0ae84f93cbadca13",
+      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
       "encoding": "application/json",
       "headers": [
         "If-Match (unquoted digest/snapshot helper argument; quoted wire header)",
@@ -4108,7 +4108,7 @@
       "request_schema": "TableReingestInput",
       "response_schema": "ContentUpdate",
       "success_status": 201,
-      "source_sha256": "180eaf66c2d64a789d531f17469a1264515524efa5ca2a3e0ae84f93cbadca13",
+      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
       "encoding": "application/json",
       "headers": [
         "If-Match (unquoted digest/snapshot helper argument; quoted wire header)"
@@ -4142,7 +4142,7 @@
       "request_schema": "DocumentReplacement",
       "response_schema": "ContentUpdate",
       "success_status": 201,
-      "source_sha256": "180eaf66c2d64a789d531f17469a1264515524efa5ca2a3e0ae84f93cbadca13",
+      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
       "encoding": "multipart/form-data",
       "headers": [
         "If-Match (unquoted digest/snapshot helper argument; quoted wire header)",
@@ -4184,7 +4184,7 @@
       "request_schema": "TableReplacement",
       "response_schema": "ContentUpdate",
       "success_status": 201,
-      "source_sha256": "180eaf66c2d64a789d531f17469a1264515524efa5ca2a3e0ae84f93cbadca13",
+      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
       "encoding": "multipart/form-data",
       "headers": [
         "If-Match (unquoted digest/snapshot helper argument; quoted wire header)"
@@ -4218,7 +4218,7 @@
       "request_schema": "KnowledgeIntentInput",
       "response_schema": "KnowledgeIntent",
       "success_status": 201,
-      "source_sha256": "db906e8cfc5f3bfebb89ae11201720ae5b16494b8d4569c704479d2db1effeeb",
+      "source_sha256": "c2b842b54a37b4d6672396ea9a3cc7e30a46fafc6bf8e7cdd8176f01c6618f56",
       "encoding": "application/json",
       "headers": []
     },
@@ -4250,7 +4250,7 @@
       "request_schema": null,
       "response_schema": "KnowledgeIntent",
       "success_status": 200,
-      "source_sha256": "db906e8cfc5f3bfebb89ae11201720ae5b16494b8d4569c704479d2db1effeeb",
+      "source_sha256": "c2b842b54a37b4d6672396ea9a3cc7e30a46fafc6bf8e7cdd8176f01c6618f56",
       "encoding": "application/json",
       "headers": []
     },
@@ -4288,7 +4288,7 @@
       "request_schema": "KnowledgeConfirmation",
       "response_schema": "KnowledgeCommitOutcome",
       "success_status": 200,
-      "source_sha256": "db906e8cfc5f3bfebb89ae11201720ae5b16494b8d4569c704479d2db1effeeb",
+      "source_sha256": "c2b842b54a37b4d6672396ea9a3cc7e30a46fafc6bf8e7cdd8176f01c6618f56",
       "success_statuses": [
         200,
         202
@@ -4332,7 +4332,7 @@
       "request_schema": "KnowledgeCancellation",
       "response_schema": "KnowledgeIntent",
       "success_status": 200,
-      "source_sha256": "db906e8cfc5f3bfebb89ae11201720ae5b16494b8d4569c704479d2db1effeeb",
+      "source_sha256": "c2b842b54a37b4d6672396ea9a3cc7e30a46fafc6bf8e7cdd8176f01c6618f56",
       "encoding": "application/json",
       "headers": []
     },
@@ -4400,7 +4400,7 @@
       "request_schema": null,
       "response_schema": "KnowledgeItemPage",
       "success_status": 200,
-      "source_sha256": "db906e8cfc5f3bfebb89ae11201720ae5b16494b8d4569c704479d2db1effeeb",
+      "source_sha256": "c2b842b54a37b4d6672396ea9a3cc7e30a46fafc6bf8e7cdd8176f01c6618f56",
       "encoding": "application/json",
       "headers": []
     },
@@ -4432,7 +4432,7 @@
       "request_schema": null,
       "response_schema": "KnowledgeItemView",
       "success_status": 200,
-      "source_sha256": "db906e8cfc5f3bfebb89ae11201720ae5b16494b8d4569c704479d2db1effeeb",
+      "source_sha256": "c2b842b54a37b4d6672396ea9a3cc7e30a46fafc6bf8e7cdd8176f01c6618f56",
       "encoding": "application/json",
       "headers": []
     },
@@ -4470,9 +4470,43 @@
       "request_schema": null,
       "response_schema": "KnowledgeItemView",
       "success_status": 200,
-      "source_sha256": "db906e8cfc5f3bfebb89ae11201720ae5b16494b8d4569c704479d2db1effeeb",
+      "source_sha256": "c2b842b54a37b4d6672396ea9a3cc7e30a46fafc6bf8e7cdd8176f01c6618f56",
       "encoding": "application/json",
       "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/datasets/{dataset_id}/files",
+      "category": "canonical",
+      "operation": "DatasetFilesController.append",
+      "source": "backend/src/koinon/knowledge/dataset_append_controller.py",
+      "line": 22,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "dataset_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "append_dataset_file",
+      "sdk_typescript": "dataset.appendFile",
+      "sdk_java": "client.datasets.appendFile",
+      "request_schema": "DatasetFileUpload",
+      "response_schema": "DatasetFileAppendResult",
+      "success_status": 201,
+      "source_sha256": "a0f9332f6af606eb2ac9dee13b363bc1f5c9f6fc312d67b92ac8286164853eb2",
+      "encoding": "multipart/form-data",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
     },
     {
       "method": "GET",
@@ -4550,7 +4584,7 @@
       "request_schema": null,
       "response_schema": "IndexPage",
       "success_status": 200,
-      "source_sha256": "8581dbd46bd032148cb1a434e562103d4628d7017b31d24d85ca63dc59572bf6",
+      "source_sha256": "290184a3a98ee053c685543baa405ab1b40071f064b1c4f9f6b7831ae4c9b014",
       "encoding": "application/json",
       "headers": []
     },
@@ -4630,7 +4664,7 @@
       "request_schema": null,
       "response_schema": "NativeIndexPage",
       "success_status": 200,
-      "source_sha256": "8581dbd46bd032148cb1a434e562103d4628d7017b31d24d85ca63dc59572bf6",
+      "source_sha256": "290184a3a98ee053c685543baa405ab1b40071f064b1c4f9f6b7831ae4c9b014",
       "encoding": "application/json",
       "headers": []
     },
@@ -4674,7 +4708,7 @@
       "request_schema": null,
       "response_schema": "NativeIndexChoice",
       "success_status": 200,
-      "source_sha256": "8581dbd46bd032148cb1a434e562103d4628d7017b31d24d85ca63dc59572bf6",
+      "source_sha256": "290184a3a98ee053c685543baa405ab1b40071f064b1c4f9f6b7831ae4c9b014",
       "encoding": "application/json",
       "headers": []
     },
@@ -4706,7 +4740,7 @@
       "request_schema": null,
       "response_schema": "KnowledgeIndexView",
       "success_status": 200,
-      "source_sha256": "8581dbd46bd032148cb1a434e562103d4628d7017b31d24d85ca63dc59572bf6",
+      "source_sha256": "290184a3a98ee053c685543baa405ab1b40071f064b1c4f9f6b7831ae4c9b014",
       "encoding": "application/json",
       "headers": []
     },
@@ -4738,7 +4772,7 @@
       "request_schema": "IndexPlanInput",
       "response_schema": "IndexPlanView",
       "success_status": 200,
-      "source_sha256": "8581dbd46bd032148cb1a434e562103d4628d7017b31d24d85ca63dc59572bf6",
+      "source_sha256": "290184a3a98ee053c685543baa405ab1b40071f064b1c4f9f6b7831ae4c9b014",
       "encoding": "application/json",
       "headers": []
     },
@@ -4770,7 +4804,7 @@
       "request_schema": "IndexCreateInput",
       "response_schema": "IndexJobView",
       "success_status": 202,
-      "source_sha256": "8581dbd46bd032148cb1a434e562103d4628d7017b31d24d85ca63dc59572bf6",
+      "source_sha256": "290184a3a98ee053c685543baa405ab1b40071f064b1c4f9f6b7831ae4c9b014",
       "encoding": "application/json",
       "headers": [
         "Idempotency-Key (required; caller-supplied stable operation key)"
@@ -4810,7 +4844,7 @@
       "request_schema": "IndexActivateInput",
       "response_schema": "KnowledgeIndexView",
       "success_status": 200,
-      "source_sha256": "8581dbd46bd032148cb1a434e562103d4628d7017b31d24d85ca63dc59572bf6",
+      "source_sha256": "290184a3a98ee053c685543baa405ab1b40071f064b1c4f9f6b7831ae4c9b014",
       "encoding": "application/json",
       "headers": []
     },
@@ -4848,7 +4882,7 @@
       "request_schema": "IndexRevisionInput",
       "response_schema": "KnowledgeIndexView",
       "success_status": 200,
-      "source_sha256": "8581dbd46bd032148cb1a434e562103d4628d7017b31d24d85ca63dc59572bf6",
+      "source_sha256": "290184a3a98ee053c685543baa405ab1b40071f064b1c4f9f6b7831ae4c9b014",
       "encoding": "application/json",
       "headers": []
     },
@@ -4886,7 +4920,7 @@
       "request_schema": "IndexRevisionInput",
       "response_schema": "IndexJobView",
       "success_status": 202,
-      "source_sha256": "8581dbd46bd032148cb1a434e562103d4628d7017b31d24d85ca63dc59572bf6",
+      "source_sha256": "290184a3a98ee053c685543baa405ab1b40071f064b1c4f9f6b7831ae4c9b014",
       "encoding": "application/json",
       "headers": [
         "Idempotency-Key (required; caller-supplied stable operation key)"
@@ -5207,7 +5241,7 @@
       "request_schema": null,
       "response_schema": "UserProfile",
       "success_status": 200,
-      "source_sha256": "8859a967d4f404a5aa175d4bcea17e3106c200723424f9ddb6a99194b23b1940",
+      "source_sha256": "9edd084d7930a5e757937bcd579fabc4f163501c49c81d0d76473c2a52db5ecb",
       "encoding": "application/json",
       "headers": []
     },
@@ -5233,7 +5267,7 @@
       "request_schema": "ProfileUpdate",
       "response_schema": "UserProfile",
       "success_status": 200,
-      "source_sha256": "8859a967d4f404a5aa175d4bcea17e3106c200723424f9ddb6a99194b23b1940",
+      "source_sha256": "9edd084d7930a5e757937bcd579fabc4f163501c49c81d0d76473c2a52db5ecb",
       "encoding": "application/json",
       "headers": []
     },
@@ -5252,7 +5286,7 @@
       "request_schema": null,
       "response_schema": "BinaryDownload",
       "success_status": 200,
-      "source_sha256": "8859a967d4f404a5aa175d4bcea17e3106c200723424f9ddb6a99194b23b1940",
+      "source_sha256": "9edd084d7930a5e757937bcd579fabc4f163501c49c81d0d76473c2a52db5ecb",
       "encoding": "binary",
       "headers": [
         "If-None-Match (optional; avatars only)"
@@ -5273,7 +5307,7 @@
       "request_schema": "AvatarUpload",
       "response_schema": "UserProfile",
       "success_status": 200,
-      "source_sha256": "8859a967d4f404a5aa175d4bcea17e3106c200723424f9ddb6a99194b23b1940",
+      "source_sha256": "9edd084d7930a5e757937bcd579fabc4f163501c49c81d0d76473c2a52db5ecb",
       "encoding": "image/png|image/jpeg|image/webp",
       "headers": []
     },
@@ -5292,7 +5326,7 @@
       "request_schema": null,
       "response_schema": "UserProfile",
       "success_status": 200,
-      "source_sha256": "8859a967d4f404a5aa175d4bcea17e3106c200723424f9ddb6a99194b23b1940",
+      "source_sha256": "9edd084d7930a5e757937bcd579fabc4f163501c49c81d0d76473c2a52db5ecb",
       "encoding": "application/json",
       "headers": []
     },
@@ -5346,7 +5380,7 @@
       "request_schema": null,
       "response_schema": "Page[Person]",
       "success_status": 200,
-      "source_sha256": "8859a967d4f404a5aa175d4bcea17e3106c200723424f9ddb6a99194b23b1940",
+      "source_sha256": "9edd084d7930a5e757937bcd579fabc4f163501c49c81d0d76473c2a52db5ecb",
       "encoding": "application/json",
       "headers": []
     },
@@ -5385,7 +5419,7 @@
       "request_schema": null,
       "response_schema": "BinaryDownload",
       "success_status": 200,
-      "source_sha256": "8859a967d4f404a5aa175d4bcea17e3106c200723424f9ddb6a99194b23b1940",
+      "source_sha256": "9edd084d7930a5e757937bcd579fabc4f163501c49c81d0d76473c2a52db5ecb",
       "encoding": "binary",
       "headers": [
         "If-None-Match (optional; avatars only)"
@@ -5419,7 +5453,7 @@
       "request_schema": "ShareReviewInput",
       "response_schema": "ShareReview",
       "success_status": 201,
-      "source_sha256": "a64efa9420dd82c62f9755fe2bb73ad9024aa1d2b28c18e8f0c95aad0e0cef14",
+      "source_sha256": "21b4c891e79bd778f6cda460b19de0604c65905193342c0e16918bc700d95213",
       "encoding": "application/json",
       "headers": []
     },
@@ -5451,7 +5485,7 @@
       "request_schema": "ShareCreate",
       "response_schema": "Share",
       "success_status": 201,
-      "source_sha256": "a64efa9420dd82c62f9755fe2bb73ad9024aa1d2b28c18e8f0c95aad0e0cef14",
+      "source_sha256": "21b4c891e79bd778f6cda460b19de0604c65905193342c0e16918bc700d95213",
       "encoding": "application/json",
       "headers": []
     },
@@ -5505,7 +5539,7 @@
       "request_schema": null,
       "response_schema": "SharePage",
       "success_status": 200,
-      "source_sha256": "a64efa9420dd82c62f9755fe2bb73ad9024aa1d2b28c18e8f0c95aad0e0cef14",
+      "source_sha256": "21b4c891e79bd778f6cda460b19de0604c65905193342c0e16918bc700d95213",
       "encoding": "application/json",
       "headers": []
     },
@@ -5537,7 +5571,7 @@
       "request_schema": null,
       "response_schema": "SharedConversation",
       "success_status": 200,
-      "source_sha256": "a64efa9420dd82c62f9755fe2bb73ad9024aa1d2b28c18e8f0c95aad0e0cef14",
+      "source_sha256": "21b4c891e79bd778f6cda460b19de0604c65905193342c0e16918bc700d95213",
       "encoding": "application/json",
       "headers": []
     },
@@ -5569,7 +5603,7 @@
       "request_schema": null,
       "response_schema": "void",
       "success_status": 204,
-      "source_sha256": "a64efa9420dd82c62f9755fe2bb73ad9024aa1d2b28c18e8f0c95aad0e0cef14",
+      "source_sha256": "21b4c891e79bd778f6cda460b19de0604c65905193342c0e16918bc700d95213",
       "encoding": "application/json",
       "headers": []
     },
@@ -5631,7 +5665,7 @@
       "request_schema": null,
       "response_schema": "Page[PersonalToken]",
       "success_status": 200,
-      "source_sha256": "c93b8bf3e002553761a30725f8b958dd3440496124f3678bf6e64464fe185ef5",
+      "source_sha256": "28820a6b2d6d8ac06c34dfc982ae8156a1e15091279ab5a60fb225d039ca242c",
       "encoding": "application/json",
       "headers": []
     },
@@ -5664,7 +5698,7 @@
       "request_schema": null,
       "response_schema": "TokenScopeOptions",
       "success_status": 200,
-      "source_sha256": "c93b8bf3e002553761a30725f8b958dd3440496124f3678bf6e64464fe185ef5",
+      "source_sha256": "28820a6b2d6d8ac06c34dfc982ae8156a1e15091279ab5a60fb225d039ca242c",
       "encoding": "application/json",
       "headers": []
     },
@@ -5690,7 +5724,7 @@
       "request_schema": "TokenInput",
       "response_schema": "TokenCreated",
       "success_status": 201,
-      "source_sha256": "c93b8bf3e002553761a30725f8b958dd3440496124f3678bf6e64464fe185ef5",
+      "source_sha256": "28820a6b2d6d8ac06c34dfc982ae8156a1e15091279ab5a60fb225d039ca242c",
       "encoding": "application/json",
       "headers": []
     },
@@ -5716,7 +5750,7 @@
       "request_schema": null,
       "response_schema": "void",
       "success_status": 204,
-      "source_sha256": "c93b8bf3e002553761a30725f8b958dd3440496124f3678bf6e64464fe185ef5",
+      "source_sha256": "28820a6b2d6d8ac06c34dfc982ae8156a1e15091279ab5a60fb225d039ca242c",
       "encoding": "application/json",
       "headers": []
     },
@@ -5735,7 +5769,7 @@
       "request_schema": null,
       "response_schema": "Capabilities",
       "success_status": 200,
-      "source_sha256": "a1796a2c0876eb42cd1b96ef8a3d5cae46b15d9844c7060f5bde5f68abf4faf6",
+      "source_sha256": "5f02a39db206ee36d79929d37ed7533f7b730a3c618bfc06d03bbce91609eb59",
       "encoding": "application/json",
       "headers": []
     }

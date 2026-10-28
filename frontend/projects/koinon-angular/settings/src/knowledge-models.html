@@ -1,0 +1,342 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+@if (!editing()) {
+  <header class="heading">
+    <div>
+      <h2>{{ 'Knowledge models' | ffkText }}</h2>
+      <p>
+        {{
+          'Choose the models used to process, search and answer questions about your knowledge.'
+            | ffkText
+        }}
+      </p>
+    </div>
+  </header>
+}
+
+@if (!editing()) {
+  <label class="scope-select"
+    >{{ 'Assignment scope' | ffkText
+    }}<select
+      [attr.aria-label]="'Assignment scope' | ffkText"
+      [ngModel]="service.scope()"
+      (ngModelChange)="scopeChanged($event)"
+      [disabled]="service.pending()"
+    >
+      <option value="">{{ 'Organization default' | ffkText }}</option>
+      @for (workspace of workspaces(); track workspace.id) {
+        <option [value]="workspace.id">{{ workspace.name }}</option>
+      }</select
+    ><small>{{
+      (service.scope()
+        ? 'Workspace overrides take precedence over organization defaults.'
+        : 'These defaults apply to workspaces without an override.'
+      ) | ffkText
+    }}</small></label
+  >
+}
+@if (service.pending()) {
+  <div class="loading"><ffk-skeleton width="60%" height="3px" [label]="'Working' | ffkText" /></div>
+}
+@if (service.error()) {
+  <div class="error" role="alert">
+    <ffk-icon name="alert" />
+    <div>
+      <p>{{ errorHelp() || 'Knowledge models could not be loaded. Try again.' | ffkText }}</p>
+      <details>
+        <summary>{{ 'Error details' | ffkText }}</summary>
+        <p>{{ service.error()?.message }}</p>
+      </details>
+      @if (!service.pending()) {
+        <ffk-button variant="quiet" (click)="reload()">{{
+          'Reload assignments' | ffkText
+        }}</ffk-button>
+      }
+    </div>
+  </div>
+}
+@if (service.notice()) {
+  <p class="notice" role="status">{{ service.notice() | ffkText }}</p>
+}
+@if (editing(); as role) {
+  <header class="editor-heading">
+    <ffk-button
+      variant="quiet"
+      icon="chevron-left"
+      (click)="back()"
+      [disabled]="service.pending()"
+      >{{ 'Back to assignments' | ffkText }}</ffk-button
+    >
+    <h2 #editorHeading tabindex="-1">{{ role.label | ffkText }}</h2>
+    <p>
+      {{ (service.scope() ? 'Workspace override' : 'Organization default') | ffkText }}
+      @if (service.scope()) {
+        <span class="scope-name">{{ scopeName() }}</span>
+      }
+    </p>
+  </header>
+  <form class="assignment-form" (ngSubmit)="save()" [attr.aria-busy]="service.pending()">
+    @if (role.supports_current_agent && role.kind !== 'embedding') {
+      <label class="select-field"
+        >{{ 'Model selection' | ffkText
+        }}<select
+          [attr.aria-label]="'Model selection' | ffkText"
+          name="mode"
+          [ngModel]="formMode()"
+          (ngModelChange)="formMode.set($event)"
+          [disabled]="service.pending()"
+        >
+          <option value="provider">{{ 'Choose a provider and model' | ffkText }}</option>
+          <option value="current_agent">{{ 'Use the current chat agent' | ffkText }}</option>
+        </select>
+        @if (errors()['mode']) {
+          <small class="field-error">{{ errors()['mode'] | ffkText }}</small>
+        }
+      </label>
+    }
+    @if (formMode() === 'current_agent') {
+      <div class="prerequisite">
+        <ffk-icon name="chat" />
+        <p>
+          {{
+            'This choice works only during a chat run. Operations outside Chat need a separate model assignment.'
+              | ffkText
+          }}
+        </p>
+      </div>
+    } @else {
+      <div class="form-grid">
+        <label class="select-field"
+          >{{ 'Model provider' | ffkText
+          }}<select
+            [attr.aria-label]="'Model provider' | ffkText"
+            name="provider"
+            [ngModel]="providerId()"
+            (ngModelChange)="providerChanged($event)"
+            [disabled]="service.pending()"
+            [attr.aria-invalid]="errors()['provider_id'] ? true : null"
+          >
+            <option value="" disabled>{{ 'Choose a provider' | ffkText }}</option>
+            @for (provider of providers(); track provider.id) {
+              <option [value]="provider.id" [disabled]="!provider.enabled">
+                {{ provider.name
+                }}{{ !provider.enabled ? ' (' + ('Disabled' | ffkText) + ')' : '' }}
+              </option>
+            }
+          </select>
+          @if (errors()['provider_id']) {
+            <small class="field-error">{{ errors()['provider_id'] | ffkText }}</small>
+          }
+        </label>
+        <label class="select-field"
+          >{{ 'Model' | ffkText
+          }}<select
+            [attr.aria-label]="'Model' | ffkText"
+            name="model"
+            [ngModel]="modelId()"
+            (ngModelChange)="modelId.set($event); modelOptions = {}"
+            [disabled]="service.pending() || !providerId()"
+            [attr.aria-invalid]="errors()['model_id'] ? true : null"
+          >
+            <option value="" disabled>{{ 'Choose a model' | ffkText }}</option>
+            @for (model of models(); track model) {
+              <option [value]="model">{{ model }}</option>
+            }
+          </select>
+          @if (errors()['model_id']) {
+            <small class="field-error">{{ errors()['model_id'] | ffkText }}</small>
+          }
+        </label>
+      </div>
+      @if (!providers().length) {
+        <p class="prerequisite">
+          {{ 'Connect a compatible provider in Providers before assigning this role.' | ffkText }}
+        </p>
+      }
+      @if (role.kind === 'embedding') {
+        <div class="prerequisite">
+          <ffk-icon name="shield" />
+          <div>
+            <strong>{{ 'An existing compatible index is required' | ffkText }}</strong>
+            <p>
+              {{
+                'Ask your deployment administrator for the approved index reference and dimensions. Saving an assignment does not build or migrate an index.'
+                  | ffkText
+              }}
+            </p>
+          </div>
+        </div>
+        <div class="form-grid">
+          <label class="select-field"
+            >{{ 'Model dimensions' | ffkText
+            }}<input
+              inputmode="numeric"
+              [attr.aria-label]="'Model dimensions' | ffkText"
+              name="dimensions"
+              [(ngModel)]="dimensions"
+              [disabled]="service.pending()"
+              [attr.aria-invalid]="errors()['dimensions'] ? true : null"
+            />
+            @if (errors()['dimensions']) {
+              <small class="field-error">{{ errors()['dimensions'] | ffkText }}</small>
+            }</label
+          ><label class="select-field"
+            >{{ 'Storage dimensions' | ffkText
+            }}<input
+              inputmode="numeric"
+              [attr.aria-label]="'Storage dimensions' | ffkText"
+              name="storage-dimensions"
+              [(ngModel)]="storageDimensions"
+              [disabled]="service.pending()"
+              [attr.aria-invalid]="errors()['storage_dimensions'] ? true : null"
+            />
+            @if (errors()['storage_dimensions']) {
+              <small class="field-error">{{ errors()['storage_dimensions'] | ffkText }}</small>
+            }
+          </label>
+        </div>
+        <p class="field-hint">
+          {{
+            (role.domain === 'documents'
+              ? 'Document model and storage dimensions must match.'
+              : 'Dataset indexes require 1536 storage dimensions.'
+            ) | ffkText
+          }}
+        </p>
+        <ffk-form-field
+          inputId="embedding-space"
+          [label]="'Approved index reference' | ffkText"
+          [value]="spaceId"
+          (valueChange)="spaceId = $event"
+          [error]="errors()['space_id'] || ''"
+        />
+        <p class="field-hint">
+          {{
+            'Changing an embedding model, dimensions or index may require a reviewed reindex. Removing and recreating an assignment does not bypass this requirement.'
+              | ffkText
+          }}
+        </p>
+      } @else {
+        @if (optionFields().length || hasModelOptions()) {
+          <details class="advanced">
+            <summary>{{ 'Model options' | ffkText }}</summary>
+            <ffk-model-options-form
+              [fields]="optionFields()"
+              [values]="modelOptions"
+              [errors]="optionErrors()"
+              (valuesChanged)="modelOptions = $event"
+            />
+          </details>
+        }
+      }
+    }
+    <label class="check"
+      ><input
+        type="checkbox"
+        name="enabled"
+        [(ngModel)]="enabled"
+        [disabled]="service.pending()"
+      />{{ 'Enable this assignment' | ffkText }}</label
+    >
+    @if (!enabled && service.scope()) {
+      <p class="field-hint">
+        {{
+          'A disabled workspace override blocks the organization default for this role.' | ffkText
+        }}
+      </p>
+    }
+    <p class="field-hint">
+      {{
+        'Saving records your choice. Availability and index compatibility are checked when a knowledge operation runs.'
+          | ffkText
+      }}
+    </p>
+    <div class="actions">
+      <ffk-button variant="quiet" (click)="back()" [disabled]="service.pending()">{{
+        'Cancel' | ffkText
+      }}</ffk-button
+      ><ffk-button type="submit" variant="primary" [loading]="service.pending()">{{
+        'Save assignment' | ffkText
+      }}</ffk-button>
+    </div>
+  </form>
+  @if (existing()) {
+    <section class="remove-section" [attr.aria-label]="'Remove assignment' | ffkText">
+      @if (!removeConfirmation()) {
+        <ffk-button
+          variant="quiet"
+          [disabled]="service.pending()"
+          (click)="removeConfirmation.set(true)"
+          >{{
+            (service.scope() ? 'Remove workspace override' : 'Remove assignment') | ffkText
+          }}</ffk-button
+        >
+      } @else {
+        <p>
+          {{
+            (service.scope()
+              ? 'Remove this override and use the organization default, if one is assigned?'
+              : 'Remove this organization assignment? Knowledge operations using this role may stop until another assignment is added.'
+            ) | ffkText
+          }}
+        </p>
+        <div class="actions">
+          <ffk-button
+            variant="quiet"
+            (click)="removeConfirmation.set(false)"
+            [disabled]="service.pending()"
+            >{{ 'Keep assignment' | ffkText }}</ffk-button
+          ><ffk-button variant="danger" (click)="remove()" [loading]="service.pending()">{{
+            'Remove assignment' | ffkText
+          }}</ffk-button>
+        </div>
+      }
+    </section>
+  }
+} @else if (service.roles()) {
+  <p class="qualification-note">
+    {{
+      'Assigned models have not been tested by this screen. Run a knowledge operation to check availability and index compatibility.'
+        | ffkText
+    }}
+  </p>
+  @for (domain of domains; track domain.id) {
+    @if (roles(domain.id).length) {
+      <section class="domain-group" [attr.aria-label]="domain.label | ffkText">
+        <h3>{{ domain.label | ffkText }}</h3>
+        @for (role of roles(domain.id); track role.id) {
+          <article class="assignment-row">
+            <div class="role-description">
+              <h4>{{ role.label | ffkText }}</h4>
+              <p>
+                {{ modelName(role) | ffkText }}
+                @if (providerName(role)) {
+                  <span> · {{ providerName(role) }}</span>
+                }
+              </p>
+              <small>{{ originLabel(role) | ffkText }}</small>
+            </div>
+            <ffk-badge tone="neutral">{{ assignmentLabel(role) | ffkText }}</ffk-badge
+            ><ffk-button
+              variant="quiet"
+              [attr.data-role]="role.id"
+              [label]="
+                ((service.scope() && !assignment(role) ? 'Customize' : 'Configure') | ffkText) +
+                ' ' +
+                (role.label | ffkText)
+              "
+              (click)="begin(role)"
+              >{{
+                (service.scope() && !assignment(role) ? 'Customize' : 'Configure') | ffkText
+              }}</ffk-button
+            >
+          </article>
+        }
+      </section>
+    }
+  }
+  @if (!service.roles()?.roles?.length && !service.pending()) {
+    <p class="empty">
+      {{ 'No knowledge model roles are available in this deployment.' | ffkText }}
+    </p>
+  }
+}

@@ -38,6 +38,16 @@ The content API checks the current revision before replacing or reingesting know
 
 Archive keeps the content and its processing state while hiding the item and its descendants from the library. Restore brings them back. A processing job that finishes while an item is archived updates its saved state without making the item visible again.
 
+### Append a dataset file through the API
+
+`POST /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/files` requires a stable `Idempotency-Key` and accepts exactly one multipart `file` for an existing dataset. It keeps the dataset identity and appends the file's parsed sheets or sections as new tables, up to 128 tables within the configured upload byte limit. It records a file version, immutable input coordinates and snapshots. Existing table identities and historical snapshots remain retained. The result returns the canonical dataset, file-version and new table identifiers.
+
+The SDK helpers are `append_dataset_file` in Python, `dataset.appendFile` in TypeScript and `datasets(tenant).appendFile` in Java. The caller needs current catalog and ingestion write permissions for the complete ancestry. Datasets with multiple canonical aliases are rejected pending explicit alias reconciliation.
+
+Append takes an exclusive publication claim. Dataset queries and schema reads return `DATASET_NOT_READY` while intake is pending or failed. Native processing commits sections independently: if a later section or canonical publication fails, earlier native effects may remain. Existing files and snapshots are preserved, but the dataset stays unavailable until its retained file version is reconciled. The same key and exact file return the retained completed receipt after current permissions are checked, without repeating native work. The receipt describes the original completed operation; it is not a fresh dataset-readiness check. A changed payload conflicts, and unfinished keys require reconciliation. There is no automatic retry or public reconciliation helper.
+
+This development endpoint has canonical, native-adapter and HTTP regression coverage. Actual PostgreSQL append concurrency, configured-provider acceptance and recovery remain unqualified. It does not provide asynchronous or bulk intake.
+
 Physical deletion is a separate API operation. It rejects nonempty resources and active workspace memberships. Source retention and storage cleanup use their own domain operations.
 
 ## Use on a small screen

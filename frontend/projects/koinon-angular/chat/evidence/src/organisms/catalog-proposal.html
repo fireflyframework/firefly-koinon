@@ -1,0 +1,107 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<section class="proposal" [attr.aria-label]="copy().title" [attr.aria-busy]="state.pending()">
+  <header>
+    <h3>{{ copy().title }}</h3>
+    @if (state.proposal(); as proposal) {
+      <span class="status" [class.applied]="proposal.status === 'applied'" aria-live="polite">{{
+        status(proposal)
+      }}</span>
+    }
+  </header>
+  @if (state.pending()) {
+    <ffk-skeleton height="3px" [label]="state.proposal() ? copy().working : copy().loading" />
+  }
+  @if (state.error() && !state.requiresNewProposal()) {
+    <p class="notice error" role="alert">{{ state.error() | ffkText }}</p>
+  }
+  @if (state.requiresNewProposal()) {
+    <p class="notice" role="status">{{ copy().newProposal }}</p>
+  }
+  @if (state.proposal(); as proposal) {
+    <p class="help">{{ copy().review }}</p>
+    @if (proposal.changes.name !== undefined) {
+      <section class="change">
+        <h4>{{ copy().name }}</h4>
+        <div class="comparison">
+          <div>
+            <h5>{{ copy().before }}</h5>
+            <p class="value before">{{ proposal.before.name }}</p>
+          </div>
+          <div>
+            <h5>{{ copy().proposed }}</h5>
+            <p class="value after">{{ proposal.changes.name }}</p>
+          </div>
+        </div>
+      </section>
+    }
+    @if (proposal.changes.description !== undefined) {
+      <section class="change">
+        <h4>{{ copy().description }}</h4>
+        <div class="comparison">
+          <div>
+            <h5>{{ copy().before }}</h5>
+            <p
+              class="value before"
+              tabindex="0"
+              role="region"
+              [attr.aria-label]="copy().before + ' ' + copy().description"
+            >
+              {{ proposal.before.description || copy().empty }}
+            </p>
+          </div>
+          <div>
+            <h5>{{ copy().proposed }}</h5>
+            <p
+              class="value after"
+              tabindex="0"
+              role="region"
+              [attr.aria-label]="copy().proposed + ' ' + copy().description"
+            >
+              {{ proposal.changes.description || copy().empty }}
+            </p>
+          </div>
+        </div>
+      </section>
+    }
+    @if (proposal.status === 'pending' && !state.canEdit()) {
+      <p class="help">{{ copy().writePermission }}</p>
+    }
+    <footer>
+      @if (proposal.status === 'pending') {
+        <ffk-button
+          data-action="apply"
+          variant="primary"
+          [disabled]="!state.canApply()"
+          [loading]="state.pending()"
+          (click)="apply()"
+          >{{ copy().apply }}</ffk-button
+        >
+        <ffk-button
+          data-action="cancel"
+          variant="quiet"
+          [disabled]="!state.canCancel()"
+          (click)="cancel()"
+          >{{ copy().cancel }}</ffk-button
+        >
+      }
+      <ffk-button variant="quiet" [disabled]="state.pending()" (click)="resource()">{{
+        copy().open
+      }}</ffk-button>
+      <ffk-button
+        data-action="refresh"
+        variant="quiet"
+        [disabled]="state.pending()"
+        (click)="load()"
+        >{{ copy().refresh }}</ffk-button
+      >
+    </footer>
+  } @else if (!state.pending()) {
+    @if (!state.canRead()) {
+      <p class="help">{{ state.requiresSignIn() ? copy().signIn : copy().unavailable }}</p>
+    } @else {
+      <ffk-button data-action="refresh" variant="neutral" (click)="load()">{{
+        copy().load
+      }}</ffk-button>
+    }
+  }
+</section>

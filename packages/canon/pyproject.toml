@@ -1,0 +1,219 @@
+# Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
+[project]
+name = "firefly-koinon-documents"
+# CalVer YY.MM.PP -- bumped per release. Note that PEP 440 normalises
+# ``26.05.04`` -> ``26.5.4`` in the built wheel filename.
+version = "26.10.0a1"
+description = "Document knowledge services for firefly koinon: file intake, immutable source versions, retrieval and provenance on native pyfly."
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+# Released under the Apache License 2.0 -- see the LICENSE file. The SDKs
+# under ``sdks/python`` and ``sdks/java`` carry their own LICENSE files.
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "Firefly Software Foundation" },
+]
+
+dependencies = [
+    # Firefly Framework runtime (DI, CQRS, EDA, web, observability, resilience,
+    # actuator, data-relational, security). Pulled in with the extras we use
+    # so a fresh ``uv sync`` is enough to boot the full stack.
+    "pyfly[fastapi,observability,security,data-relational,postgresql,eda,redis,client,scheduling,cli,agentic,agentic-security,agentic-openai-embeddings,agentic-binary,agentic-vectorstores-pgvector]>=26.10.12,<26.11",
+
+    # GenAI metaframework -- FireflyAgent over pydantic-ai, the binary
+    # normalisation stack (``[binary]`` -> ``content.binary``) and the
+    # OpenAI embeddings provider. Hybrid retrieval -- StoredChunk /
+    # ChunkHit / HybridRetriever / reciprocal_rank_fusion -- lives in
+    # ``core/services/retrieval/fusion.py``. Document intake runs on
+    # flycanon's own per-format SourceLoaders.
+
+    # Source intake -- the high-fidelity per-format SourceLoaders. Binary
+    # normalisation (HEIC / SVG / TIFF rasterisation, archive + email
+    # fan-out, PDF guard, Office -> PDF) comes from the framework's
+    # ``[binary]`` extra above, which supplies pypdf, Pillow, pillow-heif,
+    # cairosvg, py7zr and extract-msg. The wheels below back loader paths
+    # that are flycanon-specific:
+    #
+    # * ``python-docx`` -- :class:`DocxLoader` (Heading1-9 detection) + metadata.
+    # * ``python-pptx`` -- :class:`PptxLoader` (one section per slide) + metadata.
+    # * ``openpyxl``    -- :class:`XlsxLoader` (one section per sheet) + metadata.
+    # * ``pypdf``       -- lightweight page count on the loader path.
+    # * ``pymupdf``     -- :class:`PdfLoader` text + per-page rendering for
+    #   image-only PDFs (PyMuPDF first, Tesseract OCR fallback).
+    # * ``beautifulsoup4`` + ``lxml`` -- :class:`HtmlLoader` + :class:`XmlLoader`.
+    # * ``striprtf``    -- :class:`RtfLoader` (pure-Python RTF -> text).
+    # * ``odfpy``       -- :class:`OdfLoader` (ODT / ODS / ODP -> text).
+    # * ``Pillow``      -- raster handling for :class:`ImageLoader`.
+    # * ``pytesseract`` -- :class:`ImageLoader` OCR. The runtime Dockerfile
+    #   installs the ``tesseract`` binary + the common European language
+    #   packs (``-spa``, ``-eng``, ``-fra``, ...).
+    # * ``langdetect``  -- best-effort language detection on extracted text
+    #   for the metadata extractor.
+    # CSV / TSV / JSON loaders use only the stdlib.
+    "python-docx>=1.1",
+    "python-pptx>=1.0",
+    "openpyxl>=3.1",
+    "pypdf>=4.3.0",
+    "pymupdf>=1.24",
+    "beautifulsoup4>=4.12",
+    "lxml>=5.0",
+    "striprtf>=0.0.26",
+    "odfpy>=1.4.1",
+    "Pillow>=11.0",
+    "pytesseract>=0.3.13",
+    "langdetect>=1.0.9",
+
+    # HTTP client for outbound calls (webhooks, future SOTA monitors).
+    "httpx>=0.28.0",
+    "tenacity>=9.0.0",
+
+    # Configuration.
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.7.0",
+
+    # Persistence stack. asyncpg drives the runtime (async engine);
+    # psycopg is the sync sibling used by Alembic for migrations
+    # (env.py rewrites ``+asyncpg`` -> ``+psycopg`` so a single
+    # DATABASE_URL covers both). The default dense backend (pgvector) needs
+    # the ``vector`` EXTENSION on the Postgres server; the adapter ships in
+    # fireflyframework-agentic (the ``vectorstores-pgvector`` extra above) and
+    # talks to it over asyncpg -- no ``pgvector`` Python package needed here.
+    "sqlalchemy[asyncio]>=2.0",
+    "asyncpg>=0.30",
+    "psycopg[binary]>=3.2",
+    "aiosqlite>=0.22",
+    "alembic>=1.14",
+    "redis>=5.2",
+
+    # Structured logging + tracing.
+    "structlog>=25.5.0",
+]
+
+[project.scripts]
+flycanon = "flycanon.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=5.0",
+    "pytest-timeout>=2.3",
+    "ruff>=0.8",
+    "pyright>=1.1",
+    "testcontainers[postgres,redis]>=4.0",
+    "respx>=0.21",
+    "httpx>=0.28",
+    "reportlab>=4.2",
+    "python-docx>=1.1",
+    # The S3 object-store backend is an optional runtime extra, but its unit
+    # tests and the pyright type-check of ``storage/s3.py`` run unconditionally
+    # in CI, so boto3 must be present in the dev toolchain.
+    "boto3>=1.34",
+]
+
+# Optional layout-aware OCR via IBM Docling. Activates when
+# ``FLYCANON_PDF_OCR_ENGINE=docling`` is set; otherwise the PDF
+# pipeline uses PyMuPDF + Tesseract (same default as flydocs).
+# Docling preserves multi-column / table structure better than
+# Tesseract alone on complex layouts at the cost of a heavier
+# dependency and slower first-page latency.
+docling = [
+    "docling>=2.0",
+]
+
+# Optional Chroma adapter (managed or self-hosted ChromaDB). Activates
+# when FLYCANON_VECTOR_STORE=chroma. Delegates to the framework's
+# vector-store extra so the client version stays aligned with the
+# adapter that ships in fireflyframework-agentic.
+chroma = ["pyfly[agentic-vectorstores-chroma]"]
+
+# Optional Qdrant adapter (self-hosted or Qdrant Cloud). Activates
+# when FLYCANON_VECTOR_STORE=qdrant.
+qdrant = ["pyfly[agentic-vectorstores-qdrant]"]
+
+# Optional S3 object-store backend. Activates when
+# FLYCANON_OBJECT_STORE_BACKEND=s3; the localfs default needs no extra.
+s3 = [
+    "boto3>=1.34",
+]
+
+# Optional Entra (managed-identity) authentication for Azure OpenAI.
+# Activates when FLYCANON_AZURE_AUTH=managed_identity; the default
+# ``api_key`` mode needs no extra. The Azure OpenAI client itself rides on
+# the ``openai`` wheel flycanon already depends on.
+azure = [
+    "azure-identity>=1.19",
+]
+
+[build-system]
+requires = ["hatchling>=1.18"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+# Qualified runtime references: PyFly retains the existing EDA schema; Agentic
+# resolves from its immutable published wheel. uv.lock records the wheel digest.
+pyfly = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git", rev = "dba0cc6da640d96a8d154f30a7ab355c43810094" }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/flycanon"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+    "integration: requires docker compose stack (real Postgres / Redis)",
+    "llm: requires a real LLM provider (OPENAI_API_KEY/ANTHROPIC_API_KEY/...). Skipped by default.",
+]
+addopts = "-v --tb=short -m 'not llm'"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 110
+# CI clones the sibling firefly framework repos into ``./vendor/`` so
+# the Dockerfile's BuildKit contexts resolve identically in local
+# checkouts and in GitHub Actions. We don't lint third-party code on
+# its way through our pipeline -- they have their own ruff config.
+extend-exclude = ["vendor"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+# Public DTOs / interface enums map directly onto the JSON wire
+# contract we ship to callers. The mixedCase fields and Exception-
+# suffix-less identifiers are intentional -- renaming them would break
+# the API.
+"src/flycanon/interfaces/**" = ["N801", "N811", "N815", "N818"]
+# Domain exceptions on the CQRS handlers follow the framework's
+# exception-naming convention (no ``Error`` suffix); renaming them
+# would ripple through every controller advice mapping.
+"src/flycanon/core/services/**" = ["N818"]
+# Framework HTTP-shaped exceptions follow ``<Name>Exception`` not
+# ``<Name>Error`` to match pyfly + Starlette conventions; see
+# exceptions.py in this dir.
+"src/flycanon/web/conventions/**" = ["N818"]
+# Tests routinely build long inline DTOs; the line-length cap is a
+# code-smell signal we don't enforce on test fixtures.
+"tests/**" = ["E501"]
+
+[tool.pyright]
+pythonVersion = "3.13"
+typeCheckingMode = "basic"
+include = ["src/flycanon"]
+exclude = ["tests/**", "**/__pycache__/**", "vendor/**"]
+
+# Execution-environment overrides silence false positives that come
+# from framework-level metaprogramming pyright can't follow. pyfly's
+# ``Body[T]`` / ``Valid[T]`` / ``PathVar[T]`` / ``QueryParam[T]`` are
+# runtime ``Generic[T]`` classes the framework unwraps at injection
+# time -- the controller method sees the inner ``T``, but pyright
+# (which can't follow the metaprogramming) sees the wrapper. Both
+# ``reportArgumentType`` and ``reportAttributeAccessIssue`` end up
+# firing on every controller; silence both here.
+[[tool.pyright.executionEnvironments]]
+root = "src/flycanon/web/controllers"
+reportArgumentType = "none"
+reportAttributeAccessIssue = "none"
+reportOperatorIssue = "none"

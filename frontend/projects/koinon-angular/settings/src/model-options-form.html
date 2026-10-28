@@ -1,0 +1,93 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<div class="options-grid">
+  @for (field of fields; track field.name) {
+    <div class="option-field" [class.list]="field.type === 'list'">
+      <label [for]="'model-option-' + field.name">{{ field.label | ffkText }}</label>
+      @if (field.type === 'number') {
+        <input
+          [id]="'model-option-' + field.name"
+          type="number"
+          [step]="field.integer ? 1 : 'any'"
+          [min]="field.minimum ?? null"
+          [max]="field.maximum ?? null"
+          [value]="text(field.name)"
+          (input)="set(field.name, $any($event.target).value)"
+          [attr.aria-invalid]="errors[field.name] ? true : null"
+          [attr.aria-describedby]="'model-option-help-' + field.name"
+        />
+      } @else if (field.type === 'select' || field.type === 'boolean') {
+        <select
+          [id]="'model-option-' + field.name"
+          [value]="text(field.name)"
+          (change)="set(field.name, $any($event.target).value)"
+          [attr.aria-invalid]="errors[field.name] ? true : null"
+          [attr.aria-describedby]="'model-option-help-' + field.name"
+        >
+          <option value="">{{ 'Use default' | ffkText }}</option>
+          @if (field.type === 'boolean') {
+            <option value="true">{{ 'On' | ffkText }}</option>
+            <option value="false">{{ 'Off' | ffkText }}</option>
+          } @else {
+            @for (option of field.options; track option) {
+              <option [value]="option">{{ option | ffkText }}</option>
+            }
+          }
+        </select>
+      } @else {
+        @for (item of list(field.name); track $index) {
+          <div class="stop-row">
+            <textarea
+              [id]="'model-option-' + field.name + ($index ? '-' + $index : '')"
+              rows="2"
+              [attr.aria-label]="(field.label | ffkText) + ' ' + ($index + 1)"
+              [value]="item"
+              (input)="setItem(field.name, $index, $any($event.target).value)"
+            ></textarea
+            ><ffk-button
+              variant="quiet"
+              icon="close"
+              label="Remove sequence"
+              (click)="remove(field.name, $index)"
+            />
+          </div>
+        }
+        <ffk-button
+          variant="quiet"
+          icon="plus"
+          [disabled]="field.maxItems !== undefined && list(field.name).length >= field.maxItems"
+          (click)="add(field.name)"
+          >{{ 'Add sequence' | ffkText }}</ffk-button
+        >
+      }
+      <div class="help" [id]="'model-option-help-' + field.name">
+        @if (errors[field.name]) {
+          <span class="error" role="alert">{{ errors[field.name] | ffkText }}</span>
+        } @else {
+          @if (field.defaultValue !== undefined) {
+            <span>{{ 'Default' | ffkText }}: {{ field.defaultValue | ffkValue: 'NUMERIC' }}. </span>
+          }
+          @if (field.minimum !== undefined || field.maximum !== undefined) {
+            <span
+              >{{ 'Range' | ffkText }}: {{ field.minimum | ffkValue }}–{{
+                field.maximum | ffkValue
+              }}.</span
+            >
+          }
+          @if (field.type === 'list') {
+            <span
+              >{{ 'Maximum sequences' | ffkText }}: {{ field.maxItems | ffkValue }} ·
+              {{ 'Characters per sequence' | ffkText }}: {{ field.maxLength | ffkValue }}</span
+            >
+          }
+        }
+      </div>
+    </div>
+  } @empty {
+    <p class="help">
+      {{ 'Check the provider and choose a model to see its supported options.' | ffkText }}
+    </p>
+  }
+</div>
+@for (error of hiddenErrors(); track error[0]) {
+  <p class="help error" role="alert">{{ error[0] }} · {{ error[1] | ffkText }}</p>
+}

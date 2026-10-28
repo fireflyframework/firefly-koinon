@@ -1,0 +1,131 @@
+/* Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 */
+:host {
+  display: contents;
+}
+dialog {
+  position: fixed;
+  inset: 0 0 0 auto;
+  margin: 0;
+  width: min(480px, 100vw);
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--ui-line, #d8d4ca);
+  background: var(--ui-surface, #f3f1eb);
+  color: var(--ui-text, #272820);
+  box-shadow: -16px 0 48px #10110f1a;
+  box-sizing: border-box;
+  container-type: inline-size;
+  container-name: koinon-side-panel;
+  font: 400 13px/1.6 var(--ffk-font, Manrope, sans-serif);
+}
+dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+dialog::backdrop {
+  background: #10110f55;
+}
+header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--ui-line, #d8d4ca);
+}
+header > div {
+  min-width: 0;
+}
+h2 {
+  font-size: 21px;
+  line-height: 1.35;
+  letter-spacing: -0.5px;
+  font-weight: 600;
+  margin: 0;
+  overflow-wrap: anywhere;
+  outline: none;
+}
+header p {
+  font-size: 12px;
+  color: var(--ui-muted, #62645b);
+  margin: 6px 0 0;
+}
+.body {
+  --koinon-panel-block-inset: 24px;
+  --koinon-panel-inline-inset: 24px;
+  padding: 24px;
+  overflow: auto;
+  min-height: 0;
+  min-width: 0;
+  overscroll-behavior: contain;
+  flex: 1;
+}
+.panel-footer {
+  padding: 0 24px;
+  border-top: 1px solid var(--ui-line, #d8d4ca);
+  flex-shrink: 0;
+}
+.panel-footer:empty {
+  display: none;
+}
+@container koinon-side-panel (max-width:420px) {
+  header,
+  .body {
+    padding: 20px 16px;
+  }
+  .panel-footer {
+    padding: 0 16px;
+  }
+  .body {
+    --koinon-panel-block-inset: 20px;
+    --koinon-panel-inline-inset: 16px;
+  }
+  h2 {
+    font-size: 20px;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  dialog[open] {
+    animation: koinon-panel-enter 160ms ease-out;
+  }
+  @keyframes koinon-panel-enter {
+    from {
+      opacity: 0.7;
+      translate: 12px 0;
+    }
+    to {
+      opacity: 1;
+      translate: 0 0;
+    }
+  }
+}
+
+.close {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  margin: -4px -8px -4px 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.close:hover {
+  background: var(--ui-hover, #efede6);
+}
+.close:focus-visible {
+  outline: 2px solid var(--ui-accent, #855414);
+  outline-offset: 2px;
+}
+.close ffk-icon {
+  width: 18px;
+  height: 18px;
+}

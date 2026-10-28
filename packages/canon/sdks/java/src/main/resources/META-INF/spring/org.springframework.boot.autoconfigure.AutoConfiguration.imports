@@ -1,0 +1,2 @@
+com.firefly.flycanon.sdk.CanonClientAutoConfiguration
+com.firefly.flycanon.sdk.ReactiveCanonClientAutoConfiguration

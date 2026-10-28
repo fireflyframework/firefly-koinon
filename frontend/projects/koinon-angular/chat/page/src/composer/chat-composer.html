@@ -1,0 +1,171 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<form
+  class="prompt-box"
+  [class.dragging]="dragging()"
+  (ngSubmit)="submit()"
+  (dragenter)="dragEnter($event)"
+  (dragover)="dragOver($event)"
+  (dragleave)="dragLeave($event)"
+  (drop)="drop($event)"
+>
+  @if (attachments.length) {
+    <div class="attachment-tray" role="list" [attr.aria-label]="'Attached files' | ffkText">
+      @for (item of attachments; track item.id) {
+        <div class="attachment" role="listitem" [class.failed]="item.state === 'failed'">
+          <div class="attachment-preview">
+            @if (item.previewUrl && !failedPreviews().has(item.id + ':' + item.previewUrl)) {
+              <img [src]="item.previewUrl" alt="" (error)="previewFailed(item)" />
+            } @else {
+              <ffk-icon [name]="item.mediaType.startsWith('image/') ? 'image' : 'file'" />
+            }
+          </div>
+          <button
+            class="remove-file"
+            type="button"
+            [disabled]="disabled || item.removeDisabled"
+            [attr.aria-label]="('Remove file' | ffkText) + ': ' + item.name"
+            (click)="attachmentRemoved.emit(item.id)"
+          >
+            <ffk-icon name="close" />
+          </button>
+          <div class="attachment-caption">
+            <strong [title]="item.name">{{ item.name }}</strong
+            ><span>{{ size(item.size) }}</span>
+          </div>
+          <div class="attachment-state" role="status">
+            <span>{{ status(item) | ffkText }}</span>
+            @if (item.state === 'failed') {
+              <button
+                type="button"
+                [disabled]="disabled"
+                [attr.aria-label]="('Retry file' | ffkText) + ': ' + item.name"
+                (click)="attachmentRetried.emit(item.id)"
+              >
+                <ffk-icon name="refresh" />
+              </button>
+            }
+          </div>
+          @if (progress(item) !== null) {
+            <progress
+              max="100"
+              [value]="progress(item)"
+              [attr.aria-label]="('File progress' | ffkText) + ': ' + item.name"
+            ></progress>
+          }
+          @if (item.detail) {
+            <small class="attachment-detail">{{ item.detail | ffkText }}</small>
+          }
+        </div>
+      }
+    </div>
+  }
+  <div class="editor-row">
+    <button
+      #addTrigger
+      class="tool-button"
+      type="button"
+      [disabled]="disabled || busy"
+      [attr.aria-label]="'Add context' | ffkText"
+      [title]="'Add files' | ffkText"
+      aria-haspopup="menu"
+      [attr.aria-expanded]="menuOpen()"
+      (click)="toggleMenu()"
+    >
+      <ffk-icon name="plus" />
+    </button>
+    <label class="sr-only" [for]="inputId">{{ 'Message koinon' | ffkText }}</label>
+    <textarea
+      #editor
+      [id]="inputId"
+      name="message"
+      [ngModel]="value"
+      (ngModelChange)="updateValue($event)"
+      [disabled]="disabled"
+      [placeholder]="'Ask koinon…' | ffkText"
+      maxlength="32000"
+      rows="1"
+      (keydown)="keydown($event)"
+      (paste)="paste($event)"
+    ></textarea>
+    @if (running) {
+      <button
+        class="send-button stop-button"
+        type="button"
+        [attr.aria-label]="'Stop' | ffkText"
+        [title]="'Stop answer' | ffkText"
+        (click)="stopRequested.emit()"
+      >
+        <ffk-icon name="stop" />
+      </button>
+    } @else {
+      <button
+        class="send-button"
+        type="submit"
+        [disabled]="!readyToSend"
+        [attr.aria-label]="sendLabel | ffkText"
+        [title]="sendLabel | ffkText"
+      >
+        @if (busy) {
+          <span class="send-spinner" aria-hidden="true"></span>
+        } @else {
+          <ffk-icon name="arrow-up" />
+        }
+      </button>
+    }
+  </div>
+  @if (hint) {
+    <p class="composer-hint" role="status">{{ hint | ffkText }}</p>
+  }
+  <input
+    #filePicker
+    class="file-input"
+    type="file"
+    multiple
+    [accept]="accept"
+    [disabled]="!attachmentsEnabled || disabled"
+    (change)="selectFiles($event)"
+    tabindex="-1"
+    aria-hidden="true"
+  />
+  @if (dragging()) {
+    <div class="drop-prompt" aria-hidden="true">
+      <ffk-icon name="upload" /><strong>{{ 'Drop files to add them' | ffkText }}</strong>
+    </div>
+  }
+</form>
+<ng-template #addMenu
+  ><div class="composer-menu" tabindex="-1" cdkMenu [attr.aria-label]="'Add context' | ffkText">
+    <p>{{ 'Add context' | ffkText }}</p>
+    <button
+      type="button"
+      cdkMenuItem
+      [cdkMenuItemDisabled]="!attachmentsEnabled"
+      [disabled]="!attachmentsEnabled"
+      (click)="pickFiles()"
+    >
+      <ffk-icon name="paperclip" /><span
+        ><strong>{{ 'Attach files' | ffkText }}</strong
+        ><small>{{
+          (attachmentsEnabled ? 'Use files in this conversation' : attachmentsUnavailableReason)
+            | ffkText
+        }}</small></span
+      >
+    </button>
+    @if (canChooseKnowledge) {
+      <button type="button" cdkMenuItem (click)="chooseKnowledge()">
+        <ffk-icon name="folder" /><span
+          ><strong>{{ 'Choose from Library' | ffkText }}</strong
+          ><small>{{ 'Add knowledge you can access' | ffkText }}</small></span
+        >
+      </button>
+    }
+    @if (canAddKnowledge) {
+      <button type="button" cdkMenuItem (click)="addKnowledge()">
+        <ffk-icon name="upload" /><span
+          ><strong>{{ 'Add files to knowledge' | ffkText }}</strong
+          ><small>{{ 'Choose where your team will find them' | ffkText }}</small></span
+        >
+      </button>
+    }
+  </div></ng-template
+>

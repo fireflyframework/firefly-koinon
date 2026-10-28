@@ -1,0 +1,82 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<ffk-side-panel [open]="open" [heading]="'Answer sources' | ffkText" (closed)="close()">
+  @if (state.pending()) {
+    <ffk-skeleton height="3px" [label]="'Loading sources' | ffkText" />
+  }
+  @if (state.error()) {
+    <div class="notice error" role="alert">
+      <p>{{ state.error() | ffkText }}</p>
+      <ffk-button variant="quiet" (click)="load()">{{ 'Try again' | ffkText }}</ffk-button>
+    </div>
+  }
+  @if (sources(); as evidence) {
+    @if (!evidence.complete) {
+      <p class="notice">{{ 'Historical source provenance is incomplete.' | ffkText }}</p>
+    }
+    @for (note of evidence.omissions; track note) {
+      <p class="help">{{ note | ffkText }}</p>
+    }
+    <ol class="source-list">
+      @for (source of evidence.sources; track source.id) {
+        <li>
+          <div class="source-heading">
+            <h3>{{ source.title }}</h3>
+            <span class="badge" [class.changed]="source.availability !== 'available'">{{
+              availability(source) | ffkText
+            }}</span>
+          </div>
+          @if (source.page || source.section) {
+            <p class="location">
+              @if (source.page) {
+                {{ 'Page' | ffkText }} {{ source.page }}
+              }
+              @if (source.section) {
+                <span>{{ source.section }}</span>
+              }
+            </p>
+          }
+          @if (source.quote) {
+            <blockquote>{{ source.quote }}</blockquote>
+          }
+          <ffk-button variant="quiet" (click)="resource(source)">{{
+            'Open source' | ffkText
+          }}</ffk-button>
+          <details>
+            <summary>{{ 'Source details' | ffkText }}</summary>
+            <dl>
+              <dt>{{ 'Used revision' | ffkText }}</dt>
+              <dd>
+                <code>{{ source.used_revision || ('Not recorded' | ffkText) }}</code>
+              </dd>
+              <dt>{{ 'Current revision' | ffkText }}</dt>
+              <dd>
+                <code>{{ source.current_revision || ('Not verified' | ffkText) }}</code>
+              </dd>
+              @if (source.snapshot_id) {
+                <dt>{{ 'Table snapshot' | ffkText }}</dt>
+                <dd>
+                  <code>{{ source.snapshot_id }}</code>
+                </dd>
+              }
+              @if (source.chunk_id) {
+                <dt>{{ 'Citation reference' | ffkText }}</dt>
+                <dd>
+                  <code>{{ source.chunk_id }}</code>
+                </dd>
+              }
+            </dl>
+          </details>
+        </li>
+      } @empty {
+        <li class="empty">
+          {{
+            (evidence.complete
+              ? 'No sources were recorded for this selection.'
+              : 'No verified source manifest is available for this selection.'
+            ) | ffkText
+          }}
+        </li>
+      }
+    </ol>
+  }
+</ffk-side-panel>

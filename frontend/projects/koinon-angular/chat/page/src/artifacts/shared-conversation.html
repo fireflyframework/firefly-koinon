@@ -1,0 +1,102 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<section [attr.aria-labelledby]="headingId">
+  <header class="snapshot-header">
+    <div>
+      <p class="eyebrow">{{ 'Shared messages' | ffkText }}</p>
+      <h1 [id]="headingId">
+        {{ state.sharedConversation()?.share?.title || ('Open shared content' | ffkText) }}
+      </h1>
+    </div>
+    <ffk-button
+      variant="quiet"
+      icon="close"
+      [label]="'Close shared messages' | ffkText"
+      (click)="close()"
+    />
+  </header>
+  @if (state.pending()) {
+    <div class="snapshot-loading" role="status">
+      <ffk-skeleton
+        width="72%"
+        height="4px"
+        [label]="'Loading shared messages' | ffkText"
+      /><ffk-skeleton height="100px" [label]="'Loading shared messages' | ffkText" />
+    </div>
+  }
+  @if (state.error()) {
+    <div class="notice error" role="alert">
+      <h2>{{ errorTitle() | ffkText }}</h2>
+      <p>{{ state.error() | ffkText }}</p>
+      <p>
+        {{ 'Ask the owner for a new reviewed share or check your organization access.' | ffkText }}
+      </p>
+      @if (state.failureCode() !== 'SHARE_EXPIRED' && state.failureCode() !== 'SHARE_REVOKED') {
+        <ffk-button variant="quiet" (click)="load()">{{ 'Try again' | ffkText }}</ffk-button>
+      }
+    </div>
+  }
+  @if (state.sharedConversation(); as snapshot) {
+    <p class="snapshot-policy">
+      {{
+        'This reviewed snapshot grants no additional access and excludes private attachment files.'
+          | ffkText
+      }}
+    </p>
+    <p class="help">
+      {{ 'Expires' | ffkText }}
+      <time [attr.datetime]="snapshot.share.expires_at">{{
+        snapshot.share.expires_at | ffkDate: undefined : 'datetime'
+      }}</time>
+    </p>
+    <ol class="snapshot-messages" [attr.aria-label]="'Shared messages' | ffkText">
+      @for (message of snapshot.messages; track message.id) {
+        <li>
+          <article class="snapshot-message">
+            <header>
+              <h2>
+                {{ (message.role === 'assistant' ? 'koinon' : 'Conversation author') | ffkText }}
+              </h2>
+              @if (message.created_at) {
+                <time [attr.datetime]="message.created_at" [title]="message.created_at">{{
+                  message.created_at | ffkDate: presentation(message) : 'datetime'
+                }}</time>
+              } @else {
+                <span>{{ 'Time not recorded' | ffkText }}</span>
+              }
+            </header>
+            <p>{{ message.text }}</p>
+            @if (message.status !== 'completed') {
+              <p class="help">
+                {{
+                  (message.status === 'cancelled' ? 'Cancelled answer' : 'Failed answer') | ffkText
+                }}
+              </p>
+            }
+          </article>
+        </li>
+      }
+    </ol>
+    @if (snapshot.sources.length) {
+      <ffk-button variant="quiet" (click)="sourcePanel.set(true)">{{
+        'View sources' | ffkText
+      }}</ffk-button>
+    } @else {
+      <p class="help">
+        {{
+          (snapshot.source_manifest_complete
+            ? 'No sources were recorded for this selection.'
+            : 'No verified source manifest is available for this selection.'
+          ) | ffkText
+        }}
+      </p>
+    }
+  } @else if (!state.pending() && !state.error()) {
+    <p class="empty">{{ 'Open the authenticated share link provided by its owner.' | ffkText }}</p>
+  }
+</section>
+<ffk-source-drawer
+  [open]="sourcePanel()"
+  [manifest]="manifest()"
+  (closed)="sourcePanel.set(false)"
+  (resourceRequested)="resource($event)"
+/>

@@ -1,0 +1,711 @@
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark) and (max-width: 600px)" srcset="assets/brand/banner-dark-mobile.svg">
+  <source media="(max-width: 600px)" srcset="assets/brand/banner-light-mobile.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/banner-dark.svg">
+  <img src="assets/brand/banner-light.svg" alt="flycanon by Firefly" width="100%">
+</picture>
+
+### **Deployment**
+
+</div>
+
+---
+
+flycanon ships as a **single Python service** plus its operational
+dependencies. The reference deployment is one Docker image
+(`ghcr.io/fireflyframework/flycanon`) backed by a Postgres
+instance with the `vector` extension and an embedding-provider key
+of your choice. Everything else (Redis, Gotenberg, Docling OCR
+sidecar, ...) is optional.
+
+---
+
+## Reference topologies
+
+| Topology | Use case | Components |
+|----------|----------|------------|
+| **Single host (compose)** | Dev, demo, on-prem POC | `docker compose` with `flycanon` + `postgres(pgvector)` (+ optional `redis` for the EDA Redis adapter, `gotenberg` for Office conversion). |
+| **Container platform (k8s, ECS, Cloud Run, ...)** | Production | One Deployment / Service / StatefulSet per role: API, worker, Postgres, optional Redis. |
+| **Bare-metal** | Air-gapped operators | `uv run flycanon serve` + `uv run flycanon worker` + an external Postgres. |
+
+The image, the env vars, and the migration step are identical across
+all three. The differences are how you wire the dependencies.
+
+---
+
+## Install from release packages
+
+For a host installation using the released wheel, follow [Install the released server](released-server-install.md). A wheel install needs explicit framework references and the matching source archive for `pyfly.yaml` and migrations.
+
+## Pull the image
+
+```bash
+docker pull ghcr.io/fireflyframework/flycanon:latest          # latest main
+docker pull ghcr.io/fireflyframework/flycanon:26.10.6          # specific release
+docker pull ghcr.io/fireflyframework/flycanon:26.10            # latest 26.10.x
+```
+
+Multi-arch manifest: pulling `:latest` on Apple Silicon /
+AWS Graviton picks the `linux/arm64` layer; pulling on x86 picks
+`linux/amd64`. Override explicitly with `--platform linux/amd64` if
+needed.
+
+---
+
+## Roles
+
+The same image runs three commands, selectable via the `CMD` /
+`command:`:
+
+| Command | What it does | Replica policy |
+|---------|--------------|----------------|
+| `serve` | FastAPI ASGI server on `:8500`. Stateless. | Horizontally scalable behind a load balancer. |
+| `worker` | Subscribes to the EDA outbox / Redis / Kafka and processes async jobs (`ConsolidationRequested`, ...). | At least one. Many is fine -- the work-queue claim is idempotent. |
+| `migrate` | Runs `alembic upgrade head` and exits. | Single shot, before `serve` / `worker` start on a new schema. |
+
+The `docker-entrypoint.sh` shell switch maps these to the right
+process call.
+
+---
+
+## docker-compose (reference)
+
+The repo ships [`docker-compose.yml`](../docker-compose.yml) -- one
+copy is enough for a single-host deployment. The composition is:
+
+```
+flycanon-api    -> 8500/tcp        (CMD ["serve"])
+flycanon-worker                    (CMD ["worker"])
+flycanon-pg     -> 5432/tcp        pgvector/pgvector:pg16
+flycanon-redis  -> 6379/tcp        (optional; only with FLYCANON_EDA_ADAPTER=redis)
+gotenberg       -> 3000/tcp        (optional; only with FLYCANON_OFFICE_CONVERTER=gotenberg)
+```
+
+```bash
+docker compose --env-file .env up -d            # start everything
+docker compose exec flycanon-api flycanon migrate   # apply migrations
+curl -fsS http://localhost:8500/actuator/health | jq .
+```
+
+The compose file uses BuildKit named contexts so the build-from-source
+path (`docker compose build`) works without copying the sibling
+firefly framework repos into the flycanon tree -- see
+[cicd.md § Build contexts](cicd.md#build-contexts).
+
+---
+
+## Environment
+
+All keys are prefixed `FLYCANON_*`. The
+[`env_template`](../env_template) file is the canonical reference;
+copy it to `.env` (which is gitignored) and edit. The minimum
+required for production:
+
+| Key | What it is | Required? |
+|-----|------------|-----------|
+| `FLYCANON_DATABASE_URL` | Async-SQLAlchemy URL (`postgresql+asyncpg://user:pass@host:5432/db`) | **Yes** |
+| `FLYCANON_EMBEDDING_MODEL` | `<provider>:<model>` (e.g. `openai:text-embedding-3-small`, `voyageai:voyage-large-2`, `ollama:nomic-embed-text`) | **Yes** |
+| `FLYCANON_EMBEDDING_DIMENSIONS` | Dimensions of the chosen embedding model. **Must match `pgvector` index dimension** -- a mismatch produces a runtime error on first insert. | **Yes** |
+| `FLYCANON_ANSWER_MODE` | Answer engine for `/api/v1/query`: `rlm` (default) or `rag` (deprecated, opt-in). See [Answer mode](#answer-mode-rlm-default--rag-deprecated). | Defaults to `rlm`. |
+| `FLYCANON_ANSWER_MODEL` | `<provider>:<model>` for the **RAG** answer endpoint (default `anthropic:claude-sonnet-4-6`). Only used when `FLYCANON_ANSWER_MODE=rag`. `azure:<deployment>` is built from the `FLYCANON_AZURE_OPENAI_*` settings; every other prefix is resolved by pydantic-ai from its own environment contract. | Needed only for `rag` mode. |
+| `FLYCANON_ANSWER_FALLBACK_MODEL` | Used when the primary RAG model errors (e.g. provider 5xx, rate limit). | Recommended for `rag` mode. |
+| `FLYCANON_STORE_ORIGINALS` | Persist original document bytes to the object store so RLM can reason over whole documents. **Required (`true`, the default) for RLM.** See [Answer mode](#answer-mode-rlm-default--rag-deprecated). | Defaults to `true`. |
+| Provider API keys | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `VOYAGEAI_API_KEY`, `COHERE_API_KEY`, ... -- read by `fireflyframework-agentic` from env at boot. **`ANTHROPIC_API_KEY` is required at runtime whenever the RLM models are on `anthropic:`** (the default -- the engine calls the Anthropic Messages API directly). On `azure:` RLM models the engine authenticates with the `FLYCANON_AZURE_OPENAI_*` settings instead and does not read it. | As needed for your provider mix. |
+| `FLYCANON_VECTOR_STORE` | Dense backend: `pgvector` (default), `qdrant` (`--extra qdrant`), or `chroma` (`--extra chroma`). | Defaults to `pgvector`. |
+| `FLYCANON_EDA_ADAPTER` | `postgres` (default -- durable outbox + LISTEN/NOTIFY), `memory`, `redis`, `kafka`. | Defaults to `postgres`. |
+| `FLYCANON_API_KEYS` | Comma-separated static API keys. When set, every `/api/v1/*` request (except `GET /api/v1/version`) and the admin dashboard require `X-API-Key: <key>` or `Authorization: ApiKey <key>`; agent-tier requests carrying `X-Agent-Token` are exempt. Empty = open user tier (logged at boot). | **Yes in production.** |
+| `FLYCANON_ADMIN_DATABASE_URL` | DSN of the BYPASSRLS role (`flycanon_admin`) used for the tenant-wide `GET /api/v1/workspaces` listing. Empty = reuse `FLYCANON_DATABASE_URL`, which under the `flycanon_app` role collapses the listing to the caller's own workspace. | Yes when the API runs as `flycanon_app`. |
+| `FLYCANON_WEBHOOK_SECRET` | HMAC-SHA256 secret for the `X-Flycanon-Signature` header on async-ingest callbacks (`?callback_url=`). Empty = unsigned callbacks (logged at boot). Same value on api and worker. | Yes when `callback_url` is used. |
+| `FLYCANON_URL_FETCH_ALLOW_PRIVATE` | `true` disables the outbound host denylist (every non-globally-routable address: loopback / private / link-local / shared address space / reserved) for `uri` fetches and `callback_url`. Only for dev stacks whose origins live on the same private network. | Defaults to `false`; keep it there. |
+| `FLYCANON_ADMIN_REQUIRE_AUTH` | `false` opens the admin dashboard API without a key (loopback dev only). | Defaults to `true`. |
+| `FLYCANON_EDA_GROUP` | Postgres-outbox consumer group. The API defaults to `flycanon-api`, `flycanon worker` to `flycanon-workers`; they must never share one (see [async-ingest.md](async-ingest.md)). | Leave unset. |
+| `FLYCANON_OBJECT_STORE_LOCALFS_ROOT` | Directory for stored originals with the `localfs` backend. The image sets `/app/canon-data/objects` (volume-backed, writable by the `canon` user); the checkout default `./var/objects` is relative to the working directory. | Set only to relocate. |
+| `FLYCANON_CORS_ORIGINS` | Comma-separated origins for `Access-Control-Allow-Origin`. | Optional. |
+
+For a complete list with defaults and inline docs, run:
+
+```bash
+docker run --rm ghcr.io/fireflyframework/flycanon:latest cat /app/env_template
+```
+
+---
+
+## Answer mode (RLM default / RAG deprecated)
+
+`FLYCANON_ANSWER_MODE` selects the engine for the non-streaming answer
+path (`/api/v1/query`, `/api/v1/query/stream`, `/api/v1/conversations/{id}/turn`, and the agent-tier
+equivalents). `rlm` is the default; `rag` is opt-in and deprecated. Any
+value other than `rag` is normalised to `rlm`.
+
+| Key | What it is | Default |
+|-----|------------|---------|
+| `FLYCANON_ANSWER_MODE` | `rlm` (default) routes to the Recursive Language Model answerer; `rag` routes to the legacy hybrid-retrieval answerer. | `rlm` |
+| `FLYCANON_RLM_ROOT_MODEL` | Orchestrator model that drives the CodeAct REPL loop. `<provider>:<model>`, where the provider is `anthropic` or `azure` (`azure-openai` is accepted too) and any other prefix is refused at boot with the supported list. On `anthropic:`, Claude 4.6 and later (`claude-sonnet-5`, `claude-opus-5`, Opus 4.6/4.7/4.8, Sonnet 4.6) are called with adaptive thinking and no sampling knobs; Haiku 4.5 / Sonnet 4.5 with the deterministic `temperature: 0.0`. On `azure:`, the second half is the **deployment** name, no sampling knob is sent (a deployment name does not reveal whether the model behind it refuses `temperature`) and the budget travels as `max_completion_tokens`. | `anthropic:claude-sonnet-4-6` |
+| `FLYCANON_RLM_SUB_MODEL` | Model for the flat `llm()` / `rlm()` sub-calls made from REPL code and for the self-consistency candidate selector. Same generation rule as the root model, and it must name the **same provider** as the root model -- the engine holds one client, with one endpoint and one credential, so a mixed pair is refused at boot. The **final answer** is the root model's, whether it comes from the `final(...)` tool call or from the tool-less forced-final turn after `FLYCANON_RLM_MAX_ITERS`; there is no third model. (`FLYCANON_RLM_ANSWER_MODEL`, documented in 26.7.0 as the model for "the final single-shot answer synthesis", was read by nothing and was removed in 26.7.1; an env file that still sets it is ignored.) | `anthropic:claude-sonnet-4-6` |
+| `FLYCANON_RLM_MAX_ITERS` | Max orchestrator turns before the loop gives up and asks for a plain-text answer from the transcript. | `8` |
+| `FLYCANON_RLM_SUB_BUDGET` | Total recursive sub-call budget across one root session. | `12` |
+| `FLYCANON_RLM_MAX_DEPTH` | How deep `rlm(...)` may nest before degrading to a flat `llm`. | `1` |
+| `FLYCANON_RLM_PROMPT_CACHE` | Mark the large static RLM system prompt with Anthropic `cache_control: ephemeral` so it is cached server-side and reused across the many Messages calls one CodeAct session makes (cuts input-token cost + per-call latency). `false` sends it as a plain string. **Anthropic only**: Azure OpenAI caches long prompt prefixes automatically and has no equivalent field, so this setting is not read on the `azure:` path. | `true` |
+| `FLYCANON_RLM_SANDBOX` | Where the model-written REPL code runs. `subprocess` (the secure default) execs it in a scrubbed-env, resource-limited child process; `inprocess` is the explicit opt-out that runs it in the engine's own restricted `exec` namespace (dev / trusted use only). Only the exact value `inprocess` opts out; anything else resolves to `subprocess`. See [RLM execution sandbox](#rlm-execution-sandbox-security). | `subprocess` |
+| `FLYCANON_RLM_SANDBOX_TIMEOUT_S` | Per-turn wall-clock timeout (seconds) for the subprocess sandbox; the child is killed and the turn fails if exceeded. | `30` |
+
+### What RLM is
+
+The Recursive Language Model engine is a code-driven CodeAct REPL. A
+root orchestrator model writes Python against the in-scope document
+corpus (handed to it as a `docs` variable: `docs.keys()` lists the
+documents, `docs[key]` returns the full text, `docs.pages(key)` returns
+the page list for precise citation), makes recursive sub-calls on
+slices of that corpus, and finishes by citing the filings / pages it
+used. It reasons over **whole documents** rather than retrieving
+chunks, which is why it depends on the object store below.
+
+### RLM operational requirements
+
+- **Originals persisted in the object store.** RLM reads the original
+  document bytes, so intake must persist each original to the object
+  store (`FLYCANON_STORE_ORIGINALS=true`, the default) and record its
+  key on the source row. Sources without a stored original (no
+  `object_store_key`) are silently skipped by the RLM corpus builder.
+- **A provider credential at runtime.** On `anthropic:` models the RLM
+  engine calls the Anthropic Messages API directly (the `anthropic:`
+  prefix is stripped before the id is sent) and needs
+  `ANTHROPIC_API_KEY`. On `azure:<deployment>` models it calls Azure
+  OpenAI Chat Completions and needs `FLYCANON_AZURE_OPENAI_ENDPOINT` +
+  `FLYCANON_AZURE_OPENAI_API_KEY` (or `FLYCANON_AZURE_AUTH=managed_identity`)
+  -- the same settings the embedding path uses.
+
+### RAG deprecation
+
+When `FLYCANON_ANSWER_MODE=rag`, the answer dispatcher emits a
+server-side deprecation **warning log** on every RAG-mode answer:
+
+```
+FLYCANON_ANSWER_MODE=rag is deprecated and will be removed in a future release; RLM is the default
+```
+
+The legacy RAG answer path is slated for removal in a future release;
+migrate to the default `rlm` mode. When `answer_mode=rag`, the answer
+endpoints return an `X-Flycanon-Deprecation` response header to clients
+-- the client-facing deprecation signal alongside the server log. The
+`/api/v1/search` surface (raw hybrid
+retrieval, no LLM) is unaffected and stays.
+
+### RLM execution sandbox (security)
+
+The RLM REPL **execs model-written Python** every turn, and the corpus is
+**user-uploaded**, so a malicious document can prompt-inject the
+orchestrator model into writing hostile code. To contain that, the exec
+runs out of process by default (`FLYCANON_RLM_SANDBOX=subprocess`):
+
+- **Scrubbed environment.** The child inherits only a minimal whitelist
+  (`PATH`, `LANG`, `LC_ALL`, `PYTHONPATH`, `PYTHONHASHSEED`) -- no
+  `ANTHROPIC_API_KEY`, no `AWS_*` / `AZURE_*` cloud creds, no
+  `DATABASE_URL` / `REDIS_*`, and no `FLYCANON_*` secrets. Prompt-injected
+  code cannot read a credential because none are present.
+- **Resource limits.** At startup the child clamps itself with
+  `setrlimit`: a CPU-time cap (`RLIMIT_CPU`), a 1 GiB address-space cap
+  (`RLIMIT_AS`), and `RLIMIT_FSIZE = 0` so it cannot create or grow any
+  file. The parent additionally enforces a wall-clock timeout
+  (`FLYCANON_RLM_SANDBOX_TIMEOUT_S`, default 30 s) and SIGKILLs a child
+  that overruns.
+- **Capability RPC, no infrastructure in the child.** The child holds no
+  document store or model client. Its `docs` / `llm` / `rlm` / `final`
+  stubs marshal each call to the parent as a length-prefixed **JSON-only**
+  frame (never `pickle` / `eval`), validated against fixed allowlists; the
+  parent services it against the real infra and replies. The secrets,
+  network, and infrastructure objects live only in the parent.
+- **Blast radius.** An escape is limited to the in-scope corpus the parent
+  already exposes through those capability RPCs -- the same documents the
+  query was authorised to read.
+
+Setting `FLYCANON_RLM_SANDBOX=inprocess` disables this isolation and runs
+the model code in the engine's own process (restricted builtins only). It
+is intended for dev / trusted environments and is **not recommended in
+production**.
+
+**Residual risk / follow-up.** The child is still a normal process on the
+host network: a sandbox escape (or a bug in the restricted builtins) could
+attempt **network egress to exfiltrate the in-scope corpus**. Hard
+network/syscall blocking -- running the child under `nsjail` / `seccomp`
+inside a network namespace with no egress -- is a recommended
+defence-in-depth follow-up. It needs a `Dockerfile` change (the sandbox
+tooling and a dropped-network profile) and is not yet in place.
+
+---
+
+## Object store (RLM document originals)
+
+The object store holds the original document bytes the intake persisted
+so RLM can replay them. `localfs` (default) writes files under a root
+directory for dev / test; `s3` (requires `uv sync --extra s3`) writes to
+a bucket. AWS credentials for the `s3` backend are read from the
+standard environment (`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` /
+profiles / instance roles), not from these settings.
+
+| Key | What it is | Default |
+|-----|------------|---------|
+| `FLYCANON_OBJECT_STORE_BACKEND` | `localfs` (default) or `s3`. | `localfs` |
+| `FLYCANON_OBJECT_STORE_LOCALFS_ROOT` | Root directory for the `localfs` backend. | `./var/objects` |
+| `FLYCANON_OBJECT_STORE_S3_BUCKET` | Bucket name for the `s3` backend. | _(empty)_ |
+| `FLYCANON_OBJECT_STORE_S3_PREFIX` | Key prefix prepended to every object key within the bucket. | _(empty)_ |
+| `FLYCANON_OBJECT_STORE_S3_ENDPOINT_URL` | Custom endpoint for MinIO / S3-compatible services; empty = default AWS. | _(empty)_ |
+| `FLYCANON_OBJECT_STORE_S3_REGION` | Region; empty defers to boto3's standard region resolution. | _(empty)_ |
+| `FLYCANON_STORE_ORIGINALS` | Whether intake persists original bytes and records the key on the source row. On by default so RLM has a whole-document corpus; a write failure is best-effort and never fails the ingest. | `true` |
+
+---
+
+## Corpus page cache (RLM)
+
+The RLM corpus store fetches each in-scope filing's original from the
+object store and PyMuPDF-extracts its page-structured text on first
+access -- the expensive part of an RLM query. A shared, synchronous
+page cache sits in front of that fetch so an in-scope filing is
+fetched + extracted at most **once per process** (in-memory LRU) and,
+with the Redis backend, **once per fleet**. Entries are keyed by the
+source's `content_sha256`, so a re-ingested source (new bytes -> new
+sha) misses the stale entry automatically -- there is no explicit
+invalidation.
+
+Backend selection mirrors the rate-limiter / idempotency stores:
+`auto` (the default) uses Redis when `FLYCANON_REDIS_URL` is set,
+in-memory otherwise; `redis` / `memory` force one or the other. The
+Redis client is **synchronous** (the cache is read from the RLM
+engine's worker thread). For multi-replica deployments set
+`FLYCANON_REDIS_URL` so a single fetch on one replica warms the whole
+fleet.
+
+| Key | What it is | Default |
+|-----|------------|---------|
+| `FLYCANON_CORPUS_CACHE_BACKEND` | `auto` (Redis when `FLYCANON_REDIS_URL` set, else in-memory), `redis`, or `in_memory`. | `auto` |
+| `FLYCANON_CORPUS_CACHE_TTL_S` | Per-entry TTL in seconds (both backends). | `3600` |
+| `FLYCANON_CORPUS_CACHE_MAX_ENTRIES` | LRU cap for the in-memory backend (the Redis backend relies on native `EX` expiry). | `512` |
+
+---
+
+## Database
+
+flycanon runs against **PostgreSQL with the `vector` extension**.
+The reference docker-compose uses `pgvector/pgvector:pg16` so the
+extension ships pre-installed.
+
+```sql
+CREATE DATABASE flycanon;
+CREATE USER canon WITH PASSWORD 'canon';
+GRANT ALL PRIVILEGES ON DATABASE flycanon TO canon;
+
+\c flycanon
+CREATE EXTENSION IF NOT EXISTS vector;
+GRANT ALL ON SCHEMA public TO canon;
+```
+
+### Migrations
+
+Alembic migrations live under [`migrations/`](../migrations). Run
+once per deploy:
+
+For a host installation, run `flycanon migrate` from the reviewed release scaffold containing `alembic.ini` and `migrations/`. The CLI selects that working directory's configuration and keeps `FLYCANON_DATABASE_URL` as the database selection. See [Install the released server](released-server-install.md) for the retained `26.10.4` wheel workaround.
+
+```bash
+docker run --rm \
+  --env FLYCANON_DATABASE_URL=postgresql+asyncpg://canon:canon@db.internal:5432/flycanon \
+  ghcr.io/fireflyframework/flycanon:latest migrate
+```
+
+`alembic upgrade head` is **also** run on container startup when
+`RUN_MIGRATIONS=true` (the env_template default). Production deploys
+typically prefer migrating as a separate step (`RUN_MIGRATIONS=false`
+in the long-running containers, plus a one-shot `migrate` Job /
+Container right before the API rollout).
+
+### RLS roles
+
+Migration `0013_rls_policies` emits `ALTER TABLE ... FORCE ROW LEVEL
+SECURITY` on every `canon_*` table. The application connection must
+**not** be a Postgres superuser (FORCE-RLS does not apply to
+superusers), and the migration runner / background workers must
+**bypass** the policy or they would see zero rows. Provision two
+roles before pointing `FLYCANON_DATABASE_URL` at the cluster:
+
+```sql
+-- Admin role: runs migrations + cross-workspace workers
+-- (consolidation re-embed sweep, retention reaper, EDA ingest worker).
+CREATE ROLE flycanon_admin LOGIN PASSWORD 'change-me' BYPASSRLS;
+GRANT ALL PRIVILEGES ON DATABASE flycanon TO flycanon_admin;
+GRANT ALL ON SCHEMA public TO flycanon_admin;
+
+-- App role: request-path engine. NO BYPASSRLS, NOT a superuser.
+-- RLS policies filter by the per-session GUCs that
+-- `install_tenant_guc_hook()` sets on each transaction.
+CREATE ROLE flycanon_app LOGIN PASSWORD 'change-me';
+GRANT CONNECT ON DATABASE flycanon TO flycanon_app;
+GRANT USAGE ON SCHEMA public TO flycanon_app;
+GRANT SELECT, INSERT, UPDATE, DELETE
+  ON ALL TABLES IN SCHEMA public TO flycanon_app;
+GRANT USAGE, SELECT
+  ON ALL SEQUENCES IN SCHEMA public TO flycanon_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO flycanon_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT USAGE, SELECT ON SEQUENCES TO flycanon_app;
+```
+
+`GRANT ... ON ALL TABLES` covers `canon_embedding_sets` (migration
+`0017`) because the migration creates it before the grant runs. Note that
+`flycanon reindex` is **not** a `flycanon_app` operation: it reads across
+workspaces and creates one ANN index per embedding set, so run it with
+`FLYCANON_DATABASE_URL` pointed at `flycanon_admin`. A role that cannot
+see a workspace's chunks fails the run rather than activating an empty
+set.
+
+Wire `FLYCANON_DATABASE_URL` at `flycanon_app` for the `serve` role
+and at `flycanon_admin` for the `migrate` + `worker` roles, and give
+the `serve` role `FLYCANON_ADMIN_DATABASE_URL` at `flycanon_admin` as
+well: the tenant-wide `GET /api/v1/workspaces` listing runs on that
+second engine because the `canon_workspaces` policy limits the request
+engine to the caller's own workspace. See
+[architecture.md -> Row-level security](architecture.md#deployment-requirement)
+for the rationale; the integration suite
+(`tests/integration/test_rls_isolation.py`,
+`tests/integration/test_search_under_app_role.py`) exercises the
+`BYPASSRLS` vs. `app_user` contract end-to-end, the second one through
+the real `RetrievalService.search`.
+
+**What the serving role creates: nothing (since 26.7.1).** Migration
+`0016_boot_created_tables` creates `canon_chunk_vectors` (sized by the
+`FLYCANON_EMBEDDING_DIMENSIONS` / `FLYCANON_PGVECTOR_HNSW_*` values in
+the environment of the **migrate** job -- give it the same values as
+`serve`), `pyfly_eda_outbox` and `pyfly_eda_offsets`, so the dense store
+finds its table and only verifies it. Before 26.7.1 every process created
+those lazily, and PostgreSQL refuses that for `flycanon_app`: it checks
+`CREATE` on the schema before it honours `CREATE TABLE IF NOT EXISTS`, and
+demands ownership before `CREATE INDEX IF NOT EXISTS`. One piece of that
+lazy DDL remains, in pyfly rather than flycanon: `PostgresEventBus.start()`
+still runs the outbox `CREATE TABLE / INDEX IF NOT EXISTS` in every
+process. Until pyfly skips it on existing tables, a `serve` process that
+runs as `flycanon_app` needs the two statements below on top of the
+grants above; they widen nothing else (the role stays NOBYPASSRLS, and
+the two outbox tables hold no tenant rows):
+
+```sql
+-- Temporary, for pyfly's outbox DDL at boot (see the note above).
+GRANT CREATE ON SCHEMA public TO flycanon_app;
+ALTER TABLE pyfly_eda_outbox  OWNER TO flycanon_app;   -- or a NOLOGIN role
+ALTER TABLE pyfly_eda_offsets OWNER TO flycanon_app;   -- both roles belong to
+```
+
+A deployment that prefers a shared NOLOGIN owner (so the admin role keeps
+writing the outbox too) makes both login roles members of it and hands
+the two tables to that role instead -- the dworkers programme's
+`postgres-init.sql` is one worked example.
+
+### BM25 projection
+
+flycanon is **Postgres-native** for both retrieval channels: BM25 rides
+on a `tsvector` + GIN index on `canon_chunks.tsv` (generated column from
+`canon_chunks.content`), and dense vectors live in `pgvector` in the same
+Postgres. The deploy needs Postgres only.
+
+---
+
+## OCR engines
+
+flycanon handles **both PDF kinds** (Full Digital Text PDFs and
+PDF-Images) without caller flags -- see
+[pipeline.md § PDF ingestion](pipeline.md#pdf-ingestion----two-kinds-one-pipeline)
+for the routing detail.
+
+| Engine | When | How to enable |
+|--------|------|---------------|
+| **Tesseract** (default) | Ships with the image. Apt packages: `tesseract-ocr-eng`, `-spa`, `-fra`, `-deu`, `-ita`, `-por`, `-cat`. | No-op -- it's the default. Languages default to `eng+spa`; override with `FLYCANON_OCR_LANG=eng+spa+fra`. |
+| **Docling** | Layout-aware OCR with native multi-column / table handling. | Build a derived image: `RUN uv pip install --no-cache 'flycanon[docling]'`. Then run with `FLYCANON_PDF_OCR_ENGINE=docling`. Adds ~2.5 GB per architecture (PyTorch + HF wheels). |
+
+The Docling extra is **not baked into the published image** for the
+same reason it isn't on flydocs's: the size cost punishes the 95% of
+deploys that don't need layout-aware OCR.
+
+---
+
+## Office conversion
+
+Office formats (DOCX / XLSX / PPTX / ODT / ODS / ODP / RTF) are read
+via native per-format loaders (python-docx, openpyxl, python-pptx,
+odfpy, striprtf) by default. For high-fidelity extraction you can
+render Office docs to PDF first:
+
+| Converter | How | Trade-off |
+|-----------|-----|-----------|
+| `none` (default) | Native per-format loaders (python-docx / openpyxl / python-pptx / odfpy / striprtf). | Zero extra service. Text + structure fidelity for tables / images is best-effort. |
+| `gotenberg` | HTTP sidecar (`gotenberg/gotenberg:8` -- see docker-compose). | High fidelity, distroless runtime stays clean. Adds one service. |
+| `libreoffice` | In-container `soffice` subprocess. | High fidelity, no extra service. Bloats the runtime image (~1 GB). Build a derived image with `libreoffice-core`. |
+
+Switch via `FLYCANON_OFFICE_CONVERTER=none|gotenberg|libreoffice`.
+
+---
+
+## Embedding providers
+
+The embedding stack is **provider-agnostic** -- every embedder
+`fireflyframework-agentic` ships is wired, and none of them is
+privileged. Set `FLYCANON_EMBEDDING_MODEL` to `<provider>:<model>`,
+`FLYCANON_EMBEDDING_DIMENSIONS` to the width, and give the provider its
+credentials.
+
+| Provider | Model id example | Native width | Credentials |
+|----------|------------------|--------------|-------------|
+| OpenAI | `openai:text-embedding-3-small` | 1536 | `OPENAI_API_KEY` |
+| OpenAI | `openai:text-embedding-3-large` | 3072 | `OPENAI_API_KEY` |
+| **Azure OpenAI** | `azure:<deployment-name>` | per deployment | see the Azure block below |
+| AWS Bedrock | `bedrock:amazon.titan-embed-text-v2:0` | 1024 | AWS default credential chain + region |
+| Cohere | `cohere:embed-multilingual-v3.0` | 1024 | `COHERE_API_KEY` |
+| Mistral | `mistral:mistral-embed` | 1024 | `MISTRAL_API_KEY` |
+| Voyage | `voyage:voyage-3` | 1024 | `VOYAGE_API_KEY` |
+| Google | `google:text-embedding-004` | 768 | `GOOGLE_API_KEY` |
+| Ollama (local) | `ollama:nomic-embed-text` | 768 | none -- `FLYCANON_OLLAMA_BASE_URL` |
+
+Two rows to read carefully. The provider token for Voyage is **`voyage`**,
+not `voyageai:` -- the older spelling in this table was one
+`_build_embedder` never accepted. And **Google needs an extra flycanon
+does not install**: the framework's `GoogleEmbedder` imports
+`google.generativeai`, which is a different package from the
+`google-genai` that arrives transitively. Install it before configuring
+`google:`.
+
+### Azure OpenAI
+
+Azure is configured, not guessed. Before 26.8.0 the endpoint came from a
+bare `os.environ.get("AZURE_OPENAI_ENDPOINT", "")`, whose empty default
+failed inside the SDK on the first ingest; the api-version was pinned at
+`2024-02-01` inside the framework and unreachable from flycanon; and
+`dimensions` was forwarded to models that answer `400` to it.
+
+| Setting | Default | Note |
+|---|---|---|
+| `FLYCANON_AZURE_OPENAI_ENDPOINT` | `""` | `https://<resource>.openai.azure.com`. Falls back to `AZURE_OPENAI_ENDPOINT`. **Required** whenever an `azure:` model is configured, validated at config time. |
+| `FLYCANON_AZURE_OPENAI_API_VERSION` | `2026-05-01` | Data-plane api-version. |
+| `FLYCANON_AZURE_OPENAI_API_KEY` | `""` | Falls back to `AZURE_OPENAI_API_KEY`. |
+| `FLYCANON_AZURE_AUTH` | `api_key` | `api_key` or `managed_identity`. |
+| `FLYCANON_AZURE_MODEL_PRICES` | `""` | `<deployment>=<usd-per-million-in>/<usd-per-million-out>`, comma-separated. Prices the Azure **answer** path; see below. |
+
+One set of settings serves all three Azure paths: embeddings
+(`FLYCANON_EMBEDDING_MODEL=azure:...`), the RLM answer engine
+(`FLYCANON_RLM_ROOT_MODEL` / `_SUB_MODEL`) and the RAG answer model
+(`FLYCANON_ANSWER_MODEL`). An `azure:` answer model is built from these
+settings rather than from pydantic-ai's own bare `AZURE_OPENAI_*` /
+`OPENAI_API_VERSION` contract, so one Azure account is described in one
+place.
+
+**Cost on the Azure answer path.** Azure rates are per deployment and per
+agreement, and a deployment name carries no model identity, so flycanon
+ships no price table for them. With `FLYCANON_AZURE_MODEL_PRICES` unset,
+the Azure RLM client counts tokens exactly, records `cost_usd` as `0.00`
+and logs a `WARNING` once per deployment naming the deployment and this
+setting -- an unknown cost is reported, never passed off as free. A
+malformed entry is refused at construction rather than skipped, because a
+price table that drops the row you mistyped is a bill that is quietly
+wrong.
+
+**The `model=` argument on Azure is the DEPLOYMENT name, not the model
+name.** `azure:text-embedding-3-large` works only if the deployment
+happens to be named after the model; `azure:my-emb-3-large-deploy` is the
+general spelling. flycanon recognises a known model name appearing inside
+a deployment name (`prod-text-embedding-3-large` prices and validates as
+3-large) and asserts nothing about one it does not recognise.
+
+`FLYCANON_AZURE_AUTH=managed_identity` acquires a bearer token through
+`DefaultAzureCredential` for the
+`https://cognitiveservices.azure.com/.default` scope, so no key exists in
+the environment to leak. It needs the `azure` extra
+(`uv sync --extra azure`, which installs `azure-identity`).
+
+`dimensions` is sent only to models that accept it: the
+`text-embedding-3-*` line is Matryoshka-trained and takes 3072 / 1536 /
+1024 / 256 (3-large) or 1536 / 1024 / 512 / 256 (3-small);
+`text-embedding-ada-002` takes none and always returns 1536. A
+`flycanon reindex --dimensions` a model cannot produce is refused in the
+preflight, naming the widths it can.
+
+A 429 carries `Retry-After`, which flycanon honours exactly (with jitter),
+halving its in-flight window and recovering slowly. During a reindex a
+sustained throttle records `reindex.throttled` and keeps the cursor
+instead of consuming one of the job's attempts.
+
+### Changing the embedding model
+
+**It is `flycanon reindex`, not a fresh database.** Since 26.8.0
+`canon_chunk_vectors.embedding` has no fixed width: every row belongs to
+an *embedding set* (`canon_embedding_sets`), carries its own `set_id` /
+`dim` / `model`, and each set has its own partial HNSW index.
+`canon_workspaces.active_embedding_set_id` names the set that answers a
+workspace's searches, and changing the embedder is:
+
+```bash
+flycanon reindex --to azure:my-emb-3-large-deploy --dimensions 1536 \
+                 --tenant t-123 --workspace w-456 --estimate-only
+flycanon reindex --to azure:my-emb-3-large-deploy --dimensions 1536 \
+                 --tenant t-123 --workspace w-456
+```
+
+The old set serves every search for the whole run; the new one is
+invisible until it is activated, because the search predicate IS the set
+id. Activation is one `UPDATE` of one column, `--rollback` is the same
+`UPDATE` backwards, and `--drop-set` reclaims the old rows when the
+operator is satisfied. The full procedure is in
+`docs/operations-runbook.md`.
+
+Two consequences worth knowing before choosing a width:
+
+* **pgvector will not build an HNSW index on a `vector` column wider than
+  2000 dimensions.** flycanon indexes a wider set as `halfvec(N)`
+  (supported to 4000), storing full precision in the column and half in
+  the index. `text-embedding-3-large` at its native 3072 therefore works;
+  1536 is the cheaper trade and is a true truncation of the same vector.
+* **A mis-scoped query is now an error, not a wrong answer.** On a table
+  holding two widths, a query that omits the set predicate raises
+  `expected N dimensions, not M` from pgvector. That replaced the
+  boot-time refusal a single-width deployment used to get.
+
+A workspace whose set does not match this process's
+`FLYCANON_EMBEDDING_MODEL` logs a WARNING naming `flycanon reindex` and
+keeps serving from its set -- a warning and not a refusal, because one
+shared flycanon legitimately serves workspaces on different embedders.
+Per-workspace model choice is supported; per-**tenant credentials** are
+not yet (see `docs/security-model.md`).
+
+---
+
+## Authentication
+
+Three credentials, enforced by flycanon itself (since 26.7.1;
+earlier releases parsed `FLYCANON_API_KEYS` and enforced nothing):
+
+| Credential | Where | Gate |
+|------------|-------|------|
+| **Platform API key** -- `FLYCANON_API_KEYS=key1,key2,...` | `X-API-Key: <key>` or `Authorization: ApiKey <key>` | `ApiKeyMiddleware` on every `/api/v1/*` route except `GET /api/v1/version`, and on the admin dashboard. Missing -> `401 missing_api_key`, unknown -> `401 invalid_api_key`, both RFC 7807. Constant-time comparison; several keys allow rotation without downtime. |
+| **Agent token** -- minted by `POST /api/v1/agent-tokens` | `X-Agent-Token: agt_...` | Verified per request on `/api/v1/agent/*` (tenant, allowlist, scope, expiry, rate limit). A request carrying it does not need the platform key. |
+| **Operator JWT** -- `Authorization: Bearer <jwt>` | optional | Decoded without signature verification for the `actor` label and the `tenant` claim cross-check only. Not a gate: terminate and verify JWTs at a gateway if you need identity-based auth. |
+
+Default deployment: no key (open user tier). The boot log states the
+mode (`api-key gate ENABLED: n key(s)` / `api-key gate DISABLED`).
+Production deployments **must** set `FLYCANON_API_KEYS` (or front the
+service with a verifying gateway) before exposing `/api/v1/*` to any
+network other tenants can reach, and should set
+`FLYCANON_WEBHOOK_SECRET` if `callback_url` is used.
+
+---
+
+## Observability
+
+* **Tracing.** W3C trace context (`traceparent`, `tracestate`) +
+  correlation headers (`X-Correlation-Id`, `X-Request-Id`,
+  `X-Tenant-Id`) are propagated automatically by pyfly's
+  `CorrelationFilter` -- they ride into the audit log on every
+  mutation.
+* **Metrics.** Pyfly's actuator endpoints (`/actuator/metrics`,
+  `/actuator/prometheus`) expose the standard JVM-style metrics
+  (HTTP request totals + latency, async pool sizes, ...). Scrape
+  them with Prometheus.
+* **Health probes.** `/actuator/health/readiness` aggregates the
+  database health indicator + the EDA event-publisher health
+  indicator. `/actuator/health/liveness` is a process-up signal.
+  Wire them as Kubernetes `readinessProbe` + `livenessProbe`.
+
+```yaml
+# Kubernetes example
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: 8500
+  initialDelaySeconds: 5
+  periodSeconds: 5
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8500
+  periodSeconds: 10
+```
+
+---
+
+## Storage sizing
+
+flycanon does **not** store the canonical bytes -- only the
+extracted text, chunks, embeddings, and metadata. Rough planning
+numbers for the canonical store:
+
+| Per source (Manifiesto.pdf-ish: 12 pages of digital text) | Bytes |
+|-----------------------------------------------------------|-------|
+| `canon_sources` row | ~2 KB |
+| Extracted text (markdown) | ~25 KB |
+| Chunks (avg 800 chars * 30 chunks) | ~24 KB |
+| Embeddings (30 * 1536 dim * 4 bytes) | ~180 KB |
+| **Total** | **~230 KB per source** |
+
+A 10K-source corpus lands around **2.3 GB** before indexes. The
+`pgvector` HNSW index doubles that. Plan accordingly.
+
+---
+
+## Backup / DR
+
+The canonical state lives in **Postgres**. A pg_dump (or your cloud
+provider's managed backup) captures everything flycanon needs to
+resume:
+
+* `canon_sources` (no bytes)
+* `canon_chunks` (text + section path + page)
+* `canon_chunk_vectors` (embeddings)
+* `canon_knowledge_items` + `canon_knowledge_versions` + `canon_citations`
+* `canon_candidates` + `canon_audit_events` + `canon_taxonomy_nodes`
+* The `pyfly_eda_outbox` for in-flight EDA messages
+
+The BM25 projection lives in Postgres (`canon_chunks.tsv` + GIN
+index), so the pg_dump captures it too -- there is no separate
+file-backed corpus to back up.
+
+---
+
+## Upgrades
+
+Releases are CalVer (`YY.MM.PP`). The compatibility contract:
+
+* **`YY.MM.x`** -- patch releases. Drop-in replacement; no schema
+  change, no env-var change, no SDK breakage.
+* **`YY.MM.0`** -- monthly release. May introduce new optional env
+  vars or new endpoints, never breaks existing ones. Run `migrate`
+  before the new image rolls out.
+* **Major (year) bumps** -- explicitly documented breaking changes
+  in the release notes.
+
+The recommended upgrade dance:
+
+```bash
+# 1. Pull the new image
+docker pull ghcr.io/fireflyframework/flycanon:26.10.6
+
+# 2. Run migrations against the live database
+docker run --rm \
+  --env-file .env \
+  ghcr.io/fireflyframework/flycanon:26.10.6 migrate
+
+# 3. Roll the API + worker deployments
+docker compose --env-file .env up -d
+```
+
+API responses are append-only (new fields land as additive); existing
+SDK versions keep working against a newer service.
+
+---
+
+## Troubleshooting deploys
+
+See [troubleshooting.md](troubleshooting.md) for a problem -> root
+cause -> fix table covering the common production failure modes
+(embeddings unavailable, pgvector dim mismatch, OCR missing, ...).
+
+## Repository and package namespaces
+
+See [branding.md](branding.md#package-registries) for the canonical source
+URLs and the publication checks required before using the new package namespace.

@@ -1,0 +1,164 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<ffk-side-panel [open]="open" [heading]="'Export selected content' | ffkText" (closed)="close()">
+  @if (!state.exportRecord()) {
+    @if (selection?.kind === 'conversation') {
+      <p>{{ 'Export the selected messages. Private attachment files are excluded.' | ffkText }}</p>
+      <label class="field"
+        ><span>{{ 'Format' | ffkText }}</span
+        ><select
+          [(ngModel)]="conversationFormat"
+          (ngModelChange)="changed()"
+          [disabled]="state.pending()"
+        >
+          <option value="markdown">Markdown</option>
+          <option value="json">JSON</option>
+        </select></label
+      >
+      <label class="checkbox"
+        ><input
+          type="checkbox"
+          [(ngModel)]="includeEvidence"
+          (ngModelChange)="changed()"
+          [disabled]="state.pending()"
+        />{{ 'Include source evidence' | ffkText }}</label
+      >
+    } @else if (selection?.kind === 'query_result') {
+      <p>{{ 'Download the stored execution result. The query will not run again.' | ffkText }}</p>
+      <label class="field"
+        ><span>{{ 'Format' | ffkText }}</span
+        ><select
+          [(ngModel)]="resultFormat"
+          (ngModelChange)="changed()"
+          [disabled]="state.pending()"
+        >
+          <option value="parquet">Parquet</option>
+          <option value="csv">CSV</option>
+          <option value="jsonl">JSONL</option>
+        </select></label
+      >
+      @if (resultFormat === 'csv') {
+        <label class="field"
+          ><span>{{ 'CSV values' | ffkText }}</span
+          ><select [(ngModel)]="csvMode" (ngModelChange)="changed()" [disabled]="state.pending()">
+            <option value="spreadsheet_safe">{{ 'Spreadsheet-safe text' | ffkText }}</option>
+            <option value="exact">{{ 'Exact machine values' | ffkText }}</option>
+          </select></label
+        >
+      }
+    }
+    @if (state.exportReview(); as review) {
+      <section class="review" [attr.aria-label]="'Review export' | ffkText">
+        <h3>{{ review.title }}</h3>
+        <p class="help">
+          {{
+            (review.completeness === 'selected_messages'
+              ? 'Selected messages'
+              : review.completeness === 'bounded'
+                ? 'Stored bounded execution'
+                : 'Historical completeness is unknown'
+            ) | ffkText
+          }}
+        </p>
+        @for (note of review.omissions ?? []; track note) {
+          <p class="notice">{{ note | ffkText }}</p>
+        }
+        @if (review.result; as result) {
+          <dl>
+            <dt>{{ 'Stored rows' | ffkText }}</dt>
+            <dd>{{ result.row_count | ffkValue: 'integer' }}</dd>
+            <dt>{{ 'Historical row cap' | ffkText }}</dt>
+            <dd>
+              {{
+                result.row_cap === null
+                  ? ('Unknown' | ffkText)
+                  : (result.row_cap | ffkValue: 'integer')
+              }}
+            </dd>
+            <dt>{{ 'Truncated' | ffkText }}</dt>
+            <dd>
+              {{
+                (result.truncated === true ? 'Yes' : result.truncated === false ? 'No' : 'Unknown')
+                  | ffkText
+              }}
+            </dd>
+          </dl>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>{{ 'Column' | ffkText }}</th>
+                  <th>{{ 'Type' | ffkText }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (column of result.columns ?? []; track column.name) {
+                  <tr>
+                    <td>{{ column.name }}</td>
+                    <td>{{ column.data_type }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+        <div class="message-list">
+          @for (message of review.messages ?? []; track message.id) {
+            <article class="message">
+              <h3>{{ (message.role === 'user' ? 'You' : 'koinon') | ffkText }}</h3>
+              <p>{{ message.text }}</p>
+            </article>
+          }
+        </div>
+        <p class="help">
+          {{ 'Review expires' | ffkText }} {{ review.expires_at | ffkDate: undefined : 'datetime' }}
+        </p>
+      </section>
+    }
+    <div class="actions">
+      <ffk-button [disabled]="!selection || state.pending()" (click)="review()">{{
+        'Review export' | ffkText
+      }}</ffk-button>
+      @if (state.exportReview()) {
+        <ffk-button variant="primary" [loading]="state.pending()" (click)="create()">{{
+          'Create export' | ffkText
+        }}</ffk-button>
+      }
+    </div>
+  } @else {
+    @if (state.exportRecord(); as record) {
+      <h3>{{ record.title }}</h3>
+      <p class="notice" role="status">
+        {{
+          (record.status === 'ready'
+            ? 'Your export is ready.'
+            : record.status === 'cancelled'
+              ? 'This export was cancelled.'
+              : 'This export has expired.'
+          ) | ffkText
+        }}
+      </p>
+      <p class="help">
+        {{ 'Expires' | ffkText }} {{ record.expires_at | ffkDate: undefined : 'datetime' }}
+      </p>
+      @if (record.status === 'ready') {
+        <div class="actions">
+          <ffk-button variant="primary" [loading]="state.pending()" (click)="download()">{{
+            'Download' | ffkText
+          }}</ffk-button
+          ><ffk-button variant="quiet" [disabled]="state.pending()" (click)="cancel()">{{
+            'Cancel export' | ffkText
+          }}</ffk-button>
+        </div>
+      }
+    }
+  }
+  @if (state.pending()) {
+    <ffk-skeleton height="3px" [label]="'Working' | ffkText" />
+  }
+  @if (state.error() || localError()) {
+    <p class="notice error" role="alert">{{ state.error() || localError() | ffkText }}</p>
+  }
+  @if (downloaded()) {
+    <p role="status">{{ 'Download started' | ffkText }}: {{ downloaded() }}</p>
+  }
+</ffk-side-panel>

@@ -1,0 +1,443 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+@if (!editor()) {
+  <header class="heading">
+    <div>
+      <h2>{{ 'People & access' | ffkText }}</h2>
+      <p>{{ 'Choose who can use this organization and what they can do.' | ffkText }}</p>
+    </div>
+    <div class="actions">
+      <ffk-button (click)="open('existing', null, $event)">{{
+        'Add existing person' | ffkText
+      }}</ffk-button
+      ><ffk-button variant="primary" (click)="open('invite', null, $event)">{{
+        'Invite person' | ffkText
+      }}</ffk-button>
+    </div>
+  </header>
+  <nav class="view-switch" [attr.aria-label]="'Access views' | ffkText">
+    <button [attr.aria-current]="tab() === 'members' ? 'page' : null" (click)="navigate('members')">
+      {{ 'Role assignments' | ffkText }}</button
+    ><button
+      [attr.aria-current]="tab() === 'invitations' ? 'page' : null"
+      (click)="navigate('invitations')"
+    >
+      {{ 'Invitations' | ffkText }}
+    </button>
+  </nav>
+}
+@if (service.pending()) {
+  <ffk-skeleton width="60%" height="3px" [label]="'Working' | ffkText" />
+}
+@if (service.error()) {
+  <div class="error" role="alert">
+    <p>{{ errorHelp() | ffkText }}</p>
+    <details>
+      <summary>{{ 'Error details' | ffkText }}</summary>
+      <p>{{ service.error()?.message }}</p>
+    </details>
+  </div>
+}
+@if (service.notice()) {
+  <p class="notice" role="status">{{ service.notice() | ffkText }}</p>
+}
+@if (editor()) {
+  <header class="editor-heading">
+    <ffk-button
+      variant="quiet"
+      icon="chevron-left"
+      [disabled]="service.pending()"
+      (click)="close()"
+      >{{ 'Back to people' | ffkText }}</ffk-button
+    >
+    <h2 #editorHeading tabindex="-1">
+      {{
+        (editor() === 'edit'
+          ? 'Change access'
+          : editor() === 'invite'
+            ? 'Invite a person'
+            : 'Add existing person'
+        ) | ffkText
+      }}
+    </h2>
+    <p>
+      {{
+        (editor() === 'invite'
+          ? 'Create a private link for someone who can sign in through your organization’s identity provider. No email will be sent.'
+          : 'Permissions from organization and workspace roles are combined.'
+        ) | ffkText
+      }}
+    </p>
+  </header>
+  @if (service.created()) {
+    <section class="invitation-result" aria-labelledby="invitation-result-heading">
+      <h3 id="invitation-result-heading">{{ 'Invitation link created' | ffkText }}</h3>
+      <p>
+        {{
+          'Anyone with this private link who signs in through your identity provider can accept this role. Share it only with the intended person.'
+            | ffkText
+        }}
+      </p>
+      <dl>
+        <dt>{{ 'Role' | ffkText }}</dt>
+        <dd>{{ roleName(service.created()!.invitation.role) | ffkText }}</dd>
+        <dt>{{ 'Access' | ffkText }}</dt>
+        <dd>{{ scopeName(service.created()!.invitation.workspace_id) | ffkText }}</dd>
+        <dt>{{ 'Expires' | ffkText }}</dt>
+        <dd>{{ service.created()!.invitation.expires_at | ffkDate: undefined : 'datetime' }}</dd>
+      </dl>
+      <label
+        >{{ 'Private invitation link' | ffkText
+        }}<textarea
+          readonly
+          rows="3"
+          [value]="invitationLink()"
+          (focus)="$any($event.target).select()"
+        ></textarea>
+      </label>
+      <p>
+        {{ 'This link is shown once. Closing this view removes it from this session.' | ffkText }}
+      </p>
+      <div class="actions">
+        <ffk-button (click)="copyLink()">{{
+          (copied() ? 'Copied' : 'Copy link') | ffkText
+        }}</ffk-button
+        ><ffk-button variant="primary" (click)="close(); navigate('invitations')">{{
+          'Done' | ffkText
+        }}</ffk-button>
+      </div>
+    </section>
+  } @else {
+    @if (editor() === 'existing') {
+      <section class="directory-section" aria-labelledby="choose-person">
+        <h3 id="choose-person">{{ 'Choose a person' | ffkText }}</h3>
+        <p>
+          {{
+            'Search people who already belong to this organization. Use an invitation for someone new.'
+              | ffkText
+          }}
+        </p>
+        <ffk-search-field
+          [value]="directoryQuery"
+          [label]="'Search people' | ffkText"
+          [placeholder]="'Search people' | ffkText"
+          [actionLabel]="'Search' | ffkText"
+          (valueChange)="directoryQuery = $event"
+          (searchSubmitted)="service.searchPeople(directoryQuery)"
+        />
+        @if (service.directory()) {
+          <ul class="directory-results">
+            @for (person of service.directory()!.items; track person.subject) {
+              <li>
+                <button
+                  type="button"
+                  [attr.aria-pressed]="selected()?.subject === person.subject"
+                  (click)="select(person)"
+                >
+                  <span class="avatar" aria-hidden="true">
+                    @if (service.directoryAvatars()[person.subject]) {
+                      <img [src]="service.directoryAvatars()[person.subject]" alt="" />
+                    } @else {
+                      {{ initials(person.display_name || '?') }}
+                    }</span
+                  ><span>{{ person.display_name || ('Unnamed member' | ffkText) }}</span
+                  ><span class="selected-label">{{
+                    (selected()?.subject === person.subject ? 'Selected' : 'Select') | ffkText
+                  }}</span>
+                </button>
+              </li>
+            } @empty {
+              <li class="empty">
+                {{ 'No matching people. Invite someone new instead.' | ffkText }}
+              </li>
+            }
+          </ul>
+          @if (service.directory()?.next_cursor) {
+            <ffk-button
+              (click)="service.searchPeople(directoryQuery, service.directory()!.next_cursor!)"
+              [disabled]="service.searching()"
+              >{{ 'More people' | ffkText }}</ffk-button
+            >
+          }
+        }
+        @if (selected()) {
+          <p class="notice" role="status">
+            {{ 'Selected person' | ffkText }}:
+            {{ selected()!.display_name || ('Unnamed member' | ffkText) }}
+          </p>
+        }
+      </section>
+    }
+    <form class="access-form" (ngSubmit)="save()">
+      @if (editor() === 'edit') {
+        <p class="person-name">{{ name(record()!) | ffkText }}</p>
+      }
+      <label
+        >{{ 'Access scope' | ffkText
+        }}<select
+          name="access-scope"
+          [attr.aria-label]="'Access scope' | ffkText"
+          [(ngModel)]="targetScope"
+          [disabled]="editor() === 'edit' || service.pending()"
+        >
+          @if (organizationAdmin()) {
+            <option value="">{{ 'Entire organization' | ffkText }}</option>
+          }
+          @for (workspace of workspaces(); track workspace.id) {
+            <option [value]="workspace.id">{{ workspace.name }}</option>
+          }</select
+        ><small>{{
+          'An organization role applies to every workspace. A workspace role applies only there.'
+            | ffkText
+        }}</small></label
+      >
+      <label
+        >{{ 'Role' | ffkText
+        }}<select
+          name="role"
+          [attr.aria-label]="'Role' | ffkText"
+          [(ngModel)]="role"
+          [disabled]="service.pending()"
+        >
+          @for (item of roles; track item.id) {
+            <option [value]="item.id">{{ item.label | ffkText }}</option>
+          }</select
+        ><small>{{ roleDescription() | ffkText }}</small></label
+      >
+      @if (editor() === 'invite') {
+        <label
+          >{{ 'Invitation label (optional)' | ffkText
+          }}<input name="label" [(ngModel)]="label" maxlength="120" /><small>{{
+            'A reminder for administrators. It does not restrict who can accept the link.' | ffkText
+          }}</small></label
+        ><label
+          >{{ 'Link expires in' | ffkText
+          }}<select name="expiry" [(ngModel)]="hours">
+            <option [ngValue]="1">{{ '1 hour' | ffkText }}</option>
+            <option [ngValue]="24">{{ '24 hours' | ffkText }}</option>
+            <option [ngValue]="72">{{ '3 days' | ffkText }}</option>
+            <option [ngValue]="168">{{ '7 days' | ffkText }}</option>
+          </select></label
+        >
+      }
+      @if (role === 'admin') {
+        <p class="caution">
+          {{
+            'Administrators can change other people’s access and manage knowledge settings in this scope.'
+              | ffkText
+          }}
+        </p>
+      }
+      @if (formError()) {
+        <p class="error" role="alert">{{ formError() | ffkText }}</p>
+      }
+      <div class="actions">
+        <ffk-button variant="primary" type="submit" [loading]="service.pending()">{{
+          (editor() === 'invite' ? 'Create invitation link' : 'Save access') | ffkText
+        }}</ffk-button
+        ><ffk-button (click)="close()" [disabled]="service.pending()">{{
+          'Cancel' | ffkText
+        }}</ffk-button>
+      </div>
+    </form>
+  }
+} @else if (tab() === 'members') {
+  <div class="filters">
+    <ffk-search-field
+      [value]="query"
+      [label]="'Search role assignments' | ffkText"
+      [placeholder]="'Search role assignments' | ffkText"
+      [actionLabel]="'Search' | ffkText"
+      (valueChange)="query = $event"
+      (searchSubmitted)="load()"
+    /><label
+      >{{ 'Role' | ffkText
+      }}<select
+        [attr.aria-label]="'Role' | ffkText"
+        [(ngModel)]="roleFilter"
+        (ngModelChange)="load()"
+      >
+        <option value="">{{ 'All roles' | ffkText }}</option>
+        @for (role of roles; track role.id) {
+          <option [value]="role.id">{{ role.label | ffkText }}</option>
+        }
+      </select></label
+    ><label
+      >{{ 'Access scope' | ffkText
+      }}<select
+        [attr.aria-label]="'Access scope' | ffkText"
+        [(ngModel)]="scopeFilter"
+        (ngModelChange)="load()"
+      >
+        @if (organizationAdmin()) {
+          <option value="all">{{ 'All assignments' | ffkText }}</option>
+          <option value="tenant">{{ 'Organization roles' | ffkText }}</option>
+        }
+        @for (workspace of workspaces(); track workspace.id) {
+          <option [value]="workspace.id">{{ workspace.name }}</option>
+        }
+      </select></label
+    >
+  </div>
+  @if (removing()) {
+    <section class="confirmation" role="alert" aria-labelledby="remove-access-heading">
+      <h3 id="remove-access-heading">{{ 'Remove this role?' | ffkText }}</h3>
+      <p>{{ name(removing()!) | ffkText }} · {{ scopeName(removing()!.workspace_id) | ffkText }}</p>
+      <p>
+        {{
+          'Other organization or workspace roles may still give this person access. The last organization administrator cannot be removed.'
+            | ffkText
+        }}
+      </p>
+      <div class="actions">
+        <ffk-button variant="danger" [loading]="service.pending()" (click)="remove()">{{
+          'Remove role' | ffkText
+        }}</ffk-button
+        ><ffk-button (click)="removing.set(null)">{{ 'Cancel' | ffkText }}</ffk-button>
+      </div>
+    </section>
+  }
+  <div
+    class="table-wrap"
+    tabindex="0"
+    role="region"
+    [attr.aria-label]="'Role assignments' | ffkText"
+  >
+    <table>
+      <thead>
+        <tr>
+          <th>{{ 'Person' | ffkText }}</th>
+          <th>{{ 'Role' | ffkText }}</th>
+          <th>{{ 'Access' | ffkText }}</th>
+          <th>
+            <span class="sr-only">{{ 'Actions' | ffkText }}</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (member of service.members()?.items ?? []; track member.id) {
+          <tr>
+            <td>
+              <div class="person">
+                <span class="avatar" aria-hidden="true">
+                  @if (avatar(member)) {
+                    <img [src]="avatar(member)" alt="" />
+                  } @else {
+                    {{ initials(name(member)) }}
+                  }</span
+                ><span>{{ name(member) | ffkText }}</span>
+              </div>
+            </td>
+            <td [attr.data-label]="'Role' | ffkText">{{ roleName(member.role) | ffkText }}</td>
+            <td [attr.data-label]="'Access' | ffkText">
+              {{ scopeName(member.workspace_id) | ffkText }}
+            </td>
+            <td>
+              <div class="row-actions">
+                <ffk-button
+                  variant="quiet"
+                  [label]="('Change access' | ffkText) + ' · ' + name(member)"
+                  (click)="open('edit', member, $event)"
+                  >{{ 'Change' | ffkText }}</ffk-button
+                ><ffk-button
+                  variant="quiet"
+                  [label]="('Remove role' | ffkText) + ' · ' + name(member)"
+                  (click)="removing.set(member)"
+                  >{{ 'Remove' | ffkText }}</ffk-button
+                >
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          @if (!service.pending() && !service.error()) {
+            <tr>
+              <td colspan="4" class="empty">
+                {{ 'No role assignments match these filters.' | ffkText }}
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+  <ffk-pagination
+    [page]="service.members()"
+    label="Role assignments"
+    [loading]="service.pending()"
+    (pageChanged)="load($event)"
+    (sizeChanged)="pageSize = $event; load()"
+  />
+} @else {
+  <label class="status-filter"
+    >{{ 'Invitation status' | ffkText
+    }}<select [(ngModel)]="inviteStatus" (ngModelChange)="loadInvitations()">
+      <option value="pending">{{ 'Pending' | ffkText }}</option>
+      <option value="accepted">{{ 'Accepted' | ffkText }}</option>
+      <option value="expired">{{ 'Expired' | ffkText }}</option>
+      <option value="revoked">{{ 'Revoked' | ffkText }}</option>
+    </select></label
+  >
+  @if (revoking()) {
+    <section class="confirmation">
+      <h3>{{ 'Revoke this invitation?' | ffkText }}</h3>
+      <p>{{ 'The private link will stop working immediately.' | ffkText }}</p>
+      <div class="actions">
+        <ffk-button variant="danger" (click)="revoke()" [loading]="service.pending()">{{
+          'Revoke link' | ffkText
+        }}</ffk-button
+        ><ffk-button (click)="revoking.set(null)">{{ 'Cancel' | ffkText }}</ffk-button>
+      </div>
+    </section>
+  }
+  <div class="table-wrap" tabindex="0" role="region" [attr.aria-label]="'Invitations' | ffkText">
+    <table>
+      <thead>
+        <tr>
+          <th>{{ 'Invitation' | ffkText }}</th>
+          <th>{{ 'Role' | ffkText }}</th>
+          <th>{{ 'Access' | ffkText }}</th>
+          <th>{{ 'Expires' | ffkText }}</th>
+          <th>
+            <span class="sr-only">{{ 'Actions' | ffkText }}</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (invitation of service.invitations()?.items ?? []; track invitation.id) {
+          <tr>
+            <td>
+              {{ invitation.label || ('Private link' | ffkText)
+              }}<small>{{ invitationStatusLabel(invitation.status) | ffkText }}</small>
+            </td>
+            <td [attr.data-label]="'Role' | ffkText">{{ roleName(invitation.role) | ffkText }}</td>
+            <td [attr.data-label]="'Access' | ffkText">
+              {{ scopeName(invitation.workspace_id) | ffkText }}
+            </td>
+            <td [attr.data-label]="'Expires' | ffkText">
+              {{ invitation.expires_at | ffkDate: undefined : 'datetime' }}
+            </td>
+            <td>
+              @if (invitation.status === 'pending') {
+                <ffk-button variant="quiet" (click)="revoking.set(invitation)">{{
+                  'Revoke' | ffkText
+                }}</ffk-button>
+              }
+            </td>
+          </tr>
+        } @empty {
+          @if (!service.pending()) {
+            <tr>
+              <td colspan="5" class="empty">{{ 'No invitations in this view.' | ffkText }}</td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+  <ffk-pagination
+    [page]="service.invitations()"
+    label="Invitations"
+    [loading]="service.pending()"
+    (pageChanged)="loadInvitations($event)"
+    (sizeChanged)="pageSize = $event; loadInvitations()"
+  />
+}

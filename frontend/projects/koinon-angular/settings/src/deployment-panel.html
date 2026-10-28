@@ -1,0 +1,178 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<p class="ownership">{{ 'Managed by your deployment administrator.' | ffkText }}</p>
+@if (deployment; as d) {
+  <section class="observation-group">
+    <h3>{{ 'File storage' | ffkText }}</h3>
+    @for (storage of d.storage; track storage.id) {
+      <article>
+        <div>
+          <h4>{{ storageName(storage.id) | ffkText }}</h4>
+          <p>{{ backendName(storage.backend) | ffkText }}</p>
+          <p>{{ storage.reason }}</p>
+          @if (storage.store_originals === false) {
+            <p>{{ 'Original file download is disabled.' | ffkText }}</p>
+          }
+          <time [attr.datetime]="storage.observed_at" [title]="storage.observed_at"
+            >{{ 'Checked' | ffkText }}
+            {{ storage.observed_at | ffkDate: undefined : 'datetime' }}</time
+          >
+        </div>
+        <ffk-badge
+          [tone]="
+            storage.available === true
+              ? 'ready'
+              : storage.available === false
+                ? 'attention'
+                : 'neutral'
+          "
+          >{{ label(storage) | ffkText }}</ffk-badge
+        >
+      </article>
+    } @empty {
+      <p class="empty-text">{{ 'No storage observations were returned.' | ffkText }}</p>
+    }
+  </section>
+  <section class="observation-group">
+    <h3>{{ 'Search indexes' | ffkText }}</h3>
+    @for (index of d.indexes; track $index) {
+      <article>
+        <div>
+          <h4>
+            {{ 'Document search index' | ffkText }}
+            @if (index.workspace_id) {
+              · {{ workspaceName(index.workspace_id) }}
+            }
+          </h4>
+          <p>{{ index.reason }}</p>
+          <dl>
+            @if (index.embedding_sets !== undefined) {
+              <dt>{{ 'Embedding sets' | ffkText }}</dt>
+              <dd>{{ index.embedding_sets | ffkValue }}</dd>
+            }
+            @if (index.physical_indexes !== undefined) {
+              <dt>{{ 'Physical indexes' | ffkText }}</dt>
+              <dd>{{ index.physical_indexes | ffkValue }}</dd>
+            }
+            @if (index.vector_extension !== undefined) {
+              <dt>{{ 'Vector extension' | ffkText }}</dt>
+              <dd>{{ (index.vector_extension ? 'Available' : 'Not configured') | ffkText }}</dd>
+            }
+          </dl>
+          <time [attr.datetime]="index.observed_at" [title]="index.observed_at"
+            >{{ 'Checked' | ffkText }}
+            {{ index.observed_at | ffkDate: undefined : 'datetime' }}</time
+          >
+        </div>
+        <ffk-badge
+          [tone]="
+            index.available === true ? 'ready' : index.available === false ? 'attention' : 'neutral'
+          "
+          >{{ label(index) | ffkText }}</ffk-badge
+        >
+      </article>
+    } @empty {
+      <p class="empty-text">{{ 'No index observations were returned.' | ffkText }}</p>
+    }
+  </section>
+  <section class="observation-group">
+    <h3>{{ 'Data sources' | ffkText }}</h3>
+    @for (source of d.datasources; track source.id) {
+      <article>
+        <div>
+          <h4>{{ datasourceName(source.id) | ffkText }}</h4>
+          <p>{{ source.driver }} · {{ source.reason }}</p>
+          @if (source.pool_usage; as usage) {
+            <dl>
+              @if (usage.checked_out !== undefined) {
+                <dt>{{ 'Connections in use' | ffkText }}</dt>
+                <dd>{{ usage.checked_out | ffkValue }}</dd>
+              }
+              @if (usage.size !== undefined) {
+                <dt>{{ 'Pool size' | ffkText }}</dt>
+                <dd>{{ usage.size | ffkValue }}</dd>
+              }
+            </dl>
+          }
+          @if (source.role_policy; as policy) {
+            <div class="policy">
+              <span>{{ 'Access policy' | ffkText }}</span
+              ><ffk-badge [tone]="policy.available === false ? 'attention' : 'neutral'">{{
+                label(policy) | ffkText
+              }}</ffk-badge>
+              <p>{{ policy.reason }}</p>
+            </div>
+          }
+          <details>
+            <summary>{{ 'Connection limits' | ffkText }}</summary>
+            <dl>
+              <dt>{{ 'Pool size' | ffkText }}</dt>
+              <dd>{{ source.pool.size | ffkValue }}</dd>
+              <dt>{{ 'Maximum overflow' | ffkText }}</dt>
+              <dd>{{ source.pool.max_overflow | ffkValue }}</dd>
+              <dt>{{ 'Acquire timeout (seconds)' | ffkText }}</dt>
+              <dd>{{ source.pool.timeout | ffkValue }}</dd>
+              <dt>{{ 'Recycle interval (seconds)' | ffkText }}</dt>
+              <dd>{{ source.pool.recycle | ffkValue }}</dd>
+            </dl>
+          </details>
+          <time [attr.datetime]="source.observed_at" [title]="source.observed_at"
+            >{{ 'Checked' | ffkText }}
+            {{ source.observed_at | ffkDate: undefined : 'datetime' }}</time
+          >
+        </div>
+        <ffk-badge
+          [tone]="
+            source.available === true
+              ? 'ready'
+              : source.available === false
+                ? 'attention'
+                : 'neutral'
+          "
+          >{{ label(source) | ffkText }}</ffk-badge
+        >
+      </article>
+    }
+  </section>
+  <details class="operational-limits">
+    <summary>{{ 'Metrics & processing limits' | ffkText }}</summary>
+    <div class="metrics-state">
+      <h4>{{ 'Metrics collection' | ffkText }}</h4>
+      <ffk-badge [tone]="d.metrics.available === false ? 'attention' : 'neutral'">{{
+        label(d.metrics) | ffkText
+      }}</ffk-badge>
+      <p>{{ d.metrics.reason }}</p>
+      <p>
+        {{
+          (d.metrics.exporter_configured
+            ? 'Metrics exporter configured'
+            : 'Metrics exporter not configured'
+          ) | ffkText
+        }}
+      </p>
+    </div>
+    <dl>
+      <dt>{{ 'Concurrent workers' | ffkText }}</dt>
+      <dd>{{ d.limits.worker_concurrency | ffkValue }}</dd>
+      <dt>{{ 'Queued jobs per person' | ffkText }}</dt>
+      <dd>{{ d.limits.max_queued_per_subject | ffkValue }}</dd>
+      <dt>{{ 'Job lease (seconds)' | ffkText }}</dt>
+      <dd>{{ d.limits.job_lease_seconds | ffkValue }}</dd>
+      <dt>{{ 'Workspaces checked per index observation' | ffkText }}</dt>
+      <dd>{{ d.limits.max_index_workspaces | ffkValue }}</dd>
+    </dl>
+    <details>
+      <summary>{{ 'Registered metrics' | ffkText }}</summary>
+      <ul>
+        @for (name of d.metrics.names; track name) {
+          <li>
+            <code>{{ name }}</code>
+          </li>
+        }
+      </ul>
+    </details>
+  </details>
+} @else {
+  <p class="empty-text">
+    {{ 'Deployment observations are unavailable. Refresh to try again.' | ffkText }}
+  </p>
+}

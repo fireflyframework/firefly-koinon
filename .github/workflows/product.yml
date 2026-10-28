@@ -1,0 +1,110 @@
+# Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
+name: Product
+
+on:
+  push:
+    branches: [main]
+    paths: ["backend/**", "packages/**", "frontend/**", "sdk/typescript/**", "brand/**", "deploy/**", ".github/workflows/product.yml"]
+  pull_request:
+    paths: ["backend/**", "packages/**", "frontend/**", "sdk/typescript/**", "brand/**", "deploy/**", ".github/workflows/product.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: product-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PYTHONPATH: src:../packages/canon/src:../packages/structured/src
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - name: Install locked backend and development tools
+        run: |
+          python -m pip install uv==0.11.19
+          uv sync --project backend --locked --extra dev
+      - name: Lint and type check the application
+        working-directory: backend
+        run: |
+          .venv/bin/ruff check src tests
+          .venv/bin/pyright --pythonpath .venv/bin/python src/koinon
+      - name: Test application and deployment configuration
+        working-directory: backend
+        run: |
+          .venv/bin/python -m pytest -q
+          .venv/bin/python -m pytest -q ../deploy/tests
+
+  native-units:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package: canon
+            extras: dev
+            suites: tests/unit tests/native
+          - package: structured
+            extras: dev --extra file-readers
+            suites: tests/unit
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - name: Install the domain's locked development dependencies
+        run: |
+          python -m pip install uv==0.11.19
+          uv sync --project packages/${{ matrix.package }} --locked --extra ${{ matrix.extras }}
+      - name: Test native domain behavior
+        working-directory: packages/${{ matrix.package }}
+        run: .venv/bin/python -m pytest -q ${{ matrix.suites }}
+
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: |
+            sdk/typescript/package-lock.json
+            frontend/package-lock.json
+      - name: Build the framework-neutral SDK
+        working-directory: sdk/typescript
+        run: |
+          npm ci --ignore-scripts
+          npm run build
+      - name: Install frontend tools and Chromium
+        working-directory: frontend
+        run: |
+          npm ci --ignore-scripts
+          npx playwright install --with-deps chromium
+      - name: Lint, test and build all frontend entry points
+        working-directory: frontend
+        run: |
+          npm run lint
+          npm test
+          npm run build
+          npx ng build catalog
+          node scripts/smoke-consumer.mjs
+      - name: Test browser journeys
+        working-directory: frontend
+        run: npx playwright test

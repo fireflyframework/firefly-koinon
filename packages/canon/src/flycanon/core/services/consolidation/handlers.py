@@ -1,0 +1,191 @@
+# Copyright 2024-2026 Firefly Software Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""CQRS handlers for the candidate lifecycle."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+from pyfly.container import service
+from pyfly.cqrs import Command, CommandHandler, Query, QueryHandler, command_handler, query_handler
+
+from flycanon.core.mappers import to_candidate_record
+from flycanon.core.services.consolidation.candidate_service import CandidateService
+from flycanon.interfaces.dtos.candidate import (
+    AcceptCandidateRequest,
+    CandidateRecord,
+    CandidatesPage,
+    ProposeCandidateRequest,
+    RejectCandidateRequest,
+)
+from flycanon.interfaces.enums import CandidateStatus, Domain
+from flycanon.models.repositories import CandidateRepository
+
+
+@dataclass(frozen=True)
+class ProposeCandidatesCommand(Command[list[CandidateRecord]]):
+    request: ProposeCandidateRequest
+    correlation_id: str | None = None
+    tenant_id: str | None = None
+    workspace_id: str | None = None
+    actor: str | None = None
+
+
+@command_handler
+@service(name="canon.ProposeCandidatesHandler")
+class ProposeCandidatesHandler(CommandHandler[ProposeCandidatesCommand, list[CandidateRecord]]):
+    def __init__(self, candidates: CandidateService) -> None:
+        super().__init__()
+        self._candidates = candidates
+
+    async def do_handle(self, command: ProposeCandidatesCommand) -> list[CandidateRecord]:
+        rows = await self._candidates.propose_from_source(
+            command.request,
+            tenant_id=command.tenant_id or "default",
+            workspace_id=command.workspace_id or "default",
+            correlation_id=command.correlation_id,
+        )
+        return [to_candidate_record(r) for r in rows]
+
+
+@dataclass(frozen=True)
+class AcceptCandidateCommand(Command[CandidateRecord]):
+    candidate_id: str
+    request: AcceptCandidateRequest
+    correlation_id: str | None = None
+    tenant_id: str | None = None
+    workspace_id: str | None = None
+    actor: str | None = None
+
+
+@command_handler
+@service(name="canon.AcceptCandidateHandler")
+class AcceptCandidateHandler(CommandHandler[AcceptCandidateCommand, CandidateRecord]):
+    def __init__(self, candidates: CandidateService) -> None:
+        super().__init__()
+        self._candidates = candidates
+
+    async def do_handle(self, command: AcceptCandidateCommand) -> CandidateRecord:
+        row = await self._candidates.accept(
+            command.candidate_id,
+            command.request,
+            tenant_id=command.tenant_id or "default",
+            workspace_id=command.workspace_id or "default",
+            correlation_id=command.correlation_id,
+        )
+        return to_candidate_record(row)
+
+
+@dataclass(frozen=True)
+class RejectCandidateCommand(Command[CandidateRecord]):
+    candidate_id: str
+    request: RejectCandidateRequest
+    correlation_id: str | None = None
+    tenant_id: str | None = None
+    workspace_id: str | None = None
+    actor: str | None = None
+
+
+@command_handler
+@service(name="canon.RejectCandidateHandler")
+class RejectCandidateHandler(CommandHandler[RejectCandidateCommand, CandidateRecord]):
+    def __init__(self, candidates: CandidateService) -> None:
+        super().__init__()
+        self._candidates = candidates
+
+    async def do_handle(self, command: RejectCandidateCommand) -> CandidateRecord:
+        row = await self._candidates.reject(
+            command.candidate_id,
+            command.request,
+            tenant_id=command.tenant_id or "default",
+            workspace_id=command.workspace_id or "default",
+            correlation_id=command.correlation_id,
+        )
+        return to_candidate_record(row)
+
+
+@dataclass(frozen=True)
+class GetCandidateQuery(Query[CandidateRecord | None]):
+    candidate_id: str
+    tenant_id: str | None = None
+    workspace_id: str | None = None
+
+
+@query_handler
+@service(name="canon.GetCandidateHandler")
+class GetCandidateHandler(QueryHandler[GetCandidateQuery, CandidateRecord | None]):
+    def __init__(self, repository: CandidateRepository) -> None:
+        super().__init__()
+        self._repository = repository
+
+    async def do_handle(self, query: GetCandidateQuery) -> CandidateRecord | None:
+        row = await self._repository.get(
+            query.candidate_id,
+            tenant_id=query.tenant_id or "default",
+            workspace_id=query.workspace_id or "default",
+        )
+        if row is None:
+            return None
+        return to_candidate_record(row)
+
+
+@dataclass(frozen=True)
+class ListCandidatesQuery(Query[CandidatesPage]):
+    statuses: list[CandidateStatus] = field(default_factory=list)
+    source_id: str | None = None
+    domain: Domain | None = None
+    limit: int = 50
+    offset: int = 0
+    tenant_id: str | None = None
+    workspace_id: str | None = None
+
+
+@query_handler
+@service(name="canon.ListCandidatesHandler")
+class ListCandidatesHandler(QueryHandler[ListCandidatesQuery, CandidatesPage]):
+    def __init__(self, repository: CandidateRepository) -> None:
+        super().__init__()
+        self._repository = repository
+
+    async def do_handle(self, query: ListCandidatesQuery) -> CandidatesPage:
+        rows, total = await self._repository.list_candidates(
+            statuses=[s.value for s in query.statuses] or None,
+            source_id=query.source_id,
+            domain=query.domain.value if query.domain else None,
+            limit=query.limit,
+            offset=query.offset,
+            tenant_id=query.tenant_id,
+            workspace_id=query.workspace_id,
+        )
+        return CandidatesPage(
+            items=[to_candidate_record(r) for r in rows],
+            total=total,
+            offset=query.offset,
+            limit=query.limit,
+        )
+
+
+__all__: list[str] = [
+    "AcceptCandidateCommand",
+    "AcceptCandidateHandler",
+    "GetCandidateHandler",
+    "GetCandidateQuery",
+    "ListCandidatesHandler",
+    "ListCandidatesQuery",
+    "ProposeCandidatesCommand",
+    "ProposeCandidatesHandler",
+    "RejectCandidateCommand",
+    "RejectCandidateHandler",
+]

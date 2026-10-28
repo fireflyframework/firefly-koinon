@@ -1,0 +1,63 @@
+# Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
+# Select with KOINON_CONFIG_FILE. Secrets stay in your external secret store.
+koinon:
+  security:
+    issuer: ${KOINON_OIDC_ISSUER}
+    client_id: ${KOINON_OIDC_CLIENT_ID}
+    client_secret: ${KOINON_OIDC_CLIENT_SECRET}
+    api_audience: ${KOINON_OIDC_API_AUDIENCE}
+    redirect_uri: ${KOINON_OIDC_REDIRECT_URI}
+    cookie_secure: true
+  legacy:
+    enabled: false
+  assistants:
+    master_key: ${KOINON_MASTER_KEY}
+    allowed_provider_hosts: []
+    run_timeout_seconds: 180
+    lease_seconds: 60
+    max_history_messages: 40
+  operations:
+    worker_concurrency: 1
+    max_queued_per_subject: 50
+    job_lease_seconds: 60
+    max_index_workspaces: 32
+  tokens:
+    max_active_per_user: 100
+    max_lifetime_days: 365
+  storage:
+    documents:
+      backend: localfs
+      root: /var/lib/koinon/documents
+      store_originals: true
+    structured:
+      backend: local
+      root: /var/lib/koinon/structured
+      presign_ttl_seconds: 86400
+pyfly:
+  data:
+    relational:
+      enabled: true
+      ddl-auto: validate
+      url: ${KOINON_DATABASE_URL}
+      health:
+        timeout: 2
+      pool:
+        size: 5
+        max-overflow: 0
+        timeout: 5
+        recycle: 1800
+        pre-ping: false
+      datasources:
+        canon:
+          url: ${KOINON_CANON_DATABASE_URL}
+          pool: {size: 2}
+        canon_admin:
+          url: ${KOINON_CANON_ADMIN_DATABASE_URL}
+          pool: {size: 1}
+        structured:
+          url: ${KOINON_STRUCTURED_DATABASE_URL}
+          pool: {size: 2}
+        structured_admin:
+          url: ${KOINON_STRUCTURED_ADMIN_DATABASE_URL}
+          pool: {size: 1}

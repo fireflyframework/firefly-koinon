@@ -1,0 +1,138 @@
+# Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2024-2026 Firefly Software Foundation
+# Modifications Copyright 2026 Firefly Software Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Async SQLAlchemy repository for flyquery_files.
+
+Owns the two operations the rest of the ingestion path needs:
+
+* :meth:`insert_received` -- called by Stage 1 (receive) of the
+  ingestion pipeline once bytes are in object storage.
+* :meth:`get`             -- called by the worker's PARSE_AND_INGEST /
+  REPARSE handler to look up the canonical key + filename for a
+  previously-received file.
+
+The DB schema enforces ``UNIQUE(tenant_id, dataset_id,
+content_hash_sha256)`` so a content-identical re-upload is detected
+at the SQL layer; we let the duplicate-key error bubble up so the
+caller can map it to a 409 if it wants (today the controller treats
+it as a fresh insert and lets the constraint raise to the conventions
+exception handler).
+"""
+
+from __future__ import annotations
+
+import uuid
+from typing import Any
+
+import sqlalchemy as sa
+from pyfly.container import repository
+from pyfly.data.transaction import infrastructure_unit
+
+from flyquery.core.services.ingestion import lineage
+from flyquery.data import StructuredSessions, unwrap_sessions
+
+
+@repository(name="structured.FileRepository")
+class FileRepository:
+    """Repository over ``flyquery_files``."""
+
+    def __init__(self, session: StructuredSessions) -> None:
+        self._factory = unwrap_sessions(session)
+
+    async def insert_received(
+        self,
+        *,
+        file_id: uuid.UUID,
+        tenant_id: str,
+        workspace_id: uuid.UUID,
+        dataset_id: uuid.UUID,
+        original_filename: str,
+        file_format: str,
+        compression: str,
+        size_bytes: int,
+        content_hash_sha256: str,
+        object_store_key: str,
+        uploaded_by: str,
+    ) -> None:
+        """Insert a new ``RECEIVED`` row.
+
+        Status is hard-coded to ``RECEIVED`` because this method is the
+        only writer that runs at Stage 1 -- later stages mutate the
+        snapshot, not the file row.
+        """
+        async with infrastructure_unit(self._factory) as s:
+            await s.execute(
+                sa.text(
+                    """
+                    INSERT INTO flyquery_files (
+                        id, tenant_id, workspace_id, dataset_id,
+                        original_filename, file_format, compression,
+                        size_bytes, content_hash_sha256, object_store_key,
+                        uploaded_by, status
+                    ) VALUES (
+                        :id, :tenant_id, :workspace_id, :dataset_id,
+                        :original_filename, :file_format, :compression,
+                        :size_bytes, :content_hash_sha256, :object_store_key,
+                        :uploaded_by, 'RECEIVED'
+                    )
+                    """
+                ),
+                {
+                    "id": file_id,
+                    "tenant_id": tenant_id,
+                    "workspace_id": workspace_id,
+                    "dataset_id": dataset_id,
+                    "original_filename": original_filename,
+                    "file_format": file_format,
+                    "compression": compression,
+                    "size_bytes": size_bytes,
+                    "content_hash_sha256": content_hash_sha256,
+                    "object_store_key": object_store_key,
+                    "uploaded_by": uploaded_by,
+                },
+            )
+
+            await lineage.emit(
+                "received",
+                session=s,
+                file_id=file_id,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                dataset_id=dataset_id,
+                original_filename=original_filename,
+                file_format=file_format,
+                compression=compression,
+                byte_size=size_bytes,
+                sha256=content_hash_sha256,
+                actor=uploaded_by,
+            )
+
+    async def get(self, file_id: uuid.UUID | str) -> dict[str, Any] | None:
+        """Return ``{id, original_filename, object_store_key}`` for a file row.
+
+        Used by the worker's PARSE_AND_INGEST handler to recover the
+        bytes + filename it needs for re-parse. Does not filter by
+        tenant because the worker has cross-tenant privilege when
+        consuming job rows -- the job row itself binds tenancy.
+        """
+        async with infrastructure_unit(self._factory) as s:
+            result = await s.execute(
+                sa.text("SELECT id, original_filename, object_store_key FROM flyquery_files WHERE id = :id"),
+                {"id": file_id},
+            )
+            row = result.mappings().one_or_none()
+            return dict(row) if row else None

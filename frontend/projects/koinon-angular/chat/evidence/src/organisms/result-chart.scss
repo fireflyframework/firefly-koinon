@@ -1,0 +1,166 @@
+// Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
+:host {
+  display: block;
+  min-width: 0;
+}
+figure {
+  margin: 0;
+  padding: 22px;
+  border: 1px solid var(--ui-line, #d8d4ca);
+  border-radius: 9px;
+}
+figcaption {
+  font: 550 12px/1.7 var(--ffk-font, 'Manrope Variable', sans-serif);
+  margin-bottom: 24px;
+  color: var(--ui-text, #272820);
+}
+.bars {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+.bar-row {
+  display: grid;
+  grid-template-columns: minmax(70px, 130px) minmax(0, 1fr) 55px;
+  gap: 12px;
+  align-items: center;
+  font-size: 11px;
+}
+.bar-row > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ui-muted);
+}
+.bar-row strong {
+  font-weight: 550;
+  text-align: right;
+}
+.track {
+  position: relative;
+  background: var(--ui-subtle);
+  height: 19px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.track > i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--ui-line);
+  z-index: 1;
+}
+.track > b {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: var(--ffk-amber, #ffb34a);
+  min-width: 0;
+}
+.line-chart {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.line-chart path {
+  fill: none;
+  stroke: var(--ui-line);
+  stroke-width: 1;
+}
+.line-chart polyline {
+  fill: none;
+  stroke: var(--ui-accent, #855414);
+  stroke-width: 2;
+}
+.line-chart circle {
+  fill: var(--ui-accent, #855414);
+}
+.line-values {
+  list-style: none;
+  padding: 16px 0 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+}
+.line-values li {
+  display: flex;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--ui-muted);
+}
+.line-values strong {
+  color: var(--ui-text);
+  font-weight: 550;
+}
+.pie-layout {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.pie-chart {
+  width: 180px;
+  max-width: 100%;
+  flex-shrink: 0;
+}
+.pie-chart circle {
+  fill: none;
+  stroke-width: 35;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+.pie-layout ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  min-width: 130px;
+  flex: 1;
+}
+.pie-layout li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  margin: 12px 0;
+}
+.pie-layout li > span {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.pie-layout li > i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.pie-layout strong {
+  font-weight: 550;
+}
+.unavailable {
+  font: 400 12px/1.8 var(--ffk-font, 'Manrope Variable', sans-serif);
+  color: var(--ui-muted, #62645b);
+}
+@media (max-width: 700px) {
+  figure {
+    padding: 18px 16px;
+  }
+  .bar-row {
+    grid-template-columns: minmax(60px, 80px) minmax(0, 1fr) 40px;
+    gap: 8px;
+    font-size: 10px;
+  }
+  .pie-layout {
+    gap: 14px;
+  }
+  .pie-chart {
+    width: 150px;
+  }
+}
+
+figure.unframed {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}

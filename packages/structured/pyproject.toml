@@ -1,0 +1,207 @@
+[project]
+name = "firefly-koinon-structured"
+# CalVer YY.MM.PP per memory `firefly_uses_calver`.
+version = "26.10.0a1"
+description = "Structured knowledge services for firefly koinon: file readers, immutable table snapshots, SQL execution and provenance on native pyfly."
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+# Released under the Apache License 2.0 -- see the LICENSE file. The SDKs
+# under ``sdks/python`` and ``sdks/java`` carry their own LICENSE files.
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "Firefly Software Foundation" },
+]
+
+dependencies = [
+    # Firefly Framework runtime -- same extras canon uses so a fresh
+    # `uv sync` boots the full stack.
+    "pyfly[fastapi,observability,security,data-relational,postgresql,eda,redis,client,scheduling,cli,agentic]>=26.10.12,<26.11",
+    # GenAI metaframework -- FireflyAgent over pydantic-ai + the OpenAI
+    # embeddings provider. flyquery builds its own pgvector hybrid retriever
+    # and declares sqlglot directly below for its Text-to-SQL pipeline.
+
+    # HTTP + tenacity (outbound).
+    "httpx>=0.28.0",
+    "tenacity>=9.0.0",
+
+    # Configuration.
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.7.0",
+
+    # Persistence. asyncpg for runtime, psycopg for Alembic; alembic env
+    # rewrites +asyncpg -> +psycopg so one URL covers both.
+    "sqlalchemy[asyncio]>=2.0",
+    "asyncpg>=0.30",
+    "psycopg[binary]>=3.2",
+    "aiosqlite>=0.22",
+    "alembic>=1.14",
+    "redis>=5.2",
+    "pgvector>=0.3.6",
+
+    # Object store
+    "aiofiles>=24",
+
+    # DuckDB's scoped file reads require the allowed_paths security setting.
+    "duckdb>=1.3.2",
+    "pyarrow>=17.0",
+
+    # sqlglot -- SQL AST parser / validator / transpiler for the
+    # Text-to-SQL pipeline (query classification, example mining,
+    # dialect handling). Declared as a direct dependency.
+    "sqlglot>=26.0.0",
+
+    # Logging.
+    "structlog>=25.5.0",
+
+    # Prompt engine -- YAML files under ``flyquery/resources/prompts``
+    # rendered through Jinja2 (byte-equivalent pattern to flycanon +
+    # flyradar). Operators tune agent instructions and user-prompt
+    # templates without a Python redeploy.
+    "PyYAML>=6.0",
+    "jinja2>=3.1",
+]
+
+[project.scripts]
+flyquery = "flyquery.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=5.0",
+    "pytest-timeout>=2.3",
+    "ruff>=0.8",
+    "pyright>=1.1",
+    "testcontainers[postgres,redis,minio]>=4.0",
+    "respx>=0.21",
+    "httpx>=0.28",
+]
+
+# ObjectStore adapter extras
+s3 = [
+    "aiobotocore>=2.15",
+    "botocore>=1.35",
+]
+gcs = [
+    "gcloud-aio-storage>=9.3",
+]
+azure = [
+    "azure-storage-blob>=12.23",
+    "aiohttp>=3.10",
+]
+
+# PII detection / anonymization
+presidio = [
+    "presidio-analyzer>=2.2",
+    "presidio-anonymizer>=2.2",
+]
+
+# Cross-encoder reranker
+ml-reranker = [
+    "sentence-transformers>=3.3",
+]
+
+# File-format readers
+file-readers = [
+    "python-calamine>=0.3",
+    "openpyxl>=3.1",
+    "fastavro>=1.9",
+]
+
+[build-system]
+requires = ["hatchling>=1.18"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+# pyfly and agentic are consumed from their published git tags so fresh
+# clones / CI resolve them without any sibling path.
+pyfly = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git", rev = "dba0cc6da640d96a8d154f30a7ab355c43810094" }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/flyquery"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+    "integration: requires docker compose stack (Postgres / Redis / MinIO)",
+    "s3: requires MinIO (covered by 'integration')",
+    "gcs: requires fake-gcs-server",
+    "azure_blob: requires Azurite",
+    "llm: requires a real LLM provider; skipped by default",
+]
+addopts = "-v --tb=short -m 'not llm'"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 110
+extend-exclude = ["vendor"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/flyquery/interfaces/**" = ["N801", "N811", "N815", "N818"]
+"src/flyquery/core/services/**" = ["N818", "E501"]
+"src/flyquery/core/agents/**" = ["F401"]
+"src/flyquery/web/conventions/**" = ["N818"]
+# Pyfly's QueryParam resolver chokes on Python 3.10+ PEP 604 unions
+# (``str | None`` -> ``types.UnionType`` has no ``__name__``) -- we
+# pin ``typing.Optional`` here so the resolver gets ``Union[X, None]``
+# which it knows how to introspect. UP007 + UP045 want to rewrite to
+# the modern syntax; turn them off for the controller surface.
+"src/flyquery/web/controllers/**" = ["UP007", "UP045"]
+# Tests: tolerate long lines, blind ``Exception`` in validation-error
+# tests, useless-attribute-access probes (assertion helpers), the
+# openapi-generated mixedCase test names, and per-test unused imports.
+"tests/**" = ["E501", "B017", "B018", "N802", "N806", "F401"]
+
+[tool.pyright]
+pythonVersion = "3.13"
+typeCheckingMode = "basic"
+include = ["src/flyquery"]
+# Storage adapters import optional third-party SDKs that aren't part of
+# the default install matrix (S3 via aiobotocore, GCS via gcloud-aio,
+# Azure via azure-storage-blob). Pyright can't resolve those without
+# the extras installed, so we exclude the adapter files from typecheck
+# rather than pretending the imports always exist. The Protocol-based
+# port stays under typecheck via ``object_store.py``.
+exclude = [
+    "tests/**",
+    "**/__pycache__/**",
+    "vendor/**",
+    "src/flyquery/core/services/storage/adapters/s3.py",
+    "src/flyquery/core/services/storage/adapters/gcs.py",
+    "src/flyquery/core/services/storage/adapters/azure_blob.py",
+]
+# Pyfly's QueryParam[T] is opaque to pyright (it resolves to T at
+# request time but the static annotation is QueryParam). Suppress the
+# false-positive reportAssignmentType across the controller surface.
+reportMissingImports = "warning"
+reportOptionalMemberAccess = "warning"
+reportOptionalSubscript = "warning"
+reportArgumentType = "warning"
+reportAttributeAccessIssue = "warning"
+reportPrivateImportUsage = "warning"
+reportGeneralTypeIssues = "warning"
+reportCallIssue = "warning"
+reportAssignmentType = "warning"
+reportReturnType = "warning"
+
+[[tool.pyright.executionEnvironments]]
+# The controller layer is shaped by pyfly's metaprogramming: handlers
+# annotate the success response model (consumed for OpenAPI schema
+# generation) but return ``JSONResponse`` for non-2xx / multi-status
+# escape hatches, and parameter binding uses ``Annotated[...]``
+# subscripts pyright's basic mode can't resolve. Silence the resulting
+# false positives here rather than scattering per-line ignores.
+root = "src/flyquery/web/controllers"
+reportArgumentType = "none"
+reportAttributeAccessIssue = "none"
+reportOperatorIssue = "none"
+reportAssignmentType = "none"
+reportReturnType = "none"
+reportCallIssue = "none"

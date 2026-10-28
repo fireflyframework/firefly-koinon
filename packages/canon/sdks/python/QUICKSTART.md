@@ -1,0 +1,125 @@
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark) and (max-width: 600px)" srcset="../../docs/assets/brand/banner-dark-mobile.svg">
+  <source media="(max-width: 600px)" srcset="../../docs/assets/brand/banner-light-mobile.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="../../docs/assets/brand/banner-dark.svg">
+  <img src="../../docs/assets/brand/banner-light.svg" alt="flycanon by Firefly" width="100%">
+</picture>
+
+### **Python SDK quickstart**
+
+</div>
+
+---
+
+Five-minute tour of the async Python client. Assumes the flycanon
+service is running on `http://localhost:8500` (see the service-level
+[QUICKSTART](https://github.com/fireflyframework/flycanon/blob/main/QUICKSTART.md)).
+
+## 1. Install
+
+```bash
+uv add flycanon-sdk
+```
+
+## 2. Ingest a source
+
+Every tenant route needs `X-Tenant-Id` / `X-Workspace-Id`, and the
+platform key once the server sets `FLYCANON_API_KEYS`; the client
+sends them on every request from its constructor:
+
+```python
+import asyncio
+import base64
+from pathlib import Path
+
+from flycanon_sdk import CanonClient, SourceMetadata, SubmitSourceJsonPayload
+
+CLIENT = dict(base_url="http://localhost:8500", tenant_id="acme", workspace_id="ws-demo", api_key=None)
+
+
+async def ingest() -> None:
+    async with CanonClient(**CLIENT) as client:
+        payload = SubmitSourceJsonPayload(
+            content_base64=base64.b64encode(Path("sample.docx").read_bytes()).decode(),
+            filename="sample.docx",
+            content_type=("application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+            metadata=SourceMetadata(title="Sample", domain="process"),
+        )
+        source = await client.submit_source(payload)
+        print(source.model_dump_json(indent=2))
+
+
+asyncio.run(ingest())
+```
+
+## 3. Search the corpus
+
+Every hit carries the rich source-side context (filename, title,
+kind, section breadcrumb, page) at the top level — no second
+`get_source(...)` round-trip needed to render a citation label.
+
+```python
+async def search() -> None:
+    async with CanonClient(**CLIENT) as client:
+        result = await client.search("what does the document say about scope?", top_k=5)
+        for hit in result.hits:
+            label = hit.source_filename or hit.source_title or hit.source_id
+            location = hit.section_path or ""
+            if hit.page:
+                location = f"{location} (page {hit.page})" if location else f"page {hit.page}"
+            print(f"{hit.score:.4f}  [{hit.source_kind}] {label} -- {location}")
+            print(f"        {hit.content[:120]}")
+
+
+asyncio.run(search())
+```
+
+## 4. Ask a question
+
+```python
+async def ask() -> None:
+    async with CanonClient(**CLIENT) as client:
+        answer = await client.answer("Summarise the scope section in three sentences.")
+        print(answer.answer)
+        for citation in answer.citations:
+            label = citation.source_filename or citation.source_title or citation.source_id
+            print(
+                f"  - {label} ({citation.source_kind})"
+                f" -- section: {citation.section_path or '-'}"
+                f" -- score: {citation.score:.3f}"
+            )
+
+
+asyncio.run(ask())
+```
+
+## 5. Browse the canonical layer
+
+```python
+async def browse() -> None:
+    async with CanonClient(**CLIENT) as client:
+        items = await client.list_knowledge_items(domain=["process"])
+        for item in items.items:
+            print(item.title, "current_version=", item.current_version)
+
+
+asyncio.run(browse())
+```
+
+## Error handling
+
+`CanonClient` raises `CanonAPIError` on any non-2xx response. The
+exception carries the service's RFC 7807 ProblemDetails payload --
+including the stable `code` SDKs branch on:
+
+```python
+from flycanon_sdk import CanonAPIError
+
+try:
+    await client.get_knowledge("00000000-0000-0000-0000-000000000000")
+except CanonAPIError as exc:
+    if exc.code == "knowledge_item_not_found":
+        ...  # graceful 404 handling
+```

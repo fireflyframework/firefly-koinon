@@ -1,0 +1,181 @@
+# Copyright 2024-2026 Firefly Software Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Index writer -- mirrors chunks + embeddings into the corpus and vector store.
+
+Called from the ingestion CQRS handler after the bytes have been
+loaded, chunked, and embedded. Keeps the BM25 + vector projections
+in lock-step with Postgres' ``canon_chunks`` by sharing the
+``chunk_id``: both stores use the same UUID, so the
+:class:`HybridRetriever`'s RRF fusion sees both rankings reference
+the same rows.
+"""
+
+from __future__ import annotations
+
+import logging
+from collections.abc import Sequence
+
+from flycanon.core.services.retrieval.corpus_factory import CorpusContext
+from flycanon.models.entities.knowledge_chunk import KnowledgeChunkRow
+from flycanon.models.entities.source import SourceRow
+
+logger = logging.getLogger(__name__)
+
+
+class IndexService:
+    """Sync (chunks, embeddings) -> BM25 + vector projections.
+
+    The writer does NOT touch Postgres; the caller is responsible for
+    persisting the ``KnowledgeChunkRow`` rows first. The index only
+    holds the searchable projection.
+    """
+
+    def __init__(self, *, context: CorpusContext, chunk_repository: object | None = None) -> None:
+        self._context = context
+        # Optional: lets ``remove_for_source`` resolve a source's chunk ids so
+        # it can purge the dense vectors explicitly (external stores have no FK
+        # cascade). When absent, the dense purge is skipped.
+        self._chunk_repo = chunk_repository
+
+    async def initialise(self) -> None:
+        await self._context.initialise()
+
+    async def replace_for_source(
+        self,
+        *,
+        source: SourceRow,
+        chunks: Sequence[KnowledgeChunkRow],
+        embeddings: Sequence[Sequence[float]],
+        embedding_model: str,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> int:
+        """Replace every indexed chunk for ``source.id`` atomically.
+
+        Returns the number of chunks ingested into the index.
+
+        ``tenant_id`` / ``workspace_id`` are REQUIRED kwargs. Every
+        indexed vector is bound to the caller's scope so RLS policies
+        keep it visible only within ``(tenant_id, workspace_id)``.
+        Forgetting the scope fails loud with a ``TypeError`` at the
+        call site instead of silently corrupting the index.
+        """
+        if len(chunks) != len(embeddings):
+            raise ValueError(
+                f"chunk/embedding length mismatch: {len(chunks)} chunks vs {len(embeddings)} embeddings"
+            )
+
+        from pyfly.agentic.vectorstores.types import VectorDocument
+
+        from flycanon.core.services.retrieval.fusion import StoredChunk
+
+        stored_chunks = [
+            StoredChunk(
+                chunk_id=chunk.id,
+                doc_id=source.id,
+                source_path=source.filename or source.uri or source.id,
+                index_in_doc=chunk.index_in_source,
+                content=chunk.content,
+                metadata=self._chunk_metadata(source=source, chunk=chunk),
+            )
+            for chunk in chunks
+        ]
+        vector_documents = [
+            VectorDocument(
+                id=chunk.id,
+                text=chunk.content,
+                embedding=list(emb),
+                metadata={
+                    "source_id": source.id,
+                    "doc_id": source.id,
+                    "section_path": chunk.section_path or "",
+                    "page": str(chunk.page) if chunk.page is not None else "",
+                },
+            )
+            for chunk, emb in zip(chunks, embeddings, strict=True)
+        ]
+
+        # Wipe the previous index entries for this source before
+        # appending the new chunks. ``delete_by_doc_id`` returns the
+        # deleted-rows count but we don't rely on it -- the upsert is
+        # the authoritative write. Vector rows are overwritten by id
+        # on the upsert below, so stale ids resolve cleanly.
+        await self._context.corpus.delete_by_doc_id(source.id)  # type: ignore[attr-defined]
+        if stored_chunks:
+            await self._context.corpus.upsert_chunks(stored_chunks)  # type: ignore[attr-defined]
+        if vector_documents:
+            # The dense store is a scoped wrapper: tenant_id / workspace_id are
+            # required and fold into the canonical namespace. No probing -- a
+            # backend that lost the scope contract fails loud here.
+            await self._context.vector_store.upsert(
+                vector_documents,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+
+        # Note the model on the entity so re-embedding with a different
+        # model can detect the mismatch.
+        for chunk in chunks:
+            chunk.embedding_model = embedding_model
+
+        logger.info(
+            "indexed source=%s chunks=%d backend=%s tenant=%s workspace=%s",
+            source.id,
+            len(stored_chunks),
+            getattr(self._context, "backend", "unknown"),
+            tenant_id,
+            workspace_id,
+        )
+        return len(stored_chunks)
+
+    async def remove_for_source(
+        self,
+        source_id: str,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> int:
+        """Wipe every projection for ``source_id``. Idempotent.
+
+        Deletes the BM25 rows (corpus) and, when a chunk repository is wired,
+        purges the dense vectors explicitly -- external stores have no FK
+        cascade, so the embeddings would otherwise leak on a source delete. The
+        dense delete is scoped via the scoped vector store. ``tenant_id`` /
+        ``workspace_id`` are REQUIRED, mirroring :meth:`replace_for_source`, so
+        forgetting the scope on either write surface fails loud at the call site.
+        """
+        deleted = await self._context.corpus.delete_by_doc_id(source_id)  # type: ignore[attr-defined]
+        if self._chunk_repo is not None:
+            chunk_rows = await self._chunk_repo.list_for_source(source_id)  # type: ignore[attr-defined]
+            chunk_ids = [row.id for row in chunk_rows]
+            if chunk_ids:
+                await self._context.vector_store.delete(
+                    chunk_ids,
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                )
+        return int(deleted or 0)
+
+    @staticmethod
+    def _chunk_metadata(*, source: SourceRow, chunk: KnowledgeChunkRow) -> dict[str, str]:
+        meta: dict[str, str] = {
+            "source_id": source.id,
+            "source_kind": source.kind,
+        }
+        if chunk.section_path:
+            meta["section_path"] = chunk.section_path
+        if chunk.page is not None:
+            meta["page"] = str(chunk.page)
+        return meta

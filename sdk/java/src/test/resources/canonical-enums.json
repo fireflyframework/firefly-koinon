@@ -1,0 +1,479 @@
+{
+  "AddKnowledgeAction": [
+    "add"
+  ],
+  "AddKnowledgeMode": [
+    "document",
+    "dataset"
+  ],
+  "AgentConfigurationInputModalities": [
+    "text",
+    "image",
+    "audio"
+  ],
+  "ModelApi": [
+    "chat",
+    "responses",
+    "messages"
+  ],
+  "NativeModelClass": [
+    "OpenAIChatModel",
+    "OpenAIResponsesModel",
+    "AnthropicModel"
+  ],
+  "AgentTool": [
+    "search_knowledge",
+    "inspect_schema",
+    "query_dataset",
+    "propose_catalog_update"
+  ],
+  "AgentStatus": [
+    "ready",
+    "needs_setup",
+    "unverified",
+    "disabled"
+  ],
+  "AnswerAuditProvenanceStatus": [
+    "recorded",
+    "not_recorded"
+  ],
+  "AnswerPolicyOutcome": [
+    "grounded",
+    "refused",
+    "review_required"
+  ],
+  "AttachmentFormatKind": [
+    "document",
+    "image",
+    "bundle"
+  ],
+  "AttachmentHistorySummaryStatus": [
+    "storing",
+    "queued",
+    "extracting",
+    "ready",
+    "failed",
+    "cancelled",
+    "expired",
+    "deleted"
+  ],
+  "AttachmentProgressStatus": [
+    "storing",
+    "queued",
+    "running",
+    "succeeded",
+    "failed",
+    "cancelled"
+  ],
+  "AttachmentPromotionViewAction": [
+    "add",
+    "replace_document",
+    "replace_table"
+  ],
+  "CatalogProposalKind": [
+    "catalog"
+  ],
+  "CatalogProposalStatus": [
+    "pending",
+    "applied",
+    "cancelled"
+  ],
+  "MessageStatus": [
+    "queued",
+    "running",
+    "completed",
+    "failed",
+    "cancelled"
+  ],
+  "ChatMessageRole": [
+    "user",
+    "assistant"
+  ],
+  "ChatThreadTitleSource": [
+    "default",
+    "manual",
+    "ai"
+  ],
+  "CommittedKnowledgeStatus": [
+    "committed"
+  ],
+  "ConversationExportInputKind": [
+    "conversation"
+  ],
+  "ConversationExportInputFormat": [
+    "markdown",
+    "json"
+  ],
+  "ConversationMessageStatus": [
+    "completed",
+    "failed",
+    "cancelled"
+  ],
+  "DatasetFileAppendResultStatus": [
+    "ready"
+  ],
+  "DeploymentConfigurationOwnership": [
+    "deployment"
+  ],
+  "ObservationStatus": [
+    "passed",
+    "failed",
+    "unknown"
+  ],
+  "DeploymentDatasourceKind": [
+    "database"
+  ],
+  "KnowledgeDomain": [
+    "documents",
+    "structured"
+  ],
+  "DocumentEvidenceKind": [
+    "document_passage"
+  ],
+  "EntraCredentialKind": [
+    "entra"
+  ],
+  "EntraSettingsMembershipMode": [
+    "direct",
+    "transitive"
+  ],
+  "ExportKind": [
+    "conversation",
+    "query_result"
+  ],
+  "ExportFormat": [
+    "markdown",
+    "json",
+    "parquet",
+    "csv",
+    "jsonl"
+  ],
+  "ExportStatus": [
+    "ready",
+    "cancelled",
+    "expired"
+  ],
+  "ExportCompleteness": [
+    "selected_messages",
+    "bounded",
+    "unknown"
+  ],
+  "FieldSchemaType": [
+    "text",
+    "url",
+    "secret",
+    "string_list",
+    "select"
+  ],
+  "ProviderKind": [
+    "ollama",
+    "openai",
+    "anthropic"
+  ],
+  "GenerationReceiptStatus": [
+    "started",
+    "completed",
+    "failed"
+  ],
+  "GoogleCredentialKind": [
+    "google_workspace"
+  ],
+  "IdentityCheckStatus": [
+    "unconfigured",
+    "unknown",
+    "passed",
+    "failed",
+    "blocked",
+    "not_run"
+  ],
+  "MembershipRole": [
+    "viewer",
+    "analyst",
+    "editor",
+    "operator",
+    "admin"
+  ],
+  "IdentityProviderKind": [
+    "keycloak",
+    "entra",
+    "google_workspace"
+  ],
+  "IdentityProviderOwnership": [
+    "deployment",
+    "tenant"
+  ],
+  "IdentityProviderStatus": [
+    "draft",
+    "configured",
+    "blocked",
+    "verified",
+    "active",
+    "disabled"
+  ],
+  "IdentityValidationStatus": [
+    "pending",
+    "verified",
+    "failed",
+    "consumed"
+  ],
+  "IndexActivateInputRecovery": [
+    "finish",
+    "restore_previous"
+  ],
+  "InvitationStatus": [
+    "pending",
+    "accepted",
+    "expired",
+    "revoked"
+  ],
+  "KeycloakCredentialKind": [
+    "keycloak"
+  ],
+  "KnowledgeCommitReceiptAction": [
+    "create_draft",
+    "create_published",
+    "update_draft",
+    "update_published",
+    "publish_draft"
+  ],
+  "KnowledgeCommitReceiptRetrievalState": [
+    "not_published",
+    "lexical_ready",
+    "indexing",
+    "ready",
+    "unavailable"
+  ],
+  "ConnectionMode": [
+    "provider",
+    "current_agent"
+  ],
+  "KnowledgeContentDomain": [
+    "legal",
+    "compliance",
+    "process",
+    "network",
+    "ai_platform",
+    "executive",
+    "hr",
+    "cto",
+    "engineering",
+    "security",
+    "other"
+  ],
+  "KnowledgeIntentStatus": [
+    "preview",
+    "committing",
+    "committed",
+    "cancelled",
+    "stale",
+    "unresolved"
+  ],
+  "RoleKind": [
+    "embedding",
+    "generative"
+  ],
+  "KnowledgeRoleAssignment": [
+    "tenant",
+    "workspace"
+  ],
+  "KnowledgeRoleStatus": [
+    "needs_setup",
+    "assigned",
+    "disabled"
+  ],
+  "KnowledgeRoleRuntimeQualification": [
+    "not_run"
+  ],
+  "KnowledgeVersionViewPublication": [
+    "draft",
+    "published"
+  ],
+  "MembershipOrigin": [
+    "manual",
+    "corporate"
+  ],
+  "CheckStatus": [
+    "passed",
+    "failed",
+    "needs_setup",
+    "unverified"
+  ],
+  "ReasoningEffort": [
+    "none",
+    "minimal",
+    "low",
+    "medium",
+    "high",
+    "xhigh"
+  ],
+  "OutputVerbosity": [
+    "low",
+    "medium",
+    "high"
+  ],
+  "ModelProviderConfigurationOwnership": [
+    "tenant"
+  ],
+  "ModelProviderCredentialOwnership": [
+    "tenant",
+    "none"
+  ],
+  "NativeAdapterProfileStatus": [
+    "unverified"
+  ],
+  "NativeReadReceiptDomain": [
+    "documents",
+    "structured",
+    "knowledge"
+  ],
+  "NativeReadReceiptReadKind": [
+    "indexed_document",
+    "metadata",
+    "document_extraction",
+    "knowledge_version"
+  ],
+  "OpenUIArtifactKind": [
+    "openui"
+  ],
+  "PendingKnowledgeCommitStatus": [
+    "pending"
+  ],
+  "PendingKnowledgeCommitReason": [
+    "commit_outcome_unresolved"
+  ],
+  "PrivateChunkViewOffsetBasis": [
+    "normalized_text_code_points"
+  ],
+  "PrivateFileReceiptAvailability": [
+    "available",
+    "expired",
+    "deleted",
+    "changed",
+    "unavailable"
+  ],
+  "ProposalUpdateStatus": [
+    "applied",
+    "cancelled"
+  ],
+  "ExecutionStatus": [
+    "OK",
+    "REFINED_OK",
+    "FAILED",
+    "REJECTED_BY_FIREWALL"
+  ],
+  "ChartHint": [
+    "line",
+    "bar",
+    "table",
+    "pie",
+    "none"
+  ],
+  "QueryResultExportInputKind": [
+    "query_result"
+  ],
+  "QueryResultExportInputFormat": [
+    "parquet",
+    "csv",
+    "jsonl"
+  ],
+  "QueryResultExportInputCsvMode": [
+    "spreadsheet_safe",
+    "exact"
+  ],
+  "ReplaceDocumentAction": [
+    "replace_document"
+  ],
+  "ReplaceTableAction": [
+    "replace_table"
+  ],
+  "SetupCheckCapability": [
+    "chat",
+    "streaming",
+    "tools",
+    "image_input",
+    "audio_input"
+  ],
+  "ShareStatus": [
+    "active",
+    "revoked",
+    "expired"
+  ],
+  "ShareRecipientPolicy": [
+    "organization_current_acl"
+  ],
+  "SourceReferenceKind": [
+    "document",
+    "dataset",
+    "knowledge_version"
+  ],
+  "SourceReferencePageBasis": [
+    "recorded_loader"
+  ],
+  "SourceReferenceAvailability": [
+    "available",
+    "changed",
+    "unverified"
+  ],
+  "SqlAttemptReceiptExecutionKind": [
+    "imported_snapshot",
+    "computed"
+  ],
+  "StoredResultCompleteness": [
+    "bounded",
+    "unknown"
+  ],
+  "StructuredEvidenceKind": [
+    "structured_snapshot"
+  ],
+  "TableCoordinateManifestStatus": [
+    "complete",
+    "partial",
+    "not_recorded"
+  ],
+  "TableCoordinateManifestRowKind": [
+    "record",
+    "sheet_row",
+    "json_array",
+    "jsonl_record",
+    "single_object"
+  ],
+  "TableProvenanceSnapshotStatus": [
+    "PARTIAL",
+    "READY",
+    "FAILED"
+  ],
+  "TableProvenanceLevel": [
+    "file_section"
+  ],
+  "TableProvenanceOperation": [
+    "upload",
+    "replace",
+    "reingest"
+  ],
+  "ToolActivityToolName": [
+    "search_knowledge",
+    "inspect_schema",
+    "query_dataset",
+    "search_private_attachments",
+    "propose_catalog_update"
+  ],
+  "UserStatementEvidenceKind": [
+    "user_statement"
+  ],
+  "UserStatementEvidenceAuthority": [
+    "user_authored"
+  ],
+  "ValidationResultStatus": [
+    "ready",
+    "needs_setup",
+    "unverified"
+  ],
+  "EvidenceKind": [
+    "search",
+    "query",
+    "schema",
+    "lineage",
+    "attachment",
+    "proposal"
+  ]
+}

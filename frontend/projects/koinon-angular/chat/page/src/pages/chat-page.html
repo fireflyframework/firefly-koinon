@@ -1,0 +1,396 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<h1 class="sr-only">{{ 'Chat' | ffkText }}</h1>
+@if (a.error()) {
+  <div class="chat-error" role="alert">
+    <ffk-icon name="alert" /><span>{{ a.error() }}</span
+    ><ffk-button
+      variant="quiet"
+      icon="close"
+      [label]="'Dismiss chat error' | ffkText"
+      (click)="a.error.set('')"
+    />
+  </div>
+}
+<div
+  class="chat-grid"
+  [class.history-visible]="historyOpen()"
+  [class.history-collapsed]="!compact() && historyCollapsed()"
+>
+  <button
+    #historyToggle
+    class="history-boundary"
+    type="button"
+    [attr.aria-label]="(historyVisible() ? 'Hide conversations' : 'Show conversations') | ffkText"
+    [attr.title]="(historyVisible() ? 'Hide conversations' : 'Show conversations') | ffkText"
+    [attr.aria-expanded]="historyVisible()"
+    aria-controls="conversation-history"
+    (click)="toggleHistory()"
+  >
+    <ffk-icon [name]="historyVisible() ? 'chevron-left' : 'chevron'" />
+  </button>
+  @if (!historyVisible()) {
+    <ffk-button
+      class="quick-new"
+      variant="quiet"
+      icon="plus"
+      [label]="'New conversation' | ffkText"
+      [disabled]="a.running() || a.pending()"
+      (click)="startConversation()"
+    />
+  }
+  @if (compact() && historyOpen()) {
+    <button
+      class="history-shade"
+      [attr.aria-label]="'Close conversation history' | ffkText"
+      (click)="closeHistory()"
+    ></button>
+  }
+  <aside
+    id="conversation-history"
+    tabindex="-1"
+    class="conversation-list"
+    [attr.role]="compact() && historyOpen() ? 'dialog' : null"
+    [attr.aria-modal]="compact() && historyOpen() ? true : null"
+    [cdkTrapFocus]="compact() && historyOpen()"
+    [cdkTrapFocusAutoCapture]="compact() && historyOpen()"
+    [attr.aria-label]="'Conversations' | ffkText"
+    (keydown.escape)="closeHistory()"
+  >
+    <ffk-conversation-sidebar
+      [activeThread]="a.activeThread() || null"
+      [selectedThreadId]="a.threadId()"
+      [titleAgentId]="a.agentId() || null"
+      [allowAiTitle]="a.canUseAgent()"
+      [closable]="compact()"
+      [busy]="a.running() || a.pending() || files.selecting()"
+      (threadSelected)="selectThread($event)"
+      (newConversationRequested)="startConversation($event)"
+      (threadChanged)="a.applyThread($event)"
+      (closeRequested)="closeHistory()"
+    />
+  </aside>
+  <section
+    class="conversation"
+    [class.new-draft]="emptyReady()"
+    [class.named-draft]="!!a.activeThread() && a.activeThread()?.title_source !== 'default'"
+    [attr.aria-label]="'Chat conversation' | ffkText"
+  >
+    <div class="conversation-toolbar">
+      <h2 class="conversation-title">
+        {{ a.activeThread()?.title || ('New conversation' | ffkText) }}
+      </h2>
+      <div class="scope-chips" [attr.aria-label]="'Conversation knowledge scope' | ffkText">
+        @if (a.scope().workspace_id) {
+          <span
+            ><ffk-icon name="folder" />{{
+              scopeLabel(a.scope().workspace_id, 'Selected space')
+            }}</span
+          >
+        } @else {
+          <span><ffk-icon name="folder" />{{ 'Your shared knowledge' | ffkText }}</span>
+        }
+        @if (a.scope().project_id) {
+          <span>{{ scopeLabel(a.scope().project_id, 'Selected project') }}</span>
+        }
+        @if (a.scope().collection_id) {
+          <span>{{ scopeLabel(a.scope().collection_id, 'Selected folder') }}</span>
+        }
+        @if (a.scope().asset_ids?.length) {
+          <span
+            >{{ a.scope().asset_ids?.length }} selected
+            {{ a.scope().asset_ids?.length === 1 ? 'file' : 'files' }}</span
+          >
+        }
+      </div>
+    </div>
+    <div class="conversation-scroll" #messageViewport (scroll)="trackScroll()">
+      @if (a.pending() && !a.messages().length) {
+        <div
+          class="chat-loading"
+          role="status"
+          [attr.aria-label]="'Loading conversation' | ffkText"
+        >
+          <ffk-skeleton width="55%" height="12px" /><ffk-skeleton
+            width="80%"
+            height="12px"
+          /><ffk-skeleton width="65%" height="12px" />
+        </div>
+      } @else if (!a.messages().length && !a.error() && !a.canUseAgent()) {
+        <div class="conversation-empty">
+          <ffk-icon name="chat" />
+          <h2>
+            {{
+              a.canUseAgent()
+                ? 'What would you like to understand?'
+                : 'An agent needs to be ready first'
+            }}
+          </h2>
+          <p>
+            {{
+              a.canUseAgent()
+                ? 'Ask a question about the knowledge in this scope. Your answer will keep its supporting sources close by.'
+                : 'An operator can connect a model, choose knowledge tools and check that an agent is ready for your team.'
+            }}
+          </p>
+          @if (!a.canUseAgent()) {
+            <ul class="setup-checks">
+              @for (check of a.selectedAgent()?.checks || []; track check.id) {
+                <li>
+                  <ffk-icon [name]="check.status === 'passed' ? 'check' : 'alert'" />{{
+                    check.message
+                  }}
+                </li>
+              }
+            </ul>
+            @if (canConfigure()) {
+              <ffk-button (click)="setup()">{{ 'Set up an agent' | ffkText }}</ffk-button>
+            }
+          }
+          <p class="scope-note">
+            {{
+              a.activeThread()
+                ? 'This conversation keeps the knowledge scope it was created with.'
+                : 'Your current Library location sets the knowledge for this conversation.'
+            }}
+          </p>
+        </div>
+      }
+      @if (a.olderCursor()) {
+        <div class="older-messages">
+          <ffk-button variant="quiet" [loading]="a.pendingHistory()" (click)="loadOlder()">{{
+            'Load older messages' | ffkText
+          }}</ffk-button>
+        </div>
+      }
+      <div
+        class="chat-thread"
+        role="log"
+        [attr.aria-label]="'Messages' | ffkText"
+        aria-live="polite"
+        aria-relevant="additions"
+      >
+        @for (message of a.messages(); track message.id) {
+          <article
+            class="message"
+            [class.user-message]="message.role === 'user'"
+            [class.assistant-message]="message.role === 'assistant'"
+          >
+            <div class="message-heading">
+              <span class="message-mark" aria-hidden="true">
+                @if (message.role === 'user') {
+                  @if (userAvatar() && failedAvatar() !== userAvatar()) {
+                    <img
+                      [src]="userAvatar()"
+                      alt=""
+                      (error)="failedAvatar.set(userAvatar() || '')"
+                    />
+                  } @else {
+                    <span>{{ userInitials() }}</span>
+                  }
+                } @else {
+                  <img [src]="brandSymbol()" alt="" />
+                }</span
+              ><strong>{{ (message.role === 'user' ? 'You' : 'koinon') | ffkText }}</strong
+              ><time [attr.datetime]="message.created_at">{{
+                message.created_at | ffkDate: undefined : 'time'
+              }}</time>
+              @if (message.status === 'failed' || message.status === 'cancelled') {
+                <ffk-badge [tone]="message.status === 'failed' ? 'attention' : 'neutral'">{{
+                  (message.status === 'failed' ? 'Needs attention' : 'Stopped') | ffkText
+                }}</ffk-badge>
+              }
+            </div>
+            @if (message.attachments?.length) {
+              <ul class="history-files" [attr.aria-label]="'Attached files' | ffkText">
+                @for (file of message.attachments; track file.id) {
+                  <li>
+                    <ffk-icon [name]="file.kind === 'image' ? 'image' : 'file'" /><span
+                      ><strong>{{ file.filename }}</strong
+                      ><small>{{
+                        (file.available ? 'Private conversation file' : 'File no longer available')
+                          | ffkText
+                      }}</small></span
+                    >
+                    @if (file.available) {
+                      <ffk-button
+                        variant="quiet"
+                        icon="download"
+                        [label]="('Download file' | ffkText) + ': ' + file.filename"
+                        [loading]="files.downloading().has(file.id)"
+                        (click)="files.download(file)"
+                      />
+                    }
+                  </li>
+                }
+              </ul>
+            }
+            @if (message.text) {
+              <p class="message-text">
+                <ffk-message-text
+                  [text]="message.text"
+                  [references]="message.role === 'assistant' ? fileReferences() : []"
+                  (sourceSelected)="files.download($event)"
+                />
+              </p>
+            }
+            @for (artifact of message.artifacts; track artifact.id) {
+              @defer (on immediate) {
+                <ffk-openui-artifact
+                  [presentation]="message.presentation"
+                  [artifact]="artifact"
+                  [resultIds]="primaryEvidence().get(message.id)"
+                  [runId]="message.run_id || artifact.run_id"
+                  [contextKey]="f.tenantId()"
+                  [resolver]="a.resolveEvidence"
+                  (citationSelected)="onCitation($event)"
+                  (resourceSelected)="resource($event)"
+                />
+              } @loading {
+                <ffk-skeleton
+                  width="60%"
+                  height="12px"
+                  [label]="'Opening answer details' | ffkText"
+                />
+              } @error {
+                <p role="alert">
+                  {{
+                    'Answer details could not be opened. Refresh this page and try again.' | ffkText
+                  }}
+                </p>
+              }
+            }
+            @if (message.role === 'assistant') {
+              <div class="answer-actions" [attr.aria-label]="'Answer actions' | ffkText">
+                <ffk-button
+                  variant="quiet"
+                  icon="history"
+                  (click)="openArtifact('audit', message.id)"
+                  >{{ 'Audit' | ffkText }}</ffk-button
+                >
+                @if (message.status === 'completed' && canArtifact('export')) {
+                  <ffk-button
+                    variant="quiet"
+                    icon="download"
+                    [label]="'Export answer' | ffkText"
+                    [disabled]="a.running()"
+                    (click)="openArtifact('export', message.id)"
+                  />
+                }
+                @if (message.status === 'completed' && canArtifact('share')) {
+                  <ffk-button
+                    variant="quiet"
+                    icon="link"
+                    [label]="'Share answer' | ffkText"
+                    [disabled]="a.running()"
+                    (click)="openArtifact('share', message.id)"
+                  />
+                }
+              </div>
+            }
+            @if (
+              message.run_id && (message.status === 'failed' || message.status === 'cancelled')
+            ) {
+              <ffk-button
+                variant="quiet"
+                icon="refresh"
+                [disabled]="a.running() || a.pending()"
+                (click)="a.retry(message)"
+                >{{ 'Retry answer' | ffkText }}</ffk-button
+              >
+            }
+          </article>
+        }
+      </div>
+      @if (a.running()) {
+        <p class="tool-activity" role="status">
+          <span class="activity-dot"></span>{{ a.toolActivity() || 'Preparing your answer…' }}
+        </p>
+      }
+      @if (a.canUseAgent() && a.selectedAgent()?.status !== 'ready') {
+        <p class="trial-notice" role="status">
+          {{
+            'This agent is available for a trial. Some model capabilities have not been verified. Review the answer and sources.'
+              | ffkText
+          }}
+        </p>
+      }
+    </div>
+    @if (a.activeThread()?.archived_at) {
+      <div class="archived-conversation">
+        <span>{{ 'This conversation is archived.' | ffkText }}</span
+        ><ffk-button
+          variant="quiet"
+          [loading]="a.pending()"
+          (click)="a.updateThread({ archived: false })"
+          >{{ 'Restore conversation' | ffkText }}</ffk-button
+        >
+      </div>
+    }
+    @if (composerAgents().length > 1) {
+      <div class="agent-choice">
+        <label for="chat-agent">{{ 'Agent' | ffkText }}</label
+        ><select
+          id="chat-agent"
+          [value]="a.agentId()"
+          [disabled]="a.running() || a.pending() || !!a.activeThread()?.archived_at"
+          (change)="chooseAgent($event)"
+        >
+          @for (agent of composerAgents(); track agent.id) {
+            <option [value]="agent.id" [disabled]="!agent.available">
+              {{ agent.name }}{{ agent.note ? ' · ' + (agent.note | ffkText) : '' }}
+            </option>
+          }
+        </select>
+        @if (a.selectedAgent()?.description) {
+          <small>{{ a.selectedAgent()?.description }}</small>
+        }
+      </div>
+    }
+    <ffk-chat-composer
+      class="composer-slot"
+      [(value)]="draft"
+      [canSend]="!!draft.trim() && a.canUseAgent() && files.ready() && !files.selecting()"
+      [disabled]="!!a.activeThread()?.archived_at"
+      [busy]="a.pending() || files.selecting()"
+      [running]="a.running()"
+      [locale]="actions?.locale?.() || 'en-US'"
+      [attachmentsEnabled]="files.enabled() && a.canUseAgent()"
+      [attachmentsUnavailableReason]="
+        a.canUseAgent()
+          ? files.unavailableReason()
+          : 'Choose an available agent before attaching files.'
+      "
+      [attachments]="files.attachments()"
+      [accept]="files.accept()"
+      [hint]="files.error() || files.modelHint()"
+      (filesSelected)="files.select($event)"
+      (attachmentRemoved)="files.remove($event)"
+      (attachmentRetried)="files.retry($event)"
+      [sendLabel]="a.selectedAgent()?.status === 'ready' ? 'Send' : 'Send trial'"
+      (sendRequested)="submit()"
+      (stopRequested)="a.cancel()"
+    />
+    @if (a.messages().length) {
+      <p class="answer-note">{{ 'Review the sources before relying on an answer.' | ffkText }}</p>
+    }
+  </section>
+</div>
+<ffk-answer-audit
+  [open]="artifactAction() === 'audit'"
+  [message]="artifactMessage()"
+  [threadId]="a.threadId()"
+  (closed)="closeArtifact()"
+  (resourceRequested)="auditResource($event)"
+  (citationSelected)="auditCitation($event)"
+/>
+<ffk-export-dialog
+  [open]="artifactAction() === 'export'"
+  [selection]="exportSelection()"
+  (closed)="closeArtifact()"
+/>
+<ffk-share-review
+  [open]="artifactAction() === 'share'"
+  [selection]="artifactSelection()"
+  [managementBaseUrl]="actions?.managementBaseUrl?.() || ''"
+  (closed)="closeArtifact()"
+/>

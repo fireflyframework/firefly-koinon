@@ -1,0 +1,1 @@
+{"name":"@firefly-koinon/brand-tools","private":true,"type":"module","scripts":{"build":"node build.mjs"},"dependencies":{"@fontsource/manrope":"5.2.8","@resvg/resvg-js":"2.6.2","fontkit":"2.0.4"}}

@@ -1,0 +1,21 @@
+// Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
+@use '@fontsource-variable/manrope';
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: #f3f1eb;
+  font-family: 'Manrope Variable', 'Manrope', system-ui, sans-serif;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  min-width: 320px;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}

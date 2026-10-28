@@ -1,0 +1,993 @@
+# Copyright 2024-2026 Firefly Software Foundation
+# Modifications Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Source intake orchestrator -- bytes in, indexed source out.
+
+End-to-end pipeline that controllers + workers call when ingesting a
+new binary. The orchestrator owns:
+
+1. **Binary normalisation** -- :class:`BinaryNormalizer` sniffs the
+   actual media type from magic bytes, routes through the right
+   adapter (image conversion, archive expansion, email
+   decomposition, optional Office conversion), and emits one or more
+   :class:`BinaryArtifact` rows.
+
+2. **Loading** -- each artifact is fed to the loader registered for
+   its kind, producing a :class:`LoadedDocument` with heading-anchored
+   sections. Multi-artifact intakes (archives, emails) are merged
+   into a single document with constituent section markers so the
+   retrieval index sees one logical source per intake call.
+
+3. **Chunking** -- :class:`ParagraphChunker` packs paragraphs into
+   token-budgeted chunks with soft overlap.
+
+4. **Embedding** -- :class:`EmbeddingService` produces one vector
+   per chunk in batched, retried, cost-tracked calls.
+
+5. **Indexing** -- :class:`IndexService` writes the BM25 + dense
+   projections to the corpus + vector store, keyed by ``chunk_id``
+   so retrieval-time RRF fusion lines up.
+
+6. **Audit + EDA** -- :class:`AuditService` records the mutation and
+   the event publisher broadcasts ``SourceIngested`` on
+   ``flycanon.ingest``.
+"""
+
+from __future__ import annotations
+
+import contextlib
+import hashlib
+import logging
+import mimetypes
+import os
+import uuid
+from dataclasses import dataclass
+from typing import Any
+
+from pyfly.agentic.content.binary import BinaryArtifact, BinaryNormalizer
+from pyfly.container import service
+from pyfly.eda import EventPublisher
+from pyfly.kernel import DuplicateKeyException
+from sqlalchemy.exc import IntegrityError
+
+from flycanon.config import CanonSettings
+from flycanon.core.services.audit import AuditService
+from flycanon.core.services.embeddings import (
+    EmbeddingRegistry,
+    EmbeddingService,
+    EmbeddingSetBinding,
+    EmbeddingSetService,
+    bind_embedding_set,
+)
+from flycanon.core.services.ingestion import IngestionService, LoadedDocument
+from flycanon.core.services.ingestion.loaders import LoaderRegistry
+from flycanon.core.services.metadata import MetadataExtractor
+from flycanon.core.services.pii import (
+    PiiPolicy,
+    PiiPolicyViolation,
+    PiiScanner,
+    build_pii_scanner,
+)
+from flycanon.core.services.pii.scanner import redact as pii_redact
+from flycanon.core.services.retrieval import IndexService
+from flycanon.core.services.sources.errors import SourceNotFound
+from flycanon.core.services.storage.object_store import ObjectStore
+from flycanon.interfaces.dtos.source import SourceMetadata, SubmitSourceRequest
+from flycanon.interfaces.enums import SourceKind, SourceStatus
+from flycanon.models.entities.source import SourceRow
+from flycanon.models.repositories.chunk_repository import ChunkRepository
+from flycanon.models.repositories.source_repository import SourceRepository
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True, slots=True)
+class SourceRemoval:
+    """What :meth:`IntakeService.remove` actually did.
+
+    ``original_deleted`` is the fact the audit row, the ``SourceRemoved``
+    event and the workspace purge counter all report. It is returned
+    rather than left implicit so no caller has to guess it from the
+    row it read before the call: the purge service did exactly that in
+    the first 26.7.1 cut (counted ``object_store_key`` being set) and
+    reported ``originals_deleted: 2`` for two originals that were still
+    on disk, because the API process's object store was not the one the
+    worker had written to.
+    """
+
+    source_id: str
+    original_deleted: bool
+
+
+@service(name="canon.IntakeService")
+class IntakeService:
+    """End-to-end source intake: normalise -> load -> chunk -> embed -> index."""
+
+    def __init__(
+        self,
+        binary_normalizer: BinaryNormalizer,
+        ingestion: IngestionService,
+        loaders: LoaderRegistry,
+        embeddings: EmbeddingService,
+        indexer: IndexService,
+        metadata_extractor: MetadataExtractor,
+        source_repository: SourceRepository,
+        chunk_repository: ChunkRepository,
+        audit: AuditService,
+        event_publisher: EventPublisher,
+        object_store: ObjectStore,
+        settings: CanonSettings,
+        embedding_sets: EmbeddingSetService | None = None,
+        embedding_registry: EmbeddingRegistry | None = None,
+    ) -> None:
+        self._binary_normalizer = binary_normalizer
+        self._ingestion = ingestion
+        self._loaders = loaders
+        self._embeddings = embeddings
+        self._indexer = indexer
+        self._metadata = metadata_extractor
+        self._sources = source_repository
+        self._chunks = chunk_repository
+        self._audit = audit
+        self._publisher = event_publisher
+        self._object_store = object_store
+        self._settings = settings
+        # Which embedding space this workspace's vectors go into, and the
+        # embedder that produces them. Optional so a test that wires a mock
+        # embedder and a mock index keeps the pre-26.8.0 shape.
+        self._embedding_sets = embedding_sets
+        self._embedding_registry = embedding_registry
+        # Resolve the configured PII scanner once at construction.
+        # ``None`` when the scanner is disabled (or the policy is
+        # ``disabled``) -- the submit path short-circuits the check.
+        try:
+            policy = PiiPolicy(settings.pii_policy)
+        except ValueError:
+            policy = PiiPolicy.warn
+        self._pii_policy = policy
+        self._pii_scanner: PiiScanner | None = (
+            build_pii_scanner(settings.pii_scanner) if policy != PiiPolicy.disabled else None
+        )
+
+    async def _embedder_for(
+        self, *, tenant_id: str, workspace_id: str
+    ) -> tuple[EmbeddingSetBinding | None, EmbeddingService]:
+        """The workspace's embedding set and its embedder, minting the first set.
+
+        A workspace's very first ingest creates a set from the process default
+        and points the workspace at it, so a single-embedder deployment never
+        chooses a set and still gets one that records what produced its
+        vectors -- which is the whole point.
+        """
+        if self._embedding_sets is None or self._embedding_registry is None:
+            return None, self._embeddings
+        binding = await self._embedding_sets.ensure_active(tenant_id=tenant_id, workspace_id=workspace_id)
+        return binding, self._embedding_registry.for_binding(binding)
+
+    async def submit(
+        self,
+        *,
+        request: SubmitSourceRequest,
+        content: bytes,
+        tenant_id: str,
+        workspace_id: str,
+        filename: str | None = None,
+        content_type: str | None = None,
+        actor: str | None = None,
+        correlation_id: str | None = None,
+        logical_source_key: str | None = None,
+        operation_id: str | None = None,
+        authorize_commit=None,
+    ) -> SourceRow:
+        """Run the full intake pipeline and return the populated row."""
+        if logical_source_key is not None:
+            from flycanon.core.services.sources.lineage.pipeline import DocumentLineagePipeline
+
+            return await DocumentLineagePipeline(self).run(
+                request=request, content=content, tenant_id=tenant_id, workspace_id=workspace_id,
+                actor=actor, filename=filename, content_type=content_type, logical_key=logical_source_key,
+                operation_id=operation_id or logical_source_key, authorize_commit=authorize_commit,
+                correlation_id=correlation_id,
+            )
+        artifacts = await self._binary_normalizer.normalise(
+            content,
+            declared_media_type=content_type,
+            filename=filename,
+        )
+        merged_kind, merged_content, merged_metadata = self._merge_artifacts(artifacts, filename)
+        merged_content, merged_metadata = self._apply_pii_policy(merged_content, merged_metadata)
+
+        primary_kind = request.kind if request.kind != SourceKind.unknown else merged_kind
+
+        source = SourceRow(
+            id=str(uuid.uuid4()),
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            kind=primary_kind.value,
+            status=SourceStatus.pending.value,
+            filename=filename,
+            uri=request.uri,
+            content_type=content_type,
+            content_sha256="",
+            content_bytes=0,
+            metadata_json={**_metadata_to_json(request.metadata), **merged_metadata},
+        )
+
+        try:
+            result = self._ingestion.ingest(
+                source=source,
+                content=merged_content,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+        except Exception as exc:
+            source.status = SourceStatus.failed.value
+            source.error_code = getattr(exc, "code", "ingestion_failed")
+            source.error_message = str(exc)
+            await self._sources.add(source)
+            await self._publish_failure(source=source, exc=exc, correlation_id=correlation_id)
+            raise
+
+        # Per-format metadata extraction. We feed the loader-produced
+        # text back into the language detector so the ``language``
+        # field is populated even when the embedded metadata doesn't
+        # carry one. The extracted dict lands under
+        # ``metadata_json.extracted`` so the source schema stays
+        # stable while still exposing the rich facets.
+        primary_artifact = artifacts[0] if artifacts else None
+        primary_media = primary_artifact.media_type if primary_artifact else (content_type or "")
+        primary_bytes = primary_artifact.bytes if primary_artifact else merged_content
+        text_sample = self._first_text(result.chunks)
+        extracted = self._metadata.extract(
+            primary_bytes,
+            media_type=primary_media,
+            filename=filename,
+            text_sample=text_sample,
+        )
+        metadata = dict(result.source.metadata_json or {})
+        metadata["extracted"] = extracted.to_dict()
+        result.source.metadata_json = metadata
+
+        # Idempotent on the SHA-256: the same bytes resolve to the
+        # same row, no matter how many parallel callers submit them.
+        # We pre-check + handle IntegrityError so the race window
+        # between the SELECT and the INSERT is also covered (without
+        # the recovery branch, the second caller would see a 500
+        # IntegrityError from the partial-unique index on
+        # ``content_sha256``).
+        existing = await self._sources.get_by_content_sha256(
+            result.source.content_sha256,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        if existing is not None:
+            logger.info(
+                "intake idempotent: content_sha256=%s already mapped to source_id=%s",
+                result.source.content_sha256,
+                existing.id,
+            )
+            return existing
+
+        # Persist the ORIGINAL uploaded bytes (not merged_content) so RLM
+        # can re-extract whole-document text from the canonical file via
+        # the loaders. Best-effort: a storage failure logs a warning and
+        # leaves ``object_store_key`` null rather than failing the ingest.
+        # Setting the key before the INSERT lands it on the same row.
+        if self._settings.store_originals:
+            await self._store_original(
+                source=result.source,
+                content=content,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                filename=filename,
+                content_type=content_type,
+            )
+
+        try:
+            await self._sources.add(result.source)
+        except (IntegrityError, DuplicateKeyException):
+            existing = await self._sources.get_by_content_sha256(
+                result.source.content_sha256,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+            if existing is not None:
+                logger.info(
+                    "intake idempotent (race-resolved): content_sha256=%s -> source_id=%s",
+                    result.source.content_sha256,
+                    existing.id,
+                )
+                return existing
+            raise
+
+        if result.chunks:
+            binding, embedder = await self._embedder_for(tenant_id=tenant_id, workspace_id=workspace_id)
+            texts = [chunk.content for chunk in result.chunks]
+            with bind_embedding_set(binding) if binding is not None else contextlib.nullcontext():
+                embeddings = await embedder.embed(texts)
+                # Stamp the model on the chunks BEFORE persisting so the
+                # canon_chunks row carries the right ``embedding_model``
+                # column on its single INSERT. The vector projection then
+                # mirrors the same chunk ids into the chosen vector store
+                # for retrieval-time RRF fusion.
+                for chunk in result.chunks:
+                    chunk.embedding_model = embedder.model
+                await self._chunks.replace_for_source(result.source.id, result.chunks)
+                await self._indexer.replace_for_source(
+                    source=result.source,
+                    chunks=result.chunks,
+                    embeddings=embeddings,
+                    embedding_model=embedder.model,
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                )
+        else:
+            await self._chunks.replace_for_source(result.source.id, [])
+
+        await self._audit.record(
+            event_type="source.ingested",
+            subject_kind="source",
+            subject_id=result.source.id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            actor=actor,
+            correlation_id=correlation_id,
+            payload={
+                "kind": result.source.kind,
+                "content_sha256": result.source.content_sha256,
+                "n_chunks": result.source.n_chunks,
+                "n_artifacts": len(artifacts),
+            },
+        )
+        await self._publish_success(source=result.source, correlation_id=correlation_id)
+        logger.info(
+            "intake completed id=%s kind=%s n_chunks=%d n_artifacts=%d",
+            result.source.id,
+            result.source.kind,
+            result.source.n_chunks,
+            len(artifacts),
+        )
+        return result.source
+
+    async def replace(
+        self,
+        *,
+        source_id: str,
+        request: SubmitSourceRequest,
+        content: bytes,
+        tenant_id: str,
+        workspace_id: str,
+        filename: str | None = None,
+        content_type: str | None = None,
+        actor: str | None = None,
+        correlation_id: str | None = None,
+        versioned_originals: bool = False,
+        logical_source_key: str | None = None,
+        operation_id: str | None = None,
+        expected_source_version_id: str | None = None,
+        expected_extraction_id: str | None = None,
+        authorize_commit=None,
+    ) -> SourceRow:
+        """Re-ingest an existing source in place, preserving the row id.
+
+        Use when a canonical file is updated and downstream citations
+        should follow the new content rather than orphan to the deleted
+        row. The flow:
+
+        1. Look up the existing :class:`SourceRow` -- 404 propagates
+           up if it's missing.
+        2. Normalise + load + chunk + embed the new bytes through the
+           same pipeline as :meth:`submit`.
+        3. Drop the existing chunks + their vector projection via
+           :meth:`ChunkRepository.replace_for_source` /
+           :meth:`IndexService.replace_for_source` (idempotent --
+           same calls the submit path makes).
+        4. UPDATE the existing source row's mutable fields
+           (filename, uri, content_sha256, content_bytes, n_chunks,
+           metadata_json) instead of inserting a new row.
+        5. Audit ``source.replaced`` + publish a ``SourceReplaced``
+           EDA event so downstream projections can re-sync.
+
+        Citations referencing chunks that disappear in the new
+        emission are not deleted -- a future pass surfaces them as
+        ``dangling_citation`` audit warnings. v1 simply preserves
+        the citation rows (their ``chunk_id`` will resolve to
+        ``None`` in the provenance graph; out of scope for this
+        commit to repair).
+        """
+        if logical_source_key is not None:
+            from flycanon.core.services.sources.lineage.pipeline import DocumentLineagePipeline
+
+            return await DocumentLineagePipeline(self).run(
+                request=request, content=content, tenant_id=tenant_id, workspace_id=workspace_id,
+                actor=actor, filename=filename, content_type=content_type, logical_key=logical_source_key,
+                operation_id=operation_id or str(uuid.uuid4()), source_id=source_id,
+                expected_source_version_id=expected_source_version_id, expected_extraction_id=expected_extraction_id,
+                authorize_commit=authorize_commit, correlation_id=correlation_id,
+            )
+        existing = await self._sources.get(
+            source_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        if existing is None:
+            raise SourceNotFound(source_id)
+
+        artifacts = await self._binary_normalizer.normalise(
+            content,
+            declared_media_type=content_type,
+            filename=filename,
+        )
+        merged_kind, merged_content, merged_metadata = self._merge_artifacts(artifacts, filename)
+        # PII guardrail runs on the re-ingest path too: a clean v1 of
+        # a file may be replaced with a v2 that introduces emails /
+        # SSNs / etc., and the policy must catch that just like
+        # initial submit. Same scanner + policy resolution as submit().
+        merged_content, merged_metadata = self._apply_pii_policy(merged_content, merged_metadata)
+        primary_kind = request.kind if request.kind != SourceKind.unknown else merged_kind
+
+        # Build a transient SourceRow carrying the NEW values so the
+        # ingestion pipeline (which already knows how to chunk +
+        # compute content_sha256 + emit chunks for a row) does its
+        # work; we then transplant the result onto the EXISTING row
+        # (preserving its id + created_at + audit history).
+        scratch = SourceRow(
+            id=existing.id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            kind=primary_kind.value,
+            status=SourceStatus.pending.value,
+            filename=filename or existing.filename,
+            uri=request.uri or existing.uri,
+            content_type=content_type or existing.content_type,
+            content_sha256="",
+            content_bytes=0,
+            metadata_json={
+                **(existing.metadata_json or {}),
+                **_metadata_to_json(request.metadata),
+                **merged_metadata,
+            },
+        )
+        result = self._ingestion.ingest(
+            source=scratch,
+            content=merged_content,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+
+        # Per-format metadata extraction (identical to submit()).
+        primary_artifact = artifacts[0] if artifacts else None
+        primary_media = primary_artifact.media_type if primary_artifact else (content_type or "")
+        primary_bytes = primary_artifact.bytes if primary_artifact else merged_content
+        text_sample = self._first_text(result.chunks)
+        extracted = self._metadata.extract(
+            primary_bytes,
+            media_type=primary_media,
+            filename=filename,
+            text_sample=text_sample,
+        )
+        metadata = dict(result.source.metadata_json or {})
+        metadata["extracted"] = extracted.to_dict()
+
+        # Now flip the existing row in place with the new content
+        # (preserves id, created_at, ingested_at history).
+        existing.kind = result.source.kind
+        existing.status = SourceStatus.ingested.value
+        existing.filename = scratch.filename
+        existing.uri = scratch.uri
+        existing.content_type = scratch.content_type
+        existing.content_sha256 = result.source.content_sha256
+        existing.content_bytes = result.source.content_bytes
+        existing.n_chunks = result.source.n_chunks
+        existing.metadata_json = metadata
+        existing.error_code = None
+        existing.error_message = None
+
+        if versioned_originals:
+            existing.object_store_key = None
+            existing.metadata_json = {
+                key: value for key, value in existing.metadata_json.items() if key != "_persisted_original"
+            }
+
+        # Persist the NEW original bytes on the re-ingest path too, so the
+        # stored corpus follows the replaced content. Best-effort: a write
+        # failure leaves the key as-is and never fails the replace.
+        if self._settings.store_originals:
+            await self._store_original(
+                source=existing,
+                content=content,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                filename=existing.filename,
+                content_type=existing.content_type,
+                versioned=versioned_originals,
+            )
+
+        updated_row = await self._sources.update(existing)
+
+        if result.chunks:
+            binding, embedder = await self._embedder_for(tenant_id=tenant_id, workspace_id=workspace_id)
+            texts = [chunk.content for chunk in result.chunks]
+            with bind_embedding_set(binding) if binding is not None else contextlib.nullcontext():
+                embeddings = await embedder.embed(texts)
+                for chunk in result.chunks:
+                    chunk.embedding_model = embedder.model
+                    chunk.source_id = updated_row.id
+                await self._chunks.replace_for_source(updated_row.id, result.chunks)
+                await self._indexer.replace_for_source(
+                    source=updated_row,
+                    chunks=result.chunks,
+                    embeddings=embeddings,
+                    embedding_model=embedder.model,
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                )
+        else:
+            await self._chunks.replace_for_source(updated_row.id, [])
+
+        await self._audit.record(
+            event_type="source.replaced",
+            subject_kind="source",
+            subject_id=updated_row.id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            actor=actor,
+            correlation_id=correlation_id,
+            payload={
+                "kind": updated_row.kind,
+                "content_sha256": updated_row.content_sha256,
+                "n_chunks": updated_row.n_chunks,
+                "n_artifacts": len(artifacts),
+            },
+        )
+        if self._publisher is not None:
+            try:
+                await self._publisher.publish(  # type: ignore[attr-defined]
+                    destination=self._settings.ingest_topic,
+                    event_type="SourceReplaced",
+                    payload={
+                        "source_id": updated_row.id,
+                        "tenant_id": tenant_id,
+                        "workspace_id": workspace_id,
+                        "kind": updated_row.kind,
+                        "content_sha256": updated_row.content_sha256,
+                        "n_chunks": updated_row.n_chunks,
+                    },
+                    headers={"correlation-id": correlation_id} if correlation_id else None,
+                )
+            except Exception as exc:
+                logger.warning(
+                    "SourceReplaced publish failed source_id=%s: %s",
+                    updated_row.id,
+                    exc,
+                )
+        logger.info(
+            "intake replaced id=%s kind=%s n_chunks=%d",
+            updated_row.id,
+            updated_row.kind,
+            updated_row.n_chunks,
+        )
+        return updated_row
+
+    async def remove(
+        self,
+        *,
+        source_id: str,
+        tenant_id: str,
+        workspace_id: str,
+        actor: str | None = None,
+        correlation_id: str | None = None,
+    ) -> SourceRemoval:
+        """Remove a source and every indexed projection for it.
+
+        Returns a :class:`SourceRemoval` stating whether a stored
+        original was actually deleted, so callers that aggregate
+        (the workspace purge) report the same fact the audit row does.
+
+        The flow:
+
+        1. Look up the existing :class:`SourceRow` scoped to
+           ``(tenant_id, workspace_id)`` -- raises
+           :class:`SourceNotFound` (404) when the id is unknown.
+        2. Purge the index projections via
+           :meth:`IndexService.remove_for_source` (BM25 rows + dense
+           vectors). This runs BEFORE the chunk rows are deleted --
+           the indexer resolves the source's chunk ids through the
+           chunk repository, so deleting the rows first would leak
+           the dense vectors.
+        3. Delete the chunk rows
+           (:meth:`ChunkRepository.replace_for_source` with an empty
+           set) and then the source row itself.
+        4. Delete the stored original from the object store when the
+           row carries an ``object_store_key``. Until 26.7.1 removal
+           left the bytes behind, which for a tenant's off-boarding or
+           a retention delete meant the document the caller asked to
+           erase stayed readable by the RLM answer path (it reads
+           originals, not chunks) and stayed on disk / in the bucket.
+           The delete is attempted BEFORE the row goes so a failure
+           leaves a row that still points at the object and can be
+           retried, rather than an orphaned object nobody references.
+           A missing object (``FileNotFoundError``) is not an error --
+           the store port defines delete as idempotent.
+        5. Audit ``source.removed`` + publish a ``SourceRemoved`` EDA
+           event so downstream projections can re-sync, mirroring
+           ``SourceIngested`` / ``SourceReplaced``.
+        """
+        existing = await self._sources.get(
+            source_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        if existing is None:
+            raise SourceNotFound(source_id)
+
+        await self._indexer.remove_for_source(
+            source_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        await self._chunks.replace_for_source(source_id, [])
+        original_deleted = await self._delete_original(existing)
+        await self._sources.delete(existing)
+
+        await self._audit.record(
+            event_type="source.removed",
+            subject_kind="source",
+            subject_id=source_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            actor=actor,
+            correlation_id=correlation_id,
+            payload={
+                "kind": existing.kind,
+                "content_sha256": existing.content_sha256,
+                "original_deleted": original_deleted,
+            },
+        )
+        if self._publisher is not None:
+            try:
+                await self._publisher.publish(  # type: ignore[attr-defined]
+                    destination=self._settings.ingest_topic,
+                    event_type="SourceRemoved",
+                    payload={
+                        "source_id": source_id,
+                        "tenant_id": tenant_id,
+                        "workspace_id": workspace_id,
+                        "kind": existing.kind,
+                        "content_sha256": existing.content_sha256,
+                        "original_deleted": original_deleted,
+                    },
+                    headers={"correlation-id": correlation_id} if correlation_id else None,
+                )
+            except Exception as exc:
+                logger.warning(
+                    "SourceRemoved publish failed source_id=%s: %s",
+                    source_id,
+                    exc,
+                )
+        logger.info(
+            "intake removed id=%s kind=%s original_deleted=%s",
+            source_id,
+            existing.kind,
+            original_deleted,
+        )
+        return SourceRemoval(source_id=source_id, original_deleted=original_deleted)
+
+    async def _delete_original(self, source: SourceRow) -> bool:
+        """Delete the stored original for ``source``; return whether one was removed.
+
+        ``False`` when the row never had a key (``store_originals`` was
+        off at ingest, or the put failed and the ingest continued) or
+        when the object is not in the store. Any other store failure
+        propagates so the caller's row is left intact and the removal
+        can be retried -- see :meth:`remove`.
+
+        The existence check comes first because the :class:`ObjectStore`
+        port defines ``delete`` as a no-op on a missing key (localfs
+        unlinks with ``missing_ok``, S3's ``DeleteObject`` is silent), so
+        ``delete`` alone cannot tell "erased" from "was never here". The
+        difference matters: a row whose key is not in this process's
+        store means the API and the worker are looking at different
+        stores (a localfs root that is not a shared volume, a bucket
+        mismatch) and the bytes the caller asked to erase are still
+        wherever the worker put them. That is logged as a warning with
+        the key, and reported as ``original_deleted=False`` rather than
+        claimed as done. The check-then-delete pair is not atomic; a
+        concurrent delete of the same key can only turn a ``True`` into
+        an over-report of one object that is gone either way.
+        """
+        key = getattr(source, "object_store_key", None)
+        if not key:
+            return False
+        if not await self._object_store.exists(key):
+            logger.warning(
+                "intake remove: source %s points at object %r that is not in the object store; "
+                "the original was NOT deleted here (is the API's object store the worker's?)",
+                source.id,
+                key,
+            )
+            return False
+        try:
+            await self._object_store.delete(key)
+        except FileNotFoundError:
+            return False
+        return True
+
+    def _apply_pii_policy(
+        self,
+        content: bytes,
+        metadata: dict[str, Any],
+    ) -> tuple[bytes, dict[str, Any]]:
+        """Run the configured PII scan against ``content`` and apply the policy.
+
+        Returns ``(possibly-redacted-content, metadata-with-findings)``.
+        The scanner operates on the merged text (decoded UTF-8) so a
+        contaminated child artefact in an archive triggers the same
+        policy as a top-level hit. Raises :class:`PiiPolicyViolation`
+        when the policy is ``reject`` and findings are non-empty.
+        """
+        if self._pii_scanner is None or self._pii_policy == PiiPolicy.disabled:
+            return content, metadata
+        text_view = self._decode_for_scan(content)
+        findings = self._pii_scanner.scan(text_view)
+        if not findings:
+            return content, metadata
+        if self._pii_policy == PiiPolicy.reject:
+            raise PiiPolicyViolation(findings)
+        if self._pii_policy == PiiPolicy.redact:
+            redacted = pii_redact(text_view, findings)
+            content = redacted.encode("utf-8")
+        metadata.setdefault(
+            "pii_findings",
+            [{"kind": f.kind, "start": f.start, "end": f.end} for f in findings],
+        )
+        return content, metadata
+
+    async def _store_original(
+        self,
+        *,
+        source: SourceRow,
+        content: bytes,
+        tenant_id: str,
+        workspace_id: str,
+        filename: str | None,
+        content_type: str | None,
+        versioned: bool = False,
+    ) -> None:
+        """Write the original bytes to the object store and stamp the key.
+
+        Key layout mirrors flyquery's convention:
+        ``flycanon/{tenant}/{workspace}/sources/{source_id}{ext}``. The
+        extension is taken from the filename when present, else guessed
+        from ``content_type``, else ``.bin``. Best-effort: on any failure
+        we log a warning and leave ``object_store_key`` unchanged so the
+        ingest still succeeds.
+        """
+        ext = self._original_extension(filename, content_type)
+        key = f"flycanon/{tenant_id}/{workspace_id}/sources/{source.id}{ext}"
+        if versioned:
+            digest = hashlib.sha256(content).hexdigest()
+            key = f"flycanon/{tenant_id}/{workspace_id}/sources/{source.id}/{digest}{ext}"
+        try:
+            await self._object_store.put(key, content, content_type)
+        except Exception as exc:
+            logger.warning(
+                "object-store put failed source_id=%s key=%s: %s",
+                source.id,
+                key,
+                exc,
+            )
+            return
+        source.object_store_key = key
+        source.metadata_json = {
+            **(source.metadata_json or {}),
+            "_persisted_original": {"sha256": hashlib.sha256(content).hexdigest(), "bytes": len(content)},
+        }
+
+    @staticmethod
+    def _original_extension(filename: str | None, content_type: str | None) -> str:
+        """Derive a file extension for the stored original."""
+        if filename:
+            ext = os.path.splitext(filename)[1]
+            if ext:
+                return ext
+        if content_type:
+            guessed = mimetypes.guess_extension(content_type.split(";")[0].strip())
+            if guessed:
+                return guessed
+        return ".bin"
+
+    @staticmethod
+    def _decode_for_scan(content: bytes) -> str:
+        """Best-effort UTF-8 decode for the PII scanner.
+
+        Binary payloads (PDFs in their canonical form, images,
+        archives that didn't get expanded inline) decode as
+        ``replace`` -- the scanner runs against the parts of the
+        stream that ARE text, and the binary spans become
+        unmatchable byte runs.
+        """
+        try:
+            return content.decode("utf-8")
+        except (UnicodeDecodeError, AttributeError):
+            return content.decode("utf-8", errors="replace") if isinstance(content, bytes) else ""
+
+    @staticmethod
+    def _first_text(chunks: list[Any]) -> str:
+        """Return up to ~2 000 chars of the first ingested chunk's
+        text so the language detector has something to work with.
+        """
+        if not chunks:
+            return ""
+        body = getattr(chunks[0], "content", "") or ""
+        return body[:2000]
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _merge_artifacts(
+        self,
+        artifacts: list[BinaryArtifact],
+        original_filename: str | None,
+        observer=None,
+    ) -> tuple[SourceKind, bytes, dict[str, Any]]:
+        """Collapse a fan-out artifact list into a single content payload.
+
+        Single-artifact intakes pass through unchanged. Multi-artifact
+        intakes (archives, emails with attachments) get merged into
+        one Markdown document with ``## Artifact: <filename>`` section
+        markers separating constituents -- the chunker treats each
+        constituent as a sibling section, and the citation graph
+        records the ancestry on the source row's metadata.
+        """
+        if len(artifacts) == 1:
+            artifact = artifacts[0]
+            return SourceKind(artifact.kind), artifact.bytes, _ancestry_metadata([artifact])
+
+        merged_sections: list[str] = []
+        kind = SourceKind.archive
+        for index, artifact in enumerate(artifacts):
+            loader = self._loaders.get(SourceKind(artifact.kind))
+            if loader is None:
+                if observer is not None:
+                    observer(index, None, False, "loader_unavailable")
+                logger.warning(
+                    "intake skipping artifact kind=%s filename=%s -- no loader",
+                    artifact.kind,
+                    artifact.filename,
+                )
+                continue
+            try:
+                document = loader.load(artifact.bytes, filename=artifact.filename)
+            except Exception as exc:
+                if observer is not None:
+                    observer(index, None, False, "loader_failed")
+                logger.warning(
+                    "intake skipping artifact kind=%s filename=%s -- loader failed: %s",
+                    artifact.kind,
+                    artifact.filename,
+                    exc,
+                )
+                continue
+            rendered = _render_document(document, artifact_label=artifact.filename, index=index)
+            if rendered:
+                merged_sections.append(rendered)
+            if observer is not None:
+                observer(index, document, bool(rendered), None if rendered else "empty_extraction")
+
+        merged = "\n\n".join(merged_sections).encode("utf-8")
+        return kind, merged, _ancestry_metadata(artifacts)
+
+    async def _publish_success(self, *, source: SourceRow, correlation_id: str | None) -> None:
+        if self._publisher is None:
+            return
+        try:
+            await self._publisher.publish(  # type: ignore[attr-defined]
+                destination=self._settings.ingest_topic,
+                event_type=self._settings.source_ingested_event,
+                payload={
+                    "source_id": source.id,
+                    "tenant_id": source.tenant_id,
+                    "workspace_id": source.workspace_id,
+                    "kind": source.kind,
+                    "content_sha256": source.content_sha256,
+                    "n_chunks": source.n_chunks,
+                },
+                headers={"correlation-id": correlation_id} if correlation_id else None,
+            )
+        except Exception as exc:
+            logger.warning("source.ingested publish failed source_id=%s: %s", source.id, exc)
+
+    async def _publish_failure(
+        self,
+        *,
+        source: SourceRow,
+        exc: BaseException,
+        correlation_id: str | None,
+    ) -> None:
+        if self._publisher is None:
+            return
+        try:
+            await self._publisher.publish(  # type: ignore[attr-defined]
+                destination=self._settings.ingest_topic,
+                event_type=self._settings.source_ingestion_failed_event,
+                payload={
+                    "source_id": source.id,
+                    "tenant_id": source.tenant_id,
+                    "workspace_id": source.workspace_id,
+                    "kind": source.kind,
+                    "code": getattr(exc, "code", "ingestion_failed"),
+                    "message": str(exc),
+                },
+                headers={"correlation-id": correlation_id} if correlation_id else None,
+            )
+        except Exception as inner:
+            logger.warning("source.failed publish failed source_id=%s: %s", source.id, inner)
+
+
+def _metadata_to_json(metadata: SourceMetadata) -> dict[str, Any]:
+    payload: dict[str, Any] = {}
+    if metadata.title:
+        payload["title"] = metadata.title
+    if metadata.author:
+        payload["author"] = metadata.author
+    if metadata.domain is not None:
+        payload["domain"] = metadata.domain.value
+    if metadata.jurisdiction is not None:
+        payload["jurisdiction"] = metadata.jurisdiction.value
+    if metadata.language:
+        payload["language"] = metadata.language
+    if metadata.tags:
+        payload["tags"] = list(metadata.tags)
+    if metadata.extra:
+        payload.update(metadata.extra)
+    return payload
+
+
+def _ancestry_metadata(artifacts: list[BinaryArtifact]) -> dict[str, Any]:
+    return {
+        "artifacts": [
+            {
+                "filename": artifact.filename,
+                "kind": artifact.kind,
+                "media_type": artifact.media_type,
+                "derived_from": list(artifact.derived_from),
+            }
+            for artifact in artifacts
+        ]
+    }
+
+
+def _render_document(
+    document: LoadedDocument,
+    *,
+    artifact_label: str,
+    index: int,
+) -> str:
+    if not document.sections:
+        if document.raw_text:
+            return f"## Artifact: {artifact_label}\n\n{document.raw_text.strip()}"
+        return ""
+    rendered_sections: list[str] = [f"## Artifact: {artifact_label}"]
+    if document.title:
+        rendered_sections.append(f"### {document.title}")
+    for section in document.sections:
+        if section.path:
+            for level, heading in enumerate(section.path, start=3):
+                rendered_sections.append(f"{'#' * min(level, 6)} {heading}")
+        rendered_sections.append(section.body.strip())
+    return "\n\n".join(rendered_sections)

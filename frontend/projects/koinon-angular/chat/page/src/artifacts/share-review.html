@@ -1,0 +1,108 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<ffk-side-panel [open]="open" [heading]="'Share reviewed messages' | ffkText" (closed)="close()">
+  <p>
+    {{
+      'People must sign in and retain access to every source. This share grants no additional access.'
+        | ffkText
+    }}
+  </p>
+  @if (!state.shareRecord()) {
+    <p class="help">
+      {{
+        'Private-derived answers and incomplete historical source manifests cannot be shared.'
+          | ffkText
+      }}
+    </p>
+    <label class="field"
+      ><span>{{ 'Expires after' | ffkText }}</span
+      ><select [(ngModel)]="hours" [disabled]="state.pending()">
+        <option [ngValue]="1">{{ '1 hour' | ffkText }}</option>
+        <option [ngValue]="24">{{ '24 hours' | ffkText }}</option>
+        <option [ngValue]="72">{{ '3 days' | ffkText }}</option>
+        <option [ngValue]="168">{{ '7 days' | ffkText }}</option>
+      </select></label
+    >
+    @if (state.shareReview(); as review) {
+      <section [attr.aria-label]="'Review shared content' | ffkText">
+        <h3>{{ review.title }}</h3>
+        @for (note of review.omissions ?? []; track note) {
+          <p class="notice">{{ note | ffkText }}</p>
+        }
+        <div class="message-list">
+          @for (message of review.messages; track message.id) {
+            <article class="message">
+              <h3>{{ (message.role === 'user' ? 'You' : 'koinon') | ffkText }}</h3>
+              <p>{{ message.text }}</p>
+            </article>
+          }
+        </div>
+        @if (review.sources.length) {
+          <h3>{{ 'Sources' | ffkText }}</h3>
+          <ul>
+            @for (source of review.sources; track source.id) {
+              <li>{{ source.title }}</li>
+            }
+          </ul>
+        }
+        <p class="help">
+          {{ 'Review expires' | ffkText }} {{ review.expires_at | ffkDate: undefined : 'datetime' }}
+        </p>
+      </section>
+    }
+    <div class="actions">
+      <ffk-button [disabled]="!selection || state.pending()" (click)="review()">{{
+        'Review shared content' | ffkText
+      }}</ffk-button>
+      @if (state.shareReview()) {
+        <ffk-button variant="primary" [loading]="state.pending()" (click)="create()">{{
+          'Create share' | ffkText
+        }}</ffk-button>
+      }
+    </div>
+  } @else {
+    @if (state.shareRecord(); as share) {
+      <h3>{{ share.title }}</h3>
+      <p class="notice" role="status">
+        {{
+          (share.status === 'active'
+            ? 'Your reviewed share is active.'
+            : share.status === 'revoked'
+              ? 'This share was revoked.'
+              : 'This share has expired.'
+          ) | ffkText
+        }}
+      </p>
+      <p class="help">
+        {{ 'Expires' | ffkText }} {{ share.expires_at | ffkDate: undefined : 'datetime' }}
+      </p>
+      @if (share.status === 'active') {
+        @if (link()) {
+          <label class="field"
+            ><span>{{ 'Private share link' | ffkText }}</span
+            ><input [value]="link()" readonly (focus)="$any($event.target).select()" /></label
+          ><ffk-button [disabled]="state.pending()" (click)="copy()">{{
+            'Copy link' | ffkText
+          }}</ffk-button>
+        } @else {
+          <p class="help">
+            {{ 'No sharing link is configured. You can still revoke this share.' | ffkText }}
+          </p>
+        }
+        <div class="actions">
+          <ffk-button variant="quiet" [disabled]="state.pending()" (click)="revoke()">{{
+            'Revoke share' | ffkText
+          }}</ffk-button>
+        </div>
+      }
+    }
+  }
+  @if (state.pending()) {
+    <ffk-skeleton height="3px" [label]="'Working' | ffkText" />
+  }
+  @if (state.error() || localError()) {
+    <p class="notice error" role="alert">{{ state.error() || localError() | ffkText }}</p>
+  }
+  @if (copied()) {
+    <p role="status">{{ 'Link copied' | ffkText }}</p>
+  }
+</ffk-side-panel>

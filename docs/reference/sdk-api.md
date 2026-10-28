@@ -2,7 +2,7 @@
 
 Python, Java and TypeScript expose the same canonical headless API. The table records concrete SDK methods; it does not count browser-only authentication or retained domain routes outside this contract.
 
-This development contract contains 136 operations. Use a bearer token with the required current membership, permissions and resource scope. Personal tokens also enforce their saved expiry and bounds.
+This development contract contains 137 operations. Use a bearer token with the required current membership, permissions and resource scope. Personal tokens also enforce their saved expiry and bounds.
 
 [Download the operation manifest](sdk-contract.json). The maintained generator checks source mappings and schemas without starting the backend.
 
@@ -112,6 +112,7 @@ This development contract contains 136 operations. Use a bearer token with the r
 | `GET /api/v1/tenants/{tenant_id}/knowledge-items` | `knowledge_items` | `knowledgeItems.list` | `client.knowledgeItems.list` | `KnowledgeItemPage` |
 | `GET /api/v1/tenants/{tenant_id}/knowledge-items/{item_id}` | `knowledge_item` | `knowledgeItems.get` | `client.knowledgeItems.get` | `KnowledgeItemView` |
 | `GET /api/v1/tenants/{tenant_id}/knowledge-items/{item_id}/versions/{version}` | `knowledge_version` | `knowledgeItems.version` | `client.knowledgeItems.version` | `KnowledgeItemView` |
+| `POST /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/files` | `append_dataset_file` | `dataset.appendFile` | `client.datasets.appendFile` | `DatasetFileAppendResult` |
 | `GET /api/v1/tenants/{tenant_id}/knowledge-indexes` | `knowledge_indexes` | `knowledgeIndexes.list` | `client.knowledgeIndexes.list` | `IndexPage` |
 | `GET /api/v1/tenants/{tenant_id}/knowledge-index-choices` | `native_index_choices` | `knowledgeIndexes.choices` | `client.knowledgeIndexes.choices` | `NativeIndexPage` |
 | `GET /api/v1/tenants/{tenant_id}/knowledge-index-choices/{choice_id}` | `native_index_choice` | `knowledgeIndexes.choice` | `client.knowledgeIndexes.choice` | `NativeIndexChoice` |
@@ -165,6 +166,8 @@ These operations use the original structured service behind resource admission. 
 Glossary list totals can be unknown. Honor returned `limit`, `offset` and `has_more`; do not invent a total or slice another page in the client.
 
 ## Request behavior
+
+Dataset file append requires a stable Idempotency-Key, accepts one bounded multipart file and returns its canonical file-version and new table identities. Existing snapshots are retained. Native sections commit independently; pending or failed intake blocks dataset query/schema until reconciliation. Exact key/payload replays recheck permissions and return the stored completed receipt without native work. There is no automatic retry, bulk/async intake or public recovery helper. PostgreSQL concurrency and configured-provider acceptance remain separate qualification gates.
 
 Use endpoint-declared filters. Totals and page metadata are present only when the server supplies them. Cursor values are opaque. Closing a stream releases the connection; cancel the durable run separately to stop processing.
 
