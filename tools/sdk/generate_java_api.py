@@ -257,6 +257,15 @@ for name, queries in filter_defs.items():
         + ",".join("null" for _ in fields)
         + ");}\n"
     )
+    if name == "CatalogFilter":
+        previous = [field for field in fields if field[0] not in {"format", "tag"}]
+        body += (
+            "public CatalogFilter("
+            + ",".join(t + " " + n for _, n, t, _ in previous)
+            + "){this("
+            + ",".join("null" if wire in {"format", "tag"} else n for wire, n, _, _ in fields)
+            + ");}\n"
+        )
     for wire, n, t, required in fields:
         body += (
             "public "

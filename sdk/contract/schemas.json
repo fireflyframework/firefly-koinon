@@ -1730,6 +1730,140 @@
       "title": "CatalogProposalPatch",
       "type": "object"
     },
+    "CatalogSummary": {
+      "additionalProperties": true,
+      "properties": {
+        "child_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Child Count"
+        },
+        "document_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Document Count"
+        },
+        "dataset_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dataset Count"
+        },
+        "table_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Table Count"
+        },
+        "row_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Row Count"
+        },
+        "column_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Column Count"
+        },
+        "page_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page Count"
+        },
+        "size_bytes": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Size Bytes"
+        },
+        "format": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Format"
+        },
+        "language": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Language"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        }
+      },
+      "title": "CatalogSummary",
+      "type": "object"
+    },
     "CatalogUpdate": {
       "additionalProperties": false,
       "properties": {
@@ -10164,6 +10298,13 @@
     "Page": {
       "additionalProperties": true,
       "properties": {
+        "summaries": {
+          "additionalProperties": {
+            "$ref": "#/$defs/CatalogSummary"
+          },
+          "title": "Summaries",
+          "type": "object"
+        },
         "page": {
           "anyOf": [
             {
@@ -10258,6 +10399,13 @@
     "Page_AgentConfiguration_": {
       "additionalProperties": true,
       "properties": {
+        "summaries": {
+          "additionalProperties": {
+            "$ref": "#/$defs/CatalogSummary"
+          },
+          "title": "Summaries",
+          "type": "object"
+        },
         "page": {
           "anyOf": [
             {
@@ -10354,6 +10502,13 @@
     "Page_AuditEvent_": {
       "additionalProperties": true,
       "properties": {
+        "summaries": {
+          "additionalProperties": {
+            "$ref": "#/$defs/CatalogSummary"
+          },
+          "title": "Summaries",
+          "type": "object"
+        },
         "page": {
           "anyOf": [
             {
@@ -10450,6 +10605,13 @@
     "Page_CatalogEntry_": {
       "additionalProperties": true,
       "properties": {
+        "summaries": {
+          "additionalProperties": {
+            "$ref": "#/$defs/CatalogSummary"
+          },
+          "title": "Summaries",
+          "type": "object"
+        },
         "page": {
           "anyOf": [
             {
@@ -10546,6 +10708,13 @@
     "Page_ChatFolder_": {
       "additionalProperties": true,
       "properties": {
+        "summaries": {
+          "additionalProperties": {
+            "$ref": "#/$defs/CatalogSummary"
+          },
+          "title": "Summaries",
+          "type": "object"
+        },
         "page": {
           "anyOf": [
             {
@@ -10642,6 +10811,13 @@
     "Page_ChatMessage_": {
       "additionalProperties": true,
       "properties": {
+        "summaries": {
+          "additionalProperties": {
+            "$ref": "#/$defs/CatalogSummary"
+          },
+          "title": "Summaries",
+          "type": "object"
+        },
         "page": {
           "anyOf": [
             {
@@ -10738,6 +10914,13 @@
     "Page_ChatThread_": {
       "additionalProperties": true,
       "properties": {
+        "summaries": {
+          "additionalProperties": {
+            "$ref": "#/$defs/CatalogSummary"
+          },
+          "title": "Summaries",
+          "type": "object"
+        },
         "page": {
           "anyOf": [
             {
@@ -10834,6 +11017,13 @@
     "Page_Invitation_": {
       "additionalProperties": true,
       "properties": {
+        "summaries": {
+          "additionalProperties": {
+            "$ref": "#/$defs/CatalogSummary"
+          },
+          "title": "Summaries",
+          "type": "object"
+        },
         "page": {
           "anyOf": [
             {
@@ -10930,6 +11120,13 @@
     "Page_Job_": {
       "additionalProperties": true,
       "properties": {
+        "summaries": {
+          "additionalProperties": {
+            "$ref": "#/$defs/CatalogSummary"
+          },
+          "title": "Summaries",
+          "type": "object"
+        },
         "page": {
           "anyOf": [
             {
@@ -11026,6 +11223,13 @@
     "Page_KnowledgeConnection_": {
       "additionalProperties": true,
       "properties": {
+        "summaries": {
+          "additionalProperties": {
+            "$ref": "#/$defs/CatalogSummary"
+          },
+          "title": "Summaries",
+          "type": "object"
+        },
         "page": {
           "anyOf": [
             {
@@ -11122,6 +11326,13 @@
     "Page_Membership_": {
       "additionalProperties": true,
       "properties": {
+        "summaries": {
+          "additionalProperties": {
+            "$ref": "#/$defs/CatalogSummary"
+          },
+          "title": "Summaries",
+          "type": "object"
+        },
         "page": {
           "anyOf": [
             {
@@ -11218,6 +11429,13 @@
     "Page_Person_": {
       "additionalProperties": true,
       "properties": {
+        "summaries": {
+          "additionalProperties": {
+            "$ref": "#/$defs/CatalogSummary"
+          },
+          "title": "Summaries",
+          "type": "object"
+        },
         "page": {
           "anyOf": [
             {
@@ -11314,6 +11532,13 @@
     "Page_PersonalToken_": {
       "additionalProperties": true,
       "properties": {
+        "summaries": {
+          "additionalProperties": {
+            "$ref": "#/$defs/CatalogSummary"
+          },
+          "title": "Summaries",
+          "type": "object"
+        },
         "page": {
           "anyOf": [
             {
@@ -11410,6 +11635,13 @@
     "Page_ToolActivity_": {
       "additionalProperties": true,
       "properties": {
+        "summaries": {
+          "additionalProperties": {
+            "$ref": "#/$defs/CatalogSummary"
+          },
+          "title": "Summaries",
+          "type": "object"
+        },
         "page": {
           "anyOf": [
             {
@@ -16199,6 +16431,9 @@
     },
     "ContextResponse": {
       "$ref": "#/$defs/ContextResponse"
+    },
+    "CatalogSummary": {
+      "$ref": "#/$defs/CatalogSummary"
     },
     "Page": {
       "$ref": "#/$defs/Page"

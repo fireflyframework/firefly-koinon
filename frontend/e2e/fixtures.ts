@@ -1,6 +1,11 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 import { expect, type Page } from '@playwright/test';
-import type { CatalogEntry, ContextResponse } from '@fireflyframework/koinon-sdk';
+import type {
+  CatalogEntry,
+  CatalogSummary,
+  ContextResponse,
+  PublicActor,
+} from '@fireflyframework/koinon-sdk';
 export const entry = (
   id: string,
   kind: CatalogEntry['kind'],
@@ -76,7 +81,12 @@ export const context: ContextResponse = {
 };
 export async function mockService(
   page: Page,
-  options: { authenticated?: boolean; error?: boolean } = {},
+  options: {
+    authenticated?: boolean;
+    error?: boolean;
+    summaries?: Record<string, CatalogSummary>;
+    actors?: Record<string, PublicActor>;
+  } = {},
 ) {
   const rows = structuredClone(fixtures);
   const reads: { path: string; query: Record<string, string> }[] = [];
@@ -240,7 +250,11 @@ export async function mockService(
         (row) =>
           (!q || row.name.toLowerCase().includes(q)) &&
           (!kind || row.kind === kind) &&
-          (!status || row.status === status),
+          (!status || row.status === status) &&
+          (!url.searchParams.get('format') ||
+            options.summaries?.[row.id]?.format === url.searchParams.get('format')) &&
+          (!url.searchParams.get('tag') ||
+            options.summaries?.[row.id]?.tags.includes(url.searchParams.get('tag')!)),
       );
       const sort = url.searchParams.get('sort') || 'name',
         order = url.searchParams.get('order') === 'desc' ? -1 : 1;
@@ -255,6 +269,14 @@ export async function mockService(
         total = selected.length;
       return respond({
         items: selected.slice((page - 1) * page_size, page * page_size),
+        summaries: Object.fromEntries(
+          selected
+            .slice((page - 1) * page_size, page * page_size)
+            .flatMap((row) =>
+              options.summaries?.[row.id] ? [[row.id, options.summaries[row.id]]] : [],
+            ),
+        ),
+        actors: options.actors ?? {},
         total,
         page,
         page_size,

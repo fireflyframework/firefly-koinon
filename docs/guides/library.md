@@ -10,6 +10,16 @@ Choose the organization and space you have access to. Browse folders with the li
 
 A document keeps its source and extracted evidence. A dataset exposes its table and column definitions, immutable snapshots and governed query results. Names are for people; canonical identifiers and source bindings remain on the server.
 
+## Read and filter a folder
+
+The list shows each item's name, type and available content details, metadata tags and last update. Folders show the content visible to you. Documents can show recorded pages and file size; datasets can show registered tables and recorded row or column counts. Missing statistics remain unknown. An original upload's size is not the total size of a dataset with several files.
+
+Choose **Name**, **Type & contents** or **Updated** to change the server's ordering. The type column groups resource types; it does not sort by an inferred quantity. On a small screen, use the sort selector. **More filters** includes format, status, tags and **Recently added**. Apply the selection to filter the whole folder, including pages you have not opened. Active filter chips show what is applied and let you remove individual conditions.
+
+Format and language labels come from recorded metadata or a supported file suffix. Custom tags keep their display spelling. These labels do not call a model or create new knowledge. Choosing a tag uses its recorded value as the server filter. Folder names alone do not establish a file format.
+
+The page controls keep their labels and values together. Change the page size to return to the first page. Moving to another folder clears the previous folder's filters. Mobile rows retain the name, useful content details and tags without requiring the full desktop grid.
+
 ## Add knowledge
 
 Start from the destination folder and choose **Add knowledge**. Review the destination, file and processing mode before uploading. The result shows the observed processing state. Uploading bytes, processing a source and making knowledge searchable are distinct states. A failed provider or unsupported format must produce an actionable error; a request reaching the server is not a successful import.
@@ -46,7 +56,7 @@ The SDK helpers are `append_dataset_file` in Python, `dataset.appendFile` in Typ
 
 Append takes an exclusive publication claim. Dataset queries and schema reads return `DATASET_NOT_READY` while intake is pending or failed. Native processing commits sections independently: if a later section or canonical publication fails, earlier native effects may remain. Existing files and snapshots are preserved, but the dataset stays unavailable until its retained file version is reconciled. The same key and exact file return the retained completed receipt after current permissions are checked, without repeating native work. The receipt describes the original completed operation; it is not a fresh dataset-readiness check. A changed payload conflicts, and unfinished keys require reconciliation. There is no automatic retry or public reconciliation helper.
 
-This development endpoint has canonical, native-adapter and HTTP regression coverage. Actual PostgreSQL append concurrency, configured-provider acceptance and recovery remain unqualified. It does not provide asynchronous or bulk intake.
+This development endpoint has canonical, native-adapter and HTTP regression coverage. Canonical append locking, cancellation, replay and revocation passed eleven PostgreSQL checks with a controlled native port. Full native/provider append acceptance and recovery remain separate qualification steps. It does not provide asynchronous or bulk intake.
 
 Physical deletion is a separate API operation. It rejects nonempty resources and active workspace memberships. Source retention and storage cleanup use their own domain operations.
 

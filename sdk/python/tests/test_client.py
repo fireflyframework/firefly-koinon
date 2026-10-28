@@ -169,3 +169,34 @@ async def test_archive_filter_is_explicit_and_pipeline_status_is_not_mutable():
         with pytest.raises(TypeError):
             await client.update("north", "asset-1", status="ready")
     assert len(calls) == 1
+
+
+async def test_catalog_filters_preserve_typed_summaries_and_unknown_counts():
+    def handle(request):
+        assert request.url.params["tag"] == "reviewed"
+        assert request.url.params["format"] == "pdf"
+        assert request.url.params["sort"] == "kind"
+        return httpx.Response(
+            200,
+            json={
+                "items": [ENTRY],
+                "summaries": {
+                    "asset-1": {
+                        "format": "pdf",
+                        "tags": ["pdf", "reviewed"],
+                        "size_bytes": 12,
+                        "row_count": None,
+                    }
+                },
+            },
+        )
+
+    async with KoinonClient(
+        "https://knowledge.test/api/v1",
+        token_provider=lambda: "scoped",
+        transport=httpx.MockTransport(handle),
+    ) as client:
+        page = await client.catalog("north", tag="reviewed", format="pdf", sort="kind")
+    assert page.summaries["asset-1"].format == "pdf"
+    assert page.summaries["asset-1"].row_count is None
+    assert page.summaries["asset-1"].size_bytes == 12

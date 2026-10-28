@@ -269,3 +269,36 @@ it('ignores malformed capabilities, archived workspaces and role hints without s
   facade.context.set(JSON.parse(JSON.stringify(legacy)));
   expect(facade.canManageMembers()).toBe(false);
 });
+it('clears collection filters when changing workspace while retaining sort and page size', async () => {
+  const calls: RequestOptions[] = [];
+  const facade = setup(async (_method, path, options) => {
+    if (path === '/context') return context;
+    calls.push(options ?? {});
+    return { items: [] };
+  });
+  await facade.bootstrap();
+  await facade.loadLibrary({
+    q: 'policy',
+    kind: 'document',
+    status: 'ready',
+    tag: 'policy',
+    format: 'pdf',
+    page: 3,
+    page_size: 50,
+    sort: 'updated_at',
+    order: 'desc',
+  });
+  await facade.setWorkspace('another-space');
+  expect(calls.at(-1)?.query).toMatchObject({
+    workspace_id: 'another-space',
+    page: 1,
+    page_size: 50,
+    sort: 'updated_at',
+    order: 'desc',
+    q: '',
+    kind: undefined,
+    status: undefined,
+    tag: undefined,
+    format: undefined,
+  });
+});

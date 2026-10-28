@@ -1,0 +1,138 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+@if (loading) {
+  <div role="status" [attr.aria-label]="'Loading library' | ffkText" class="loading">
+    @for (row of [1, 2, 3, 4]; track row) {
+      <div>
+        <ffk-skeleton width="32px" height="32px" /><ffk-skeleton width="65%" height="14px" />
+      </div>
+    }
+  </div>
+} @else if (!items.length) {
+  <div class="empty">
+    <ffk-icon name="folder" />
+    <h3>{{ emptyTitle | ffkText }}</h3>
+    <p>{{ emptyDescription | ffkText }}</p>
+  </div>
+} @else {
+  <div class="table" role="table" [attr.aria-label]="'Library items' | ffkText">
+    <div class="row header" role="row">
+      <span role="columnheader" [attr.aria-sort]="sortState('name')">
+        @if (sortable) {
+          <button class="column-sort" (click)="sortRequested.emit('name')">
+            {{ 'Name' | ffkText }}<span aria-hidden="true">{{ sortMark('name') }}</span>
+          </button>
+        } @else {
+          {{ 'Name' | ffkText }}
+        }
+      </span>
+      <span role="columnheader" class="contents" [attr.aria-sort]="sortState('kind')">
+        @if (sortable) {
+          <button class="column-sort" (click)="sortRequested.emit('kind')">
+            {{ 'Type & contents' | ffkText }}<span aria-hidden="true">{{ sortMark('kind') }}</span>
+          </button>
+        } @else {
+          {{ 'Type & contents' | ffkText }}
+        }
+      </span>
+      <span role="columnheader" class="tags">{{ 'Tags' | ffkText }}</span>
+      <span role="columnheader" class="updated" [attr.aria-sort]="sortState('updated_at')">
+        @if (sortable) {
+          <button class="column-sort" (click)="sortRequested.emit('updated_at')">
+            {{ 'Updated' | ffkText }}<span aria-hidden="true">{{ sortMark('updated_at') }}</span>
+          </button>
+        } @else {
+          {{ 'Updated' | ffkText }}
+        }
+      </span>
+      <span role="columnheader" class="sr-only">{{ 'Details' | ffkText }}</span>
+    </div>
+    @for (item of items; track item.id) {
+      <div role="row" class="row" [class.selected]="item.id === selectedId">
+        <div role="cell" class="name-cell">
+          <span
+            class="resource-icon"
+            [class.folder]="isFolder(item)"
+            [class.dataset]="item.kind === 'dataset'"
+            ><ffk-icon [name]="icon(item.kind)"
+          /></span>
+          <div class="name-wrap">
+            <button class="name" (click)="opened.emit(item)" [title]="item.name">
+              {{ item.name }}
+            </button>
+            @if (item.description) {
+              <span class="description" [title]="item.description">{{ item.description }}</span>
+            }
+            <span class="mobile-contents"
+              >{{ kind(item.kind) | ffkText }}
+              @if (contents(item)) {
+                <span aria-hidden="true"> · </span>{{ contents(item) }}
+              }
+            </span>
+            <span class="compact-tags">
+              @for (tag of tags(item).slice(0, 2); track tag) {
+                @if (sortable) {
+                  <button
+                    class="tag"
+                    [title]="('Filter by tag' | ffkText) + ': ' + tagLabel(item, tag)"
+                    (click)="tagSelected.emit(tag)"
+                  >
+                    {{ tagLabel(item, tag) }}
+                  </button>
+                } @else {
+                  <span class="tag">{{ tagLabel(item, tag) }}</span>
+                }
+              }
+            </span>
+            @if (item.status && item.status !== 'ready' && item.status !== 'active') {
+              <ffk-badge [tone]="item.status === 'failed' ? 'attention' : 'neutral'">{{
+                status(item.status) | ffkText
+              }}</ffk-badge>
+            }
+          </div>
+        </div>
+        <div role="cell" class="contents">
+          <span>{{ kind(item.kind) | ffkText }}</span
+          ><small>{{ contents(item) || ('Details not recorded' | ffkText) }}</small>
+        </div>
+        <div role="cell" class="tags">
+          @for (tag of tags(item).slice(0, 3); track tag) {
+            @if (sortable) {
+              <button
+                class="tag"
+                [title]="('Filter by tag' | ffkText) + ': ' + tagLabel(item, tag)"
+                (click)="tagSelected.emit(tag)"
+              >
+                {{ tagLabel(item, tag) }}
+              </button>
+            } @else {
+              <span class="tag">{{ tagLabel(item, tag) }}</span>
+            }
+          }
+          @if (tags(item).length > 3) {
+            <span class="more-tags" [title]="tags(item).slice(3).join(', ')"
+              >+{{ tags(item).length - 3 }}</span
+            >
+          }
+          @if (!tags(item).length) {
+            <span class="unrecorded"
+              >—<span class="sr-only">{{ 'No recorded tags' | ffkText }}</span></span
+            >
+          }
+        </div>
+        <span role="cell" class="updated" [title]="item.updated_at || item.created_at"
+          ><span>{{ item.updated_at || item.created_at | ffkDate }}</span
+          ><small>{{ actorName(item.updated_by || item.created_by) }}</small></span
+        >
+        <div role="cell" class="detail-cell">
+          <button
+            class="details"
+            [attr.aria-label]="('Details for' | ffkText) + ' ' + item.name"
+            (click)="selected.emit(item)"
+          >
+            <ffk-icon name="info" />
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+}

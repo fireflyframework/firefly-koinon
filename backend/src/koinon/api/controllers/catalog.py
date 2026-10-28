@@ -40,6 +40,8 @@ class CatalogController:
         view: QueryParam[str] = "raw",
         q: QueryParam[str] = "",
         status: QueryParam[str | None] = None,
+        format: QueryParam[str | None] = None,
+        tag: QueryParam[str | None] = None,
         page: QueryParam[int] = 1,
         page_size: QueryParam[int] = 100,
         sort: QueryParam[str] = "name",
@@ -56,6 +58,8 @@ class CatalogController:
             view=view,
             q=q,
             status=status,
+            format=format,
+            tag=tag,
             page=page,
             page_size=page_size,
             sort=sort,
@@ -64,7 +68,7 @@ class CatalogController:
         subjects = {
             actor for entry in result["items"] for actor in (entry.created_by, entry.updated_by) if actor
         }
-        actors = {subject: await self.profiles.author_summary(subject) for subject in sorted(subjects)}
+        actors = await self.profiles.author_summaries(subjects)
         return {**result, "items": [entry_dto(entry) for entry in result["items"]], "actors": actors}
 
     @post_mapping("/tenants/{tenant_id}/catalog", status_code=201)

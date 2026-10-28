@@ -104,7 +104,22 @@ class ContextResponse(ResponseModel):
     workspaces: list[CatalogEntry] = Field(default_factory=list[CatalogEntry])
 
 
+class CatalogSummary(ResponseModel):
+    child_count: int | None = None
+    document_count: int | None = None
+    dataset_count: int | None = None
+    table_count: int | None = None
+    row_count: int | None = None
+    column_count: int | None = None
+    page_count: int | None = None
+    size_bytes: int | None = None
+    format: str | None = None
+    language: str | None = None
+    tags: list[str] = Field(default_factory=list)
+
+
 class Page[T](ResponseModel):
+    summaries: dict[str, CatalogSummary] = Field(default_factory=dict)
     page: int | None = None
     size: int | None = None
     page_size: int | None = None

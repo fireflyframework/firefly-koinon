@@ -10,7 +10,7 @@ export interface CatalogEntry {
 }
 export interface EntryCreate {kind:ResourceKind;name:string;description?:string;parent_id?:string|null;metadata?:Record<string,Json>}
 export interface EntryUpdate {name?:string;description?:string;metadata?:Record<string,Json>}
-export interface CatalogFilter {page?:number;page_size?:number;q?:string;status?:string;sort?:'name'|'created_at'|'updated_at';order?:'asc'|'desc';view?:'raw'|'library';include_archived?:boolean;kind?:ResourceKind;parent_id?:string;project_id?:string;workspace_id?:string;[key:string]:string|number|boolean|undefined}
+export interface CatalogFilter {page?:number;page_size?:number;q?:string;status?:string;sort?:'name'|'kind'|'created_at'|'updated_at';format?:string;tag?:string;order?:'asc'|'desc';view?:'raw'|'library';include_archived?:boolean;kind?:ResourceKind;parent_id?:string;project_id?:string;workspace_id?:string;[key:string]:string|number|boolean|undefined}
 export interface Membership {managed?:boolean;origin?:'manual'|'corporate';source_id?:string|null;source_name?:string|null;expires_at?:string|null;id:string;subject:string;tenant_id:string;workspace_id:string|null;role:'viewer'|'analyst'|'editor'|'operator'|'admin';active:boolean}
 export interface AuditFilter {q?:string;action?:string;subject?:string;from_date?:string;through_date?:string;time_zone?:string;page?:number;page_size?:number;sort?:'created_at'|'action';order?:'asc'|'desc';[key:string]:string|number|undefined}
 export interface MembershipFilter {q?:string;role?:Membership['role'];scope?:'all'|'tenant'|'workspace';workspace_id?:string;page?:number;page_size?:number;[key:string]:string|number|undefined}
@@ -38,7 +38,8 @@ export interface LineageNode {id:string;label:string;kind:string;[key:string]:Js
 export interface LineageEdge {source:string;target:string;label?:string}
 export interface Lineage {nodes:LineageNode[];edges:LineageEdge[]}
 export interface AuditEvent {id:string;subject:string;action:string;resource_id:string|null;details:Record<string,Json>;created_at:string}
-export interface Page<T> {next_cursor?:string|null;actors?:Record<string,PublicActor>;items:T[];total?:number;page?:number;size?:number;page_size?:number;pages?:number}
+export interface CatalogSummary {child_count:number|null;document_count:number|null;dataset_count:number|null;table_count:number|null;row_count:number|null;column_count:number|null;page_count:number|null;size_bytes:number|null;format:string|null;language:string|null;tags:string[]}
+export interface Page<T> {summaries?:Record<string,CatalogSummary>;next_cursor?:string|null;actors?:Record<string,PublicActor>;items:T[];total?:number;page?:number;size?:number;page_size?:number;pages?:number}
 export interface MemberInput {subject:string;role:Membership['role'];workspace_id?:string|null}
 export interface KnowledgeScope {workspace_id?:string;project_id?:string;collection_id?:string;asset_ids?:string[]}
 export interface SetupCheck {id:string;status:'passed'|'failed'|'needs_setup'|'unverified';message:string;model_id?:string;capability?:'chat'|'streaming'|'tools'|'image_input'|'audio_input';supported?:boolean|null;verified?:boolean}

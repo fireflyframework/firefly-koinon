@@ -685,19 +685,31 @@ class CatalogService:
         view="raw",
         q="",
         status=None,
+        format=None,
+        tag=None,
         page=1,
         page_size=100,
         sort="name",
         order="asc",
     ) -> dict:
+        from koinon.catalog.summaries import FORMATS
+
         if (
-            not isinstance(page, int)
-            or page < 1
+            type(page) is not int
+            or not 1 <= page <= 1000000
+            or type(page_size) is not int
             or not 1 <= page_size <= 100
-            or sort not in {"name", "created_at", "updated_at"}
+            or sort not in {"name", "kind", "created_at", "updated_at"}
             or order not in {"asc", "desc"}
             or view not in {"raw", "library"}
             or len(q) > 255
+            or (kind is not None and kind not in PARENTS)
+            or (
+                status is not None
+                and status not in {"ready", "draft", "pending", "disabled", "archived", "error"}
+            )
+            or (format is not None and format.strip().lower() not in FORMATS)
+            or (tag is not None and not 1 <= len(tag.strip()) <= 64)
         ):
             raise InvalidHierarchy("Choose valid filters and a page size from 1 to 100", code="INVALID_PAGE")
         parent = await self.get(subject, tenant_id, parent_id) if parent_id else None
@@ -751,6 +763,8 @@ class CatalogService:
             view=view,
             q=q.strip(),
             status=status,
+            format=format.strip().lower() if format else None,
+            tag=tag.strip().lower() if tag else None,
             page=page,
             page_size=page_size,
             sort=sort,

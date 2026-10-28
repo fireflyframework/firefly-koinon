@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 from pyfly.container import repository
 from pyfly.data.relational.sqlalchemy import Repository
-from sqlalchemy import and_, case, exists, func, literal, or_, select
+from sqlalchemy import JSON, Text, and_, case, cast, column, exists, func, literal, or_, select
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import aliased
+from sqlalchemy.sql.elements import ColumnElement
 
 from koinon.catalog.entities import AuditEvent, CatalogEntry, Membership, Tenant
 from koinon.knowledge.curated.entities import CuratedCatalogState, CuratedSourceRoot
@@ -190,13 +192,15 @@ class CatalogRepository(Repository[CatalogEntry, str]):
         view="raw",
         q="",
         status=None,
+        format=None,
+        tag=None,
         page=1,
         page_size=100,
         sort="name",
         order="asc",
     ):
         entry = CatalogEntry
-        predicates = [
+        predicates: list[ColumnElement[bool]] = [
             entry.tenant_id == tenant_id,
             curated_admission(tenant_id, allowed_workspaces, allowed_resources, allowed_assets),
         ]
@@ -219,13 +223,6 @@ class CatalogRepository(Repository[CatalogEntry, str]):
             predicates.append(entry.workspace_id == workspace_id)
         if project_id:
             predicates.append(entry.project_id == project_id)
-        if kind:
-            predicates.append(entry.kind == kind)
-        if status:
-            predicates.append(entry.status == status)
-        if q:
-            escaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-            predicates.append(entry.name.ilike(f"%{escaped}%", escape="\\"))
         if not include_archived:
             hidden = (
                 select(entry.id, literal(0).label("depth"))
@@ -239,6 +236,53 @@ class CatalogRepository(Repository[CatalogEntry, str]):
                 .where(child.tenant_id == tenant_id, hidden.c.depth < 16)
             )
             predicates.append(entry.id.not_in(select(hidden.c.id)))
+        visible = select(entry.id).where(*predicates).cte("catalog_visible")
+        predicates = [entry.id.in_(select(visible.c.id))]
+        if kind:
+            predicates.append(entry.kind == kind)
+        if status:
+            predicates.append(entry.status == status)
+        if q:
+            escaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            predicates.append(entry.name.ilike(f"%{escaped}%", escape="\\"))
+        from koinon.catalog.summaries import format_expression
+
+        file_format = format_expression(entry)
+        if format:
+            predicates.append(file_format == format)
+        if tag:
+            tags = entry.metadata_json["tags"]
+            dialect = self._require_session().get_bind().dialect.name
+            if dialect == "postgresql":
+                safe_tags = case((func.json_typeof(tags) == "array", tags), else_=cast(literal("[]"), JSON))
+                values = (
+                    func.json_array_elements(safe_tags)
+                    .table_valued(column("value", JSON))
+                    .alias("catalog_tags")
+                )
+                tag_value = values.c.value.op("#>>")(cast(literal("{}"), ARRAY(Text)))
+                string_tag = func.json_typeof(values.c.value) == "string"
+                string_language = func.json_typeof(entry.metadata_json["language"]) == "string"
+            else:
+                values = func.json_each(tags).table_valued("value", "type").alias("catalog_tags")
+                tag_value = values.c.value
+                string_tag = and_(values.c.type == "text", func.json_type(tags) == "array")
+                string_language = func.json_type(entry.metadata_json, "$.language") == "text"
+            custom = (
+                select(literal(1))
+                .select_from(values)
+                .where(string_tag, func.lower(func.trim(tag_value)) == tag)
+            )
+            predicates.append(
+                or_(
+                    file_format == tag,
+                    and_(
+                        string_language,
+                        func.lower(func.trim(entry.metadata_json["language"].as_string())) == tag,
+                    ),
+                    exists(custom.correlate(entry)),
+                )
+            )
         if parent is not None:
             if view == "library" and parent.kind in {"collection", "corpus"}:
                 source = aliased(entry)
@@ -249,6 +293,7 @@ class CatalogRepository(Repository[CatalogEntry, str]):
                 has_assets = exists(
                     select(assets.id).where(
                         assets.tenant_id == tenant_id,
+                        assets.id.in_(select(visible.c.id)),
                         assets.parent_id == entry.id,
                         assets.kind.in_(["document", "dataset"]),
                     )
@@ -280,21 +325,95 @@ class CatalogRepository(Repository[CatalogEntry, str]):
         statement = select(entry).where(*predicates)
         session = self._require_session()
         total = int((await session.scalar(select(func.count()).select_from(statement.subquery()))) or 0)
-        column = func.lower(entry.name) if sort == "name" else getattr(entry, sort)
-        ordered = column.desc() if order == "desc" else column.asc()
+        sort_column = func.lower(entry.name) if sort == "name" else getattr(entry, sort)
+        ordered = sort_column.desc() if order == "desc" else sort_column.asc()
         folders = case((entry.kind.in_(["workspace", "project", "collection", "corpus"]), 0), else_=1)
         rows = (
             await session.scalars(
-                statement.order_by(folders, ordered, entry.id).offset((page - 1) * page_size).limit(page_size)
+                statement.order_by(folders, ordered, func.lower(entry.name), entry.id)
+                .offset((page - 1) * page_size)
+                .limit(page_size)
             )
         ).all()
+        summaries = await self._page_summaries(rows, visible)
         return {
+            "summaries": summaries,
             "items": list(rows),
             "total": total,
             "page": page,
             "page_size": page_size,
             "pages": (total + page_size - 1) // page_size,
         }
+
+    async def _page_summaries(self, rows, visible):
+        from koinon.catalog.summaries import LIBRARY_KINDS, format_expression, summary
+
+        if not rows:
+            return {}
+        entry = CatalogEntry
+        identifiers = [row.id for row in rows]
+        tenant_id = rows[0].tenant_id
+        child, parent, asset = aliased(entry), aliased(entry), aliased(entry)
+        # Source wrappers disappear only when this caller can see an asset beneath them.
+        has_assets = exists(
+            select(asset.id)
+            .where(
+                asset.parent_id == child.id,
+                asset.id.in_(select(visible.c.id)),
+                asset.kind.in_(["document", "dataset"]),
+            )
+            .correlate(child)
+        )
+        direct = select(child.parent_id.label("parent_id"), child.kind).where(
+            child.tenant_id == tenant_id,
+            child.id.in_(select(visible.c.id)),
+            child.kind.in_(sorted(LIBRARY_KINDS | {"table"})),
+            child.parent_id.in_(identifiers),
+            or_(child.kind != "source", ~has_assets),
+        )
+        projected = (
+            select(parent.parent_id.label("parent_id"), child.kind)
+            .join(
+                parent,
+                and_(parent.id == child.parent_id, parent.tenant_id == tenant_id, parent.kind == "source"),
+            )
+            .where(
+                child.tenant_id == tenant_id,
+                child.id.in_(select(visible.c.id)),
+                child.kind.in_(["document", "dataset"]),
+                parent.parent_id.in_(identifiers),
+            )
+        )
+        children = direct.union_all(projected).subquery("library_children")
+        counts_query = select(children.c.parent_id, children.c.kind, func.count()).group_by(
+            children.c.parent_id,
+            children.c.kind,
+        )
+        session = self._require_session()
+        counts = {}
+        for parent_id, kind, count in await session.execute(counts_query):
+            group = counts.setdefault(parent_id, {"total": 0})
+            group[kind] = count
+            group["total"] += count
+        source = aliased(entry)
+        metadata_query = (
+            select(entry.id, format_expression(entry), source.metadata_json)
+            .outerjoin(
+                source,
+                and_(
+                    source.id == entry.parent_id,
+                    source.tenant_id == tenant_id,
+                    source.kind == "source",
+                    source.id.in_(select(visible.c.id)),
+                ),
+            )
+            .where(entry.id.in_(identifiers), entry.tenant_id == tenant_id)
+        )
+        metadata = {
+            identifier: (file_format, source_data)
+            for identifier, file_format, source_data in await session.execute(metadata_query)
+        }
+        return {row.id: summary(row, counts.get(row.id, {}), *metadata[row.id]) for row in rows}
 
 
 @repository
