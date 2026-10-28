@@ -1,11 +1,11 @@
-# Copyright 2026 Firefly Software Foundation & Firefly Software Solutions Inc.
+# Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
 site_name: firefly koinon
 site_description: Organizational knowledge, evidence and exploration.
 site_url: https://fireflyframework.github.io/firefly-koinon/
 repo_url: https://github.com/fireflyframework/firefly-koinon
 repo_name: fireflyframework/firefly-koinon
-copyright: Copyright 2026 Firefly Software Foundation & Firefly Software Solutions Inc.
+copyright: Copyright 2026 Firefly Software Foundation
 strict: true
 theme:
   name: material

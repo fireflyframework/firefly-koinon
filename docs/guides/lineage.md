@@ -1,4 +1,4 @@
-<!-- Copyright 2026 Firefly Software Foundation & Firefly Software Solutions Inc. SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
 # Inspect versions and source lineage
 
 A saved answer must identify the inputs it used. The current version of a table can change later; that does not change the answer’s recorded snapshot. Source provenance describes those recorded inputs, while the execution audit describes the tools and SQL that produced the answer.

@@ -4,4 +4,4 @@ firefly koinon runs as a headless API. Forge and other applications can use REST
 
 Read [local deployment](local-deployment.md), [migrations](migrations.md), [production](production.md), [configuration and observations](configuration.md), and [backup and recovery](backup-restore.md). [Qualification](qualification.md) separates observed local behavior from untested templates and external providers.
 
-Copyright 2026 Firefly Software Foundation & Firefly Software Solutions Inc. Licensed under Apache-2.0. Made with <3.
+Copyright 2026 Firefly Software Foundation. Licensed under Apache-2.0. Made with <3.

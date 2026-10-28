@@ -38,4 +38,4 @@ This offline operator command creates only a new tenant and its first admin in o
 
 Persistent volumes retain state. Stop services without removing volumes when preserving data. Do not initialize unrelated databases or delete volumes as a troubleshooting shortcut.
 
-Copyright 2026 Firefly Software Foundation & Firefly Software Solutions Inc. Licensed under Apache-2.0. Made with <3.
+Copyright 2026 Firefly Software Foundation. Licensed under Apache-2.0. Made with <3.

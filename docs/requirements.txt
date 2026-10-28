@@ -1,4 +1,4 @@
-# Copyright 2026 Firefly Software Foundation & Firefly Software Solutions Inc.
+# Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
 mkdocs==1.6.1
 mkdocs-material==9.8.0
