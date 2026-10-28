@@ -193,3 +193,45 @@ def test_revoked_delegated_token_stops_durable_chat_before_any_model_call(client
 
     stopped = client.portal.call(execute)
     assert stopped.status == "failed" and stopped.error_code == "TOKEN_UNAVAILABLE"
+
+
+def test_library_summary_counts_filter_private_siblings_and_signed_response(client):
+    url = "/api/v1/tenants/north/catalog"
+    parent, identifiers = client.workspace_id, {}
+    for kind in ("project", "collection", "source"):
+        response = client.post(url, headers=bearer(), json={"kind": kind, "name": kind, "parent_id": parent})
+        assert response.status_code == 201, response.text
+        identifiers[kind] = response.json()["id"]
+        parent = identifiers[kind]
+    files = []
+    for name, tag in [("Visible.pdf", "reviewed"), ("Private.csv", "secret")]:
+        files.append(
+            client.post(
+                url,
+                headers=bearer(),
+                json={
+                    "kind": "document",
+                    "name": name,
+                    "parent_id": parent,
+                    "metadata": {"tags": [tag], "bytes": 12},
+                },
+            ).json()
+        )
+    token = create_token(client, ["catalog:read"], asset_ids=[files[0]["id"]]).json()
+    headers = {"Authorization": "Bearer " + token["token"]}
+    result = client.get(url, headers=headers, params={"parent_id": identifiers["project"], "view": "library"})
+    assert result.status_code == 200, result.text
+    from koinon.catalog.dtos import CatalogSummary
+
+    typed = CatalogSummary.model_validate(result.json()["summaries"][identifiers["collection"]])
+    assert typed.child_count == typed.document_count == 1
+    summary = result.json()["summaries"][identifiers["collection"]]
+    assert summary["child_count"] == summary["document_count"] == 1
+    assert summary["dataset_count"] == 0
+    filtered = client.get(url, headers=headers, params={"view": "library", "tag": "secret"})
+    assert filtered.json()["total"] == 0
+    source = client.get(url, headers=headers, params={"kind": "source"})
+    assert source.json()["summaries"][parent]["child_count"] == 1
+    assert "secret" not in source.text and files[1]["id"] not in source.text
+    assert client.delete("/api/v1/tokens/" + token["id"], headers=bearer()).status_code == 204
+    assert client.get(url, headers=headers).status_code == 401

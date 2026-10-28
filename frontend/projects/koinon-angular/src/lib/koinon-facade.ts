@@ -140,7 +140,7 @@ export class KoinonFacade {
     this.parentId.set(id);
     this.selected.set(null);
     this.clearResults();
-    await this.loadLibrary({page:1,q:"",kind:undefined});
+    await this.loadLibrary({page:1,q:"",kind:undefined,status:undefined,tag:undefined,format:undefined});
   }
   async refresh(): Promise<void> {
     const revision = ++this.revision;

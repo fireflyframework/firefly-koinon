@@ -431,6 +431,20 @@
           "default": null
         },
         {
+          "name": "format",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "tag",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
           "name": "page",
           "annotation": "QueryParam[int]",
           "location": "query",
@@ -466,7 +480,7 @@
       "request_schema": null,
       "response_schema": "Page[CatalogEntry]",
       "success_status": 200,
-      "source_sha256": "7f8bf31694fe132fa8cca4f61ca9d2e6ae11be7f13551fc13625fcd7be283a34",
+      "source_sha256": "41fa56a03750a4c12c36bc3b185510a0b690f66a9d9018325e9b884a0d855689",
       "encoding": "application/json",
       "headers": []
     },
@@ -476,7 +490,7 @@
       "category": "canonical",
       "operation": "CatalogController.catalog_create",
       "source": "backend/src/koinon/api/controllers/catalog.py",
-      "line": 71,
+      "line": 75,
       "parameters": [
         {
           "name": "tenant_id",
@@ -498,7 +512,7 @@
       "request_schema": "CatalogCreate",
       "response_schema": "CatalogEntry",
       "success_status": 201,
-      "source_sha256": "7f8bf31694fe132fa8cca4f61ca9d2e6ae11be7f13551fc13625fcd7be283a34",
+      "source_sha256": "41fa56a03750a4c12c36bc3b185510a0b690f66a9d9018325e9b884a0d855689",
       "encoding": "application/json",
       "headers": []
     },
@@ -508,7 +522,7 @@
       "category": "canonical",
       "operation": "CatalogController.catalog_get",
       "source": "backend/src/koinon/api/controllers/catalog.py",
-      "line": 80,
+      "line": 84,
       "parameters": [
         {
           "name": "tenant_id",
@@ -530,7 +544,7 @@
       "request_schema": null,
       "response_schema": "CatalogEntry",
       "success_status": 200,
-      "source_sha256": "7f8bf31694fe132fa8cca4f61ca9d2e6ae11be7f13551fc13625fcd7be283a34",
+      "source_sha256": "41fa56a03750a4c12c36bc3b185510a0b690f66a9d9018325e9b884a0d855689",
       "encoding": "application/json",
       "headers": []
     },
@@ -540,7 +554,7 @@
       "category": "canonical",
       "operation": "CatalogController.catalog_patch",
       "source": "backend/src/koinon/api/controllers/catalog.py",
-      "line": 84,
+      "line": 88,
       "parameters": [
         {
           "name": "tenant_id",
@@ -568,7 +582,7 @@
       "request_schema": "CatalogUpdate",
       "response_schema": "CatalogEntry",
       "success_status": 200,
-      "source_sha256": "7f8bf31694fe132fa8cca4f61ca9d2e6ae11be7f13551fc13625fcd7be283a34",
+      "source_sha256": "41fa56a03750a4c12c36bc3b185510a0b690f66a9d9018325e9b884a0d855689",
       "encoding": "application/json",
       "headers": []
     },
@@ -578,7 +592,7 @@
       "category": "canonical",
       "operation": "CatalogController.catalog_archive",
       "source": "backend/src/koinon/api/controllers/catalog.py",
-      "line": 100,
+      "line": 104,
       "parameters": [
         {
           "name": "tenant_id",
@@ -600,7 +614,7 @@
       "request_schema": null,
       "response_schema": "CatalogEntry",
       "success_status": 200,
-      "source_sha256": "7f8bf31694fe132fa8cca4f61ca9d2e6ae11be7f13551fc13625fcd7be283a34",
+      "source_sha256": "41fa56a03750a4c12c36bc3b185510a0b690f66a9d9018325e9b884a0d855689",
       "encoding": "application/json",
       "headers": []
     },
@@ -610,7 +624,7 @@
       "category": "canonical",
       "operation": "CatalogController.catalog_restore",
       "source": "backend/src/koinon/api/controllers/catalog.py",
-      "line": 108,
+      "line": 112,
       "parameters": [
         {
           "name": "tenant_id",
@@ -632,7 +646,7 @@
       "request_schema": null,
       "response_schema": "CatalogEntry",
       "success_status": 200,
-      "source_sha256": "7f8bf31694fe132fa8cca4f61ca9d2e6ae11be7f13551fc13625fcd7be283a34",
+      "source_sha256": "41fa56a03750a4c12c36bc3b185510a0b690f66a9d9018325e9b884a0d855689",
       "encoding": "application/json",
       "headers": []
     },
@@ -642,7 +656,7 @@
       "category": "canonical",
       "operation": "CatalogController.catalog_delete",
       "source": "backend/src/koinon/api/controllers/catalog.py",
-      "line": 116,
+      "line": 120,
       "parameters": [
         {
           "name": "tenant_id",
@@ -664,7 +678,7 @@
       "request_schema": null,
       "response_schema": "void",
       "success_status": 204,
-      "source_sha256": "7f8bf31694fe132fa8cca4f61ca9d2e6ae11be7f13551fc13625fcd7be283a34",
+      "source_sha256": "41fa56a03750a4c12c36bc3b185510a0b690f66a9d9018325e9b884a0d855689",
       "encoding": "application/json",
       "headers": []
     },

@@ -8,12 +8,11 @@ import {
   ChangeDetectionStrategy,
   inject,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import type { Page } from '@fireflyframework/koinon-sdk';
 import { KoinonButton } from '../atoms/button';
 @Component({
   selector: 'ffk-pagination',
-  imports: [KoinonTextPipe, FormsModule, KoinonButton],
+  imports: [KoinonTextPipe, KoinonButton],
   template: `@if (
     page &&
     page.page !== undefined &&
@@ -22,14 +21,18 @@ import { KoinonButton } from '../atoms/button';
     page.total > 0
   ) {
     <nav [attr.aria-label]="(label | ffkText) + ' ' + ('pagination' | ffkText)">
-      <span>{{ range() }} {{ 'of' | ffkText }} {{ page.total }} {{ 'items' | ffkText }}</span>
+      <span class="range"
+        >{{ range() }} {{ 'of' | ffkText }} {{ page.total }}
+        {{ (page.total === 1 ? 'item' : 'items') | ffkText }}</span
+      >
       @if (showPageSize) {
         <label
           >{{ 'Per page' | ffkText
           }}<select
             [attr.aria-label]="(label | ffkText) + ' ' + ('Items per page' | ffkText)"
-            [ngModel]="page.page_size || 25"
-            (ngModelChange)="sizeChanged.emit(+$event)"
+            [value]="page.page_size || 25"
+            [disabled]="loading"
+            (change)="changeSize($event)"
           >
             <option [value]="25">25</option>
             <option [value]="50">50</option>
@@ -37,7 +40,7 @@ import { KoinonButton } from '../atoms/button';
           </select></label
         >
       }
-      <div>
+      <div class="page-navigation">
         <ffk-button
           variant="quiet"
           icon="chevron-left"
@@ -59,17 +62,18 @@ import { KoinonButton } from '../atoms/button';
     :host {
       display: block;
       min-width: 0;
+      container: koinon-pagination / inline-size;
     }
     nav {
       display: flex;
       align-items: center;
-      gap: 18px;
+      gap: 12px 20px;
       flex-wrap: wrap;
-      padding: 20px 4px;
-      font: 400 10px/1.6 var(--ffk-font, 'Manrope Variable', sans-serif);
+      padding: 16px 4px;
+      font: 400 12px/1.5 var(--ffk-font, 'Manrope Variable', sans-serif);
       color: var(--ui-muted);
     }
-    nav > div {
+    .page-navigation {
       display: flex;
       align-items: center;
       gap: 7px;
@@ -79,28 +83,47 @@ import { KoinonButton } from '../atoms/button';
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 10px;
+      font-size: 12px;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
     select {
-      font: 500 10px var(--ffk-font, 'Manrope Variable', sans-serif);
+      font: 500 12px var(--ffk-font, 'Manrope Variable', sans-serif);
       border: 1px solid var(--ui-line);
       border-radius: 5px;
       background: var(--ui-surface);
       color: var(--ui-text);
-      padding: 5px;
+      padding: 6px 8px;
+      min-height: 34px;
       cursor: pointer;
+    }
+    .range,
+    .page-navigation {
+      white-space: nowrap;
+    }
+    select:disabled {
+      cursor: wait;
+      opacity: 0.6;
     }
     select:focus-visible {
       outline: 2px solid var(--ui-accent);
       outline-offset: 3px;
     }
-    @media (max-width: 700px) {
+    @container koinon-pagination (max-width: 700px) {
       nav {
         gap: 12px;
         justify-content: space-between;
       }
+      .page-navigation {
+        flex-basis: 100%;
+        justify-content: flex-end;
+      }
+      nav {
+        padding-block: 14px;
+        font-size: 11px;
+      }
       label {
-        display: none;
+        font-size: 11px;
       }
     }
   `,
@@ -119,6 +142,10 @@ export class KoinonPagination {
   @Input() showPageSize = true;
   @Output() pageChanged = new EventEmitter<number>();
   @Output() sizeChanged = new EventEmitter<number>();
+  changeSize(event: Event) {
+    const size = Number((event.target as HTMLSelectElement).value);
+    if (!this.loading && [25, 50, 100].includes(size)) this.sizeChanged.emit(size);
+  }
   range() {
     if (!this.page?.total) return '0';
     const start = ((this.page.page ?? 1) - 1) * (this.page.page_size ?? 25) + 1;

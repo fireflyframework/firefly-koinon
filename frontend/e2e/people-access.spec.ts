@@ -186,7 +186,7 @@ test('named membership list uses actual server pages and filters', async ({ page
   expect(service.reads.at(-1)?.get('role')).toBe('editor');
   await panel.getByRole('searchbox', { name: 'Search role assignments' }).fill('Researcher 03');
   await panel.getByRole('searchbox', { name: 'Search role assignments' }).press('Enter');
-  await expect(panel.getByText('1–1 of 1 items')).toBeVisible();
+  await expect(panel.getByText('1–1 of 1 item')).toBeVisible();
   await expect(panel.getByText('Researcher 03', { exact: true })).toBeVisible();
   await expect(panel).not.toContainText('private-issuer');
 });

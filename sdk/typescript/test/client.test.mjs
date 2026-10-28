@@ -94,3 +94,16 @@ test('native problem and legacy envelope retain support reference and detail',as
   }
  });
 });
+test('catalog filters and recorded summaries survive the transport',async()=>{
+ await server((req,res)=>{
+  const query=new URL(req.url,'http://localhost').searchParams;
+  assert.equal(query.get('format'),'pdf');assert.equal(query.get('tag'),'reviewed');assert.equal(query.get('sort'),'kind');
+  res.setHeader('Content-Type','application/json');
+  res.end(JSON.stringify({items:[],summaries:{entry:{format:'pdf',size_bytes:12,row_count:null,tags:['pdf','reviewed']}}}));
+ },async baseUrl=>{
+  const client=new KoinonClient({transport:new FetchTransport({baseUrl,accessToken:()=> 'caller-scoped'})});
+  const page=await client.catalog.list('north',{format:'pdf',tag:'reviewed',sort:'kind'});
+  assert.equal(page.summaries.entry.row_count,null);assert.equal(page.summaries.entry.size_bytes,12);
+  assert.deepEqual(page.summaries.entry.tags,['pdf','reviewed']);
+ });
+});

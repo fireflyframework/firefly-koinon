@@ -201,3 +201,17 @@ def test_animated_image_is_rejected():
     )
     with pytest.raises(ValueError):
         sanitize_avatar(output.getvalue())
+
+
+async def test_batched_author_summaries_preserve_public_projection_and_missing_profiles(profiles):
+    service, _ = profiles
+    await service.update("issuer|member", {"display_name": "Member", "locale": "es-MX"})
+    summaries = await service.author_summaries({"issuer|member", "issuer|missing", "historical"})
+    assert summaries["issuer|member"]["display_name"] == "Member"
+    assert summaries["issuer|missing"]["display_name"] == ""
+    assert summaries["historical"]["avatar_data_url"] is None
+    assert all(
+        set(value) == {"subject", "display_name", "avatar_data_url", "avatar_version"}
+        for value in summaries.values()
+    )
+    assert await service.author_summaries(set()) == {}

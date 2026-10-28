@@ -234,3 +234,206 @@ async def test_project_filter_is_authorized_and_executed_before_pagination(catal
         await service.page("issuer|bob", "south", project_id=project.id)
     with pytest.raises(InvalidHierarchy):
         await service.page("issuer|alice", "north", project_id=workspace.id)
+
+
+async def test_library_summaries_use_complete_visible_projection_and_unknown_metadata(catalog):
+    service, _, _ = catalog
+    parent = None
+    entries = {}
+    for kind in ("workspace", "project", "collection", "source"):
+        item = await service.create("issuer|alice", "north", kind=kind, name=kind, parent_id=parent)
+        entries[kind] = item
+        parent = item.id
+    document = await service.create(
+        "issuer|alice",
+        "north",
+        kind="document",
+        name="Policy.PDF",
+        parent_id=parent,
+        metadata={"bytes": 2048, "page_count": 3, "language": "EN", "tags": [" Reviewed ", "reviewed"]},
+    )
+    dataset = await service.create("issuer|alice", "north", kind="dataset", name="Unknown", parent_id=parent)
+    await service.create("issuer|alice", "north", kind="table", name="Facts", parent_id=dataset.id)
+    result = await service.page(
+        "issuer|reader", "north", parent_id=entries["project"].id, view="library", page_size=1
+    )
+    assert result["summaries"][entries["collection"].id]["child_count"] == 2
+    assert result["summaries"][entries["collection"].id]["document_count"] == 1
+    files = await service.page("issuer|reader", "north", parent_id=entries["collection"].id, view="library")
+    summary = files["summaries"][document.id]
+    assert summary["format"] == "pdf"
+    assert summary["tags"] == ["pdf", "en", "Reviewed"]
+    assert summary["size_bytes"] == 2048 and summary["page_count"] == 3
+    assert files["summaries"][dataset.id]["row_count"] is None
+    assert files["summaries"][dataset.id]["column_count"] is None
+    assert files["summaries"][dataset.id]["table_count"] == 1
+    await service.archive("issuer|alice", "north", document.id)
+    result = await service.page("issuer|reader", "north", parent_id=entries["project"].id, view="library")
+    assert result["summaries"][entries["collection"].id]["child_count"] == 1
+
+
+async def test_library_format_tag_and_kind_sort_apply_before_pagination(catalog):
+    service, _, _ = catalog
+    parent = None
+    for kind in ("workspace", "project", "collection", "source"):
+        parent = (await service.create("issuer|alice", "north", kind=kind, name=kind, parent_id=parent)).id
+    for name, kind, tags in [
+        ("A.csv", "dataset", []),
+        ("Z.pdf", "document", ["Reviewed"]),
+        ("B.pdf", "document", ["reviewed"]),
+    ]:
+        await service.create(
+            "issuer|alice", "north", kind=kind, name=name, parent_id=parent, metadata={"tags": tags}
+        )
+    result = await service.page(
+        "issuer|reader", "north", parent_id=parent, format="pdf", tag="REVIEWED", page_size=1, page=2
+    )
+    assert result["total"] == 2 and result["items"][0].name == "Z.pdf"
+    result = await service.page(
+        "issuer|reader", "north", parent_id=parent, sort="kind", order="desc", page_size=1
+    )
+    assert result["items"][0].kind == "document"
+    assert (await service.page("issuer|reader", "north", parent_id=parent, tag="csv"))["total"] == 1
+    from koinon.catalog.errors import InvalidHierarchy
+
+    for filters in (
+        {"tag": "x" * 65},
+        {"format": "unknown"},
+        {"kind": "not-a-kind"},
+        {"status": "not-a-status"},
+        {"page": 1000001},
+    ):
+        with pytest.raises(InvalidHierarchy):
+            await service.page("issuer|reader", "north", **filters)
+
+
+async def test_summary_queries_are_batched_and_workspace_revocation_is_current(catalog):
+    from sqlalchemy import event
+
+    from koinon.catalog.entities import Membership
+    from koinon.catalog.errors import AccessDenied
+
+    service, session, _ = catalog
+    workspaces = []
+    for name in ("Visible", "Other"):
+        workspace = await service.create("issuer|alice", "north", kind="workspace", name=name)
+        workspaces.append(workspace)
+        for number in range(3):
+            await service.create(
+                "issuer|alice", "north", kind="project", name=f"Project {number}", parent_id=workspace.id
+            )
+    await service.membership_repository.save(
+        Membership(
+            id="summary-member",
+            subject="issuer|summary",
+            tenant_id="north",
+            workspace_id=workspaces[0].id,
+            role="viewer",
+        )
+    )
+    statements = []
+
+    def observe(connection, cursor, statement, parameters, context, executemany):
+        if "lattice_catalog" in statement and (
+            statement.startswith("SELECT") or statement.startswith("WITH")
+        ):
+            statements.append(statement)
+
+    engine = session.bind.sync_engine
+    event.listen(engine, "before_cursor_execute", observe)
+    try:
+        one = await service.page("issuer|summary", "north", page_size=1)
+        small = len(statements)
+        statements.clear()
+        all_rows = await service.page("issuer|summary", "north", page_size=100)
+        assert small == len(statements) == 4
+        assert all(row.workspace_id == workspaces[0].id for row in all_rows["items"])
+        assert one["total"] == all_rows["total"] == 4
+        assert all_rows["summaries"][workspaces[0].id]["child_count"] == 3
+    finally:
+        event.remove(engine, "before_cursor_execute", observe)
+    await service.membership_repository.delete_by_id("summary-member")
+    with pytest.raises(AccessDenied):
+        await service.page("issuer|summary", "north")
+
+
+async def test_summary_ignores_malformed_numbers_and_non_string_tags(catalog):
+    service, _, _ = catalog
+    item = await service.create(
+        "issuer|alice",
+        "north",
+        kind="workspace",
+        name="Metrics",
+        metadata={
+            "row_count": True,
+            "column_count": -1,
+            "page_count": "10",
+            "bytes": 9007199254740992,
+            "language": 123,
+            "tags": [123, None, {"secret": "nested"}, " Valid "],
+            "_not_an_internal_marker": "public",
+        },
+    )
+    page = await service.page("issuer|reader", "north", tag="valid")
+    summary = page["summaries"][item.id]
+    assert summary["tags"] == ["Valid"]
+    assert all(summary[key] is None for key in ("row_count", "column_count", "page_count", "size_bytes"))
+    assert (await service.page("issuer|reader", "north", tag="123"))["total"] == 0
+
+
+async def test_folder_filename_suffix_does_not_invent_a_file_format(catalog):
+    service, _, _ = catalog
+    workspace = await service.create("issuer|alice", "north", kind="workspace", name="Budget.xlsx")
+    page = await service.page("issuer|reader", "north", kind="workspace")
+    assert page["summaries"][workspace.id]["format"] is None
+    assert page["summaries"][workspace.id]["tags"] == []
+    assert (await service.page("issuer|reader", "north", format="xlsx"))["total"] == 0
+    assert (await service.page("issuer|reader", "north", tag="xlsx"))["total"] == 0
+    await service.update("issuer|alice", "north", workspace.id, {"metadata": {"format": "xlsx"}})
+    assert (await service.page("issuer|reader", "north", format="xlsx"))["total"] == 1
+
+
+async def test_dataset_summary_does_not_treat_original_source_bytes_as_aggregate(catalog):
+    service, _, _ = catalog
+    parent = None
+    for kind in ("workspace", "project", "collection", "source"):
+        parent = (
+            await service.create(
+                "issuer|alice",
+                "north",
+                kind=kind,
+                name=kind,
+                parent_id=parent,
+                metadata={"bytes": 100} if kind == "source" else {},
+            )
+        ).id
+    dataset = await service.create("issuer|alice", "north", kind="dataset", name="Data", parent_id=parent)
+    document = await service.create("issuer|alice", "north", kind="document", name="File", parent_id=parent)
+    await service.create(
+        "issuer|alice",
+        "north",
+        kind="index_version",
+        name="more.csv",
+        parent_id=dataset.id,
+        metadata={"bytes": 50},
+    )
+    page = await service.page("issuer|reader", "north", parent_id=parent)
+    assert page["summaries"][dataset.id]["size_bytes"] is None
+    assert page["summaries"][document.id]["size_bytes"] == 100
+    await service.update("issuer|alice", "north", dataset.id, {"metadata": {"size_bytes": 150}})
+    page = await service.page("issuer|reader", "north", parent_id=parent)
+    assert page["summaries"][dataset.id]["size_bytes"] == 150
+
+
+async def test_custom_tag_display_preserves_case_and_filter_matching_is_normalized(catalog):
+    service, _, _ = catalog
+    workspace = await service.create(
+        "issuer|alice",
+        "north",
+        kind="workspace",
+        name="Labels",
+        metadata={"tags": [" Finance ", "PII", "finance", "pii", "API"]},
+    )
+    page = await service.page("issuer|reader", "north", tag="finance")
+    assert page["summaries"][workspace.id]["tags"] == ["Finance", "PII", "API"]
+    assert (await service.page("issuer|reader", "north", tag="PII"))["total"] == 1

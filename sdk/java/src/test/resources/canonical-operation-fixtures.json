@@ -24,6 +24,23 @@
     "request": null,
     "response": "Page[AuditEvent]",
     "body": {
+      "summaries": {
+        "example": {
+          "child_count": 1,
+          "document_count": 1,
+          "dataset_count": 1,
+          "table_count": 1,
+          "row_count": 1,
+          "column_count": 1,
+          "page_count": 1,
+          "size_bytes": 1,
+          "format": "format-value",
+          "language": "language-value",
+          "tags": [
+            "tags-value"
+          ]
+        }
+      },
       "page": 1,
       "size": 1,
       "page_size": 1,
@@ -77,6 +94,8 @@
       "view": "view value",
       "q": "q value",
       "status": "status value",
+      "format": "format value",
+      "tag": "tag value",
       "page": 2,
       "page_size": 2,
       "sort": "sort value",
@@ -86,6 +105,23 @@
     "request": null,
     "response": "Page[CatalogEntry]",
     "body": {
+      "summaries": {
+        "example": {
+          "child_count": 1,
+          "document_count": 1,
+          "dataset_count": 1,
+          "table_count": 1,
+          "row_count": 1,
+          "column_count": 1,
+          "page_count": 1,
+          "size_bytes": 1,
+          "format": "format-value",
+          "language": "language-value",
+          "tags": [
+            "tags-value"
+          ]
+        }
+      },
       "page": 1,
       "size": 1,
       "page_size": 1,
@@ -438,6 +474,23 @@
     "request": null,
     "response": "Page[Job]",
     "body": {
+      "summaries": {
+        "example": {
+          "child_count": 1,
+          "document_count": 1,
+          "dataset_count": 1,
+          "table_count": 1,
+          "row_count": 1,
+          "column_count": 1,
+          "page_count": 1,
+          "size_bytes": 1,
+          "format": "format-value",
+          "language": "language-value",
+          "tags": [
+            "tags-value"
+          ]
+        }
+      },
       "page": 1,
       "size": 1,
       "page_size": 1,
@@ -576,6 +629,23 @@
     "request": null,
     "response": "Page[Membership]",
     "body": {
+      "summaries": {
+        "example": {
+          "child_count": 1,
+          "document_count": 1,
+          "dataset_count": 1,
+          "table_count": 1,
+          "row_count": 1,
+          "column_count": 1,
+          "page_count": 1,
+          "size_bytes": 1,
+          "format": "format-value",
+          "language": "language-value",
+          "tags": [
+            "tags-value"
+          ]
+        }
+      },
       "page": 1,
       "size": 1,
       "page_size": 1,
@@ -713,6 +783,23 @@
     "request": null,
     "response": "Page[Invitation]",
     "body": {
+      "summaries": {
+        "example": {
+          "child_count": 1,
+          "document_count": 1,
+          "dataset_count": 1,
+          "table_count": 1,
+          "row_count": 1,
+          "column_count": 1,
+          "page_count": 1,
+          "size_bytes": 1,
+          "format": "format-value",
+          "language": "language-value",
+          "tags": [
+            "tags-value"
+          ]
+        }
+      },
       "page": 1,
       "size": 1,
       "page_size": 1,
@@ -883,6 +970,23 @@
     "request": null,
     "response": "Page[AgentConfiguration]",
     "body": {
+      "summaries": {
+        "example": {
+          "child_count": 1,
+          "document_count": 1,
+          "dataset_count": 1,
+          "table_count": 1,
+          "row_count": 1,
+          "column_count": 1,
+          "page_count": 1,
+          "size_bytes": 1,
+          "format": "format-value",
+          "language": "language-value",
+          "tags": [
+            "tags-value"
+          ]
+        }
+      },
       "page": 1,
       "size": 1,
       "page_size": 1,
@@ -1310,6 +1414,23 @@
     "request": null,
     "response": "Page[ChatThread]",
     "body": {
+      "summaries": {
+        "example": {
+          "child_count": 1,
+          "document_count": 1,
+          "dataset_count": 1,
+          "table_count": 1,
+          "row_count": 1,
+          "column_count": 1,
+          "page_count": 1,
+          "size_bytes": 1,
+          "format": "format-value",
+          "language": "language-value",
+          "tags": [
+            "tags-value"
+          ]
+        }
+      },
       "page": 1,
       "size": 1,
       "page_size": 1,
@@ -1404,6 +1525,23 @@
     "request": null,
     "response": "Page[ChatMessage]",
     "body": {
+      "summaries": {
+        "example": {
+          "child_count": 1,
+          "document_count": 1,
+          "dataset_count": 1,
+          "table_count": 1,
+          "row_count": 1,
+          "column_count": 1,
+          "page_count": 1,
+          "size_bytes": 1,
+          "format": "format-value",
+          "language": "language-value",
+          "tags": [
+            "tags-value"
+          ]
+        }
+      },
       "page": 1,
       "size": 1,
       "page_size": 1,
@@ -1732,6 +1870,23 @@
     "request": null,
     "response": "Page[ToolActivity]",
     "body": {
+      "summaries": {
+        "example": {
+          "child_count": 1,
+          "document_count": 1,
+          "dataset_count": 1,
+          "table_count": 1,
+          "row_count": 1,
+          "column_count": 1,
+          "page_count": 1,
+          "size_bytes": 1,
+          "format": "format-value",
+          "language": "language-value",
+          "tags": [
+            "tags-value"
+          ]
+        }
+      },
       "page": 1,
       "size": 1,
       "page_size": 1,
@@ -1936,6 +2091,23 @@
     "request": null,
     "response": "Page[ChatFolder]",
     "body": {
+      "summaries": {
+        "example": {
+          "child_count": 1,
+          "document_count": 1,
+          "dataset_count": 1,
+          "table_count": 1,
+          "row_count": 1,
+          "column_count": 1,
+          "page_count": 1,
+          "size_bytes": 1,
+          "format": "format-value",
+          "language": "language-value",
+          "tags": [
+            "tags-value"
+          ]
+        }
+      },
       "page": 1,
       "size": 1,
       "page_size": 1,
@@ -4295,6 +4467,23 @@
     "request": null,
     "response": "Page[KnowledgeConnection]",
     "body": {
+      "summaries": {
+        "example": {
+          "child_count": 1,
+          "document_count": 1,
+          "dataset_count": 1,
+          "table_count": 1,
+          "row_count": 1,
+          "column_count": 1,
+          "page_count": 1,
+          "size_bytes": 1,
+          "format": "format-value",
+          "language": "language-value",
+          "tags": [
+            "tags-value"
+          ]
+        }
+      },
       "page": 1,
       "size": 1,
       "page_size": 1,
@@ -6848,6 +7037,23 @@
     "request": null,
     "response": "Page[Person]",
     "body": {
+      "summaries": {
+        "example": {
+          "child_count": 1,
+          "document_count": 1,
+          "dataset_count": 1,
+          "table_count": 1,
+          "row_count": 1,
+          "column_count": 1,
+          "page_count": 1,
+          "size_bytes": 1,
+          "format": "format-value",
+          "language": "language-value",
+          "tags": [
+            "tags-value"
+          ]
+        }
+      },
       "page": 1,
       "size": 1,
       "page_size": 1,
@@ -7170,6 +7376,23 @@
     "request": null,
     "response": "Page[PersonalToken]",
     "body": {
+      "summaries": {
+        "example": {
+          "child_count": 1,
+          "document_count": 1,
+          "dataset_count": 1,
+          "table_count": 1,
+          "row_count": 1,
+          "column_count": 1,
+          "page_count": 1,
+          "size_bytes": 1,
+          "format": "format-value",
+          "language": "language-value",
+          "tags": [
+            "tags-value"
+          ]
+        }
+      },
       "page": 1,
       "size": 1,
       "page_size": 1,

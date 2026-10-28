@@ -186,6 +186,19 @@ class ProfileService:
 
     async def author_summary(self, subject: str) -> dict:
         row = await self.profiles.find_by_id(profile_id(subject)) if "|" in subject else None
+        return self._author_summary(subject, row)
+
+    async def author_summaries(self, subjects: set[str]) -> dict[str, dict]:
+        if not subjects:
+            return {}
+        rows = await self.profiles.author_rows(subjects)
+        by_subject = {row.subject: row for row in rows}
+        return {
+            subject: self._author_summary(subject, by_subject.get(subject)) for subject in sorted(subjects)
+        }
+
+    @staticmethod
+    def _author_summary(subject: str, row: Profile | None) -> dict:
         return {
             "subject": subject,
             "display_name": row.display_name if row else "",

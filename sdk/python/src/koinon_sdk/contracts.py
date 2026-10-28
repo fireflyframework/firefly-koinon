@@ -22,6 +22,8 @@ class PageFilter(TypedDict, total=False):
 
 
 class CatalogFilter(PageFilter, total=False):
+    format: str
+    tag: str
     status: str
     view: Literal["raw", "library"]
     include_archived: bool

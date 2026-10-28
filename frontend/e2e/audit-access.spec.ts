@@ -124,7 +124,7 @@ test('audit sends server pages and date/action/person filters with human names',
     .getByRole('searchbox', { name: 'Search audit activity' })
     .fill('Research colleague 02');
   await panel.getByRole('searchbox', { name: 'Search audit activity' }).press('Enter');
-  await expect(panel.getByText('1–1 of 1 items')).toBeVisible();
+  await expect(panel.getByText('1–1 of 1 item')).toBeVisible();
   await panel.getByRole('button', { name: 'Filter by person · Research colleague 02' }).click();
   await expect
     .poll(() => service.reads.at(-1)?.get('subject'))
