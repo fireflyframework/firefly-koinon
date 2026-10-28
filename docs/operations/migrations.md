@@ -18,4 +18,8 @@ Provisioning refuses an existing role with conflicting superuser/RLS privileges.
 
 An unqualified `alembic_version` table requires reviewed history mapping. Do not stamp, delete version rows or replay migrations to bypass this guard. This deployment does not automatically adopt a separate installation's data. Back up first, test the exact upgrade on a restored copy, then schedule migration and restart separately. Automatic downgrade is disabled; use a reviewed recovery plan.
 
+Document index provisioning is a product-only extension in `packages/canon/migrations/koinon_versions`. The deployment wrapper combines it with the preserved document history. Standalone document installations retain `0017_embedding_sets`; the product resolves `0018_index_provisioning` on the same parent. Relocating the unchanged source does not change an applied revision or require a rollback or data reset.
+
+The registration table is excluded from ordinary document DML grants. Its runtime role has no registration or provisioning-function privileges. The control role receives registration SELECT/INSERT and the narrow function EXECUTE; UPDATE/DELETE remain denied. Re-run the reviewed role-provisioning command after migrations to establish this boundary.
+
 Copyright 2026 Firefly Software Foundation & Firefly Software Solutions Inc. Licensed under Apache-2.0. Made with <3.

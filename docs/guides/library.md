@@ -30,6 +30,12 @@ Editors can add and maintain knowledge in their authorized scope. Viewers can re
 
 Keep titles and descriptions recognizable to the team. Inspect original source details, processing state, lineage and references before replacing or retiring knowledge. Dataset query results should identify the snapshot used; source evidence should retain section or page references when supplied by the source format.
 
+Choose the history icon beside a dataset table to open [History & lineage](lineage.md). Versions are paginated, and each detail read keeps the selected historical snapshot separate from the current pointer. A missing original record stays visible rather than being inferred from the latest file.
+
+Document details expose extracted chunks with their citation identities and any supplied page or section. Processing offsets describe the emitted chunk stream, including overlap; they are not positions in the original file. Use page or section references when locating evidence in an original document.
+
+The content API checks the current revision before replacing or reingesting knowledge. A document update requires acknowledgment that previous chunk identities will be invalidated. Existing citation rows remain recorded, and the response reports the actual effects. Dataset table updates preserve historical snapshots. If the revision changed, reload the current state and review it before retrying.
+
 Archive keeps the content and its processing state while hiding the item and its descendants from the library. Restore brings them back. A processing job that finishes while an item is archived updates its saved state without making the item visible again.
 
 Physical deletion is a separate API operation. It rejects nonempty resources and active workspace memberships. Source retention and storage cleanup use their own domain operations.
