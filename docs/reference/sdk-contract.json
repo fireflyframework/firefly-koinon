@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "api_prefix": "/api/v1",
   "status": "Canonical API contract; development snapshot",
-  "canonical_operation_count": 137,
+  "canonical_operation_count": 140,
   "qualified_compatibility_operations": [
     {
       "operation": "GlossaryController.list_terms",
@@ -240,7 +240,8 @@
   "authentication": {
     "headless": "caller-supplied bearer, fresh per request; renewal owned by caller",
     "browser": "same operation suffix under /bff/api/v1 with native cookie session and CSRF on writes",
-    "tokens_management": "interactive verified identity required; PAT cannot mint or manage PATs"
+    "tokens_management": "interactive verified identity required; PAT cannot mint or manage PATs",
+    "applications_management": "interactive owner identity required; personal tokens and application credentials cannot approve or manage authorizations"
   },
   "semantics": {
     "writes": "no automatic retries; explicit chat client_request_id supports server idempotency",
@@ -2322,6 +2323,120 @@
       "response_schema": "ValidationResult",
       "success_status": 200,
       "source_sha256": "c881dab3a834eb9f08e82f63aa1bc7dbe8f67d3a6aa23e2bbd2a5aa352ce0491",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/authorized-applications",
+      "category": "canonical",
+      "operation": "AuthorizedApplicationController.list",
+      "source": "backend/src/koinon/authorized_applications/controllers.py",
+      "line": 18,
+      "parameters": [
+        {
+          "name": "q",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "status",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "all"
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        },
+        {
+          "name": "sort",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "connected_at"
+        },
+        {
+          "name": "order",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "desc"
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "authorized_applications",
+      "sdk_typescript": "authorizedApplications.list",
+      "sdk_java": "client.authorizedApplications.list",
+      "request_schema": null,
+      "response_schema": "Page[AuthorizedApplication]",
+      "success_status": 200,
+      "source_sha256": "af6224f59c833b8eb8e66fc50385715ce841eb97c17bf4fd7fc3c6b6f83a7fd7",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/authorized-applications/{application_id}",
+      "category": "canonical",
+      "operation": "AuthorizedApplicationController.detail",
+      "source": "backend/src/koinon/authorized_applications/controllers.py",
+      "line": 39,
+      "parameters": [
+        {
+          "name": "application_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "authorized_application",
+      "sdk_typescript": "authorizedApplications.get",
+      "sdk_java": "client.authorizedApplications.get",
+      "request_schema": null,
+      "response_schema": "AuthorizedApplication",
+      "success_status": 200,
+      "source_sha256": "af6224f59c833b8eb8e66fc50385715ce841eb97c17bf4fd7fc3c6b6f83a7fd7",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/authorized-applications/{application_id}",
+      "category": "canonical",
+      "operation": "AuthorizedApplicationController.revoke",
+      "source": "backend/src/koinon/authorized_applications/controllers.py",
+      "line": 43,
+      "parameters": [
+        {
+          "name": "application_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": null,
+      "sdk_python": "revoke_authorized_application",
+      "sdk_typescript": "authorizedApplications.revoke",
+      "sdk_java": "client.authorizedApplications.revoke",
+      "request_schema": null,
+      "response_schema": "void",
+      "success_status": 204,
+      "source_sha256": "af6224f59c833b8eb8e66fc50385715ce841eb97c17bf4fd7fc3c6b6f83a7fd7",
       "encoding": "application/json",
       "headers": []
     },
@@ -5783,7 +5898,7 @@
       "request_schema": null,
       "response_schema": "Capabilities",
       "success_status": 200,
-      "source_sha256": "5f02a39db206ee36d79929d37ed7533f7b730a3c618bfc06d03bbce91609eb59",
+      "source_sha256": "3c8051cd80906123158f3e871146c217d2e1b7cbbdff3f5f5a7cc9c069c257f6",
       "encoding": "application/json",
       "headers": []
     }

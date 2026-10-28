@@ -25,7 +25,7 @@ def identity_from_request(request: Request) -> RequestIdentity:
     subject = context.attributes.get("sub")
     if not issuer or not subject or context.user_id != subject:
         raise UnauthorizedException("Verified issuer and subject required", code="INVALID_IDENTITY")
-    method = "bearer" if request.url.path.startswith("/api/") else "oidc-session"
+    method = "bearer" if request.url.path.startswith(("/api/", "/mcp")) else "oidc-session"
     return RequestIdentity(f"{issuer}|{subject}", True, method)
 
 

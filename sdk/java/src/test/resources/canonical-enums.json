@@ -70,6 +70,11 @@
     "replace_document",
     "replace_table"
   ],
+  "AuthorizedApplicationStatus": [
+    "active",
+    "revoked",
+    "expired"
+  ],
   "CatalogProposalKind": [
     "catalog"
   ],
@@ -392,11 +397,6 @@
     "tools",
     "image_input",
     "audio_input"
-  ],
-  "ShareStatus": [
-    "active",
-    "revoked",
-    "expired"
   ],
   "ShareRecipientPolicy": [
     "organization_current_acl"

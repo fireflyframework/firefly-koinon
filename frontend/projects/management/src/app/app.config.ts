@@ -8,7 +8,7 @@ import {
   KOINON_INVITATION_LOADER,
   KOINON_SHARED_CONVERSATION_LOADER,
   provideKoinonClient,
-} from '@fireflyframework/koinon-angular';
+} from '@fireflyframework/koinon-angular/workbench';
 export function csrfToken(): string | null {
   const value = document.cookie
     .split(';')

@@ -1,0 +1,17 @@
+firefly koinon desktop integration
+Copyright 2026 Firefly Software Foundation
+
+Original bridge code and reusable skill instructions are licensed under the
+Apache License, Version 2.0. The full license is included in LICENSE.
+
+Firefly names, wordmarks, and graphic identities remain protected trademarks.
+Apache-2.0 does not grant trademark rights.
+
+The desktop extension includes third-party runtime dependencies. Their copyright
+and license notices are retained in THIRD_PARTY_NOTICES.txt. Exact versions,
+source locations, and integrity values are recorded in DEPENDENCIES.json.
+Manrope font files included with the installation preview use SIL Open Font
+License 1.1; the license is included in assets/FONT-LICENSE.txt.
+
+The portable skills archive contains original instruction files, not the bridge,
+runtime dependencies, or font files.

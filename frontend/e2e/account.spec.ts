@@ -27,7 +27,7 @@ test('profile preferences switch the actual shell language after persistence and
   });
   await page.goto('/');
   await page.getByRole('button', { name: 'Account menu', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Profile & preferences', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Your account', exact: true }).click();
   await page
     .getByRole('combobox', { name: 'Interface language', exact: true })
     .selectOption('es-ES');
@@ -49,7 +49,7 @@ test('profile preferences switch the actual shell language after persistence and
   await page.reload();
   await expect(page.getByRole('button', { name: 'Biblioteca', exact: true }).first()).toBeVisible();
   await page.getByRole('button', { name: 'Menú de cuenta', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Perfil y preferencias', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Tu cuenta', exact: true }).click();
   await expect(
     page.getByRole('combobox', { name: 'Idioma de la interfaz', exact: true }),
   ).toHaveValue('es-ES');
@@ -127,12 +127,12 @@ test('personal token secret is shown once and revoke uses the SDK with CSRF', as
 });
 
 for (const width of [1440, 390])
-  test(`profile review and focus restoration ${width}`, async ({ page }) => {
+  test(`profile page navigation and focus ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
     await mockService(page);
     await page.goto('/');
     await page.getByRole('button', { name: 'Account menu', exact: true }).click();
-    await page.getByRole('menuitem', { name: 'Profile & preferences', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Your account', exact: true }).click();
     await expect(page.getByRole('textbox', { name: 'Display name', exact: true })).toHaveValue(
       'Alex Rivera',
     );
@@ -146,14 +146,21 @@ for (const width of [1440, 390])
         'position:fixed;bottom:0;left:0;right:0;z-index:9999;padding:5px 12px;background:#855414;color:white;font:10px system-ui;pointer-events:none;text-align:center';
       document.body.append(mark);
     });
-    const dir = resolve('../../control/frontend-captures/atomic-stage3');
+    const dir = resolve('../../control/frontend-captures/account-pages-v21');
     await mkdir(dir, { recursive: true });
     await page.screenshot({
       path: resolve(dir, `profile-${width}.png`),
       fullPage: true,
       animations: 'disabled',
     });
-    await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Account menu', exact: true })).toBeFocused();
+    await expect(
+      page.getByRole('heading', { name: 'Profile & preferences', exact: true }),
+    ).toBeFocused();
+    await page
+      .getByRole('navigation', { name: 'Breadcrumb', exact: true })
+      .getByRole('button', { name: 'Library', exact: true })
+      .click();
+    await expect(page).toHaveURL('/');
+    await expect(page.getByRole('heading', { name: 'Library', exact: true })).toBeVisible();
   });

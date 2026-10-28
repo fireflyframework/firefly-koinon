@@ -8,7 +8,7 @@ Construct the SDK with a transport that handles your application’s authenticat
 
 ```ts
 import {KoinonClient, FetchTransport} from '@fireflyframework/koinon-sdk';
-import {provideKoinonClient} from '@fireflyframework/koinon-angular';
+import {provideKoinonClient} from '@fireflyframework/koinon-angular/workbench';
 
 const transport = new FetchTransport({
   baseUrl: '/bff/api/v1',
@@ -51,10 +51,14 @@ Outputs include `selectionChange`, `contextChange`, `queryCompleted`, `citationS
 
 ## Optional Chat and Settings
 
-The primary entry point contains the library and atomic controls. Enable feature entry points with lazy loaders:
+For a Library host, import `KoinonWorkbench`, its injection providers, and optional loader tokens from `@fireflyframework/koinon-angular/workbench`. This entrypoint contains the complete initial Library and its synchronous vocabulary; dialog and provenance vocabulary arrives with those panels. Chat and Settings register their vocabulary before their views render.
+
+The existing root entrypoint remains compatible: it reexports the same component classes and injection tokens, and immediately registers the complete Spanish dictionary for callers of `KoinonI18n.text()`. Hosts that need the complete standalone translation dictionary can keep using the root entrypoint. Do not import root symbols in an initial Library host solely to configure feature loader tokens, because that also loads the complete compatibility dictionary.
+
+Enable optional feature entrypoints with lazy loaders:
 
 ```ts
-import {KOINON_CHAT_LOADER, KOINON_SETTINGS_LOADER} from '@fireflyframework/koinon-angular';
+import {KOINON_CHAT_LOADER, KOINON_SETTINGS_LOADER} from '@fireflyframework/koinon-angular/workbench';
 
 const optionalFeatures = [
   {

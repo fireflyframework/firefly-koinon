@@ -3,6 +3,8 @@
 // Controlled HTTP fixtures verify the UI contract; native parsing is qualified separately.
 import { test, expect } from '@playwright/test';
 import { mockService } from './fixtures';
+import { mkdir } from 'node:fs/promises';
+import { resolve } from 'node:path';
 const capabilities = {
   storage: { available: true, reason: 'Fixture' },
   database: { available: true, reason: 'Fixture' },
@@ -253,3 +255,79 @@ test('uploads a private file, waits for extraction and submits only selected IDs
   await page.keyboard.press('Escape');
   await expect(composer.getByRole('listitem')).toHaveCount(0);
 });
+
+for (const spanish of [false, true])
+  test(`configured unverified storage permits an honest first upload choice ${spanish ? 'Spanish' : 'English'}`, async ({
+    page,
+  }) => {
+    await mockService(page);
+    const pending = {
+      ...capabilities,
+      storage: {
+        available: null,
+        configured: true,
+        reason: 'Configured; no availability observation',
+      },
+    };
+    await page.route('**/bff/api/v1/**', async (route) => {
+      const path = new URL(route.request().url()).pathname;
+      if (path.endsWith('/capabilities'))
+        return route.fulfill({
+          json: path.includes('/attachments/')
+            ? pending
+            : { providers: [], features: [], attachments: pending },
+        });
+      if (path.endsWith('/agents'))
+        return route.fulfill({
+          json: {
+            items: [
+              {
+                id: 'reader',
+                name: 'Reader',
+                input_modalities: ['text'],
+                status: 'ready',
+                checks: [],
+              },
+            ],
+          },
+        });
+      if (path.endsWith('/chat/threads') || path.endsWith('/chat/folders'))
+        return route.fulfill({ json: { items: [], page: 1, pages: 0, total: 0 } });
+      if (spanish && path.endsWith('/profile'))
+        return route.fulfill({
+          json: {
+            subject: 'synthetic.reviewer',
+            display_name: 'Alex Rivera',
+            locale: 'es-ES',
+            time_zone: 'UTC',
+            response_language: 'en',
+            avatar_version: null,
+          },
+        });
+      return route.fallback();
+    });
+    await page.goto('/');
+    if (spanish)
+      await expect(page.getByRole('heading', { name: 'Biblioteca', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Chat', exact: true }).click();
+    const composer = page.locator('ffk-chat-composer');
+    await expect(composer.locator('textarea')).toBeEnabled();
+    await expect(composer.locator('.composer-hint')).toHaveText(
+      spanish
+        ? 'El almacenamiento privado de archivos está configurado, pero aún no se ha verificado. Tu carga comprobará su disponibilidad.'
+        : 'Private file storage is configured but has not been verified. Your upload will check availability.',
+    );
+    await composer
+      .getByRole('button', { name: spanish ? 'Añadir contexto' : 'Add context', exact: true })
+      .click();
+    await expect(
+      page.getByRole('menuitem', { name: spanish ? /Adjuntar archivos/ : /Attach files/ }),
+    ).toBeEnabled();
+    await expect(composer.locator('input[type=file]')).toBeEnabled();
+    const directory = resolve('../../control/frontend-captures/bundle-v19');
+    await mkdir(directory, { recursive: true });
+    await page.screenshot({
+      path: resolve(directory, `storage-unverified-${spanish ? 'es' : 'en'}.png`),
+      fullPage: true,
+    });
+  });

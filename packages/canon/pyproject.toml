@@ -19,7 +19,7 @@ dependencies = [
     # Firefly Framework runtime (DI, CQRS, EDA, web, observability, resilience,
     # actuator, data-relational, security). Pulled in with the extras we use
     # so a fresh ``uv sync`` is enough to boot the full stack.
-    "pyfly[fastapi,observability,security,data-relational,postgresql,eda,redis,client,scheduling,cli,agentic,agentic-security,agentic-openai-embeddings,agentic-binary,agentic-vectorstores-pgvector]>=26.10.12,<26.11",
+    "pyfly[fastapi,observability,security,data-relational,postgresql,eda,redis,client,scheduling,cli,agentic,agentic-security,agentic-openai-embeddings,agentic-binary,agentic-vectorstores-pgvector]>=26.10.13,<26.11",
 
     # GenAI metaframework -- FireflyAgent over pydantic-ai, the binary
     # normalisation stack (``[binary]`` -> ``content.binary``) and the
@@ -153,7 +153,7 @@ build-backend = "hatchling.build"
 [tool.uv.sources]
 # Qualified runtime references: PyFly retains the existing EDA schema; Agentic
 # resolves from its immutable published wheel. uv.lock records the wheel digest.
-pyfly = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git", rev = "dba0cc6da640d96a8d154f30a7ab355c43810094" }
+pyfly = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git", rev = "d44d5915d76207266c7a2789987b1d613fe36d55" }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/flycanon"]

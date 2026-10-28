@@ -34,6 +34,12 @@ koinon:
       backend: local
       root: /var/lib/koinon/structured
       presign_ttl_seconds: 86400
+    attachments:
+      backend: local
+      # Existing installations may retain koinon.attachments.storage_root instead.
+      root: /var/lib/koinon/private-attachments
+      request_timeout_seconds: 10
+      max_object_bytes: 67108864
 pyfly:
   data:
     relational:

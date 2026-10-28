@@ -11,6 +11,7 @@
     "noImplicitReturns": true,
     "paths": {
       "@fireflyframework/koinon-angular": ["./dist/koinon-angular"],
+      "@fireflyframework/koinon-angular/workbench": ["./dist/koinon-angular/workbench"],
       "@fireflyframework/koinon-angular/chat": ["./dist/koinon-angular/chat"],
       "@fireflyframework/koinon-angular/chat/page": ["./dist/koinon-angular/chat/page"],
       "@fireflyframework/koinon-angular/chat/evidence": ["./dist/koinon-angular/chat/evidence"],

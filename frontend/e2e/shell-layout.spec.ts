@@ -42,7 +42,7 @@ for (const width of [1440, 1024, 820])
     await avatar.click();
     const account = page.getByRole('menu', { name: 'Account menu', exact: true });
     await expect(account).toBeVisible();
-    for (const name of ['Profile & preferences', 'API tokens', 'Sign out']) {
+    for (const name of ['Your account', 'API tokens', 'Authorized applications', 'Sign out']) {
       const box = (await account.getByRole('menuitem', { name, exact: true }).boundingBox())!;
       expect(box.x).toBeGreaterThanOrEqual(0);
       expect(box.x + box.width).toBeLessThanOrEqual(width);
@@ -109,7 +109,7 @@ for (const width of [320, 390])
     await page.goto('/');
     const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
     await menu.click();
-    const avatar = page.getByRole('button', { name: 'Profile & preferences', exact: true });
+    const avatar = page.getByRole('button', { name: 'Your account', exact: true });
     await expect(avatar).toBeVisible();
     const box = (await avatar.boundingBox())!;
     expect(box.width).toBeGreaterThanOrEqual(36);

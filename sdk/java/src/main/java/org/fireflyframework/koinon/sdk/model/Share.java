@@ -11,7 +11,7 @@ public record Share(
     @JsonProperty("id") String id,
     @JsonProperty("title") String title,
     @JsonProperty("revision") String revision,
-    @JsonProperty("status") ShareStatus status,
+    @JsonProperty("status") AuthorizedApplicationStatus status,
     @JsonProperty("recipient_policy") ShareRecipientPolicy recipientPolicy,
     @JsonProperty("created_at") Instant createdAt,
     @JsonProperty("expires_at") Instant expiresAt,

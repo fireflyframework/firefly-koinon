@@ -8,7 +8,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /** Typed canonical AttachmentObservation contract. */
 public record AttachmentObservation(
     @JsonProperty("available") Boolean available,
-    @JsonProperty("reason") String reason
+    @JsonProperty("reason") String reason,
+    @JsonProperty("configured") Boolean configured
 ) {
+    public AttachmentObservation { configured = Boolean.TRUE.equals(configured); }
+    public AttachmentObservation(Boolean available, String reason) {
+        this(available, reason, false);
+    }
 
 }

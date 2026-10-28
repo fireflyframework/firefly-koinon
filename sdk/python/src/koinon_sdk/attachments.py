@@ -3,7 +3,7 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/knowledge/attachments/dtos.py
-SHA256: fe244915be28e6501bf352fed5eb9299931e421185bbf0ca4dd155f738c2155c
+SHA256: 8f0c3a1100edae857e2712575adb2c8a0092bde9684e877936c5976cbddd4eb5
 
 Server authorization and semantic validation remain authoritative.
 """
@@ -113,6 +113,7 @@ class AttachmentPromotionInput(RootModel[PromotionAction]):
 class AttachmentObservation(ResponseModel):
     available: bool | None
     reason: str
+    configured: bool = False
 
 
 class AttachmentLimits(ResponseModel):

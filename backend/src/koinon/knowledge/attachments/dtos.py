@@ -120,6 +120,7 @@ class AttachmentPromotionInput(RootModel[PromotionAction]):
 class AttachmentObservation(BaseModel):
     available: bool | None
     reason: str
+    configured: bool = False
 
 
 class AttachmentLimits(BaseModel):

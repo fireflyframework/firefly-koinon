@@ -1,0 +1,291 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<section class="applications" [attr.aria-label]="'Authorized applications' | ffkText">
+  <header class="introduction">
+    <p>
+      {{
+        'Review access you authorized from another application. Start a new connection from that application.'
+          | ffkText
+      }}
+    </p>
+    <p>
+      {{ 'Permissions also depend on your current organization and workspace access.' | ffkText }}
+    </p>
+  </header>
+  <form class="filters" (ngSubmit)="apply()">
+    <div class="search">
+      <label for="application-search">{{ 'Search applications' | ffkText }}</label>
+      <div>
+        <input
+          id="application-search"
+          type="search"
+          name="query"
+          maxlength="255"
+          [(ngModel)]="query"
+        />
+        <ffk-button
+          variant="quiet"
+          type="submit"
+          icon="search"
+          [label]="'Apply application filters' | ffkText"
+          [disabled]="state.loading()"
+        />
+      </div>
+    </div>
+    <label
+      >{{ 'Status' | ffkText
+      }}<select
+        [attr.aria-label]="'Application status' | ffkText"
+        name="status"
+        [ngModel]="state.filter().status"
+        (ngModelChange)="filter({ status: $event, page: 1 })"
+      >
+        <option value="all">{{ 'All connections' | ffkText }}</option>
+        <option value="active">{{ 'Active' | ffkText }}</option>
+        <option value="expired">{{ 'Expired' | ffkText }}</option>
+        <option value="revoked">{{ 'Revoked' | ffkText }}</option>
+      </select></label
+    >
+    <label
+      >{{ 'Sort' | ffkText
+      }}<select
+        [attr.aria-label]="'Sort applications' | ffkText"
+        name="sort"
+        [ngModel]="sortChoice()"
+        (ngModelChange)="sort($event)"
+      >
+        <option value="connected_at:desc">{{ 'Newest connections' | ffkText }}</option>
+        <option value="connected_at:asc">{{ 'Oldest connections' | ffkText }}</option>
+        <option value="name:asc">{{ 'Name A to Z' | ffkText }}</option>
+        <option value="name:desc">{{ 'Name Z to A' | ffkText }}</option>
+        <option value="expires_at:asc">{{ 'Soonest expiry' | ffkText }}</option>
+        <option value="expires_at:desc">{{ 'Latest expiry' | ffkText }}</option>
+        <option value="last_used_at:desc">{{ 'Recent activity' | ffkText }}</option>
+        <option value="last_used_at:asc">{{ 'Oldest activity' | ffkText }}</option>
+      </select></label
+    >
+  </form>
+  <p class="activity-note">{{ 'Time zone' | ffkText }}: {{ i18n.preferences().time_zone }}</p>
+  @if (state.error()) {
+    <div class="error" role="alert">
+      <p>{{ state.error() | ffkText }}</p>
+      <ffk-button
+        variant="quiet"
+        (click)="filter()"
+        [disabled]="state.loading()"
+        [label]="'Try loading applications again' | ffkText"
+        >{{ 'Try again' | ffkText }}</ffk-button
+      >
+    </div>
+  }
+  @if (state.notice()) {
+    <p class="notice" role="status" tabindex="-1">{{ state.notice() | ffkText }}</p>
+  }
+  @if (state.loading()) {
+    <p class="loading" role="status">{{ 'Loading authorized applications…' | ffkText }}</p>
+  } @else if (state.loaded()) {
+    @if (state.page().items.length) {
+      <div class="column-headings" aria-hidden="true">
+        <span>{{ 'Application name' | ffkText }}</span
+        ><span>{{ 'Organization' | ffkText }} / {{ 'Workspace' | ffkText }}</span
+        ><span>{{ 'Status' | ffkText }}</span
+        ><span>{{ 'Connected' | ffkText }} / {{ 'Expires' | ffkText }}</span
+        ><span>{{ 'Actions' | ffkText }}</span>
+      </div>
+    }
+    <div
+      class="application-list"
+      role="region"
+      [attr.aria-label]="'Application connections' | ffkText"
+    >
+      @for (row of state.page().items; track row.id) {
+        <article class="application-row" [attr.data-application-id]="row.id">
+          <header class="application-heading">
+            <span class="app-mark"><ffk-icon name="link" /></span>
+            <h4>{{ row.name }}</h4>
+          </header>
+          <div class="connection-scope">
+            <strong>{{ row.tenant_name || ('Organization unavailable' | ffkText) }}</strong
+            ><span>{{ row.workspace_name || ('Workspace unavailable' | ffkText) }}</span>
+          </div>
+          <span class="connection-status" [class.active]="lifecycle(row) === 'active'">{{
+            (lifecycle(row) === 'active'
+              ? 'Active'
+              : lifecycle(row) === 'expired'
+                ? 'Expired'
+                : 'Revoked'
+            ) | ffkText
+          }}</span>
+
+          <dl class="dates">
+            <div>
+              <dt>{{ 'Connected' | ffkText }}</dt>
+              <dd [title]="row.connected_at">
+                {{ row.connected_at | ffkDate: undefined : 'datetime' }}
+              </dd>
+            </div>
+            <div>
+              <dt>{{ 'Expires' | ffkText }}</dt>
+              <dd [title]="row.expires_at">
+                {{ row.expires_at | ffkDate: undefined : 'datetime' }}
+              </dd>
+            </div>
+          </dl>
+          @if (lifecycle(row) === 'expired') {
+            <p class="expiry-note">
+              {{
+                'This connection expired. Reconnect from the application to authorize access again.'
+                  | ffkText
+              }}
+            </p>
+          }
+          <div class="row-actions">
+            <ffk-button
+              variant="neutral"
+              icon="info"
+              [disabled]="!!state.revoking()"
+              (click)="open(row.id)"
+              >{{
+                (state.detail()?.id === row.id ? 'Hide permissions' : 'Review permissions')
+                  | ffkText
+              }}</ffk-button
+            >
+            @if (lifecycle(row) === 'active' && confirming()?.id !== row.id) {
+              <ffk-button
+                class="revoke-trigger"
+                variant="quiet"
+                icon="unlink"
+                [disabled]="!!state.revoking()"
+                (click)="confirm(row, $event)"
+                >{{ 'Revoke access' | ffkText }}</ffk-button
+              >
+            }
+          </div>
+          @if (confirming()?.id === row.id) {
+            <section
+              class="confirmation"
+              [attr.aria-label]="'Revoke application confirmation' | ffkText"
+            >
+              <h5 class="confirmation-heading" tabindex="-1">
+                {{ 'Revoke access?' | ffkText }}
+              </h5>
+              <p>
+                <strong>{{ row.name }}</strong>
+                {{
+                  'will lose this connection to koinon. You can reconnect from the application later.'
+                    | ffkText
+                }}
+              </p>
+              <div>
+                <ffk-button
+                  variant="neutral"
+                  icon="close"
+                  [disabled]="!!state.revoking()"
+                  (click)="cancel()"
+                  >{{ 'Keep access' | ffkText }}</ffk-button
+                ><ffk-button
+                  variant="danger"
+                  icon="unlink"
+                  [loading]="state.revoking() === row.id"
+                  (click)="revoke()"
+                  >{{ 'Revoke access' | ffkText }}</ffk-button
+                >
+              </div>
+            </section>
+          }
+          @if (state.detail()?.id === row.id) {
+            <section
+              class="connection-detail"
+              role="region"
+              [attr.aria-label]="'Application permissions' | ffkText"
+            >
+              <div class="permission-content">
+                <h5 class="permission-heading" tabindex="-1">
+                  {{ state.detail()!.name }}
+                </h5>
+                <p class="permission-label">{{ 'Allowed permissions' | ffkText }}</p>
+                <ul class="permissions">
+                  @for (scope of state.detail()!.scopes; track scope) {
+                    <li>{{ permission(scope) | ffkText }}</li>
+                  } @empty {
+                    <li>{{ 'No permissions recorded' | ffkText }}</li>
+                  }
+                </ul>
+              </div>
+              <div class="activity-content">
+                <dl>
+                  <dt>{{ 'Last activity' | ffkText }}</dt>
+                  <dd>
+                    @if (activity(state.detail()!.last_used_at); as stamp) {
+                      {{ stamp | ffkDate: undefined : 'datetime' }}
+                    } @else {
+                      {{ 'No recorded activity' | ffkText }}
+                    }
+                  </dd>
+                  @if (state.detail()!.revoked_at) {
+                    <dt>{{ 'Revoked' | ffkText }}</dt>
+                    <dd>{{ state.detail()!.revoked_at | ffkDate: undefined : 'datetime' }}</dd>
+                  }
+                </dl>
+                <p class="activity-note">
+                  {{
+                    'Activity times are approximate and update at most every five minutes.'
+                      | ffkText
+                  }}
+                </p>
+              </div>
+              <details class="references">
+                <summary>{{ 'Connection details' | ffkText }}</summary>
+                <dl>
+                  <dt>{{ 'Application ID' | ffkText }}</dt>
+                  <dd>{{ state.detail()!.client_id }}</dd>
+                  <dt>{{ 'Service address' | ffkText }}</dt>
+                  <dd>{{ state.detail()!.resource }}</dd>
+                </dl>
+              </details>
+            </section>
+          }
+        </article>
+      } @empty {
+        @if (!state.error()) {
+          <div class="empty">
+            <ffk-icon name="link" />
+            <h4>
+              {{
+                (state.filter().q || state.filter().status !== 'all'
+                  ? 'No applications match these filters.'
+                  : 'No authorized applications yet.'
+                ) | ffkText
+              }}
+            </h4>
+            <p>
+              {{
+                'Connect from an application that supports koinon. Your authorized connections will appear here.'
+                  | ffkText
+              }}
+            </p>
+          </div>
+        }
+      }
+    </div>
+  } @else if (!state.error()) {
+    <p class="loading">{{ 'Load applications for your current account.' | ffkText }}</p>
+    <ffk-button variant="quiet" (click)="filter()">{{
+      'Load authorized applications' | ffkText
+    }}</ffk-button>
+  }
+  @if (state.detailLoading()) {
+    <p role="status" class="loading">{{ 'Loading application permissions…' | ffkText }}</p>
+  }
+  @if (state.filter().q || state.filter().status !== 'all') {
+    <ffk-button variant="quiet" (click)="clear()" [disabled]="state.loading()">{{
+      'Clear application filters' | ffkText
+    }}</ffk-button>
+  }
+  <ffk-pagination
+    [page]="state.page()"
+    [label]="'Authorized applications' | ffkText"
+    [loading]="state.loading() || !!state.revoking()"
+    (pageChanged)="filter({ page: $event })"
+    (sizeChanged)="filter({ page_size: $event, page: 1 })"
+  />
+</section>

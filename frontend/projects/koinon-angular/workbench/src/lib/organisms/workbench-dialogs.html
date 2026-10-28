@@ -1,0 +1,512 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<section
+  class="dialog"
+  [class.account-dialog]="w.dialog() === 'account'"
+  [class.tree-dialog]="w.dialog() === 'tree'"
+  [class.wide]="
+    w.dialog() === 'account' ||
+    w.dialog() === 'query' ||
+    w.dialog() === 'lineage' ||
+    w.dialog() === 'archived'
+  "
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="dialog-title"
+  cdkTrapFocus
+  cdkTrapFocusAutoCapture
+>
+  <header>
+    <div>
+      <span class="eyebrow">{{
+        (w.dialog() === 'account'
+          ? 'Account'
+          : w.dialog() === 'upload'
+            ? 'Add knowledge'
+            : w.dialog() === 'query'
+              ? 'Dataset explorer'
+              : 'Library'
+        ) | ffkText
+      }}</span>
+      <h2 id="dialog-title">
+        {{
+          w.dialog() === 'account'
+            ? 'Your account'
+            : w.dialog() === 'archived'
+              ? 'Archived items'
+              : w.dialog() === 'tree'
+                ? 'Browse folders'
+                : w.dialog() === 'add'
+                  ? 'Add knowledge'
+                  : w.dialog() === 'create'
+                    ? 'Create a ' + w.kind(w.formKind).toLowerCase()
+                    : w.dialog() === 'edit'
+                      ? 'Edit details'
+                      : w.dialog() === 'upload'
+                        ? 'Upload files'
+                        : w.dialog() === 'archive'
+                          ? 'Archive this item?'
+                          : w.dialog() === 'query'
+                            ? w.f.selected()?.name
+                            : w.dialog() === 'lineage'
+                              ? 'Where this came from'
+                              : 'Source evidence'
+        }}
+      </h2>
+    </div>
+    <ffk-button
+      variant="quiet"
+      icon="close"
+      label="Close dialog"
+      [disabled]="w.uploadState() === 'receiving'"
+      (click)="w.closeDialog()"
+    />
+  </header>
+  @if (w.dialogError()) {
+    <div class="workbench-error" role="alert">{{ w.dialogError() }}</div>
+  }
+  @if (w.dialog() === 'account') {
+    <div class="account-body">
+      @defer (when w.dialog()==='account') {
+        <ffk-account-panel [initialTab]="w.accountTab()" />
+      } @loading {
+        <ffk-skeleton width="60%" height="12px" [label]="'Opening panel' | ffkText" />
+      } @error {
+        <p role="alert">
+          {{ 'This panel could not be opened. Refresh this page and try again.' | ffkText }}
+        </p>
+      }
+    </div>
+  }
+  @if (w.dialog() === 'tree') {
+    @defer (when !!w.dialog()) {
+      <ffk-folder-tree
+        [entries]="w.allEntries()"
+        [currentId]="w.f.parentId()"
+        [contextKey]="w.f.tenantId()"
+        [error]="w.f.error()"
+        [loadChildren]="w.loadTreeChildren"
+        (selected)="w.openTreeFolder($event)"
+      />
+    } @error {
+      <p role="alert">
+        {{ 'This panel could not be opened. Refresh this page and try again.' | ffkText }}
+      </p>
+    }
+  }
+  @if (w.dialog() === 'add') {
+    <p class="dialog-intro">
+      Choose how you’d like to add knowledge to <strong>{{ w.folderTitle() }}</strong
+      >.
+    </p>
+    <div class="add-options">
+      @if (w.f.canUpload()) {
+        <button (click)="w.beginUpload()">
+          <span class="option-icon"><ffk-icon name="upload" /></span
+          ><span
+            ><strong>{{ 'Upload files' | ffkText }}</strong
+            ><small>Documents and datasets for your team</small></span
+          ><ffk-icon name="chevron" />
+        </button>
+      }
+      @if (w.f.canWrite() && w.folderKind(); as next) {
+        <button (click)="w.beginCreate()">
+          <span class="option-icon"><ffk-icon name="folder" /></span
+          ><span
+            ><strong>Create a {{ w.kind(next).toLowerCase() }}</strong
+            ><small>{{
+              next === 'workspace'
+                ? 'A home for a team or area of work'
+                : next === 'project'
+                  ? 'Group related knowledge around a project'
+                  : 'Keep related files together'
+            }}</small></span
+          ><ffk-icon name="chevron" />
+        </button>
+      }
+    </div>
+  }
+  @if (w.dialog() === 'create' || w.dialog() === 'edit') {
+    <form (submit)="$event.preventDefault(); w.save()">
+      <ffk-form-field
+        inputId="resource-name"
+        [label]="'Name' | ffkText"
+        [value]="w.formName"
+        (valueChange)="w.formName = $event"
+        required
+        hint="Choose a name your team will recognize."
+      /><ffk-form-field
+        inputId="resource-description"
+        [label]="'Description' | ffkText"
+        [value]="w.formDescription"
+        (valueChange)="w.formDescription = $event"
+        multiline
+        placeholder="What belongs here?"
+      />
+      <p class="form-location"><ffk-icon name="folder" />{{ w.folderTitle() }}</p>
+      <div class="dialog-actions">
+        <ffk-button variant="quiet" (click)="w.closeDialog()">{{ 'Cancel' | ffkText }}</ffk-button
+        ><ffk-button type="submit" variant="primary" [loading]="w.f.pending()">{{
+          w.dialog() === 'edit' ? 'Save changes' : 'Create ' + w.kind(w.formKind).toLowerCase()
+        }}</ffk-button>
+      </div>
+    </form>
+  }
+  @if (w.dialog() === 'archive') {
+    <p class="dialog-intro">
+      <strong>{{ w.f.selected()?.name }}</strong> will leave this library. You can restore it from
+      Archived. Your organization’s retention rules still apply.
+    </p>
+    <div class="dialog-actions">
+      <ffk-button variant="quiet" (click)="w.closeDialog()">{{ 'Keep item' | ffkText }}</ffk-button
+      ><ffk-button variant="danger" [loading]="w.f.pending()" (click)="w.archive()">{{
+        'Archive' | ffkText
+      }}</ffk-button>
+    </div>
+  }
+  @if (w.dialog() === 'upload') {
+    @if (w.uploadState() === 'complete') {
+      <div class="upload-complete">
+        <span class="completed-mark"><ffk-icon name="check" /></span>
+        <h3>
+          {{ w.uploadedCount() }} {{ w.uploadedCount() === 1 ? 'file received' : 'files received' }}
+        </h3>
+        <p>
+          {{
+            'Open the result to see its current status, or follow processing in Activity.' | ffkText
+          }}
+        </p>
+        <div class="dialog-actions">
+          <ffk-button variant="quiet" (click)="w.closeDialog()">{{ 'Done' | ffkText }}</ffk-button
+          ><ffk-button variant="primary" (click)="w.openUploadResult()">{{
+            'Open result' | ffkText
+          }}</ffk-button>
+        </div>
+      </div>
+    } @else {
+      <form (submit)="$event.preventDefault(); w.upload()">
+        <div class="upload-location">
+          <div>
+            <span>{{ 'Destination folder' | ffkText }}</span
+            ><strong>{{ w.uploadDestinationName() }}</strong>
+          </div>
+          <ffk-button
+            variant="quiet"
+            [disabled]="w.uploadState() === 'receiving'"
+            (click)="w.uploadDestinationOpen.set(!w.uploadDestinationOpen())"
+            >{{ w.formParent ? 'Change' : 'Choose folder' }}</ffk-button
+          >
+        </div>
+        @if (w.uploadDestinationOpen()) {
+          <div class="upload-folder-picker">
+            <p>{{ 'Choose a folder inside a project.' | ffkText }}</p>
+            @defer (when !!w.dialog()) {
+              <ffk-folder-tree
+                [entries]="w.allEntries()"
+                [currentId]="w.formParent"
+                [contextKey]="w.f.tenantId()"
+                [error]="w.f.error()"
+                [loadChildren]="w.loadTreeChildren"
+                [selectableKinds]="w.uploadFolderKinds"
+                (selected)="w.chooseUploadFolder($event)"
+              />
+            } @error {
+              <p role="alert">
+                {{ 'This panel could not be opened. Refresh this page and try again.' | ffkText }}
+              </p>
+            }
+          </div>
+        }
+        <label for="upload-mode">{{ 'Use these files as' | ffkText }}</label
+        ><select
+          id="upload-mode"
+          name="mode"
+          [value]="w.uploadMode"
+          (change)="w.uploadMode = $any($event.target).value"
+          [disabled]="w.uploadState() === 'receiving'"
+        >
+          <option value="document">{{ 'Documents to read and search' | ffkText }}</option>
+          <option value="dataset">{{ 'Data to explore with queries' | ffkText }}</option>
+        </select>
+        <div class="drop-zone" (dragover)="$event.preventDefault()" (drop)="w.captureDrop($event)">
+          <ffk-icon name="upload" /><strong>{{ 'Drop your files here' | ffkText }}</strong
+          ><span>{{ 'or choose files from your computer' | ffkText }}</span
+          ><input
+            type="file"
+            id="upload-files"
+            [attr.aria-label]="'Choose files' | ffkText"
+            multiple
+            (change)="w.captureFiles($event)"
+            [disabled]="w.uploadState() === 'receiving'"
+          />
+        </div>
+        @if (w.files.length) {
+          <div class="upload-preview" [attr.aria-label]="'Files to upload' | ffkText">
+            @for (file of w.files; track $index) {
+              <div>
+                <ffk-icon name="file" /><span [title]="file.name">{{ file.name }}</span
+                ><small>{{ file.size | number }} bytes</small
+                ><span class="upload-file-state">{{
+                  w.uploadedFiles().has(file)
+                    ? 'Received'
+                    : w.uploadCurrentFile() === file
+                      ? 'Receiving…'
+                      : w.uploadFailedFile() === file
+                        ? 'Needs attention'
+                        : 'Ready to upload'
+                }}</span>
+              </div>
+            }
+          </div>
+        }
+        @if (w.uploadState() === 'receiving') {
+          <div class="upload-progress" role="status">
+            <span class="workbench-status-line"></span>Receiving file {{ w.uploadedCount() + 1 }} of
+            {{ w.files.length }}. {{ w.uploadedCount() }} received.
+          </div>
+        }
+        <p class="field-help">
+          {{
+            'Available formats depend on your organization’s ingestion services. Files are validated when received.'
+              | ffkText
+          }}
+        </p>
+        <div class="dialog-actions">
+          <ffk-button
+            variant="quiet"
+            [disabled]="w.uploadState() === 'receiving'"
+            (click)="w.closeDialog()"
+            >{{ 'Cancel' | ffkText }}</ffk-button
+          ><ffk-button
+            type="submit"
+            variant="primary"
+            icon="upload"
+            [disabled]="!w.files.length || !w.formParent"
+            [loading]="w.uploadState() === 'receiving'"
+            >Upload {{ w.remainingFiles() || '' }}
+            {{ w.remainingFiles() === 1 ? 'file' : 'files' }}</ffk-button
+          >
+        </div>
+      </form>
+    }
+  }
+  @if (w.dialog() === 'query') {
+    <form (submit)="$event.preventDefault(); w.runQuery()">
+      <ffk-form-field
+        inputId="dataset-question"
+        [label]="'What would you like to understand?' | ffkText"
+        [value]="w.queryQuestion"
+        (valueChange)="w.queryQuestion = $event"
+        [placeholder]="'Ask a question about this dataset' | ffkText"
+        required
+      />
+      <div class="dialog-actions">
+        <ffk-button
+          type="submit"
+          variant="primary"
+          [loading]="w.f.pending()"
+          [disabled]="!w.f.canQuery() || !w.queryQuestion.trim()"
+          >{{ 'Run query' | ffkText }}</ffk-button
+        >
+      </div>
+    </form>
+    @if (!w.f.canQuery()) {
+      <p class="field-help">
+        Your role can view this dataset. Ask an administrator for permission to run queries.
+      </p>
+    }
+    @if (w.f.error()) {
+      <div class="workbench-error" role="alert">{{ w.f.error() }}</div>
+    }
+    @if (w.f.queryResult(); as result) {
+      <section class="query-result">
+        <div class="result-status">
+          <ffk-badge [tone]="w.queryStatusTone(result.execution_status)">{{
+            w.queryStatusLabel(result.execution_status) | ffkText
+          }}</ffk-badge>
+          @if (result.row_count !== undefined && result.row_count !== null) {
+            <span
+              >{{ result.row_count }} rows{{ result.truncated ? ' · Result truncated' : '' }}</span
+            >
+          }
+        </div>
+        @if (result.explanation) {
+          <p>{{ result.explanation }}</p>
+        }
+        @if (result.sql) {
+          <details>
+            <summary>{{ 'SQL used' | ffkText }}</summary>
+            @defer (when !!result.sql) {
+              <ffk-code-block [code]="result.sql" label="Recorded SQL" />
+            } @error {
+              <pre>{{ result.sql }}</pre>
+            }
+          </details>
+        }
+        @if (result.preview?.length) {
+          <div class="workbench-table-wrap" tabindex="0" aria-label="Query result table">
+            <table>
+              <thead>
+                <tr>
+                  @for (column of w.queryColumns(); track column) {
+                    <th>{{ column }}</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of result.preview; track $index) {
+                  <tr>
+                    @for (column of w.queryColumns(); track column) {
+                      <td>{{ row[column] }}</td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+        @if (result.snapshot_pins) {
+          <details>
+            <summary>{{ 'Source snapshot' | ffkText }}</summary>
+            <pre>{{ result.snapshot_pins | json }}</pre>
+          </details>
+        }
+        @for (citation of result.citations || []; track $index) {
+          <ffk-button variant="quiet" (click)="w.openCitation(citation)">{{
+            citation.title || 'Source evidence'
+          }}</ffk-button>
+        }
+      </section>
+    }
+    @if (w.f.schema(); as schema) {
+      <details class="dataset-schema">
+        <summary>Dataset schema · {{ schema.tables.length }} tables</summary>
+        @for (table of schema.tables; track table.id) {
+          <h3>{{ table.name }}</h3>
+          <ffk-button variant="quiet" icon="history" (click)="w.openTableHistory(table)">{{
+            'History & lineage' | ffkText
+          }}</ffk-button>
+          <div class="workbench-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>{{ 'Column' | ffkText }}</th>
+                  <th>{{ 'Type' | ffkText }}</th>
+                  <th>{{ 'Description' | ffkText }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (column of table.columns; track column.id) {
+                  <tr>
+                    <td>{{ column.name }}</td>
+                    <td>{{ column.data_type }}</td>
+                    <td>{{ column.description }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </details>
+    }
+  }
+  @if (w.dialog() === 'lineage') {
+    <p class="dialog-intro">Trace the sources and processing steps behind this knowledge.</p>
+    @if (w.f.error()) {
+      <div class="workbench-error" role="alert">{{ w.f.error() }}</div>
+    }
+    @if (w.f.lineage(); as lineage) {
+      <div class="lineage-flow">
+        @for (edge of lineage.edges; track $index) {
+          <div>
+            <span>{{ w.nodeLabel(edge.source) }}</span
+            ><ffk-icon name="chevron" /><span>{{ w.nodeLabel(edge.target) }}</span>
+            @if (edge.label) {
+              <small>{{ edge.label }}</small>
+            }
+          </div>
+        } @empty {
+          <p class="workbench-quiet">No lineage relationships have been recorded for this item.</p>
+        }
+      </div>
+    }
+  }
+  @if (w.dialog() === 'archived') {
+    <p class="dialog-intro">
+      Archived knowledge stays in storage. Restore an item to return it to its original location.
+    </p>
+    <ffk-search-field
+      [value]="w.archiveQuery"
+      (valueChange)="w.archiveQuery = $event"
+      [label]="'Filter archived items' | ffkText"
+      [actionLabel]="'Apply archived filter' | ffkText"
+      [placeholder]="'Filter archived items by name' | ffkText"
+      (searchSubmitted)="w.f.loadArchived({ q: $event, page: 1 })"
+    />
+    @if (w.f.error()) {
+      <div class="workbench-error" role="alert">{{ w.f.error() }}</div>
+    } @else if (w.f.pending()) {
+      <div class="archive-loading">
+        <ffk-skeleton width="70%" height="12px" label="Loading archived items" />
+      </div>
+    } @else {
+      <div class="workbench-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>{{ 'Name' | ffkText }}</th>
+              <th>{{ 'Type' | ffkText }}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of w.f.archivedPage().items; track entry.id) {
+              <tr>
+                <td class="resource-name">{{ entry.name }}</td>
+                <td>{{ w.kind(entry.kind) }}</td>
+                <td>
+                  <ffk-button [disabled]="w.f.pending()" (click)="w.restore(entry)">{{
+                    'Restore' | ffkText
+                  }}</ffk-button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="3">
+                  <div class="workbench-empty">
+                    <h3>No archived items</h3>
+                    <p>
+                      {{
+                        w.archiveQuery
+                          ? 'Try another name or clear the filter.'
+                          : 'Items you archive will appear here.'
+                      }}
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+    <ffk-pagination
+      [page]="w.f.archivedPage()"
+      [label]="'Archived' | ffkText"
+      [loading]="w.f.pending()"
+      (pageChanged)="w.f.loadArchived({ page: $event })"
+      (sizeChanged)="w.f.loadArchived({ page_size: $event, page: 1 })"
+    />
+  }
+  @if (w.dialog() === 'citation' && w.activeCitation) {
+    @defer (when !!w.activeCitation) {
+      <ffk-citation-panel
+        [citation]="w.activeCitation"
+        (resourceRequested)="w.citationResource($event)"
+      />
+    } @error {
+      <p role="alert">
+        {{ 'This panel could not be opened. Refresh this page and try again.' | ffkText }}
+      </p>
+    }
+  }
+</section>

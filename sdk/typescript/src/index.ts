@@ -1,6 +1,8 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 import type {AnswerAudit} from './generated.js';
+import type {AuthorizedApplication} from './generated.js';
+import type {AuthorizedApplicationFilter} from './types.js';
 import type {DatasetFileAppendResult} from './generated.js';
 import type {TableProvenance,TableSnapshotPage} from './generated.js';
 import type {CoordinateCellRequest,TableCoordinateManifest,TableCoordinateSelection,TableRowRangePage,TableColumnBindingPage,KnowledgeIntentInput,KnowledgeIntent,KnowledgeConfirmation,CommittedKnowledge,PendingKnowledgeCommit,KnowledgeItemView,KnowledgeItemPage} from './generated.js';
@@ -41,6 +43,7 @@ export class KoinonClient {
  readonly chat;
  readonly profile;
  readonly tokens;
+ readonly authorizedApplications;
  readonly people;
  readonly knowledgeConnections;
  readonly knowledgeIndexes;
@@ -129,6 +132,11 @@ export class KoinonClient {
    avatar:(options:RequestOptions={})=>transport.request<Blob>('GET','/profile/avatar',{...options,responseType:'blob'}),
    uploadAvatar:(file:Blob,options:RequestOptions={})=>transport.request<UserProfile>('POST','/profile/avatar',{...options,body:file,headers:{...options.headers,'Content-Type':file.type}}),
    deleteAvatar:(options:RequestOptions={})=>transport.request<UserProfile>('DELETE','/profile/avatar',options),
+  };
+  this.authorizedApplications={
+   list:(options:RequestOptions&{query?:AuthorizedApplicationFilter}={})=>transport.request<Page<AuthorizedApplication>>('GET','/authorized-applications',options),
+   get:(applicationId:string,options:RequestOptions={})=>transport.request<AuthorizedApplication>('GET',`/authorized-applications/${id(applicationId)}`,options),
+   revoke:(applicationId:string,options:RequestOptions={})=>transport.request<void>('DELETE',`/authorized-applications/${id(applicationId)}`,options),
   };
   this.tokens={
    list:(options:RequestOptions&{query?:StatusFilter}={})=>transport.request<Page<PersonalToken>>('GET','/tokens',options),

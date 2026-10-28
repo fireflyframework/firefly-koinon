@@ -98,9 +98,10 @@ class CapabilitiesController:
                 attachments = await attachment_service.deployment()
             except (ServiceUnavailableException, SQLAlchemyError, OSError, TimeoutError, ValueError):
                 attachments = None
-        attachment_ready = attachments is not None and all(
-            value.available is True
-            for value in (attachments.storage, attachments.database, attachments.extraction)
+        attachment_ready = (
+            attachments is not None
+            and (attachments.storage.configured or attachments.storage.available is True)
+            and all(value.available is True for value in (attachments.database, attachments.extraction))
         )
         features.append(
             {
@@ -108,6 +109,8 @@ class CapabilitiesController:
                 "name": "Private conversation attachments",
                 "available": attachment_ready,
                 "reason": "Private storage, database isolation and worker heartbeat were observed"
+                if attachment_ready and attachments is not None and attachments.storage.available is True
+                else "Storage configured; provider health is unknown; database and worker observed"
                 if attachment_ready
                 else "Private attachment prerequisites have not all been observed or enabled",
             }

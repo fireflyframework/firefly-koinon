@@ -3,7 +3,7 @@
 """One native context for catalog, security, jobs and retained knowledge domains."""
 
 import importlib.util
-from contextlib import asynccontextmanager
+from contextlib import AsyncExitStack, asynccontextmanager
 from copy import deepcopy
 from json import JSONDecodeError
 
@@ -22,6 +22,9 @@ from koinon.api.controllers.context import ContextController
 from koinon.api.controllers.jobs import JobController
 from koinon.api.controllers.memberships import MembershipController
 from koinon.configuration import ApplicationConfiguration
+from koinon.mcp.http import McpHttpBoundary
+from koinon.mcp.server import create_mcp_server
+from koinon.mcp.settings import McpSettings
 from koinon.security.configuration import SecurityConfiguration, native_security_defaults
 from koinon.security.controllers import AuthController
 from koinon.security.settings import OidcSettings
@@ -67,6 +70,8 @@ def create_application(config: dict):
     mandatory["pyfly"]["session"].pop("concurrency")
     values = merge_configuration(values, mandatory)
     context = ApplicationContext(Config(values))
+    mcp_settings = Config(values).bind(McpSettings)
+    context.container.register_instance(McpSettings, mcp_settings)
     registry = CapabilityRegistry()
     context.container.register_instance(CapabilityRegistry, registry)
     context.container.register_instance(LegacyOperationPolicies, LegacyOperationPolicies())
@@ -76,11 +81,14 @@ def create_application(config: dict):
         "koinon.assistants",
         "koinon.profiles",
         "koinon.tokens",
+        "koinon.authorized_applications",
+        "koinon.mcp_auth",
         "koinon.operations",
         "koinon.corporate_identity",
         "koinon.evidence",
         "koinon.exports",
         "koinon.sharing",
+        "koinon.storage",
     ):
         scan_package(package, context.container)
     for cls in (
@@ -117,6 +125,7 @@ def create_application(config: dict):
                 "koinon.assistants",
                 "koinon.profiles",
                 "koinon.tokens",
+                "koinon.authorized_applications",
                 "koinon.corporate_identity",
                 "koinon.evidence",
                 "koinon.exports",
@@ -140,7 +149,10 @@ def create_application(config: dict):
     async def lifespan(app):
         await context.start()
         try:
-            yield
+            async with AsyncExitStack() as stack:
+                if mcp_settings.enabled:
+                    await stack.enter_async_context(app.state.mcp_server.session_manager.run())
+                yield
         finally:
             await context.stop()
 
@@ -155,6 +167,33 @@ def create_application(config: dict):
     for exception in (PyFlyException, ValidationError, JSONDecodeError):
         app.add_exception_handler(exception, global_exception_handler)
     register_domain_problems(app)
+    if mcp_settings.enabled:
+        from koinon.mcp_auth.http import install_oauth
+        from koinon.mcp_auth.service import McpOAuthService
+
+        async def canonical_bearer(raw):
+            return await context.get_bean(McpOAuthService).canonical_bearer(raw)
+
+        async def can_request_scopes(raw, scopes):
+            return await context.get_bean(McpOAuthService).can_request_scopes(raw, scopes)
+
+        server = create_mcp_server(
+            app,
+            mcp_settings,
+            canonical_bearer,
+            oauth_enabled=Config(values).get("koinon.mcp.oauth.enabled", False),
+            can_request_scopes=can_request_scopes,
+        )
+        mcp_app = server.streamable_http_app(
+            stateless_http=True,
+            json_response=True,
+            max_request_body_size=mcp_settings.max_request_bytes,
+            transport_security=mcp_settings.transport_security(),
+        )
+        app.router.routes.extend(mcp_app.routes)
+        app.add_middleware(McpHttpBoundary, settings=mcp_settings)
+        app.state.mcp_server = server
+        install_oauth(app, context)
     app.state.context = context
     app.state.capability_registry = registry
     return app

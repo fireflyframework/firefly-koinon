@@ -2,17 +2,21 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { AccountNavigation } from './account-navigation';
 @Injectable({ providedIn: 'root' })
 export class SessionService {
   private readonly http = inject(HttpClient);
+  private readonly navigation = inject(AccountNavigation);
   readonly error = signal('');
   signIn(): void {
+    this.navigation.retainForSignIn();
     window.location.assign('/oauth2/authorization/koinon');
   }
   async signOut(): Promise<boolean> {
     this.error.set('');
     try {
       await firstValueFrom(this.http.post('/logout', {}, { withCredentials: true }));
+      this.navigation.clearPending();
       return true;
     } catch {
       this.error.set('Sign out did not complete. Your session has not been cleared.');

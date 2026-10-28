@@ -2,6 +2,25 @@
 
 The API is a standalone service. Deploy the Python backend and the five explicit database datasource credentials, run migrations in a separate privileged job, then start `koinon.main:app` behind an operator-managed HTTPS proxy. Angular is optional. Forge and other consumers authenticate through their registered OIDC clients and call `/api/v1/**` using access tokens for the configured API audience. SDK consumers need neither Angular nor the backend Python package installed in their application.
 
+## Serve the management application
+
+Use `deploy/production/nginx.conf` for an API-only reverse proxy. To serve Angular and the API on one origin, use `nginx-management.conf` instead, inside your TLS server. Build the SDK and frontend with the repository's Node tooling:
+
+```sh
+npm ci --prefix sdk/typescript --ignore-scripts
+npm run build --prefix sdk/typescript
+npm ci --prefix frontend --ignore-scripts
+npm run build --prefix frontend
+```
+
+Set the template's `root` to the read-only `frontend/dist/management/browser` output. Account screens have direct `/account/profile`, `/account/tokens` and `/account/applications` links. The static fallback returns the management index for those links, with `Cache-Control: no-store` on the index. API, browser session, login/callback, MCP and discovery requests stay on the backend; they must never receive the SPA index. Missing assets return 404. The template supplies the content types needed by scripts, styles, branding and fonts and preserves unbuffered backend responses.
+
+The management application owns browser history. Embedded Angular components and custom elements use account-section inputs/events and leave the host application's URL alone. Embed those components or the SDK in another product; the standalone management template permits framing only from its own origin.
+
+The dedicated proxy CI gate runs native nginx with a temporary static site and a local HTTP fixture, checking direct account links, MIME types and backend method/body/path forwarding. It does not qualify operator TLS, production hosts, identity-provider callbacks or an active deployment.
+
+## Operate the backend
+
 `deploy/production/backend.service`, `runtime.env.example` and `nginx.conf` are reviewable templates, not an accepted production deployment. Adapt service paths, writable storage, TLS certificates, proxy limits and trusted proxy addresses. The systemd EnvironmentFile uses systemd quoting rules; the literal files read by `deploy/run.py` use a different format. Quote a nonempty JSON host allowlist correctly for the chosen launcher. Require verified database TLS with operator-managed CA material outside loopback development; backup tools preserve explicit libpq TLS URL options and reject unsupported options. Do not expose the backend directly while trusting arbitrary forwarded headers. The supplied systemd template trusts only a loopback proxy and grants writes only under `/var/lib/koinon`. Configure document/blob storage there or on an explicitly managed shared storage service. Running multiple instances requires shared storage as well as shared SQL sessions.
 
 Provision your own identity tenant and client credentials. Use `deploy/bootstrap.py` once with a verified canonical subject to create a new application tenant and its first administrator. The command refuses existing tenants; use the authorized member API thereafter. Set the issuer, API audience and exact registered callback. Generic providers require explicit authorization/token/JWKS URLs and may require provider-specific authorization response settings. Entra/Google interoperability was not live-qualified. Secure cookies and HTTPS are required outside loopback development. Cookie sessions and their concurrency registry use PostgreSQL; do not replace them with process memory in a multi-instance deployment.

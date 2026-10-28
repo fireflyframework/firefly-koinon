@@ -183,6 +183,13 @@ export const ACCESS_SPANISH: Readonly<Record<string, string>> = {
   'Stop answer': 'Detener respuesta',
   'Attach files': 'Adjuntar archivos',
   'Use files in this conversation': 'Usar archivos en esta conversación',
+  'Private file storage is configured but has not been verified. Your upload will check availability.':
+    'El almacenamiento privado de archivos está configurado, pero aún no se ha verificado. Tu carga comprobará su disponibilidad.',
+  'Private file storage is configured, but the last availability check failed. You can try uploading again.':
+    'El almacenamiento privado de archivos está configurado, pero la última comprobación de disponibilidad falló. Puedes volver a intentar la carga.',
+  'File uploads are not configured. Ask your administrator to enable private file storage.':
+    'La carga de archivos no está configurada. Pide a tu administrador que habilite el almacenamiento privado de archivos.',
+
   'Choose from Library': 'Elegir de la Biblioteca',
   'Add knowledge you can access': 'Añadir conocimiento al que tienes acceso',
   'Add files to knowledge': 'Añadir archivos al conocimiento',

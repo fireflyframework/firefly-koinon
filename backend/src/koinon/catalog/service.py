@@ -158,7 +158,18 @@ class CatalogService:
         self, subject: str, tenant_id: str, permission: str, workspace_id: str | None = None
     ) -> None:
         await self._validate_workspace(tenant_id, workspace_id)
-        if permission not in await self.permissions(subject, tenant_id, workspace_id):
+        memberships = await self.memberships(subject)
+        grant = await self.restriction.grant(subject) if self.restriction else None
+        if permission not in self._resolved_permissions(memberships, tenant_id, workspace_id, grant):
+            if (
+                grant is not None
+                and grant.tenant_id == tenant_id
+                and grant.asset_ids is None
+                and (grant.workspace_ids is None or workspace_id in grant.workspace_ids)
+                and permission not in grant.scopes
+                and permission in self._resolved_permissions(memberships, tenant_id, workspace_id)
+            ):
+                raise AccessDenied("API token lacks the required permission", code="TOKEN_INSUFFICIENT_SCOPE")
             raise AccessDenied("Resource is not accessible in the selected context", code="ACCESS_DENIED")
 
     async def _scoped_entry(self, tenant_id: str, entry_id: str, *, lock=False) -> CatalogEntry:

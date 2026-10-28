@@ -51,4 +51,6 @@ test-results/
 smoke/angular-host/dist/
 smoke/angular-host/.angular/
 
-projects/koinon-angular/src/lib/_brand-tokens.generated.scss
+projects/koinon-angular/workbench/src/lib/_brand-tokens.generated.scss
+
+projects/koinon-angular/workbench/src/lib/foundations/*.generated.ts

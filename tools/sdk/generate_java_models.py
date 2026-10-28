@@ -224,6 +224,12 @@ for name, definition in defs.items():
     )
     copies = []
     accessors = []
+    if name == "AttachmentObservation":
+        body += (
+            "    public AttachmentObservation { configured = Boolean.TRUE.equals(configured); }\n"
+            "    public AttachmentObservation(Boolean available, String reason) {\n"
+            "        this(available, reason, false);\n    }\n"
+        )
     for wire, key, kind, raw, wrapped in fields:
         if wrapped:
             continue

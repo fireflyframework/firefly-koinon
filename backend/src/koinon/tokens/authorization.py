@@ -5,6 +5,8 @@ from datetime import UTC, datetime
 from pyfly.container import service
 from pyfly.security.context_holder import SecurityContextHolder
 
+from koinon.authorized_applications.entities import credential_matches
+from koinon.authorized_applications.repositories import AuthorizedApplicationRepository
 from koinon.catalog.errors import AccessDenied
 from koinon.catalog.repositories import CatalogRepository
 from koinon.tokens.repositories import PersonalTokenRepository
@@ -12,8 +14,14 @@ from koinon.tokens.repositories import PersonalTokenRepository
 
 @service(name="tokens.restrictions")
 class TokenRestriction:
-    def __init__(self, tokens: PersonalTokenRepository, entries: CatalogRepository):
+    def __init__(
+        self,
+        tokens: PersonalTokenRepository,
+        entries: CatalogRepository,
+        applications: AuthorizedApplicationRepository | None = None,
+    ):
         self.tokens, self.entries = tokens, entries
+        self.applications = applications
 
     async def grant(self, subject: str):
         context = SecurityContextHolder.get_context()
@@ -28,6 +36,14 @@ class TokenRestriction:
             or row.expires_at <= datetime.now(UTC)
         ):
             raise AccessDenied("This API token is no longer valid", code="TOKEN_UNAVAILABLE")
+        if row.purpose == "application":
+            application = (
+                await self.applications.find_by_id(row.authorized_application_id)
+                if self.applications
+                else None
+            )
+            if not credential_matches(application, row, datetime.now(UTC)):
+                raise AccessDenied("This application connection is no longer valid", code="TOKEN_UNAVAILABLE")
         return row
 
     async def resource(self, subject: str, entry, *, write=False):

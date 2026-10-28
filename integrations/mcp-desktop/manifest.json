@@ -1,0 +1,84 @@
+{
+  "manifest_version": "0.3",
+  "name": "firefly-koinon",
+  "display_name": "firefly koinon",
+  "version": "26.10.0-alpha.1",
+  "description": "Connect your desktop assistant to authorized knowledge in firefly koinon.",
+  "long_description": "Discover document and dataset evidence through your organization's firefly koinon MCP endpoint. This desktop extension forwards remote tools, resources, and prompts. Access remains governed by your personal access token and server permissions. Configure your operator's HTTPS MCP URL before connecting. This is an unreleased preview integration.",
+  "author": {
+    "name": "Firefly Software Foundation",
+    "url": "https://github.com/fireflyframework"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fireflyframework/firefly-koinon"
+  },
+  "homepage": "https://fireflyframework.github.io/firefly-koinon/",
+  "documentation": "https://fireflyframework.github.io/firefly-koinon/integrations/desktop/",
+  "support": "https://github.com/fireflyframework/firefly-koinon/issues",
+  "privacy_policies": [
+    "https://fireflyframework.github.io/firefly-koinon/integrations/privacy/"
+  ],
+  "license": "Apache-2.0",
+  "icon": "assets/icon.png",
+  "icons": [
+    {
+      "src": "assets/icon.png",
+      "size": "512x512",
+      "theme": "light"
+    },
+    {
+      "src": "assets/icon-dark.png",
+      "size": "512x512",
+      "theme": "dark"
+    }
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.cjs",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/server/index.cjs"
+      ],
+      "env": {
+        "KOINON_MCP_URL": "${user_config.server_url}",
+        "KOINON_TOKEN": "${user_config.token}"
+      }
+    }
+  },
+  "tools_generated": true,
+  "prompts_generated": true,
+  "keywords": [
+    "knowledge",
+    "documents",
+    "datasets",
+    "evidence",
+    "firefly koinon"
+  ],
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
+    "runtimes": {
+      "node": ">=22"
+    }
+  },
+  "user_config": {
+    "server_url": {
+      "type": "string",
+      "title": "MCP endpoint",
+      "description": "Your operator's full HTTPS MCP URL, for example https://knowledge.example.com/mcp. No credentials or query parameters.",
+      "required": true
+    },
+    "token": {
+      "type": "string",
+      "title": "Personal access token",
+      "description": "A koinon personal access token issued for your authorized scope. Sent only to the configured MCP endpoint.",
+      "sensitive": true,
+      "required": true
+    }
+  }
+}

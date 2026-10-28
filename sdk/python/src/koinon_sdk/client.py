@@ -20,6 +20,7 @@ from koinon_sdk.attachments import (
     AttachmentView,
     PrivateChunkPage,
 )
+from koinon_sdk.authorized_applications import AuthorizedApplication
 from koinon_sdk.connection_filters import (
     AttachmentChunkFilter,
     AttachmentFilter,
@@ -34,6 +35,7 @@ from koinon_sdk.connection_filters import (
 from koinon_sdk.contracts import (
     AgentFilter,
     AuditFilter,
+    AuthorizedApplicationFilter,
     BinaryDownload,
     CatalogFilter,
     ContentUpdate,
@@ -1163,6 +1165,21 @@ class KoinonClient:
         return Page[Person].model_validate(
             await self._request("GET", self._tenant(tenant_id) + "/people", params=filters)
         )
+
+    async def authorized_applications(
+        self, **filters: Unpack[AuthorizedApplicationFilter]
+    ) -> Page[AuthorizedApplication]:
+        return Page[AuthorizedApplication].model_validate(
+            await self._request("GET", "authorized-applications", params=filters)
+        )
+
+    async def authorized_application(self, application_id: str) -> AuthorizedApplication:
+        return AuthorizedApplication.model_validate(
+            await self._request("GET", "authorized-applications/" + quote(application_id, safe=""))
+        )
+
+    async def revoke_authorized_application(self, application_id: str) -> None:
+        await self._request("DELETE", "authorized-applications/" + quote(application_id, safe=""))
 
     async def tokens(self, **filters: Unpack[StatusFilter]) -> Page[PersonalToken]:
         return Page[PersonalToken].model_validate(await self._request("GET", "tokens", params=filters))

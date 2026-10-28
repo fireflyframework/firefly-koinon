@@ -80,14 +80,22 @@ class AttachmentCapabilityService:
         settings.validate()
         try:
             self.storage.configured()
+            local = self.storage.profile.backend == "local"
+            configured = local or find_spec("boto3") is not None
             storage = {
-                "available": True,
-                "reason": "Private storage is configured and its directory permissions were checked",
+                "configured": configured,
+                "available": True if local else None if configured else False,
+                "reason": "Private storage is configured and its directory permissions were checked"
+                if local
+                else "Private S3 storage is configured; provider access has not been verified"
+                if configured
+                else "Install the declared private S3 storage SDK dependency",
             }
         except (ServiceUnavailableException, OSError):
             storage = {
+                "configured": False,
                 "available": False,
-                "reason": "Configure a writable dedicated private storage directory with 0700 permissions",
+                "reason": "Configure private storage and verify its declared backend requirements",
             }
         source = self.data.registry.primary
         database = {

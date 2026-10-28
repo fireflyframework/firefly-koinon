@@ -21,8 +21,11 @@ def render(contract: dict) -> str:
         "",
         (
             f"This development contract contains {contract['canonical_operation_count']} operations. "
-            "Use a bearer token with the required current membership, permissions and resource scope. "
-            "Personal tokens also enforce their saved expiry and bounds."
+            "Resource operations require the caller's current membership, permissions and resource scope. "
+            "Bearer credentials also enforce their saved expiry and bounds. "
+            "Authorized-application management requires a verified interactive user session; "
+            "personal tokens and application credentials cannot manage authorizations. "
+            "[Read about authorized applications](../guides/authorized-applications.md)."
         ),
         "",
         (

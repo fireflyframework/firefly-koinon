@@ -47,19 +47,25 @@ nav:
   - Configure:
       - Administration: guides/administration.md
       - Profiles and API tokens: operations/profiles-and-tokens.md
+      - Authorized applications: guides/authorized-applications.md
   - Integrate:
       - Headless API and SDK: guides/headless.md
       - API and SDK reference: reference/sdk-api.md
       - Embedded components: guides/embedding.md
+      - Desktop MCP extension: integrations/desktop.md
+      - Integration data flow and privacy: integrations/privacy.md
   - Understand:
       - Architecture: concepts/architecture.md
       - Backend structure: concepts/backend-structure.md
+      - MCP architecture: architecture/mcp.md
       - Visual identity: concepts/visual-identity.md
   - Operate:
       - Overview: operations/README.md
       - Local environment: operations/local-deployment.md
       - Production: operations/production.md
       - Configuration and observations: operations/configuration.md
+      - File persistence and storage: operations/storage.md
+      - MCP authentication: operations/mcp-authentication.md
       - Migrations: operations/migrations.md
       - Backup and restore: operations/backup-restore.md
       - Qualification: operations/qualification.md

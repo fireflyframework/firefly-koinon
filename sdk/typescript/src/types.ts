@@ -97,6 +97,7 @@ export interface DocumentChunks {document_id:string;source_id:string;native_sour
 
 export interface PageFilter {q?:string;page?:number;page_size?:number;sort?:string;order?:'asc'|'desc';[key:string]:string|number|boolean|undefined}
 export interface StatusFilter extends PageFilter {status?:string}
+export interface AuthorizedApplicationFilter {q?:string;status?:'all'|'active'|'expired'|'revoked';page?:number;page_size?:number;sort?:'connected_at'|'name'|'expires_at'|'last_used_at';order?:'asc'|'desc'}
 export interface MemberUpdate {role?:Membership['role'];active?:boolean}
 export interface Person {profile_id?:string|null;subject:string;display_name:string;avatar_url:string|null;avatar_version:string|null}
 export interface ContentPrecondition {filename?:string;expected_sha256:string;acknowledge_chunk_invalidation?:boolean;expected_source_version_id?:string|null;expected_extraction_id?:string|null}

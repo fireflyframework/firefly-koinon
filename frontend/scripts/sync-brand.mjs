@@ -44,7 +44,7 @@ const variables = [
 ];
 const { writeFile } = await import('node:fs/promises');
 await writeFile(
-  new URL('../projects/koinon-angular/src/lib/_brand-tokens.generated.scss', import.meta.url),
+  new URL('../projects/koinon-angular/workbench/src/lib/_brand-tokens.generated.scss', import.meta.url),
   `// Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0\n// Generated from canonical brand/tokens.json; do not edit.\n@mixin tokens {\n${variables.join('\n')}\n}\n`,
 );
 

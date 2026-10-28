@@ -149,6 +149,7 @@ add(
     },
 )
 add("ProfileController", "PeopleApi", {"people": "list", "person_avatar": "avatar"})
+add("AuthorizedApplicationController", "AuthorizedApplicationsApi", {"list": "list", "detail": "get", "revoke": "revoke"})
 add(
     "PersonalTokenController",
     "TokensApi",
@@ -177,6 +178,7 @@ def upper(s):
 
 
 filters = {
+    "AuthorizedApplicationController.list": "AuthorizedApplicationFilter",
     "TableCoordinateController.manifest": "TableCoordinateFilter",
     "TableCoordinateController.rows": "TableCoordinatePageFilter",
     "TableCoordinateController.columns": "TableCoordinatePageFilter",

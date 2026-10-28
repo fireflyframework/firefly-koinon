@@ -4,7 +4,9 @@ import { ACCESS_SPANISH } from './access-spanish';
 import { KNOWLEDGE_SPANISH } from './knowledge-spanish';
 import { LINEAGE_SPANISH } from './lineage-spanish';
 import { AUDIT_LINEAGE_SPANISH } from './audit-lineage-spanish';
+import { APPLICATIONS_SPANISH } from './applications-spanish';
 export const SPANISH: Readonly<Record<string, string>> = {
+  'Panel unavailable': 'Panel no disponible',
   'Type & contents': 'Tipo y contenido',
   'Contents': 'Contenido',
   'Tags': 'Etiquetas',
@@ -628,4 +630,5 @@ export const SPANISH: Readonly<Record<string, string>> = {
   ...ARTIFACTS_SPANISH,
   ...LINEAGE_SPANISH,
   ...AUDIT_LINEAGE_SPANISH,
+  ...APPLICATIONS_SPANISH,
 };

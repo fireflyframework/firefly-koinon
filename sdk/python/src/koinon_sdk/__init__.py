@@ -31,6 +31,7 @@ from koinon_sdk.attachments import (
     ReplaceDocument,
     ReplaceTable,
 )
+from koinon_sdk.authorized_applications import AuthorizedApplication
 from koinon_sdk.client import (
     ApiError,
     KoinonClient,
@@ -49,6 +50,7 @@ from koinon_sdk.connection_filters import (
 from koinon_sdk.contracts import (
     AgentFilter,
     AuditFilter,
+    AuthorizedApplicationFilter,
     BinaryDownload,
     CatalogCreate,
     CatalogFilter,
@@ -293,6 +295,8 @@ from koinon_sdk.streaming import (
 )
 
 __all__ = [
+    "AuthorizedApplication",
+    "AuthorizedApplicationFilter",
     "DatasetFileAppendResult",
     "ProvenanceArtifact",
     "ProvenanceTransformStep",

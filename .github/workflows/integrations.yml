@@ -1,0 +1,47 @@
+# Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
+name: Integrations
+
+on:
+  push:
+    branches: [main]
+    paths: ["integrations/**", "brand/**", "LICENSE", "NOTICE", ".github/workflows/integrations.yml"]
+  pull_request:
+    paths: ["integrations/**", "brand/**", "LICENSE", "NOTICE", ".github/workflows/integrations.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integrations-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  desktop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: integrations/mcp-desktop/package-lock.json
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - name: Build and qualify the desktop extension and skills
+        working-directory: integrations/mcp-desktop
+        run: |
+          npm ci --ignore-scripts
+          npm run package
+      - name: Check packaged checksums
+        working-directory: integrations/mcp-desktop/dist
+        run: sha256sum --check SHA256SUMS

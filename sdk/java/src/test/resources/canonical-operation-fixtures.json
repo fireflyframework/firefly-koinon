@@ -2958,6 +2958,141 @@
     "idempotency": false
   },
   {
+    "operation": "AuthorizedApplicationController.list",
+    "group": "AuthorizedApplicationsApi",
+    "method": "list",
+    "http": "GET",
+    "path": "/api/v1/authorized-applications",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {
+      "q": "q value",
+      "status": "status value",
+      "page": 2,
+      "page_size": 2,
+      "sort": "sort value",
+      "order": "order value"
+    },
+    "filter": "AuthorizedApplicationFilter",
+    "request": null,
+    "response": "Page[AuthorizedApplication]",
+    "body": {
+      "summaries": {
+        "example": {
+          "child_count": 1,
+          "document_count": 1,
+          "dataset_count": 1,
+          "table_count": 1,
+          "row_count": 1,
+          "column_count": 1,
+          "page_count": 1,
+          "size_bytes": 1,
+          "format": "format-value",
+          "language": "language-value",
+          "tags": [
+            "tags-value"
+          ]
+        }
+      },
+      "page": 1,
+      "size": 1,
+      "page_size": 1,
+      "pages": 1,
+      "next_cursor": "next_cursor-value",
+      "actors": {
+        "example": {
+          "subject": "subject-value",
+          "display_name": "display_name-value",
+          "avatar_data_url": "avatar_data_url-value",
+          "avatar_version": "avatar_version-value"
+        }
+      },
+      "items": [
+        {
+          "id": "id-value",
+          "client_id": "client_id-value",
+          "name": "name-value",
+          "resource": "resource-value",
+          "tenant_id": "tenant_id-value",
+          "tenant_name": "tenant_name-value",
+          "workspace_id": "workspace_id-value",
+          "workspace_name": "workspace_name-value",
+          "scopes": [
+            "scopes-value"
+          ],
+          "status": "active",
+          "connected_at": "2026-10-27T12:34:56Z",
+          "expires_at": "2026-10-27T12:34:56Z",
+          "last_used_at": "2026-10-27T12:34:56Z",
+          "revoked_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "total": 1
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "AuthorizedApplicationController.detail",
+    "group": "AuthorizedApplicationsApi",
+    "method": "get",
+    "http": "GET",
+    "path": "/api/v1/authorized-applications/application_id value",
+    "ids": {
+      "application_id": "application_id value",
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "AuthorizedApplication",
+    "body": {
+      "id": "id-value",
+      "client_id": "client_id-value",
+      "name": "name-value",
+      "resource": "resource-value",
+      "tenant_id": "tenant_id-value",
+      "tenant_name": "tenant_name-value",
+      "workspace_id": "workspace_id-value",
+      "workspace_name": "workspace_name-value",
+      "scopes": [
+        "scopes-value"
+      ],
+      "status": "active",
+      "connected_at": "2026-10-27T12:34:56Z",
+      "expires_at": "2026-10-27T12:34:56Z",
+      "last_used_at": "2026-10-27T12:34:56Z",
+      "revoked_at": "2026-10-27T12:34:56Z"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "AuthorizedApplicationController.revoke",
+    "group": "AuthorizedApplicationsApi",
+    "method": "revoke",
+    "http": "DELETE",
+    "path": "/api/v1/authorized-applications/application_id value",
+    "ids": {
+      "application_id": "application_id value",
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "void",
+    "body": null,
+    "status": 204,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
     "operation": "CorporateIdentityController.list",
     "group": "IdentityApi",
     "method": "list",
@@ -3877,15 +4012,18 @@
     "body": {
       "storage": {
         "available": false,
-        "reason": "reason-value"
+        "reason": "reason-value",
+        "configured": false
       },
       "database": {
         "available": false,
-        "reason": "reason-value"
+        "reason": "reason-value",
+        "configured": false
       },
       "extraction": {
         "available": false,
-        "reason": "reason-value"
+        "reason": "reason-value",
+        "configured": false
       },
       "limits": {
         "max_file_bytes": 1,
@@ -3907,7 +4045,8 @@
           ],
           "extraction": {
             "available": false,
-            "reason": "reason-value"
+            "reason": "reason-value",
+            "configured": false
           }
         }
       ],
@@ -7543,15 +7682,18 @@
       "attachments": {
         "storage": {
           "available": false,
-          "reason": "reason-value"
+          "reason": "reason-value",
+          "configured": false
         },
         "database": {
           "available": false,
-          "reason": "reason-value"
+          "reason": "reason-value",
+          "configured": false
         },
         "extraction": {
           "available": false,
-          "reason": "reason-value"
+          "reason": "reason-value",
+          "configured": false
         },
         "limits": {
           "max_file_bytes": 1,
@@ -7573,7 +7715,8 @@
             ],
             "extraction": {
               "available": false,
-              "reason": "reason-value"
+              "reason": "reason-value",
+              "configured": false
             }
           }
         ],
