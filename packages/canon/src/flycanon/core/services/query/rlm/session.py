@@ -321,7 +321,15 @@ def _monty_system(system, *, documents):
             "  full document text. `docs.pages(fid)` -> list of page strings.\n"
             "  `docs.npages(fid)` -> page count.", _MONTY_DOCS,
         )
-    return system + "\nExecution uses Monty's Python subset. Native `re` and the supplied helpers are ready."
+    return (
+        system + "\nExecution uses Monty's Python subset. Native `re` and the supplied helpers are ready."
+        "\n\nWhen extraction depends on wording or layout you have not observed, first print a bounded "
+        "representative excerpt and inspect the result before choosing a pattern. Validate matches and "
+        "extracted value types before calculating. A pattern miss or parsing failure is not evidence of "
+        "absence: inspect relevant context and revise within the remaining iteration budget. Direct literal "
+        "searches and checked read/compute/final in one action remain valid; do not add verification turns "
+        "for already validated values."
+    )
 
 
 class RLMSession:

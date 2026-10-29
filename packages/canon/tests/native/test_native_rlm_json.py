@@ -809,3 +809,73 @@ async def test_blank_final_correction_reauthorizes_before_next_model_dispatch(fa
         assert raised.value.code == "SOURCE8_REVOKED"
         assert client.token_totals()["input_tokens"] == 7 and client.token_totals()["output_tokens"] == 3
     assert len(requests) == 1
+
+
+@pytest.mark.parametrize("mode", ["native", "default"])
+@pytest.mark.parametrize("nested", [False, True])
+async def test_secure_extraction_workflow_reaches_actual_transport_without_extra_turns(factory, mode, nested):
+    requests = []
+
+    def respond(messages, info):
+        requests.append(messages)
+        system = str(messages[0].parts[0].content)
+        assert "print a bounded representative excerpt" in system
+        assert "Validate matches and extracted value types" in system
+        assert "A pattern miss or parsing failure is not evidence of absence" in system
+        assert "remaining iteration budget" in system
+        assert "Direct literal searches and checked read/compute/final in one action remain valid" in system
+        assert "do not add verification turns for already validated values" in system
+        code = "final(str(len(text)))" if nested else (
+            "value = docs.get('source-id'); final(str(len(value)), filings=['source-id'], pages=[0])")
+        part = TextPart(json.dumps({"code": code})) if mode == "native" else ToolCallPart(
+            "python", {"code": code}, "actual-single-action")
+        return ModelResponse(parts=[part], usage=RequestUsage(input_tokens=7, output_tokens=3))
+
+    model = FunctionModel(respond, profile={"supports_json_schema_output": True})
+    with bound(factory, model, mode) as client:
+        session = RLMSession(client, depth=1 if nested else 0, max_iters=1, sub_budget=0)
+        observer = Observer()
+        result = await run(session, observer) if nested else await run_documents(session, observer, DocumentFixture())
+        assert result[0] == str(len("42" if nested else "source scalar"))
+        assert client.token_totals()["input_tokens"] == 7 and client.token_totals()["output_tokens"] == 3
+        assert len([event for event in observer.events if event[0] == "rlm.root"]) == 1
+    assert len(requests) == 1 and session.turns == 1 and session.sub_calls == 0
+
+
+@pytest.mark.parametrize("mode", ["native", "default"])
+async def test_extraction_workflow_actual_sdk_wire_matches_recorded_prompt(factory, monkeypatch, mode):
+    import ast
+
+    wires = []
+
+    def respond(request):
+        payload = json.loads(request.content)
+        wires.append(payload)
+        code = "value = docs.get('source-id'); final(str(len(value)), filings=['source-id'], pages=[0])"
+        message = {"role": "assistant", "content": json.dumps({"code": code})} if mode == "native" else {
+            "role": "assistant", "content": None, "tool_calls": [{"id": "actual-workflow-call", "type": "function",
+                "function": {"name": "python", "arguments": json.dumps({"code": code})}}]}
+        return httpx2.Response(200, json={"id": "offline-workflow", "object": "chat.completion", "created": 0,
+            "model": "qwen2.5:7b", "choices": [{"index": 0, "message": message,
+                "finish_reason": "stop" if mode == "native" else "tool_calls"}],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 2, "total_tokens": 12}})
+
+    monkeypatch.setattr("pydantic_ai.providers._openai_compatible.create_async_httpx2_client",
+        lambda: httpx2.AsyncClient(transport=httpx2.MockTransport(respond), trust_env=False))
+    selected = await ModelFactory().build(ModelSpec(provider="ollama", model="qwen2.5:7b",
+        base_url="http://127.0.0.1:11434/v1", credential=Credential.none()))
+    try:
+        with bound(factory, selected, mode) as client:
+            observer = Observer()
+            result = await run_documents(RLMSession(client, max_iters=1, sub_budget=0), observer, DocumentFixture())
+            assert result[0] == str(len("source scalar"))
+        assert len(wires) == 1 and len(observer.events) == 1
+        system = wires[0]["messages"][0]["content"]
+        assert system.count("When extraction depends on wording or layout") == 1
+        assert "print a bounded representative excerpt" in system and "remaining iteration budget" in system
+        if mode == "native":
+            assert wires[0]["messages"] == json.loads(observer.events[0][1])["messages"]
+        else:
+            assert system == ast.literal_eval(observer.events[0][1])[0]
+    finally:
+        await selected.client.close()

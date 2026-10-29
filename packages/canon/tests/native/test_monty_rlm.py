@@ -618,3 +618,18 @@ async def test_late_blank_final_rejection_preserves_feedback_without_another_tur
 async def test_explicit_standalone_legacy_blank_final_behavior_is_preserved(answer):
     result = RLMSession(Client([f"final({answer!r})"]), max_iters=1, sandbox_mode="inprocess").run_over_text("q", "text")
     assert result == (answer, [], False)
+
+
+@pytest.mark.parametrize("nested,expected_hash", [
+    (False, "fa28a1a0a6e16a1228c7c9459e3873bc0c5a7bc9716b7a1a703432ec1a68eaab"),
+    (True, "da44ff4106743d5956c13cf7d0a4ac62a515551b5df1fabec2d1988963993a72"),
+])
+def test_extraction_workflow_does_not_change_explicit_legacy_prompts(nested, expected_hash):
+    from hashlib import sha256
+
+    client = Client(["final('unchanged')"])
+    session = RLMSession(client, max_iters=1, sub_budget=0, sandbox_mode="inprocess")
+    result = session.run_over_text("q", "text") if nested else session.run("q", Documents())
+    assert result == ("unchanged", [], False) and client.calls == 1
+    assert sha256(client.systems[0].encode()).hexdigest() == expected_hash
+    assert "When extraction depends on wording or layout" not in client.systems[0]

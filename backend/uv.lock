@@ -1206,6 +1206,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28" },
     { name = "jinja2", specifier = ">=3.1" },
+    { name = "numpy", marker = "extra == 'dev'", specifier = ">=2.0" },
     { name = "openpyxl", marker = "extra == 'file-readers'", specifier = ">=3.1" },
     { name = "pgvector", specifier = ">=0.3.6" },
     { name = "presidio-analyzer", marker = "extra == 'presidio'", specifier = ">=2.2" },
