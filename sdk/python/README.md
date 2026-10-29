@@ -12,19 +12,23 @@ async with KoinonClient("https://knowledge.example.org/api/v1", token_provider=m
 
 Use the bearer API prefix, not the browser BFF. Native pyfly applications can provide the client through a configuration bean and inject it into services. Close the client during application shutdown. HTTP errors retain server problem details; writes are not automatically retried. Build and test the installed wheel before consumer rollout.
 
-Assistant setup and streaming use the same standalone client:
+Chat setup and streaming use the same standalone client:
 
 ```python
 from koinon_sdk import KnowledgeScope, RunInput
 
 async with KoinonClient("https://knowledge.example.org/api/v1", token_provider=my_token) as knowledge:
-    agents = await knowledge.agents("north")
-    thread = await knowledge.create_thread("north", scope=KnowledgeScope(workspace_id="workspace-id"))
+    settings = await knowledge.organization_chat_settings("north", workspace_id="workspace-id")
+    if not settings.can_run or settings.default_agent_id is None:
+        raise RuntimeError("Configure organization chat before submitting a question")
+    scope = KnowledgeScope(workspace_id="workspace-id")
+    thread = await knowledge.create_thread("north", scope=scope)
     run = await knowledge.submit_run(
         "north",
         thread.id,
         RunInput(
-            agent_id=agents.items[0].id,
+            agent_id=settings.default_agent_id,
+            scope=scope,
             message="Summarize this workspace",
             client_request_id="caller-generated-stable-request-id",
         ),
@@ -34,7 +38,7 @@ async with KoinonClient("https://knowledge.example.org/api/v1", token_provider=m
             print(event.id, event.type, event.data.text)
 ```
 
-Check agent readiness and choose an authorized agent before submission. Provider methods are `configuration`, `create_provider`, `update_provider`, and `validate_provider`; provider inputs hide secrets in their representation and provider responses never include them. Agent methods are `agents`, `create_agent`, `update_agent`, and `validate_agent`. Chat methods also include `threads`, `messages`, `cancel_run`, `retry_run`, and `result` for authorized evidence.
+Use the saved organization default for standard chat. Explicit integrations may choose another authorized agent. Provider methods are `configuration`, `create_provider`, `update_provider`, and `validate_provider`; provider inputs hide secrets in their representation and provider responses never include them. Agent methods are `agents`, `create_agent`, `update_agent`, and `validate_agent`. Chat methods also include `threads`, `messages`, `cancel_run`, `retry_run`, and `result` for authorized evidence.
 
 Keep the last fully processed event ID and pass it as `last_event_id` to resume. Event types include `message_reset`; clear the prior rendered message when that event starts an explicit retried run. The SDK does not reconnect streams or retry writes automatically. Reusing the caller's `client_request_id` with the same payload lets the server identify an existing submission. Explicit `retry_run` starts the server's reviewed retry behavior; closing a stream does not cancel the server job. Use `cancel_run` for cancellation.
 
@@ -52,7 +56,7 @@ Use an interactive identity to call `token_scopes(tenant_id, workspace_id=...)`,
 
 Document readers use `document_chunks(tenant_id, document_id, offset=0, limit=50, page=None, section=None, q=None)` and `document_original(tenant_id, document_id)`. Chunk section paths are nullable strings. Original downloads return authenticated bytes and do not write local files or follow redirects. Each call obtains a fresh caller token. `ApiError.transaction_id` (also available as `request_id`) preserves native problem-details `transactionId` or legacy error references for operator correlation.
 
-The canonical operation index and standalone wire schemas are in `sdk/contract/operations.json` and `schemas.json` at the repository root. The current development contract has 137 canonical versioned operations with named helpers. Qualified retained glossary operations are listed separately from that count. Public operator probes and browser-only `/auth/me` are outside the headless versioned API.
+The canonical operation index and standalone wire schemas are in `sdk/contract/operations.json` and `schemas.json` at the repository root. The current development contract has 142 canonical versioned operations with named helpers. Qualified retained glossary operations are listed separately from that count. Public operator probes and browser-only `/auth/me` are outside the headless versioned API.
 
 `append_dataset_file(tenant, dataset, filename="more.csv", content=file_bytes, idempotency_key="stable-request")` appends one file and its parsed tables to an existing dataset and returns `DatasetFileAppendResult`. It preserves previous snapshots and returns canonical file-version/table identities. Pending or failed intake blocks dataset query/schema until reconciliation; writes are never automatically replayed. Native section commits are independent, so this is not an atomic bulk upload or a recovery API. An identical request with the same key returns its retained receipt after current authorization, without repeating native work; a changed payload conflicts. PostgreSQL concurrency and configured-provider acceptance are separate qualification gates.
 

@@ -54,7 +54,8 @@
         }
       </nav>
       <div class="header-organization">
-        <div class="organization">
+        <label class="organization">
+          <ffk-icon class="organization-mark" name="users" />
           <span class="eyebrow">{{ 'Organization' | ffkText }}</span
           ><select
             [attr.aria-label]="'Organization' | ffkText"
@@ -66,7 +67,7 @@
               <option [value]="org.id" [selected]="org.id === tenantId">{{ org.name }}</option>
             }</select
           ><ffk-icon name="down" />
-        </div>
+        </label>
       </div>
     }
     @if (!personalAccount && destination === 'library') {
@@ -185,7 +186,8 @@
           <ffk-icon name="close" />
         </button>
       </div>
-      <div class="organization">
+      <label class="organization">
+        <ffk-icon class="organization-mark" name="users" />
         <span class="eyebrow">{{ 'Organization' | ffkText }}</span
         ><select
           [attr.aria-label]="'Organization' | ffkText"
@@ -197,7 +199,7 @@
             <option [value]="org.id" [selected]="org.id === tenantId">{{ org.name }}</option>
           }</select
         ><ffk-icon name="down" />
-      </div>
+      </label>
       <nav [attr.aria-label]="'Main navigation' | ffkText">
         @for (item of destinations; track item.id) {
           <button

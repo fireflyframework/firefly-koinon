@@ -78,7 +78,7 @@ Resource groups provide concrete typed methods and asynchronous `CompletableFutu
 
 ## Contract and helpers
 
-The [API and SDK reference](../reference/sdk-api.md) maps the same 61 canonical operations to all three clients. The shared schema contains 107 definitions, including requests, responses, pages and binary descriptors. Retained routes outside that contract require separate migration qualification.
+The [API and SDK reference](../reference/sdk-api.md) maps the same 142 canonical operations to all three clients. The shared schema contains 258 definitions, including requests, responses, pages and binary descriptors. Retained routes outside that contract require separate migration qualification.
 
 Each SDK includes server-page iteration and exact-number helpers. Page iteration is lazy, preserves opaque cursors and does not slice local arrays. Decimals and integers outside JavaScript's safe range travel as exact strings. Convert a value only when its column or field is known to be numeric; preserve identifiers, date-only values and unknown text.
 

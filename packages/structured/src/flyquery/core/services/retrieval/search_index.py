@@ -435,7 +435,7 @@ class SearchIndex:
                                ELSE 0.5
                            END AS score
                     FROM flyquery_examples
-                    WHERE workspace_id = :workspace_id AND quality IN ('APPROVED', 'PROPOSED') {ds_filter}
+                    WHERE workspace_id = :workspace_id AND quality = 'APPROVED' {ds_filter}
                     ORDER BY score DESC
                     LIMIT :lim
                     """
@@ -449,7 +449,7 @@ class SearchIndex:
                     SELECT id, question, generated_sql,
                            0.5 AS score
                     FROM flyquery_examples
-                    WHERE workspace_id = :workspace_id AND quality IN ('APPROVED', 'PROPOSED') {ds_filter}
+                    WHERE workspace_id = :workspace_id AND quality = 'APPROVED' {ds_filter}
                     ORDER BY created_at DESC
                     LIMIT :lim
                     """

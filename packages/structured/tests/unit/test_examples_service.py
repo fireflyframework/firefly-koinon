@@ -27,10 +27,12 @@ from flyquery.interfaces.examples import ExampleCreate
 class FakeRepo:
     def __init__(self) -> None:
         self.rows: list[dict] = []
+        self.versions: dict[uuid.UUID, int] = {}
 
     async def create(self, **fields: object) -> dict:
         row = {**fields, "id": uuid.uuid4()}
         self.rows.append(row)
+        self.versions[row["id"]] = 0
         return row
 
     async def list(
@@ -55,10 +57,34 @@ class FakeRepo:
                 return r
         return None
 
-    async def update_quality(self, example_id: uuid.UUID, quality: str) -> dict:
+    async def _review_snapshot(self, example_id: uuid.UUID):
+        row = await self.get(example_id)
+        if row is None:
+            raise KeyError("Example not found")
+        return dict(row), str(self.versions[example_id])
+
+    async def update_quality(
+        self,
+        example_id: uuid.UUID,
+        quality: str,
+        *,
+        embedding=None,
+        expected_source=None,
+        expected_quality=None,
+        expected_review_version=None,
+    ) -> dict:
         for r in self.rows:
             if r.get("id") == example_id:
+                if expected_source is not None:
+                    assert expected_source == (r["question"], r["generated_sql"])
+                if expected_quality is not None:
+                    assert expected_quality == r["quality"]
+                if expected_review_version is not None:
+                    assert expected_review_version == str(self.versions[example_id])
                 r["quality"] = quality
+                self.versions[example_id] += 1
+                if embedding is not None:
+                    r["embedding"] = embedding
                 return r
         raise KeyError(f"example {example_id} not found")
 
