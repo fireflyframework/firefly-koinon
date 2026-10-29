@@ -5,10 +5,11 @@
 import hashlib
 import json
 import os
-from typing import Annotated
+from typing import Annotated, Literal
 from urllib.parse import urlsplit
 
 from pydantic import Field, field_validator
+from pydantic_ai.models import Model
 from pyfly.agentic.models import Credential, ModelFactory, ModelOptions, ModelSpec, model_settings_for
 from pyfly.agentic.models.factory import DEFAULT_CLASS_BY_PROVIDER
 from pyfly.container import component
@@ -25,6 +26,7 @@ DEFAULT_URLS = {
 
 
 class ModelParameters(ModelOptions):
+    output_mode: Literal["default", "native"] | None = None
     max_tokens: int | None = Field(
         default=4096, ge=64, le=16384, strict=True, json_schema_extra={"type": "integer"}
     )
@@ -75,6 +77,27 @@ def normalized_options(api: str, values: dict | None) -> ModelParameters:
     return parameters
 
 
+def output_mode_for(kind: str, values: dict | None) -> Literal["default", "native"]:
+    selected = ModelParameters.model_validate(values or {}).output_mode
+    return selected or ("native" if kind == "ollama" else "default")
+
+
+def admit_output_mode(model: Model, mode: Literal["default", "native"], *, rlm: bool = False):
+    profile = model.profile
+    protocol = "native" if mode == "native" else (
+        "tool" if rlm else profile.get("default_structured_output_mode", "tool")
+    )
+    requirements = {
+        "native": ("supports_json_schema_output", False),
+        "tool": ("supports_tools", True),
+        "prompted": ("supports_text_output", True),
+    }
+    requirement = requirements.get(protocol)
+    if mode not in {"default", "native"} or requirement is None or profile.get(*requirement) is not True:
+        raise ValueError("The selected output mode is unsupported by the resolved model profile")
+    return protocol
+
+
 def options_fingerprint(api: str, values: dict | None) -> str:
     encoded = json.dumps(
         normalized_options(api, values).model_dump(mode="json", exclude_none=True), sort_keys=True
@@ -98,7 +121,7 @@ def supported_option_fields(provider, model_id: str) -> list[str]:
         "store_responses": False,
         "output_verbosity": "low",
     }
-    supported = []
+    supported = ["output_mode"]
     for name, value in examples.items():
         try:
             spec = ModelSpec(
@@ -233,13 +256,27 @@ class ConnectionResolver:
             base_url=self.address(provider.kind, provider.base_url),
             credential=Credential.none(),
             model_class=CLASSES[api],
-            options=parameters,
+            options=ModelOptions.model_validate(parameters.model_dump(exclude={"output_mode"})),
         )
         self.settings_for(spec)
         return spec
 
     def settings_for(self, spec: ModelSpec) -> dict:
         return self.models.settings_for(spec)
+
+    def output_mode(self, provider, model_id, options, model, *, rlm=False):
+        mode = output_mode_for(provider.kind, options)
+        protocol = admit_output_mode(model, mode, rlm=rlm)
+        option_key = options_fingerprint(api_for(provider.kind, provider.api), options)
+        capability = next(
+            (row for row in capability_state(provider, option_key) if row["model_id"] == model_id), None
+        )
+        if capability and (
+            capability["chat"]["supported"] is False
+            or (protocol == "tool" and capability["tools"]["supported"] is False)
+        ):
+            raise ValueError("The selected output mode conflicts with current model capabilities")
+        return mode
 
     def supported_providers(self) -> list[dict]:
         aliases = {"openai-chat": ("openai", "chat"), "openai-responses": ("openai", "responses")}

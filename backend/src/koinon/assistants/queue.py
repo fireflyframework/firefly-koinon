@@ -82,7 +82,10 @@ class AssistantQueue:
         return run
 
     @transactional
-    async def begin_generation(self, run_id, worker_id, *, model_id, model_class, api):
+    async def begin_generation(
+        self, run_id, worker_id, *, model_id, model_class, api,
+        binding_output_mode=None, model_options_sha256=None,
+    ):
         from koinon.assistants.audit_dtos import GenerationReceipt
         from koinon.assistants.entities import ToolResult
         from koinon.assistants.lifecycle import identifier
@@ -103,6 +106,8 @@ class AssistantQueue:
             model_id=model_id,
             model_class=model_class,
             api=api,
+            binding_output_mode=binding_output_mode,
+            model_options_sha256=model_options_sha256,
             started_at=timestamp(),
         )
         await self.assistants.results.save(

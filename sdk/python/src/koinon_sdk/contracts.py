@@ -222,7 +222,7 @@ class KnowledgeConnectionInput(InputModel):
     mode: Literal["provider", "current_agent"] = "provider"
     provider_id: str | None = None
     model_id: str | None = None
-    model_options: ModelParameters = Field(default_factory=ModelParameters)
+    model_options: ModelParameters | None = None
     dimensions: int | None = None
     storage_dimensions: int | None = None
     space_id: str | None = None

@@ -3,7 +3,7 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/assistants/audit_dtos.py
-SHA256: 39aabe770e0d4a75e38bc231e91bb484345672fbfb4b6ec6db29bd53846876d8
+SHA256: 9b4b24f6365bd128627fd8a5b382b28df0e3844c4022c8e0fa9f9ad8b232e373
 
 Server authorization and semantic validation remain authoritative.
 """
@@ -32,6 +32,8 @@ class GenerationReceipt(AuditValue):
     model_id: str = Field(min_length=1, max_length=255)
     model_class: str = Field(min_length=1, max_length=128)
     api: Literal["chat", "responses", "messages"]
+    binding_output_mode: Literal["default", "native"] | None = None
+    model_options_sha256: str | None = Field(default=None, pattern="^[a-f0-9]{64}$")
     started_at: AwareDatetime
     finished_at: AwareDatetime | None = None
     status: Literal["started", "completed", "failed"] = "started"

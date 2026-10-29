@@ -15,6 +15,7 @@ export interface ModelOptionField {
 }
 export type ModelOptionValues = Record<string, string | string[]>;
 const LABELS: Record<keyof ModelParameters, string> = {
+  output_mode: 'Structured output',
   max_tokens: 'Maximum output tokens',
   temperature: 'Temperature',
   top_p: 'Top P',

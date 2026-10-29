@@ -18,6 +18,8 @@ public record GenerationReceipt(
     @JsonProperty("model_id") String modelId,
     @JsonProperty("model_class") String modelClass,
     @JsonProperty("api") ModelApi api,
+    @JsonProperty("binding_output_mode") ModelOutputMode bindingOutputMode,
+    @JsonProperty("model_options_sha256") String modelOptionsSha256,
     @JsonProperty("started_at") Instant startedAt,
     @JsonProperty("finished_at") Instant finishedAt,
     @JsonProperty("status") GenerationReceiptStatus status

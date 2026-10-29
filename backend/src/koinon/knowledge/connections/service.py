@@ -10,7 +10,7 @@ from pyfly.container import service
 from pyfly.data.relational.sqlalchemy import LockMode, transactional
 from pyfly.kernel import ConflictException, DuplicateKeyException, InvalidRequestException
 
-from koinon.assistants.connections import ConnectionResolver, ModelParameters
+from koinon.assistants.connections import ConnectionResolver, ModelParameters, api_for, normalized_options
 from koinon.assistants.repositories import ProviderRepository
 from koinon.catalog.errors import AccessDenied
 from koinon.catalog.service import CatalogService
@@ -165,7 +165,9 @@ class KnowledgeConnectionService:
                 "This scoped role is already assigned", code="KNOWLEDGE_CONNECTION_EXISTS"
             )
         provider = None
-        options = data.model_options
+        options = data.model_options.model_dump(
+            mode="json", exclude_unset=True, exclude_none=True
+        ) if data.model_options else {}
         if data.mode == "current_agent":
             if (
                 role.embedding
@@ -212,7 +214,9 @@ class KnowledgeConnectionService:
                 try:
                     spec = self.compiler.spec(provider, data.model_id, options)
                     assert spec.options is not None
-                    options = spec.options.model_dump(mode="json", exclude_none=True)
+                    options = normalized_options(api_for(provider.kind, provider.api), options).model_dump(
+                        mode="json", exclude_none=True
+                    )
                 except ValueError as error:
                     raise InvalidRequestException(
                         "Choose native model options supported by this provider and API",

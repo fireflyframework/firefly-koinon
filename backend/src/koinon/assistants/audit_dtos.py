@@ -23,6 +23,8 @@ class GenerationReceipt(AuditValue):
     model_id: str = Field(min_length=1, max_length=255)
     model_class: str = Field(min_length=1, max_length=128)
     api: Literal["chat", "responses", "messages"]
+    binding_output_mode: Literal["default", "native"] | None = None
+    model_options_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     started_at: AwareDatetime
     finished_at: AwareDatetime | None = None
     status: Literal["started", "completed", "failed"] = "started"

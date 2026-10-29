@@ -3724,7 +3724,7 @@
       "request_schema": null,
       "response_schema": "KnowledgeRoles",
       "success_status": 200,
-      "source_sha256": "98f30985358551a7fa1b1a08e51670f535401a485b435dae3f028c45999c8dc8",
+      "source_sha256": "825f869535746214e5976934c729684a449eba1d4373bfd2da03c88b0699d404",
       "encoding": "application/json",
       "headers": []
     },
@@ -3757,7 +3757,7 @@
       "request_schema": null,
       "response_schema": "Page[KnowledgeConnection]",
       "success_status": 200,
-      "source_sha256": "98f30985358551a7fa1b1a08e51670f535401a485b435dae3f028c45999c8dc8",
+      "source_sha256": "825f869535746214e5976934c729684a449eba1d4373bfd2da03c88b0699d404",
       "encoding": "application/json",
       "headers": []
     },
@@ -3789,7 +3789,7 @@
       "request_schema": "KnowledgeConnectionInput",
       "response_schema": "KnowledgeConnection",
       "success_status": 201,
-      "source_sha256": "98f30985358551a7fa1b1a08e51670f535401a485b435dae3f028c45999c8dc8",
+      "source_sha256": "825f869535746214e5976934c729684a449eba1d4373bfd2da03c88b0699d404",
       "encoding": "application/json",
       "headers": []
     },
@@ -3827,7 +3827,7 @@
       "request_schema": "KnowledgeConnectionInput",
       "response_schema": "KnowledgeConnection",
       "success_status": 200,
-      "source_sha256": "98f30985358551a7fa1b1a08e51670f535401a485b435dae3f028c45999c8dc8",
+      "source_sha256": "825f869535746214e5976934c729684a449eba1d4373bfd2da03c88b0699d404",
       "encoding": "application/json",
       "headers": []
     },
@@ -3837,7 +3837,7 @@
       "category": "canonical",
       "operation": "KnowledgeConnectionsController.get",
       "source": "backend/src/koinon/knowledge/connections/controllers.py",
-      "line": 67,
+      "line": 70,
       "parameters": [
         {
           "name": "tenant_id",
@@ -3859,7 +3859,7 @@
       "request_schema": null,
       "response_schema": "KnowledgeConnection",
       "success_status": 200,
-      "source_sha256": "98f30985358551a7fa1b1a08e51670f535401a485b435dae3f028c45999c8dc8",
+      "source_sha256": "825f869535746214e5976934c729684a449eba1d4373bfd2da03c88b0699d404",
       "encoding": "application/json",
       "headers": []
     },
@@ -3869,7 +3869,7 @@
       "category": "canonical",
       "operation": "KnowledgeConnectionsController.delete",
       "source": "backend/src/koinon/knowledge/connections/controllers.py",
-      "line": 71,
+      "line": 74,
       "parameters": [
         {
           "name": "tenant_id",
@@ -3897,7 +3897,7 @@
       "request_schema": null,
       "response_schema": "Deleted",
       "success_status": 200,
-      "source_sha256": "98f30985358551a7fa1b1a08e51670f535401a485b435dae3f028c45999c8dc8",
+      "source_sha256": "825f869535746214e5976934c729684a449eba1d4373bfd2da03c88b0699d404",
       "encoding": "application/json",
       "headers": []
     },

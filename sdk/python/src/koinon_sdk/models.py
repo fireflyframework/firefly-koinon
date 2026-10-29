@@ -359,6 +359,7 @@ class SetupCheck(ResponseModel):
 
 class ModelParameters(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, allow_inf_nan=False)
+    output_mode: Literal["default", "native"] | None = None
     max_tokens: int = Field(default=4096, ge=64, le=16384, strict=True)
     temperature: float | None = Field(default=None, ge=0, le=2, strict=True)
     top_p: float | None = Field(default=None, ge=0, le=1, strict=True)

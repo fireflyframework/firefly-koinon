@@ -13,7 +13,7 @@ public record KnowledgeConnectionInput(
     @JsonProperty("mode") ConnectionMode mode,
     @JsonProperty("provider_id") JsonField<String> providerId,
     @JsonProperty("model_id") JsonField<String> modelId,
-    @JsonProperty("model_options") ModelParameters modelOptions,
+    @JsonProperty("model_options") JsonField<ModelParameters> modelOptions,
     @JsonProperty("dimensions") JsonField<Long> dimensions,
     @JsonProperty("storage_dimensions") JsonField<Long> storageDimensions,
     @JsonProperty("space_id") JsonField<String> spaceId,
@@ -34,7 +34,9 @@ public record KnowledgeConnectionInput(
     public KnowledgeConnectionInput withModelId(String value){return new KnowledgeConnectionInput(domain,role,workspaceId,mode,providerId,JsonField.of(value),modelOptions,dimensions,storageDimensions,spaceId,enabled,expectedRevision);}
     public KnowledgeConnectionInput clearModelId(){return new KnowledgeConnectionInput(domain,role,workspaceId,mode,providerId,JsonField.clear(),modelOptions,dimensions,storageDimensions,spaceId,enabled,expectedRevision);}
     public KnowledgeConnectionInput omitModelId(){return new KnowledgeConnectionInput(domain,role,workspaceId,mode,providerId,null,modelOptions,dimensions,storageDimensions,spaceId,enabled,expectedRevision);}
-    public KnowledgeConnectionInput withModelOptions(ModelParameters value){return new KnowledgeConnectionInput(domain,role,workspaceId,mode,providerId,modelId,value,dimensions,storageDimensions,spaceId,enabled,expectedRevision);}
+    public KnowledgeConnectionInput withModelOptions(ModelParameters value){return new KnowledgeConnectionInput(domain,role,workspaceId,mode,providerId,modelId,JsonField.of(value),dimensions,storageDimensions,spaceId,enabled,expectedRevision);}
+    public KnowledgeConnectionInput clearModelOptions(){return new KnowledgeConnectionInput(domain,role,workspaceId,mode,providerId,modelId,JsonField.clear(),dimensions,storageDimensions,spaceId,enabled,expectedRevision);}
+    public KnowledgeConnectionInput omitModelOptions(){return new KnowledgeConnectionInput(domain,role,workspaceId,mode,providerId,modelId,null,dimensions,storageDimensions,spaceId,enabled,expectedRevision);}
     public KnowledgeConnectionInput withDimensions(Long value){return new KnowledgeConnectionInput(domain,role,workspaceId,mode,providerId,modelId,modelOptions,JsonField.of(value),storageDimensions,spaceId,enabled,expectedRevision);}
     public KnowledgeConnectionInput clearDimensions(){return new KnowledgeConnectionInput(domain,role,workspaceId,mode,providerId,modelId,modelOptions,JsonField.clear(),storageDimensions,spaceId,enabled,expectedRevision);}
     public KnowledgeConnectionInput omitDimensions(){return new KnowledgeConnectionInput(domain,role,workspaceId,mode,providerId,modelId,modelOptions,null,storageDimensions,spaceId,enabled,expectedRevision);}

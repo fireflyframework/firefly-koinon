@@ -2,6 +2,7 @@
 import { describeModelOptions, parseModelOptions } from '../../../../settings/src/model-options';
 const schema = {
   properties: {
+    output_mode: { anyOf: [{ type: 'string', enum: ['default', 'native'] }, { type: 'null' }] },
     max_tokens: { type: 'integer', minimum: 64, maximum: 16384, default: 4096 },
     temperature: { anyOf: [{ type: 'number', minimum: 0, maximum: 2 }, { type: 'null' }] },
     reasoning: { anyOf: [{ type: 'string', enum: ['none', 'low', 'high'] }, { type: 'null' }] },
@@ -15,6 +16,14 @@ const schema = {
   },
 };
 describe('native model option form', () => {
+  it('keeps Auto omitted and roundtrips explicit output modes through the shared administrator form', () => {
+    const fields = describeModelOptions(schema, ['output_mode']);
+    expect(fields.map((field) => field.name)).toEqual(['output_mode']);
+    expect(parseModelOptions(fields, { output_mode: '' }).value).toEqual({});
+    for (const mode of ['default', 'native'])
+      expect(parseModelOptions(fields, { output_mode: mode }).value).toEqual({ output_mode: mode });
+    expect(parseModelOptions(fields, { output_mode: 'auto' }).errors['output_mode']).toBeTruthy();
+  });
   it('shows only schema fields supported by the selected model API', () => {
     expect(
       describeModelOptions(schema, ['max_tokens', 'reasoning']).map((field) => field.name),

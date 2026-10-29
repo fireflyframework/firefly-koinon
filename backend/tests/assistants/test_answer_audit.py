@@ -35,7 +35,8 @@ async def test_owner_audit_preserves_used_revision_when_current_source_changes(a
     capture = CapturedEvidence(data, (source,), True, (native_read,), (sql,))
     await queue.evidence(run.id, "proposal-worker", "search", data, [entry.id], capture=capture)
     await queue.begin_generation(
-        run.id, "proposal-worker", model_id="selected-model", model_class="OpenAIChatModel", api="chat"
+        run.id, "proposal-worker", model_id="selected-model", model_class="OpenAIChatModel", api="chat",
+        binding_output_mode="default", model_options_sha256="e" * 64,
     )
     await queue.finish(run.id, "proposal-worker")
     audit = await context.get_bean(AnswerAudits).get("issuer|admin", "north", run.id)
@@ -44,6 +45,8 @@ async def test_owner_audit_preserves_used_revision_when_current_source_changes(a
     assert audit["native_reads"][0]["content_sha256"] == "c" * 64
     assert audit["sql_attempts"][0]["executed"] is True
     assert audit["generations"][0]["model_id"] == "selected-model"
+    assert audit["generations"][0]["binding_output_mode"] == "default"
+    assert audit["generations"][0]["model_options_sha256"] == "e" * 64
     assert audit["generations"][0]["agent_revision"] == run.agent_revision
     assert audit["generations"][0]["finished_at"] is not None
     assert audit["private_files"] == []

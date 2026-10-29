@@ -22,3 +22,13 @@ test('connection methods preserve required nullable preconditions and revision/i
  await client.identity.testStatus('north','provider','test/id');
  assert.equal(calls[7].path,'/tenants/north/identity/providers/provider/tests/test%2Fid');
 });
+
+test('agent protocol choice preserves explicit null and omission without adding request flags',async()=>{
+ const bodies=[];const client=new KoinonClient({transport:{request:async(method,path,options={})=>{bodies.push(options.body);return {};}}});
+ for(const output_mode of ['default','native',null])
+  await client.agents.update('north','agent',{model_options:{max_tokens:512,output_mode}});
+ await client.agents.update('north','agent',{name:'Unchanged protocol'});
+ assert.deepEqual(bodies.slice(0,3).map(x=>x.model_options.output_mode),['default','native',null]);
+ assert.equal('model_options' in bodies[3],false);
+ assert.equal(bodies.some(x=>'extra_body' in x),false);
+});

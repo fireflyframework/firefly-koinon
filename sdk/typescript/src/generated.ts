@@ -376,6 +376,8 @@ export interface GenerationReceipt {
  "model_id": string;
  "model_class": string;
  "api": "chat" | "responses" | "messages";
+ "binding_output_mode"?: "default" | "native" | null;
+ "model_options_sha256"?: string | null;
  "started_at": string;
  "finished_at"?: string | null;
  "status"?: "started" | "completed" | "failed";

@@ -4,6 +4,12 @@ export const KNOWLEDGE_SPANISH: Readonly<Record<string, string>> = {
   'Sources could not be loaded.': 'No se pudieron cargar las fuentes.',
 
   'Model options': 'Opciones del modelo',
+  'Structured output': 'Salida estructurada',
+  'Auto': 'Automático',
+  'Default structured output': 'Salida estructurada predeterminada',
+  'Native JSON': 'JSON nativo',
+  'Auto preserves provider behavior. Default uses the model profile; RLM actions use tool calling. Native JSON requires schema support. Unsupported choices stop before generation.':
+    'Automático conserva el comportamiento del proveedor. El valor predeterminado usa el perfil del modelo; las acciones RLM usan llamadas a herramientas. JSON nativo requiere compatibilidad con esquemas. Las opciones incompatibles se detienen antes de generar.',
   'Choose a provider.': 'Elige un proveedor.',
   'Choose a model.': 'Elige un modelo.',
   'Not reported': 'No informado',

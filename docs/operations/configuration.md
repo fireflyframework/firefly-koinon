@@ -39,4 +39,14 @@ Document storage aliases are `KOINON_DOCUMENT_STORAGE_BACKEND`, `ROOT`, `S3_BUCK
 
 Azure Blob Storage and Google Cloud Storage use the same three explicit document, structured and private-attachment profiles. The [storage guide](storage.md) lists provider fields, environment aliases, optional installation extras, credential resolution and bounded query scratch behavior. Valid configuration and an installed SDK are separate from verified provider availability. Storage profiles are deployment configuration; organization chat settings and user API tokens cannot change them.
 
+## Model output protocols
+
+Administrators can set `model_options.output_mode` on an agent or a separate generative knowledge connection. The shared advanced model options show **Auto**, **Default structured output** (`default`) and **Native JSON** (`native`). Omitted or null preserves existing behavior: native output for Ollama bindings and the SDK default for other providers. This option does not change the outer chat answer from text to JSON.
+
+An explicit `default` uses the model profile's normal structured-output protocol; for document RLM actions it selects function tools. An explicit `native` requests schema-constrained JSON. The runtime checks the actual resolved model profile and current capability negatives before dispatch and stops on incompatibility. It never switches protocols after a failed request. These choices do not override provider profiles or add arbitrary provider request settings.
+
+A `current_agent` knowledge role inherits its admitted agent's effective mode. It cannot override model options; embedding roles do not accept output modes. Saving an agent choice advances its revision, so an already queued answer cannot silently adopt the changed configuration. New generation receipts record the chosen `binding_output_mode` and normalized `model_options_sha256`; missing historical values remain unknown. A binding mode is not proof of the actual wire protocol or a successful RLM answer.
+
+Provider discovery and advertised tools support remain separate from observed generation and semantic qualification. Selecting a protocol does not qualify curated RLM, bypass recorded-view/read guards, or alter model, iteration, token or execution budgets.
+
 Copyright 2026 Firefly Software Foundation. Licensed under Apache-2.0. Made with <3.

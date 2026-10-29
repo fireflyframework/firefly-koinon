@@ -5342,6 +5342,35 @@
           "title": "Api",
           "type": "string"
         },
+        "binding_output_mode": {
+          "anyOf": [
+            {
+              "enum": [
+                "default",
+                "native"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Binding Output Mode"
+        },
+        "model_options_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Options Sha256"
+        },
         "started_at": {
           "format": "date-time",
           "title": "Started At",
@@ -7853,7 +7882,15 @@
           "title": "Model Id"
         },
         "model_options": {
-          "$ref": "#/$defs/ModelParameters"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelParameters"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "dimensions": {
           "anyOf": [
@@ -9580,6 +9617,22 @@
     "ModelParameters": {
       "additionalProperties": false,
       "properties": {
+        "output_mode": {
+          "anyOf": [
+            {
+              "enum": [
+                "default",
+                "native"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Mode"
+        },
         "max_tokens": {
           "default": 4096,
           "maximum": 16384,

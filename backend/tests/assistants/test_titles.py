@@ -176,3 +176,201 @@ async def test_expired_private_file_evidence_is_not_sent_to_the_title_model(assi
             "issuer|viewer", "north", thread["id"], agent["id"], expected_revision=1
         )
     build.assert_not_called()
+
+
+def title_protocol_fixture(factory, *, kind, mode, profile=None):
+    """Fake authority/repositories, with real public factory and SDK model execution only."""
+    from types import SimpleNamespace
+
+    from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart
+    from pydantic_ai.models.function import FunctionModel
+    from pyfly.agentic.models import ModelFactory
+
+    from koinon.assistants.connections import ConnectionResolver
+    from koinon.assistants.settings import AssistantSettings
+    from koinon.assistants.title_service import TitleService
+
+    requests = []
+
+    def answer(messages, info):
+        requests.append(info)
+        part = (
+            TextPart('{"title":"Offline title"}')
+            if info.model_request_parameters.output_mode == "native"
+            else ToolCallPart(info.output_tools[0].name, {"title": "Offline title"}, "actual-title-call")
+        )
+        return ModelResponse(parts=[part])
+
+    model = FunctionModel(
+        answer, profile={"supports_tools": True, "supports_json_schema_output": True, **(profile or {})}
+    )
+    agent = SimpleNamespace(
+        id="agent",
+        revision=1,
+        provider_id="provider",
+        enabled=True,
+        model_id="qwen2.5:3b" if kind == "ollama" else "gpt-4o",
+        scope={},
+        model_options={} if mode is None else {"output_mode": mode},
+    )
+    provider = SimpleNamespace(
+        id="provider",
+        revision=1,
+        validated_revision=1,
+        kind=kind,
+        api="chat",
+        base_url="http://127.0.0.1:11434/v1",
+        model_ids=[agent.model_id],
+        enabled=True,
+        secret_ciphertext=None if kind == "ollama" else "fixture-ciphertext",
+        checks=[{"id": "connection", "status": "passed"}, {"id": "models", "status": "passed"}],
+    )
+    agents, providers = object(), object()
+
+    async def scoped(repository, *_args):
+        return agent if repository is agents else provider
+
+    resolver = ConnectionResolver(AssistantSettings(allowed_provider_hosts=["127.0.0.1"]), ModelFactory())
+    assistants = SimpleNamespace(
+        agents=agents,
+        providers=providers,
+        scoped=scoped,
+        thread=AsyncMock(return_value=SimpleNamespace(revision=1, scope={})),
+        validate_scope=AsyncMock(return_value={}),
+        owned_run=AsyncMock(),
+        runs=SimpleNamespace(
+            recent_title_runs=AsyncMock(
+                return_value=[SimpleNamespace(id="run", scope={}, user_message_id="message")]
+            )
+        ),
+        message_repository=SimpleNamespace(
+            find_by_id=AsyncMock(
+                return_value=SimpleNamespace(role="user", text="An offline conversation excerpt")
+            )
+        ),
+        configuration_service=SimpleNamespace(connections=resolver),
+        secrets=SimpleNamespace(decrypt=Mock(return_value="fixture-key")),
+    )
+    models = SimpleNamespace(build_with_secret=Mock(return_value=model))
+    service = TitleService(assistants, models, SimpleNamespace(resolve=lambda _type: factory))
+    return SimpleNamespace(
+        service=service, agent=agent, provider=provider, model=model, models=models, requests=requests
+    )
+
+
+@pytest.fixture
+async def title_factory():
+    from pyfly.agentic.config import AgenticConfig
+    from pyfly.agentic.runtime import AgenticRuntime
+
+    async with AgenticRuntime(AgenticConfig(default_model="test", plugin_auto_discover=False)) as runtime:
+        yield runtime.agent_factory
+
+
+@pytest.mark.parametrize(
+    "kind,choice,expected",
+    [
+        ("ollama", "default", "tool"),
+        ("openai", "native", "native"),
+        ("ollama", None, "native"),
+        ("openai", None, "tool"),
+    ],
+)
+async def test_title_honors_explicit_protocol_and_preserves_legacy_unset(
+    title_factory, kind, choice, expected
+):
+    fixture = title_protocol_fixture(title_factory, kind=kind, mode=choice)
+    result = await fixture.service.propose("actor", "tenant", "thread", "agent", expected_revision=1)
+    assert result.title == "Offline title"
+    assert len(fixture.requests) == 1
+    assert fixture.requests[0].model_request_parameters.output_mode == expected
+    assert fixture.requests[0].model_settings["max_tokens"] == 64
+    assert "output_mode" not in fixture.requests[0].model_settings
+    fixture.models.build_with_secret.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "kind,configured,borrowed",
+    [
+        ("ollama", "native", "default"),
+        ("openai", "default", "native"),
+    ],
+)
+async def test_title_reuses_exact_borrowed_mode_instead_of_rederiving_provider_or_agent(
+    title_factory, kind, configured, borrowed
+):
+    from koinon.assistants.model_bindings import BorrowedModel, bind_model
+
+    fixture = title_protocol_fixture(title_factory, kind=kind, mode=configured)
+    binding = BorrowedModel(
+        fixture.model,
+        {},
+        kind,
+        "chat",
+        borrowed,
+        agent_id="agent",
+        agent_revision=1,
+        provider_id="provider",
+        provider_revision=1,
+    )
+    with bind_model("tenant", "actor", binding):
+        await fixture.service.propose("actor", "tenant", "thread", "agent", expected_revision=1)
+    assert len(fixture.requests) == 1
+    assert fixture.requests[0].model_request_parameters.output_mode == (
+        "native" if borrowed == "native" else "tool"
+    )
+    fixture.models.build_with_secret.assert_not_called()
+
+
+@pytest.mark.parametrize("mode", ["default", "native"])
+@pytest.mark.parametrize("borrowed", [False, True])
+async def test_title_rejects_unsupported_actual_mode_before_factory_or_model_request(
+    title_factory, monkeypatch, mode, borrowed
+):
+    from contextlib import nullcontext
+
+    from pyfly.kernel import ServiceUnavailableException
+
+    from koinon.assistants.model_bindings import BorrowedModel, bind_model
+
+    fixture = title_protocol_fixture(
+        title_factory,
+        kind="ollama",
+        mode=mode,
+        profile={"supports_tools": mode != "default", "supports_json_schema_output": mode != "native"},
+    )
+    create = Mock(side_effect=AssertionError("Unsupported modes must fail before agent construction"))
+    monkeypatch.setattr(title_factory, "create", create)
+    binding = BorrowedModel(
+        fixture.model,
+        {},
+        "ollama",
+        "chat",
+        mode,
+        agent_id="agent",
+        agent_revision=1,
+        provider_id="provider",
+        provider_revision=1,
+    )
+    with (
+        bind_model("tenant", "actor", binding) if borrowed else nullcontext(),
+        pytest.raises(ServiceUnavailableException) as raised,
+    ):
+        await fixture.service.propose("actor", "tenant", "thread", "agent", expected_revision=1)
+    assert raised.value.code == "AGENT_MODEL_OUTPUT_MODE_UNSUPPORTED"
+    assert fixture.requests == []
+    create.assert_not_called()
+
+
+async def test_default_title_keeps_bare_type_and_honors_sdk_profile_default(title_factory, monkeypatch):
+    from koinon.assistants.title_dtos import TitleText
+
+    fixture = title_protocol_fixture(
+        title_factory, kind="ollama", mode="default", profile={"default_structured_output_mode": "native"}
+    )
+    original = title_factory.create
+    create = Mock(side_effect=original)
+    monkeypatch.setattr(title_factory, "create", create)
+    await fixture.service.propose("actor", "tenant", "thread", "agent", expected_revision=1)
+    assert create.call_args.kwargs["output_type"] is TitleText
+    assert fixture.requests[0].model_request_parameters.output_mode == "native"

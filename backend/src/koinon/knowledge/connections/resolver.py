@@ -13,7 +13,7 @@ from pyfly.data.transaction import infrastructure_unit
 from pyfly.kernel import ServiceUnavailableException
 from sqlalchemy import text
 
-from koinon.assistants.connections import ConnectionResolver, api_for, options_fingerprint
+from koinon.assistants.connections import ConnectionResolver, admit_output_mode, api_for, options_fingerprint
 from koinon.assistants.model_bindings import current_model_binding
 from koinon.assistants.repositories import ProviderRepository
 from koinon.assistants.settings import ProviderSecrets
@@ -284,6 +284,10 @@ class PersistedKnowledgeConnectionResolver(KnowledgeConnectionResolver):
                     subject, tenant_id, workspace, permission=PERMISSIONS[purpose]
                 )
                 if row.mode == "current_agent":
+                    try:
+                        admit_output_mode(spec.model, spec.output_mode, rlm=role == "documents.rlm")
+                    except ValueError as error:
+                        raise prerequisite(str(error), "KNOWLEDGE_MODEL_OUTPUT_MODE_UNSUPPORTED") from error
                     selected[role] = port.ModelBinding(
                         spec.model,
                         spec.model_settings,
@@ -336,12 +340,18 @@ class PersistedKnowledgeConnectionResolver(KnowledgeConnectionResolver):
                             self.compiler.models.build_with_secret(spec, secret)
                         )
                     api = api_for(provider.kind, provider.api)
+                    try:
+                        output_mode = self.compiler.output_mode(
+                            provider, row.model_id, row.model_options, cache[key], rlm=role == "documents.rlm"
+                        )
+                    except ValueError as error:
+                        raise prerequisite(str(error), "KNOWLEDGE_MODEL_OUTPUT_MODE_UNSUPPORTED") from error
                     selected[role] = port.ModelBinding(
                         cache[key],
                         self.compiler.settings_for(spec),
                         provider.kind,
                         api,
-                        "native" if provider.kind == "ollama" else "default",
+                        output_mode,
                         provenance=port.ModelBindingProvenance(
                             mode="provider",
                             assignment_id=row.id,
