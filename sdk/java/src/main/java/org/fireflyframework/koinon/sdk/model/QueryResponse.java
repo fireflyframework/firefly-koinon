@@ -10,6 +10,7 @@ import java.util.Map;
 
 /** Typed canonical QueryResponse contract. */
 public record QueryResponse(
+    @JsonProperty("knowledge_settings_snapshot") OrganizationKnowledgeSnapshot knowledgeSettingsSnapshot,
     @JsonProperty("query_id") String queryId,
     @JsonProperty("sql") String sql,
     @JsonProperty("execution_status") ExecutionStatus executionStatus,

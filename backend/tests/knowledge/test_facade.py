@@ -10,6 +10,7 @@ import pytest
 @pytest.fixture
 async def context(tmp_path: Path):
     from pyfly.core import PyFlyApplication
+    from test_policy_runtime_scope import snapshot
 
     from koinon.app import KoinonApplication
     from koinon.catalog.entities import Membership, Tenant
@@ -59,7 +60,10 @@ async def context(tmp_path: Path):
             lineage=AsyncMock(return_value={"nodes": [], "edges": []}),
         )
         bindings = app.context.get_bean(DomainBindingRepository)
-        facade = KnowledgeFacade(catalog, bindings, domains, KnowledgeSettings(max_upload_bytes=1024))
+        policies = SimpleNamespace(snapshot=AsyncMock(side_effect=lambda subject, tenant: snapshot(tenant)))
+        facade = KnowledgeFacade(
+            catalog, bindings, domains, KnowledgeSettings(max_upload_bytes=1024), knowledge_settings=policies
+        )
         yield facade, catalog, domains, tree, app.context
     finally:
         await app.shutdown()
@@ -342,7 +346,10 @@ async def test_search_asset_ids_restrict_sources_before_retrieval_and_empty_neve
     await facade.search("issuer|reader", "north", question="facts", asset_ids=[first["id"]], answer=True)
     assert domains.search.await_args.kwargs["source_ids"] == ["native-source"]
     domains.search.reset_mock()
-    assert await facade.search("issuer|reader", "north", question="facts", asset_ids=[], answer=True) == {
+    empty = await facade.search("issuer|reader", "north", question="facts", asset_ids=[], answer=True)
+    policy = await facade.knowledge_settings.snapshot("issuer|reader", "north")
+    assert empty.pop("knowledge_settings_snapshot") == policy.model_dump(mode="json")
+    assert empty == {
         "hits": [],
         "answer": "",
         "citations": [],

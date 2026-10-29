@@ -33,6 +33,9 @@ def bearer(subject="admin"):
 
 @pytest.fixture
 def client(tmp_path, monkeypatch, request):
+    from flycanon.config import CanonSettings
+    from flyquery.config import FlyquerySettings
+
     from koinon.app import create_application
 
     jwk = json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(KEY.public_key()))
@@ -71,6 +74,15 @@ def client(tmp_path, monkeypatch, request):
                 }
             },
         }
+    )
+    (tmp_path / "documents").mkdir()
+    (tmp_path / "structured").mkdir()
+    app.state.context.container.register_instance(
+        CanonSettings,
+        CanonSettings(answer_mode="rag", object_store_localfs_root=str(tmp_path / "documents")),
+    )
+    app.state.context.container.register_instance(
+        FlyquerySettings, FlyquerySettings(object_store_base=str(tmp_path / "structured"))
     )
     if hasattr(request, "param"):
         from koinon.web.projection import register_controller

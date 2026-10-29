@@ -264,6 +264,20 @@ from koinon_sdk.models import (
     ValidationResult,
 )
 from koinon_sdk.organization_chat import OrganizationChatSettings, OrganizationChatSettingsInput
+from koinon_sdk.organization_knowledge import (
+    DocumentKnowledgeBounds,
+    DocumentKnowledgeCapabilities,
+    DocumentKnowledgeSettings,
+    KnowledgeIntegerBounds,
+    KnowledgeNumberBounds,
+    OrganizationKnowledgeCapabilities,
+    OrganizationKnowledgeSettings,
+    OrganizationKnowledgeSettingsInput,
+    OrganizationKnowledgeSnapshot,
+    StructuredKnowledgeBounds,
+    StructuredKnowledgeCapabilities,
+    StructuredKnowledgeSettings,
+)
 from koinon_sdk.pagination import (
     cursor_pages,
     offset_pages,
@@ -296,6 +310,18 @@ from koinon_sdk.streaming import (
 )
 
 __all__ = [
+    "DocumentKnowledgeBounds",
+    "DocumentKnowledgeCapabilities",
+    "DocumentKnowledgeSettings",
+    "KnowledgeIntegerBounds",
+    "KnowledgeNumberBounds",
+    "OrganizationKnowledgeCapabilities",
+    "OrganizationKnowledgeSettings",
+    "OrganizationKnowledgeSettingsInput",
+    "OrganizationKnowledgeSnapshot",
+    "StructuredKnowledgeBounds",
+    "StructuredKnowledgeCapabilities",
+    "StructuredKnowledgeSettings",
     "OrganizationChatSettings",
     "OrganizationChatSettingsInput",
     "AuthorizedApplication",

@@ -8,6 +8,8 @@ import pytest
 
 @pytest.fixture
 async def assistants(tmp_path: Path):
+    from flycanon.config import CanonSettings
+    from flyquery.config import FlyquerySettings
     from pyfly.container.scanner import scan_package
     from pyfly.context import ApplicationContext
     from pyfly.core import Config
@@ -40,7 +42,9 @@ async def assistants(tmp_path: Path):
             }
         )
     )
-    for package in ("koinon.catalog", "koinon.assistants"):
+    context.container.register_instance(CanonSettings, CanonSettings(answer_mode="rag"))
+    context.container.register_instance(FlyquerySettings, FlyquerySettings())
+    for package in ("koinon.catalog", "koinon.organization_knowledge", "koinon.assistants"):
         scan_package(package, context.container)
     await context.start()
     for tenant in ("north", "south"):

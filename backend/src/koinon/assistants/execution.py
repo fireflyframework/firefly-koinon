@@ -5,7 +5,7 @@
 import asyncio
 import json
 import logging
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager, nullcontext, suppress
 from pathlib import Path
 
 from pydantic_ai import Tool as PydanticTool
@@ -38,8 +38,18 @@ from koinon.catalog.errors import AccessDenied
 from koinon.knowledge.attachments.ports import AttachmentRef
 from koinon.knowledge.capture_dtos import CapturedEvidence
 from koinon.knowledge.evidence_capture import NativeEvidenceFailure, NativeKnowledgeEvidence, failure_capture
+from koinon.organization_knowledge.dtos import OrganizationKnowledgeSnapshot
+from koinon.organization_knowledge.runtime import bind_snapshot, snapshot_for_run
 
 logger = logging.getLogger(__name__)
+_NATIVE_POLICY_REFUSALS = frozenset(
+    {
+        "RLM_DOCUMENT_VIEWS_REQUIRED",
+        "KNOWLEDGE_RLM_UNQUALIFIED",
+        "KNOWLEDGE_SETTINGS_SNAPSHOT_REQUIRED",
+        "KNOWLEDGE_SETTINGS_SNAPSHOT_INVALID",
+    }
+)
 
 
 @service(name="assistants.executor")
@@ -83,6 +93,16 @@ class AssistantExecutor:
             )
         return self.container.resolve(NativeKnowledgeEvidence)
 
+    @staticmethod
+    def policy_for_run(run: ChatRun) -> OrganizationKnowledgeSnapshot:
+        snapshot = snapshot_for_run(run)
+        if snapshot is None:
+            raise ServiceUnavailableException(
+                "This answer has no recorded knowledge settings. Start a new answer.",
+                code="KNOWLEDGE_SETTINGS_SNAPSHOT_REQUIRED",
+            )
+        return snapshot
+
     async def tools(
         self,
         run_id: str,
@@ -112,23 +132,26 @@ class AssistantExecutor:
         @asynccontextmanager
         async def captured_call(kind, method, *args, assets=(), **kwargs):
             async with native_capture_lock:
+                run, thread, _, _ = await self.authority(run_id, worker_id)
+                snapshot = self.policy_for_run(run) if kind in {"search", "query"} else None
                 limits = await self.queue.capture_limits(run_id, worker_id, kind)
                 capture = None
-                try:
-                    capture = await method(*args, _limits=limits, **kwargs)
-                    yield capture
-                except NativeEvidenceFailure as error:
-                    await record_observation(kind, error.capture, assets)
-                    raise
-                except asyncio.CancelledError as error:
-                    receipt = failure_capture(error) or capture
-                    if receipt is not None:
-                        try:
-                            async with asyncio.timeout(2):
-                                await record_observation(kind, receipt, assets)
-                        except Exception:
-                            logger.info("Cancelled native receipt could not be retained")
-                    raise
+                with bind_snapshot(snapshot, thread.subject) if snapshot is not None else nullcontext():
+                    try:
+                        capture = await method(*args, _limits=limits, **kwargs)
+                        yield capture
+                    except NativeEvidenceFailure as error:
+                        await record_observation(kind, error.capture, assets)
+                        raise
+                    except asyncio.CancelledError as error:
+                        receipt = failure_capture(error) or capture
+                        if receipt is not None:
+                            try:
+                                async with asyncio.timeout(2):
+                                    await record_observation(kind, receipt, assets)
+                            except Exception:
+                                logger.info("Cancelled native receipt could not be retained")
+                        raise
 
         async def evidence(kind: str, capture: CapturedEvidence, assets: list[str]):
             data = capture.data
@@ -169,6 +192,7 @@ class AssistantExecutor:
         @tracked_tool(self.queue, self.authority, run_id, worker_id, "search_knowledge")
         async def search_knowledge(question: str) -> dict:
             run, thread, _, _ = await self.authority(run_id, worker_id)
+            policy = self.policy_for_run(run)
             scope = dict(run.scope)
             if "asset_ids" in scope:
                 documents = []
@@ -184,8 +208,8 @@ class AssistantExecutor:
                 run.tenant_id,
                 question=question,
                 **scope,
-                limit=10,
-                answer=False,
+                limit=min(100, policy.documents.retrieval_top_k),
+                answer=policy.documents.answer_mode == "rlm",
             ) as capture:
                 assets = list(
                     dict.fromkeys(
@@ -720,6 +744,10 @@ class AssistantExecutor:
             )
             cause = exc
             for _ in range(12):
+                cause_code = getattr(cause, "code", None)
+                if cause_code in _NATIVE_POLICY_REFUSALS:
+                    code = cause_code
+                    break
                 if getattr(cause, "code", None) == "EVIDENCE_BUDGET_EXCEEDED":
                     code = "EVIDENCE_BUDGET_EXCEEDED"
                     break
@@ -739,7 +767,7 @@ class AssistantExecutor:
                     break
                 cause = nested
             with suppress(ConflictException):
-                if code in {
+                if code in _NATIVE_POLICY_REFUSALS or code in {
                     "EVIDENCE_PROVENANCE_REQUIRED",
                     "EVIDENCE_UNAVAILABLE",
                     "EVIDENCE_BUDGET_EXCEEDED",

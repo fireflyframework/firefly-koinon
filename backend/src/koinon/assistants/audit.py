@@ -14,6 +14,7 @@ from koinon.assistants.service import AssistantService
 from koinon.catalog.errors import AccessDenied
 from koinon.evidence.dtos import SourceReference
 from koinon.evidence.ports import SourceResolverPort
+from koinon.organization_knowledge.runtime import snapshot_for_run
 from koinon.tokens.repositories import PersonalTokenRepository
 
 
@@ -151,6 +152,7 @@ class AnswerAudits:
             await self.origin(subject, tenant_id, run, token_id)
         return AnswerAudit(
             run_id=run.id,
+            knowledge_settings_snapshot=snapshot_for_run(run),
             provenance_status="recorded"
             if generations or references or private or native_reads or attempts
             else "not_recorded",

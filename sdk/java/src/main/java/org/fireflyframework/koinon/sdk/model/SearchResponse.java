@@ -8,6 +8,7 @@ import java.util.List;
 
 /** Typed canonical SearchResponse contract. */
 public record SearchResponse(
+    @JsonProperty("knowledge_settings_snapshot") OrganizationKnowledgeSnapshot knowledgeSettingsSnapshot,
     @JsonProperty("hits") List<SearchHit> hits,
     @JsonProperty("answer") String answer,
     @JsonProperty("citations") List<Citation> citations

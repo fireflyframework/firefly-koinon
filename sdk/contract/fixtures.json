@@ -142,6 +142,36 @@
       "run_id": "run_id-value",
       "provenance_status": "recorded",
       "source_provenance_complete": false,
+      "knowledge_settings_snapshot": {
+        "tenant_id": "tenant_id-value",
+        "schema_version": 1,
+        "revision": 1,
+        "origin": "organization",
+        "documents": {
+          "answer_mode": "rag",
+          "retrieval_top_k": 1,
+          "retrieval_per_query_k": 1,
+          "retrieval_rrf_k": 1,
+          "query_expansion_enabled": false,
+          "query_expansion_n": 1,
+          "answer_top_k": 1,
+          "rlm_max_iters": 1,
+          "rlm_sub_budget": 1,
+          "rlm_max_depth": 1,
+          "rlm_self_consistency": 1,
+          "rlm_extended_reasoning": false
+        },
+        "structured": {
+          "top_k_schema": 1,
+          "top_k_examples": 1,
+          "top_k_metrics": 1,
+          "rrf_k": 1,
+          "generation_candidates": 1,
+          "max_refine_retries": 1,
+          "grounding_min_confidence": 0.25
+        },
+        "digest": "2d828ceecae2f7188752442624651e0e3e02c525cddf3908caf4fa10fe6b5fc5"
+      },
       "generations": [
         {
           "id": "id-value",
@@ -1863,6 +1893,106 @@
         "availability": "available"
       }
     },
+    "DocumentKnowledgeBounds": {
+      "retrieval_top_k": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "retrieval_per_query_k": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "retrieval_rrf_k": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "query_expansion_n": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "answer_top_k": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "rlm_max_iters": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "rlm_sub_budget": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "rlm_max_depth": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "rlm_self_consistency": {
+        "minimum": 1,
+        "maximum": 1
+      }
+    },
+    "DocumentKnowledgeCapabilities": {
+      "answer_modes": [
+        "rag"
+      ],
+      "rlm_curated_knowledge_supported": false,
+      "rlm_curated_knowledge_reason": "KNOWLEDGE_RLM_UNQUALIFIED",
+      "rlm_model_role": "documents.rlm",
+      "rlm_recorded_views_required": true,
+      "rlm_recorded_views_reason": "RLM_DOCUMENT_VIEWS_REQUIRED",
+      "bounds": {
+        "retrieval_top_k": {
+          "minimum": 1,
+          "maximum": 1
+        },
+        "retrieval_per_query_k": {
+          "minimum": 1,
+          "maximum": 1
+        },
+        "retrieval_rrf_k": {
+          "minimum": 1,
+          "maximum": 1
+        },
+        "query_expansion_n": {
+          "minimum": 1,
+          "maximum": 1
+        },
+        "answer_top_k": {
+          "minimum": 1,
+          "maximum": 1
+        },
+        "rlm_max_iters": {
+          "minimum": 1,
+          "maximum": 1
+        },
+        "rlm_sub_budget": {
+          "minimum": 1,
+          "maximum": 1
+        },
+        "rlm_max_depth": {
+          "minimum": 1,
+          "maximum": 1
+        },
+        "rlm_self_consistency": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    },
+    "DocumentKnowledgeSettings": {
+      "answer_mode": "rag",
+      "retrieval_top_k": 1,
+      "retrieval_per_query_k": 1,
+      "retrieval_rrf_k": 1,
+      "query_expansion_enabled": false,
+      "query_expansion_n": 1,
+      "answer_top_k": 1,
+      "rlm_max_iters": 1,
+      "rlm_sub_budget": 1,
+      "rlm_max_depth": 1,
+      "rlm_self_consistency": 1,
+      "rlm_extended_reasoning": false
+    },
     "DocumentReingestInput": {
       "acknowledge_chunk_invalidation": false
     },
@@ -1929,6 +2059,36 @@
       "run_id": "run-1",
       "kind": "search",
       "data": {
+        "knowledge_settings_snapshot": {
+          "tenant_id": "tenant_id-value",
+          "schema_version": 1,
+          "revision": 1,
+          "origin": "organization",
+          "documents": {
+            "answer_mode": "rag",
+            "retrieval_top_k": 1,
+            "retrieval_per_query_k": 1,
+            "retrieval_rrf_k": 1,
+            "query_expansion_enabled": false,
+            "query_expansion_n": 1,
+            "answer_top_k": 1,
+            "rlm_max_iters": 1,
+            "rlm_sub_budget": 1,
+            "rlm_max_depth": 1,
+            "rlm_self_consistency": 1,
+            "rlm_extended_reasoning": false
+          },
+          "structured": {
+            "top_k_schema": 1,
+            "top_k_examples": 1,
+            "top_k_metrics": 1,
+            "rrf_k": 1,
+            "generation_candidates": 1,
+            "max_refine_retries": 1,
+            "grounding_min_confidence": 0.25
+          },
+          "digest": "2d828ceecae2f7188752442624651e0e3e02c525cddf3908caf4fa10fe6b5fc5"
+        },
         "hits": [
           {
             "id": "id-value",
@@ -2797,6 +2957,10 @@
       "error_code": "error_code-value",
       "error": "error-value"
     },
+    "KnowledgeIntegerBounds": {
+      "minimum": 1,
+      "maximum": 1
+    },
     "KnowledgeIntent": {
       "id": "id-value",
       "revision": 1,
@@ -2952,6 +3116,11 @@
         "committed_at": "2026-10-27T12:34:56Z"
       }
     },
+    "KnowledgeNumberBounds": {
+      "minimum": 0.25,
+      "maximum": 0.25
+    },
+    "KnowledgePolicyValue": {},
     "KnowledgeProvider": {
       "id": "id-value",
       "name": "name-value",
@@ -3386,6 +3555,255 @@
     "OrganizationChatSettingsInput": {
       "default_agent_id": "default_agent_id-value",
       "expected_revision": 1
+    },
+    "OrganizationKnowledgeCapabilities": {
+      "documents": {
+        "answer_modes": [
+          "rag"
+        ],
+        "rlm_curated_knowledge_supported": false,
+        "rlm_curated_knowledge_reason": "KNOWLEDGE_RLM_UNQUALIFIED",
+        "rlm_model_role": "documents.rlm",
+        "rlm_recorded_views_required": true,
+        "rlm_recorded_views_reason": "RLM_DOCUMENT_VIEWS_REQUIRED",
+        "bounds": {
+          "retrieval_top_k": {
+            "minimum": 1,
+            "maximum": 1
+          },
+          "retrieval_per_query_k": {
+            "minimum": 1,
+            "maximum": 1
+          },
+          "retrieval_rrf_k": {
+            "minimum": 1,
+            "maximum": 1
+          },
+          "query_expansion_n": {
+            "minimum": 1,
+            "maximum": 1
+          },
+          "answer_top_k": {
+            "minimum": 1,
+            "maximum": 1
+          },
+          "rlm_max_iters": {
+            "minimum": 1,
+            "maximum": 1
+          },
+          "rlm_sub_budget": {
+            "minimum": 1,
+            "maximum": 1
+          },
+          "rlm_max_depth": {
+            "minimum": 1,
+            "maximum": 1
+          },
+          "rlm_self_consistency": {
+            "minimum": 1,
+            "maximum": 1
+          }
+        }
+      },
+      "structured": {
+        "bounds": {
+          "top_k_schema": {
+            "minimum": 1,
+            "maximum": 1
+          },
+          "top_k_examples": {
+            "minimum": 1,
+            "maximum": 1
+          },
+          "top_k_metrics": {
+            "minimum": 1,
+            "maximum": 1
+          },
+          "rrf_k": {
+            "minimum": 1,
+            "maximum": 1
+          },
+          "generation_candidates": {
+            "minimum": 1,
+            "maximum": 1
+          },
+          "max_refine_retries": {
+            "minimum": 1,
+            "maximum": 1
+          },
+          "grounding_min_confidence": {
+            "minimum": 0.25,
+            "maximum": 0.25
+          }
+        }
+      }
+    },
+    "OrganizationKnowledgeSettings": {
+      "tenant_id": "tenant_id-value",
+      "schema_version": 1,
+      "revision": 1,
+      "origin": "deployment",
+      "documents": {
+        "answer_mode": "rag",
+        "retrieval_top_k": 1,
+        "retrieval_per_query_k": 1,
+        "retrieval_rrf_k": 1,
+        "query_expansion_enabled": false,
+        "query_expansion_n": 1,
+        "answer_top_k": 1,
+        "rlm_max_iters": 1,
+        "rlm_sub_budget": 1,
+        "rlm_max_depth": 1,
+        "rlm_self_consistency": 1,
+        "rlm_extended_reasoning": false
+      },
+      "structured": {
+        "top_k_schema": 1,
+        "top_k_examples": 1,
+        "top_k_metrics": 1,
+        "rrf_k": 1,
+        "generation_candidates": 1,
+        "max_refine_retries": 1,
+        "grounding_min_confidence": 0.25
+      },
+      "capabilities": {
+        "documents": {
+          "answer_modes": [
+            "rag"
+          ],
+          "rlm_curated_knowledge_supported": false,
+          "rlm_curated_knowledge_reason": "KNOWLEDGE_RLM_UNQUALIFIED",
+          "rlm_model_role": "documents.rlm",
+          "rlm_recorded_views_required": true,
+          "rlm_recorded_views_reason": "RLM_DOCUMENT_VIEWS_REQUIRED",
+          "bounds": {
+            "retrieval_top_k": {
+              "minimum": 1,
+              "maximum": 1
+            },
+            "retrieval_per_query_k": {
+              "minimum": 1,
+              "maximum": 1
+            },
+            "retrieval_rrf_k": {
+              "minimum": 1,
+              "maximum": 1
+            },
+            "query_expansion_n": {
+              "minimum": 1,
+              "maximum": 1
+            },
+            "answer_top_k": {
+              "minimum": 1,
+              "maximum": 1
+            },
+            "rlm_max_iters": {
+              "minimum": 1,
+              "maximum": 1
+            },
+            "rlm_sub_budget": {
+              "minimum": 1,
+              "maximum": 1
+            },
+            "rlm_max_depth": {
+              "minimum": 1,
+              "maximum": 1
+            },
+            "rlm_self_consistency": {
+              "minimum": 1,
+              "maximum": 1
+            }
+          }
+        },
+        "structured": {
+          "bounds": {
+            "top_k_schema": {
+              "minimum": 1,
+              "maximum": 1
+            },
+            "top_k_examples": {
+              "minimum": 1,
+              "maximum": 1
+            },
+            "top_k_metrics": {
+              "minimum": 1,
+              "maximum": 1
+            },
+            "rrf_k": {
+              "minimum": 1,
+              "maximum": 1
+            },
+            "generation_candidates": {
+              "minimum": 1,
+              "maximum": 1
+            },
+            "max_refine_retries": {
+              "minimum": 1,
+              "maximum": 1
+            },
+            "grounding_min_confidence": {
+              "minimum": 0.25,
+              "maximum": 0.25
+            }
+          }
+        }
+      }
+    },
+    "OrganizationKnowledgeSettingsInput": {
+      "expected_revision": 1,
+      "documents": {
+        "answer_mode": "rag",
+        "retrieval_top_k": 1,
+        "retrieval_per_query_k": 1,
+        "retrieval_rrf_k": 1,
+        "query_expansion_enabled": false,
+        "query_expansion_n": 1,
+        "answer_top_k": 1,
+        "rlm_max_iters": 1,
+        "rlm_sub_budget": 1,
+        "rlm_max_depth": 1,
+        "rlm_self_consistency": 1,
+        "rlm_extended_reasoning": false
+      },
+      "structured": {
+        "top_k_schema": 1,
+        "top_k_examples": 1,
+        "top_k_metrics": 1,
+        "rrf_k": 1,
+        "generation_candidates": 1,
+        "max_refine_retries": 1,
+        "grounding_min_confidence": 0.25
+      }
+    },
+    "OrganizationKnowledgeSnapshot": {
+      "tenant_id": "tenant_id-value",
+      "schema_version": 1,
+      "revision": 1,
+      "origin": "organization",
+      "documents": {
+        "answer_mode": "rag",
+        "retrieval_top_k": 1,
+        "retrieval_per_query_k": 1,
+        "retrieval_rrf_k": 1,
+        "query_expansion_enabled": false,
+        "query_expansion_n": 1,
+        "answer_top_k": 1,
+        "rlm_max_iters": 1,
+        "rlm_sub_budget": 1,
+        "rlm_max_depth": 1,
+        "rlm_self_consistency": 1,
+        "rlm_extended_reasoning": false
+      },
+      "structured": {
+        "top_k_schema": 1,
+        "top_k_examples": 1,
+        "top_k_metrics": 1,
+        "rrf_k": 1,
+        "generation_candidates": 1,
+        "max_refine_retries": 1,
+        "grounding_min_confidence": 0.25
+      },
+      "digest": "2d828ceecae2f7188752442624651e0e3e02c525cddf3908caf4fa10fe6b5fc5"
     },
     "Page": {
       "summaries": {
@@ -4472,6 +4890,36 @@
       "sql": "sql-value"
     },
     "QueryResponse": {
+      "knowledge_settings_snapshot": {
+        "tenant_id": "tenant_id-value",
+        "schema_version": 1,
+        "revision": 1,
+        "origin": "organization",
+        "documents": {
+          "answer_mode": "rag",
+          "retrieval_top_k": 1,
+          "retrieval_per_query_k": 1,
+          "retrieval_rrf_k": 1,
+          "query_expansion_enabled": false,
+          "query_expansion_n": 1,
+          "answer_top_k": 1,
+          "rlm_max_iters": 1,
+          "rlm_sub_budget": 1,
+          "rlm_max_depth": 1,
+          "rlm_self_consistency": 1,
+          "rlm_extended_reasoning": false
+        },
+        "structured": {
+          "top_k_schema": 1,
+          "top_k_examples": 1,
+          "top_k_metrics": 1,
+          "rrf_k": 1,
+          "generation_candidates": 1,
+          "max_refine_retries": 1,
+          "grounding_min_confidence": 0.25
+        },
+        "digest": "2d828ceecae2f7188752442624651e0e3e02c525cddf3908caf4fa10fe6b5fc5"
+      },
       "query_id": "query_id-value",
       "sql": "sql-value",
       "execution_status": "OK",
@@ -4626,6 +5074,36 @@
       "answer": false
     },
     "SearchResponse": {
+      "knowledge_settings_snapshot": {
+        "tenant_id": "tenant_id-value",
+        "schema_version": 1,
+        "revision": 1,
+        "origin": "organization",
+        "documents": {
+          "answer_mode": "rag",
+          "retrieval_top_k": 1,
+          "retrieval_per_query_k": 1,
+          "retrieval_rrf_k": 1,
+          "query_expansion_enabled": false,
+          "query_expansion_n": 1,
+          "answer_top_k": 1,
+          "rlm_max_iters": 1,
+          "rlm_sub_budget": 1,
+          "rlm_max_depth": 1,
+          "rlm_self_consistency": 1,
+          "rlm_extended_reasoning": false
+        },
+        "structured": {
+          "top_k_schema": 1,
+          "top_k_examples": 1,
+          "top_k_metrics": 1,
+          "rrf_k": 1,
+          "generation_candidates": 1,
+          "max_refine_retries": 1,
+          "grounding_min_confidence": 0.25
+        },
+        "digest": "2d828ceecae2f7188752442624651e0e3e02c525cddf3908caf4fa10fe6b5fc5"
+      },
       "hits": [
         {
           "id": "id-value",
@@ -5002,6 +5480,77 @@
         "current_revision": "current_revision-value",
         "availability": "available"
       }
+    },
+    "StructuredKnowledgeBounds": {
+      "top_k_schema": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "top_k_examples": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "top_k_metrics": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "rrf_k": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "generation_candidates": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "max_refine_retries": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "grounding_min_confidence": {
+        "minimum": 0.25,
+        "maximum": 0.25
+      }
+    },
+    "StructuredKnowledgeCapabilities": {
+      "bounds": {
+        "top_k_schema": {
+          "minimum": 1,
+          "maximum": 1
+        },
+        "top_k_examples": {
+          "minimum": 1,
+          "maximum": 1
+        },
+        "top_k_metrics": {
+          "minimum": 1,
+          "maximum": 1
+        },
+        "rrf_k": {
+          "minimum": 1,
+          "maximum": 1
+        },
+        "generation_candidates": {
+          "minimum": 1,
+          "maximum": 1
+        },
+        "max_refine_retries": {
+          "minimum": 1,
+          "maximum": 1
+        },
+        "grounding_min_confidence": {
+          "minimum": 0.25,
+          "maximum": 0.25
+        }
+      }
+    },
+    "StructuredKnowledgeSettings": {
+      "top_k_schema": 1,
+      "top_k_examples": 1,
+      "top_k_metrics": 1,
+      "rrf_k": 1,
+      "generation_candidates": 1,
+      "max_refine_retries": 1,
+      "grounding_min_confidence": 0.25
     },
     "TableColumnBindingPage": {
       "manifest": {

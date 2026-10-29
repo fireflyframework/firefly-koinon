@@ -80,6 +80,7 @@ def create_application(config: dict):
         "koinon.jobs",
         "koinon.assistants",
         "koinon.organization_chat",
+        "koinon.organization_knowledge",
         "koinon.profiles",
         "koinon.tokens",
         "koinon.authorized_applications",
@@ -125,6 +126,7 @@ def create_application(config: dict):
             (
                 "koinon.assistants",
                 "koinon.organization_chat",
+                "koinon.organization_knowledge",
                 "koinon.profiles",
                 "koinon.tokens",
                 "koinon.authorized_applications",

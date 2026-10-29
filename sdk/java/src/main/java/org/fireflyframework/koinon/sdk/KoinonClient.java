@@ -99,6 +99,10 @@ public final class KoinonClient implements AutoCloseable {
     return new OrganizationChatApi(transport, tenant);
   }
 
+  public OrganizationKnowledgeApi organizationKnowledge(String tenant) {
+    return new OrganizationKnowledgeApi(transport, tenant);
+  }
+
   public AgentsApi agents(String tenant) {
     return new AgentsApi(transport, tenant);
   }

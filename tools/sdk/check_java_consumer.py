@@ -57,12 +57,27 @@ import org.fireflyframework.koinon.sdk.ExactValues;
 import org.fireflyframework.koinon.sdk.RequestOptions;
 import org.fireflyframework.koinon.sdk.api.DatasetsApi;
 import org.fireflyframework.koinon.sdk.api.OrganizationChatApi;
+import org.fireflyframework.koinon.sdk.api.OrganizationKnowledgeApi;
+import org.fireflyframework.koinon.sdk.model.OrganizationKnowledgeSettings;
+import org.fireflyframework.koinon.sdk.model.OrganizationKnowledgeSettingsInput;
+import org.fireflyframework.koinon.sdk.model.OrganizationKnowledgeSnapshot;
+import org.fireflyframework.koinon.sdk.model.KnowledgeAnswerMode;
 import org.fireflyframework.koinon.sdk.model.OrganizationChatSettings;
 import org.fireflyframework.koinon.sdk.model.OrganizationChatSettingsInput;
 import org.fireflyframework.koinon.sdk.model.OrganizationChatFilter;
 import org.fireflyframework.koinon.sdk.model.DatasetFileAppendResult;
 import org.fireflyframework.koinon.sdk.model.DatasetFileUpload;
 public final class HeadlessConsumer {
+  static OrganizationKnowledgeSettings policySignature(OrganizationKnowledgeApi api) {
+    var current = api.get();
+    return api.update(OrganizationKnowledgeSettingsInput.empty()
+        .withExpectedRevision(current.revision())
+        .withDocuments(current.documents().withAnswerMode(KnowledgeAnswerMode.RAG))
+        .withStructured(current.structured()));
+  }
+  static OrganizationKnowledgeSnapshot captured(org.fireflyframework.koinon.sdk.model.AnswerAudit audit) {
+    return audit.knowledgeSettingsSnapshot();
+  }
   static DatasetFileAppendResult appendSignature(DatasetsApi api, java.nio.file.Path file) {
     return api.appendFile("dataset", new DatasetFileUpload(file, "text/csv"), "stable-request");
   }
@@ -74,7 +89,7 @@ public final class HeadlessConsumer {
   public static void main(String[] args) {
     try (var client = KoinonClient.builder(URI.create("http://127.0.0.1:1/api/v1"))
         .bearerToken(() -> "fictional-consumer-token").build()) {
-      if (client.organizationChat("example") == null || client.catalog("example") == null || client.profile() == null) throw new AssertionError();
+      if (client.organizationKnowledge("example") == null || client.organizationChat("example") == null || client.catalog("example") == null || client.profile() == null) throw new AssertionError();
       var value = ExactValues.decimal(new BigDecimal("12345678901234567890.00100"));
       if (!value.textValue().equals("12345678901234567890.00100")) throw new AssertionError();
       if (!RequestOptions.defaults().ifMatch("revision").headers().containsKey("If-Match")) throw new AssertionError();

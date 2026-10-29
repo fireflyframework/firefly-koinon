@@ -93,11 +93,13 @@ async def test_native_body_reads_are_versioned_and_drafts_never_replace_serving_
     )
     from unittest.mock import AsyncMock, MagicMock
 
+    from flycanon.config import CanonSettings
     from flycanon.core.services.query.handlers import SearchKnowledgeHandler
     from flycanon.core.services.query.search_service import SearchService
     from flycanon.core.services.retrieval.corpus_factory import CorpusContext
     from flycanon.core.services.retrieval.retrieval_service import RetrievalService
     from pyfly.cqrs import DefaultQueryBus, HandlerRegistry
+    from test_policy_runtime_scope import snapshot
 
     from koinon.knowledge.adapters import NativeDomains
     from koinon.knowledge.evidence_capture import NativeKnowledgeEvidence
@@ -117,7 +119,9 @@ async def test_native_body_reads_are_versioned_and_drafts_never_replace_serving_
     )
     retrieval._hydrate = AsyncMock(return_value=[])
     handlers = HandlerRegistry()
-    handlers.register_query_handler(SearchKnowledgeHandler(SearchService(retrieval=retrieval)))
+    handlers.register_query_handler(
+        SearchKnowledgeHandler(SearchService(retrieval=retrieval), CanonSettings())
+    )
     context.container.register_instance(DefaultQueryBus, DefaultQueryBus(handlers, caching_enabled=False))
     facade = KnowledgeFacade(
         curated[1],
@@ -125,6 +129,9 @@ async def test_native_body_reads_are_versioned_and_drafts_never_replace_serving_
         NativeDomains(context.container),
         KnowledgeSettings(),
         SimpleNamespace(get=lambda: corpus),
+        knowledge_settings=SimpleNamespace(
+            snapshot=AsyncMock(side_effect=lambda subject, tenant: snapshot(tenant))
+        ),
     )
     produced = await NativeKnowledgeEvidence(facade, context.get_bean(DataSourceRegistry)).search(
         "issuer|reader", "north", question="threshold", asset_ids=[first.item_id], answer=False

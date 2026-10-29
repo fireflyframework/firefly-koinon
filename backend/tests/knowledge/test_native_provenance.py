@@ -327,7 +327,7 @@ async def test_real_native_executor_cancellation_is_recorded_after_worker_cleanu
     assert attempt.reason_code == "SQL_ATTEMPT_CANCELLED"
 
 
-async def test_rlm_lazy_content_is_attested_before_leased_worker_model_input():
+async def test_rlm_legacy_original_remains_unknown_and_never_enters_model_input():
     import asyncio
     from unittest.mock import Mock
 
@@ -341,8 +341,14 @@ async def test_rlm_lazy_content_is_attested_before_leased_worker_model_input():
     docs = CanonDocStore(
         {
             "source.txt": SourceMeta(
-                "source", "source.txt", "Title", "text", "owned-key", "stale-hint",
-                tenant_id="tenant", workspace_id="workspace",
+                "source",
+                "source.txt",
+                "Title",
+                "text",
+                "owned-key",
+                "stale-hint",
+                tenant_id="tenant",
+                workspace_id="workspace",
             )
         },
         object_store=SimpleNamespace(get_sync=Mock(return_value=text.encode())),
@@ -351,17 +357,16 @@ async def test_rlm_lazy_content_is_attested_before_leased_worker_model_input():
 
     @provenance.worker
     def run():
-        read = docs["source.txt"]
-        provenance.model("rlm.root", read)
-        assert receipt.native_reads[-2].stage == "rlm.read"
-        assert receipt.native_reads[-1].content_sha256 == sha256(read.encode()).hexdigest()
-        return read
+        return docs["source.txt"]
 
     with provenance.observe(receipt, tenant_id="tenant", workspace_id="workspace", actor="owner"):
         await provenance.corpus(docs)
-        assert text in await asyncio.to_thread(run)
-    assert [row.stage for row in receipt.native_reads] == ["rlm.corpus", "rlm.read", "rlm.root"]
-    assert all(row.source_ids == ("source",) for row in receipt.native_reads)
+        with pytest.raises(ServiceUnavailableException) as error:
+            await asyncio.to_thread(run)
+    assert error.value.code == "RLM_DOCUMENT_VIEWS_REQUIRED"
+    assert [row.stage for row in receipt.native_reads] == ["rlm.corpus"]
+    assert receipt.documents == {} and receipt.document_extractions == {}
+    docs._object_store.get_sync.assert_not_called()
 
 
 async def test_direct_native_controller_receives_only_exact_server_bound_internal_context():

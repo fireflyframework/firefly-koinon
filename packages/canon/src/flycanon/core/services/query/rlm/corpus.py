@@ -216,7 +216,19 @@ class CanonDocStore:
                 raise ServiceUnavailableException(
                     "The exact document extraction observer is required", code="EVIDENCE_UNAVAILABLE"
                 )
+            parts_hook = getattr(scope.observer, "document_view_parts", None)
+            if callable(parts_hook) and meta.source_version_id is None:
+                raise ServiceUnavailableException(
+                    "Exact recorded document views are required for product RLM answers",
+                    code="RLM_DOCUMENT_VIEWS_REQUIRED",
+                )
+            if meta.source_version_id is not None and not callable(parts_hook):
+                raise ServiceUnavailableException(
+                    "The exact document part observer is required", code="EVIDENCE_UNAVAILABLE"
+                )
             pages = self._load_pages(key)
+            if meta.source_version_id is not None and callable(parts_hook):
+                parts_hook(meta, self._read_receipts[key], scope)
             if meta.source_version_id is not None and callable(hook):
                 receipt = self._read_receipts[key]
                 hook(meta.source_id, receipt.source_version_id, receipt.extraction_id, scope)
@@ -355,9 +367,17 @@ class CanonCorpusBuilder:
                 if whole_reader is None:
                     await observation.observer.authorize()
                     whole_reader = WholeDocumentReader(DocumentLineage(self._sources, self._object_store))
-                pin = await whole_reader.pin(
-                    DocumentScope(tenant_id, str(workspace_id), observation.actor), str(row.id)
-                )
+                try:
+                    pin = await whole_reader.pin(
+                        DocumentScope(tenant_id, str(workspace_id), observation.actor), str(row.id)
+                    )
+                except ServiceUnavailableException as error:
+                    if required and error.code == "DOCUMENT_EXTRACTION_UNAVAILABLE":
+                        raise ServiceUnavailableException(
+                            "Exact recorded document views are required for product RLM answers",
+                            code="RLM_DOCUMENT_VIEWS_REQUIRED",
+                        ) from error
+                    raise
                 meta = replace(
                     meta,
                     object_store_key="",

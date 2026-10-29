@@ -96,6 +96,7 @@ class ChatRun(Base):
     access_token_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     agent_revision: Mapped[int] = mapped_column()
     provider_revision: Mapped[int] = mapped_column()
+    knowledge_settings_snapshot: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     scope: Mapped[dict] = mapped_column(JSON, default=dict)
     client_request_id: Mapped[str] = mapped_column(String(255))
     payload_hash: Mapped[str] = mapped_column(String(64))

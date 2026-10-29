@@ -1,0 +1,218 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<section
+  [attr.aria-label]="'Knowledge behavior' | ffkText"
+  [attr.aria-busy]="c.pending() || c.saving()"
+>
+  <header>
+    <div>
+      <h2>{{ 'Knowledge behavior' | ffkText }}</h2>
+      <p class="organization"><ffk-icon name="users" />{{ c.f.tenant()?.name }}</p>
+      <p>
+        {{
+          'These settings apply to this organization. Workspace model assignments remain separate.'
+            | ffkText
+        }}
+      </p>
+    </div>
+    <ffk-button
+      variant="quiet"
+      icon="refresh"
+      [label]="'Reload knowledge behavior' | ffkText"
+      [disabled]="c.pending() || c.saving()"
+      (click)="c.load()"
+    />
+  </header>
+  @if (c.pending()) {
+    <ffk-skeleton width="60%" height="3px" [label]="'Loading knowledge behavior' | ffkText" />
+  }
+  @if (c.error()) {
+    <p class="feedback error" role="alert"><ffk-icon name="alert" />{{ c.error() | ffkText }}</p>
+  }
+  @if (c.notice()) {
+    <p class="feedback" role="status"><ffk-icon name="check" />{{ c.notice() | ffkText }}</p>
+  }
+  @if (c.settings(); as settings) {
+    <p class="origin">
+      {{
+        (settings.origin === 'deployment'
+          ? 'Using deployment settings'
+          : 'Saved for this organization'
+        ) | ffkText
+      }}
+      · {{ 'Revision' | ffkText }} {{ settings.revision | ffkValue: 'INTEGER' }}
+    </p>
+    @if (!c.f.tenantPermissions().has('settings:write')) {
+      <p class="read-only">
+        {{
+          'You can view these settings. An organization administrator with settings permission can change them.'
+            | ffkText
+        }}
+      </p>
+    }
+    <form #form (ngSubmit)="save(form)" novalidate>
+      <fieldset class="methods" [disabled]="!c.canEdit()" aria-describedby="knowledge-method-help">
+        <legend>{{ 'Document answers' | ffkText }}</legend>
+        <p id="knowledge-method-help">
+          {{ 'Choose how koinon uses authorized documents to answer questions.' | ffkText }}
+        </p>
+        @for (mode of settings.capabilities.documents.answer_modes; track mode) {
+          <label class="method"
+            ><input
+              type="radio"
+              name="documents.answer_mode"
+              [value]="mode"
+              [ngModel]="c.values()['documents.answer_mode']"
+              (ngModelChange)="c.set('documents.answer_mode', $event)"
+              [attr.aria-invalid]="c.errors()['documents.answer_mode'] ? true : null"
+            /><span
+              ><strong>{{
+                (mode === 'rag'
+                  ? 'Find relevant passages (RAG)'
+                  : 'Analyze documents in steps (RLM)'
+                ) | ffkText
+              }}</strong
+              ><small>{{
+                (mode === 'rag'
+                  ? 'Find relevant passages and use them to answer.'
+                  : 'Examine documents through several analysis steps before answering.'
+                ) | ffkText
+              }}</small></span
+            ></label
+          >
+        }
+      </fieldset>
+      @if (
+        c.values()['documents.answer_mode'] === 'rlm' &&
+        !settings.capabilities.documents.rlm_curated_knowledge_supported
+      ) {
+        <aside class="limitation">
+          <ffk-icon name="alert" />
+          <div>
+            <strong>{{ 'RLM uses document files' | ffkText }}</strong>
+            <p>
+              {{
+                'Curated knowledge requires RAG; koinon will not switch methods automatically.'
+                  | ffkText
+              }}
+            </p>
+          </div>
+        </aside>
+      }
+      @if (
+        c.values()['documents.answer_mode'] === 'rlm' &&
+        settings.capabilities.documents.rlm_recorded_views_required
+      ) {
+        <p class="recorded-views">
+          {{
+            'RLM needs document versions with recorded processing details. Older documents may need to be reprocessed.'
+              | ffkText
+          }}
+        </p>
+      }
+      @if (c.errors()['documents.answer_mode']) {
+        <p class="field-error" role="alert">{{ c.errors()['documents.answer_mode'] | ffkText }}</p>
+      }
+      @for (group of groups; track group.label) {
+        <details class="advanced">
+          <summary>{{ group.label | ffkText }}</summary>
+          <p>{{ group.description | ffkText }}</p>
+          <div class="fields">
+            @for (field of group.fields; track field.name) {
+              <div class="field" [class.checkbox]="field.boolean">
+                @if (field.boolean) {
+                  <label [for]="id(field)"
+                    ><input
+                      type="checkbox"
+                      [id]="id(field)"
+                      [name]="id(field)"
+                      [ngModel]="c.values()[id(field)]"
+                      (ngModelChange)="c.set(id(field), $event)"
+                      [disabled]="!c.canEdit()"
+                    />{{ field.label | ffkText }}</label
+                  >
+                } @else {
+                  <label [for]="id(field)">{{ field.label | ffkText }}</label
+                  ><input
+                    type="number"
+                    [id]="id(field)"
+                    [name]="id(field)"
+                    [step]="field.decimal ? 'any' : 1"
+                    [min]="c.bound(field)?.minimum ?? null"
+                    [max]="c.bound(field)?.maximum ?? null"
+                    [value]="c.values()[id(field)]"
+                    (input)="c.set(id(field), $any($event.target).value)"
+                    [disabled]="!c.canEdit() || !c.bound(field)"
+                    [attr.aria-invalid]="c.errors()[id(field)] ? true : null"
+                    [attr.aria-describedby]="id(field) + '-help'"
+                  /><small [id]="id(field) + '-help'">
+                    @if (c.errors()[id(field)]) {
+                      <span class="field-error" role="alert">{{
+                        c.errors()[id(field)] | ffkText
+                      }}</span>
+                    } @else if (c.bound(field); as bound) {
+                      {{ 'Range' | ffkText }}: {{ bound.minimum | ffkValue }}–{{
+                        bound.maximum | ffkValue
+                      }}
+                    } @else {
+                      {{ 'Limits unavailable' | ffkText }}
+                    }
+                  </small>
+                }
+              </div>
+            }
+          </div>
+        </details>
+      }
+      <details class="prerequisites">
+        <summary>{{ 'Model prerequisites' | ffkText }}</summary>
+        <p>
+          {{
+            'Assignments are checked when an operation runs. Assigned does not mean runtime availability has been verified.'
+              | ffkText
+          }}
+        </p>
+        @for (role of requiredRoles(); track role.id) {
+          <div class="role">
+            <span>{{ role.label | ffkText }}</span
+            ><ffk-badge [tone]="role.status === 'assigned' ? 'neutral' : 'attention'">{{
+              status(role.status) | ffkText
+            }}</ffk-badge>
+          </div>
+        }
+        @if (!c.roles()) {
+          <p>
+            {{
+              'Model assignments could not be read in this scope. An administrator can review them in Knowledge models.'
+                | ffkText
+            }}
+          </p>
+        }
+        @if (
+          c.values()['documents.answer_mode'] === 'rlm' &&
+          !settings.capabilities.documents.rlm_curated_knowledge_supported
+        ) {
+          <small class="technical-detail">{{
+            settings.capabilities.documents.rlm_curated_knowledge_reason
+          }}</small>
+        }
+        @if (c.f.tenantPermissions().has('providers:write')) {
+          <a href="#knowledge-model-assignments">{{ 'Review model assignments' | ffkText }}</a>
+        }
+      </details>
+      <footer [class.dirty-actions]="c.dirty() || c.saving()">
+        <ffk-button
+          variant="quiet"
+          [disabled]="!c.dirty() || c.pending() || c.saving()"
+          (click)="c.cancel()"
+          >{{ 'Cancel' | ffkText }}</ffk-button
+        ><ffk-button
+          type="submit"
+          variant="primary"
+          [disabled]="!c.canSave()"
+          [loading]="c.saving()"
+          >{{ 'Save changes' | ffkText }}</ffk-button
+        >
+      </footer>
+    </form>
+  }
+</section>

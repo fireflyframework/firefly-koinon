@@ -19,8 +19,11 @@ sys.path.insert(0, str(root / "sdk/python/src"))
 from koinon_sdk import contracts, models, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance
 from koinon_sdk.client import KoinonClient
 from koinon_sdk import coordinates, curated, dataset_files, authorized_applications, organization_chat
+from koinon_sdk import organization_knowledge
 
 rows = """
+OrganizationKnowledgeController.get|organization_knowledge_settings|organizationKnowledge.get|-|OrganizationKnowledgeSettings
+OrganizationKnowledgeController.update|update_organization_knowledge_settings|organizationKnowledge.update|OrganizationKnowledgeSettingsInput|OrganizationKnowledgeSettings
 OrganizationChatController.get|organization_chat_settings|organizationChat.get|-|OrganizationChatSettings
 OrganizationChatController.update|update_organization_chat_settings|organizationChat.update|OrganizationChatSettingsInput|OrganizationChatSettings
 AuthorizedApplicationController.list|authorized_applications|authorizedApplications.list|-|Page[AuthorizedApplication]
@@ -357,7 +360,7 @@ assert not mapping, mapping
 assert not unmapped, "Canonical API operations awaiting typed SDK mapping: " + ", ".join(unmapped)
 
 classes = {}
-for module in (models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files, authorized_applications, organization_chat):
+for module in (models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files, authorized_applications, organization_chat, organization_knowledge):
     classes.update(
         {
             name: value

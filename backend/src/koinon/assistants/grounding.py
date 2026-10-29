@@ -23,12 +23,32 @@ def evidence_view(kind: str, data: dict, evidence_id: str, budget: int) -> dict:
         )
 
     records = data.get(key) or []
+    if kind == "search" and data.get("no_answer") is True:
+        view["no_answer"] = True
+        records = []
+    final_answer = data.get("answer") if kind == "search" else None
+    analysis_pending = isinstance(final_answer, str) and bool(final_answer.strip())
     for record in records:
         candidate = {**view, key: [*view[key], record]}
         if not fits(candidate):
             view["truncated"] = True
             break
         view = candidate
+        if analysis_pending:
+            analysis = {
+                "text": final_answer,
+                "citations": data.get("citations") or [],
+                "result_id": evidence_id,
+            }
+            while analysis["text"] and not fits({**view, "derived_analysis": analysis}):
+                analysis["text"] = analysis["text"][: len(analysis["text"]) // 2]
+                analysis["truncated"] = True
+                view["truncated"] = True
+            if analysis["text"] and fits({**view, "derived_analysis": analysis}):
+                view["derived_analysis"] = analysis
+            else:
+                view["truncated"] = True
+            analysis_pending = False
     if not fits(view):
         return {"evidence_id": evidence_id, "truncated": True}
     return view
@@ -38,7 +58,7 @@ def has_evidence(kind: str, view: dict) -> bool:
     if kind == "query":
         return view.get("execution_status") in {"OK", "REFINED_OK"} and bool(view.get("preview"))
     if kind == "search":
-        return any(
+        return view.get("no_answer") is not True and any(
             isinstance(hit, dict) and isinstance(hit.get("text"), str) and hit["text"].strip()
             for hit in view.get("hits", [])
         )
@@ -47,6 +67,28 @@ def has_evidence(kind: str, view: dict) -> bool:
 
 def refusal_message(language: str, code: str = "KNOWLEDGE_ONLY") -> str:
     messages = {
+        "RLM_DOCUMENT_VIEWS_REQUIRED": (
+            "The selected documents do not have the recorded views required for RLM. "
+            "Ask an administrator to review the source prerequisites.",
+            "Los documentos seleccionados no tienen las vistas registradas que requiere RLM. "
+            "Pide a un administrador que revise los requisitos de las fuentes.",
+        ),
+        "KNOWLEDGE_RLM_UNQUALIFIED": (
+            "RLM is not qualified for curated knowledge. Choose a supported source or "
+            "ask an organization administrator to review the answer mode.",
+            "RLM aún no está validado para el conocimiento curado. Elige una fuente compatible "
+            "o pide a un administrador que revise el modo de respuesta.",
+        ),
+        "KNOWLEDGE_SETTINGS_SNAPSHOT_REQUIRED": (
+            "This answer has no recorded knowledge settings. Start a new answer.",
+            "Esta respuesta no tiene una configuración de conocimiento registrada. "
+            "Inicia una nueva respuesta.",
+        ),
+        "KNOWLEDGE_SETTINGS_SNAPSHOT_INVALID": (
+            "The recorded knowledge settings for this answer could not be verified. Start a new answer.",
+            "No se pudo verificar la configuración de conocimiento registrada para esta respuesta. "
+            "Inicia una nueva respuesta.",
+        ),
         "EVIDENCE_BUDGET_EXCEEDED": (
             "This question exceeded the source audit budget. Narrow the question or select fewer sources.",
             "Esta pregunta superó el límite de auditoría de fuentes. "

@@ -135,6 +135,19 @@
   "DocumentEvidenceKind": [
     "document_passage"
   ],
+  "KnowledgeAnswerMode": [
+    "rag",
+    "rlm"
+  ],
+  "DocumentKnowledgeCapabilitiesRlmCuratedKnowledgeReason": [
+    "KNOWLEDGE_RLM_UNQUALIFIED"
+  ],
+  "DocumentKnowledgeCapabilitiesRlmModelRole": [
+    "documents.rlm"
+  ],
+  "DocumentKnowledgeCapabilitiesRlmRecordedViewsReason": [
+    "RLM_DOCUMENT_VIEWS_REQUIRED"
+  ],
   "EntraCredentialKind": [
     "entra"
   ],
@@ -347,6 +360,10 @@
     "needs_setup",
     "unverified",
     "ready"
+  ],
+  "KnowledgeSettingsOrigin": [
+    "deployment",
+    "organization"
   ],
   "PendingKnowledgeCommitStatus": [
     "pending"

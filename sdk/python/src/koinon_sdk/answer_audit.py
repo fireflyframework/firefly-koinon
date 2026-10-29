@@ -3,7 +3,7 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/assistants/audit_dtos.py
-SHA256: 3e42b51eededc8abbd11c5502368d759ddc82b0db7f106636bff9d0de2b3ae7c
+SHA256: 39aabe770e0d4a75e38bc231e91bb484345672fbfb4b6ec6db29bd53846876d8
 
 Server authorization and semantic validation remain authoritative.
 """
@@ -14,6 +14,7 @@ from pydantic import AwareDatetime, Field
 
 from koinon_sdk._base import ResponseModel
 from koinon_sdk.evidence import SourceReference
+from koinon_sdk.organization_knowledge import OrganizationKnowledgeSnapshot
 
 
 class AuditValue(ResponseModel):
@@ -115,6 +116,7 @@ class AnswerAudit(AuditValue):
     run_id: str
     provenance_status: Literal["recorded", "not_recorded"]
     source_provenance_complete: bool | None = None
+    knowledge_settings_snapshot: OrganizationKnowledgeSnapshot | None = None
     generations: list[GenerationReceipt] = Field(default_factory=list[GenerationReceipt], max_length=100)
     sources: list[SourceReference] = Field(default_factory=list[SourceReference], max_length=500)
     private_files: list[PrivateFileReceipt] = Field(default_factory=list[PrivateFileReceipt], max_length=10)

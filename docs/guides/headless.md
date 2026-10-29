@@ -97,3 +97,5 @@ OpenUI artifacts contain only registered component names and evidence references
 Run the API with `koinon.main:app` and the independent worker with `python -m koinon.assistants.worker`, using runtime credentials and the same protected configuration. Run migrations separately with deployment authority. The worker needs configured knowledge and model providers; it has no dependency on the management application. See [production deployment](../operations/production.md) for identity, storage, sessions and secret management.
 
 Qualification is recorded separately for SDK packaging, native API authorization, local provider generation, embedded UI and production deployment. Passing a mock HTTP test does not establish provider readiness.
+
+Organization administrators can read and update typed [knowledge behavior settings](../operations/organization-knowledge.md) through all three SDKs. Organization policy revisions and optional applied snapshots remain distinct from workspace model assignments and token permissions.

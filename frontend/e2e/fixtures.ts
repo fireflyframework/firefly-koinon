@@ -1,5 +1,6 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 import { expect, type Page } from '@playwright/test';
+import { knowledgeBehaviorSettings } from './knowledge-behavior-fixture';
 import type {
   CatalogEntry,
   CatalogSummary,
@@ -130,6 +131,8 @@ export async function mockService(
         status: id ? 'ready' : 'unconfigured',
       });
     }
+    if (path.endsWith('/knowledge/settings') && request.method() === 'GET')
+      return respond({ ...knowledgeBehaviorSettings, tenant_id: path.split('/')[2] });
     if (path.endsWith('/configuration'))
       return respond({
         providers: [],

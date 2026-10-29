@@ -6,6 +6,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, JsonValue, Sec
 
 from koinon_sdk._base import InputModel, ResponseModel
 from koinon_sdk.attachments import AttachmentCapabilities
+from koinon_sdk.organization_knowledge import OrganizationKnowledgeSnapshot
 from koinon_sdk.proposals import CatalogProposal, ProposalUpdate
 
 
@@ -156,6 +157,7 @@ class UsageSummary(ResponseModel):
 
 
 class QueryResponse(ResponseModel):
+    knowledge_settings_snapshot: OrganizationKnowledgeSnapshot | None = None
     query_id: str
     sql: str | None = None
     execution_status: Literal["OK", "REFINED_OK", "FAILED", "REJECTED_BY_FIREWALL"] | None
@@ -195,6 +197,7 @@ class SearchHit(ResponseModel):
 
 
 class SearchResponse(ResponseModel):
+    knowledge_settings_snapshot: OrganizationKnowledgeSnapshot | None = None
     hits: list[SearchHit]
     answer: str | None = None
     citations: list[Citation] = Field(default_factory=list[Citation])

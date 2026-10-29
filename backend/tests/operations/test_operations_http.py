@@ -25,6 +25,9 @@ def test_signed_configuration_observations_require_operator_authority(client):
     assert deployment["ownership"] == "deployment" and deployment["read_only"] is True
     assert deployment["datasources"][0]["available"] is True
     assert deployment["metrics"]["available"] is None
-    assert all(item["available"] is None for item in deployment["storage"])
+    assert {item["id"]: item["available"] for item in deployment["storage"]} == {
+        "documents": True,
+        "structured": True,
+    }
     assert "sqlite+" not in response.text and "app.db" not in response.text
     assert client.post(path + "/deployment", headers=native.bearer(), json={}).status_code == 404

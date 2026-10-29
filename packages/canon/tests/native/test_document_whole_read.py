@@ -135,6 +135,13 @@ async def test_rlm_hook_observes_committed_exact_view_before_model_and_not_metad
         def document_sync(self, stage, *args):
             events.append(("sync", stage))
 
+        def document_view_parts(self, meta, read, scope):
+            assert scope.active and scope.observer is self
+            assert meta.source_id == read.source_id == source.id
+            assert tuple(page.text for page in read.pages) == ("safe complete text",)
+            assert all(page.part_id and page.sha256 == sha256(page.text.encode()).hexdigest() for page in read.pages)
+            events.append(("parts", read.extraction_id))
+
         def document_extraction(self, source_id, version_id, extraction_id, scope):
             assert scope.active and scope.observer is self
             assert source_id == source.id
@@ -167,7 +174,7 @@ async def test_rlm_hook_observes_committed_exact_view_before_model_and_not_metad
             docs.resolve(key).source_id = "foreign"
         with pytest.raises(TypeError):
             docs._sources[key] = docs.resolve(key)
-    assert [event[0] for event in events] == ["sync", "extraction", "sync", "sync"]
+    assert [event[0] for event in events] == ["sync", "parts", "extraction", "sync", "sync"]
     assert events[-2:] == [("sync", "rlm.read"), ("sync", "rlm.root")]
 
 
@@ -406,13 +413,15 @@ async def test_required_legacy_whole_source_needs_explicit_versioned_intake(
         provenance.observe(
             SimpleNamespace(authorize=AsyncMock()), tenant_id="t", workspace_id="w", actor="actor"
         ),
-        pytest.raises(ServiceUnavailableException, match="explicitly authorized versioned intake"),
+        pytest.raises(ServiceUnavailableException) as rejected,
     ):
         await CanonCorpusBuilder(
             source_repository=repositories["source"],
             knowledge_repository=repositories["knowledge"],
             object_store=lineage.store,
         ).build(tenant_id="t", workspace_id="w")
+    assert rejected.value.code == "RLM_DOCUMENT_VIEWS_REQUIRED"
+    assert rejected.value.__cause__.code == "DOCUMENT_EXTRACTION_UNAVAILABLE"
 
 
 async def test_reused_view_reauthorizes_before_returning_verified_content(lineage, repositories):
@@ -524,7 +533,8 @@ async def test_versioned_citation_index_one_uses_real_part_for_recorded_page_sev
     )
     source = await submit(intake)
     observer = SimpleNamespace(
-        authorize=AsyncMock(), document_extraction=lambda *args: None, document_sync=lambda *args: None
+        authorize=AsyncMock(), document_extraction=lambda *args: None, document_sync=lambda *args: None,
+        document_view_parts=lambda *args: None,
     )
     with provenance.observe(observer, tenant_id="t", workspace_id="w", actor="actor"):
         docs = await CanonCorpusBuilder(

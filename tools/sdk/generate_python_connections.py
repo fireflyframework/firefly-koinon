@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCES = {
+    "organization_knowledge": "backend/src/koinon/organization_knowledge/dtos.py",
     "organization_chat": "backend/src/koinon/organization_chat/dtos.py",
     "authorized_applications": "backend/src/koinon/authorized_applications/dtos.py",
     "coordinates": "backend/src/koinon/knowledge/provenance/coordinate_dtos.py",
@@ -81,9 +82,11 @@ def render(source):
             node.body = [
                 item
                 for item in node.body
-                if isinstance(item, ast.AnnAssign)
-                and isinstance(item.target, ast.Name)
-                and item.target.id != "model_config"
+                if (isinstance(item, ast.AnnAssign)
+                    and isinstance(item.target, ast.Name)
+                    and item.target.id != "model_config")
+                or (source.parent.name == "organization_knowledge" and node.name == "KnowledgePolicyValue"
+                    and isinstance(item, ast.Assign))
             ] or [ast.Pass()]
             if source.parent.name == "curated" and node.name == "KnowledgeConfirmation":
                 original = next(value for value in ast.parse(source.read_text()).body if isinstance(value, ast.ClassDef) and value.name == node.name)
@@ -105,7 +108,7 @@ def render(source):
         "datetime": ["datetime"],
         "typing": ["Annotated", "Literal"],
         "uuid": ["UUID"],
-        "pydantic": ["AwareDatetime", "Field", "JsonValue", "RootModel", "SecretStr", "StrictBool", "StrictFloat", "StrictInt", "StrictStr", "field_validator"],
+        "pydantic": ["AwareDatetime", "ConfigDict", "Field", "JsonValue", "RootModel", "SecretStr", "StrictBool", "StrictFloat", "StrictInt", "StrictStr", "field_validator"],
         "koinon_sdk._base": ["DocumentRevisionPreconditions", "InputModel", "ResponseModel"],
         "koinon_sdk.contracts": ["Role"],
     }
@@ -114,6 +117,7 @@ def render(source):
     names -= declared
     available["koinon_sdk.evidence"] = ["ConversationMessage", "Frozen", "Identifier", "Revision", "SourceReference", "StoredResult"]
     available["koinon_sdk.exports"] = ["Input", "MessageSelection"]
+    available["koinon_sdk.organization_knowledge"] = ["OrganizationKnowledgeSnapshot"]
     imports = "\n".join(
         "from " + key + " import " + ", ".join(name for name in values if name in names)
         for key, values in available.items()

@@ -196,7 +196,7 @@ class NativeKnowledgeEvidence:
         try:
             receipt.budget.check(receipt, minimum_reads=1, minimum_sources=1)
             data = await self.knowledge.search(subject, tenant_id, **arguments, _capture=receipt)
-            complete = receipt.complete and receipt.observed and not arguments.get("answer", False)
+            complete = receipt.complete and receipt.observed
             admitted = {}
             for hit in data.get("hits", []):
                 known = receipt.knowledge_sources.get(str(hit.get("id")))
@@ -268,9 +268,16 @@ class NativeKnowledgeEvidence:
                 if read.domain != "canon" or read.tenant_id != tenant_id:
                     raise unavailable()
                 for native_id in read.source_ids:
-                    bound = admitted.get((read.workspace_id, native_id))
+                    key = (read.workspace_id, native_id)
+                    bound = admitted.get(key)
                     if bound is None:
-                        raise unavailable()
+                        canonical_id = receipt.canonical_documents.get(key)
+                        if canonical_id is None:
+                            raise unavailable()
+                        bound = await self.entry(subject, tenant_id, canonical_id, "document")
+                        if (bound[1].native_workspace_id, bound[1].native_id) != key:
+                            raise unavailable()
+                        admitted[key] = bound
                     chain, _ = bound
                     reads.append(
                         replace(
@@ -292,6 +299,10 @@ class NativeKnowledgeEvidence:
                     [(source, bindings[source.asset_id]) for source in part_sources],
                 )
                 sources.update(verified)
+            if arguments.get("answer", False):
+                from koinon.knowledge.rlm_provenance import verified_rlm_answer
+
+                complete = complete and verified_rlm_answer(receipt, data, admitted)
             return checked_capture(
                 receipt,
                 data,
@@ -309,7 +320,10 @@ class NativeKnowledgeEvidence:
                 (receipt.document_origins or receipt.knowledge_sources)
                 and (receipt.documents or receipt.native_reads)
             ):
-                raise failed_receipt(error, receipt, tenant_id) from None
+                failure = failed_receipt(error, receipt, tenant_id)
+                if getattr(error, "code", None) == "RLM_DOCUMENT_VIEWS_REQUIRED":
+                    failure.code = "RLM_DOCUMENT_VIEWS_REQUIRED"
+                raise failure from None
             raise
         finally:
             receipt.closed = True
