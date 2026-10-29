@@ -44,33 +44,6 @@
   align-self: center;
   margin-top: 0;
 }
-.agent-choice {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-  margin: 8px 0;
-  font-size: 12px;
-  color: var(--ui-muted);
-}
-.agent-choice select {
-  min-height: 36px;
-  max-width: 280px;
-  border: 1px solid var(--ui-line);
-  border-radius: 7px;
-  background: var(--ui-surface);
-  color: var(--ui-text);
-  font: inherit;
-  padding: 6px 8px;
-}
-.agent-choice small {
-  flex-basis: 100%;
-  line-height: 1.6;
-}
-.new-draft .agent-choice {
-  width: min(100%, 820px);
-  align-self: center;
-}
 .conversation-list {
   display: flex;
   flex-direction: column;
@@ -196,28 +169,6 @@
 .conversation-empty .scope-note {
   font-size: 11px;
   margin-top: 8px;
-}
-.setup-checks {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-width: 45ch;
-}
-.setup-checks li {
-  display: flex;
-  gap: 8px;
-  font-size: 12px;
-  line-height: 1.7;
-  color: var(--ui-muted);
-  text-align: left;
-}
-.setup-checks ffk-icon {
-  flex-shrink: 0;
-  font-size: 14px;
-  margin-top: 3px;
 }
 .chat-thread {
   display: flex;
@@ -384,14 +335,6 @@ select:focus-visible {
   border: 0;
   border-radius: 12px;
 }
-.trial-notice {
-  font-size: 11px;
-  line-height: 1.7;
-  color: var(--ui-muted);
-  border-left: 2px solid var(--ui-accent);
-  padding: 6px 12px;
-  margin: 16px 0 0;
-}
 :host(.chat-compact) .chat-grid {
   grid-template-columns: minmax(0, 1fr);
   gap: 0;
@@ -547,13 +490,11 @@ select:focus-visible {
 .conversation-scroll,
 .composer-slot,
 .conversation-toolbar,
-.agent-choice,
 .answer-note {
   width: min(100%, var(--ffk-reading-max, 760px));
   align-self: center;
 }
 .new-draft .composer-slot,
-.new-draft .agent-choice,
 .new-draft.named-draft .conversation-toolbar {
   width: min(100%, var(--ffk-reading-max, 760px));
 }
@@ -686,12 +627,6 @@ select:focus-visible {
 .assistant-message .message-text {
   background: var(--ui-canvas);
   border-color: transparent;
-}
-
-@media (pointer: coarse) {
-  .agent-choice select {
-    min-height: 44px;
-  }
 }
 
 .answer-actions {

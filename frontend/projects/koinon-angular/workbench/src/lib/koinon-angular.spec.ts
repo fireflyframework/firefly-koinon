@@ -224,3 +224,94 @@ it('keeps a controlled account section until the host acknowledges navigation', 
   await fixture.whenStable();
   expect(fixture.componentInstance.accountScreen()).toBe(null);
 });
+
+it('requests Library and account dismissal when changing organizations from a personal screen', async () => {
+  const fixture = await mount(async (_method, path) =>
+    path === '/context'
+      ? { subject: 'reader', tenants: [
+          { id: 'tenant-one', name: 'First', roles: [], permissions: ['catalog:read'] },
+          { id: 'tenant-two', name: 'Second', roles: [], permissions: ['catalog:read'] },
+        ], memberships: [], workspaces: [] }
+      : { items: [] },
+  );
+  fixture.componentRef.setInput('view', 'chat');
+  fixture.componentRef.setInput('accountSection', 'profile');
+  await fixture.whenStable();
+  const views: string[] = [], sections: (string | null)[] = [];
+  fixture.componentInstance.viewChange.subscribe(value => views.push(value));
+  fixture.componentInstance.accountSectionChange.subscribe(value => sections.push(value));
+  await fixture.componentInstance.changeTenant('tenant-two');
+  expect(views).toEqual(['library']);
+  expect(sections).toEqual([null]);
+  expect(fixture.componentInstance.f.tenantId()).toBe('tenant-two');
+});
+
+it('keeps an organization load failure visible after navigating from Chat', async () => {
+  const fixture = await mount(async (_method, path) => {
+    if (path === '/context') return { subject: 'reader', tenants: [
+      { id: 'tenant-one', name: 'First', roles: [], permissions: ['catalog:read'] },
+      { id: 'tenant-two', name: 'Second', roles: [], permissions: ['catalog:read'] },
+    ], memberships: [], workspaces: [] };
+    if (path === '/tenants/tenant-two/catalog') throw new KoinonError(503, 'UNAVAILABLE', 'Organization temporarily unavailable');
+    return { items: [] };
+  });
+  await fixture.componentInstance.navigate('chat');
+  await fixture.componentInstance.changeTenant('tenant-two');
+  expect(fixture.componentInstance.f.error()).toBe('Organization temporarily unavailable');
+});
+
+it('resets organization and navigation immediately without clobbering a later Chat request', async () => {
+  let complete!: (value: unknown) => void;
+  const fixture = await mount(async (_method, path) => {
+    if (path === '/context') return { subject: 'reader', tenants: [
+      { id: 'tenant-one', name: 'First', roles: [], permissions: ['catalog:read'] },
+      { id: 'tenant-two', name: 'Second', roles: [], permissions: ['catalog:read'] },
+    ], memberships: [], workspaces: [] };
+    if (path === '/tenants/tenant-two/catalog') return new Promise(resolve => { complete = resolve; });
+    return { items: [] };
+  });
+  await fixture.componentInstance.navigate('chat');
+  const views: string[] = [];
+  fixture.componentInstance.viewChange.subscribe(value => views.push(value));
+  const scopes: string[] = [];
+  fixture.componentInstance.contextChange.subscribe(scope => scopes.push(scope.tenantId));
+  const changing = fixture.componentInstance.changeTenant('tenant-two');
+  expect(scopes).toEqual(['tenant-two']);
+  expect(fixture.componentInstance.destination()).toBe('library');
+  expect(fixture.componentInstance.f.tenantId()).toBe('tenant-two');
+  await fixture.componentInstance.navigate('chat');
+  complete({ items: [] });
+  await changing;
+  expect(fixture.componentInstance.destination()).toBe('chat');
+  expect(views).toEqual(['library', 'chat']);
+});
+
+it('does not request initial host resources after all organization memberships are removed', async () => {
+  const catalogs: string[] = [];
+  const fixture = await mount(async (_method, path) => {
+    if (path === '/context') return { subject: 'reader', tenants: [], memberships: [], workspaces: [] };
+    if (path.includes('/catalog')) catalogs.push(path);
+    return { items: [] };
+  });
+  fixture.componentRef.setInput('workspaceId', 'previous-workspace');
+  fixture.componentRef.setInput('projectId', 'previous-project');
+  fixture.componentRef.setInput('resourceId', 'previous-resource');
+  await fixture.whenStable();
+  expect(catalogs).toEqual([]);
+  expect(fixture.componentInstance.f.workspaceId()).toBe('');
+});
+
+it('retries the chosen organization after the initial explicit entry scope has been replaced', async () => {
+  const fixture = await mount(async (_method, path) => path === '/context'
+    ? { subject: 'reader', tenants: [
+        { id: 'tenant-one', name: 'First', roles: [], permissions: ['catalog:read'] },
+        { id: 'tenant-two', name: 'Second', roles: [], permissions: ['catalog:read'] },
+      ], memberships: [], workspaces: [] }
+    : { items: [] });
+  fixture.componentRef.setInput('tenantId', 'tenant-one');
+  await fixture.whenStable();
+  await fixture.componentInstance.changeTenant('tenant-two');
+  fixture.componentInstance.retryConnection();
+  await fixture.whenStable();
+  expect(fixture.componentInstance.f.tenantId()).toBe('tenant-two');
+});

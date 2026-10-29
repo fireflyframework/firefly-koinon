@@ -49,6 +49,10 @@ The host can instead set the `client` input. A client change resets scoped state
 
 Outputs include `selectionChange`, `contextChange`, `queryCompleted`, `citationSelected`, `authenticationRequired`, `signOutRequested`, and `themeChange`. The host handles sign-in, sign-out, and theme persistence when embedding the workbench.
 
+An optional `KOINON_TENANT_RESOLVER` provider lets the host choose an initial organization from the freshly fetched `ContextResponse` and the requested `tenantId`. The resolver runs before the first catalog request; its result must be present in `context.tenants`, otherwise the workbench uses the first authorized organization. The default behavior prefers the explicit input, then the current organization for the same authenticated subject on retry. An empty authorized list clears the current scope without a catalog request. Existing component inputs, constructors, and providers remain compatible.
+
+The management application retains only the selected organization ID in tab storage, scoped by deployment base and authenticated subject, and revalidates it against fresh context. Explicit authorized share and accepted invitation scope takes precedence. Embedded hosts own any persistence policy; the library never reads or writes their URL or browser storage. Listen to `contextChange` to retain selection without feeding every event back into the initial context inputs.
+
 ## Optional Chat and Settings
 
 For a Library host, import `KoinonWorkbench`, its injection providers, and optional loader tokens from `@fireflyframework/koinon-angular/workbench`. This entrypoint contains the complete initial Library and its synchronous vocabulary; dialog and provenance vocabulary arrives with those panels. Chat and Settings register their vocabulary before their views render.

@@ -8,7 +8,12 @@ const program =
   'root = KnowledgeAnswer([table, chart, document, schema, flow, cites])\ntable = Evidence("r-query", "table")\nchart = Evidence("r-query", "chart")\ndocument = Evidence("r-search", "document")\nschema = Evidence("r-schema", "schema")\nflow = Evidence("r-lineage", "lineage")\ncites = Evidence("r-search", "citations")';
 async function assistantFixture(
   page: Page,
-  options: { malicious?: boolean; denied?: boolean; audit?: boolean } = {},
+  options: {
+    malicious?: boolean;
+    denied?: boolean;
+    audit?: boolean;
+    multipleAgents?: boolean;
+  } = {},
 ) {
   await mockService(page);
   if (options.audit)
@@ -27,6 +32,7 @@ async function assistantFixture(
   let sent = false,
     completed = false;
   const resultReads: string[] = [];
+  const submittedAgents: string[] = [];
   const artifact = {
     id: 'artifact',
     kind: 'openui',
@@ -152,6 +158,18 @@ async function assistantFixture(
     if (path.endsWith('/agents'))
       return json({
         items: [
+          ...(options.multipleAgents
+            ? [
+                {
+                  id: 'disabled-agent',
+                  name: 'Disabled configuration',
+                  enabled: false,
+                  can_run: false,
+                  status: 'disabled',
+                  checks: [],
+                },
+              ]
+            : []),
           {
             id: 'agent-one',
             name: 'Research assistant',
@@ -163,9 +181,21 @@ async function assistantFixture(
             instructions: '',
             enabled: true,
             revision: 1,
-            status: 'ready',
+            status: options.multipleAgents ? 'unverified' : 'ready',
+            can_run: true,
             checks: [],
           },
+          ...(options.multipleAgents
+            ? [
+                {
+                  id: 'other-agent',
+                  name: 'Other configuration',
+                  enabled: true,
+                  status: 'ready',
+                  checks: [],
+                },
+              ]
+            : []),
         ],
       });
     if (path.endsWith('/chat/threads'))
@@ -221,6 +251,7 @@ async function assistantFixture(
           : [],
       });
     if (path.endsWith('/runs')) {
+      submittedAgents.push(route.request().postDataJSON().agent_id);
       sent = true;
       return json({ run_id: 'run-one', message_id: 'answer', event_cursor: '0' });
     }
@@ -318,7 +349,7 @@ async function assistantFixture(
     }
     return route.fallback();
   });
-  return { resultReads };
+  return { resultReads, submittedAgents };
 }
 async function ask(page: Page) {
   await page.goto('/');
@@ -714,3 +745,34 @@ test('both message clocks use the viewer timezone while evidence keeps its respo
   await expect(page.locator('.user-message time')).toHaveText(/6:00\s*AM/);
   await expect(page.locator('.assistant-message time')).toHaveText(/6:00\s*AM/);
 });
+
+for (const width of [1440, 390])
+  test(`multiple technical agents stay out of the composer while answer audit retains provenance at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    const service = await assistantFixture(page, { audit: true, multipleAgents: true });
+    await ask(page);
+    const chat = page.locator('ffk-chat-page');
+    await expect(chat.locator('#chat-agent, .agent-choice, .trial-notice')).toHaveCount(0);
+    await expect(chat.getByRole('button', { name: 'Send', exact: true })).toBeVisible();
+    await expect(chat.getByRole('button', { name: 'Send trial', exact: true })).toHaveCount(0);
+    expect(service.submittedAgents).toEqual(['agent-one']);
+    await expect(chat.locator('.assistant-message .message-heading strong')).toHaveText('koinon');
+    await page.getByRole('button', { name: 'Audit', exact: true }).click();
+    const audit = page.getByRole('dialog', { name: 'Answer audit', exact: true });
+    await expect(audit.getByText('fixture-local', { exact: true })).toBeVisible();
+    await audit.locator('.generation-record summary').click();
+    await expect(audit.locator('code').filter({ hasText: /^agent-one$/ })).toBeVisible();
+    await expect(audit.locator('code').filter({ hasText: /^provider-one$/ })).toBeVisible();
+    await audit.getByRole('tab', { name: 'Sources', exact: true }).click();
+    await expect(audit.getByText('Service operating policy.pdf', { exact: true })).toBeVisible();
+    await expect(audit.getByText('Quarterly service activity', { exact: true })).toBeVisible();
+    await page.keyboard.press('Escape');
+    const output = resolve(process.cwd(), '.qualification-v22/chat-captures');
+    await mkdir(output, { recursive: true });
+    await page.screenshot({
+      path: resolve(output, `chat-no-agent-picker-${width}.png`),
+      animations: 'disabled',
+    });
+  });

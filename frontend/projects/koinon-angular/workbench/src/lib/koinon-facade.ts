@@ -21,7 +21,7 @@ import {
   type RequestOptions,
   type SearchResponse,
 } from '@fireflyframework/koinon-sdk';
-import { KOINON_TRANSPORT } from './client-provider';
+import { KOINON_TENANT_RESOLVER, KOINON_TRANSPORT } from './client-provider';
 import type {FolderPageState} from './models';
 import { KoinonClientContext } from './services/client-context';
 
@@ -29,6 +29,7 @@ import { KoinonClientContext } from './services/client-context';
 export class KoinonFacade {
   private readonly clientContext=inject(KoinonClientContext);
   private readonly transport = inject(KOINON_TRANSPORT, { optional: true });
+  private readonly tenantResolver = inject(KOINON_TENANT_RESOLVER, { optional: true });
   private revision = 0;
   private initialization = 0;
   readonly context = signal<ContextResponse | null>(null);
@@ -96,6 +97,7 @@ export class KoinonFacade {
   }
   async bootstrap(tenantId = ''): Promise<void> {
     const initialization = ++this.initialization;
+    const previousSubject = this.context()?.subject;
     this.initializing.set(true);
     this.error.set('');
     this.authRequired.set(false);
@@ -103,8 +105,11 @@ export class KoinonFacade {
       const context = await this.api().context();
       if (initialization !== this.initialization) return;
       this.context.set(context);
-      const id = tenantId || context.tenants[0]?.id;
-      if (id) await this.selectTenant(id);
+      const requested = this.tenantResolver
+        ? this.tenantResolver(context, tenantId)
+        : tenantId || (previousSubject === context.subject ? this.tenantId() : '');
+      const id = context.tenants.find(tenant => tenant.id === requested)?.id || context.tenants[0]?.id;
+      await this.selectTenant(id || '');
     } catch (error) {
       if (initialization === this.initialization) this.error.set(this.message(error));
     } finally {
@@ -124,6 +129,10 @@ export class KoinonFacade {
     this.clearResults();
     this.error.set('');
     this.notice.set('');
+    if (!id) {
+      this.pending.set(false);
+      return;
+    }
     this.pending.set(true);
     try {
       const result = await this.api().catalog.list(id,this.libraryFilter());

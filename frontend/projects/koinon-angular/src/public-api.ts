@@ -4,8 +4,10 @@ export { KoinonFacade } from '@fireflyframework/koinon-angular/workbench';
 export {
   KOINON_CLIENT,
   KOINON_TRANSPORT,
+  KOINON_TENANT_RESOLVER,
   provideKoinonClient,
 } from '@fireflyframework/koinon-angular/workbench';
+export type { KoinonTenantResolver } from '@fireflyframework/koinon-angular/workbench';
 export type { KoinonScope, KoinonView } from '@fireflyframework/koinon-angular/workbench';
 export { KoinonCitationPanel } from '@fireflyframework/koinon-angular/workbench';
 export { KoinonButton } from '@fireflyframework/koinon-angular/workbench';

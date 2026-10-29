@@ -63,7 +63,7 @@
             (change)="organizationChanged.emit($any($event.target).value)"
           >
             @for (org of organizations; track org.id) {
-              <option [value]="org.id">{{ org.name }}</option>
+              <option [value]="org.id" [selected]="org.id === tenantId">{{ org.name }}</option>
             }</select
           ><ffk-icon name="down" />
         </div>
@@ -194,7 +194,7 @@
           (change)="organizationChanged.emit($any($event.target).value)"
         >
           @for (org of organizations; track org.id) {
-            <option [value]="org.id">{{ org.name }}</option>
+            <option [value]="org.id" [selected]="org.id === tenantId">{{ org.name }}</option>
           }</select
         ><ffk-icon name="down" />
       </div>

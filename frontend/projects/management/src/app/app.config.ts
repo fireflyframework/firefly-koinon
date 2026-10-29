@@ -1,14 +1,16 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 import { provideHttpClient, withXsrfConfiguration } from '@angular/common/http';
-import { type ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { type ApplicationConfig, inject, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { FetchTransport, KoinonClient } from '@fireflyframework/koinon-sdk';
 import {
   KOINON_CHAT_LOADER,
   KOINON_SETTINGS_LOADER,
   KOINON_INVITATION_LOADER,
   KOINON_SHARED_CONVERSATION_LOADER,
+  KOINON_TENANT_RESOLVER,
   provideKoinonClient,
 } from '@fireflyframework/koinon-angular/workbench';
+import { OrganizationSelection } from './organization-selection';
 export function csrfToken(): string | null {
   const value = document.cookie
     .split(';')
@@ -24,6 +26,13 @@ export function csrfToken(): string | null {
 const transport = new FetchTransport({ baseUrl: '/bff/api/v1', credentials: 'include', csrfToken });
 export const appConfig: ApplicationConfig = {
   providers: [
+    {
+      provide: KOINON_TENANT_RESOLVER,
+      useFactory: () => {
+        const selection = inject(OrganizationSelection);
+        return selection.resolve.bind(selection);
+      },
+    },
     {
       provide: KOINON_SHARED_CONVERSATION_LOADER,
       useValue: () => import('@fireflyframework/koinon-angular/chat/page').then(module => module.KoinonSharedConversation),
