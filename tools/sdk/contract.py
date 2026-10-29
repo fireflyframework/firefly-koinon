@@ -365,7 +365,9 @@ for module in (models, contracts, indexes, identity, attachments, evidence, expo
         {
             name: value
             for name, value in vars(module).items()
-            if inspect.isclass(value)
+            # Pydantic can cache parameterized RootModels in module globals.
+            if name.isidentifier()
+            and inspect.isclass(value)
             and issubclass(value, BaseModel)
             and value.__module__ == module.__name__
             and name not in {"ResponseModel", "InputModel"}

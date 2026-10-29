@@ -69,6 +69,8 @@ flyquery = "flyquery.cli:main"
 storage-azure = ["firefly-koinon-storage[azure]==26.10.0a1"]
 storage-gcs = ["firefly-koinon-storage[gcs]==26.10.0a1"]
 dev = [
+    # DuckDB's Python UDF fixtures require NumPy.
+    "numpy>=2.0",
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
     "pytest-cov>=5.0",
