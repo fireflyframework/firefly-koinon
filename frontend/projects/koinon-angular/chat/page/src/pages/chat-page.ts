@@ -1,5 +1,7 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
+import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
+import { CHAT_SPANISH } from './chat-spanish';
 import { KoinonTextPipe, KoinonDatePipe } from '@fireflyframework/koinon-angular';
 import { A11yModule } from '@angular/cdk/a11y';
 import {
@@ -40,6 +42,8 @@ import { KoinonExportDialog } from '../artifacts/export-dialog';
 import { KoinonShareReview } from '../artifacts/share-review';
 import { KoinonAnswerAudit } from '../artifacts/answer-audit';
 import type { ConversationSelection, ExportSelection } from '../services/artifact-selections';
+
+registerKoinonSpanish(CHAT_SPANISH);
 
 @Component({
   selector: 'ffk-chat-page',
@@ -135,18 +139,6 @@ export class KoinonChatPage implements OnInit, AfterViewInit, OnDestroy {
     const selected = this.artifactSelection();
     return selected ? { kind: 'conversation', ...selected } : null;
   });
-  readonly composerAgents = computed(() =>
-    this.a.agents().map((agent) => ({
-      id: agent.id,
-      name: agent.name,
-      available: this.a.canUseAgent(agent),
-      note: this.a.canUseAgent(agent)
-        ? agent.status === 'ready'
-          ? ''
-          : 'Trial'
-        : 'Setup required',
-    })),
-  );
   private readonly tasks = inject(PendingTasks);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
@@ -298,9 +290,6 @@ export class KoinonChatPage implements OnInit, AfterViewInit, OnDestroy {
       { injector: this.injector },
     );
   }
-  chooseAgent(event: Event) {
-    this.a.agentId.set((event.target as HTMLSelectElement).value);
-  }
   closeHistory() {
     const wasOpen = this.historyOpen();
     this.historyOpen.set(false);
@@ -354,7 +343,10 @@ export class KoinonChatPage implements OnInit, AfterViewInit, OnDestroy {
     );
   }
   canConfigure() {
-    return this.f.tenantPermissions().has('agents:write');
+    return (
+      this.f.tenantPermissions().has('agents:write') &&
+      (!!this.actions?.setup || this.setupRequested.observed)
+    );
   }
   selectThread(thread: ChatThread) {
     this.closeHistory();

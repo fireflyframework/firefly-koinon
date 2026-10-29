@@ -118,39 +118,21 @@
       } @else if (!a.messages().length && !a.error() && !a.canUseAgent()) {
         <div class="conversation-empty">
           <ffk-icon name="chat" />
-          <h2>
-            {{
-              a.canUseAgent()
-                ? 'What would you like to understand?'
-                : 'An agent needs to be ready first'
-            }}
-          </h2>
+          <h2>{{ 'koinon is unavailable right now.' | ffkText }}</h2>
           <p>
             {{
-              a.canUseAgent()
-                ? 'Ask a question about the knowledge in this scope. Your answer will keep its supporting sources close by.'
-                : 'An operator can connect a model, choose knowledge tools and check that an agent is ready for your team.'
+              'Your administrator can enable chat for your team. Please try again later.' | ffkText
             }}
           </p>
-          @if (!a.canUseAgent()) {
-            <ul class="setup-checks">
-              @for (check of a.selectedAgent()?.checks || []; track check.id) {
-                <li>
-                  <ffk-icon [name]="check.status === 'passed' ? 'check' : 'alert'" />{{
-                    check.message
-                  }}
-                </li>
-              }
-            </ul>
-            @if (canConfigure()) {
-              <ffk-button (click)="setup()">{{ 'Set up an agent' | ffkText }}</ffk-button>
-            }
+          @if (canConfigure()) {
+            <ffk-button (click)="setup()">{{ 'Configure koinon' | ffkText }}</ffk-button>
           }
           <p class="scope-note">
             {{
-              a.activeThread()
+              (a.activeThread()
                 ? 'This conversation keeps the knowledge scope it was created with.'
                 : 'Your current Library location sets the knowledge for this conversation.'
+              ) | ffkText
             }}
           </p>
         </div>
@@ -306,14 +288,6 @@
           <span class="activity-dot"></span>{{ a.toolActivity() || 'Preparing your answer…' }}
         </p>
       }
-      @if (a.canUseAgent() && a.selectedAgent()?.status !== 'ready') {
-        <p class="trial-notice" role="status">
-          {{
-            'This agent is available for a trial. Some model capabilities have not been verified. Review the answer and sources.'
-              | ffkText
-          }}
-        </p>
-      }
     </div>
     @if (a.activeThread()?.archived_at) {
       <div class="archived-conversation">
@@ -324,26 +298,6 @@
           (click)="a.updateThread({ archived: false })"
           >{{ 'Restore conversation' | ffkText }}</ffk-button
         >
-      </div>
-    }
-    @if (composerAgents().length > 1) {
-      <div class="agent-choice">
-        <label for="chat-agent">{{ 'Agent' | ffkText }}</label
-        ><select
-          id="chat-agent"
-          [value]="a.agentId()"
-          [disabled]="a.running() || a.pending() || !!a.activeThread()?.archived_at"
-          (change)="chooseAgent($event)"
-        >
-          @for (agent of composerAgents(); track agent.id) {
-            <option [value]="agent.id" [disabled]="!agent.available">
-              {{ agent.name }}{{ agent.note ? ' · ' + (agent.note | ffkText) : '' }}
-            </option>
-          }
-        </select>
-        @if (a.selectedAgent()?.description) {
-          <small>{{ a.selectedAgent()?.description }}</small>
-        }
       </div>
     }
     <ffk-chat-composer
@@ -358,7 +312,7 @@
       [attachmentsUnavailableReason]="
         a.canUseAgent()
           ? files.unavailableReason()
-          : 'Choose an available agent before attaching files.'
+          : 'File attachments will be available when koinon is ready.'
       "
       [attachments]="files.attachments()"
       [accept]="files.accept()"
@@ -366,7 +320,7 @@
       (filesSelected)="files.select($event)"
       (attachmentRemoved)="files.remove($event)"
       (attachmentRetried)="files.retry($event)"
-      [sendLabel]="a.selectedAgent()?.status === 'ready' ? 'Send' : 'Send trial'"
+      sendLabel="Send"
       (sendRequested)="submit()"
       (stopRequested)="a.cancel()"
     />

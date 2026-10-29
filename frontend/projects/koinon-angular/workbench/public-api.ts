@@ -2,6 +2,7 @@
 export { KoinonWorkbench } from './src/lib/koinon-angular';
 export { KoinonFacade } from './src/lib/koinon-facade';
 export { KOINON_CLIENT, KOINON_TRANSPORT, provideKoinonClient } from './src/lib/client-provider';
+export { KOINON_TENANT_RESOLVER, type KoinonTenantResolver } from './src/lib/client-provider';
 export type { KoinonScope, KoinonView } from './src/lib/models';
 export { KoinonCitationPanel } from './src/lib/citation-panel';
 export { KoinonButton } from './src/lib/atoms/button';

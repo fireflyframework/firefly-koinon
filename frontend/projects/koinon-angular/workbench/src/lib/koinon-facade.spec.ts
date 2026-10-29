@@ -9,7 +9,7 @@ import {
   type RequestOptions,
   type HttpMethod,
 } from '@fireflyframework/koinon-sdk';
-import { provideKoinonClient } from './client-provider';
+import { KOINON_TENANT_RESOLVER, type KoinonTenantResolver, provideKoinonClient } from './client-provider';
 import { KoinonFacade } from './koinon-facade';
 const entry = (id: string, tenant = 'tenant-one'): CatalogEntry => ({
   id,
@@ -45,6 +45,7 @@ const context: ContextResponse = {
 };
 function setup(
   handler: (method: HttpMethod, path: string, options?: RequestOptions) => Promise<unknown>,
+  resolver?: KoinonTenantResolver,
 ) {
   const transport: KoinonTransport = {
     stream: () => {
@@ -55,7 +56,9 @@ function setup(
   };
   const client = new KoinonClient({ transport });
   TestBed.configureTestingModule({
-    providers: [KoinonFacade, ...provideKoinonClient(client, transport)],
+    providers: [KoinonFacade, ...provideKoinonClient(client, transport),
+      ...(resolver ? [{ provide: KOINON_TENANT_RESOLVER, useValue: resolver }] : []),
+    ],
   });
   return TestBed.inject(KoinonFacade);
 }
@@ -135,6 +138,69 @@ describe('host transport errors', () => {
 });
 
 describe('host client changes', () => {
+  it('resolves the host preference from fresh context before the first catalog request', async () => {
+    const events: string[] = [];
+    const facade = setup(async (_method, path) => {
+      events.push(path);
+      return path === '/context' ? context : { items: [] };
+    }, (fresh, requested) => {
+      expect(fresh.subject).toBe('synthetic-user');
+      expect(requested).toBe('tenant-one');
+      events.push('resolve');
+      return 'tenant-two';
+    });
+    await facade.bootstrap('tenant-one');
+    expect(events).toEqual(['/context', 'resolve', '/tenants/tenant-two/catalog']);
+  });
+  it('does not request an organization absent from fresh context even when a host resolver returns it', async () => {
+    const reads: string[] = [];
+    const facade = setup(async (_method, path) => {
+      if (path === '/context') return context;
+      reads.push(path);
+      return { items: [] };
+    }, () => 'revoked');
+    await facade.bootstrap();
+    expect(reads).toEqual(['/tenants/tenant-one/catalog']);
+  });
+  it('does not carry a previous identity selection into the next identity context', async () => {
+    let current = context;
+    const facade = setup(async (_method, path) => path === '/context' ? current : { items: [] });
+    await facade.bootstrap();
+    await facade.selectTenant('tenant-two');
+    current = { ...context, subject: 'other-person' };
+    await facade.bootstrap();
+    expect(facade.tenantId()).toBe('tenant-one');
+  });
+  it('retains a selected authorized organization when retrying with reordered context', async () => {
+    let current = context;
+    const reads: string[] = [];
+    const facade = setup(async (_method, path) => {
+      if (path === '/context') return current;
+      reads.push(path);
+      return { items: [] };
+    });
+    await facade.bootstrap();
+    await facade.selectTenant('tenant-two');
+    current = { ...context, tenants: [...context.tenants] };
+    await facade.bootstrap();
+    expect(facade.tenantId()).toBe('tenant-two');
+    expect(reads.at(-1)).toBe('/tenants/tenant-two/catalog');
+  });
+  it('clears scoped state without a catalog request when fresh context has no memberships', async () => {
+    let current = context;
+    const reads: string[] = [];
+    const facade = setup(async (_method, path) => {
+      if (path === '/context') return current;
+      reads.push(path);
+      return { items: [entry('old-workspace')] };
+    });
+    await facade.bootstrap();
+    current = { ...context, tenants: [] };
+    await facade.bootstrap();
+    expect(facade.tenantId()).toBe('');
+    expect(facade.entries()).toEqual([]);
+    expect(reads).toEqual(['/tenants/tenant-one/catalog']);
+  });
   it('discards the previous identity context when a new host client is supplied', async () => {
     let oldContext!: (value: unknown) => void;
     const facade = setup(async (_method, path) =>

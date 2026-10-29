@@ -13,6 +13,7 @@ describe('published entrypoint compatibility', () => {
       'KoinonClientContext',
       'KOINON_CLIENT',
       'KOINON_TRANSPORT',
+      'KOINON_TENANT_RESOLVER',
     ] as const)
       expect(legacy[key]).toBe(workbench[key]);
   });

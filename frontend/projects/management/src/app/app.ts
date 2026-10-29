@@ -6,6 +6,7 @@ import { SessionService } from './session.service';
 import { PendingInvitation } from './pending-invitation';
 import { PendingShare } from './pending-share';
 import { AccountNavigation } from './account-navigation';
+import { OrganizationSelection } from './organization-selection';
 @Component({
   selector: 'app-root',
   imports: [KoinonWorkbench],
@@ -19,6 +20,7 @@ import { AccountNavigation } from './account-navigation';
       [accountSection]="navigation.section()"
       (accountSectionChange)="$event ? navigation.open($event) : navigation.section.set(null)"
       [tenantId]="entryTenant"
+      (contextChange)="organization.remember($event)"
       [sharedConversationId]="share.shareId()"
       (sharedConversationDismissed)="share.clear()"
       [invitationToken]="invitation.token()"
@@ -50,6 +52,7 @@ export class App {
   readonly invitation = inject(PendingInvitation);
   readonly share = inject(PendingShare);
   readonly navigation = inject(AccountNavigation);
+  readonly organization = inject(OrganizationSelection);
   readonly entryTenant = this.share.tenantId();
   readonly theme = signal<'light' | 'dark'>(this.initialTheme());
   private initialTheme(): 'light' | 'dark' {
