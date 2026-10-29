@@ -154,6 +154,16 @@ class CanonDocStore:
     def npages(self, key: str) -> int:
         return len(self._load(key))
 
+    def _execution_read(self, key: str, *, as_pages: bool):
+        """Release content to code only after the receiver admits its explicit usage evidence."""
+        pages = self._load(key)
+        content = list(pages) if as_pages else "\n".join(pages)
+        self._record(key)
+        meta = self._sources[key]
+        if meta.source_version_id is not None:
+            provenance.execution_read(meta, self._read_receipts[key])
+        return content
+
     # -- citation mapping --
     def resolve(self, key: str) -> SourceMeta | None:
         """Source pointer behind ``key`` (for citations), or ``None``."""

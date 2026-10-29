@@ -414,16 +414,12 @@ class CanonSettings(BaseSettings):
     # prompt is sent as a plain string (no cache breakpoint).
     rlm_prompt_cache: bool = Field(default=True)
     # Where the model-written REPL code is executed.
-    # ``subprocess`` (FLYCANON_RLM_SANDBOX, the secure default) runs each
-    # turn's code in the scrubbed-env sandbox child, servicing every
-    # docs/llm/rlm request from the parent so the child holds no secrets;
-    # ``inprocess`` is the explicit opt-out that runs the code in the
-    # engine's own restricted ``exec`` namespace (dev/trusted use only).
-    # Only the exact string ``inprocess`` opts out; any other value
-    # (including an unrecognised or empty one) normalises to ``subprocess``.
+    # Required provenance uses the public persistent Monty VM. The legacy
+    # modes remain explicit standalone compatibility options, without an
+    # execution-isolation claim.
     rlm_sandbox: str = Field(
-        default="subprocess",
-        description="RLM REPL execution mode: ``subprocess`` (default) or ``inprocess`` (opt-out).",
+        default="monty",
+        description="RLM execution mode: monty (required provenance), or explicit standalone legacy mode.",
     )
     # Per-turn wall-clock timeout (seconds) for the subprocess sandbox.
     rlm_sandbox_timeout_s: int = Field(default=30, ge=1)
@@ -613,11 +609,10 @@ class CanonSettings(BaseSettings):
     @field_validator("rlm_sandbox", mode="before")
     @classmethod
     def _normalise_rlm_sandbox(cls, value: object) -> str:
-        # Secure by default: only the exact string ``inprocess`` opts out of
-        # the out-of-process sandbox; any other value (including an
-        # unrecognised or empty one) resolves to ``subprocess``.
         text = str(value).strip().lower() if value is not None else ""
-        return "inprocess" if text == "inprocess" else "subprocess"
+        if text not in {"monty", "inprocess", "subprocess"}:
+            raise ValueError("RLM execution mode must be monty, inprocess, or subprocess")
+        return text
 
 
 @lru_cache(maxsize=1)

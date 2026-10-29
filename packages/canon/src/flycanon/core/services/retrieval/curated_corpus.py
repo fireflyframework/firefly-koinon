@@ -58,6 +58,12 @@ def documents_enabled(*, tenant_id, workspace_id):
     lease = _current.get()
     if lease is None:
         return True
-    if not lease.active or current_task() is not lease.task or (tenant_id, workspace_id) != (lease.tenant_id, lease.workspace_id):
-        raise ServiceUnavailableException("Curated corpus admission expired", code="KNOWLEDGE_CORPUS_SCOPE_EXPIRED")
+    if (
+        not lease.active
+        or current_task() is not lease.task
+        or (tenant_id, workspace_id) != (lease.tenant_id, lease.workspace_id)
+    ):
+        raise ServiceUnavailableException(
+            "Curated corpus admission expired", code="KNOWLEDGE_CORPUS_SCOPE_EXPIRED"
+        )
     return lease.documents

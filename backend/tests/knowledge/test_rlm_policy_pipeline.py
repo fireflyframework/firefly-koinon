@@ -132,7 +132,7 @@ async def test_admitted_rlm_policy_executes_native_codeact_and_returns_exact_imm
             model_calls.append(info.model_settings)
             assert [tool.name for tool in info.function_tools] == ["python"]
             code = (
-                "key = docs.keys()[0]\ntext = docs[key]\n"
+                "key = docs.keys()[0]\ntext = docs.get(key)\n"
                 "value = text.rsplit(': ', 1)[1]\nfinal(value, filings=[key], pages=[0])"
             )
             return ModelResponse(parts=[ToolCallPart("python", {"code": code}, "controlled-python")])
@@ -275,7 +275,7 @@ async def test_admitted_rlm_policy_executes_native_codeact_and_returns_exact_imm
         assert pre_searches == []
         assert {
             key: budget_calls[0][key] for key in ("max_iters", "sub_budget", "max_depth", "sandbox_mode")
-        } == {"max_iters": 6, "sub_budget": 0, "max_depth": 0, "sandbox_mode": "subprocess"}
+        } == {"max_iters": 6, "sub_budget": 0, "max_depth": 0, "sandbox_mode": "monty"}
         assert model_calls == [{"temperature": 0.0, "max_tokens": 96}]
         assert (
             baseline.answer_mode,

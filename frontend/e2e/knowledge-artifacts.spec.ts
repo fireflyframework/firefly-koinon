@@ -4,6 +4,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { mkdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { mockService, context as baseContext } from './fixtures';
+import { documents, structured } from './knowledge-behavior-fixture';
 const revision = 'a'.repeat(64),
   stamp = '2026-10-27T10:00:00Z';
 const source = {
@@ -88,6 +89,113 @@ const immutableIdentityAudit = {
     },
   ],
 };
+
+for (const spanish of [false, true])
+  for (const recorded of [true, false])
+    test(`answer audit preserves recorded policy and part identity ${spanish ? 'es' : 'en'} ${recorded ? 'recorded' : 'missing'}`, async ({
+      page,
+    }) => {
+      const width = spanish ? 390 : 1440;
+      await page.setViewportSize({ width, height: 1000 });
+      await artifactFixture(page);
+      let settingsReads = 0;
+      const policy = {
+        tenant_id: 'tenant-one',
+        schema_version: 1,
+        revision: 7,
+        origin: 'organization',
+        documents: { ...documents, answer_mode: 'rlm' },
+        structured,
+        digest: 'f'.repeat(64),
+      };
+      await page.route('**/bff/api/v1/tenants/tenant-one/knowledge/settings', (route) => {
+        settingsReads++;
+        return route.fulfill({ json: { ...policy, revision: 99, documents } });
+      });
+      await page.route('**/bff/api/v1/tenants/tenant-one/chat/runs/review-run/audit', (route) =>
+        route.fulfill({
+          json: {
+            ...immutableIdentityAudit,
+            ...(recorded ? { knowledge_settings_snapshot: policy } : {}),
+          },
+        }),
+      );
+      if (spanish)
+        await page.route('**/bff/api/v1/profile', (route) =>
+          route.fulfill({
+            json: {
+              subject: baseContext.subject,
+              display_name: 'Alex Rivera',
+              locale: 'es-ES',
+              time_zone: 'Europe/Madrid',
+              response_language: 'es',
+              avatar_url: null,
+              avatar_version: null,
+            },
+          }),
+        );
+      await openChat(page);
+      await page
+        .getByRole('button', { name: spanish ? 'Auditoría' : 'Audit', exact: true })
+        .nth(1)
+        .click();
+      const dialog = page.getByRole('dialog', {
+        name: spanish ? 'Auditoría de la respuesta' : 'Answer audit',
+        exact: true,
+      });
+      await expect(
+        dialog.getByText(
+          spanish ? 'Política de conocimiento registrada' : 'Recorded knowledge policy',
+          { exact: true },
+        ),
+      ).toBeVisible();
+      if (recorded) {
+        await expect(dialog.locator('.recorded-policy dd').nth(0)).toHaveText('7');
+        await expect(dialog.locator('.recorded-policy dd').nth(1)).toHaveText(
+          spanish ? 'Organización' : 'Organization',
+        );
+        await expect(dialog.locator('.recorded-policy dd').nth(2)).toHaveText('RLM');
+        await expect(dialog.locator('.recorded-policy')).not.toContainText('99');
+      } else {
+        await expect(dialog.locator('.recorded-policy')).toHaveCount(0);
+        await expect(
+          dialog
+            .locator('h4')
+            .filter({
+              hasText: spanish
+                ? 'Política de conocimiento registrada'
+                : 'Recorded knowledge policy',
+            })
+            .locator('+ p'),
+        ).toHaveText(spanish ? 'Sin registrar' : 'Not recorded');
+      }
+      await capture(
+        page,
+        `answer-audit-policy-${spanish ? 'es' : 'en'}-${recorded ? 'recorded' : 'missing'}.png`,
+      );
+      await dialog.getByRole('tab', { name: spanish ? 'Fuentes' : 'Sources', exact: true }).click();
+      await dialog.getByRole('button', { name: /Service operating policy.pdf/ }).click();
+      const technical = dialog.locator('.source-detail .technical-references');
+      await expect(technical).toHaveJSProperty('open', false);
+      const hash = technical
+        .locator('dt')
+        .filter({ hasText: spanish ? 'SHA-256 del fragmento' : 'Passage SHA-256' })
+        .locator('+ dd code');
+      await expect(hash).not.toBeVisible();
+      await technical.locator('summary').click();
+      await expect(hash).toHaveText('a'.repeat(64));
+      await expect(hash).toBeVisible();
+      await expect(technical).toContainText('document-version-used');
+      await expect(technical).toContainText('document-view-used');
+      await expect(technical).toContainText('document-part-used');
+      await capture(
+        page,
+        `answer-audit-part-${spanish ? 'es' : 'en'}-${recorded ? 'recorded' : 'missing'}.png`,
+      );
+      expect(settingsReads).toBe(0);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+      await expect(page.getByRole('dialog')).toHaveCount(1);
+    });
 async function artifactFixture(page: Page, rights = true, structuredOrigin = true) {
   await mockService(page, { organizationAgent: 'agent' });
   const permissions = [
@@ -439,7 +547,13 @@ async function artifactFixture(page: Page, rights = true, structuredOrigin = tru
 }
 async function openChat(page: Page) {
   await page.goto('/');
-  const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
+  await expect(
+    page.getByRole('button', { name: /^(Account menu|Menú de cuenta)$/, exact: true }),
+  ).toBeVisible();
+  const menu = page.getByRole('button', {
+    name: /^(Open navigation|Abrir navegación)$/,
+    exact: true,
+  });
   if (await menu.isVisible()) await menu.click();
   await page.getByRole('button', { name: 'Chat', exact: true }).click();
   await expect(

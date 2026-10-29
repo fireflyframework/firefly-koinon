@@ -19,6 +19,7 @@ import {
   KoinonButton,
   KoinonCodeBlock,
   KoinonDatePipe,
+  KoinonIcon,
   KoinonSidePanel,
   KoinonSkeleton,
   KoinonTextPipe,
@@ -44,6 +45,7 @@ import { KoinonRecordedOrigin } from './recorded-origin';
     KoinonButton,
     KoinonCodeBlock,
     KoinonDatePipe,
+    KoinonIcon,
     KoinonSidePanel,
     KoinonSkeleton,
     KoinonTextPipe,
@@ -142,6 +144,35 @@ export class KoinonAnswerAudit implements OnChanges, OnDestroy {
       if (this.open && this.scope && (this.scope !== scope || this.context !== context))
         this.close();
     });
+    effect(() => {
+      if (
+        this.tab() !== 'sources' ||
+        !this.open ||
+        this.state.auditPending() ||
+        this.state.manifestPending() ||
+        this.state.auditError() ||
+        this.state.manifestError() ||
+        this.sourceId() ||
+        this.privateId() ||
+        this.citationIndex() !== null ||
+        this.attemptIndex() !== null ||
+        this.readIndex() !== null ||
+        this.state.selected()
+      )
+        return;
+      const sources = this.state.sources(),
+        files = this.state.audit()?.private_files ?? [];
+      if (sources.length + files.length + this.fallbackCitations().length !== 1) return;
+      if (sources.length) this.selectSource(sources[0].id);
+      else if (files.length) this.selectPrivate(files[0].id);
+    });
+  }
+  private clearSelection() {
+    this.privateId.set('');
+    this.sourceId.set('');
+    this.citationIndex.set(null);
+    this.attemptIndex.set(null);
+    this.readIndex.set(null);
   }
   ngOnChanges() {
     const message = this.message;
@@ -152,9 +183,7 @@ export class KoinonAnswerAudit implements OnChanges, OnDestroy {
     if (binding === this.binding) return;
     this.binding = binding;
     this.tab.set('overview');
-    this.privateId.set('');
-    this.sourceId.set('');
-    this.citationIndex.set(null);
+    this.clearSelection();
     this.state.clear();
     this.scope = this.state.scopeKey();
     this.context = this.state.contextSnapshot();
@@ -165,6 +194,7 @@ export class KoinonAnswerAudit implements OnChanges, OnDestroy {
     this.state.clear();
   }
   close() {
+    this.clearSelection();
     this.state.clear();
     this.closed.emit();
   }

@@ -415,7 +415,8 @@ class IntakeService:
                 request=request, content=content, tenant_id=tenant_id, workspace_id=workspace_id,
                 actor=actor, filename=filename, content_type=content_type, logical_key=logical_source_key,
                 operation_id=operation_id or str(uuid.uuid4()), source_id=source_id,
-                expected_source_version_id=expected_source_version_id, expected_extraction_id=expected_extraction_id,
+                expected_source_version_id=expected_source_version_id,
+                expected_extraction_id=expected_extraction_id,
                 authorize_commit=authorize_commit, correlation_id=correlation_id,
             )
         existing = await self._sources.get(

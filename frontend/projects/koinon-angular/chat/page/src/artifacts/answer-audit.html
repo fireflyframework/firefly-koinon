@@ -126,6 +126,23 @@
           {{ 'Revisions unverified' | ffkText }}
         </p>
       }
+      <h4 class="overview-heading">{{ 'Recorded knowledge policy' | ffkText }}</h4>
+      @if (state.audit()?.knowledge_settings_snapshot; as policy) {
+        <dl class="references recorded-policy">
+          <dt>{{ 'Policy revision' | ffkText }}</dt>
+          <dd>{{ policy.revision | ffkValue: 'integer' }}</dd>
+          <dt>{{ 'Policy origin' | ffkText }}</dt>
+          <dd>
+            {{
+              (policy.origin === 'organization' ? 'Organization' : 'Deployment defaults') | ffkText
+            }}
+          </dd>
+          <dt>{{ 'Document answer mode' | ffkText }}</dt>
+          <dd>{{ policy.documents.answer_mode.toUpperCase() }}</dd>
+        </dl>
+      } @else if (!state.auditPending() && !state.auditError()) {
+        <p class="help">{{ 'Not recorded' | ffkText }}</p>
+      }
       <h4 class="overview-heading">{{ 'Recorded limits' | ffkText }}</h4>
       @for (omission of state.manifest()?.omissions ?? []; track $index) {
         <p class="help">{{ omission | ffkText }}</p>
@@ -204,8 +221,10 @@
                 [attr.aria-pressed]="sourceId() === source.id"
                 (click)="selectSource(source.id)"
               >
+                <ffk-icon name="file" />
                 <span>{{ source.title }}</span
                 ><small>{{ sourceState(source) | ffkText }}</small>
+                <ffk-icon class="source-chevron" name="chevron" />
               </button>
             </li>
           }
@@ -276,6 +295,10 @@
                   <dd>
                     <code>{{ source.source_part_id }}</code>
                   </dd>
+                  <dt>{{ 'Passage SHA-256' | ffkText }}</dt>
+                  <dd>
+                    <code>{{ source.source_part_sha256 || ('Not recorded' | ffkText) }}</code>
+                  </dd>
                 }
                 @if (source.knowledge_version_id) {
                   <dt>{{ 'Knowledge version reference' | ffkText }}</dt>
@@ -330,8 +353,10 @@
                 [attr.aria-pressed]="privateId() === file.id"
                 (click)="selectPrivate(file.id)"
               >
+                <ffk-icon name="file" />
                 <span>{{ file.filename }}</span
                 ><small>{{ privateAvailability(file.availability) | ffkText }}</small>
+                <ffk-icon class="source-chevron" name="chevron" />
               </button>
             </li>
           }
@@ -382,8 +407,10 @@
                 [attr.aria-pressed]="citationIndex() === $index"
                 (click)="selectCitation($index)"
               >
+                <ffk-icon name="file" />
                 <span>{{ citation.title || ('Recorded citation' | ffkText) }}</span
                 ><small>{{ 'Unverified revision' | ffkText }}</small>
+                <ffk-icon class="source-chevron" name="chevron" />
               </button>
             </li>
           }

@@ -165,7 +165,11 @@ class RetrievalService:
         # been indexed has no set; its dense half has nothing to return, so
         # it is switched off rather than asked with the wrong model.
         documents_enabled = curated_corpus.documents_enabled(tenant_id=tenant_id, workspace_id=workspace_id)
-        binding, embedder = await self._resolve_embedder(tenant_id=tenant_id, workspace_id=workspace_id) if documents_enabled else (None, self._embeddings)
+        binding, embedder = (
+            await self._resolve_embedder(tenant_id=tenant_id, workspace_id=workspace_id)
+            if documents_enabled
+            else (None, self._embeddings)
+        )
 
         # Scope-bound proxies. ``HybridRetriever`` calls
         # ``corpus.bm25_search(text, top_k=...)`` and

@@ -21,9 +21,9 @@ import pytest
 from flycanon.config import CanonSettings
 
 
-def test_rlm_sandbox_defaults_to_subprocess():
+def test_rlm_sandbox_defaults_to_monty():
     settings = CanonSettings()
-    assert settings.rlm_sandbox == "subprocess"
+    assert settings.rlm_sandbox == "monty"
     assert settings.rlm_sandbox_timeout_s == 30
 
 
@@ -36,9 +36,15 @@ def test_rlm_sandbox_normalises_case_and_whitespace(value):
     assert CanonSettings(rlm_sandbox=value).rlm_sandbox == "inprocess"
 
 
-@pytest.mark.parametrize("value", ["subprocess", "nonsense", "", "thread"])
-def test_rlm_sandbox_unknown_falls_back_to_subprocess(value):
-    assert CanonSettings(rlm_sandbox=value).rlm_sandbox == "subprocess"
+@pytest.mark.parametrize("value", ["monty", "subprocess", "inprocess"])
+def test_rlm_sandbox_accepts_explicit_modes(value):
+    assert CanonSettings(rlm_sandbox=value).rlm_sandbox == value
+
+
+@pytest.mark.parametrize("value", ["nonsense", "", "thread", None])
+def test_rlm_sandbox_unknown_is_rejected(value):
+    with pytest.raises(ValueError):
+        CanonSettings(rlm_sandbox=value)
 
 
 def test_rlm_sandbox_timeout_rejects_below_one():

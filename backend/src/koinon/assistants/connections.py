@@ -179,9 +179,9 @@ def provider_state(provider) -> dict:
             "ownership": "deployment",
             "read_only": True,
             "model_class": CLASSES[api],
-            "provider_identity": "anthropic" if api == "messages" else "openai",
+            "provider_identity": provider.kind,
             "profile_status": "unverified",
-            "reason": "Native Ollama uses an OpenAI-compatible adapter; "
+            "reason": "Native Ollama preserves its provider identity over OpenAI-compatible chat transport; "
             "provider-specific profile behavior remains unqualified."
             if provider.kind == "ollama"
             else "Only reported observed model capabilities are qualified.",

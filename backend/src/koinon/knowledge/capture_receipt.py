@@ -534,6 +534,11 @@ class NativeEvidenceReceipt:
 
         document_view_parts(self, meta, read, scope)
 
+    def document_execution_read(self, meta, read, scope):
+        from koinon.knowledge.rlm_provenance import document_execution_read
+
+        document_execution_read(self, meta, read, scope)
+
     def document_extraction(self, source_id, source_version_id, extraction_id, scope):
         from flycanon.core.services.query.provenance import current
 
@@ -568,6 +573,10 @@ class NativeEvidenceReceipt:
         self.document_extractions[key] = value
 
     def document_sync(self, stage, content, sources, scope):
+        from koinon.knowledge.rlm_provenance import EXECUTION_READ, unavailable
+
+        if stage == EXECUTION_READ:
+            raise unavailable()
         # Only the trusted domain observer can grant a live RLM worker-thread lease.
         if (
             self.closed

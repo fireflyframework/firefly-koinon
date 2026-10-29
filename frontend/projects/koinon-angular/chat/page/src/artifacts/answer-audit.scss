@@ -298,15 +298,17 @@ summary:focus-visible {
   list-style: none;
   margin: 0;
   padding: 0;
+  border: 1px solid var(--ui-line, #d8d4ca);
+  border-radius: 7px;
 }
 .source-options li + li {
   border-top: 1px solid var(--ui-line, #d8d4ca);
 }
 .source-options button {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 3px;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 3px 10px;
   width: 100%;
   min-height: 56px;
   padding: 10px 12px;
@@ -321,6 +323,19 @@ summary:focus-visible {
 .source-options button[aria-pressed='true'] {
   border-inline-start-color: var(--ui-accent, #855414);
   background: var(--ui-hover, #efede6);
+}
+.source-options ffk-icon {
+  width: 16px;
+  height: 16px;
+  grid-row: 1 / 3;
+  color: var(--ui-muted, #62645b);
+}
+.source-options .source-chevron {
+  grid-column: 3;
+}
+.source-options span,
+.source-options small {
+  grid-column: 2;
 }
 .source-options span {
   font-weight: 600;

@@ -1,6 +1,12 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 export const AUDIT_LINEAGE_SPANISH: Readonly<Record<string, string>> = {
+  'Recorded knowledge policy': 'Política de conocimiento registrada',
+  'Policy revision': 'Revisión de la política',
+  'Policy origin': 'Origen de la política',
+  'Document answer mode': 'Método de respuesta documental',
+  'Deployment defaults': 'Valores de la instalación',
+  'Passage SHA-256': 'SHA-256 del fragmento',
   'Connection reference recorded.': 'Referencia de conexión registrada.',
   'Recorded document extraction': 'Extracción de documento registrada',
   'Published knowledge content': 'Contenido de conocimiento publicado',

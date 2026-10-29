@@ -92,8 +92,16 @@ def failed_receipt(error, receipt, tenant_id, chain=None, binding=None):
             )
             sources[value.id] = value
     else:
+        from koinon.knowledge.rlm_provenance import execution_views
+
+        used = (
+            execution_views(receipt)
+            if any(row.stage.startswith("rlm.") for row in receipt.native_reads) else None
+        )
         sources.update({source.id: source for source in receipt.knowledge_sources.values()})
         for row in receipt.documents.values():
+            if used is not None and (row.workspace_id, row.source_id) not in used:
+                continue
             origin = receipt.document_origins.get((row.workspace_id, row.source_id))
             if origin is None:
                 continue
@@ -196,6 +204,8 @@ class NativeKnowledgeEvidence:
         try:
             receipt.budget.check(receipt, minimum_reads=1, minimum_sources=1)
             data = await self.knowledge.search(subject, tenant_id, **arguments, _capture=receipt)
+            from koinon.knowledge.rlm_provenance import execution_views
+
             complete = receipt.complete and receipt.observed
             admitted = {}
             for hit in data.get("hits", []):
@@ -303,6 +313,24 @@ class NativeKnowledgeEvidence:
                 from koinon.knowledge.rlm_provenance import verified_rlm_answer
 
                 complete = complete and verified_rlm_answer(receipt, data, admitted)
+                if any(row.stage.startswith("rlm.") for row in receipt.native_reads):
+                    used = execution_views(receipt)
+                    used_assets = {
+                        chain[0].id for key, (chain, _) in admitted.items() if key in used
+                    }
+                    sources = {
+                        identifier: source for identifier, source in sources.items()
+                        if source.kind != "document" or source.asset_id in used_assets
+                    }
+                    data = {**data, "hits": [
+                        hit for hit in data.get("hits", [])
+                        if str(hit.get("id")) in receipt.knowledge_sources
+                        or str(hit.get("id")) in receipt.documents
+                        and receipt.document_origins.get((
+                            receipt.documents[str(hit["id"])].workspace_id,
+                            receipt.documents[str(hit["id"])].source_id,
+                        ), (None,))[0] in used_assets
+                    ]}
             return checked_capture(
                 receipt,
                 data,
