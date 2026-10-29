@@ -127,9 +127,11 @@ export class KoinonAssistant implements OnDestroy {
       this.f.authRequired.set(true);
     this.error.set(message);
   }
-  async initialize() {
+  async initialize(agentOverride?: string) {
     const epoch = ++this.epoch,
-      tenant = this.f.tenantId();
+      tenant = this.f.tenantId(),
+      scopeKey = this.currentScopeKey();
+    this.agentId.set('');
     this.pending.set(true);
     this.error.set('');
     try {
@@ -139,17 +141,31 @@ export class KoinonAssistant implements OnDestroy {
         ...(scope.workspace_id ? { workspace_id: scope.workspace_id } : {}),
         ...(scope.project_id ? { project_id: scope.project_id } : {}),
       };
-      const [agents, threads] = await Promise.all([
+      const [agents, threads, settings] = await Promise.all([
         client.agents.list(tenant, { query }),
         client.chat.threads(tenant, {
           query: { page: 1, page_size: 25, status: 'active', ...query },
         }),
+        agentOverride ? Promise.resolve(null) : client.organizationChat.get(tenant, query),
       ]);
-      if (epoch !== this.epoch) return;
-      this.agents.set(agents.items);
-      this.agentId.set(
-        agents.items.find((x) => this.canUseAgent(x))?.id ?? agents.items[0]?.id ?? '',
-      );
+      if (epoch !== this.epoch || scopeKey !== this.currentScopeKey()) return;
+      const id =
+        agentOverride ||
+        (settings?.tenant_id === tenant && settings.configured && settings.can_run
+          ? settings.default_agent_id
+          : null);
+      const available = [...agents.items];
+      for (
+        let page = 2;
+        id && !available.some((agent) => agent.id === id) && page <= (agents.pages ?? 1);
+        ++page
+      ) {
+        const next = await client.agents.list(tenant, { query: { ...query, page } });
+        if (epoch !== this.epoch || scopeKey !== this.currentScopeKey()) return;
+        available.push(...next.items);
+      }
+      this.agents.set(available);
+      this.agentId.set(available.some((agent) => agent.id === id) ? id! : '');
       this.threads.set(threads.items);
       this.historyPage.set(threads);
       const first = this.threads()[0];

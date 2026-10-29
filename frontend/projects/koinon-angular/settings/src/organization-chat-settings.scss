@@ -1,0 +1,75 @@
+// Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
+:host {
+  display: block;
+  min-width: 0;
+  margin-bottom: 24px;
+}
+section {
+  border: 1px solid var(--ui-line);
+  border-radius: 12px;
+  padding: 20px;
+}
+header,
+form {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+h3 {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  font-weight: 600;
+}
+p {
+  margin: 8px 0 0;
+  color: var(--ui-muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+form {
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+label {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 180px;
+  font-size: 12px;
+  color: var(--ui-muted);
+}
+select {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
+  border: 1px solid var(--ui-line);
+  border-radius: 8px;
+  padding: 9px 12px;
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  font: inherit;
+}
+select:focus-visible {
+  outline: 2px solid var(--ui-focus, var(--ui-accent));
+  outline-offset: 3px;
+}
+.feedback {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.feedback ffk-icon {
+  flex-shrink: 0;
+}
+@media (max-width: 600px) {
+  section {
+    padding: 16px;
+  }
+  form > ffk-button {
+    width: 100%;
+  }
+}

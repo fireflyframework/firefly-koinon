@@ -1,0 +1,35 @@
+# Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
+from koinon_storage.cloud import CloudProfile, CloudStore
+from koinon_storage.cloud import ObjectTooLargeError as CloudTooLargeError
+
+from flycanon.core.services.storage.object_store import ObjectStore, ObjectTooLargeError
+
+
+class CloudObjectStore(ObjectStore):
+    def __init__(self, profile: CloudProfile, *, client=None):
+        self.native = CloudStore(profile, client=client)
+
+    async def put(self, key, data, content_type=None):
+        await self.native.put(key, data, content_type)
+
+    async def get(self, key):
+        return await self.get_bounded(key, self.native.profile.max_object_bytes)
+
+    async def get_bounded(self, key, max_bytes):
+        try:
+            return await self.native.get_bounded(key, max_bytes)
+        except CloudTooLargeError:
+            raise ObjectTooLargeError("Original exceeds the configured byte limit") from None
+
+    def get_sync(self, key):
+        try:
+            return self.native.get_sync(key)
+        except CloudTooLargeError:
+            raise ObjectTooLargeError("Original exceeds the configured byte limit") from None
+
+    async def delete(self, key):
+        await self.native.delete(key)
+
+    async def exists(self, key):
+        return await self.native.exists(key)

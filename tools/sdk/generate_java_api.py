@@ -18,6 +18,7 @@ def add(controller, group, methods):
         mapping[controller + "." + key] = (group, value)
 
 
+add("OrganizationChatController", "OrganizationChatApi", {"get": "get", "update": "update"})
 add("AuditController", "AuditApi", {"audit": "list"})
 add("DatasetFilesController", "DatasetsApi", {"append": "appendFile"})
 add(
@@ -178,6 +179,7 @@ def upper(s):
 
 
 filters = {
+    "OrganizationChatController.get": "OrganizationChatFilter",
     "AuthorizedApplicationController.list": "AuthorizedApplicationFilter",
     "TableCoordinateController.manifest": "TableCoordinateFilter",
     "TableCoordinateController.rows": "TableCoordinatePageFilter",

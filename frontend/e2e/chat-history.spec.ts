@@ -7,7 +7,7 @@ import type { ChatThread } from '@fireflyframework/koinon-sdk';
 test('history requests server pages and filters, preserves the selected scope, and restores an archived thread', async ({
   page,
 }) => {
-  await mockService(page);
+  await mockService(page, { organizationAgent: 'guide' });
   const rows: ChatThread[] = Array.from({ length: 51 }, (_, index) => ({
     id: `history-${index + 1}`,
     title: index === 25 ? 'Policy review' : `Conversation ${index + 1}`,

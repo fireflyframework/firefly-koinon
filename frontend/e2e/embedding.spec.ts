@@ -85,7 +85,7 @@ test('an embedded sign-in request is an event and does not navigate the host', a
 });
 
 test('a host opens a focused chat and controls its sidebar without changing the host URL',async({page})=>{
-  await mockService(page);
+  await mockService(page, { organizationAgent: 'reader' });
   await page.route('**/bff/api/v1/tenants/*/agents**',route=>route.fulfill({contentType:'application/json',body:JSON.stringify({items:[{id:'reader',status:'ready',name:'koinon'}]})}));
   await page.goto('/elements/');
   await page.waitForFunction(()=>!!customElements.get('firefly-koinon'));

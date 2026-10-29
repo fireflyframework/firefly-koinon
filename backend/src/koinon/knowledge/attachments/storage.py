@@ -10,8 +10,9 @@ from pyfly.container import component
 from pyfly.kernel import ConflictException, ServiceUnavailableException
 
 from koinon.knowledge.attachments.settings import AttachmentSettings
+from koinon.storage.cloud import CloudBlobStore
 from koinon.storage.local import LocalBlobStore
-from koinon.storage.ports import BlobStore, BlobTooLargeError, admit
+from koinon.storage.ports import BlobIntegrityError, BlobStore, BlobTooLargeError, admit
 from koinon.storage.s3 import S3BlobStore
 from koinon.storage.settings import AttachmentStorageProfile
 
@@ -46,12 +47,23 @@ class AttachmentStorage:
             profile.s3_endpoint_url,
             profile.s3_region,
             profile.s3_kms_key_id,
+            profile.azure_account_url,
+            profile.azure_container,
+            profile.azure_prefix,
+            profile.gcs_bucket,
+            profile.gcs_project,
+            profile.gcs_prefix,
+            profile.gcs_endpoint_url,
+            profile.request_timeout_seconds,
+            profile.max_object_bytes,
         )
         if self._binding is not None and self._binding != binding:
             raise ValueError("Private storage profile cannot change in a running instance")
         if self.store is None:
             if profile.backend == "s3":
                 self.store = S3BlobStore(profile)
+            elif profile.backend in {"azure", "gcs"}:
+                self.store = CloudBlobStore(profile)
             else:
                 if not root:
                     raise ServiceUnavailableException(
@@ -108,7 +120,7 @@ class AttachmentStorage:
             raise ConflictException("Private original is unavailable", code="ATTACHMENT_ORIGINAL_UNAVAILABLE")
         try:
             content = await self.configured().get_bounded(self.key(row, normalized), expected_size)
-        except BlobTooLargeError as error:
+        except (BlobTooLargeError, BlobIntegrityError) as error:
             raise ConflictException(
                 "Private file integrity verification failed", code="ATTACHMENT_DIGEST_MISMATCH"
             ) from error

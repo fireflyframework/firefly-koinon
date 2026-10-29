@@ -6,7 +6,7 @@ import { mockService, fixtures } from './fixtures';
 test('New conversation opens a clean draft from Library even when history exists', async ({
   page,
 }) => {
-  await mockService(page);
+  await mockService(page, { organizationAgent: 'guide' });
   const thread = {
     id: 'old-thread',
     title: 'Saved discussion',
@@ -67,7 +67,7 @@ test('New conversation opens a clean draft from Library even when history exists
 test('palette searches scoped server results and opens a resource with keyboard navigation', async ({
   page,
 }) => {
-  await mockService(page);
+  await mockService(page, { organizationAgent: 'guide' });
   const searches: Record<string, string>[] = [];
   await page.route('**/bff/api/v1/tenants/*/catalog?**', async (route) => {
     const url = new URL(route.request().url());
@@ -109,7 +109,7 @@ test('palette searches scoped server results and opens a resource with keyboard 
 
 test('mobile commands fit the header and return focus after Escape', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 800 });
-  await mockService(page);
+  await mockService(page, { organizationAgent: 'guide' });
   await page.goto('/');
   const trigger = page.getByRole('button', { name: 'Search and commands', exact: true });
   await trigger.click();

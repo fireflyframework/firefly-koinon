@@ -88,7 +88,9 @@ class TableResolver:
         if not table_names:
             return {}
 
-        base = object_store_base or self._settings.object_store_base
+        from flyquery.core.services.storage.object_store_factory import storage_base
+
+        base = (object_store_base or storage_base(self._settings)).rstrip("/")
 
         rows = await self._session.execute(
             sa.text("""

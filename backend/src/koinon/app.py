@@ -79,6 +79,7 @@ def create_application(config: dict):
         "koinon.catalog",
         "koinon.jobs",
         "koinon.assistants",
+        "koinon.organization_chat",
         "koinon.profiles",
         "koinon.tokens",
         "koinon.authorized_applications",
@@ -123,6 +124,7 @@ def create_application(config: dict):
         if cls.__module__.startswith(
             (
                 "koinon.assistants",
+                "koinon.organization_chat",
                 "koinon.profiles",
                 "koinon.tokens",
                 "koinon.authorized_applications",

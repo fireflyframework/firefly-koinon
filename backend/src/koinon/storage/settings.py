@@ -4,6 +4,7 @@ import re
 from dataclasses import dataclass
 from urllib.parse import urlsplit
 
+from koinon_storage.cloud import CloudProfile
 from pyfly.container import component
 from pyfly.core import config_properties
 
@@ -21,14 +22,23 @@ class AttachmentStorageProfile:
     s3_endpoint_url: str = ""
     s3_region: str = ""
     s3_kms_key_id: str = ""
+    azure_account_url: str = ""
+    azure_container: str = ""
+    azure_prefix: str = ""
+    gcs_bucket: str = ""
+    gcs_project: str = ""
+    gcs_prefix: str = ""
+    gcs_endpoint_url: str = ""
     request_timeout_seconds: int = 10
     max_object_bytes: int = 64 * 1024 * 1024
 
     def __post_init__(self):
+        if self.backend in {"azure", "gcs"}:
+            self.cloud_profile()
         if self.root is not None and not isinstance(self.root, str):
             raise ValueError("Private storage root must be an explicit directory path")
-        if self.backend not in {"local", "s3"}:
-            raise ValueError("Private attachment storage backend must be local or s3")
+        if self.backend not in {"local", "s3", "azure", "gcs"}:
+            raise ValueError("Private attachment storage backend must be local, s3, azure or gcs")
         if type(self.request_timeout_seconds) is not int or not 1 <= self.request_timeout_seconds <= 60:
             raise ValueError("Private storage request timeout must be an integer from 1 to 60 seconds")
         if type(self.max_object_bytes) is not int or not 1 <= self.max_object_bytes <= 64 * 1024 * 1024:
@@ -44,3 +54,19 @@ class AttachmentStorageProfile:
                 raise ValueError("Private storage endpoint cannot contain a query")
         if self.backend == "s3" and not re.fullmatch(r"[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]", self.s3_bucket):
             raise ValueError("Private storage requires an explicit valid S3 bucket")
+
+    def cloud_profile(self):
+        return CloudProfile(
+            backend=self.backend,
+            **{
+                "azure_account_url": self.azure_account_url,
+                "azure_container": self.azure_container,
+                "azure_prefix": self.azure_prefix,
+                "gcs_bucket": self.gcs_bucket,
+                "gcs_project": self.gcs_project,
+                "gcs_prefix": self.gcs_prefix,
+                "gcs_endpoint_url": self.gcs_endpoint_url,
+                "request_timeout_seconds": self.request_timeout_seconds,
+                "max_object_bytes": self.max_object_bytes,
+            },
+        )

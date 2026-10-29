@@ -1,0 +1,26 @@
+# Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
+[Unit]
+Description=firefly koinon conversation worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=koinon
+Group=koinon
+WorkingDirectory=/opt/koinon/backend
+EnvironmentFile=/etc/koinon/runtime.env
+ExecStart=/opt/koinon/backend/.venv/bin/python -m koinon.assistants.worker
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=45
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/koinon
+
+[Install]
+WantedBy=multi-user.target

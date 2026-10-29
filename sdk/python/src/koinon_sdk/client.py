@@ -149,6 +149,7 @@ from koinon_sdk.models import (
     UserProfile,
     ValidationResult,
 )
+from koinon_sdk.organization_chat import OrganizationChatSettings, OrganizationChatSettingsInput
 from koinon_sdk.proposals import CatalogProposal, ProposalConfirmation, ProposalRevision
 from koinon_sdk.provenance import TableProvenance, TableSnapshotPage
 from koinon_sdk.sharing import (
@@ -1164,6 +1165,29 @@ class KoinonClient:
         }
         return Page[Person].model_validate(
             await self._request("GET", self._tenant(tenant_id) + "/people", params=filters)
+        )
+
+    async def organization_chat_settings(
+        self, tenant_id: str, *, workspace_id: str | None = None, project_id: str | None = None
+    ) -> OrganizationChatSettings:
+        filters = {
+            key: value
+            for key, value in {"workspace_id": workspace_id, "project_id": project_id}.items()
+            if value is not None
+        }
+        return OrganizationChatSettings.model_validate(
+            await self._request("GET", self._tenant(tenant_id) + "/chat/settings", params=filters)
+        )
+
+    async def update_organization_chat_settings(
+        self, tenant_id: str, value: OrganizationChatSettingsInput
+    ) -> OrganizationChatSettings:
+        return OrganizationChatSettings.model_validate(
+            await self._request(
+                "PUT",
+                self._tenant(tenant_id) + "/chat/settings",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
         )
 
     async def authorized_applications(

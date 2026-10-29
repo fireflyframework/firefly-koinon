@@ -33,7 +33,7 @@ const capabilities = {
 test('uploads a private file, waits for extraction and submits only selected IDs', async ({
   page,
 }) => {
-  await mockService(page);
+  await mockService(page, { organizationAgent: 'reader' });
   let uploaded = false,
     reads = 0,
     submitted = false;
@@ -260,7 +260,7 @@ for (const spanish of [false, true])
   test(`configured unverified storage permits an honest first upload choice ${spanish ? 'Spanish' : 'English'}`, async ({
     page,
   }) => {
-    await mockService(page);
+    await mockService(page, { organizationAgent: 'reader' });
     const pending = {
       ...capabilities,
       storage: {

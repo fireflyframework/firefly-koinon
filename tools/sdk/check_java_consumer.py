@@ -56,16 +56,25 @@ import org.fireflyframework.koinon.sdk.KoinonClient;
 import org.fireflyframework.koinon.sdk.ExactValues;
 import org.fireflyframework.koinon.sdk.RequestOptions;
 import org.fireflyframework.koinon.sdk.api.DatasetsApi;
+import org.fireflyframework.koinon.sdk.api.OrganizationChatApi;
+import org.fireflyframework.koinon.sdk.model.OrganizationChatSettings;
+import org.fireflyframework.koinon.sdk.model.OrganizationChatSettingsInput;
+import org.fireflyframework.koinon.sdk.model.OrganizationChatFilter;
 import org.fireflyframework.koinon.sdk.model.DatasetFileAppendResult;
 import org.fireflyframework.koinon.sdk.model.DatasetFileUpload;
 public final class HeadlessConsumer {
   static DatasetFileAppendResult appendSignature(DatasetsApi api, java.nio.file.Path file) {
     return api.appendFile("dataset", new DatasetFileUpload(file, "text/csv"), "stable-request");
   }
+  static OrganizationChatSettings organizationSignature(OrganizationChatApi api) {
+    var current = api.get(OrganizationChatFilter.empty().withWorkspaceId("workspace"));
+    return api.update(OrganizationChatSettingsInput.empty().clearDefaultAgentId()
+        .withExpectedRevision(current.revision()));
+  }
   public static void main(String[] args) {
     try (var client = KoinonClient.builder(URI.create("http://127.0.0.1:1/api/v1"))
         .bearerToken(() -> "fictional-consumer-token").build()) {
-      if (client.catalog("example") == null || client.profile() == null) throw new AssertionError();
+      if (client.organizationChat("example") == null || client.catalog("example") == null || client.profile() == null) throw new AssertionError();
       var value = ExactValues.decimal(new BigDecimal("12345678901234567890.00100"));
       if (!value.textValue().equals("12345678901234567890.00100")) throw new AssertionError();
       if (!RequestOptions.defaults().ifMatch("revision").headers().containsKey("If-Match")) throw new AssertionError();

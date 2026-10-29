@@ -56,11 +56,15 @@ import os
 import tempfile
 import threading
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass
+from pathlib import Path
+from typing import cast
 
 from flyquery.core.services.execution.ast_classifier import AstClassifier
 from flyquery.core.services.query import provenance
 from flyquery.core.services.query.provenance import execution
+from flyquery.core.services.storage.adapters.cloud import CloudObjectStore
 
 
 @dataclass(frozen=True)
@@ -205,6 +209,13 @@ class DuckDBExecutor:
     """
 
     def __init__(self, settings) -> None:
+        self._cloud_store: CloudObjectStore | None = None
+        self._cloud_base = ""
+        if getattr(settings, "object_store", "local") in {"azure", "gcs"}:
+            from flyquery.core.services.storage.object_store_factory import build_object_store, storage_base
+
+            self._cloud_store = cast(CloudObjectStore, build_object_store(settings))
+            self._cloud_base = storage_base(settings).rstrip("/") + "/"
         self._memory_limit = settings.duckdb_memory_limit
         self._row_cap = settings.default_row_cap
         self._timeout_ms = settings.default_statement_timeout_ms
@@ -295,11 +306,51 @@ class DuckDBExecutor:
         except ImportError as exc:
             return ExecutionError(message=f"duckdb not installed: {exc}")
 
-        if classification.classification in {"INSERT", "UPDATE", "DELETE"}:
-            if len(derived_tables) != 1:
-                return ExecutionError(message="DML requires exactly one registered DERIVED target")
-            return self._sync_dml(sql, attached_tables, derived_tables, duckdb, control)
-        return self._sync_select(sql, attached_tables, duckdb, control)
+        try:
+            with self._snapshot_paths(attached_tables, derived_tables, control) as (attached, derived):
+                if classification.classification in {"INSERT", "UPDATE", "DELETE"}:
+                    if len(derived) != 1:
+                        return ExecutionError(message="DML requires exactly one registered DERIVED target")
+                    return self._sync_dml(sql, attached, derived, duckdb, control)
+                return self._sync_select(sql, attached, duckdb, control)
+        except (OSError, ValueError):
+            return ExecutionError(
+                message="Registered snapshot storage is unavailable or exceeds its byte bound"
+            )
+
+    @contextmanager
+    def _snapshot_paths(self, attached_tables, derived_tables, control):
+        if self._cloud_store is None:
+            yield attached_tables, derived_tables
+            return
+        if len(attached_tables) > 128:
+            raise ValueError("Cloud snapshot table count exceeds its supported bound")
+        # Only resolver-supplied pinned URIs under the configured binding become
+        # local files. DuckDB retains its exact allowlist and external-access ban.
+        for uri in attached_tables.values():
+            if not isinstance(uri, str) or not uri.startswith(self._cloud_base):
+                raise ValueError("Snapshot is outside its configured cloud binding")
+        native = self._cloud_store.native
+        limit = native.profile.max_object_bytes
+        with tempfile.TemporaryDirectory(prefix="koinon-snapshots-") as directory:
+            resolved = {}
+            total = 0
+            for uri in dict.fromkeys(attached_tables.values()):
+                control.check()
+                content = native.get_sync(uri[len(self._cloud_base) :])
+                control.check()
+                total += len(content)
+                if total > limit:
+                    raise ValueError("Cloud snapshot aggregate byte bound exceeded")
+                path = Path(directory) / (str(len(resolved)) + ".parquet")
+                descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+                with os.fdopen(descriptor, "wb") as stream:
+                    stream.write(content)
+                resolved[uri] = str(path)
+            yield (
+                {name: resolved[uri] for name, uri in attached_tables.items()},
+                {name: resolved[uri] for name, uri in derived_tables.items()},
+            )
 
     def _connection(self, duckdb, paths: list[str], control: _ExecutionControl):
         conn = duckdb.connect(

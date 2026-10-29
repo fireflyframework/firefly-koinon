@@ -11,6 +11,14 @@ import {
 import { provideKoinonClient } from '../client-provider';
 import { KoinonFacade } from '../koinon-facade';
 import { KoinonAssistant } from './assistant';
+const defaultChatSettings = (path: string, id = 'agent') => ({
+  tenant_id: path.split('/')[2],
+  default_agent_id: id,
+  revision: 1,
+  configured: true,
+  can_run: true,
+  status: 'ready',
+});
 const message = (id: string, text: string): ChatMessage => ({
   id,
   role: 'assistant',
@@ -28,36 +36,38 @@ describe('persisted assistant runs', () => {
     let threadReads = 0;
     const transport: KoinonTransport = {
       request: async <T>(_method: HttpMethod, path: string) => {
-        const value = path.endsWith('/agents')
-          ? { items: [{ id: 'agent', name: 'Local research', status: 'ready', checks: [] }] }
-          : path.endsWith('/chat/threads')
-            ? { items: [{ id: 'thread', title: 'Research', scope: {} }] }
-            : path.endsWith('/messages')
-              ? {
-                  items: submitted
-                    ? [
-                        message('earlier', 'Keep this answer'),
-                        {
-                          ...message('answer', ++reload < 3 ? '' : 'Canonical answer'),
-                          run_id: 'run',
-                          status: reload < 3 ? 'running' : 'completed',
-                          ...(reload === 1 ? { answer_policy: { outcome: 'grounded' } } : {}),
-                        },
-                      ]
-                    : [message('earlier', 'Keep this answer')],
-                }
-              : path.endsWith('/runs')
-                ? ((submitted = true), { run_id: 'run', message_id: 'answer' })
-                : path.endsWith('/chat/threads/thread')
-                  ? (++threadReads,
-                    {
-                      id: 'thread',
-                      title: 'Service review changes',
-                      revision: 2,
-                      title_source: 'ai',
-                      scope: {},
-                    })
-                  : {};
+        const value = path.endsWith('/chat/settings')
+          ? defaultChatSettings(path)
+          : path.endsWith('/agents')
+            ? { items: [{ id: 'agent', name: 'Local research', status: 'ready', checks: [] }] }
+            : path.endsWith('/chat/threads')
+              ? { items: [{ id: 'thread', title: 'Research', scope: {} }] }
+              : path.endsWith('/messages')
+                ? {
+                    items: submitted
+                      ? [
+                          message('earlier', 'Keep this answer'),
+                          {
+                            ...message('answer', ++reload < 3 ? '' : 'Canonical answer'),
+                            run_id: 'run',
+                            status: reload < 3 ? 'running' : 'completed',
+                            ...(reload === 1 ? { answer_policy: { outcome: 'grounded' } } : {}),
+                          },
+                        ]
+                      : [message('earlier', 'Keep this answer')],
+                  }
+                : path.endsWith('/runs')
+                  ? ((submitted = true), { run_id: 'run', message_id: 'answer' })
+                  : path.endsWith('/chat/threads/thread')
+                    ? (++threadReads,
+                      {
+                        id: 'thread',
+                        title: 'Service review changes',
+                        revision: 2,
+                        title_source: 'ai',
+                        scope: {},
+                      })
+                    : {};
         return value as T;
       },
       stream: async function* <T>() {
@@ -135,6 +145,7 @@ it('pages and filters server history without changing the active conversation kn
   };
   const transport: KoinonTransport = {
     request: async <T>(_method: HttpMethod, path: string, options?: RequestOptions) => {
+      if (path.endsWith('/chat/settings')) return defaultChatSettings(path) as T;
       if (path.endsWith('/agents')) return { items: [] } as T;
       if (path.endsWith('/chat/threads')) {
         queries.push(options?.query);
@@ -175,24 +186,26 @@ it('loads older messages using the opaque server cursor without replacing curren
   const reads: unknown[] = [],
     transport: KoinonTransport = {
       request: async <T>(_method: HttpMethod, path: string, options?: RequestOptions) => {
-        const value = path.endsWith('/agents')
-          ? { items: [] }
-          : path.endsWith('/chat/threads')
-            ? { items: [{ id: 'thread', title: 'Research', scope: {} }] }
-            : path.endsWith('/messages')
-              ? (reads.push(options?.query),
-                options?.query?.['before']
-                  ? {
-                      items: [
-                        { ...message('older', 'Earlier evidence'), created_at: '2026-10-25' },
-                      ],
-                      next_cursor: null,
-                    }
-                  : {
-                      items: [message('current', 'Current evidence')],
-                      next_cursor: 'opaque-page-cursor',
-                    })
-              : {};
+        const value = path.endsWith('/chat/settings')
+          ? defaultChatSettings(path)
+          : path.endsWith('/agents')
+            ? { items: [] }
+            : path.endsWith('/chat/threads')
+              ? { items: [{ id: 'thread', title: 'Research', scope: {} }] }
+              : path.endsWith('/messages')
+                ? (reads.push(options?.query),
+                  options?.query?.['before']
+                    ? {
+                        items: [
+                          { ...message('older', 'Earlier evidence'), created_at: '2026-10-25' },
+                        ],
+                        next_cursor: null,
+                      }
+                    : {
+                        items: [message('current', 'Current evidence')],
+                        next_cursor: 'opaque-page-cursor',
+                      })
+                : {};
         return value as T;
       },
       stream: () => {
@@ -221,28 +234,36 @@ it('allows an explicitly runnable unverified agent without labeling it ready', a
   const transport: KoinonTransport = {
     request: async <T>(method: HttpMethod, path: string, options?: RequestOptions) => {
       if (method === 'POST' && path.endsWith('/chat/threads')) createdBody = options?.body;
-      const value = path.endsWith('/agents')
-        ? {
-            items: [
-              { id: 'trial', name: 'Local trial', status: 'unverified', can_run: true, checks: [] },
-            ],
-          }
-        : path.endsWith('/chat/threads')
-          ? method === 'GET'
-            ? { items: [] }
-            : { id: 'thread', title: 'Trial', scope: {} }
-          : path.endsWith('/runs')
-            ? { run_id: 'run', message_id: 'answer' }
-            : path.endsWith('/messages')
-              ? {
-                  items: [
-                    {
-                      ...message('answer', completed ? 'Observed answer' : ''),
-                      status: completed ? 'completed' : 'running',
-                    },
-                  ],
-                }
-              : {};
+      const value = path.endsWith('/chat/settings')
+        ? defaultChatSettings(path, 'trial')
+        : path.endsWith('/agents')
+          ? {
+              items: [
+                {
+                  id: 'trial',
+                  name: 'Local trial',
+                  status: 'unverified',
+                  can_run: true,
+                  checks: [],
+                },
+              ],
+            }
+          : path.endsWith('/chat/threads')
+            ? method === 'GET'
+              ? { items: [] }
+              : { id: 'thread', title: 'Trial', scope: {} }
+            : path.endsWith('/runs')
+              ? { run_id: 'run', message_id: 'answer' }
+              : path.endsWith('/messages')
+                ? {
+                    items: [
+                      {
+                        ...message('answer', completed ? 'Observed answer' : ''),
+                        status: completed ? 'completed' : 'running',
+                      },
+                    ],
+                  }
+                : {};
       return value as T;
     },
     stream: async function* <T>() {
@@ -297,24 +318,26 @@ it('resumes an interrupted event stream from the last cursor without resubmittin
   const cursors: unknown[] = [];
   const transport: KoinonTransport = {
     request: async <T>(method: HttpMethod, path: string) => {
-      const value = path.endsWith('/agents')
-        ? { items: [{ id: 'agent', name: 'Guide', status: 'ready' }] }
-        : path.endsWith('/chat/threads')
-          ? { items: [{ id: 'thread', title: 'Research', scope: {} }] }
-          : path.endsWith('/runs')
-            ? (++submitted, { run_id: 'run', message_id: 'answer', event_cursor: '0' })
-            : path.endsWith('/messages')
-              ? {
-                  items: submitted
-                    ? [
-                        {
-                          ...message('answer', completed ? 'First second' : ''),
-                          status: completed ? 'completed' : 'running',
-                        },
-                      ]
-                    : [],
-                }
-              : {};
+      const value = path.endsWith('/chat/settings')
+        ? defaultChatSettings(path)
+        : path.endsWith('/agents')
+          ? { items: [{ id: 'agent', name: 'Guide', status: 'ready' }] }
+          : path.endsWith('/chat/threads')
+            ? { items: [{ id: 'thread', title: 'Research', scope: {} }] }
+            : path.endsWith('/runs')
+              ? (++submitted, { run_id: 'run', message_id: 'answer', event_cursor: '0' })
+              : path.endsWith('/messages')
+                ? {
+                    items: submitted
+                      ? [
+                          {
+                            ...message('answer', completed ? 'First second' : ''),
+                            status: completed ? 'completed' : 'running',
+                          },
+                        ]
+                      : [],
+                  }
+                : {};
       return value as T;
     },
     stream: async function* <T>(_method: HttpMethod, _path: string, options?: RequestOptions) {
@@ -351,15 +374,17 @@ for (const status of [401, 403, 503])
       streams = 0;
     const transport: KoinonTransport = {
       request: async <T>(_method: HttpMethod, path: string) => {
-        const value = path.endsWith('/agents')
-          ? { items: [{ id: 'agent', status: 'ready' }] }
-          : path.endsWith('/chat/threads')
-            ? { items: [{ id: 'thread', title: 'Research', scope: {} }] }
-            : path.endsWith('/runs')
-              ? (++submitted, { run_id: 'run', message_id: 'answer' })
-              : path.endsWith('/messages')
-                ? { items: submitted ? [{ ...message('answer', ''), status: 'running' }] : [] }
-                : {};
+        const value = path.endsWith('/chat/settings')
+          ? defaultChatSettings(path)
+          : path.endsWith('/agents')
+            ? { items: [{ id: 'agent', status: 'ready' }] }
+            : path.endsWith('/chat/threads')
+              ? { items: [{ id: 'thread', title: 'Research', scope: {} }] }
+              : path.endsWith('/runs')
+                ? (++submitted, { run_id: 'run', message_id: 'answer' })
+                : path.endsWith('/messages')
+                  ? { items: submitted ? [{ ...message('answer', ''), status: 'running' }] : [] }
+                  : {};
         return value as T;
       },
       stream: () => {
@@ -391,15 +416,17 @@ it('abandons a pending reconnect when the organization context changes', async (
     streams = 0;
   const transport: KoinonTransport = {
     request: async <T>(_method: HttpMethod, path: string) => {
-      const value = path.endsWith('/agents')
-        ? { items: [{ id: 'agent', status: 'ready' }] }
-        : path.endsWith('/chat/threads')
-          ? { items: [{ id: 'thread', title: 'Research', scope: {} }] }
-          : path.endsWith('/runs')
-            ? ((submitted = true), { run_id: 'run', message_id: 'answer' })
-            : path.endsWith('/messages')
-              ? { items: submitted ? [{ ...message('answer', ''), status: 'running' }] : [] }
-              : {};
+      const value = path.endsWith('/chat/settings')
+        ? defaultChatSettings(path)
+        : path.endsWith('/agents')
+          ? { items: [{ id: 'agent', status: 'ready' }] }
+          : path.endsWith('/chat/threads')
+            ? { items: [{ id: 'thread', title: 'Research', scope: {} }] }
+            : path.endsWith('/runs')
+              ? ((submitted = true), { run_id: 'run', message_id: 'answer' })
+              : path.endsWith('/messages')
+                ? { items: submitted ? [{ ...message('answer', ''), status: 'running' }] : [] }
+                : {};
       return value as T;
     },
     stream: () => {
@@ -453,6 +480,10 @@ it('asks the server to page agents and history within the selected knowledge sco
   facade.workspaceId.set('workspace');
   facade.projectId.set('project');
   await TestBed.inject(KoinonAssistant).initialize();
+  expect(reads.find((read) => read.path.endsWith('/chat/settings'))?.query).toEqual({
+    workspace_id: 'workspace',
+    project_id: 'project',
+  });
   expect(reads.find((read) => read.path.endsWith('/agents'))?.query).toEqual({
     workspace_id: 'workspace',
     project_id: 'project',
@@ -476,19 +507,21 @@ it('keeps grouped chat scope unchanged and includes only explicit attachment IDs
   const transport: KoinonTransport = {
     request: async <T>(method: HttpMethod, path: string, options?: RequestOptions) => {
       if (method === 'POST') writes.push({ path, body: options?.body });
-      const value = path.endsWith('/agents')
-        ? { items: [{ id: 'agent', status: 'ready' }] }
-        : path.endsWith('/chat/threads')
-          ? method === 'POST'
-            ? { id: 'created', scope, revision: 1 }
-            : { items: [] }
-          : path.endsWith('/runs')
-            ? { run_id: 'run', message_id: 'answer' }
-            : path.endsWith('/messages')
-              ? { items: [message('answer', 'Stored result')] }
-              : path.endsWith('/created')
-                ? { id: 'created', scope, revision: 2 }
-                : {};
+      const value = path.endsWith('/chat/settings')
+        ? defaultChatSettings(path)
+        : path.endsWith('/agents')
+          ? { items: [{ id: 'agent', status: 'ready' }] }
+          : path.endsWith('/chat/threads')
+            ? method === 'POST'
+              ? { id: 'created', scope, revision: 1 }
+              : { items: [] }
+            : path.endsWith('/runs')
+              ? { run_id: 'run', message_id: 'answer' }
+              : path.endsWith('/messages')
+                ? { items: [message('answer', 'Stored result')] }
+                : path.endsWith('/created')
+                  ? { id: 'created', scope, revision: 2 }
+                  : {};
       return value as T;
     },
     stream: () => {
@@ -539,17 +572,19 @@ it('projects tool lifecycle once per invocation and ignores older replayed trans
   };
   const transport: KoinonTransport = {
     request: async <T>(_method: HttpMethod, path: string) => {
-      const value = path.endsWith('/agents')
-        ? { items: [{ id: 'agent', status: 'ready' }] }
-        : path.endsWith('/chat/threads')
-          ? { items: [{ id: 'thread', scope: {}, revision: 1 }] }
-          : path.endsWith('/runs')
-            ? ((submitted = true), { run_id: 'run', message_id: 'answer' })
-            : path.endsWith('/messages')
-              ? { items: submitted ? [{ ...message('answer', ''), status: 'running' }] : [] }
-              : path.endsWith('/thread')
-                ? { id: 'thread', scope: {}, revision: 1 }
-                : {};
+      const value = path.endsWith('/chat/settings')
+        ? defaultChatSettings(path)
+        : path.endsWith('/agents')
+          ? { items: [{ id: 'agent', status: 'ready' }] }
+          : path.endsWith('/chat/threads')
+            ? { items: [{ id: 'thread', scope: {}, revision: 1 }] }
+            : path.endsWith('/runs')
+              ? ((submitted = true), { run_id: 'run', message_id: 'answer' })
+              : path.endsWith('/messages')
+                ? { items: submitted ? [{ ...message('answer', ''), status: 'running' }] : [] }
+                : path.endsWith('/thread')
+                  ? { id: 'thread', scope: {}, revision: 1 }
+                  : {};
       return value as T;
     },
     stream: async function* <T>() {
@@ -581,7 +616,7 @@ it('projects tool lifecycle once per invocation and ignores older replayed trans
 });
 
 it('discards a delayed thread creation when a new folder draft replaces it', async () => {
-  let release:()=>void = () => {
+  let release: () => void = () => {
     throw Error('Deferred response has not been registered');
   };
   const transport: KoinonTransport = {
@@ -591,7 +626,11 @@ it('discards a delayed thread creation when a new folder draft replaces it', asy
           release = () => resolve({ id: 'old-thread', scope: {}, revision: 1 } as T);
         });
       return (
-        path.endsWith('/agents') ? { items: [{ id: 'agent', status: 'ready' }] } : { items: [] }
+        path.endsWith('/chat/settings')
+          ? defaultChatSettings(path)
+          : path.endsWith('/agents')
+            ? { items: [{ id: 'agent', status: 'ready' }] }
+            : { items: [] }
       ) as T;
     },
     stream: () => {
@@ -631,7 +670,7 @@ it('discards a delayed thread creation when a new folder draft replaces it', asy
 
 it('does not reinsert old tool activity when a deferred page arrives after a run reset', async () => {
   let submitted = false;
-  let release:()=>void = () => {
+  let release: () => void = () => {
     throw Error('Deferred response has not been registered');
   };
   const previous = {
@@ -648,28 +687,30 @@ it('does not reinsert old tool activity when a deferred page arrives after a run
           release = () => resolve({ items: [previous], total: 1, page: 1, pages: 1 } as T);
         });
       return (
-        path.endsWith('/agents')
-          ? { items: [{ id: 'agent', status: 'ready' }] }
-          : path.endsWith('/chat/threads')
-            ? { items: [{ id: 'thread', scope: {}, revision: 1 }] }
-            : path.endsWith('/runs')
-              ? ((submitted = true), { run_id: 'run', message_id: 'answer' })
-              : path.endsWith('/messages')
-                ? {
-                    items: submitted
-                      ? [
-                          {
-                            ...message('answer', ''),
-                            status: 'running',
-                            tool_activities: [],
-                            tool_activity_count: 0,
-                          },
-                        ]
-                      : [],
-                  }
-                : path.endsWith('/thread')
-                  ? { id: 'thread', scope: {}, revision: 1 }
-                  : {}
+        path.endsWith('/chat/settings')
+          ? defaultChatSettings(path)
+          : path.endsWith('/agents')
+            ? { items: [{ id: 'agent', status: 'ready' }] }
+            : path.endsWith('/chat/threads')
+              ? { items: [{ id: 'thread', scope: {}, revision: 1 }] }
+              : path.endsWith('/runs')
+                ? ((submitted = true), { run_id: 'run', message_id: 'answer' })
+                : path.endsWith('/messages')
+                  ? {
+                      items: submitted
+                        ? [
+                            {
+                              ...message('answer', ''),
+                              status: 'running',
+                              tool_activities: [],
+                              tool_activity_count: 0,
+                            },
+                          ]
+                        : [],
+                    }
+                  : path.endsWith('/thread')
+                    ? { id: 'thread', scope: {}, revision: 1 }
+                    : {}
       ) as T;
     },
     stream: async function* <T>() {
@@ -699,4 +740,126 @@ it('does not reinsert old tool activity when a deferred page arrives after a run
   await assistant.send('Read sources');
   expect(assistant.messages()[0].tool_activities).toEqual([]);
   expect(assistant.activityLoading().size).toBe(0);
+});
+
+it.each([
+  ['configured second agent', 'second', true, true, 'second'],
+  ['missing organization default', null, false, false, ''],
+  ['disabled organization default', 'second', true, false, ''],
+  ['inaccessible organization default', 'missing', false, false, ''],
+] as const)(
+  'uses the organization chat setting without fallback: %s',
+  async (_label, id, configured, canRun, expected) => {
+    const reads: string[] = [];
+    const transport: KoinonTransport = {
+      request: async <T>(_method: HttpMethod, path: string) => {
+        reads.push(path);
+        return (
+          path.endsWith('/chat/settings')
+            ? {
+                tenant_id: 'tenant',
+                default_agent_id: id,
+                revision: 7,
+                configured,
+                can_run: canRun,
+                status: canRun ? 'ready' : id ? 'disabled' : 'unconfigured',
+              }
+            : path.endsWith('/agents')
+              ? {
+                  items: [
+                    { id: 'first', status: 'ready', can_run: true },
+                    { id: 'second', status: canRun ? 'ready' : 'disabled', can_run: canRun },
+                  ],
+                }
+              : { items: [] }
+        ) as T;
+      },
+      stream: () => {
+        throw new Error('Unexpected stream');
+      },
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        KoinonFacade,
+        KoinonAssistant,
+        ...provideKoinonClient(new KoinonClient({ transport }), transport),
+      ],
+    });
+    TestBed.inject(KoinonFacade).tenantId.set('tenant');
+    const assistant = TestBed.inject(KoinonAssistant);
+    await assistant.initialize();
+    expect(assistant.agentId()).toBe(expected);
+    expect(assistant.canUseAgent()).toBe(!!expected);
+    expect(reads).toContain('/tenants/tenant/chat/settings');
+  },
+);
+
+it('drops a previously selected organization agent when a fresh settings read is forbidden', async () => {
+  let denied = false;
+  const transport: KoinonTransport = {
+    request: async <T>(_method: HttpMethod, path: string) => {
+      if (path.endsWith('/chat/settings')) {
+        if (denied) throw new KoinonError(403, 'DENIED', 'Chat configuration is inaccessible');
+        return defaultChatSettings(path) as T;
+      }
+      return (
+        path.endsWith('/agents') ? { items: [{ id: 'agent', status: 'ready' }] } : { items: [] }
+      ) as T;
+    },
+    stream: () => {
+      throw new Error('Unexpected stream');
+    },
+  };
+  TestBed.configureTestingModule({
+    providers: [
+      KoinonFacade,
+      KoinonAssistant,
+      ...provideKoinonClient(new KoinonClient({ transport }), transport),
+    ],
+  });
+  TestBed.inject(KoinonFacade).tenantId.set('tenant');
+  const assistant = TestBed.inject(KoinonAssistant);
+  await assistant.initialize();
+  expect(assistant.agentId()).toBe('agent');
+  denied = true;
+  await assistant.initialize();
+  expect(assistant.agentId()).toBe('');
+  expect(assistant.canUseAgent()).toBe(false);
+  expect(await assistant.send('Try the old agent')).toBe(false);
+});
+
+it('finds the configured organization agent beyond the first authorized agent page', async () => {
+  const reads: RequestOptions['query'][] = [];
+  const transport: KoinonTransport = {
+    request: async <T>(_method: HttpMethod, path: string, options?: RequestOptions) => {
+      if (path.endsWith('/chat/settings')) return defaultChatSettings(path, 'configured') as T;
+      if (path.endsWith('/agents')) {
+        reads.push(options?.query);
+        return {
+          items: [{ id: options?.query?.['page'] === 2 ? 'configured' : 'other', status: 'ready' }],
+          page: options?.query?.['page'] ?? 1,
+          pages: 2,
+        } as T;
+      }
+      return { items: [] } as T;
+    },
+    stream: () => {
+      throw new Error('Unexpected stream');
+    },
+  };
+  TestBed.configureTestingModule({
+    providers: [
+      KoinonFacade,
+      KoinonAssistant,
+      ...provideKoinonClient(new KoinonClient({ transport }), transport),
+    ],
+  });
+  const facade = TestBed.inject(KoinonFacade);
+  facade.tenantId.set('tenant');
+  facade.workspaceId.set('workspace');
+  const assistant = TestBed.inject(KoinonAssistant);
+  await assistant.initialize();
+  expect(assistant.agentId()).toBe('configured');
+  expect(assistant.canUseAgent()).toBe(true);
+  expect(reads).toEqual([{ workspace_id: 'workspace' }, { workspace_id: 'workspace', page: 2 }]);
 });

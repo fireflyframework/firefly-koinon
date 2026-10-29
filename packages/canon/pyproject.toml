@@ -16,6 +16,7 @@ authors = [
 ]
 
 dependencies = [
+    "firefly-koinon-storage==26.10.0a1",
     # Firefly Framework runtime (DI, CQRS, EDA, web, observability, resilience,
     # actuator, data-relational, security). Pulled in with the extras we use
     # so a fresh ``uv sync`` is enough to boot the full stack.
@@ -94,6 +95,8 @@ dependencies = [
 flycanon = "flycanon.cli:main"
 
 [project.optional-dependencies]
+storage-azure = ["firefly-koinon-storage[azure]==26.10.0a1"]
+storage-gcs = ["firefly-koinon-storage[gcs]==26.10.0a1"]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
@@ -151,6 +154,7 @@ requires = ["hatchling>=1.18"]
 build-backend = "hatchling.build"
 
 [tool.uv.sources]
+firefly-koinon-storage = { path = "../storage", editable = true }
 # Qualified runtime references: PyFly retains the existing EDA schema; Agentic
 # resolves from its immutable published wheel. uv.lock records the wheel digest.
 pyfly = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git", rev = "d44d5915d76207266c7a2789987b1d613fe36d55" }

@@ -6,6 +6,10 @@ from dataclasses import dataclass
 from typing import Protocol
 
 
+class BlobIntegrityError(OSError):
+    pass
+
+
 class BlobTooLargeError(ValueError):
     pass
 

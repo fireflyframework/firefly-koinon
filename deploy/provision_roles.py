@@ -34,7 +34,12 @@ def grant_table(connection, table, role, *, document_control=False):
             "canon_source_lineage_events",
         }
     )
-    receipt = table in {"canon_curated_heads", "canon_knowledge_commits", "canon_source_heads"}
+    receipt = table in {
+        "canon_curated_heads",
+        "canon_knowledge_commits",
+        "canon_source_heads",
+        "koinon_organization_chat_settings",
+    }
     outbox = table.startswith("canon_knowledge_outbox_")
     if immutable or receipt or outbox:
         connection.execute(

@@ -122,6 +122,8 @@
   "TableCoordinateController.cells": "client.datasets.tableCoordinateCells",
   "TableCoordinateController.rows": "client.datasets.tableCoordinateRows",
   "TableCoordinateController.columns": "client.datasets.tableCoordinateColumns",
+  "OrganizationChatController.get": "client.organizationChat.get",
+  "OrganizationChatController.update": "client.organizationChat.update",
   "ProfileController.get": "client.profile.get",
   "ProfileController.update": "client.profile.update",
   "ProfileController.avatar": "client.profile.avatar",

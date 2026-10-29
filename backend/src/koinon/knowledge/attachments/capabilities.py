@@ -81,15 +81,25 @@ class AttachmentCapabilityService:
         try:
             self.storage.configured()
             local = self.storage.profile.backend == "local"
-            configured = local or find_spec("boto3") is not None
+            dependencies = {
+                "s3": ("boto3",),
+                "azure": ("azure.storage.blob", "azure.identity"),
+                "gcs": ("google.cloud.storage",),
+            }
+            try:
+                configured = local or all(
+                    find_spec(name) is not None for name in dependencies[self.storage.profile.backend]
+                )
+            except ModuleNotFoundError:
+                configured = False
             storage = {
                 "configured": configured,
                 "available": True if local else None if configured else False,
                 "reason": "Private storage is configured and its directory permissions were checked"
                 if local
-                else "Private S3 storage is configured; provider access has not been verified"
+                else "Private cloud storage is configured; provider access has not been verified"
                 if configured
-                else "Install the declared private S3 storage SDK dependency",
+                else "Install the declared private cloud storage SDK dependency",
             }
         except (ServiceUnavailableException, OSError):
             storage = {

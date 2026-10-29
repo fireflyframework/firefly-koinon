@@ -2,7 +2,15 @@
 
 An agent combines a configured model, allowed read tools and a knowledge scope. The same API serves the management application, embedded components and headless consumers.
 
-Choose an available agent and the folder or items relevant to the question. Review its setup checks before starting. An agent cannot grant access: every tool checks current persisted permissions and source ancestry. Dataset queries require query permission as well as read access.
+An organization operator selects the default chat agent once in **Settings → Agents**. Standard chat uses this saved organization setting across conversations; choose the folder or items relevant to the question. Review the default agent's setup checks before starting. An agent cannot grant access: every tool checks current persisted permissions and source ancestry. Dataset queries require query permission as well as read access.
+
+## Organization chat default
+
+The organization setting is independent of conversations and knowledge-model assignments. An organization operator with `agents:write` selects an organization-wide agent with an empty knowledge scope. This setting grants no additional access: current membership, token resource bounds, thread scope and tool permissions still apply. Workspace-only operators cannot change the organization default.
+
+`GET /api/v1/tenants/{tenant_id}/chat/settings` returns the saved agent identity, revision and effective `configured`, `can_run` and `status` fields. Workspace members and bounded tokens pass their current `workspace_id` and optional `project_id`. `PUT` accepts `default_agent_id` (including explicit null to clear) and the current `expected_revision`; use revision zero when no setting exists. Concurrent or stale writes return a conflict. The setting records the actor and time and emits an audit event. No provider secrets or instructions are returned.
+
+Clearing the setting, disabling its agent, or losing the selected agent blocks standard chat until an operator resolves setup. There is no automatic agent fallback. Explicit SDK integrations and **Try agent** keep submitting a concrete `agent_id`; `RunInput` and the durable queue continue recording the actual selected agent and model snapshots.
 
 ## Durable conversations
 

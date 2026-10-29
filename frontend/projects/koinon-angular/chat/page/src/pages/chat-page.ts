@@ -185,9 +185,9 @@ export class KoinonChatPage implements OnInit, AfterViewInit, OnDestroy {
   }
   ngOnInit() {
     this.tasks.run(async () => {
-      await this.a.initialize();
-      if (this.actions?.newConversation?.()) this.startConversation();
       const id = this.actions?.agentId?.();
+      await this.a.initialize(id);
+      if (this.actions?.newConversation?.()) this.startConversation();
       if (id && this.a.agents().some((agent) => agent.id === id)) {
         this.a.newConversation();
         this.a.agentId.set(id);

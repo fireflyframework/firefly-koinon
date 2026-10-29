@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "api_prefix": "/api/v1",
   "status": "Canonical API contract; development snapshot",
-  "canonical_operation_count": 140,
+  "canonical_operation_count": 142,
   "qualified_compatibility_operations": [
     {
       "operation": "GlossaryController.list_terms",
@@ -5352,6 +5352,78 @@
       "response_schema": "TableColumnBindingPage",
       "success_status": 200,
       "source_sha256": "d759c25229cdf4d1a0f99b628cd660604272935cddb743f5c3b86c5940ab9bc1",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/chat/settings",
+      "category": "canonical",
+      "operation": "OrganizationChatController.get",
+      "source": "backend/src/koinon/organization_chat/controllers.py",
+      "line": 19,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "project_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "organization_chat_settings",
+      "sdk_typescript": "organizationChat.get",
+      "sdk_java": "client.organizationChat.get",
+      "request_schema": null,
+      "response_schema": "OrganizationChatSettings",
+      "success_status": 200,
+      "source_sha256": "8f2c14859c6228fca1c3ef45c1f8649d3ef86bfbb959c357a81685da338e26b5",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/tenants/{tenant_id}/chat/settings",
+      "category": "canonical",
+      "operation": "OrganizationChatController.update",
+      "source": "backend/src/koinon/organization_chat/controllers.py",
+      "line": 34,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[OrganizationChatSettingsInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "update_organization_chat_settings",
+      "sdk_typescript": "organizationChat.update",
+      "sdk_java": "client.organizationChat.update",
+      "request_schema": "OrganizationChatSettingsInput",
+      "response_schema": "OrganizationChatSettings",
+      "success_status": 200,
+      "source_sha256": "8f2c14859c6228fca1c3ef45c1f8649d3ef86bfbb959c357a81685da338e26b5",
       "encoding": "application/json",
       "headers": []
     },

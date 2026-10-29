@@ -340,6 +340,14 @@
   "OpenUIArtifactKind": [
     "openui"
   ],
+  "OrganizationChatSettingsStatus": [
+    "unconfigured",
+    "unavailable",
+    "disabled",
+    "needs_setup",
+    "unverified",
+    "ready"
+  ],
   "PendingKnowledgeCommitStatus": [
     "pending"
   ],

@@ -51,6 +51,15 @@ def test_source_head_allows_pointer_updates_but_cannot_be_deleted():
     ]
 
 
+def test_organization_chat_setting_preserves_revision_history_on_reprovisioning():
+    connection = Statements()
+    module.grant_table(connection, "koinon_organization_chat_settings", "example_runtime")
+    assert connection.items == [
+        'REVOKE ALL ON TABLE public."koinon_organization_chat_settings" FROM "example_runtime"',
+        'GRANT SELECT,INSERT,UPDATE ON TABLE public."koinon_organization_chat_settings" TO "example_runtime"',
+    ]
+
+
 def test_outbox_publisher_cannot_read_or_reseed_delivery_sequence():
     connection = Statements()
     module.grant_sequence(connection, "canon_knowledge_outbox_deliveries_id_seq", "example_runtime")
