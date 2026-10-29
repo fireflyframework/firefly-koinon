@@ -41,6 +41,15 @@ except ImportError:
     _HAS_AZURE = False
 
 
+def storage_base(settings) -> str:
+    """Keep the native snapshot URI aligned with the configured cloud binding."""
+    if getattr(settings, "object_store", "local") == "gcs" and settings.object_store_gcs_bucket:
+        return "gs://" + settings.object_store_gcs_bucket + "/" + settings.object_store_gcs_prefix
+    if getattr(settings, "object_store", "local") == "azure" and settings.object_store_azure_container:
+        return "azure://" + settings.object_store_azure_container + "/" + settings.object_store_azure_prefix
+    return settings.object_store_base
+
+
 def build_object_store(settings: FlyquerySettings) -> ObjectStore:
     kind = settings.object_store
     if kind == "local":
@@ -64,8 +73,14 @@ def build_object_store(settings: FlyquerySettings) -> ObjectStore:
             raise RuntimeError("object_store=gcs but [gcs] extra not installed; run: uv sync --extra gcs")
         from flyquery.core.services.storage.adapters.gcs import GcsObjectStore
 
+        base = storage_base(settings)
         return GcsObjectStore(
-            base=settings.object_store_base, presign_ttl_s=settings.object_store_presign_ttl_s
+            base=base,
+            presign_ttl_s=settings.object_store_presign_ttl_s,
+            endpoint_url=settings.object_store_gcs_endpoint_url or None,
+            project=settings.object_store_gcs_project,
+            request_timeout_seconds=settings.object_store_request_timeout_seconds,
+            max_object_bytes=settings.object_store_max_object_bytes,
         )
     if kind == "azure":
         if not _HAS_AZURE:
@@ -74,7 +89,16 @@ def build_object_store(settings: FlyquerySettings) -> ObjectStore:
             )
         from flyquery.core.services.storage.adapters.azure_blob import AzureBlobObjectStore
 
+        base = settings.object_store_base
+        if settings.object_store_azure_container:
+            base = (
+                "azure://" + settings.object_store_azure_container + "/" + settings.object_store_azure_prefix
+            )
         return AzureBlobObjectStore(
-            base=settings.object_store_base, presign_ttl_s=settings.object_store_presign_ttl_s
+            base=base,
+            presign_ttl_s=settings.object_store_presign_ttl_s,
+            account_url=settings.object_store_azure_account_url,
+            request_timeout_seconds=settings.object_store_request_timeout_seconds,
+            max_object_bytes=settings.object_store_max_object_bytes,
         )
     raise ValueError(f"unknown object_store kind: {kind!r}")

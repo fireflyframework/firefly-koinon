@@ -2,7 +2,7 @@
 
 Python, Java and TypeScript expose the same canonical headless API. The table records concrete SDK methods; it does not count browser-only authentication or retained domain routes outside this contract.
 
-This development contract contains 140 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
+This development contract contains 142 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
 
 [Download the operation manifest](sdk-contract.json). The maintained generator checks source mappings and schemas without starting the backend.
 
@@ -131,6 +131,8 @@ This development contract contains 140 operations. Resource operations require t
 | `POST /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates/cells` | `table_coordinate_cells` | `dataset.tableCoordinateCells` | `client.datasets.tableCoordinateCells` | `TableCoordinateSelection` |
 | `GET /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates/rows` | `table_coordinate_rows` | `dataset.tableCoordinateRows` | `client.datasets.tableCoordinateRows` | `TableRowRangePage` |
 | `GET /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates/columns` | `table_coordinate_columns` | `dataset.tableCoordinateColumns` | `client.datasets.tableCoordinateColumns` | `TableColumnBindingPage` |
+| `GET /api/v1/tenants/{tenant_id}/chat/settings` | `organization_chat_settings` | `organizationChat.get` | `client.organizationChat.get` | `OrganizationChatSettings` |
+| `PUT /api/v1/tenants/{tenant_id}/chat/settings` | `update_organization_chat_settings` | `organizationChat.update` | `client.organizationChat.update` | `OrganizationChatSettings` |
 | `GET /api/v1/profile` | `profile` | `profile.get` | `client.profile.get` | `UserProfile` |
 | `PATCH /api/v1/profile` | `update_profile` | `profile.update` | `client.profile.update` | `UserProfile` |
 | `GET /api/v1/profile/avatar` | `avatar_download` | `profile.avatarDownload` | `client.profile.avatar` | `BinaryDownload` |

@@ -14,6 +14,7 @@
 
 # tests/integration/test_object_store_conformance.py
 import uuid
+from contextlib import suppress
 from pathlib import Path
 
 import pytest
@@ -43,7 +44,21 @@ def store(request, tmp_path, minio_container, fake_gcs_container, azurite_contai
     if request.param == "gcs":
         if fake_gcs_container is None:
             pytest.skip("fake-gcs-server container unavailable")
-        pytest.importorskip("gcloud.aio.storage", reason="[gcs] extra not installed")
+        pytest.importorskip("google.cloud.storage", reason="[gcs] extra not installed")
+        from google.api_core.exceptions import Conflict
+        from google.auth.credentials import AnonymousCredentials
+        from google.cloud.storage import Client
+
+        # Resource provisioning belongs to this owned-emulator fixture, never the adapter.
+        with (
+            Client(
+                project="fixture",
+                credentials=AnonymousCredentials(),
+                client_options={"api_endpoint": fake_gcs_container.get_url()},
+            ) as client,
+            suppress(Conflict),
+        ):
+            client.create_bucket("flyquery-test", timeout=10, retry=None)
         from flyquery.core.services.storage.adapters.gcs import GcsObjectStore
 
         return GcsObjectStore(
@@ -55,8 +70,16 @@ def store(request, tmp_path, minio_container, fake_gcs_container, azurite_contai
         if azurite_container is None:
             pytest.skip("Azurite container unavailable")
         pytest.importorskip("azure.storage.blob", reason="[azure] extra not installed")
+        from azure.core.exceptions import ResourceExistsError
+        from azure.storage.blob import BlobServiceClient
+
         from flyquery.core.services.storage.adapters.azure_blob import AzureBlobObjectStore
 
+        with (
+            BlobServiceClient.from_connection_string(azurite_container.get_connection_string()) as client,
+            suppress(ResourceExistsError),
+        ):
+            client.create_container("flyquery-test", timeout=10)
         return AzureBlobObjectStore(
             base="azure://flyquery-test",
             connection_string=azurite_container.get_connection_string(),
@@ -107,6 +130,8 @@ async def test_list_prefix(store) -> None:
 async def test_presign_get(store) -> None:
     key = f"unit/{uuid.uuid4()}/p.bin"
     await store.put(key, b"presigned", content_type="application/octet-stream")
+    if store.__class__.__name__ == "GcsObjectStore":
+        pytest.skip("Anonymous GCS emulator credentials cannot sign private download URLs")
     url = await store.presign_get(key, ttl_s=60)
     assert isinstance(url, str) and len(url) > 0
 

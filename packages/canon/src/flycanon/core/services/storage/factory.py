@@ -34,4 +34,18 @@ def build_object_store(settings: CanonSettings) -> ObjectStore:
             endpoint_url=settings.object_store_s3_endpoint_url or None,
             region=settings.object_store_s3_region or None,
         )
+    if backend in {"azure", "gcs"}:
+        from koinon_storage.cloud import CloudProfile
+
+        from flycanon.core.services.storage.cloud import CloudObjectStore
+
+        profile = CloudProfile(
+            backend=backend,
+            **{
+                field: getattr(settings, "object_store_" + field)
+                for field in CloudProfile.__dataclass_fields__
+                if field != "backend"
+            },
+        )
+        return CloudObjectStore(profile)
     raise ValueError(f"unknown object_store_backend: {backend!r}")

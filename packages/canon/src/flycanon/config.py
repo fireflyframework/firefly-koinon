@@ -460,7 +460,7 @@ class CanonSettings(BaseSettings):
     # ``tenant/workspace/.../files/{id}.{ext}`` layout shared with flyquery.
     object_store_backend: str = Field(
         default="localfs",
-        description="Object-store backend: ``localfs`` (default) or ``s3``.",
+        description="Object-store backend: localfs, s3, azure or gcs.",
     )
     # localfs backend (FLYCANON_OBJECT_STORE_LOCALFS_ROOT). ``./var/objects``
     # is relative to the process working directory, which is what a
@@ -483,6 +483,16 @@ class CanonSettings(BaseSettings):
     object_store_s3_endpoint_url: str = Field(default="")
     # Optional region; empty defers to boto3's standard region resolution.
     object_store_s3_region: str = Field(default="")
+    object_store_azure_account_url: str = ""
+    object_store_azure_container: str = ""
+    object_store_azure_prefix: str = ""
+    object_store_gcs_bucket: str = ""
+    object_store_gcs_project: str = ""
+    object_store_gcs_prefix: str = ""
+    object_store_gcs_endpoint_url: str = ""
+    object_store_request_timeout_seconds: int = 10
+    object_store_max_object_bytes: int = 64 * 1024 * 1024
+
     # Whether intake persists the original uploaded bytes to the object
     # store and records the key on the source row (``object_store_key``).
     # On by default so RLM has a whole-document corpus to reason over; a

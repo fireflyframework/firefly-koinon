@@ -4,7 +4,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { mockService } from './fixtures';
 
 async function proposalFixture(page: Page, conflict = false) {
-  await mockService(page);
+  await mockService(page, { organizationAgent: 'guide' });
   const stamp = '2026-10-27T10:00:00Z';
   const thread = {
     id: 'proposal-thread',

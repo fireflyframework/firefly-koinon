@@ -89,7 +89,7 @@ const immutableIdentityAudit = {
   ],
 };
 async function artifactFixture(page: Page, rights = true, structuredOrigin = true) {
-  await mockService(page);
+  await mockService(page, { organizationAgent: 'agent' });
   const permissions = [
     'exports:read',
     'exports:write',

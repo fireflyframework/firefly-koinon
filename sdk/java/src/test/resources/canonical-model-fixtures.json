@@ -1,5 +1,5 @@
 {
-  "definition_count": 256,
+  "definition_count": 258,
   "excluded_definitions": [
     "AttachmentUpload",
     "AvatarUpload",
@@ -3385,6 +3385,18 @@
       "status": "passed",
       "observed_at": "2026-10-27T12:34:56Z",
       "reason": "reason-value"
+    },
+    "OrganizationChatSettings": {
+      "tenant_id": "tenant_id-value",
+      "default_agent_id": "default_agent_id-value",
+      "revision": 1,
+      "configured": false,
+      "can_run": false,
+      "status": "unconfigured"
+    },
+    "OrganizationChatSettingsInput": {
+      "default_agent_id": "default_agent_id-value",
+      "expected_revision": 1
     },
     "Page": {
       "summaries": {

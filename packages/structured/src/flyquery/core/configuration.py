@@ -60,6 +60,15 @@ class FlyqueryConfiguration:
             "backend": "object_store",
             "root": "object_store_base",
             "presign_ttl_seconds": "object_store_presign_ttl_s",
+            "azure_account_url": "object_store_azure_account_url",
+            "azure_container": "object_store_azure_container",
+            "azure_prefix": "object_store_azure_prefix",
+            "gcs_bucket": "object_store_gcs_bucket",
+            "gcs_project": "object_store_gcs_project",
+            "gcs_prefix": "object_store_gcs_prefix",
+            "gcs_endpoint_url": "object_store_gcs_endpoint_url",
+            "request_timeout_seconds": "object_store_request_timeout_seconds",
+            "max_object_bytes": "object_store_max_object_bytes",
         }
         overrides = {}
         for key, field in fields.items():

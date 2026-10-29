@@ -7,7 +7,7 @@ import { context, mockService } from './fixtures';
 const organization = (page: Page) =>
   page.getByRole('combobox', { name: 'Organization', exact: true });
 async function setup(page: Page) {
-  await mockService(page);
+  await mockService(page, { organizationAgent: 'reader' });
   const current = structuredClone(context);
   current.tenants[1].permissions.push('chat:use');
   const catalogs: string[] = [];

@@ -299,6 +299,15 @@ def configure_policies(koinon, value):
 def configure_storage(koinon, value):
     fields = {
         "documents": {
+            "azure_account_url": "DOCUMENT_STORAGE_AZURE_ACCOUNT_URL",
+            "azure_container": "DOCUMENT_STORAGE_AZURE_CONTAINER",
+            "azure_prefix": "DOCUMENT_STORAGE_AZURE_PREFIX",
+            "gcs_bucket": "DOCUMENT_STORAGE_GCS_BUCKET",
+            "gcs_project": "DOCUMENT_STORAGE_GCS_PROJECT",
+            "gcs_prefix": "DOCUMENT_STORAGE_GCS_PREFIX",
+            "gcs_endpoint_url": "DOCUMENT_STORAGE_GCS_ENDPOINT_URL",
+            "request_timeout_seconds": "DOCUMENT_STORAGE_REQUEST_TIMEOUT_SECONDS",
+            "max_object_bytes": "DOCUMENT_STORAGE_MAX_OBJECT_BYTES",
             "backend": "DOCUMENT_STORAGE_BACKEND",
             "root": "DOCUMENT_STORAGE_ROOT",
             "store_originals": "DOCUMENT_STORE_ORIGINALS",
@@ -308,11 +317,27 @@ def configure_storage(koinon, value):
             "s3_region": "DOCUMENT_STORAGE_S3_REGION",
         },
         "structured": {
+            "azure_account_url": "STRUCTURED_STORAGE_AZURE_ACCOUNT_URL",
+            "azure_container": "STRUCTURED_STORAGE_AZURE_CONTAINER",
+            "azure_prefix": "STRUCTURED_STORAGE_AZURE_PREFIX",
+            "gcs_bucket": "STRUCTURED_STORAGE_GCS_BUCKET",
+            "gcs_project": "STRUCTURED_STORAGE_GCS_PROJECT",
+            "gcs_prefix": "STRUCTURED_STORAGE_GCS_PREFIX",
+            "gcs_endpoint_url": "STRUCTURED_STORAGE_GCS_ENDPOINT_URL",
+            "request_timeout_seconds": "STRUCTURED_STORAGE_REQUEST_TIMEOUT_SECONDS",
+            "max_object_bytes": "STRUCTURED_STORAGE_MAX_OBJECT_BYTES",
             "backend": "STRUCTURED_STORAGE_BACKEND",
             "root": "STRUCTURED_STORAGE_ROOT",
             "presign_ttl_seconds": "STRUCTURED_STORAGE_PRESIGN_TTL_SECONDS",
         },
         "attachments": {
+            "azure_account_url": "ATTACHMENT_STORAGE_AZURE_ACCOUNT_URL",
+            "azure_container": "ATTACHMENT_STORAGE_AZURE_CONTAINER",
+            "azure_prefix": "ATTACHMENT_STORAGE_AZURE_PREFIX",
+            "gcs_bucket": "ATTACHMENT_STORAGE_GCS_BUCKET",
+            "gcs_project": "ATTACHMENT_STORAGE_GCS_PROJECT",
+            "gcs_prefix": "ATTACHMENT_STORAGE_GCS_PREFIX",
+            "gcs_endpoint_url": "ATTACHMENT_STORAGE_GCS_ENDPOINT_URL",
             "backend": "ATTACHMENT_STORAGE_BACKEND",
             "root": "ATTACHMENT_STORAGE_ROOT",
             "s3_bucket": "ATTACHMENT_STORAGE_S3_BUCKET",
@@ -342,14 +367,14 @@ def configure_storage(koinon, value):
                 if "\0" in selected:
                     raise ValueError(alias + " contains an invalid character")
             if key == "backend" and selected not in (
-                {"localfs", "s3"}
+                {"localfs", "s3", "azure", "gcs"}
                 if domain == "documents"
-                else {"local", "s3"}
+                else {"local", "s3", "azure", "gcs"}
                 if domain == "attachments"
                 else {"local", "s3", "gcs", "azure"}
             ):
                 raise ValueError(alias + " names an unsupported backend")
-            if key == "s3_endpoint_url" and selected:
+            if key in {"s3_endpoint_url", "azure_account_url", "gcs_endpoint_url"} and selected:
                 parsed = urlsplit(text(selected, alias))
                 if (
                     not parsed.hostname

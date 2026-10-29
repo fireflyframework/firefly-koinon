@@ -33,6 +33,7 @@ class Provider(Base):
 
 class AgentConfiguration(Base):
     __tablename__ = "koinon_agents"
+    __table_args__ = (UniqueConstraint("tenant_id", "id", name="uq_koinon_agents_tenant_id"),)
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("lattice_tenants.id"), index=True)
     provider_id: Mapped[str] = mapped_column(ForeignKey("koinon_providers.id"))

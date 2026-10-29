@@ -35,11 +35,24 @@ async function mount(
     spanish?: boolean;
     action?: boolean;
     output?: boolean;
+    defaultId?: string | null;
   } = {},
 ) {
   const transport: KoinonTransport = {
     request: async <T>(_method: unknown, path: string) =>
-      (path.endsWith('/agents') ? { items: agents } : { items: [] }) as T,
+      (path.endsWith('/chat/settings')
+        ? {
+            tenant_id: 'tenant',
+            default_agent_id:
+              options.defaultId === undefined ? (agents[0]?.id ?? null) : options.defaultId,
+            revision: 1,
+            configured: options.defaultId !== null,
+            can_run: options.defaultId !== null,
+            status: 'ready',
+          }
+        : path.endsWith('/agents')
+          ? { items: agents }
+          : { items: [] }) as T,
     stream: () => {
       throw new Error('Unexpected stream');
     },
@@ -88,12 +101,15 @@ async function mount(
   fixture.detectChanges();
   return { fixture, assistant: TestBed.inject(KoinonAssistant), setup };
 }
-it('speaks to koinon without an agent picker and keeps the first runnable agent as the default', async () => {
-  const { fixture, assistant } = await mount([
-    agent('disabled', { enabled: false, status: 'disabled', can_run: false }),
-    agent('first-runnable', { status: 'unverified', can_run: true }),
-    agent('other-ready'),
-  ]);
+it('speaks to koinon without an agent picker and uses the configured organization default', async () => {
+  const { fixture, assistant } = await mount(
+    [
+      agent('disabled', { enabled: false, status: 'disabled', can_run: false }),
+      agent('first-runnable', { status: 'unverified', can_run: true }),
+      agent('other-ready'),
+    ],
+    { defaultId: 'first-runnable' },
+  );
   expect(assistant.agentId()).toBe('first-runnable');
   expect(fixture.nativeElement.querySelector('#chat-agent')).toBeNull();
   expect(fixture.nativeElement.querySelector('.trial-notice')).toBeNull();
@@ -105,6 +121,7 @@ it('speaks to koinon without an agent picker and keeps the first runnable agent 
 it('preserves an explicit host operator agent override without adding a picker', async () => {
   const { fixture, assistant } = await mount([agent('first'), agent('operator-choice')], {
     override: 'operator-choice',
+    defaultId: null,
   });
   expect(assistant.agentId()).toBe('operator-choice');
   expect(fixture.nativeElement.querySelector('#chat-agent')).toBeNull();

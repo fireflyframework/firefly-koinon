@@ -30,7 +30,7 @@ async def schema_rows(session, binding, embedding, dataset_id, limit):
         text(
             OBJECTS_SQL
             + """
-        SELECT o.id,o.qualified_name,o.description,o.data_type,o.table_id,o.kind,
+        SELECT o.id,o.qualified_name,o.description,o.data_type,o.table_id,o.kind,o.snapshot_id,
                o.profile_json,o.sample_values_json,o.governance_json,
                1-(v.embedding <=> CAST(:emb AS vector)) AS score
         FROM flyquery_schema_objects o JOIN flyquery_tables t ON t.id=o.table_id

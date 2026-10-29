@@ -1,7 +1,7 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 import { test, expect, type Page } from '@playwright/test';
 import { mockService, context as baseContext } from './fixtures';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 const program =
@@ -13,9 +13,10 @@ async function assistantFixture(
     denied?: boolean;
     audit?: boolean;
     multipleAgents?: boolean;
+    answerActions?: boolean;
   } = {},
 ) {
-  await mockService(page);
+  await mockService(page, { organizationAgent: 'agent-one' });
   if (options.audit)
     await page.route('**/bff/api/v1/context', (route) =>
       route.fulfill({
@@ -23,7 +24,16 @@ async function assistantFixture(
           ...baseContext,
           tenants: baseContext.tenants.map((tenant, index) =>
             index === 0
-              ? { ...tenant, permissions: [...tenant.permissions, 'evidence:read'] }
+              ? {
+                  ...tenant,
+                  permissions: [
+                    ...tenant.permissions,
+                    'evidence:read',
+                    ...(options.answerActions
+                      ? ['exports:read', 'exports:write', 'shares:read', 'shares:write']
+                      : []),
+                  ],
+                }
               : tenant,
           ),
         },
@@ -168,6 +178,13 @@ async function assistantFixture(
                   status: 'disabled',
                   checks: [],
                 },
+                {
+                  id: 'other-agent',
+                  name: 'Other configuration',
+                  enabled: true,
+                  status: 'ready',
+                  checks: [],
+                },
               ]
             : []),
           {
@@ -185,17 +202,6 @@ async function assistantFixture(
             can_run: true,
             checks: [],
           },
-          ...(options.multipleAgents
-            ? [
-                {
-                  id: 'other-agent',
-                  name: 'Other configuration',
-                  enabled: true,
-                  status: 'ready',
-                  checks: [],
-                },
-              ]
-            : []),
         ],
       });
     if (path.endsWith('/chat/threads'))
@@ -773,6 +779,82 @@ for (const width of [1440, 390])
     await mkdir(output, { recursive: true });
     await page.screenshot({
       path: resolve(output, `chat-no-agent-picker-${width}.png`),
+      animations: 'disabled',
+    });
+  });
+
+for (const width of [1440, 390])
+  test(`keyboard return from answer audit keeps the shared focus ring inside its scrollport at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await assistantFixture(page, { audit: true, answerActions: true });
+    await ask(page);
+    const trigger = page.getByRole('button', { name: 'Audit', exact: true });
+    await trigger.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('dialog', { name: 'Answer audit', exact: true })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(trigger).toBeFocused();
+    const bounds = await trigger.evaluate((node) => {
+      const style = getComputedStyle(node),
+        box = node.getBoundingClientRect();
+      const viewport = node.closest('.conversation-scroll') as HTMLElement;
+      const row = node.closest('.answer-actions')!;
+      const rowBox = row.getBoundingClientRect();
+      const clip = viewport.getBoundingClientRect();
+      const outside = Math.max(0, parseFloat(style.outlineWidth) + parseFloat(style.outlineOffset));
+      return {
+        row: { left: rowBox.left, top: rowBox.top, right: rowBox.right, height: rowBox.height },
+        targets: [...row.querySelectorAll('button')].map((button) => {
+          const target = button.getBoundingClientRect();
+          return {
+            left: target.left,
+            top: target.top,
+            right: target.right,
+            width: target.width,
+            height: target.height,
+          };
+        }),
+        keyboardVisible: node.matches(':focus-visible'),
+        outlineWidth: parseFloat(style.outlineWidth),
+        ring: {
+          left: box.left - outside,
+          top: box.top - outside,
+          right: box.right + outside,
+          bottom: box.bottom + outside,
+        },
+        clip: {
+          left: clip.left + viewport.clientLeft,
+          top: clip.top + viewport.clientTop,
+          right: clip.left + viewport.clientLeft + viewport.clientWidth,
+          bottom: clip.top + viewport.clientTop + viewport.clientHeight,
+        },
+      };
+    });
+    expect(bounds.targets).toHaveLength(3);
+    expect(bounds.row.height).toBeLessThanOrEqual(width < 700 ? 44 : 32);
+    for (const target of bounds.targets) {
+      expect(target.height).toBe(width < 700 ? 44 : 32);
+      if (width < 700) expect(target.width).toBeGreaterThanOrEqual(44);
+      expect(target.left).toBeGreaterThanOrEqual(bounds.row.left);
+      expect(target.right).toBeLessThanOrEqual(bounds.row.right);
+      expect(Math.abs(target.top - bounds.row.top)).toBeLessThanOrEqual(0.5);
+    }
+    expect(bounds.keyboardVisible).toBe(true);
+    expect(bounds.outlineWidth).toBeGreaterThan(0);
+    expect(bounds.ring.left).toBeGreaterThanOrEqual(bounds.clip.left);
+    expect(bounds.ring.top).toBeGreaterThanOrEqual(bounds.clip.top);
+    expect(bounds.ring.right).toBeLessThanOrEqual(bounds.clip.right);
+    expect(bounds.ring.bottom).toBeLessThanOrEqual(bounds.clip.bottom);
+    const directory = resolve(process.cwd(), '.qualification-v23-followup/focus-captures');
+    await mkdir(directory, { recursive: true });
+    await writeFile(
+      resolve(directory, `audit-keyboard-bounds-${width}.json`),
+      JSON.stringify(bounds, null, 2) + '\n',
+    );
+    await page.screenshot({
+      path: resolve(directory, `audit-keyboard-focus-${width}.png`),
       animations: 'disabled',
     });
   });

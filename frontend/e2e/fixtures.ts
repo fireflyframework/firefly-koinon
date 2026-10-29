@@ -86,6 +86,7 @@ export async function mockService(
     error?: boolean;
     summaries?: Record<string, CatalogSummary>;
     actors?: Record<string, PublicActor>;
+    organizationAgent?: string | null;
   } = {},
 ) {
   const rows = structuredClone(fixtures);
@@ -118,6 +119,17 @@ export async function mockService(
         avatar_version: null,
       });
     if (path === '/context') return respond(context);
+    if (path.endsWith('/chat/settings')) {
+      const id = options.organizationAgent ?? null;
+      return respond({
+        tenant_id: path.split('/')[2],
+        default_agent_id: id,
+        revision: 1,
+        configured: !!id,
+        can_run: !!id,
+        status: id ? 'ready' : 'unconfigured',
+      });
+    }
     if (path.endsWith('/configuration'))
       return respond({
         providers: [],

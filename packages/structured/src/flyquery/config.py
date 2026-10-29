@@ -83,6 +83,15 @@ class FlyquerySettings(BaseSettings):
     object_store_base: str = "/var/lib/flyquery/blobs"
     object_store_kms_default: str = ""
     object_store_presign_ttl_s: int = 86400
+    object_store_azure_account_url: str = ""
+    object_store_azure_container: str = ""
+    object_store_azure_prefix: str = ""
+    object_store_gcs_bucket: str = ""
+    object_store_gcs_project: str = ""
+    object_store_gcs_prefix: str = ""
+    object_store_gcs_endpoint_url: str = ""
+    object_store_request_timeout_seconds: int = 10
+    object_store_max_object_bytes: int = 64 * 1024 * 1024
 
     # DuckDB execution
     duckdb_httpfs: bool = True

@@ -6,7 +6,7 @@ import { mockService } from './fixtures';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 async function groupedFixture(page: Page) {
-  await mockService(page);
+  await mockService(page, { organizationAgent: 'agent-one' });
   const stamp = '2026-10-26T10:00:00Z';
   const folder = (id: string, name: string, parent_id: string | null = null): ChatFolder => ({
     id,

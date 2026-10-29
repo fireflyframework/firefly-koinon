@@ -48,6 +48,7 @@ import type {
   CatalogEntry,
   Page,
 } from '@fireflyframework/koinon-sdk';
+import { KoinonOrganizationChatSettings } from './organization-chat-settings';
 import { KoinonConfiguration } from './configuration';
 @Component({
   selector: 'ffk-settings-page',
@@ -68,6 +69,7 @@ import { KoinonConfiguration } from './configuration';
     KoinonPeopleAccess,
     KoinonAuditPanel,
     KoinonModelOptionsForm,
+    KoinonOrganizationChatSettings,
   ],
   providers: [KoinonConfiguration],
   templateUrl: './settings-page.html',

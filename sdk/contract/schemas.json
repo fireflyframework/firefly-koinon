@@ -10405,6 +10405,91 @@
       "title": "OperationalObservation",
       "type": "object"
     },
+    "OrganizationChatSettings": {
+      "additionalProperties": true,
+      "properties": {
+        "tenant_id": {
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "default_agent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Default Agent Id"
+        },
+        "revision": {
+          "maximum": 2147483647,
+          "minimum": 0,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "configured": {
+          "title": "Configured",
+          "type": "boolean"
+        },
+        "can_run": {
+          "title": "Can Run",
+          "type": "boolean"
+        },
+        "status": {
+          "enum": [
+            "unconfigured",
+            "unavailable",
+            "disabled",
+            "needs_setup",
+            "unverified",
+            "ready"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tenant_id",
+        "default_agent_id",
+        "revision",
+        "configured",
+        "can_run",
+        "status"
+      ],
+      "title": "OrganizationChatSettings",
+      "type": "object"
+    },
+    "OrganizationChatSettingsInput": {
+      "additionalProperties": false,
+      "properties": {
+        "default_agent_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Default Agent Id"
+        },
+        "expected_revision": {
+          "maximum": 2147483646,
+          "minimum": 0,
+          "title": "Expected Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "default_agent_id",
+        "expected_revision"
+      ],
+      "title": "OrganizationChatSettingsInput",
+      "type": "object"
+    },
     "Page": {
       "additionalProperties": true,
       "properties": {
@@ -17313,6 +17398,12 @@
     },
     "AuthorizedApplication": {
       "$ref": "#/$defs/AuthorizedApplication"
+    },
+    "OrganizationChatSettings": {
+      "$ref": "#/$defs/OrganizationChatSettings"
+    },
+    "OrganizationChatSettingsInput": {
+      "$ref": "#/$defs/OrganizationChatSettingsInput"
     },
     "Page[AuditEvent]": {
       "$ref": "#/$defs/Page_AuditEvent_"

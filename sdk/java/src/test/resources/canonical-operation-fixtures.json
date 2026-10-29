@@ -7031,6 +7031,61 @@
     "idempotency": false
   },
   {
+    "operation": "OrganizationChatController.get",
+    "group": "OrganizationChatApi",
+    "method": "get",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/chat/settings",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {
+      "workspace_id": "workspace_id value",
+      "project_id": "project_id value"
+    },
+    "filter": "OrganizationChatFilter",
+    "request": null,
+    "response": "OrganizationChatSettings",
+    "body": {
+      "tenant_id": "tenant_id-value",
+      "default_agent_id": "default_agent_id-value",
+      "revision": 1,
+      "configured": false,
+      "can_run": false,
+      "status": "unconfigured"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "OrganizationChatController.update",
+    "group": "OrganizationChatApi",
+    "method": "update",
+    "http": "PUT",
+    "path": "/api/v1/tenants/tenant value/chat/settings",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "OrganizationChatSettingsInput",
+    "response": "OrganizationChatSettings",
+    "body": {
+      "tenant_id": "tenant_id-value",
+      "default_agent_id": "default_agent_id-value",
+      "revision": 1,
+      "configured": false,
+      "can_run": false,
+      "status": "unconfigured"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
     "operation": "ProfileController.get",
     "group": "ProfileApi",
     "method": "get",

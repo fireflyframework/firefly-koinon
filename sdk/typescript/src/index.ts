@@ -1,5 +1,6 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
+import type {OrganizationChatSettings,OrganizationChatSettingsInput} from './generated.js';
 import type {AnswerAudit} from './generated.js';
 import type {AuthorizedApplication} from './generated.js';
 import type {AuthorizedApplicationFilter} from './types.js';
@@ -44,6 +45,7 @@ export class KoinonClient {
  readonly profile;
  readonly tokens;
  readonly authorizedApplications;
+ readonly organizationChat;
  readonly people;
  readonly knowledgeConnections;
  readonly knowledgeIndexes;
@@ -67,6 +69,10 @@ export class KoinonClient {
     update:(tenantId:string,workspaceId:string,termId:string,input:GlossaryTermUpdate,expectedUpdatedAt:string,options:RequestOptions={})=>transport.request<GlossaryTermRead>('PUT',path+'/'+id(termId),{...options,body:input,headers:headers(tenantId,workspaceId,options,expectedUpdatedAt)}),
     remove:(tenantId:string,workspaceId:string,termId:string,expectedUpdatedAt:string,options:RequestOptions={})=>transport.request<void>('DELETE',path+'/'+id(termId),{...options,headers:headers(tenantId,workspaceId,options,expectedUpdatedAt)}),
    };
+  };
+  this.organizationChat={
+   get:(tenantId:string,filter:{workspace_id?:string;project_id?:string}={},options:RequestOptions={})=>transport.request<OrganizationChatSettings>('GET',`${tenant(tenantId)}/chat/settings`,{...options,query:{...filter}}),
+   update:(tenantId:string,input:OrganizationChatSettingsInput,options:RequestOptions={})=>transport.request<OrganizationChatSettings>('PUT',`${tenant(tenantId)}/chat/settings`,{...options,body:input}),
   };
   this.structured={glossary:glossary(false),agentGlossary:glossary(true)};
   this.exports={

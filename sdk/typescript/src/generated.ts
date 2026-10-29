@@ -777,6 +777,18 @@ export interface NativeTableSnapshot {
  "table_name": string;
  "snapshot_id": string;
 }
+export interface OrganizationChatSettings {
+ "tenant_id": string;
+ "default_agent_id": string | null;
+ "revision": number;
+ "configured": boolean;
+ "can_run": boolean;
+ "status": "unconfigured" | "unavailable" | "disabled" | "needs_setup" | "unverified" | "ready";
+}
+export interface OrganizationChatSettingsInput {
+ "default_agent_id": string | null;
+ "expected_revision": number;
+}
 export interface PendingKnowledgeCommit {
  "status"?: "pending";
  "operation_id": string;

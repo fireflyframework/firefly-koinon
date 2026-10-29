@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCES = {
+    "organization_chat": "backend/src/koinon/organization_chat/dtos.py",
     "authorized_applications": "backend/src/koinon/authorized_applications/dtos.py",
     "coordinates": "backend/src/koinon/knowledge/provenance/coordinate_dtos.py",
     "curated": "backend/src/koinon/knowledge/curated/dtos.py",

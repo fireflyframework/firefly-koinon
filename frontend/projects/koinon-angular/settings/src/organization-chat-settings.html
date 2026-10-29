@@ -1,0 +1,62 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+@if (allowed()) {
+  <section
+    [attr.aria-label]="'Organization chat' | ffkText"
+    [attr.aria-busy]="pending() || saving()"
+  >
+    <header>
+      <div>
+        <h3>{{ 'Organization chat' | ffkText }}</h3>
+        <p>
+          {{ 'Choose once for this organization. Everyone uses this agent in chat.' | ffkText }}
+        </p>
+      </div>
+      <ffk-button
+        variant="quiet"
+        icon="refresh"
+        [label]="'Reload organization chat' | ffkText"
+        [disabled]="pending() || saving()"
+        (click)="load()"
+      />
+    </header>
+    @if (error()) {
+      <p class="feedback" role="alert"><ffk-icon name="alert" />{{ error() | ffkText }}</p>
+    }
+    @if (notice()) {
+      <p class="feedback" role="status"><ffk-icon name="check" />{{ notice() | ffkText }}</p>
+    }
+    <form (ngSubmit)="save()">
+      <label for="organization-chat-agent"
+        >{{ 'Organization chat agent' | ffkText }}
+        <select
+          id="organization-chat-agent"
+          name="organization-chat-agent"
+          [ngModel]="selectedId()"
+          (ngModelChange)="selectedId.set($event)"
+          [disabled]="pending() || saving() || !settings()"
+        >
+          <option value="">{{ 'No agent — chat unavailable' | ffkText }}</option>
+          @if (missingDefault()) {
+            <option [value]="missingDefault()" disabled>{{ 'Unavailable agent' | ffkText }}</option>
+          }
+          @for (agent of agents(); track agent.id) {
+            <option [value]="agent.id">{{ agent.name }}</option>
+          }
+        </select>
+      </label>
+      <ffk-button type="submit" variant="primary" [disabled]="!canSave()" [loading]="saving()">{{
+        'Save organization chat' | ffkText
+      }}</ffk-button>
+    </form>
+    @if (settings() && !settings()?.can_run) {
+      <p class="availability">
+        {{
+          (settings()?.default_agent_id
+            ? 'The selected agent is unavailable for chat. Review its configuration or choose another organization agent.'
+            : 'Chat is unavailable until an organization agent is selected.'
+          ) | ffkText
+        }}
+      </p>
+    }
+  </section>
+}

@@ -184,6 +184,7 @@
             >{{ 'Create an agent' | ffkText }}</ffk-button
           >
         </header>
+        <ffk-organization-chat-settings />
         @if (!usableProviders().length) {
           <div class="setup-notice">
             <ffk-icon name="alert" /><span>{{

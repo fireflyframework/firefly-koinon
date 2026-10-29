@@ -263,6 +263,7 @@ from koinon_sdk.models import (
     UserProfile,
     ValidationResult,
 )
+from koinon_sdk.organization_chat import OrganizationChatSettings, OrganizationChatSettingsInput
 from koinon_sdk.pagination import (
     cursor_pages,
     offset_pages,
@@ -295,6 +296,8 @@ from koinon_sdk.streaming import (
 )
 
 __all__ = [
+    "OrganizationChatSettings",
+    "OrganizationChatSettingsInput",
     "AuthorizedApplication",
     "AuthorizedApplicationFilter",
     "DatasetFileAppendResult",

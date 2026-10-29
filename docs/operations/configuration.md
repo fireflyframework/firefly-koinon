@@ -37,4 +37,6 @@ With default five-source pools, one process permits eleven pooled connections an
 
 Document storage aliases are `KOINON_DOCUMENT_STORAGE_BACKEND`, `ROOT`, `S3_BUCKET`, `S3_PREFIX`, `S3_ENDPOINT_URL`, `S3_REGION` with the same prefix, plus `KOINON_DOCUMENT_STORE_ORIGINALS`. Structured storage aliases are `KOINON_STRUCTURED_STORAGE_BACKEND`, `ROOT` and `PRESIGN_TTL_SECONDS`. These override only the approved storage fields in the native module settings. They cannot change database credentials. Remote endpoints require HTTPS outside explicitly configured loopback development.
 
+Azure Blob Storage and Google Cloud Storage use the same three explicit document, structured and private-attachment profiles. The [storage guide](storage.md) lists provider fields, environment aliases, optional installation extras, credential resolution and bounded query scratch behavior. Valid configuration and an installed SDK are separate from verified provider availability. Storage profiles are deployment configuration; organization chat settings and user API tokens cannot change them.
+
 Copyright 2026 Firefly Software Foundation. Licensed under Apache-2.0. Made with <3.
