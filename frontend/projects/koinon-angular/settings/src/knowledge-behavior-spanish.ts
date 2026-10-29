@@ -12,7 +12,7 @@ export const KNOWLEDGE_BEHAVIOR_SPANISH: Readonly<Record<string, string>> = {
   Revision: 'Revisión',
   'You can view these settings. An organization administrator with settings permission can change them.':
     'Puedes consultar esta configuración. Un administrador de la organización con permiso de configuración puede modificarla.',
-  'Document answers': 'Respuestas sobre documentos',
+  'Document answers': 'Respuestas de documentos',
   'Choose how koinon uses authorized documents to answer questions.':
     'Elige cómo usa koinon los documentos autorizados para responder preguntas.',
   'Find relevant passages (RAG)': 'Buscar fragmentos relevantes (RAG)',

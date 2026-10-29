@@ -115,7 +115,7 @@ The combined RLM regression passes the admitted policy through the native adapte
 
 All three SDKs expose 144 canonical operations and 271 schemas. The new policy methods, bounds and applied snapshots passed source and installed consumer checks: 122 Python tests, 37 TypeScript tests and 878 Java tests on each of JDK 21 and 25. These tests do not establish live coverage of every operation. Managed migration, deployment, actual administrator saves and live-provider RLM acceptance remain separate steps.
 
-The final Settings build passed 315 library units, 43 management units and the complete 214-case controlled browser suite, plus configured lint/type checks, all entry-point builds, a packed Angular consumer and locale checks. Browser geometry and read-count assertions wait for the final visible view without relaxing their limits. Its initial management bundle is 499,801 bytes under the unchanged 500,000-byte guard. Source screenshots use controlled responses; they are not captures of a deployed organization policy.
+The final Settings build passed 317 library units, 43 management units and the complete 214-case controlled browser suite, plus configured lint/type checks, all entry-point builds, a packed Angular consumer and locale checks. Browser geometry and read-count assertions wait for the final visible view without relaxing their limits. Both locale registration orders preserve all 1,294 canonical Spanish translations; five affected Spanish browser cases passed after the label correction. Its initial management bundle is 499,801 bytes under the unchanged 500,000-byte guard. Source screenshots use controlled responses; they are not captures of a deployed organization policy.
 
 ## Product acceptance still required
 

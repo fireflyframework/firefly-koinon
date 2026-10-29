@@ -239,6 +239,13 @@ test('Spanish lazy settings keeps document methods separate from SQL controls', 
   await expect(
     panel.getByRole('heading', { name: 'Comportamiento del conocimiento', exact: true }),
   ).toBeVisible();
+  await expect(panel.locator('legend')).toHaveText('Respuestas de documentos');
+  const directory = process.env['KOINON_UI_CAPTURE_DIR'] ?? 'test-results/knowledge-behavior';
+  await mkdir(directory, { recursive: true });
+  await page.screenshot({
+    path: resolve(directory, 'knowledge-behavior-spanish-390.png'),
+    animations: 'disabled',
+  });
   await panel
     .locator('summary')
     .filter({ hasText: /^Consultas de datos$/ })
