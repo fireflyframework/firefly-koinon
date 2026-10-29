@@ -139,8 +139,11 @@ class _FakeObjectStore:
 
 
 class _FakeExamplesService:
+    def __init__(self):
+        self.created = []
+
     async def create(self, *args, **kwargs):
-        pass
+        self.created.append((args, kwargs))
 
 
 class _FakeSettings:
@@ -192,6 +195,7 @@ async def test_sse_happy_path_emits_all_events():
     from flyquery.web.controllers.query_controller import QueryController
 
     settings = _FakeSettings()
+    settings.autolearn_enabled = True
 
     # Build controller with minimal fakes
     ctrl = QueryController.__new__(QueryController)
@@ -265,6 +269,8 @@ async def test_sse_happy_path_emits_all_events():
     assert event_names[0] == "schema_linked"
     # final must come last
     assert event_names[-1] == "final"
+
+    assert ctrl._examples_service.created == [], "The read-only SSE surface must not admit examples"
 
 
 @pytest.mark.asyncio

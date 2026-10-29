@@ -31,7 +31,7 @@ Execution order
 10. ExplainerAgent — NL summary + chart hint
 11. Persist flyquery_queries row via QueryRepository
 12. Upload result Parquet + upsert flyquery_query_results via ResultUploader
-13. AutoLearner.maybe_propose() — first-shot OK + no PII → insert PROPOSED example
+13. Optional authorized auto-learning — first-shot OK + no PII → create an unapproved draft
 14. Return AnswerResult
 """
 
@@ -44,6 +44,7 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from flyquery.core.agents.model_bindings import model_reference
+from flyquery.core.services.examples.auto_learner import autolearn_allowed
 from flyquery.core.services.execution.ast_classifier import AstClassifier
 from flyquery.core.services.execution.duckdb_executor import ExecutionError, ExecutionResult
 from flyquery.core.services.execution.scope_guard import ScopeGuard, ScopeGuardError
@@ -1052,7 +1053,12 @@ class QueryService:
         # ------------------------------------------------------------------
         # 12. Auto-learn (only on first-shot OK + no PII + no clarification)
         # ------------------------------------------------------------------
-        if execution_status == "OK" and isinstance(result, ExecutionResult) and not clarification_emitted:
+        if (
+            autolearn_allowed(self._settings, scopes)
+            and execution_status == "OK"
+            and isinstance(result, ExecutionResult)
+            and not clarification_emitted
+        ):
             await self._auto_learner.maybe_propose(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
@@ -1063,6 +1069,7 @@ class QueryService:
                 pii_findings=[],
                 query_id=query_id,
                 row_count=result.row_count,
+                authorized=True,
             )
 
         # ------------------------------------------------------------------

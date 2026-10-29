@@ -158,12 +158,13 @@ export class KoinonSettingsPage implements OnInit {
   ];
   ngOnInit() {
     this.tasks.run(async () => {
-      if (this.allowed('providers:write')) await this.c.load();
+      const metadata = this.allowed('providers:write') ? this.c.load() : undefined;
       const requested = this.actions?.section?.() || 'providers';
       const initial =
         this.tabs.find((tab) => tab.id === requested && this.allowed(tab.permission)) ??
         this.tabs.find((tab) => this.allowed(tab.permission));
       if (initial) await this.openSection(initial.id);
+      await metadata;
     });
   }
   allowed(permission: string) {

@@ -64,7 +64,7 @@ async def example_rows(session, binding, embedding, workspace_id, dataset_id, li
         JOIN flyquery_embedding_vectors v ON v.set_id=:set_id AND v.kind='example'
           AND v.object_id=e.id AND v.content_hash=fresh.source_hash
           AND v.tenant_id=:tenant AND v.workspace_id=:workspace
-        WHERE e.workspace_id=:workspace AND e.quality IN ('APPROVED','PROPOSED')
+        WHERE e.workspace_id=:workspace AND e.quality = 'APPROVED'
     """
             + condition
             + " ORDER BY v.embedding <=> CAST(:emb AS vector) LIMIT :lim"

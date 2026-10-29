@@ -45,6 +45,12 @@ Providers and agents are separate from the model roles used by document and data
 
 Generative roles may use the current chat agent only when the role descriptor permits it and the operation has an active agent context. Embedding roles require an explicit provider, model, dimensions and approved existing space. Do not guess an embedding space or substitute a different model for indexed knowledge. An incompatible change requires reindexing; removing and recreating an assignment does not bypass that requirement.
 
+## Knowledge approval
+
+Dataset questions may retain execution, result and audit evidence. Canonical query credentials carry read/execute authority and cannot automatically create knowledge-base examples, including when the caller is an administrator.
+
+Native automatic draft learning is disabled by default. An explicitly enabled `autolearn_enabled` policy also requires explicit example-author authority; query-read authority alone is insufficient. Authorized proposals retain `PROPOSED` status. Draft and rejected examples are excluded from lexical/vector grounding and versioned indexing until an authorized explicit approval makes them eligible. Approval computes the compatible embedding before changing review state, then publishes the active vector in the same transaction as the approval. Provider failures, a changed source or an active-index change leave the draft unapproved. Approval also compares a private database row version alongside source and review state. A rejection committed while embedding is in flight wins even if the example was already rejected; stale approval returns a conflict. The private version adds no public response field or schema column, and a fresh explicit reapproval remains supported. Existing drafts and vectors are preserved; they are not silently approved, deleted or backfilled.
+
 ## Connections and parameters
 
 Settings should present prerequisites and observed states. Model credentials are write-only; responses report whether they are configured. They are encrypted using an external master key and never stored in browser settings. Provider addresses require a deployment-managed host allowlist.

@@ -24,6 +24,7 @@ from typing import Any
 import sqlalchemy as sa
 from pyfly.container import repository
 from pyfly.data.transaction import infrastructure_unit
+from sqlalchemy.exc import NoResultFound
 
 from flyquery.data import StructuredSessions, unwrap_sessions
 
@@ -155,20 +156,96 @@ class ExamplesRepository:
             row = result.mappings().one_or_none()
             return dict(row) if row else None
 
-    async def update_quality(self, example_id: uuid.UUID, quality: str) -> dict[str, Any]:
-        """Set quality (APPROVED | REJECTED | PROPOSED) and return updated row."""
-        async with infrastructure_unit(self._factory) as s:
-            result = await s.execute(
+    async def _review_snapshot(self, example_id: uuid.UUID) -> tuple[dict[str, Any], str]:
+        """Capture a private MVCC token without adding it to public example responses."""
+        async with infrastructure_unit(self._factory) as session:
+            result = await session.execute(
                 sa.text(
                     """
+                    SELECT id, tenant_id, workspace_id, dataset_id, question,
+                           generated_sql, normalised_sql, source, quality,
+                           citations_json, created_at, created_by, last_used_at, usage_count,
+                           xmin::text AS _review_version
+                    FROM flyquery_examples WHERE id = :id
+                    """
+                ),
+                {"id": example_id},
+            )
+            row = dict(result.mappings().one())
+            version = str(row.pop("_review_version"))
+            return row, version
+
+    async def update_quality(
+        self,
+        example_id: uuid.UUID,
+        quality: str,
+        *,
+        embedding: list[float] | None = None,
+        expected_source: tuple[str, str] | None = None,
+        expected_quality: str | None = None,
+        expected_review_version: str | None = None,
+    ) -> dict[str, Any]:
+        """Change review state; approval and its active vector share the native unit."""
+        from flyquery.core.agents.model_bindings import embedding_for
+
+        binding = embedding_for("structured.embedding")
+        versioned = binding is not None and binding.versioned
+        if quality == "APPROVED" and expected_review_version is None:
+            raise ValueError("Example approval requires a private review snapshot")
+        if quality == "APPROVED" and versioned and embedding is None:
+            raise ValueError("Versioned example approval requires its compatible embedding")
+        assignments = "quality = :quality"
+        params: dict[str, Any] = {"id": example_id, "quality": quality}
+        if embedding is not None and not versioned:
+            assignments += ", embedding = CAST(:embedding AS vector)"
+            params["embedding"] = str(embedding)
+        condition = ""
+        if expected_source is not None:
+            condition = " AND question=:expected_question AND generated_sql=:expected_sql"
+            params.update(expected_question=expected_source[0], expected_sql=expected_source[1])
+        if expected_quality is not None:
+            condition += " AND quality=:expected_quality"
+            params["expected_quality"] = expected_quality
+        if expected_review_version is not None:
+            condition += " AND xmin::text=:expected_review_version"
+            params["expected_review_version"] = expected_review_version
+        async with infrastructure_unit(self._factory) as session:
+            if quality == "APPROVED":
+                from flyquery.core.services.retrieval.index_scope import guard_publication
+
+                await guard_publication(session, binding)
+            result = await session.execute(
+                sa.text(
+                    f"""
                     UPDATE flyquery_examples
-                    SET quality = :quality
-                    WHERE id = :id
+                    SET {assignments}
+                    WHERE id = :id {condition}
                     RETURNING id, tenant_id, workspace_id, dataset_id, question,
                               generated_sql, normalised_sql, source, quality,
                               citations_json, created_at, created_by, last_used_at, usage_count
                     """
                 ),
-                {"id": example_id, "quality": quality},
+                params,
             )
-            return dict(result.mappings().one())
+            try:
+                row = result.mappings().one()
+            except NoResultFound:
+                if expected_source is None and expected_quality is None and expected_review_version is None:
+                    raise
+                from pyfly.kernel import ConflictException
+
+                raise ConflictException(
+                    "The example source or review state changed; review it again before approval",
+                    code="EXAMPLE_REVIEW_CONFLICT",
+                ) from None
+            if quality == "APPROVED" and versioned:
+                from flyquery.core.services.retrieval.sidecar_writer import write_active_vector
+
+                await write_active_vector(
+                    self._factory,
+                    tenant_id=row["tenant_id"],
+                    object_id=row["id"],
+                    kind="example",
+                    vector=embedding,
+                )
+            return dict(row)

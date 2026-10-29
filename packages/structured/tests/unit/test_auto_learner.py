@@ -55,6 +55,7 @@ async def test_maybe_propose_inserts_on_first_shot_ok() -> None:
         retries=0,
         pii_findings=[],
         query_id=qid,
+        authorized=True,
     )
     assert len(svc.calls) == 1
     call = svc.calls[0]
@@ -77,6 +78,7 @@ async def test_maybe_propose_skips_when_retries_gt_zero() -> None:
         retries=1,
         pii_findings=[],
         query_id=uuid.uuid4(),
+        authorized=True,
     )
     assert len(svc.calls) == 0
 
@@ -94,5 +96,46 @@ async def test_maybe_propose_skips_when_pii_findings() -> None:
         retries=0,
         pii_findings=[{"type": "email"}],
         query_id=uuid.uuid4(),
+        authorized=True,
     )
     assert len(svc.calls) == 0
+
+
+async def test_learner_requires_explicit_authorization_before_creating_a_draft():
+    service = FakeExamplesService()
+    learner = AutoLearner(service)
+    await learner.maybe_propose(
+        tenant_id="tenant",
+        workspace_id=uuid.uuid4(),
+        dataset_id=None,
+        question="question",
+        generated_sql="SELECT 1",
+        retries=0,
+        pii_findings=[],
+        query_id=uuid.uuid4(),
+    )
+    assert service.calls == []
+
+
+def test_native_autolearning_is_opt_in_by_default(monkeypatch):
+    from flyquery.config import FlyquerySettings
+
+    monkeypatch.delenv("FLYQUERY_AUTOLEARN_ENABLED", raising=False)
+    assert FlyquerySettings(_env_file=None).autolearn_enabled is False
+
+
+async def test_authorized_autolearning_does_not_propose_an_empty_result():
+    service = FakeExamplesService()
+    await AutoLearner(service).maybe_propose(
+        tenant_id="tenant",
+        workspace_id=uuid.uuid4(),
+        dataset_id=None,
+        question="question",
+        generated_sql="SELECT 1 WHERE false",
+        retries=0,
+        pii_findings=[],
+        query_id=uuid.uuid4(),
+        row_count=0,
+        authorized=True,
+    )
+    assert service.calls == []

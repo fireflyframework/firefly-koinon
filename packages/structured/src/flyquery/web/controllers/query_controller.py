@@ -47,7 +47,7 @@ from flyquery.core.agents.critic_agent import build_critic_agent
 from flyquery.core.agents.explainer_agent import build_explainer_agent
 from flyquery.core.agents.generation_agent import build_generation_agent
 from flyquery.core.agents.grounding_agent import build_grounding_agent
-from flyquery.core.services.examples.auto_learner import AutoLearner
+from flyquery.core.services.examples.auto_learner import AutoLearner, autolearn_allowed
 from flyquery.core.services.examples.examples_service import ExamplesService
 from flyquery.core.services.execution.ast_classifier import AstClassifier
 from flyquery.core.services.execution.duckdb_executor import DuckDBExecutor
@@ -755,7 +755,7 @@ class QueryController:
                     workspace_id=workspace_id,
                     dataset_id=request.dataset_id,
                 )
-                if execution_status == "OK":
+                if execution_status == "OK" and autolearn_allowed(self._settings, _DEFAULT_USER_SCOPES):
                     await auto_learner.maybe_propose(
                         tenant_id=tenant_id,
                         workspace_id=workspace_id,
@@ -765,6 +765,8 @@ class QueryController:
                         retries=retries,
                         pii_findings=[],
                         query_id=query_id,
+                        row_count=exec_result.row_count,
+                        authorized=True,
                     )
 
             # Stage 6: final

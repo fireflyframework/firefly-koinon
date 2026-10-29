@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""AutoLearner: promote first-shot OK runs to AGENT_LEARNED, quality=PROPOSED."""
+"""Create explicitly authorized first-shot drafts; approval controls knowledge reuse."""
 
 from __future__ import annotations
 
@@ -22,15 +22,22 @@ from typing import Any
 from flyquery.interfaces.examples import ExampleCreate
 
 
+def autolearn_allowed(settings: Any, scopes: set[str]) -> bool:
+    """Automatic draft creation is an explicit native policy plus author authority."""
+    return getattr(settings, "autolearn_enabled", False) is True and "flyquery.examples:author" in scopes
+
+
 class AutoLearner:
     """Proposes an examples row after a successful first-shot query run.
 
     Skips when:
+    - explicit author authorization was not supplied
     - ``retries > 0`` (query required critic refinement)
     - PII findings were detected in the result
     - the query returned no rows (``row_count`` is 0, when provided)
 
-    Called by QueryService (Phase D) after a successful execution.
+    Called only after opt-in policy and author authority checks. A proposal
+    remains outside retrieval and indexing until it is explicitly approved.
     """
 
     def __init__(self, examples_service: Any) -> None:
@@ -48,9 +55,11 @@ class AutoLearner:
         pii_findings: list[Any],
         query_id: uuid.UUID,
         row_count: int | None = None,
+        authorized: bool = False,
     ) -> None:
         """Insert a flyquery_examples row when all criteria pass.
 
+        :param authorized: explicit caller authorization after policy and author-scope checks
         :param tenant_id: tenant identifier
         :param workspace_id: workspace UUID
         :param dataset_id: optional dataset UUID
@@ -64,6 +73,8 @@ class AutoLearner:
             would otherwise poison grounding). When ``None`` the row gate is
             skipped to preserve behaviour for callers that do not pass it.
         """
+        if authorized is not True:
+            return
         if retries > 0:
             return
         if pii_findings:

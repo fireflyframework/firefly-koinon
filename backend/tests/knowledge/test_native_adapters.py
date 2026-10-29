@@ -327,3 +327,65 @@ async def test_direct_sql_returns_original_answer_contract_with_trusted_native_r
     )
     assert AnswerResponse.model_validate(result).preview == [{"total": 12}]
     assert "chart_hint" in result
+
+
+async def test_canonical_dataset_query_borrows_only_read_authority_even_for_an_administrator():
+    from contextlib import asynccontextmanager
+    from uuid import uuid4
+
+    from flyquery.core.services.datasets.dataset_service import DatasetService
+    from flyquery.web.controllers.query_controller import QueryController
+    from flyquery.web.conventions.context import current_tenant_context
+
+    from koinon.knowledge.adapters import NativeDomains
+
+    workspace, dataset = str(uuid4()), str(uuid4())
+    datasets = SimpleNamespace(
+        get=AsyncMock(
+            return_value={
+                "id": dataset,
+                "tenant_id": "north",
+                "workspace_id": workspace,
+            }
+        )
+    )
+    observed = []
+
+    async def answer(**arguments):
+        observed.append(arguments["scopes"])
+        assert current_tenant_context().actor == "issuer|administrator"
+        return {"query_id": str(uuid4()), "execution_status": "OK", "sql": "SELECT 1", "snapshot_pins": {}}
+
+    @asynccontextmanager
+    async def session():
+        yield object()
+
+    controller = SimpleNamespace(
+        _session_factory=session, _build_service=lambda selected: SimpleNamespace(answer=answer)
+    )
+    services = {DatasetService: datasets, QueryController: controller}
+    domains = NativeDomains(
+        SimpleNamespace(
+            contains_type=lambda kind: kind in services,
+            resolve=lambda kind: services[kind],
+            registered_types=lambda: [],
+        )
+    )
+    domains.model_requirements = lambda *arguments: ("query", ())
+
+    @asynccontextmanager
+    async def connections(*arguments, **keywords):
+        yield
+
+    domains.model_connections = connections
+    await domains.query(
+        tenant_id="north",
+        workspace_id=workspace,
+        dataset_id=dataset,
+        dataset_allowlist={dataset},
+        question="Count",
+        conversation_id=None,
+        sql=None,
+        actor="issuer|administrator",
+    )
+    assert observed == [{"flyquery.query:read", "flyquery.sql:execute"}]

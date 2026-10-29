@@ -22,7 +22,7 @@ WITH objects AS (
    jsonb_build_object('id',e.id,'kind','example','question',e.question,'generated_sql',e.generated_sql),
    encode(sha256(convert_to(jsonb_build_array(e.question,e.generated_sql)::text,'UTF8')),'hex')
  FROM flyquery_examples e
- WHERE e.tenant_id=:tenant AND e.workspace_id=:workspace AND e.quality IN ('APPROVED','PROPOSED')
+ WHERE e.tenant_id=:tenant AND e.workspace_id=:workspace AND e.quality = 'APPROVED'
 )
 """
 

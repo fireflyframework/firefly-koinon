@@ -18,7 +18,7 @@ Hosts can implement `KoinonTransport` instead of using `FetchTransport`. Its `re
 
 Build/test: `npm ci`, `npm test`. Installed-consumer acceptance and API integration acceptance are separate gates.
 
-The source-backed canonical index and wire DTO schemas live in `sdk/contract/operations.json` and `schemas.json` at the repository root. The current development contract has 137 canonical versioned operations with helpers; retained routes are excluded except the separately listed qualified glossary operations. Operator probes and cookie-only `/auth/me` are outside the headless versioned API.
+The source-backed canonical index and wire DTO schemas live in `sdk/contract/operations.json` and `schemas.json` at the repository root. The current development contract has 142 canonical versioned operations with helpers; retained routes are excluded except the separately listed qualified glossary operations. Operator probes and cookie-only `/auth/me` are outside the headless versioned API.
 
 `dataset.tableProvenance(tenant, dataset, table, usedSnapshot)` reads an exact snapshot. `dataset.tableSnapshots(tenant, dataset, table, {query:{page:1,page_size:25}})` returns server-paged history and a separate current snapshot. A `not_recorded` origin remains unknown; `file_section` coverage is not row or cell lineage.
 

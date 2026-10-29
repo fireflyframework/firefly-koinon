@@ -365,21 +365,23 @@ async def test_answer_calls_result_uploader():
 
 
 @pytest.mark.asyncio
-async def test_answer_calls_auto_learner_on_first_shot():
-    """AutoLearner.maybe_propose is called once on a first-shot OK run."""
+async def test_answer_calls_auto_learner_only_with_explicit_policy_and_authority():
+    """Native opt-in learning requires an author grant and creates only a draft."""
     learner = _FakeAutoLearner()
     svc = _make_service(auto_learner=learner)
+    svc._settings.autolearn_enabled = True
 
     await svc.answer(
         tenant_id="ten-a",
         workspace_id=uuid.uuid4(),
         dataset_id=uuid.uuid4(),
         question="test",
-        scopes={"flyquery.query:read"},
+        scopes={"flyquery.query:read", "flyquery.examples:author"},
     )
 
     assert len(learner.proposals) == 1
     assert learner.proposals[0]["retries"] == 0
+    assert learner.proposals[0]["authorized"] is True
 
 
 @pytest.mark.asyncio
@@ -816,3 +818,22 @@ async def test_timeout_during_advisory_repair_does_not_restore_an_earlier_succes
     assert result.execution_status == "FAILED"
     assert critic.calls == 1
     assert repo.created_queries[0]["error_json"]["sql_state"] == "57014"
+
+
+@pytest.mark.parametrize(
+    "enabled,scopes",
+    [
+        (False, {"flyquery.query:read", "flyquery.examples:author"}),
+        (True, {"flyquery.query:read", "flyquery.sql:execute"}),
+        (True, {"flyquery.query:read"}),
+    ],
+)
+async def test_successful_reads_never_admit_examples_without_policy_and_authority(enabled, scopes):
+    learner = _FakeAutoLearner()
+    service = _make_service(auto_learner=learner)
+    service._settings.autolearn_enabled = enabled
+    result = await service.answer(
+        tenant_id="ten-a", workspace_id=uuid.uuid4(), dataset_id=uuid.uuid4(), question="test", scopes=scopes
+    )
+    assert result.execution_status == "OK"
+    assert learner.proposals == []

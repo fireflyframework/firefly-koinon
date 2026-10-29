@@ -265,7 +265,7 @@ class FlyquerySettings(BaseSettings):
     conv_summary_interval: int = 5
 
     # Auto-learn
-    autolearn_enabled: bool = True
+    autolearn_enabled: bool = False
 
     # Observability
     otel_endpoint: str = ""
