@@ -116,7 +116,12 @@ def test_search_asset_scope_http_empty_unknown_and_bounds_never_invoke_a_model(c
         json={"question": "facts", "asset_ids": [], "answer": True},
     )
     assert response.status_code == 200, response.text
-    assert response.json() == {"hits": [], "answer": "", "citations": []}
+    from koinon.organization_knowledge.dtos import OrganizationKnowledgeSnapshot
+
+    result = response.json()
+    policy = OrganizationKnowledgeSnapshot.model_validate(result.pop("knowledge_settings_snapshot"))
+    assert policy.tenant_id == "north" and policy.origin == "deployment" and policy.revision == 0
+    assert result == {"hits": [], "answer": "", "citations": []}
     response = client.post(
         "/api/v1/tenants/north/search", headers=bearer(), json={"question": "facts", "asset_ids": ["unknown"]}
     )

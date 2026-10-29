@@ -43,6 +43,8 @@ names = {
         "CheckStatus": ["passed", "failed", "needs_setup", "unverified"],
         "ObservationStatus": ["passed", "failed", "unknown"],
         "KnowledgeDomain": ["documents", "structured"],
+        "KnowledgeAnswerMode": ["rag", "rlm"],
+        "KnowledgeSettingsOrigin": ["deployment", "organization"],
         "ConnectionMode": ["provider", "current_agent"],
         "RoleKind": ["embedding", "generative"],
         "ReasoningEffort": ["none", "minimal", "low", "medium", "high", "xhigh"],
@@ -215,7 +217,8 @@ for name, definition in defs.items():
         + name
         + " contract. */\npublic record "
         + name
-        + "(\n    "
+        + "(\n"
+        + ("    " if fields else "")
         + ",\n    ".join(
             "@JsonProperty(" + json.dumps(wire) + ") " + kind + " " + key
             for wire, key, kind, _, _ in fields
@@ -345,7 +348,7 @@ for name, values in enums.items():
     constants = []
     for value in values:
         constants.append(
-            re.sub(r"(?<=[a-z])(?=[A-Z])", "_", value).upper().replace("-", "_")
+            re.sub(r"[^A-Z0-9_]", "_", re.sub(r"(?<=[a-z])(?=[A-Z])", "_", value).upper())
             + "("
             + json.dumps(value)
             + ")"

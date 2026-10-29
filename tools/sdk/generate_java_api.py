@@ -19,6 +19,7 @@ def add(controller, group, methods):
 
 
 add("OrganizationChatController", "OrganizationChatApi", {"get": "get", "update": "update"})
+add("OrganizationKnowledgeController", "OrganizationKnowledgeApi", {"get": "get", "update": "update"})
 add("AuditController", "AuditApi", {"audit": "list"})
 add("DatasetFilesController", "DatasetsApi", {"append": "appendFile"})
 add(

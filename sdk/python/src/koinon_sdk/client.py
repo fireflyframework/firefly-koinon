@@ -150,6 +150,10 @@ from koinon_sdk.models import (
     ValidationResult,
 )
 from koinon_sdk.organization_chat import OrganizationChatSettings, OrganizationChatSettingsInput
+from koinon_sdk.organization_knowledge import (
+    OrganizationKnowledgeSettings,
+    OrganizationKnowledgeSettingsInput,
+)
 from koinon_sdk.proposals import CatalogProposal, ProposalConfirmation, ProposalRevision
 from koinon_sdk.provenance import TableProvenance, TableSnapshotPage
 from koinon_sdk.sharing import (
@@ -1165,6 +1169,22 @@ class KoinonClient:
         }
         return Page[Person].model_validate(
             await self._request("GET", self._tenant(tenant_id) + "/people", params=filters)
+        )
+
+    async def organization_knowledge_settings(self, tenant_id: str) -> OrganizationKnowledgeSettings:
+        return OrganizationKnowledgeSettings.model_validate(
+            await self._request("GET", self._tenant(tenant_id) + "/knowledge/settings")
+        )
+
+    async def update_organization_knowledge_settings(
+        self, tenant_id: str, value: OrganizationKnowledgeSettingsInput
+    ) -> OrganizationKnowledgeSettings:
+        return OrganizationKnowledgeSettings.model_validate(
+            await self._request(
+                "PUT",
+                self._tenant(tenant_id) + "/knowledge/settings",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
         )
 
     async def organization_chat_settings(

@@ -5,6 +5,7 @@
 import os
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
@@ -27,6 +28,7 @@ async def pg_curated(pg_scope, monkeypatch):
     from pyfly.core import Config
     from pyfly.data.relational.datasource_registry import DataSourceRegistry
     from sqlalchemy.engine import make_url
+    from test_policy_runtime_scope import snapshot as knowledge_snapshot
 
     from koinon.catalog.entities import Membership, Tenant
     from koinon.catalog.repositories import MembershipRepository, TenantRepository
@@ -109,7 +111,15 @@ async def pg_curated(pg_scope, monkeypatch):
     domains._resolve = lambda kind: lifecycle if kind is KnowledgeService else resolve(kind)
     catalog = context.get_bean(CatalogService)
     bindings = context.get_bean(DomainBindingRepository)
-    facade = KnowledgeFacade(catalog, bindings, domains, KnowledgeSettings())
+    facade = KnowledgeFacade(
+        catalog,
+        bindings,
+        domains,
+        KnowledgeSettings(),
+        knowledge_settings=SimpleNamespace(
+            snapshot=AsyncMock(side_effect=lambda subject, tenant: knowledge_snapshot(tenant))
+        ),
+    )
     authority = context.get_bean(CuratedAuthority)
     authority.sources = SimpleNamespace(get=lambda: NativeSourceResolver(facade, domains, registry))
     native = context.get_bean(NativeCuratedKnowledge)

@@ -161,7 +161,12 @@
       }
       @if (section() === 'models') {
         @defer (on immediate) {
-          <ffk-knowledge-models [configuration]="c.configuration()" />
+          <ffk-knowledge-behavior />
+          @if (allowed('providers:write')) {
+            <div id="knowledge-model-assignments">
+              <ffk-knowledge-models [configuration]="c.configuration()" />
+            </div>
+          }
         } @loading {
           <ffk-skeleton width="60%" height="12px" [label]="'Opening settings section' | ffkText" />
         } @error {

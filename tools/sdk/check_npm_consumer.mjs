@@ -22,9 +22,30 @@ try {
   await mkdir(path.join(consumer, 'test'), {recursive: true});
   await mkdir(path.join(sdkCheckDir, 'sdk/contract'), {recursive: true});
   await copyFile(path.join(repository, 'sdk/contract/operations.json'), path.join(sdkCheckDir, 'sdk/contract/operations.json'));
+  await copyFile(path.join(repository, 'sdk/contract/fixtures.json'), path.join(sdkCheckDir, 'sdk/contract/fixtures.json'));
   await writeFile(path.join(consumer, 'package.json'), JSON.stringify({private: true, type: 'module'}));
   run(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', archive]);
   const installed = path.join(consumer, 'node_modules/@fireflyframework/koinon-sdk');
+  await writeFile(path.join(consumer, 'policy-consumer.ts'), `
+import {KoinonClient,type OrganizationKnowledgeSettingsInput,type OrganizationKnowledgeSnapshot,type SearchResponse,type AnswerAudit} from '@fireflyframework/koinon-sdk';
+declare const client:KoinonClient;
+async function policy(tenant:string){
+ const current=await client.organizationKnowledge.get(tenant);
+ const input:OrganizationKnowledgeSettingsInput={expected_revision:current.revision,documents:{...current.documents,answer_mode:'rag'},structured:current.structured};
+ const saved=await client.organizationKnowledge.update(tenant,input);
+ const bound:number=saved.capabilities.documents.bounds.rlm_max_iters.maximum;
+ return bound;
+}
+function captured(response:SearchResponse,audit:AnswerAudit):OrganizationKnowledgeSnapshot|null|undefined{
+ return response.knowledge_settings_snapshot??audit.knowledge_settings_snapshot;
+}
+// @ts-expect-error Knowledge behavior has organization scope, not workspace filters.
+client.organizationKnowledge.get('north',{workspace_id:'workspace'});
+// @ts-expect-error Updates require both complete policy objects.
+client.organizationKnowledge.update('north',{expected_revision:0});
+`);
+  run(process.execPath,[path.join(repository,'sdk/typescript/node_modules/typescript/bin/tsc'),
+    '--strict','--noEmit','--target','ES2022','--module','NodeNext','--moduleResolution','NodeNext','policy-consumer.ts']);
   for (const name of ['LICENSE', 'NOTICE']) {
     assert.deepEqual(await readFile(path.join(installed, name)), await readFile(path.join(repository, name)));
   }

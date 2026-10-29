@@ -5,6 +5,7 @@ from typing import Literal
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
 from koinon.evidence.dtos import SourceReference
+from koinon.organization_knowledge.dtos import OrganizationKnowledgeSnapshot
 
 
 class AuditValue(BaseModel):
@@ -147,6 +148,7 @@ class AnswerAudit(AuditValue):
     run_id: str
     provenance_status: Literal["recorded", "not_recorded"]
     source_provenance_complete: bool | None = None
+    knowledge_settings_snapshot: OrganizationKnowledgeSnapshot | None = None
     generations: list[GenerationReceipt] = Field(default_factory=list, max_length=100)
     sources: list[SourceReference] = Field(default_factory=list, max_length=500)
     private_files: list[PrivateFileReceipt] = Field(default_factory=list, max_length=10)

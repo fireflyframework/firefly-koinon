@@ -21,6 +21,8 @@ from koinon.knowledge.capture_receipt import NativeEvidenceReceipt
 from koinon.knowledge.curated.ports import CuratedCorpusPort
 from koinon.knowledge.entities import DomainBinding
 from koinon.knowledge.repositories import DomainBindingRepository
+from koinon.organization_knowledge.runtime import settings_for_operation
+from koinon.organization_knowledge.service import OrganizationKnowledgeService
 
 
 @component(name="knowledge.settings")
@@ -41,9 +43,11 @@ class KnowledgeFacade:
         domains: NativeDomains,
         settings: KnowledgeSettings,
         curated: Provider[CuratedCorpusPort | None] | None = None,
+        knowledge_settings: OrganizationKnowledgeService | None = None,
     ):
         self.catalog, self.bindings, self.domains, self.settings = catalog, bindings, domains, settings
         self.curated = curated
+        self.knowledge_settings = knowledge_settings
 
     async def _chain(self, subject: str, tenant_id: str, entry_id: str, permission="catalog:read"):
         chain, seen = [], set()
@@ -347,6 +351,7 @@ class KnowledgeFacade:
                 "Narrow the search to a workspace or project", code="SEARCH_SCOPE_TOO_WIDE"
             )
         hits, citations, answers = [], [], []
+        policy = await settings_for_operation(self.knowledge_settings, subject, tenant_id)
         _capture = _capture or NativeEvidenceReceipt(subject, tenant_id)
         for (catalog_workspace, native_workspace), admitted in groups.items():
             knowledge = curated_groups.get((catalog_workspace, native_workspace), {})
@@ -380,6 +385,7 @@ class KnowledgeFacade:
                 limit=limit,
                 answer=answer,
                 actor=subject,
+                _knowledge_settings_snapshot=policy,
                 **({"_capture": _capture} if _capture is not None else {}),
                 **({"_curated_retrieve": curated_retrieve} if curated_retrieve is not None else {}),
             )
@@ -450,6 +456,7 @@ class KnowledgeFacade:
         response: dict = {"hits": sorted(hits, key=lambda hit: hit.get("score") or 0, reverse=True)[:limit]}
         if answer:
             response.update(answer="\n\n".join(answers), citations=citations)
+        response["knowledge_settings_snapshot"] = policy.model_dump(mode="json")
         return response
 
     async def query(
@@ -468,6 +475,7 @@ class KnowledgeFacade:
             raise InvalidHierarchy("Select a dataset", code="INVALID_DATASET")
         self._ready_dataset(chain[0])
         binding = await self.binding(tenant_id, dataset_id, "structured", entry=chain[0])
+        policy = await settings_for_operation(self.knowledge_settings, subject, tenant_id)
         _capture = _capture or NativeEvidenceReceipt(subject, tenant_id)
 
         async def authorize_model():
@@ -475,7 +483,7 @@ class KnowledgeFacade:
             self._ready_dataset(current[0])
 
         _capture.authorize_model = authorize_model
-        return await self.domains.query(
+        result = await self.domains.query(
             tenant_id=tenant_id,
             workspace_id=binding.native_workspace_id,
             catalog_workspace_id=chain[0].workspace_id,
@@ -485,8 +493,10 @@ class KnowledgeFacade:
             conversation_id=conversation_id,
             sql=sql,
             actor=subject,
+            _knowledge_settings_snapshot=policy,
             **({"_capture": _capture} if _capture is not None else {}),
         )
+        return {**result, "knowledge_settings_snapshot": policy.model_dump(mode="json")}
 
     async def schema(self, subject, tenant_id, dataset_id, *, _capture: NativeEvidenceReceipt | None = None):
         chain = await self._chain(subject, tenant_id, dataset_id)

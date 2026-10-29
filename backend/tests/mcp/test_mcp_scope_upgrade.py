@@ -85,7 +85,12 @@ def test_actual_scope_denial_triggers_official_client_challenge_and_upgrade_work
     upgraded = oauth_token(oauth_client, scopes="catalog:read knowledge:search")
     response = call(oauth_client, upgraded, "koinon_search", arguments)
     assert response.json()["result"]["isError"] is False
-    assert response.json()["result"]["structuredContent"] == {"hits": []}
+    from koinon.organization_knowledge.dtos import OrganizationKnowledgeSnapshot
+
+    result = response.json()["result"]["structuredContent"]
+    policy = OrganizationKnowledgeSnapshot.model_validate(result.pop("knowledge_settings_snapshot"))
+    assert policy.tenant_id == "north" and policy.origin == "deployment" and policy.revision == 0
+    assert result == {"hits": []}
 
 
 def test_foreign_workspace_and_current_role_denials_do_not_prompt_scope_upgrade(oauth_client):

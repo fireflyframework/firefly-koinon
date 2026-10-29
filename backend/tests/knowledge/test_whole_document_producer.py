@@ -77,6 +77,17 @@ async def test_whole_document_commit_precedes_real_receiver_and_model_context(tm
         )
         receipt = NativeEvidenceReceipt("owner", "tenant")
         receipt.authorize_model = AsyncMock(return_value=True)
+        receipt.admit_documents(
+            "tenant",
+            "workspace",
+            "owner",
+            {
+                source.id: (
+                    SimpleNamespace(id="asset", workspace_id="canonical", name="Controlled"),
+                    SimpleNamespace(id="source-parent"),
+                )
+            },
+        )
         recorded = receipt.document_extraction
         loop = asyncio.get_running_loop()
 
@@ -121,6 +132,10 @@ async def test_whole_document_commit_precedes_real_receiver_and_model_context(tm
 
             actual = await asyncio.to_thread(consume)
         assert actual == "Exact normalized context"
+        assert len(receipt.documents) == 1
+        part = next(iter(receipt.documents.values()))
+        assert part.quote == actual and part.digest == sha256(actual.encode()).hexdigest()
+        assert part.source_part_sha256 == sha256(actual.encode()).hexdigest()
         assert len(receipt.document_extractions) == 1
         metadata_read, document_read, model_input = receipt.native_reads
         assert metadata_read.extraction_id is None

@@ -1,6 +1,7 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 import type {OrganizationChatSettings,OrganizationChatSettingsInput} from './generated.js';
+import type {OrganizationKnowledgeSettings,OrganizationKnowledgeSettingsInput} from './generated.js';
 import type {AnswerAudit} from './generated.js';
 import type {AuthorizedApplication} from './generated.js';
 import type {AuthorizedApplicationFilter} from './types.js';
@@ -27,7 +28,21 @@ export * from './transport.js';
 export type KnowledgeCommitOutcome = CommittedKnowledge | PendingKnowledgeCommit;
 const id=encodeURIComponent;
 const tenant=(tenantId:string)=>`/tenants/${id(tenantId)}`;
+type OrganizationSettingsApi<T,I,F extends boolean>={
+ get:F extends true?(tenantId:string,filter?:{workspace_id?:string;project_id?:string},options?:RequestOptions)=>Promise<T>:(tenantId:string,options?:RequestOptions)=>Promise<T>;
+ update:(tenantId:string,input:I,options?:RequestOptions)=>Promise<T>;
+};
 export class KoinonClient {
+ get organizationKnowledge(){
+  return this.organizationSettings<OrganizationKnowledgeSettings,OrganizationKnowledgeSettingsInput,false>('/knowledge/settings',false);
+ }
+ private organizationSettings<T,I,F extends boolean>(suffix:string,scoped:F):OrganizationSettingsApi<T,I,F>{
+  const transport=this.options.transport;
+  return {
+   get:(tenantId:string,input:RequestOptions|{workspace_id?:string;project_id?:string}={},options:RequestOptions={})=>transport.request<T>('GET',tenant(tenantId)+suffix,scoped?{...options,query:{...input as {workspace_id?:string;project_id?:string}}}:input as RequestOptions),
+   update:(tenantId:string,input:I,options:RequestOptions={})=>transport.request<T>('PUT',tenant(tenantId)+suffix,{...options,body:input}),
+  } as OrganizationSettingsApi<T,I,F>;
+ }
  readonly knowledgeIntents;
  readonly knowledgeItems;
  readonly catalog;
@@ -70,10 +85,7 @@ export class KoinonClient {
     remove:(tenantId:string,workspaceId:string,termId:string,expectedUpdatedAt:string,options:RequestOptions={})=>transport.request<void>('DELETE',path+'/'+id(termId),{...options,headers:headers(tenantId,workspaceId,options,expectedUpdatedAt)}),
    };
   };
-  this.organizationChat={
-   get:(tenantId:string,filter:{workspace_id?:string;project_id?:string}={},options:RequestOptions={})=>transport.request<OrganizationChatSettings>('GET',`${tenant(tenantId)}/chat/settings`,{...options,query:{...filter}}),
-   update:(tenantId:string,input:OrganizationChatSettingsInput,options:RequestOptions={})=>transport.request<OrganizationChatSettings>('PUT',`${tenant(tenantId)}/chat/settings`,{...options,body:input}),
-  };
+  this.organizationChat=this.organizationSettings<OrganizationChatSettings,OrganizationChatSettingsInput,true>('/chat/settings',true);
   this.structured={glossary:glossary(false),agentGlossary:glossary(true)};
   this.exports={
    review:(tenantId:string,input:ExportReviewRequest,options:RequestOptions={})=>transport.request<ExportReview>('POST',`${tenant(tenantId)}/exports/reviews`,{...options,body:input}),

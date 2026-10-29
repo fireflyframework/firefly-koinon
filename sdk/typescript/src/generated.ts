@@ -15,6 +15,7 @@ export interface AnswerAudit {
  "run_id": string;
  "provenance_status": "recorded" | "not_recorded";
  "source_provenance_complete"?: boolean | null;
+ "knowledge_settings_snapshot"?: OrganizationKnowledgeSnapshot | null;
  "generations"?: Array<GenerationReceipt>;
  "sources"?: Array<SourceReference>;
  "private_files"?: Array<PrivateFileReceipt>;
@@ -260,6 +261,40 @@ export interface DatasetFileAppendResult {
 export interface DocumentEvidence {
  "kind"?: "document_passage";
  "source": SourceReference;
+}
+export interface DocumentKnowledgeBounds {
+ "retrieval_top_k": KnowledgeIntegerBounds;
+ "retrieval_per_query_k": KnowledgeIntegerBounds;
+ "retrieval_rrf_k": KnowledgeIntegerBounds;
+ "query_expansion_n": KnowledgeIntegerBounds;
+ "answer_top_k": KnowledgeIntegerBounds;
+ "rlm_max_iters": KnowledgeIntegerBounds;
+ "rlm_sub_budget": KnowledgeIntegerBounds;
+ "rlm_max_depth": KnowledgeIntegerBounds;
+ "rlm_self_consistency": KnowledgeIntegerBounds;
+}
+export interface DocumentKnowledgeCapabilities {
+ "answer_modes": Array<"rag" | "rlm">;
+ "rlm_curated_knowledge_supported": boolean;
+ "rlm_curated_knowledge_reason": "KNOWLEDGE_RLM_UNQUALIFIED";
+ "rlm_model_role": "documents.rlm";
+ "rlm_recorded_views_required": true;
+ "rlm_recorded_views_reason": "RLM_DOCUMENT_VIEWS_REQUIRED";
+ "bounds": DocumentKnowledgeBounds;
+}
+export interface DocumentKnowledgeSettings {
+ "answer_mode": "rag" | "rlm";
+ "retrieval_top_k": number;
+ "retrieval_per_query_k": number;
+ "retrieval_rrf_k": number;
+ "query_expansion_enabled": boolean;
+ "query_expansion_n": number;
+ "answer_top_k": number;
+ "rlm_max_iters": number;
+ "rlm_sub_budget": number;
+ "rlm_max_depth": number;
+ "rlm_self_consistency": number;
+ "rlm_extended_reasoning": boolean;
 }
 export interface EntraCredential {
  "kind": "entra";
@@ -637,6 +672,10 @@ export interface KnowledgeIndexView {
  "error_code"?: string | null;
  "error"?: string | null;
 }
+export interface KnowledgeIntegerBounds {
+ "minimum": number;
+ "maximum": number;
+}
 export interface KnowledgeIntent {
  "id": string;
  "revision": number;
@@ -692,6 +731,12 @@ export interface KnowledgeItemView {
  "head_version": number;
  "serving_version"?: number | null;
  "selected_version": KnowledgeVersionView;
+}
+export interface KnowledgeNumberBounds {
+ "minimum": number;
+ "maximum": number;
+}
+export interface KnowledgePolicyValue {
 }
 export interface KnowledgeVersionView {
  "item_id": string;
@@ -788,6 +833,33 @@ export interface OrganizationChatSettings {
 export interface OrganizationChatSettingsInput {
  "default_agent_id": string | null;
  "expected_revision": number;
+}
+export interface OrganizationKnowledgeCapabilities {
+ "documents": DocumentKnowledgeCapabilities;
+ "structured": StructuredKnowledgeCapabilities;
+}
+export interface OrganizationKnowledgeSettings {
+ "tenant_id": string;
+ "schema_version": 1;
+ "revision": number;
+ "origin": "deployment" | "organization";
+ "documents": DocumentKnowledgeSettings;
+ "structured": StructuredKnowledgeSettings;
+ "capabilities": OrganizationKnowledgeCapabilities;
+}
+export interface OrganizationKnowledgeSettingsInput {
+ "expected_revision": number;
+ "documents": DocumentKnowledgeSettings;
+ "structured": StructuredKnowledgeSettings;
+}
+export interface OrganizationKnowledgeSnapshot {
+ "tenant_id": string;
+ "schema_version": 1;
+ "revision": number;
+ "origin": "deployment" | "organization";
+ "documents": DocumentKnowledgeSettings;
+ "structured": StructuredKnowledgeSettings;
+ "digest": string;
 }
 export interface PendingKnowledgeCommit {
  "status"?: "pending";
@@ -1010,6 +1082,27 @@ export interface StoredResult {
 export interface StructuredEvidence {
  "kind"?: "structured_snapshot";
  "source": SourceReference;
+}
+export interface StructuredKnowledgeBounds {
+ "top_k_schema": KnowledgeIntegerBounds;
+ "top_k_examples": KnowledgeIntegerBounds;
+ "top_k_metrics": KnowledgeIntegerBounds;
+ "rrf_k": KnowledgeIntegerBounds;
+ "generation_candidates": KnowledgeIntegerBounds;
+ "max_refine_retries": KnowledgeIntegerBounds;
+ "grounding_min_confidence": KnowledgeNumberBounds;
+}
+export interface StructuredKnowledgeCapabilities {
+ "bounds": StructuredKnowledgeBounds;
+}
+export interface StructuredKnowledgeSettings {
+ "top_k_schema": number;
+ "top_k_examples": number;
+ "top_k_metrics": number;
+ "rrf_k": number;
+ "generation_candidates": number;
+ "max_refine_retries": number;
+ "grounding_min_confidence": number;
 }
 export interface TableColumnBindingPage {
  "manifest": TableCoordinateManifest;

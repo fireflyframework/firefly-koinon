@@ -11,6 +11,7 @@ public record AnswerAudit(
     @JsonProperty("run_id") String runId,
     @JsonProperty("provenance_status") AnswerAuditProvenanceStatus provenanceStatus,
     @JsonProperty("source_provenance_complete") Boolean sourceProvenanceComplete,
+    @JsonProperty("knowledge_settings_snapshot") OrganizationKnowledgeSnapshot knowledgeSettingsSnapshot,
     @JsonProperty("generations") List<GenerationReceipt> generations,
     @JsonProperty("sources") List<SourceReference> sources,
     @JsonProperty("private_files") List<PrivateFileReceipt> privateFiles,

@@ -118,6 +118,10 @@ for (const width of [1440, 1024, 390])
     await expect(page.locator('ffk-workbench')).toHaveAttribute('style', /--ffk-font/);
     await page.evaluate(() => document.fonts.ready);
     if (width === 390) {
+      await expect(page.getByRole('heading', { name: 'Reference library', exact: true })).toBeVisible();
+      const description = page.locator('.library-heading p');
+      await expect(description).toHaveClass('generic-description');
+      await expect(description).not.toBeVisible();
       const heading = await page.locator('.library-heading').boundingBox();
       const title = await page
         .getByRole('heading', { name: 'Reference library', exact: true })

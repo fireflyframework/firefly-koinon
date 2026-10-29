@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "api_prefix": "/api/v1",
   "status": "Canonical API contract; development snapshot",
-  "canonical_operation_count": 142,
+  "canonical_operation_count": 144,
   "qualified_compatibility_operations": [
     {
       "operation": "GlossaryController.list_terms",
@@ -5424,6 +5424,64 @@
       "response_schema": "OrganizationChatSettings",
       "success_status": 200,
       "source_sha256": "8f2c14859c6228fca1c3ef45c1f8649d3ef86bfbb959c357a81685da338e26b5",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge/settings",
+      "category": "canonical",
+      "operation": "OrganizationKnowledgeController.get",
+      "source": "backend/src/koinon/organization_knowledge/controllers.py",
+      "line": 22,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "OrganizationKnowledgeSettings",
+      "sdk_python": "organization_knowledge_settings",
+      "sdk_typescript": "organizationKnowledge.get",
+      "sdk_java": "client.organizationKnowledge.get",
+      "request_schema": null,
+      "response_schema": "OrganizationKnowledgeSettings",
+      "success_status": 200,
+      "source_sha256": "9ab094768b9c3f891d2ae4a990e18e81df935c50b2a7a1a3fdf9aeb2c972247c",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge/settings",
+      "category": "canonical",
+      "operation": "OrganizationKnowledgeController.update",
+      "source": "backend/src/koinon/organization_knowledge/controllers.py",
+      "line": 26,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[OrganizationKnowledgeSettingsInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "OrganizationKnowledgeSettings",
+      "sdk_python": "update_organization_knowledge_settings",
+      "sdk_typescript": "organizationKnowledge.update",
+      "sdk_java": "client.organizationKnowledge.update",
+      "request_schema": "OrganizationKnowledgeSettingsInput",
+      "response_schema": "OrganizationKnowledgeSettings",
+      "success_status": 200,
+      "source_sha256": "9ab094768b9c3f891d2ae4a990e18e81df935c50b2a7a1a3fdf9aeb2c972247c",
       "encoding": "application/json",
       "headers": []
     },

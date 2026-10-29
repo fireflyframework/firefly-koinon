@@ -33,6 +33,7 @@ import { describeModelOptions, parseModelOptions, type ModelOptionValues } from 
 import { KoinonPeopleAccess } from './people-access';
 import { KoinonAuditPanel } from './audit-panel';
 import { KoinonKnowledgeModels } from './knowledge-models';
+import { KoinonKnowledgeBehavior } from './knowledge-behavior';
 import { KoinonDeploymentPanel } from './deployment-panel';
 import type {
   CapabilityState,
@@ -66,6 +67,7 @@ import { KoinonConfiguration } from './configuration';
     KoinonFolderTree,
     KoinonDeploymentPanel,
     KoinonKnowledgeModels,
+    KoinonKnowledgeBehavior,
     KoinonPeopleAccess,
     KoinonAuditPanel,
     KoinonModelOptionsForm,
@@ -161,8 +163,8 @@ export class KoinonSettingsPage implements OnInit {
       const metadata = this.allowed('providers:write') ? this.c.load() : undefined;
       const requested = this.actions?.section?.() || 'providers';
       const initial =
-        this.tabs.find((tab) => tab.id === requested && this.allowed(tab.permission)) ??
-        this.tabs.find((tab) => this.allowed(tab.permission));
+        this.tabs.find((tab) => tab.id === requested && this.tabAllowed(tab)) ??
+        this.tabs.find((tab) => this.tabAllowed(tab));
       if (initial) await this.openSection(initial.id);
       await metadata;
     });
@@ -172,13 +174,16 @@ export class KoinonSettingsPage implements OnInit {
       permission,
     );
   }
+  tabAllowed(tab: { id: string; permission: string }) {
+    return this.allowed(tab.permission) || (tab.id === 'models' && this.allowed('settings:write'));
+  }
   tabsFor(group: { sections: string[] }) {
     return this.tabs.filter(
-      (tab) => group.sections.includes(tab.id) && this.allowed(tab.permission),
+      (tab) => group.sections.includes(tab.id) && this.tabAllowed(tab),
     );
   }
   async openSection(section: string) {
-    if (!this.tabs.some((tab) => tab.id === section && this.allowed(tab.permission))) return;
+    if (!this.tabs.some((tab) => tab.id === section && this.tabAllowed(tab))) return;
     this.providerValues['secret'] = '';
     this.section.set(section);
     this.editor.set(null);

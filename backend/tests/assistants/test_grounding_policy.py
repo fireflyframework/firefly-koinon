@@ -74,3 +74,61 @@ async def test_unrelated_model_answer_never_reaches_durable_text_or_stream(assis
         and event["data"].get("answer_policy", {}).get("outcome") == "refused"
         for event in events
     )
+
+
+def test_native_final_analysis_is_explicit_and_keeps_exact_result_and_citations_without_reasoning():
+    from koinon.assistants.grounding import evidence_view, has_evidence
+
+    data = {
+        "hits": [{"asset_id": "asset", "text": "Recorded source passage"}],
+        "answer": "Final derived answer",
+        "citations": [{"id": "source-used"}],
+        "reasoning": "PRIVATE_INTERNAL_REASONING",
+    }
+    view = evidence_view("search", data, "exact-result", 2048)
+    assert view["derived_analysis"] == {
+        "text": data["answer"],
+        "citations": data["citations"],
+        "result_id": "exact-result",
+    }
+    assert "PRIVATE_INTERNAL_REASONING" not in str(view)
+    assert has_evidence("search", view)
+
+
+def test_large_final_analysis_stays_bounded_with_source_evidence_and_original_answer_unchanged():
+    import json
+
+    from koinon.assistants.context_budget import ConservativeTokenEstimator
+    from koinon.assistants.grounding import evidence_view, has_evidence
+
+    data = {
+        "hits": [{"asset_id": "asset", "text": "Source"}],
+        "answer": "Long final answer. " * 1000,
+        "citations": [{"id": "source-used"}],
+    }
+    view = evidence_view("search", data, "exact-result", 512)
+    assert view["derived_analysis"]["text"] and view["derived_analysis"]["truncated"] is True
+    assert view["derived_analysis"]["result_id"] == "exact-result"
+    assert view["derived_analysis"]["citations"] == data["citations"]
+    assert (
+        ConservativeTokenEstimator().estimate(json.dumps(view, ensure_ascii=False, separators=(",", ":")))
+        <= 512
+    )
+    assert has_evidence("search", view) and len(data["answer"]) > 10000
+
+
+def test_no_answer_cannot_promote_native_analysis_or_contradictory_hits():
+    from koinon.assistants.grounding import evidence_view, has_evidence
+
+    view = evidence_view(
+        "search",
+        {
+            "answer": "Unsupported answer",
+            "no_answer": True,
+            "hits": [{"asset_id": "asset", "text": "Source"}],
+        },
+        "result",
+        512,
+    )
+    assert not has_evidence("search", view)
+    assert "derived_analysis" not in view

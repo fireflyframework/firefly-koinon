@@ -1,5 +1,6 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
+import hashlib
 import json
 import runpy
 from pathlib import Path
@@ -23,7 +24,14 @@ def fixture(s, field="", depth=0):
                 "decimal": "12345678901234567890.12345678901234567890",
                 "integer": "9007199254740993",
             }
-        return fixture(defs[name], field, depth + 1)
+        value = fixture(defs[name], field, depth + 1)
+        if name == "OrganizationKnowledgeSnapshot":
+            value["origin"] = "organization"
+            value["digest"] = hashlib.sha256(json.dumps(
+                {key: item for key, item in value.items() if key != "digest"},
+                sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False,
+            ).encode()).hexdigest()
+        return value
     if "const" in s:
         return s["const"]
     if "enum" in s:
@@ -87,6 +95,8 @@ fixtures = {
         "TableReplacement",
     ]
 }
+if "OrganizationKnowledgeSnapshot" in fixtures:
+    fixtures["OrganizationKnowledgeSnapshot"] = fixture({"$ref": "#/$defs/OrganizationKnowledgeSnapshot"})
 fixtures["EvidenceResult"] = {
     "id": "evidence-1",
     "run_id": "run-1",

@@ -188,43 +188,46 @@ class QueryController:
         attached = await resolver.resolve(dataset_id, list(ast.table_refs))
         return await self._executor.execute(sql, attached)
 
-    def _build_service(self, db_session: AsyncSession) -> QueryService:
+    def _build_service(
+        self, db_session: AsyncSession, *, settings: FlyquerySettings | None = None
+    ) -> QueryService:
         """Build a per-request QueryService around the provided session."""
+        settings = settings if settings is not None else self._settings
         index = SearchIndex(db_session)
         retriever = HybridRetriever(
             index=index,
             embedder=self._embedder,
-            rrf_k=self._settings.rrf_k,
+            rrf_k=settings.rrf_k,
         )
 
         # Build a NoopReranker here; the actual reranker bean is injected via
         # configuration in production but for the controller we use the same
         # factory pattern as the configuration.py bean.
-        reranker = build_reranker(self._settings)
+        reranker = build_reranker(settings)
 
-        table_resolver = TableResolver(session=db_session, settings=self._settings)
+        table_resolver = TableResolver(session=db_session, settings=settings)
         uploader = ResultUploader(
             object_store=self._object_store,
             query_repo=self._query_repo,
-            settings=self._settings,
+            settings=settings,
         )
         auto_learner = AutoLearner(examples_service=self._examples_service)
 
         return QueryService(
             retriever=retriever,
             reranker=reranker,
-            grounding_agent=build_grounding_agent(self._settings),
-            generation_agent=build_generation_agent(self._settings),
-            critic_agent=build_critic_agent(self._settings)
-            if self._settings.max_refine_retries > 0
+            grounding_agent=build_grounding_agent(settings),
+            generation_agent=build_generation_agent(settings),
+            critic_agent=build_critic_agent(settings)
+            if settings.max_refine_retries > 0
             else None,
-            explainer_agent=build_explainer_agent(self._settings),
+            explainer_agent=build_explainer_agent(settings),
             ast_classifier=self._ast_classifier,
             scope_guard=self._scope_guard,
             table_resolver=table_resolver,
             executor=self._executor,
             query_repo=self._query_repo,
-            settings=self._settings,
+            settings=settings,
             result_uploader=uploader,
             auto_learner=auto_learner,
             semantic_repo=self._semantic_repo,

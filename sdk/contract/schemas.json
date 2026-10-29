@@ -453,6 +453,17 @@
           "default": null,
           "title": "Source Provenance Complete"
         },
+        "knowledge_settings_snapshot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OrganizationKnowledgeSnapshot"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "generations": {
           "items": {
             "$ref": "#/$defs/GenerationReceipt"
@@ -4250,6 +4261,196 @@
         "source"
       ],
       "title": "DocumentEvidence",
+      "type": "object"
+    },
+    "DocumentKnowledgeBounds": {
+      "additionalProperties": false,
+      "properties": {
+        "retrieval_top_k": {
+          "$ref": "#/$defs/KnowledgeIntegerBounds"
+        },
+        "retrieval_per_query_k": {
+          "$ref": "#/$defs/KnowledgeIntegerBounds"
+        },
+        "retrieval_rrf_k": {
+          "$ref": "#/$defs/KnowledgeIntegerBounds"
+        },
+        "query_expansion_n": {
+          "$ref": "#/$defs/KnowledgeIntegerBounds"
+        },
+        "answer_top_k": {
+          "$ref": "#/$defs/KnowledgeIntegerBounds"
+        },
+        "rlm_max_iters": {
+          "$ref": "#/$defs/KnowledgeIntegerBounds"
+        },
+        "rlm_sub_budget": {
+          "$ref": "#/$defs/KnowledgeIntegerBounds"
+        },
+        "rlm_max_depth": {
+          "$ref": "#/$defs/KnowledgeIntegerBounds"
+        },
+        "rlm_self_consistency": {
+          "$ref": "#/$defs/KnowledgeIntegerBounds"
+        }
+      },
+      "required": [
+        "retrieval_top_k",
+        "retrieval_per_query_k",
+        "retrieval_rrf_k",
+        "query_expansion_n",
+        "answer_top_k",
+        "rlm_max_iters",
+        "rlm_sub_budget",
+        "rlm_max_depth",
+        "rlm_self_consistency"
+      ],
+      "title": "DocumentKnowledgeBounds",
+      "type": "object"
+    },
+    "DocumentKnowledgeCapabilities": {
+      "additionalProperties": false,
+      "properties": {
+        "answer_modes": {
+          "items": {
+            "enum": [
+              "rag",
+              "rlm"
+            ],
+            "type": "string"
+          },
+          "title": "Answer Modes",
+          "type": "array"
+        },
+        "rlm_curated_knowledge_supported": {
+          "title": "Rlm Curated Knowledge Supported",
+          "type": "boolean"
+        },
+        "rlm_curated_knowledge_reason": {
+          "const": "KNOWLEDGE_RLM_UNQUALIFIED",
+          "title": "Rlm Curated Knowledge Reason",
+          "type": "string"
+        },
+        "rlm_model_role": {
+          "const": "documents.rlm",
+          "title": "Rlm Model Role",
+          "type": "string"
+        },
+        "rlm_recorded_views_required": {
+          "const": true,
+          "title": "Rlm Recorded Views Required",
+          "type": "boolean"
+        },
+        "rlm_recorded_views_reason": {
+          "const": "RLM_DOCUMENT_VIEWS_REQUIRED",
+          "title": "Rlm Recorded Views Reason",
+          "type": "string"
+        },
+        "bounds": {
+          "$ref": "#/$defs/DocumentKnowledgeBounds"
+        }
+      },
+      "required": [
+        "answer_modes",
+        "rlm_curated_knowledge_supported",
+        "rlm_curated_knowledge_reason",
+        "rlm_model_role",
+        "rlm_recorded_views_required",
+        "rlm_recorded_views_reason",
+        "bounds"
+      ],
+      "title": "DocumentKnowledgeCapabilities",
+      "type": "object"
+    },
+    "DocumentKnowledgeSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "answer_mode": {
+          "enum": [
+            "rag",
+            "rlm"
+          ],
+          "title": "Answer Mode",
+          "type": "string"
+        },
+        "retrieval_top_k": {
+          "maximum": 200,
+          "minimum": 1,
+          "title": "Retrieval Top K",
+          "type": "integer"
+        },
+        "retrieval_per_query_k": {
+          "maximum": 500,
+          "minimum": 1,
+          "title": "Retrieval Per Query K",
+          "type": "integer"
+        },
+        "retrieval_rrf_k": {
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Retrieval Rrf K",
+          "type": "integer"
+        },
+        "query_expansion_enabled": {
+          "title": "Query Expansion Enabled",
+          "type": "boolean"
+        },
+        "query_expansion_n": {
+          "maximum": 10,
+          "minimum": 1,
+          "title": "Query Expansion N",
+          "type": "integer"
+        },
+        "answer_top_k": {
+          "maximum": 40,
+          "minimum": 1,
+          "title": "Answer Top K",
+          "type": "integer"
+        },
+        "rlm_max_iters": {
+          "maximum": 64,
+          "minimum": 1,
+          "title": "Rlm Max Iters",
+          "type": "integer"
+        },
+        "rlm_sub_budget": {
+          "maximum": 128,
+          "minimum": 0,
+          "title": "Rlm Sub Budget",
+          "type": "integer"
+        },
+        "rlm_max_depth": {
+          "maximum": 8,
+          "minimum": 0,
+          "title": "Rlm Max Depth",
+          "type": "integer"
+        },
+        "rlm_self_consistency": {
+          "maximum": 8,
+          "minimum": 1,
+          "title": "Rlm Self Consistency",
+          "type": "integer"
+        },
+        "rlm_extended_reasoning": {
+          "title": "Rlm Extended Reasoning",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "answer_mode",
+        "retrieval_top_k",
+        "retrieval_per_query_k",
+        "retrieval_rrf_k",
+        "query_expansion_enabled",
+        "query_expansion_n",
+        "answer_top_k",
+        "rlm_max_iters",
+        "rlm_sub_budget",
+        "rlm_max_depth",
+        "rlm_self_consistency",
+        "rlm_extended_reasoning"
+      ],
+      "title": "DocumentKnowledgeSettings",
       "type": "object"
     },
     "DocumentReingestInput": {
@@ -8070,6 +8271,25 @@
       "title": "KnowledgeIndexView",
       "type": "object"
     },
+    "KnowledgeIntegerBounds": {
+      "additionalProperties": false,
+      "properties": {
+        "minimum": {
+          "title": "Minimum",
+          "type": "integer"
+        },
+        "maximum": {
+          "title": "Maximum",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "minimum",
+        "maximum"
+      ],
+      "title": "KnowledgeIntegerBounds",
+      "type": "object"
+    },
     "KnowledgeIntent": {
       "additionalProperties": true,
       "properties": {
@@ -8499,6 +8719,31 @@
         "selected_version"
       ],
       "title": "KnowledgeItemView",
+      "type": "object"
+    },
+    "KnowledgeNumberBounds": {
+      "additionalProperties": false,
+      "properties": {
+        "minimum": {
+          "title": "Minimum",
+          "type": "number"
+        },
+        "maximum": {
+          "title": "Maximum",
+          "type": "number"
+        }
+      },
+      "required": [
+        "minimum",
+        "maximum"
+      ],
+      "title": "KnowledgeNumberBounds",
+      "type": "object"
+    },
+    "KnowledgePolicyValue": {
+      "additionalProperties": false,
+      "properties": {},
+      "title": "KnowledgePolicyValue",
       "type": "object"
     },
     "KnowledgeProvider": {
@@ -10488,6 +10733,149 @@
         "expected_revision"
       ],
       "title": "OrganizationChatSettingsInput",
+      "type": "object"
+    },
+    "OrganizationKnowledgeCapabilities": {
+      "additionalProperties": false,
+      "properties": {
+        "documents": {
+          "$ref": "#/$defs/DocumentKnowledgeCapabilities"
+        },
+        "structured": {
+          "$ref": "#/$defs/StructuredKnowledgeCapabilities"
+        }
+      },
+      "required": [
+        "documents",
+        "structured"
+      ],
+      "title": "OrganizationKnowledgeCapabilities",
+      "type": "object"
+    },
+    "OrganizationKnowledgeSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "tenant_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "revision": {
+          "maximum": 2147483647,
+          "minimum": 0,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "origin": {
+          "enum": [
+            "deployment",
+            "organization"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "documents": {
+          "$ref": "#/$defs/DocumentKnowledgeSettings"
+        },
+        "structured": {
+          "$ref": "#/$defs/StructuredKnowledgeSettings"
+        },
+        "capabilities": {
+          "$ref": "#/$defs/OrganizationKnowledgeCapabilities"
+        }
+      },
+      "required": [
+        "tenant_id",
+        "schema_version",
+        "revision",
+        "origin",
+        "documents",
+        "structured",
+        "capabilities"
+      ],
+      "title": "OrganizationKnowledgeSettings",
+      "type": "object"
+    },
+    "OrganizationKnowledgeSettingsInput": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "maximum": 2147483646,
+          "minimum": 0,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "documents": {
+          "$ref": "#/$defs/DocumentKnowledgeSettings"
+        },
+        "structured": {
+          "$ref": "#/$defs/StructuredKnowledgeSettings"
+        }
+      },
+      "required": [
+        "expected_revision",
+        "documents",
+        "structured"
+      ],
+      "title": "OrganizationKnowledgeSettingsInput",
+      "type": "object"
+    },
+    "OrganizationKnowledgeSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "tenant_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "revision": {
+          "maximum": 2147483647,
+          "minimum": 0,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "origin": {
+          "enum": [
+            "deployment",
+            "organization"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "documents": {
+          "$ref": "#/$defs/DocumentKnowledgeSettings"
+        },
+        "structured": {
+          "$ref": "#/$defs/StructuredKnowledgeSettings"
+        },
+        "digest": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tenant_id",
+        "schema_version",
+        "revision",
+        "origin",
+        "documents",
+        "structured",
+        "digest"
+      ],
+      "title": "OrganizationKnowledgeSnapshot",
       "type": "object"
     },
     "Page": {
@@ -13151,6 +13539,17 @@
     "QueryResponse": {
       "additionalProperties": true,
       "properties": {
+        "knowledge_settings_snapshot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OrganizationKnowledgeSnapshot"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "query_id": {
           "title": "Query Id",
           "type": "string"
@@ -13794,6 +14193,17 @@
     "SearchResponse": {
       "additionalProperties": true,
       "properties": {
+        "knowledge_settings_snapshot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OrganizationKnowledgeSnapshot"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "hits": {
           "items": {
             "$ref": "#/$defs/SearchHit"
@@ -14891,6 +15301,114 @@
         "source"
       ],
       "title": "StructuredEvidence",
+      "type": "object"
+    },
+    "StructuredKnowledgeBounds": {
+      "additionalProperties": false,
+      "properties": {
+        "top_k_schema": {
+          "$ref": "#/$defs/KnowledgeIntegerBounds"
+        },
+        "top_k_examples": {
+          "$ref": "#/$defs/KnowledgeIntegerBounds"
+        },
+        "top_k_metrics": {
+          "$ref": "#/$defs/KnowledgeIntegerBounds"
+        },
+        "rrf_k": {
+          "$ref": "#/$defs/KnowledgeIntegerBounds"
+        },
+        "generation_candidates": {
+          "$ref": "#/$defs/KnowledgeIntegerBounds"
+        },
+        "max_refine_retries": {
+          "$ref": "#/$defs/KnowledgeIntegerBounds"
+        },
+        "grounding_min_confidence": {
+          "$ref": "#/$defs/KnowledgeNumberBounds"
+        }
+      },
+      "required": [
+        "top_k_schema",
+        "top_k_examples",
+        "top_k_metrics",
+        "rrf_k",
+        "generation_candidates",
+        "max_refine_retries",
+        "grounding_min_confidence"
+      ],
+      "title": "StructuredKnowledgeBounds",
+      "type": "object"
+    },
+    "StructuredKnowledgeCapabilities": {
+      "additionalProperties": false,
+      "properties": {
+        "bounds": {
+          "$ref": "#/$defs/StructuredKnowledgeBounds"
+        }
+      },
+      "required": [
+        "bounds"
+      ],
+      "title": "StructuredKnowledgeCapabilities",
+      "type": "object"
+    },
+    "StructuredKnowledgeSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "top_k_schema": {
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Top K Schema",
+          "type": "integer"
+        },
+        "top_k_examples": {
+          "maximum": 50,
+          "minimum": 0,
+          "title": "Top K Examples",
+          "type": "integer"
+        },
+        "top_k_metrics": {
+          "maximum": 50,
+          "minimum": 0,
+          "title": "Top K Metrics",
+          "type": "integer"
+        },
+        "rrf_k": {
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Rrf K",
+          "type": "integer"
+        },
+        "generation_candidates": {
+          "maximum": 8,
+          "minimum": 1,
+          "title": "Generation Candidates",
+          "type": "integer"
+        },
+        "max_refine_retries": {
+          "maximum": 8,
+          "minimum": 0,
+          "title": "Max Refine Retries",
+          "type": "integer"
+        },
+        "grounding_min_confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Grounding Min Confidence",
+          "type": "number"
+        }
+      },
+      "required": [
+        "top_k_schema",
+        "top_k_examples",
+        "top_k_metrics",
+        "rrf_k",
+        "generation_candidates",
+        "max_refine_retries",
+        "grounding_min_confidence"
+      ],
+      "title": "StructuredKnowledgeSettings",
       "type": "object"
     },
     "TableColumnBindingPage": {
@@ -17404,6 +17922,45 @@
     },
     "OrganizationChatSettingsInput": {
       "$ref": "#/$defs/OrganizationChatSettingsInput"
+    },
+    "KnowledgePolicyValue": {
+      "$ref": "#/$defs/KnowledgePolicyValue"
+    },
+    "DocumentKnowledgeSettings": {
+      "$ref": "#/$defs/DocumentKnowledgeSettings"
+    },
+    "StructuredKnowledgeSettings": {
+      "$ref": "#/$defs/StructuredKnowledgeSettings"
+    },
+    "KnowledgeIntegerBounds": {
+      "$ref": "#/$defs/KnowledgeIntegerBounds"
+    },
+    "KnowledgeNumberBounds": {
+      "$ref": "#/$defs/KnowledgeNumberBounds"
+    },
+    "DocumentKnowledgeBounds": {
+      "$ref": "#/$defs/DocumentKnowledgeBounds"
+    },
+    "StructuredKnowledgeBounds": {
+      "$ref": "#/$defs/StructuredKnowledgeBounds"
+    },
+    "DocumentKnowledgeCapabilities": {
+      "$ref": "#/$defs/DocumentKnowledgeCapabilities"
+    },
+    "StructuredKnowledgeCapabilities": {
+      "$ref": "#/$defs/StructuredKnowledgeCapabilities"
+    },
+    "OrganizationKnowledgeCapabilities": {
+      "$ref": "#/$defs/OrganizationKnowledgeCapabilities"
+    },
+    "OrganizationKnowledgeSettings": {
+      "$ref": "#/$defs/OrganizationKnowledgeSettings"
+    },
+    "OrganizationKnowledgeSettingsInput": {
+      "$ref": "#/$defs/OrganizationKnowledgeSettingsInput"
+    },
+    "OrganizationKnowledgeSnapshot": {
+      "$ref": "#/$defs/OrganizationKnowledgeSnapshot"
     },
     "Page[AuditEvent]": {
       "$ref": "#/$defs/Page_AuditEvent_"

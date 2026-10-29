@@ -32,6 +32,8 @@ from koinon.catalog.errors import AccessDenied
 from koinon.catalog.service import CatalogService
 from koinon.knowledge.attachments.ports import AttachmentRef, ChatAttachmentAccess
 from koinon.operations.settings import OperationalSettings
+from koinon.organization_knowledge.runtime import snapshot_for_run
+from koinon.organization_knowledge.service import OrganizationKnowledgeService
 
 
 @service(name="assistants.service")
@@ -54,6 +56,7 @@ class AssistantService:
         operations: OperationalSettings | None = None,
         attachments: ChatAttachmentAccess | None = None,
         attachment_provider: Provider[ChatAttachmentAccess | None] | None = None,
+        organization_knowledge: OrganizationKnowledgeService | None = None,
     ):
         self.catalog, self.providers, self.agents = catalog, providers, agents
         self.threads, self.message_repository, self.runs, self.events = threads, messages, runs, events
@@ -64,6 +67,7 @@ class AssistantService:
         self.operations = operations or OperationalSettings()
         self.attachments = attachments
         self.attachment_provider = attachment_provider
+        self.organization_knowledge = organization_knowledge
 
     def _attachment_access(self) -> ChatAttachmentAccess | None:
         if self.attachments is not None:
@@ -243,6 +247,11 @@ class AssistantService:
         if any(row.status in {"queued", "running"} for row in await self.runs.find_all(thread_id=thread_id)):
             raise ConflictException("Wait for or cancel the current answer", code="THREAD_BUSY")
         await self.require_queue_capacity(subject, tenant_id)
+        if self.organization_knowledge is None:
+            raise ServiceUnavailableException(
+                "Organization knowledge settings are unavailable", code="KNOWLEDGE_SETTINGS_UNAVAILABLE"
+            )
+        knowledge_settings = await self.organization_knowledge.snapshot(subject, tenant_id)
         user = await self.message_repository.save(
             ChatMessage(id=identifier(), thread_id=thread_id, role="user", text=message)
         )
@@ -261,6 +270,7 @@ class AssistantService:
                 access_token_id=active_context.attributes.get("koinon_token_id") if active_context else None,
                 agent_revision=agent.revision,
                 provider_revision=provider.revision,
+                knowledge_settings_snapshot=knowledge_settings.model_dump(mode="json"),
                 scope=scope,
                 client_request_id=key,
                 payload_hash=digest,
@@ -355,6 +365,7 @@ class AssistantService:
             raise ConflictException(
                 "Only a failed or cancelled answer can be retried", code="RUN_NOT_RETRYABLE"
             )
+        snapshot_for_run(run)
         if any(
             row.status in {"queued", "running"} for row in await self.runs.find_all(thread_id=run.thread_id)
         ):

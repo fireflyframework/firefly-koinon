@@ -81,7 +81,7 @@ def _configuration(cls: type, domain: str) -> type:
         clone.__annotations__ = function.__annotations__.copy()
         clone.__dict__.update(function.__dict__)
         bean_name = getattr(function, "__pyfly_bean_name__", name)
-        clone.__pyfly_bean_name__ = (
+        clone.__dict__["__pyfly_bean_name__"] = (
             bean_name if bean_name.startswith(domain + ".") else f"{domain}.{bean_name}"
         )
         methods[name] = clone

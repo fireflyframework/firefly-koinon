@@ -647,6 +647,7 @@ test('shows persisted tool names and outcomes without exposing invocation argume
 }) => {
   const service = await assistantFixture(page);
   await ask(page);
+  await expect(page.getByRole('cell', { name: 'North', exact: true })).toBeVisible();
   await expect(page.locator('.assistant-message ffk-tool-activity')).toHaveCount(0);
   const reads = service.resultReads.length;
   await page.getByRole('button', { name: 'Audit', exact: true }).click();

@@ -529,6 +529,11 @@ class NativeEvidenceReceipt:
         self.search(scope.tenant_id, scope.workspace_id, scope.actor, rows)
         self.document_sync(stage, prompt, tuple(sorted({str(row["source_id"]) for row in rows})), scope)
 
+    def document_view_parts(self, meta, read, scope):
+        from koinon.knowledge.rlm_provenance import document_view_parts
+
+        document_view_parts(self, meta, read, scope)
+
     def document_extraction(self, source_id, source_version_id, extraction_id, scope):
         from flycanon.core.services.query.provenance import current
 
