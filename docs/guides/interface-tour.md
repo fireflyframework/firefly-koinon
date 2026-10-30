@@ -8,6 +8,12 @@ The screenshots show the built interface with **controlled example data**. Names
 
 Sign in through your organization's identity provider. The organization selector in the top navigation determines which organization's library, conversations and settings you are viewing. Choosing an organization does not grant access to it.
 
+koinon presents the product as your corporate brain: a place to find organizational knowledge, ask questions and inspect its sources. The sign-in page uses the installation's configured identity and opens the knowledge available to your account.
+
+[![The desktop sign-in page introduces koinon as your corporate brain](../assets/screenshots/corporate-brain-sign-in-1440.png)](../assets/screenshots/corporate-brain-sign-in-1440.png)
+
+[![The same sign-in experience on a mobile screen](../assets/screenshots/corporate-brain-sign-in-390.png)](../assets/screenshots/corporate-brain-sign-in-390.png)
+
 Open **Library**, select a workspace and follow its projects and folders. The breadcrumb shows your current location. Use the column headers to sort, the folder filter to narrow names, **More filters** for metadata and **Per page** to change the result size. The page controls request the next server page; they do not download the whole repository.
 
 [![A folder with document and dataset rows, filters, sortable columns and pagination](../assets/screenshots/library-folder.png)](../assets/screenshots/library-folder.png)

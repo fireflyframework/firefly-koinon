@@ -208,10 +208,9 @@ export const SPANISH: Readonly<Record<string, string>> = {
   'A shared home for your team’s documents and data.':
     'Un lugar compartido para los documentos y datos de tu equipo.',
   'Keep the knowledge your team needs together.': 'Reúne el conocimiento que necesita tu equipo.',
-  'A shared home for knowledge': 'Un lugar compartido para el conocimiento',
-  'Your team’s knowledge': 'El conocimiento de tu equipo',
-  'Open the documents and data shared with you.':
-    'Abre los documentos y datos compartidos contigo.',
+  'Your corporate brain': 'Tu cerebro corporativo',
+  'Find what your organization knows. Ask questions, check the sources and keep knowledge up to date.':
+    'Encuentra lo que sabe tu organización. Haz preguntas, consulta las fuentes y mantén el conocimiento al día.',
   'Your session has ended. Sign in again to continue.':
     'Tu sesión ha terminado. Vuelve a iniciar sesión para continuar.',
   'People & access': 'Personas y acceso',
@@ -417,8 +416,8 @@ export const SPANISH: Readonly<Record<string, string>> = {
   'Settings sections': 'Secciones de configuración',
   'Show resource': 'Mostrar recurso',
   'Showing the first 500 returned rows.': 'Se muestran las primeras 500 filas devueltas.',
-  'Sign in with your organization to open your library.':
-    'Inicia sesión con tu organización para abrir tu biblioteca.',
+  'Sign in with your organization account.':
+    'Inicia sesión con tu cuenta de la organización.',
   Sort: 'Ordenar',
   'Sort library items': 'Ordenar elementos de la biblioteca',
   Stop: 'Detener',

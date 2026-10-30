@@ -1,7 +1,7 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
 site_name: firefly koinon
-site_description: Organizational knowledge, evidence and exploration.
+site_description: Your corporate brain. Documents, data and reviewed knowledge, connected to their sources.
 site_url: https://fireflyframework.github.io/firefly-koinon/
 repo_url: https://github.com/fireflyframework/firefly-koinon
 repo_name: fireflyframework/firefly-koinon
