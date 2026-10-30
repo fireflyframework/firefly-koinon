@@ -24,6 +24,7 @@ import { KoinonTextPipe, KoinonDatePipe, KoinonI18n } from '../foundations/i18n'
 import { KoinonButton } from '../atoms/button';
 import { KoinonIcon } from '../atoms/icon';
 import { KoinonPagination } from '../molecules/pagination';
+import { KoinonMcpConnectionPanel } from './mcp-connection-panel';
 
 const PERMISSIONS: Readonly<Record<string, string>> = {
   'catalog:read': 'Browse knowledge',
@@ -56,6 +57,7 @@ const PERMISSIONS: Readonly<Record<string, string>> = {
     KoinonButton,
     KoinonIcon,
     KoinonPagination,
+    KoinonMcpConnectionPanel,
   ],
   providers: [KoinonAuthorizedApplications],
   templateUrl: './authorized-applications-panel.html',
@@ -74,6 +76,7 @@ export class KoinonAuthorizedApplicationsPanel implements OnInit {
   private trigger?: HTMLElement;
   private triggerId = '';
   readonly confirming = signal<AuthorizedApplication | null>(null);
+  readonly connecting = signal(false);
   query = '';
   constructor() {
     effect(() => {

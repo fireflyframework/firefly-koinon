@@ -50,10 +50,12 @@ import type {
   Page,
 } from '@fireflyframework/koinon-sdk';
 import { KoinonOrganizationChatSettings } from './organization-chat-settings';
+import { KoinonIdentityAppearance } from './identity-appearance';
 import { KoinonConfiguration } from './configuration';
 @Component({
   selector: 'ffk-settings-page',
   imports: [
+    KoinonIdentityAppearance,
     KoinonTextPipe,
       KoinonValuePipe,
     FormsModule,
@@ -135,7 +137,7 @@ export class KoinonSettingsPage implements OnInit {
         ) ?? [],
   );
   readonly groups = [
-    { id: 'organization', label: 'Organization', sections: ['people'] },
+    { id: 'organization', label: 'Organization', sections: ['people','identity'] },
     {
       id: 'knowledge',
       label: 'Knowledge & AI',
@@ -144,6 +146,7 @@ export class KoinonSettingsPage implements OnInit {
     { id: 'operations', label: 'Operations', sections: ['audit', 'operations'] },
   ];
   readonly tabs = [
+    { id: 'identity', label: 'Identity & appearance', permission: 'settings:write', icon: 'palette' },
     { id: 'people', label: 'People & access', permission: 'members:write', icon: 'users' },
     {
       id: 'sources',

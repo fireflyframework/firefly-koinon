@@ -10,7 +10,7 @@ import {
 } from '@fireflyframework/koinon-sdk';
 import { KoinonFacade } from '../koinon-facade';
 import { KoinonClientContext } from '../services/client-context';
-import { KoinonCommandPalette } from './command-palette';
+import { KoinonCommandPaletteContent as KoinonCommandPalette } from './command-palette-content';
 function setup(
   request: KoinonTransport['request'] = async <T>() =>
     ({ items: [], page: 1, pages: 0, total: 0 }) as T,

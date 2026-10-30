@@ -18,6 +18,12 @@ import { KoinonButton } from '../atoms/button';
 import { KoinonFormField } from '../molecules/form-field';
 import { KoinonPagination } from '../molecules/pagination';
 import { KoinonAuthorizedApplicationsPanel } from './authorized-applications-panel';
+import {
+  availableTokenScopes,
+  tokenDependencies,
+  tokenScopeGroup,
+  type TokenScopeGroup,
+} from '../services/token-permissions';
 @Component({
   selector: 'ffk-account-panel',
   imports: [
@@ -48,6 +54,13 @@ export class KoinonAccountPanel implements OnInit, OnChanges {
   readonly copied = signal(false);
   readonly formError = signal('');
   readonly revoking = signal('');
+  readonly scopeNotice = signal('');
+  readonly scopeGroups: { id: TokenScopeGroup; name: string }[] = [
+    { id: 'read', name: 'Read & ask' },
+    { id: 'write', name: 'Create & maintain knowledge' },
+    { id: 'organization', name: 'Manage organization' },
+    { id: 'profile', name: 'Your profile' },
+  ];
   name = '';
   locale = 'en-US';
   timeZone = 'UTC';
@@ -58,6 +71,7 @@ export class KoinonAccountPanel implements OnInit, OnChanges {
   workspaceBound = true;
   assetBound = false;
   tokenQuery = '';
+  private tokenContext = { subject: '', tenant: '', workspace: '', asset: '' };
   readonly timeZones = [
     ...new Set([
       'UTC',
@@ -131,6 +145,12 @@ export class KoinonAccountPanel implements OnInit, OnChanges {
       .toUpperCase();
   }
   beginToken() {
+    this.tokenContext = {
+      subject: this.f.context()?.subject ?? '',
+      tenant: this.f.tenantId(),
+      workspace: this.f.workspaceId(),
+      asset: this.selectedAsset()?.id ?? '',
+    };
     this.tokenName = '';
     this.scopeIds = [];
     this.workspaceBound = !!this.f.workspaceId();
@@ -146,22 +166,67 @@ export class KoinonAccountPanel implements OnInit, OnChanges {
     this.formError.set('');
     this.secret.set('');
     this.copied.set(false);
+    this.scopeNotice.set('');
+  }
+  availableScopes() {
+    return availableTokenScopes(
+      this.account.tokenScopes()?.items ?? [],
+      this.f.tenantPermissions(),
+      this.f.permissions(),
+    );
+  }
+  groupScopes(group: TokenScopeGroup) {
+    return this.availableScopes().filter((scope) => tokenScopeGroup(scope.id) === group);
+  }
+  scopeDisabled(id: string) {
+    return (
+      this.requiredScope(id) ||
+      ((this.workspaceBound || this.assetBound) && tokenScopeGroup(id) === 'organization')
+    );
+  }
+  limitChanged(kind: 'workspace' | 'asset', selected: boolean) {
+    if (kind === 'workspace') this.workspaceBound = selected;
+    else this.assetBound = selected;
+    if (selected) {
+      const retained = this.scopeIds.filter((id) => tokenScopeGroup(id) !== 'organization');
+      if (retained.length !== this.scopeIds.length)
+        this.scopeNotice.set(
+          'Organization permissions were removed because this token is limited to knowledge resources.',
+        );
+      this.scopeIds = retained;
+    }
+  }
+  preset(kind: 'read' | 'write' | 'organization') {
+    const scopes = this.availableScopes();
+    if (kind === 'organization') {
+      if (!this.groupScopes('organization').length) return;
+      this.workspaceBound = false;
+      this.assetBound = false;
+      this.scopeNotice.set(
+        'All available knowledge and organization permissions are selected. This token has organization scope.',
+      );
+    } else this.scopeNotice.set('Review the selected permissions before creating this token.');
+    this.scopeIds = tokenDependencies(
+      scopes
+        .filter((scope) => {
+          const group = tokenScopeGroup(scope.id);
+          return (
+            group === 'read' ||
+            (kind !== 'read' && group === 'write') ||
+            (kind === 'organization' && group === 'organization')
+          );
+        })
+        .map((scope) => scope.id),
+      scopes,
+    );
   }
   toggleScope(id: string, selected: boolean) {
     if (!selected) {
       this.scopeIds = this.scopeIds.filter((value) => value !== id);
       return;
     }
-    const scopes = this.account.tokenScopes()?.items ?? [],
-      ids = new Set(this.scopeIds);
-    const add = (key: string) => {
-      if (ids.has(key)) return;
-      ids.add(key);
-      for (const dependency of scopes.find((value) => value.id === key)?.dependencies ?? [])
-        add(dependency);
-    };
-    add(id);
-    this.scopeIds = [...ids];
+    if (this.scopeDisabled(id)) return;
+    this.scopeIds = tokenDependencies([...this.scopeIds, id], this.availableScopes());
   }
   requiredScope(id: string) {
     return this.scopeIds.some(
@@ -175,6 +240,44 @@ export class KoinonAccountPanel implements OnInit, OnChanges {
   }
   async createToken() {
     this.formError.set('');
+    if (
+      this.tokenContext.subject !== (this.f.context()?.subject ?? '') ||
+      this.tokenContext.tenant !== this.f.tenantId()
+    ) {
+      this.formError.set(
+        'Your access context changed. Cancel and start a new token to review its access.',
+      );
+      return;
+    }
+    if (
+      this.workspaceBound &&
+      (!this.tokenContext.workspace || this.tokenContext.workspace !== this.f.workspaceId())
+    ) {
+      this.formError.set(
+        'The selected workspace changed. Cancel and start a new token to review its limits.',
+      );
+      return;
+    }
+    if (
+      this.assetBound &&
+      (!this.tokenContext.asset || this.tokenContext.asset !== this.selectedAsset()?.id)
+    ) {
+      this.formError.set(
+        'The selected file changed. Cancel and start a new token to review its limits.',
+      );
+      return;
+    }
+    const available = new Set(this.availableScopes().map((scope) => scope.id));
+    if (this.scopeIds.some((id) => !available.has(id))) {
+      this.scopeIds = tokenDependencies(
+        this.scopeIds.filter((id) => available.has(id)),
+        this.availableScopes(),
+      );
+      this.formError.set(
+        'Your available permissions changed. Review the remaining permissions before creating this token.',
+      );
+      return;
+    }
     if (!this.tokenName.trim() || !this.scopeIds.length || !this.expiryDate) {
       this.formError.set('Enter a name, expiry date and at least one permission.');
       return;
@@ -182,8 +285,17 @@ export class KoinonAccountPanel implements OnInit, OnChanges {
     const expiresAt = this.expiryDate + 'T23:59:59Z',
       remaining = new Date(expiresAt).getTime() - Date.now(),
       maximum = this.account.tokenScopes()?.max_lifetime_days ?? 0;
-    if (!Number.isFinite(remaining) || remaining <= 0 || remaining > maximum * 86400000) {
+    if (!Number.isFinite(remaining) || remaining < 60000 || remaining > maximum * 86400000) {
       this.formError.set('Choose an expiry date within the allowed lifetime.');
+      return;
+    }
+    if (
+      (this.workspaceBound || this.assetBound) &&
+      this.scopeIds.some((id) => tokenScopeGroup(id) === 'organization')
+    ) {
+      this.formError.set(
+        'Organization permissions require organization scope. Remove the workspace and file limits.',
+      );
       return;
     }
     const created = await this.account.createToken({
@@ -191,8 +303,8 @@ export class KoinonAccountPanel implements OnInit, OnChanges {
       tenant_id: this.f.tenantId(),
       scopes: this.scopeIds,
       expires_at: expiresAt,
-      workspace_ids: this.workspaceBound && this.f.workspaceId() ? [this.f.workspaceId()] : null,
-      asset_ids: this.assetBound && this.f.selected() ? [this.f.selected()!.id] : null,
+      workspace_ids: this.workspaceBound ? [this.tokenContext.workspace] : null,
+      asset_ids: this.assetBound ? [this.tokenContext.asset] : null,
     });
     if (created) {
       this.secret.set(created.token);

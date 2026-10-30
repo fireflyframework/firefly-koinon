@@ -29,6 +29,7 @@ import type {
 import { KoinonKnowledgeArtifacts } from '../services/knowledge-artifacts';
 import { KoinonSourceDrawer } from './source-drawer';
 export interface SharedConversationActions {
+  assistantName?:()=>string;
   closed: () => void;
   resourceRequested: (source: SourceReference) => void;
 }

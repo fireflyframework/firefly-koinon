@@ -91,7 +91,7 @@
           >{{ 'Page' | ffkText }} {{ search.page().page }} / {{ search.page().pages }}
           @if (search.page().total !== undefined) {
             <span class="total">
-              · {{ search.page().total }}
+             , {{ search.page().total }}
               {{ copy().results.toLocaleLowerCase(i18n.preferences().locale) }}</span
             >
           }

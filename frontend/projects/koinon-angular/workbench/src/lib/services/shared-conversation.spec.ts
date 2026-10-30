@@ -128,3 +128,28 @@ it('clears snapshot text and invokes the explicit host action when context chang
   expect(closed).toHaveBeenCalledOnce();
   fixture.destroy();
 });
+it('renders the saved assistant identity rather than renaming a historical shared snapshot', async () => {
+  const { fixture } = await mount(
+    async <T>() =>
+      ({
+        ...snapshot,
+        identity: {
+          product_name: 'Northstar Knowledge',
+          assistant_name: 'Northstar',
+          branding_revision: 4,
+          branding_origin: 'organization',
+          branding_sha256: 'c'.repeat(64),
+        },
+        messages: [{ ...snapshot.messages[0], role: 'assistant' }],
+      }) as T,
+  );
+  fixture.componentRef.setInput('actions', {
+    assistantName: () => 'Different current identity',
+    closed: () => undefined,
+    resourceRequested: () => undefined,
+  });
+  fixture.detectChanges();
+  expect(fixture.nativeElement.textContent).toContain('Northstar Knowledge');
+  expect(fixture.nativeElement.textContent).toContain('Northstar');
+  expect(fixture.nativeElement.textContent).not.toContain('Different current identity');
+});

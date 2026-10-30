@@ -359,6 +359,7 @@ async function assistantFixture(
 }
 async function ask(page: Page) {
   await page.goto('/');
+  await expect(page.locator('ffk-shell .topbar')).toBeVisible();
   const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
   if (await menu.isVisible()) await menu.click();
   await page.getByRole('button', { name: 'Chat', exact: true }).click();
@@ -433,7 +434,7 @@ test('captures the current chat and OpenUI review at desktop and mobile sizes', 
   });
   await page.evaluate(() => {
     const label = document.createElement('div');
-    label.textContent = 'Controlled service fixtures · Chat and OpenUI review';
+    label.textContent = 'Controlled service fixtures, Chat and OpenUI review';
     Object.assign(label.style, {
       position: 'fixed',
       inset: 'auto 0 0',
@@ -572,7 +573,7 @@ test('a new chat centers a simple koinon prompt with independent navigation cont
   });
   await page.evaluate(() => {
     const note = document.createElement('div');
-    note.textContent = 'Controlled service fixtures · Chat layout review';
+    note.textContent = 'Controlled service fixtures, Chat layout review';
     Object.assign(note.style, {
       position: 'fixed',
       inset: 'auto 0 0',
@@ -692,7 +693,7 @@ for (const width of [1440, 390])
         'calc(100dvh - 22px)',
       );
       const note = document.createElement('div');
-      note.textContent = 'Controlled API fixtures · Answer audit layout review';
+      note.textContent = 'Controlled API fixtures, Answer audit layout review';
       note.style.cssText =
         'position:fixed;bottom:0;left:0;right:0;height:22px;background:#10110f;color:#f3f1eb;text-align:center;font:10px/22px system-ui;z-index:99999';
       document.body.append(note);
@@ -716,7 +717,7 @@ for (const width of [1440, 390])
         ?.shadowRoot?.querySelector('dialog[open]');
       if (panel) {
         const note = document.createElement('div');
-        note.textContent = 'Controlled API fixtures · Answer audit layout review';
+        note.textContent = 'Controlled API fixtures, Answer audit layout review';
         note.style.cssText =
           'position:absolute;bottom:0;left:0;right:0;height:22px;background:#10110f;color:#f3f1eb;text-align:center;font:10px/22px system-ui;z-index:99999';
         panel.append(note);

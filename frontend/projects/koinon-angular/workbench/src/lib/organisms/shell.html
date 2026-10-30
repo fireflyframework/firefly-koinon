@@ -18,17 +18,9 @@
       <a
         class="brand"
         href="#library"
-        aria-label="firefly koinon Library"
+        [attr.aria-label]="productName + ', ' + ('Library' | ffkText)"
         (click)="go('library', $event)"
-        ><img
-          [src]="
-            brandBase +
-            '/logos/firefly-koinon-lockup-' +
-            (theme === 'dark' ? 'reversed' : 'color') +
-            '.svg'
-          "
-          alt="firefly koinon"
-      /></a>
+        >@if(logo()){<img [src]="logo()" [alt]="productName"/>}@else{<strong class="custom-brand-name">{{productName}}</strong>}</a>
       <nav class="main-navigation" [attr.aria-label]="'Main navigation' | ffkText">
         @for (item of destinations; track item.id) {
           <button
@@ -84,7 +76,7 @@
         class="icon-button"
         type="button"
         [attr.aria-label]="'Search and commands' | ffkText"
-        [attr.title]="('Search and commands' | ffkText) + ' · ⌘ / Ctrl K'"
+        [attr.title]="('Search and commands' | ffkText) + ', ⌘ / Ctrl K'"
         (click)="commandsRequested.emit()"
       >
         <ffk-icon name="search" />
@@ -168,16 +160,9 @@
         <a
           class="brand"
           href="#library"
-          aria-label="firefly koinon Library"
+          [attr.aria-label]="productName + ', ' + ('Library' | ffkText)"
           (click)="go('library', $event)"
-          ><img
-            [src]="
-              brandBase +
-              '/logos/firefly-koinon-lockup-' +
-              (theme === 'dark' ? 'reversed' : 'color') +
-              '.svg'
-            "
-            alt="firefly koinon" /></a
+          >@if(logo()){<img [src]="logo()" [alt]="productName"/>}@else{<strong class="custom-brand-name">{{productName}}</strong>}</a
         ><button
           class="icon-button"
           [attr.aria-label]="'Close navigation' | ffkText"

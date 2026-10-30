@@ -310,7 +310,7 @@
               <p>
                 {{ modelName(role) | ffkText }}
                 @if (providerName(role)) {
-                  <span> · {{ providerName(role) }}</span>
+                  <span>, {{ providerName(role) }}</span>
                 }
               </p>
               <small>{{ originLabel(role) | ffkText }}</small>

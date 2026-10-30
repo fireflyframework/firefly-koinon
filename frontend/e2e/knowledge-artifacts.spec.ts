@@ -568,7 +568,7 @@ async function capture(page: Page, name: string) {
       'calc(100dvh - 22px)',
     );
     const note = document.createElement('div');
-    note.textContent = 'Controlled API fixtures · Export/share/source review';
+    note.textContent = 'Controlled API fixtures, Export/share/source review';
     note.style.cssText =
       'position:fixed;bottom:0;left:0;right:0;height:22px;background:#10110f;color:#f3f1eb;text-align:center;font:10px/22px sans-serif;z-index:99999';
     const dialog = document

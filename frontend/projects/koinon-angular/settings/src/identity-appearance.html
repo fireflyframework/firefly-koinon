@@ -1,0 +1,301 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<header class="heading">
+  <div>
+    <h2>{{ 'Identity & appearance' | ffkText }}</h2>
+    <p>{{ 'Names, logos and colors for your organization’s knowledge space.' | ffkText }}</p>
+    <span class="scope"
+      ><ffk-icon name="users" />{{
+        settings()?.tenant_id ? f.tenant()?.name || ('Organization' | ffkText) : ''
+      }}</span
+    >
+  </div>
+  <div class="heading-actions">
+    <span class="origin" [class.unsaved]="changed()"
+      ><span></span
+      >{{
+        (changed()
+          ? 'Unsaved changes'
+          : settings()?.origin === 'organization'
+            ? 'Organization identity'
+            : 'Using deployment defaults'
+        ) | ffkText
+      }}</span
+    ><ffk-button
+      variant="quiet"
+      icon="refresh"
+      [disabled]="saving() || !brand.defaultsReady()"
+      (click)="restore()"
+      >{{ 'Use deployment defaults' | ffkText }}</ffk-button
+    >
+  </div>
+</header>
+@if (error()) {
+  <div class="feedback error" role="alert">
+    <ffk-icon name="alert" /><span>{{ error() | ffkText }}</span>
+    @if (stale()) {
+      <ffk-button variant="quiet" icon="refresh" (click)="load()">{{
+        'Reload' | ffkText
+      }}</ffk-button>
+    }
+  </div>
+}
+@if (notice()) {
+  <p class="feedback notice" role="status"><ffk-icon name="check" />{{ notice() | ffkText }}</p>
+}
+@if (brand.defaultsError()) {
+  <div class="feedback" role="status">
+    <ffk-icon name="info" /><span>{{
+      'Installation identity could not be loaded. Restore and sign-in preview are unavailable.'
+        | ffkText
+    }}</span
+    ><ffk-button variant="quiet" icon="refresh" (click)="brand.loadDefaults(true)">{{
+      'Try again' | ffkText
+    }}</ffk-button>
+  </div>
+}
+@if (brand.override()) {
+  <p class="feedback" role="note">
+    <ffk-icon name="info" />{{
+      'This embedded view uses its host’s identity. Your organization settings are still saved separately.'
+        | ffkText
+    }}
+  </p>
+}
+@if (pending()) {
+  <p role="status">{{ 'Loading identity settings…' | ffkText }}</p>
+}
+@if (settings()) {
+  <div class="identity-layout">
+    <form (ngSubmit)="save()">
+      <div class="identity-tabs" role="tablist" [attr.aria-label]="'Identity editor' | ffkText">
+        @for (tab of ['identity', 'colors']; track tab) {
+          <button
+            type="button"
+            role="tab"
+            [id]="'identity-tab-' + tab"
+            [attr.aria-selected]="editorTab() === tab"
+            [attr.aria-controls]="'identity-panel-' + tab"
+            [tabIndex]="editorTab() === tab ? 0 : -1"
+            (keydown)="tabKey($event)"
+            (click)="editorTab.set($any(tab))"
+          >
+            <ffk-icon [name]="tab === 'identity' ? 'image' : 'palette'" />{{
+              (tab === 'identity' ? 'Identity' : 'Colors') | ffkText
+            }}
+          </button>
+        }
+      </div>
+      <section
+        role="tabpanel"
+        [hidden]="editorTab() !== 'identity'"
+        id="identity-panel-identity"
+        aria-labelledby="identity-tab-identity"
+      >
+        <fieldset [disabled]="saving() || pending() || !allowed()">
+          <legend>{{ 'Make it familiar' | ffkText }}</legend>
+          <p>{{ 'Choose the names your team sees in navigation and conversations.' | ffkText }}</p>
+          <div class="names">
+            <label
+              >{{ 'Product name' | ffkText
+              }}<input
+                [attr.aria-label]="'Product name' | ffkText"
+                name="product-name"
+                maxlength="128"
+                required
+                [ngModel]="draft().product_name"
+                (ngModelChange)="name('product_name', $event)"
+              /><small>{{ 'Shown in the navigation and browser tab.' | ffkText }}</small></label
+            ><label
+              >{{ 'Assistant name' | ffkText
+              }}<input
+                [attr.aria-label]="'Assistant name' | ffkText"
+                name="assistant-name"
+                maxlength="128"
+                required
+                [ngModel]="draft().assistant_name"
+                (ngModelChange)="name('assistant_name', $event)"
+              /><small>{{ 'Shown beside replies and in the message box.' | ffkText }}</small></label
+            >
+          </div>
+        </fieldset>
+        <fieldset [disabled]="saving() || pending() || !allowed()">
+          <legend>{{ 'Logos & icons' | ffkText }}</legend>
+          <p>
+            {{
+              'Drop an image onto each asset, or choose a file. PNG, JPEG or WebP, up to 256 KB and 2048 pixels.'
+                | ffkText
+            }}
+          </p>
+          <div class="asset-list">
+            @for (asset of assets; track asset.key) {
+              <ffk-identity-asset
+                [label]="asset.label"
+                [hint]="asset.hint"
+                [value]="draft()[asset.key]"
+                [fallback]="fallback(asset.key)"
+                [dark]="asset.key === 'logo_dark'"
+                [square]="asset.key === 'symbol' || asset.key === 'favicon'"
+                [busy]="!!uploading()"
+                [disabled]="saving() || !allowed()"
+                (fileSelected)="uploadFile(asset.key, $event)"
+                (removed)="remove(asset.key)"
+              />
+            }
+          </div>
+        </fieldset>
+      </section>
+      <section
+        role="tabpanel"
+        [hidden]="editorTab() !== 'colors'"
+        id="identity-panel-colors"
+        aria-labelledby="identity-tab-colors"
+      >
+        <fieldset [disabled]="saving() || pending() || !allowed()">
+          <legend>{{ 'Start with your brand color' | ffkText }}</legend>
+          <p>
+            {{
+              'Generate readable button and link colors for both themes, then adjust the details below.'
+                | ffkText
+            }}
+          </p>
+          <div class="brand-color">
+            <label
+              >{{ 'Brand color' | ffkText
+              }}<span class="color-input"
+                ><input
+                  type="color"
+                  [attr.aria-label]="'Brand color picker' | ffkText"
+                  [value]="brandColor()"
+                  (input)="brandColor.set($any($event.target).value)" /><input
+                  [attr.aria-label]="'Brand color' | ffkText"
+                  name="brand-color"
+                  [ngModel]="brandColor()"
+                  (ngModelChange)="brandColor.set($event)"
+                  maxlength="7"
+                  spellcheck="false" /></span></label
+            ><ffk-button
+              icon="palette"
+              [disabled]="saving() || !validBrandColor()"
+              (click)="applyColor()"
+              >{{ 'Apply to both themes' | ffkText }}</ffk-button
+            >
+          </div>
+        </fieldset>
+        <fieldset [disabled]="saving() || pending() || !allowed()">
+          <div class="palette-heading">
+            <h3>{{ 'Fine-tune your palette' | ffkText }}</h3>
+            <div class="theme-picker" role="group" [attr.aria-label]="'Palette theme' | ffkText">
+              @for (theme of ['light', 'dark']; track theme) {
+                <button
+                  type="button"
+                  [attr.aria-pressed]="previewTheme() === theme"
+                  (click)="previewTheme.set($any(theme))"
+                >
+                  <ffk-icon [name]="theme === 'light' ? 'sun' : 'moon'" />{{
+                    (theme === 'light' ? 'Light' : 'Dark') | ffkText
+                  }}
+                </button>
+              }
+            </div>
+          </div>
+          <div class="palette">
+            @for (key of colors; track key) {
+              <label
+                >{{ labels[key] | ffkText
+                }}<span class="color-input"
+                  ><input
+                    type="color"
+                    [attr.aria-label]="(labels[key] | ffkText) + ' ' + ('color picker' | ffkText)"
+                    [value]="draft().palette[previewTheme()][key]"
+                    (input)="color(key, $any($event.target).value)" /><input
+                    [attr.aria-label]="labels[key] | ffkText"
+                    [name]="'color-' + key"
+                    maxlength="7"
+                    spellcheck="false"
+                    [ngModel]="draft().palette[previewTheme()][key]"
+                    (ngModelChange)="color(key, $event)" /></span
+              ></label>
+            }
+          </div>
+        </fieldset>
+        <section class="checks" [attr.aria-label]="'Readability checks' | ffkText">
+          <h3>{{ 'Readability checks' | ffkText }}</h3>
+          <p>{{ 'Text must meet 4.5:1 contrast on both backgrounds.' | ffkText }}</p>
+          <div>
+            @for (check of checks(); track check.label) {
+              <div class="contrast-row" [class.failed]="!check.passed">
+                <ffk-icon [name]="check.passed ? 'check' : 'alert'" /><span>{{
+                  check.label | ffkText
+                }}</span
+                ><strong>{{ check.ratio.toFixed(2) }}:1</strong
+                ><small>{{ (check.passed ? 'Pass' : 'Needs attention') | ffkText }}</small>
+              </div>
+            }
+          </div>
+        </section>
+      </section>
+      @if (problems().length) {
+        <div class="validation" role="alert">
+          <ffk-icon name="alert" />
+          <div>
+            @for (problem of problems(); track problem) {
+              <p>{{ problem | ffkText }}</p>
+            }
+          </div>
+        </div>
+      }
+      <footer class="save-actions">
+        <span>{{
+          (uploading()
+            ? 'Reading image…'
+            : changed()
+              ? 'Your changes are not saved yet.'
+              : 'Your organization identity is up to date.'
+          ) | ffkText
+        }}</span>
+        <div>
+          <ffk-button
+            variant="quiet"
+            [disabled]="(!changed() && !uploading()) || saving()"
+            (click)="discard()"
+            >{{ 'Discard changes' | ffkText }}</ffk-button
+          ><ffk-button
+            type="submit"
+            variant="primary"
+            icon="check"
+            [loading]="saving()"
+            [disabled]="!canSave()"
+            >{{ 'Save changes' | ffkText }}</ffk-button
+          >
+        </div>
+      </footer>
+    </form>
+    <aside class="preview" [class.preview-open]="previewOpen()">
+      <button
+        class="preview-toggle"
+        type="button"
+        [attr.aria-expanded]="previewOpen()"
+        (click)="previewOpen.set(!previewOpen())"
+      >
+        <ffk-icon name="image" /><span>{{ 'Preview your identity' | ffkText }}</span
+        ><ffk-icon [name]="previewOpen() ? 'chevron-left' : 'chevron'" />
+      </button>
+      <div class="preview-content">
+        <ffk-identity-preview
+          [value]="draft()"
+          [deployment]="brand.deployment()"
+          [installationReady]="brand.defaultsReady()"
+          [theme]="previewTheme()"
+          [brandBase]="brand.assetBase()"
+          (themeChanged)="previewTheme.set($event)"
+        />
+        <p class="scope-note">
+          <ffk-icon name="shield" />{{
+            'Your identity changes the appearance. Permissions and source attribution stay in place.'
+              | ffkText
+          }}
+        </p>
+      </div>
+    </aside>
+  </div>
+}

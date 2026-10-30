@@ -40,7 +40,7 @@
           <h4>
             {{ 'Document search index' | ffkText }}
             @if (index.workspace_id) {
-              · {{ workspaceName(index.workspace_id) }}
+             , {{ workspaceName(index.workspace_id) }}
             }
           </h4>
           <p>{{ index.reason }}</p>
@@ -80,7 +80,7 @@
       <article>
         <div>
           <h4>{{ datasourceName(source.id) | ffkText }}</h4>
-          <p>{{ source.driver }} · {{ source.reason }}</p>
+          <p>{{ source.driver }}, {{ source.reason }}</p>
           @if (source.pool_usage; as usage) {
             <dl>
               @if (usage.checked_out !== undefined) {

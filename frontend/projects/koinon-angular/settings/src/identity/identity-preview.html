@@ -1,0 +1,137 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<div class="preview-heading">
+  <div>
+    <h3>{{ 'Live preview' | ffkText }}</h3>
+    <p>{{ 'Explore how your identity appears across the product.' | ffkText }}</p>
+  </div>
+  <div class="themes" role="group" [attr.aria-label]="'Preview theme' | ffkText">
+    @for (theme of ['light', 'dark']; track theme) {
+      <button
+        type="button"
+        [attr.aria-label]="
+          (theme === 'light' ? 'Preview light theme' : 'Preview dark theme') | ffkText
+        "
+        [attr.aria-pressed]="mode() === theme"
+        (click)="themeChanged.emit($any(theme))"
+      >
+        <ffk-icon [name]="theme === 'light' ? 'sun' : 'moon'" />
+      </button>
+    }
+  </div>
+</div>
+<div class="surfaces" role="group" [attr.aria-label]="'Preview screen' | ffkText">
+  @for (item of surfaces; track item.id) {
+    <button
+      type="button"
+      [disabled]="item.id === 'sign-in' && !installationReady"
+      [attr.aria-pressed]="surface() === item.id"
+      (click)="surface.set(item.id)"
+    >
+      <ffk-icon [name]="item.icon" />{{ item.label | ffkText }}
+    </button>
+  }
+</div>
+<div class="frame" [ngStyle]="styles()" [attr.aria-label]="'Product preview' | ffkText">
+  <div class="browser-title">
+    @if (valueShown().favicon) {
+      <img [src]="valueShown().favicon" alt="" />
+    } @else {
+      <ffk-icon name="globe" />
+    }
+    <span>{{ valueShown().product_name }}</span
+    ><ffk-icon name="shield" />
+  </div>
+  @if (surface() === 'sign-in' && !installationReady) {
+    <section class="sign-in" role="status">
+      {{ 'Installation preview is unavailable until its identity loads.' | ffkText }}
+    </section>
+  } @else if (surface() === 'sign-in') {
+    <section class="sign-in">
+      <div class="preview-logo">
+        @if (logo()) {
+          <img [src]="logo()" [alt]="valueShown().product_name" />
+        } @else {
+          <strong>{{ valueShown().product_name }}</strong>
+        }
+      </div>
+      <div class="login-card">
+        @if (symbol()) {
+          <img class="symbol" [src]="symbol()" alt="" />
+        }
+        <h4>{{ 'Your team’s knowledge' | ffkText }}</h4>
+        <p>{{ 'Sign in to open the knowledge shared with you.' | ffkText }}</p>
+        <span class="primary">{{ 'Sign in' | ffkText }}<ffk-icon name="chevron" /></span
+        ><small>{{ 'Your organization manages access.' | ffkText }}</small>
+      </div>
+    </section>
+  } @else {
+    <header>
+      <div class="preview-logo">
+        @if (logo()) {
+          <img [src]="logo()" [alt]="valueShown().product_name" />
+        } @else {
+          <strong>{{ valueShown().product_name }}</strong>
+        }
+      </div>
+      <span class="avatar" [attr.aria-label]="'Example user' | ffkText">JD</span>
+    </header>
+    <nav>
+      <span [class.active]="surface() === 'navigation'"
+        ><ffk-icon name="folder" />{{ 'Library' | ffkText }}</span
+      ><span [class.active]="surface() === 'chat'"
+        ><ffk-icon name="chat" />{{ 'Chat' | ffkText }}</span
+      >
+    </nav>
+    @if (surface() === 'chat') {
+      <section class="chat">
+        <p class="user-message">{{ 'Where can I find the team handbook?' | ffkText }}</p>
+        <div class="assistant-label">
+          @if (symbol()) {
+            <img class="symbol" [src]="symbol()" alt="" />
+          } @else {
+            <span class="avatar">{{ valueShown().assistant_name.slice(0, 1) }}</span>
+          }
+          <strong>{{ valueShown().assistant_name }}</strong>
+        </div>
+        <p class="answer">{{ 'The handbook is in your shared library.' | ffkText }}</p>
+        <span class="source"><ffk-icon name="file" />{{ 'View source' | ffkText }}</span>
+        <div class="composer">
+          <ffk-icon name="plus" /><span
+            >{{ 'Ask' | ffkText }} {{ valueShown().assistant_name }}…</span
+          ><span class="send"><ffk-icon name="arrow-up" /></span>
+        </div>
+      </section>
+    } @else {
+      <section class="library">
+        <div class="library-heading">
+          <h4>{{ 'Your library' | ffkText }}</h4>
+          <span class="primary"><ffk-icon name="plus" />{{ 'New' | ffkText }}</span>
+        </div>
+        <div class="library-search">
+          <ffk-icon name="search" />{{ 'Search your knowledge' | ffkText }}
+        </div>
+        <div class="library-row">
+          <ffk-icon name="folder" /><span
+            >{{ 'Team resources' | ffkText }}<small>{{ 'Shared folder' | ffkText }}</small></span
+          ><ffk-icon name="chevron" />
+        </div>
+        <div class="library-row">
+          <ffk-icon name="file" /><span
+            >{{ 'Team handbook' | ffkText }}<small>{{ 'Document' | ffkText }}</small></span
+          ><ffk-icon name="chevron" />
+        </div>
+      </section>
+    }
+  }
+  <footer>© 2026 Firefly Software Foundation<span>Apache 2.0</span></footer>
+</div>
+<p class="preview-note">
+  @if (surface() === 'sign-in') {
+    <ffk-icon name="info" />{{
+      'Sign-in uses the installation identity. Organization identity appears after sign-in.'
+        | ffkText
+    }}
+  } @else {
+    <ffk-icon name="check" />{{ 'Preview only. Changes apply after you save.' | ffkText }}
+  }
+</p>

@@ -325,7 +325,7 @@
           }}</ffk-badge>
           @if (result.row_count !== undefined && result.row_count !== null) {
             <span
-              >{{ result.row_count }} rows{{ result.truncated ? ' · Result truncated' : '' }}</span
+              >{{ result.row_count }} rows{{ result.truncated ? ', Result truncated' : '' }}</span
             >
           }
         </div>
@@ -379,7 +379,7 @@
     }
     @if (w.f.schema(); as schema) {
       <details class="dataset-schema">
-        <summary>Dataset schema · {{ schema.tables.length }} tables</summary>
+        <summary>Dataset schema, {{ schema.tables.length }} tables</summary>
         @for (table of schema.tables; track table.id) {
           <h3>{{ table.name }}</h3>
           <ffk-button variant="quiet" icon="history" (click)="w.openTableHistory(table)">{{

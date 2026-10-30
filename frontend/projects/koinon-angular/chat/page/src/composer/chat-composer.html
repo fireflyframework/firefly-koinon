@@ -73,7 +73,7 @@
     >
       <ffk-icon name="plus" />
     </button>
-    <label class="sr-only" [for]="inputId">{{ 'Message koinon' | ffkText }}</label>
+    <label class="sr-only" [for]="inputId">{{ ('Message' | ffkText) + ' ' + assistantName }}</label>
     <textarea
       #editor
       [id]="inputId"
@@ -81,7 +81,7 @@
       [ngModel]="value"
       (ngModelChange)="updateValue($event)"
       [disabled]="disabled"
-      [placeholder]="'Ask koinon…' | ffkText"
+      [placeholder]="('Ask' | ffkText) + ' ' + assistantName + '…'"
       maxlength="32000"
       rows="1"
       (keydown)="keydown($event)"

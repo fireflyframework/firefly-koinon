@@ -42,6 +42,9 @@ export class KoinonShell implements AfterViewInit, OnDestroy {
   @Input() destination: PrimaryDestination = 'library';
   @Input() theme: 'light' | 'dark' = 'light';
   @Input() showNavigation = true;
+  @Input() productName = 'koinon';
+  @Input() brandLogo?: string;
+  logo(){return this.brandLogo ?? (this.brandBase+'/logos/firefly-koinon-lockup-'+(this.theme==='dark'?'reversed':'color')+'.svg');}
   @Input() brandBase = '/assets/brand';
   @Input() organizations: OrganizationOption[] = [];
   @Input() tenantId = '';

@@ -1,0 +1,192 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<section class="connection" [attr.aria-label]="'Connect an app' | ffkText">
+  <header>
+    <div>
+      <h3>{{ 'Connect Claude or ChatGPT' | ffkText }}</h3>
+      <p>
+        {{
+          'Use this installation’s connection details. Your organization controls the server URL.'
+            | ffkText
+        }}
+      </p>
+    </div>
+    <ffk-button
+      variant="quiet"
+      icon="refresh"
+      [loading]="loading()"
+      (click)="load()"
+      [label]="'Reload connection details' | ffkText"
+    />
+  </header>
+  @if (loading()) {
+    <p role="status">{{ 'Loading connection details…' | ffkText }}</p>
+  }
+  @if (error()) {
+    <p class="notice" role="alert">{{ error() | ffkText }}</p>
+  }
+  @if (notice()) {
+    <p class="notice" role="status">{{ notice() | ffkText }}</p>
+  }
+  @if (value(); as config) {
+    @if (!config.enabled || !config.endpoint) {
+      <div class="unavailable">
+        <strong>{{ 'MCP is disabled for this installation.' | ffkText }}</strong>
+        <p>
+          {{
+            'Ask an administrator to enable MCP, then review this installation’s connection details.'
+              | ffkText
+          }}
+        </p>
+      </div>
+    } @else {
+      <div class="connection-fields">
+        <div class="field">
+          <label [for]="id + '-app'">{{ 'Chat application' | ffkText }}</label
+          ><select [id]="id + '-app'" [(ngModel)]="app">
+            <option value="claude">Claude</option>
+            <option value="chatgpt">ChatGPT</option>
+          </select>
+        </div>
+        <div class="copy-group">
+          <label [for]="id + '-url'">{{ 'MCP server URL' | ffkText }}</label>
+          <div class="copy-field">
+            <input
+              [id]="id + '-url'"
+              readonly
+              [value]="config.endpoint"
+              [attr.aria-describedby]="config.local_only ? id + '-local-help' : null"
+              spellcheck="false"
+            /><ffk-button
+              icon="copy"
+              variant="quiet"
+              [label]="'Copy MCP server URL' | ffkText"
+              (click)="copy(config.endpoint)"
+            />
+          </div>
+        </div>
+      </div>
+      @if (config.local_only) {
+        <div class="unavailable" [id]="id + '-local-help'">
+          <strong>{{ 'This address is local to the server computer.' | ffkText }}</strong>
+          <p>{{ 'Use it with a desktop client running on that computer.' | ffkText }}</p>
+          <p>
+            {{
+              'Hosted chat applications need a reachable HTTPS address configured by your administrator.'
+                | ffkText
+            }}
+          </p>
+        </div>
+      }
+      @if (config.oauth_enabled) {
+        <div class="registration-fields">
+          <div class="field">
+            <label [for]="id + '-registration'">{{
+              'Registered OAuth application' | ffkText
+            }}</label
+            ><select [id]="id + '-registration'" [(ngModel)]="registrationId">
+              <option value="">
+                {{ 'Choose the application registered by your administrator' | ffkText }}
+              </option>
+              @for (client of registrations(); track client.client_id) {
+                <option [value]="client.client_id">{{ client.name }}</option>
+              }
+            </select>
+          </div>
+          @if (registration(); as client) {
+            <div class="copy-group">
+              <label [for]="id + '-client'">{{ 'OAuth client ID' | ffkText }}</label>
+              <div class="copy-field">
+                <input
+                  [id]="id + '-client'"
+                  readonly
+                  [value]="client.client_id"
+                  spellcheck="false"
+                /><ffk-button
+                  icon="copy"
+                  variant="quiet"
+                  [label]="'Copy OAuth client ID' | ffkText"
+                  (click)="copy(client.client_id)"
+                />
+              </div>
+            </div>
+            @if (client.client_auth === 'confidential') {
+              <p class="help">
+                {{
+                  'Your administrator supplies the client secret directly to the chat application. It is never displayed here.'
+                    | ffkText
+                }}
+              </p>
+            }
+          }
+          @if (!registrations().length) {
+            <p class="help">
+              {{
+                'Ask your administrator for the registered OAuth client ID and exact callback setup for your chat application.'
+                  | ffkText
+              }}
+            </p>
+          }
+        </div>
+        <ol class="steps">
+          <li>
+            <strong>{{
+              (app === 'claude'
+                ? 'Add the MCP server in Claude.'
+                : 'Add the MCP server in ChatGPT.'
+              ) | ffkText
+            }}</strong>
+            <p>
+              {{
+                'Open the chat application’s connector settings, add a custom MCP server and paste the URL above.'
+                  | ffkText
+              }}
+            </p>
+          </li>
+          <li>
+            <strong>{{ 'Choose OAuth and your registered client.' | ffkText }}</strong>
+            <p>
+              {{
+                'Use the client ID above. Your administrator must register the exact callback displayed by the chat application.'
+                  | ffkText
+              }}
+            </p>
+          </li>
+          <li>
+            <strong>{{ 'Sign in with your organization account.' | ffkText }}</strong>
+            <p>
+              {{
+                'Review the organization, workspace and requested permissions before approving the connection.'
+                  | ffkText
+              }}
+            </p>
+          </li>
+          <li>
+            <strong>{{ 'Ask a question or propose a knowledge change.' | ffkText }}</strong>
+            <p>
+              {{
+                'Answers retain their source references. Saving a proposed change requires an interactive review and your approval inside the chat application.'
+                  | ffkText
+              }}
+            </p>
+          </li>
+        </ol>
+        <p class="help">
+          {{
+            'Return to this list to review or revoke access. Removing a connection in the chat app does not revoke it here.'
+              | ffkText
+          }}
+        </p>
+      } @else {
+        <div class="unavailable">
+          <strong>{{ 'OAuth connections are not enabled.' | ffkText }}</strong>
+          <p>
+            {{
+              'Ask an administrator to configure OAuth for Claude and ChatGPT. API tokens remain separate and only work in clients that support bearer credentials.'
+                | ffkText
+            }}
+          </p>
+        </div>
+      }
+    }
+  }
+</section>

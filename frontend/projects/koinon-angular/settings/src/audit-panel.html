@@ -64,7 +64,7 @@
       /></label>
     </div>
     <p class="time-zone">
-      {{ 'Dates use your profile time zone.' | ffkText }} · {{ i18n.preferences().time_zone }}
+      {{ 'Dates use your profile time zone.' | ffkText }}, {{ i18n.preferences().time_zone }}
     </p>
   </div>
   <div filterChips class="filter-chips">
@@ -74,7 +74,7 @@
         class="filter-chip"
         [attr.aria-label]="
           ('Remove filter' | ffkText) +
-          ' · ' +
+          ', ' +
           (chip.label | ffkText) +
           ': ' +
           (chip.id === 'action' ? (actionName(chip.value) | ffkText) : (chip.value | ffkText))
@@ -151,7 +151,7 @@
                   class="event-open"
                   [disabled]="service.pending()"
                   [attr.aria-label]="
-                    ('View details' | ffkText) + ' · ' + (actionName(event.action) | ffkText)
+                    ('View details' | ffkText) + ', ' + (actionName(event.action) | ffkText)
                   "
                   (click)="openDetails(event)"
                 >
@@ -172,7 +172,7 @@
                   class="person"
                   [disabled]="service.pending()"
                   [attr.aria-label]="
-                    ('Filter by person' | ffkText) + ' · ' + personName(event.subject)
+                    ('Filter by person' | ffkText) + ', ' + personName(event.subject)
                   "
                   (click)="filterPerson(event)"
                 >

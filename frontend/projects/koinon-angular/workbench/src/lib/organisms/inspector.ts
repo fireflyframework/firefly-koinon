@@ -82,7 +82,7 @@ import { friendlyStatus, friendlyKind, resourceIcon } from '../services/library-
               <div class="table-row">
                 <ffk-icon name="table" /><span>{{ table.name }}</span
                 ><small>{{ table.columns.length }} columns</small>
-                <ffk-button variant="quiet" icon="history" [label]="('History & lineage' | ffkText) + ' · ' + table.name"
+                <ffk-button variant="quiet" icon="history" [label]="('History & lineage' | ffkText) + ', ' + table.name"
                   (click)="tableHistoryRequested.emit({ id: table.id, name: table.name })"/>
               </div>
             }

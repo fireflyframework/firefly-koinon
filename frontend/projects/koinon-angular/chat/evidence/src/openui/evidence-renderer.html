@@ -184,7 +184,7 @@
                   !file.media_type.startsWith('image/') && !file.complete && file.total_chunks > 0
                 ) {
                   <span>
-                    · {{ file.chunk_ids.length }} / {{ file.total_chunks }}
+                   , {{ file.chunk_ids.length }} / {{ file.total_chunks }}
                     {{ 'passages' | ffkText }}</span
                   >
                 }
@@ -203,7 +203,7 @@
           <ffk-button variant="quiet" icon="file" (click)="context.citationRequested.emit(citation)"
             >{{ citation.title || 'Source evidence' }}
             @if (citation.page) {
-              · p. {{ citation.page }}
+             , p. {{ citation.page }}
             }
           </ffk-button>
         }

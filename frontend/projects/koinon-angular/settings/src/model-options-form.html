@@ -78,7 +78,7 @@
           }
           @if (field.type === 'list') {
             <span
-              >{{ 'Maximum sequences' | ffkText }}: {{ field.maxItems | ffkValue }} ·
+              >{{ 'Maximum sequences' | ffkText }}: {{ field.maxItems | ffkValue }},
               {{ 'Characters per sequence' | ffkText }}: {{ field.maxLength | ffkValue }}</span
             >
           }
@@ -92,5 +92,5 @@
   }
 </div>
 @for (error of hiddenErrors(); track error[0]) {
-  <p class="help error" role="alert">{{ error[0] }} · {{ error[1] | ffkText }}</p>
+  <p class="help error" role="alert">{{ error[0] }}, {{ error[1] | ffkText }}</p>
 }

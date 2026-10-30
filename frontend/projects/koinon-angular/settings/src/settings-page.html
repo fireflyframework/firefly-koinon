@@ -63,6 +63,7 @@
       <p class="notice" role="status">{{ c.notice() | ffkText }}</p>
     }
     @if (!editor()) {
+      @if (section() === 'identity') {<ffk-identity-appearance/>}
       @if (section() === 'providers') {
         <header class="section-heading">
           <div>
@@ -94,7 +95,7 @@
             <article>
               <div>
                 <h3>{{ provider.name }}</h3>
-                <p>{{ provider.kind }} · {{ provider.model_ids.join(', ') }}</p>
+                <p>{{ provider.kind }}, {{ provider.model_ids.join(', ') }}</p>
                 <details class="capability-details">
                   <summary>{{ 'Model capabilities' | ffkText }}</summary>
                   <p>
@@ -259,7 +260,7 @@
       <header class="section-heading">
         <div>
           <span class="eyebrow"
-            >{{ 'Provider setup' | ffkText }} · {{ step() }} {{ 'of' | ffkText }} 3</span
+            >{{ 'Provider setup' | ffkText }}, {{ step() }} {{ 'of' | ffkText }} 3</span
           >
           <h2>{{ providerRecord()?.name || ('Connect a model' | ffkText) }}</h2>
           @if (step() === 2) {
@@ -753,7 +754,7 @@
               <p>
                 {{ connection.provider }}
                 @if (connection.model_id) {
-                  · {{ connection.model_id }}
+                 , {{ connection.model_id }}
                 }
               </p>
               <p>{{ connection.reason }}</p>

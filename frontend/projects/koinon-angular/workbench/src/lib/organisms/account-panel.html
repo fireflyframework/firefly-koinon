@@ -170,47 +170,120 @@
       }
     </section>
   } @else if (creating()) {
-    <form (ngSubmit)="createToken()">
-      <ffk-form-field
-        inputId="token-name"
-        [label]="'Token name' | ffkText"
-        [value]="tokenName"
-        (valueChange)="tokenName = $event"
-        required
-      /><label
-        >{{ 'Expires' | ffkText }} (UTC)<input
-          type="date"
-          name="expires"
-          [(ngModel)]="expiryDate"
+    <form class="token-create" (ngSubmit)="createToken()">
+      <div class="token-owner">
+        <span class="owner-avatar" aria-hidden="true">
+          @if (account.avatar()) {
+            <img [src]="account.avatar()" alt="" />
+          } @else {
+            {{ initials() }}
+          }
+        </span>
+        <div>
+          <strong>{{ account.profile()?.display_name }}</strong>
+          <p>{{ tenantName(f.tenantId()) }}</p>
+        </div>
+      </div>
+      <p class="help">
+        {{
+          'This token acts as you. Your current role and resource access are checked on every request.'
+            | ffkText
+        }}
+      </p>
+      <div class="preference-grid">
+        <ffk-form-field
+          inputId="token-name"
+          [label]="'Token name' | ffkText"
+          [value]="tokenName"
+          (valueChange)="tokenName = $event"
           required
-      /></label>
-      @if (f.workspaceId()) {
-        <label class="check"
-          ><input type="checkbox" name="workspace" [(ngModel)]="workspaceBound" /><span
-            >{{ 'Limit to current workspace' | ffkText }} · {{ workspaceName() }}</span
-          ></label
-        >
-      }
-      @if (selectedAsset(); as asset) {
-        <label class="check"
-          ><input type="checkbox" name="asset" [(ngModel)]="assetBound" /><span
-            >{{ 'Limit to selected file' | ffkText }} · {{ asset.name }}</span
-          ></label
-        >
-      }
-      <fieldset>
-        <legend>{{ 'Permissions' | ffkText }}</legend>
-        @for (scope of account.tokenScopes()?.items; track scope.id) {
+        /><label
+          >{{ 'Expires' | ffkText }} (UTC)<input
+            type="date"
+            name="expires"
+            [(ngModel)]="expiryDate"
+            required
+        /></label>
+      </div>
+      <fieldset class="token-limits">
+        <legend>{{ 'Resource limits' | ffkText }}</legend>
+        @if (f.workspaceId()) {
           <label class="check"
             ><input
               type="checkbox"
-              [checked]="scopeIds.includes(scope.id)"
-              [disabled]="requiredScope(scope.id)"
-              (change)="toggleScope(scope.id, $any($event.target).checked)"
-            /><span>{{ scope.name | ffkText }}</span></label
+              name="workspace"
+              [ngModel]="workspaceBound"
+              (ngModelChange)="limitChanged('workspace', $event)"
+            /><span
+              >{{ 'Limit to current workspace' | ffkText }}, {{ workspaceName() }}</span
+            ></label
           >
         }
+        @if (selectedAsset(); as asset) {
+          <label class="check"
+            ><input
+              type="checkbox"
+              name="asset"
+              [ngModel]="assetBound"
+              (ngModelChange)="limitChanged('asset', $event)"
+            /><span>{{ 'Limit to selected file' | ffkText }}, {{ asset.name }}</span></label
+          >
+        }
+        <p class="help">
+          {{
+            'Organization management requires organization scope. Resource limits apply to knowledge operations.'
+              | ffkText
+          }}
+        </p>
       </fieldset>
+      <section class="permission-selection" [attr.aria-label]="'Permissions' | ffkText">
+        <h3>{{ 'Permissions' | ffkText }}</h3>
+        <div class="token-presets">
+          <ffk-button variant="neutral" (click)="preset('read')">{{
+            'Read & ask' | ffkText
+          }}</ffk-button>
+          @if (groupScopes('write').length) {
+            <ffk-button variant="neutral" (click)="preset('write')">{{
+              'Create & maintain knowledge' | ffkText
+            }}</ffk-button>
+          }
+          @if (groupScopes('organization').length) {
+            <ffk-button variant="neutral" (click)="preset('organization')">{{
+              'Administration' | ffkText
+            }}</ffk-button>
+          }
+        </div>
+        @if (scopeNotice()) {
+          <p role="status" class="notice">{{ scopeNotice() | ffkText }}</p>
+        }
+        <div class="permission-grid">
+          @for (group of scopeGroups; track group.id) {
+            @if (groupScopes(group.id).length) {
+              <fieldset [class.organization-permissions]="group.id === 'organization'">
+                <legend>{{ group.name | ffkText }}</legend>
+                @if (group.id === 'organization' && (workspaceBound || assetBound)) {
+                  <p class="help">
+                    {{ 'Remove resource limits to select organization permissions.' | ffkText }}
+                  </p>
+                } @else {
+                  <div class="scope-options">
+                    @for (scope of groupScopes(group.id); track scope.id) {
+                      <label class="check"
+                        ><input
+                          type="checkbox"
+                          [checked]="scopeIds.includes(scope.id)"
+                          [disabled]="scopeDisabled(scope.id)"
+                          (change)="toggleScope(scope.id, $any($event.target).checked)"
+                        /><span>{{ scope.name | ffkText }}</span></label
+                      >
+                    }
+                  </div>
+                }
+              </fieldset>
+            }
+          }
+        </div>
+      </section>
       <p class="help">
         {{
           'Permissions are limited by your current access. Dependent permissions are selected together.'
@@ -258,7 +331,7 @@
             <strong>{{ token.name }}</strong>
             <p>{{ tenantName(token.tenant_id) }}</p>
             <p [title]="token.expires_at">
-              {{ 'Expires' | ffkText }} {{ token.expires_at | ffkDate }} ·
+              {{ 'Expires' | ffkText }} {{ token.expires_at | ffkDate }},
               <code>{{ token.prefix }}…</code>
             </p>
             <details>

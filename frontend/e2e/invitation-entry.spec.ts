@@ -76,7 +76,7 @@ test('an invited user with no organizations can review and accept access before 
   });
   await page.evaluate(() => {
     const label = document.createElement('div');
-    label.textContent = 'Controlled service fixtures · Invitation review';
+    label.textContent = 'Controlled service fixtures, Invitation review';
     Object.assign(label.style, {
       position: 'fixed',
       inset: 'auto 0 0',

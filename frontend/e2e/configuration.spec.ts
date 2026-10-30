@@ -152,7 +152,7 @@ for (const width of [1440, 390])
         .querySelector<HTMLElement>('ffk-workbench')
         ?.style.setProperty('--koinon-workspace-height', 'calc(100dvh - 22px)');
       const mark = document.createElement('div');
-      mark.textContent = 'Controlled service fixtures · Frontend review only';
+      mark.textContent = 'Interface preview using controlled service data.';
       mark.style.cssText =
         'position:fixed;bottom:0;left:0;right:0;z-index:9999;padding:5px 12px;background:#855414;color:white;font:10px system-ui;pointer-events:none;text-align:center';
       document.body.append(mark);

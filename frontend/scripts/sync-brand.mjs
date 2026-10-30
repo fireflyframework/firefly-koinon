@@ -29,9 +29,9 @@ for (const key of [
   if (!/^#[0-9a-f]{6}$/i.test(tokens.palette[key]))
     throw new Error(`Invalid canonical brand color: ${key}`);
 const variables = [
-  ...Object.entries(tokens.palette).map(([key, value]) => `  --ffk-${key}: ${value};`),
+  ...Object.entries(tokens.palette).map(([key, value]) => `  --ffk-${key}: ${key === 'amber' ? 'var(--koinon-brand-action, '+value+')' : key === 'gold' ? 'var(--koinon-brand-accent, '+value+')' : value};`),
   ...Object.entries(tokens.themes).flatMap(([theme, values]) =>
-    Object.entries(values).map(([key, value]) => `  --ffk-${theme}-${key}: ${value};`),
+    Object.entries(values).map(([key, value]) => `  --ffk-${theme}-${key}: var(--koinon-brand-${theme}-${key === 'actionText' ? 'action_text' : key}, ${value});`),
   ),
   `  --ffk-sidebar: ${tokens.layout.sidebar}px;`,
   `  --ffk-reading-max: ${tokens.layout.readingMax}px;`,

@@ -1,0 +1,352 @@
+// Copyright 2026 Firefly Software Foundation
+// SPDX-License-Identifier: Apache-2.0
+:host {
+  display: block;
+  min-width: 0;
+}
+.preview-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 650;
+}
+.preview-heading p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--ui-muted);
+  margin: 5px 0 0;
+}
+.themes {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--ui-canvas);
+  border: 1px solid var(--ui-line);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.themes button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+.themes button[aria-pressed='true'] {
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  box-shadow: 0 1px 3px #10110f14;
+}
+.surfaces {
+  display: flex;
+  gap: 4px;
+  margin: 18px 0 12px;
+}
+.surfaces button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 6px;
+  padding: 8px;
+  font-size: 11px;
+  border: 1px solid transparent;
+  min-height: 36px;
+}
+.surfaces button[aria-pressed='true'] {
+  background: var(--ui-canvas);
+  border-color: var(--ui-line);
+  color: var(--ui-text);
+}
+button {
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ui-muted);
+  font: inherit;
+  cursor: pointer;
+}
+button:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 3px;
+}
+.frame {
+  overflow: hidden;
+  border: 1px solid var(--koinon-brand-line);
+  border-radius: 12px;
+  color: var(--koinon-brand-text);
+  background: var(--koinon-brand-canvas);
+  font-size: 12px;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  --ui-text: var(--koinon-brand-text);
+  --ui-muted: var(--koinon-brand-muted);
+}
+.browser-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--koinon-brand-line);
+  color: var(--koinon-brand-muted);
+  background: var(--koinon-brand-surface);
+  font-size: 10px;
+}
+.browser-title > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.browser-title > img {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+}
+.frame header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  background: var(--koinon-brand-surface);
+  border-bottom: 1px solid var(--koinon-brand-line);
+}
+.preview-logo {
+  min-width: 0;
+}
+.preview-logo > img {
+  display: block;
+  max-width: 180px;
+  width: 100%;
+  max-height: 34px;
+  object-fit: contain;
+}
+.preview-logo strong {
+  font-size: 16px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  flex-shrink: 0;
+  border: 1px solid var(--koinon-brand-line);
+  background: var(--koinon-brand-surface);
+  border-radius: 50%;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.frame nav {
+  display: flex;
+  gap: 18px;
+  padding: 12px 16px;
+  background: var(--koinon-brand-surface);
+  color: var(--koinon-brand-muted);
+}
+nav > span {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.frame nav .active {
+  color: var(--koinon-brand-accent);
+  font-weight: 600;
+}
+.chat {
+  padding: 20px 16px;
+  flex: 1;
+}
+.user-message {
+  margin: 0 0 26px 30px;
+  padding: 11px 13px;
+  border: 1px solid var(--koinon-brand-line);
+  border-radius: 12px 12px 3px 12px;
+  background: var(--koinon-brand-surface);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.assistant-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+.symbol {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+.answer {
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.source {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  color: var(--koinon-brand-accent);
+  font-size: 11px;
+  text-decoration: underline;
+}
+.composer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--koinon-brand-line);
+  background: var(--koinon-brand-surface);
+  border-radius: 12px;
+  margin-top: 28px;
+  font-size: 11px;
+  color: var(--koinon-brand-muted);
+}
+.composer > span:not(.send) {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.send {
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--koinon-brand-action);
+  color: var(--koinon-brand-action_text);
+}
+.library {
+  padding: 20px 16px;
+  flex: 1;
+}
+.library-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+h4 {
+  font-size: 18px;
+  line-height: 1.4;
+  letter-spacing: -0.03em;
+  font-weight: 550;
+  margin: 0;
+}
+.primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 7px;
+  padding: 8px 10px;
+  background: var(--koinon-brand-action);
+  color: var(--koinon-brand-action_text);
+  font-size: 11px;
+  font-weight: 600;
+}
+.library-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--koinon-brand-line);
+  border-radius: 7px;
+  background: var(--koinon-brand-surface);
+  color: var(--koinon-brand-muted);
+  padding: 11px;
+  margin-bottom: 14px;
+}
+.library-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--koinon-brand-line);
+}
+.library-row > span {
+  flex: 1;
+}
+.library-row small {
+  display: block;
+  color: var(--koinon-brand-muted);
+  font-size: 10px;
+  margin-top: 5px;
+}
+.sign-in {
+  padding: 26px 22px;
+  flex: 1;
+}
+.sign-in > .preview-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+.login-card {
+  border: 1px solid var(--koinon-brand-line);
+  border-radius: 12px;
+  padding: 22px 18px;
+  background: var(--koinon-brand-surface);
+}
+.login-card .symbol {
+  margin-bottom: 14px;
+}
+.login-card p {
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 10px 0 20px;
+  color: var(--koinon-brand-muted);
+}
+.login-card small {
+  display: block;
+  font-size: 10px;
+  line-height: 1.6;
+  margin-top: 16px;
+  color: var(--koinon-brand-muted);
+}
+footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  justify-content: space-between;
+  padding: 12px;
+  border-top: 1px solid var(--koinon-brand-line);
+  font-size: 8px;
+  line-height: 1.6;
+  background: var(--koinon-brand-surface);
+  color: var(--koinon-brand-muted);
+}
+.preview-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--ui-muted);
+  margin: 14px 0 0;
+}
+.preview-note > ffk-icon {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+@media (pointer: coarse) {
+  .themes button {
+    height: 40px;
+    width: 40px;
+  }
+  .surfaces button {
+    min-height: 44px;
+  }
+}

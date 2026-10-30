@@ -1,6 +1,13 @@
 <!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
 <section class="applications" [attr.aria-label]="'Authorized applications' | ffkText">
   <header class="introduction">
+    <ffk-button
+      icon="link"
+      variant="neutral"
+      [expanded]="connecting()"
+      (click)="connecting.set(!connecting())"
+      >{{ 'Connect an app' | ffkText }}</ffk-button
+    >
     <p>
       {{
         'Review access you authorized from another application. Start a new connection from that application.'
@@ -11,6 +18,9 @@
       {{ 'Permissions also depend on your current organization and workspace access.' | ffkText }}
     </p>
   </header>
+  @if (connecting()) {
+    <ffk-mcp-connection-panel />
+  }
   <form class="filters" (ngSubmit)="apply()">
     <div class="search">
       <label for="application-search">{{ 'Search applications' | ffkText }}</label>

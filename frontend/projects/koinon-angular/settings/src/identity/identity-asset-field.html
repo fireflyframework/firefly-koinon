@@ -1,0 +1,68 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<div
+  class="asset"
+  [class.dragging]="dragging()"
+  [class.busy]="busy"
+  (dragover)="drag($event)"
+  (dragleave)="dragging.set(false)"
+  (drop)="drop($event)"
+>
+  <div class="asset-preview" [class.dark]="dark" [class.square]="square">
+    @if ((value || fallback) && failed() !== (value || fallback)) {
+      <img
+        [src]="value || fallback"
+        alt=""
+        (load)="imageLoaded($event)"
+        (error)="failed.set(value || fallback)"
+      />
+    } @else {
+      <ffk-icon [name]="square ? 'image' : 'upload'" />
+    }
+  </div>
+  <div class="asset-description">
+    <label [for]="id">{{ label | ffkText }}</label>
+    <p>{{ hint | ffkText }}</p>
+    <small>{{
+      (busy
+        ? 'Reading image…'
+        : value
+          ? dimensions()
+          : fallback
+            ? 'Automatic fallback'
+            : 'Drop an image here'
+      ) | ffkText
+    }}</small>
+  </div>
+  <div class="asset-actions">
+    <button
+      type="button"
+      [disabled]="disabled || busy"
+      [attr.aria-label]="('Choose image for' | ffkText) + ' ' + (label | ffkText)"
+      (click)="picker.click()"
+    >
+      <ffk-icon name="upload" />{{ (value ? 'Replace' : 'Upload') | ffkText }}
+    </button>
+    @if (value) {
+      <button
+        type="button"
+        class="remove"
+        [disabled]="disabled || busy"
+        [attr.aria-label]="('Remove' | ffkText) + ' ' + (label | ffkText)"
+        (click)="removed.emit()"
+      >
+        <ffk-icon name="close" />
+      </button>
+    }
+  </div>
+  <input
+    #picker
+    [id]="id"
+    class="sr-only"
+    tabindex="-1"
+    type="file"
+    accept="image/png,image/jpeg,image/webp"
+    [disabled]="disabled || busy"
+    [attr.aria-label]="('Upload' | ffkText) + ' ' + (label | ffkText)"
+    (change)="select($event)"
+  />
+</div>

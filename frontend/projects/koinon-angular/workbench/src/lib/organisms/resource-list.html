@@ -65,7 +65,7 @@
             <span class="mobile-contents"
               >{{ kind(item.kind) | ffkText }}
               @if (contents(item)) {
-                <span aria-hidden="true"> · </span>{{ contents(item) }}
+                <span aria-hidden="true">, </span>{{ contents(item) }}
               }
             </span>
             <span class="compact-tags">

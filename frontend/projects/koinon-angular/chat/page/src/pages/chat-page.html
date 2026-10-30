@@ -118,14 +118,14 @@
       } @else if (!a.messages().length && !a.error() && !a.canUseAgent()) {
         <div class="conversation-empty">
           <ffk-icon name="chat" />
-          <h2>{{ 'koinon is unavailable right now.' | ffkText }}</h2>
+          <h2>{{ assistantCopy('koinon is unavailable right now.') }}</h2>
           <p>
             {{
               'Your administrator can enable chat for your team. Please try again later.' | ffkText
             }}
           </p>
           @if (canConfigure()) {
-            <ffk-button (click)="setup()">{{ 'Configure koinon' | ffkText }}</ffk-button>
+            <ffk-button (click)="setup()">{{ assistantCopy('Configure koinon') }}</ffk-button>
           }
           <p class="scope-note">
             {{
@@ -170,9 +170,9 @@
                     <span>{{ userInitials() }}</span>
                   }
                 } @else {
-                  <img [src]="brandSymbol()" alt="" />
+                  @if(brandSymbol()){<img [src]="brandSymbol()" alt="" />}@else{<span>{{assistantName().slice(0,1).toUpperCase()}}</span>}
                 }</span
-              ><strong>{{ (message.role === 'user' ? 'You' : 'koinon') | ffkText }}</strong
+              ><strong>{{ message.role === 'user' ? ('You' | ffkText) : assistantName() }}</strong
               ><time [attr.datetime]="message.created_at">{{
                 message.created_at | ffkDate: undefined : 'time'
               }}</time>
@@ -304,6 +304,7 @@
       </div>
     }
     <ffk-chat-composer
+      [assistantName]="assistantName()"
       class="composer-slot"
       [(value)]="draft"
       [canSend]="!!draft.trim() && a.canUseAgent() && files.ready() && !files.selecting()"
@@ -315,7 +316,7 @@
       [attachmentsUnavailableReason]="
         a.canUseAgent()
           ? files.unavailableReason()
-          : 'File attachments will be available when koinon is ready.'
+          : assistantCopy('File attachments will be available when koinon is ready.')
       "
       [attachments]="files.attachments()"
       [accept]="files.accept()"
