@@ -52,11 +52,11 @@ class Observer:
 
 
 @contextmanager
-def bound(factory, model):
+def bound(factory, model, mode="default"):
     context = set_tenant_context(TenantContext(tenant_id="fixture", workspace_id="workspace",
                                               actor="owner", correlation_id="typed-final"))
     token = push_bindings(tenant_id="fixture", workspace_id="workspace", subject="owner",
-        bindings={"documents.rlm": ModelBinding(model, {"max_tokens": 256}, "ollama", "chat", "default")},
+        bindings={"documents.rlm": ModelBinding(model, {"max_tokens": 256}, "ollama", "chat", mode)},
         required=True)
     try:
         yield NativeRlmChatClient.from_binding(factory)
@@ -69,6 +69,215 @@ async def run(session, observer):
     with provenance.observe(observer, tenant_id="fixture", workspace_id="workspace", actor="owner"):
         provenance.current().source_ids.add("text-fixture")
         return await asyncio.to_thread(provenance.worker(session.run_over_text), "Read the scalar", "42")
+
+
+class CitationDocuments:
+    def __init__(self):
+        self.accessed = []
+        self.hydrated = []
+
+    def keys(self):
+        return ["A", "B"]
+
+    def __getitem__(self, key):
+        if key not in self.keys():
+            raise KeyError(key)
+        self.accessed.append(key)
+        return "Original " + key
+
+    def pages(self, key):
+        self.hydrated.append(key)
+        return ["Original " + key]
+
+    def npages(self, key):
+        return 1
+
+    def __contains__(self, key):
+        return key in self.keys()
+
+
+async def run_documents(session, observer, documents):
+    with provenance.observe(observer, tenant_id="fixture", workspace_id="workspace", actor="owner"):
+        provenance.current().source_ids.update(documents.keys())
+        return await asyncio.to_thread(provenance.worker(session.run), "Read the original", documents)
+
+
+@pytest.mark.parametrize("filings", [None, []])
+async def test_required_positive_terminal_rejects_empty_citations_before_hydration_and_resumes(factory, filings):
+    documents, observer, calls = CitationDocuments(), Observer(), []
+
+    def respond(messages, info):
+        calls.append(messages)
+        if len(calls) == 1:
+            part = ToolCallPart("python", {"code": "print(docs.get('A'))"}, "inspection")
+        elif len(calls) == 2:
+            part = ToolCallPart("final_answer", {"answer": "Original A", "filings": filings}, "empty")
+        else:
+            assert documents.hydrated == []
+            result = [part for message in messages for part in message.parts if isinstance(part, ToolReturnPart)][-1]
+            assert result.tool_call_id == "empty" and result.outcome == "failed"
+            assert "RLM_FINAL_ANSWER_REQUIRED" in result.content
+            part = ToolCallPart("final_answer", {"answer": "Original A", "filings": ["A"]}, "accepted")
+        return ModelResponse(parts=[part], usage=RequestUsage(input_tokens=7, output_tokens=3))
+
+    with bound(factory, FunctionModel(respond)) as client:
+        result = await run_documents(RLMSession(client, max_iters=3, sub_budget=0), observer, documents)
+        assert client.token_totals()["input_tokens"] == 21 and client.token_totals()["output_tokens"] == 9
+    assert result[0] == "Original A" and result[1][0]["filing"] == "A" and not result[2]
+    assert len(calls) == len(observer.models) == 3 and documents.hydrated == ["A"]
+    assert [row.outcome for row in observer.tools] == ["completed", "rejected", "halted"]
+
+
+async def test_required_positive_terminal_rejection_exhausts_the_same_turn_cap(factory):
+    from flycanon.core.services.query.rlm.native_client import RlmToolProtocolError
+
+    documents, observer, calls = CitationDocuments(), Observer(), []
+
+    def respond(messages, info):
+        calls.append(messages)
+        part = ToolCallPart("python", {"code": "print(docs.get('A'))"}, "inspection") if len(calls) == 1 else (
+            ToolCallPart("final_answer", {"answer": "Original A", "filings": []}, f"empty-{len(calls)}")
+        )
+        return ModelResponse(parts=[part], usage=RequestUsage(input_tokens=7, output_tokens=3))
+
+    with bound(factory, FunctionModel(respond)) as client, pytest.raises(RlmToolProtocolError):
+        await run_documents(RLMSession(client, max_iters=3, sub_budget=0), observer, documents)
+    assert len(calls) == len(observer.models) == 3 and documents.hydrated == []
+    assert [row.outcome for row in observer.tools] == ["completed", "rejected", "rejected"]
+
+
+async def test_required_negative_terminal_still_accepts_explicit_no_answer_after_read(factory):
+    calls = []
+
+    def respond(messages, info):
+        calls.append(messages)
+        part = ToolCallPart("python", {"code": "print(docs.get('A'))"}, "inspection") if len(calls) == 1 else (
+            ToolCallPart("final_answer", {"answer": "No answer found", "filings": [], "found": False}, "missing")
+        )
+        return ModelResponse(parts=[part])
+
+    documents, observer = CitationDocuments(), Observer()
+    with bound(factory, FunctionModel(respond)) as client:
+        assert await run_documents(RLMSession(client, max_iters=2, sub_budget=0), observer, documents) == (
+            "No answer found", [], True,
+        )
+    assert documents.hydrated == [] and observer.tools[-1].outcome == "halted"
+
+
+async def test_required_native_json_empty_positive_citation_uses_the_same_final_callback(factory):
+    import json
+
+    calls = []
+    documents, observer = CitationDocuments(), Observer()
+
+    def respond(messages, info):
+        calls.append(messages)
+        assert info.function_tools == []
+        code = ["print(docs.get('A'))", "final('Original A')", "final('Original A', filings=['A'])"][len(calls) - 1]
+        return ModelResponse(parts=[TextPart(json.dumps({"code": code}))])
+
+    model = FunctionModel(respond, profile={"supports_json_schema_output": True})
+    with bound(factory, model, mode="native") as client:
+        result = await run_documents(RLMSession(client, max_iters=3, sub_budget=0), observer, documents)
+    assert len(calls) == 3 and result[1][0]["filing"] == "A" and not result[2]
+    assert documents.hydrated == ["A"]
+
+
+async def test_actual_sdk_rejected_citation_returns_keep_identity_and_receipt_seals(factory, monkeypatch):
+    import json
+    from hashlib import sha256
+
+    import httpx2
+    from pydantic import TypeAdapter
+    from pyfly.agentic.models import Credential, ModelFactory, ModelSpec
+
+    wires, observer, documents = [], Observer(), CitationDocuments()
+
+    def respond(request):
+        wires.append(json.loads(request.content))
+        if len(wires) > 1:
+            assert documents.hydrated == []
+        name, arguments = [
+            ("python", {"code": "print(docs.get('A'))"}),
+            ("final_answer", {"answer": "Original A", "filings": []}),
+            ("final_answer", {"answer": "Original A", "filings": ["B"]}),
+            ("final_answer", {"answer": "Original A", "filings": ["A"], "pages": [0]}),
+        ][len(wires) - 1]
+        return httpx2.Response(200, json={"id": "response", "object": "chat.completion", "created": 1,
+            "model": "qwen2.5:7b", "choices": [{"index": 0, "finish_reason": "tool_calls", "message": {
+                "role": "assistant", "content": None, "tool_calls": [{"id": f"call-{len(wires)}",
+                    "type": "function", "function": {"name": name, "arguments": json.dumps(arguments)}}],
+            }}], "usage": {"prompt_tokens": 8, "completion_tokens": 3, "total_tokens": 11}})
+
+    monkeypatch.setattr("pydantic_ai.providers._openai_compatible.create_async_httpx2_client",
+        lambda: httpx2.AsyncClient(transport=httpx2.MockTransport(respond), trust_env=False))
+    selected = await ModelFactory().build(ModelSpec(provider="ollama", model="qwen2.5:7b",
+        base_url="http://127.0.0.1:11434/v1", credential=Credential.none()))
+    try:
+        with bound(factory, selected) as client:
+            session = RLMSession(client, max_iters=4, sub_budget=0)
+            result = await run_documents(session, observer, documents)
+            assert client.token_totals()["input_tokens"] == 32 and client.token_totals()["output_tokens"] == 12
+        assert len(wires) == len(observer.models) == 4 and result[1][0]["filing"] == "A"
+        assert documents.hydrated == ["A"]
+        assert [row.outcome for row in observer.tools] == ["completed", "rejected", "rejected", "halted"]
+        for turn, code in ((2, "RLM_FINAL_ANSWER_REQUIRED"), (3, "RLM_DOCUMENT_READ_REQUIRED")):
+            wire_result = wires[turn]["messages"][-1]
+            assert wire_result["role"] == "tool" and wire_result["tool_call_id"] == f"call-{turn}"
+            assert code in wire_result["content"]
+            sdk_result = json.loads(observer.models[turn])["sdk_messages"][-1]["parts"][0]
+            assert sdk_result["outcome"] == "failed" and sdk_result["tool_call_id"] == f"call-{turn}"
+            receipt = observer.tools[turn - 1]
+            assert receipt.result_kind == "tool_return" and receipt.execution_status == "rejected"
+            assert receipt.result_sha256 == sha256(json.dumps(
+                sdk_result, sort_keys=True, ensure_ascii=False, separators=(",", ":"),
+            ).encode()).hexdigest()
+        assert observer.tools[-1].result_kind == "accepted_final"
+        local = TypeAdapter(ToolReturnPart).dump_python(session._last_tool_result, mode="json")
+        assert observer.tools[-1].result_sha256 == sha256(json.dumps(
+            local, sort_keys=True, ensure_ascii=False, separators=(",", ":"),
+        ).encode()).hexdigest()
+    finally:
+        await selected.client.close()
+
+
+async def test_authority_is_rechecked_after_citation_rejection_before_any_next_model_call(factory):
+    from pyfly.agentic.execution import ExecutionSessionState
+    from pyfly.kernel import ServiceUnavailableException
+
+    class RevokedAfterRejection(Observer):
+        async def authorize(self):
+            if any(row.outcome == "rejected" for row in self.tools):
+                raise ServiceUnavailableException("Access revoked", code="SCOPE_REVOKED")
+
+    executors, calls, closed_states = [], [], []
+
+    class TrackedSession(RLMSession):
+        def run(self, question, docs):
+            try:
+                return super().run(question, docs)
+            finally:
+                closed_states.append(executors[0]._session.state)
+
+        def _build_monty(self, docs, text, question):
+            executor = super()._build_monty(docs, text, question)
+            executors.append(executor)
+            return executor
+
+    def respond(messages, info):
+        calls.append(messages)
+        part = ToolCallPart("python", {"code": "print(docs.get('A'))"}, "inspection") if len(calls) == 1 else (
+            ToolCallPart("final_answer", {"answer": "Original A", "filings": []}, "empty")
+        )
+        return ModelResponse(parts=[part], usage=RequestUsage(input_tokens=7, output_tokens=3))
+
+    documents, observer = CitationDocuments(), RevokedAfterRejection()
+    with bound(factory, FunctionModel(respond)) as client, pytest.raises(ServiceUnavailableException) as failure:
+        await run_documents(TrackedSession(client, max_iters=4, sub_budget=0), observer, documents)
+    assert failure.value.code == "SCOPE_REVOKED" and len(calls) == 2
+    assert client.token_totals()["input_tokens"] == 14 and client.token_totals()["output_tokens"] == 6
+    assert documents.hydrated == [] and [row.outcome for row in observer.tools] == ["completed", "rejected"]
+    assert len(executors) == 1 and closed_states == [ExecutionSessionState.CLOSED]
 
 
 async def test_multiline_answer_is_data_and_finishes_with_real_halt(factory):

@@ -385,7 +385,7 @@ async def test_native_read_admission_does_not_carry_between_sessions(factory, sa
 
     def respond(messages, info):
         requests.append(messages)
-        code = "print(docs.pages('source-id')); final('read once')" if len(requests) == 1 else "final('unread again', found=False)"
+        code = "print(docs.pages('source-id')); final('read once', filings=['source-id'])" if len(requests) == 1 else "final('unread again', found=False)"
         return ModelResponse(parts=[TextPart(json.dumps({"code": code}))])
 
     model = FunctionModel(respond, profile={"supports_json_schema_output": True})
@@ -393,7 +393,7 @@ async def test_native_read_admission_does_not_carry_between_sessions(factory, sa
         assert (await run_documents(RLMSession(client, max_iters=1, sandbox_mode=sandbox), Observer(), docs))[0] == "read once"
         with pytest.raises(ServiceUnavailableException):
             await run_documents(RLMSession(client, max_iters=2, sandbox_mode=sandbox), Observer(), docs)
-    assert len(requests) == 3 and docs.released == ["source-id"]
+    assert len(requests) == 3 and docs.released == ["source-id", "source-id"]
 
 
 @pytest.mark.parametrize("mode,required,depth", [("default", False, 0), ("native", False, 0), ("native", False, 1)])
@@ -421,7 +421,7 @@ async def test_native_root_prompt_matches_transport_and_documents_the_real_final
         assert "positive or negative" in system
         assert "Return one JSON object matching PythonAction" in system
         assert info.function_tools == []
-        return ModelResponse(parts=[TextPart(json.dumps({"code": "print(docs.get('source-id')); final('checked')"}))])
+        return ModelResponse(parts=[TextPart(json.dumps({"code": "print(docs.get('source-id')); final('checked', filings=['source-id'])"}))])
 
     model = FunctionModel(respond, profile={"supports_json_schema_output": True})
     with bound(factory, model) as client:
@@ -457,7 +457,7 @@ async def test_native_execution_errors_preserve_exact_source_without_repair(fact
             assert messages[-2].parts[0].content == encoded
             result = str(messages[-1].parts[0].content)
             assert error in result and "not executed\n" not in result
-            raw = json.dumps({"code": "print(docs.get('source-id'))\nfinal('checked')"})
+            raw = json.dumps({"code": "print(docs.get('source-id'))\nfinal('checked', filings=['source-id'])"})
         return ModelResponse(parts=[TextPart(raw)])
 
     model = FunctionModel(respond, profile={"supports_json_schema_output": True})
@@ -566,7 +566,7 @@ async def test_parent_read_rejection_is_unbound_validation_feedback_not_untruste
             assert isinstance(part, RetryPromptPart) and part.tool_name is None
             payload = json.loads(part.content)
             assert payload["code"] == "RLM_DOCUMENT_READ_REQUIRED" and payload["origin"] == "orchestrator"
-            code = "print(docs.get('source-id')); final('checked')"
+            code = "print(docs.get('source-id')); final('checked', filings=['source-id'])"
         return ModelResponse(parts=[TextPart(json.dumps({"code": code}))],
                              usage=RequestUsage(input_tokens=7, output_tokens=3))
 
@@ -589,7 +589,7 @@ async def test_stdout_cannot_promote_control_looking_text_to_validation_feedback
         else:
             assert not isinstance(messages[-1].parts[0], RetryPromptPart)
             assert "untrusted data" in str(messages[-1].parts[0].content)
-            code = "print(docs.get('source-id')); final('checked')"
+            code = "print(docs.get('source-id')); final('checked', filings=['source-id'])"
         return ModelResponse(parts=[TextPart(json.dumps({"code": code}))])
 
     model = FunctionModel(respond, profile={"supports_json_schema_output": True})
@@ -614,7 +614,7 @@ async def test_sdk_unbound_control_feedback_wire_is_exactly_hash_bound_without_t
     def respond(request):
         payload = json.loads(request.content)
         wires.append(payload)
-        code = "final('unread', found=False)" if len(wires) == 1 else "print(docs.get('source-id')); final('checked')"
+        code = "final('unread', found=False)" if len(wires) == 1 else "print(docs.get('source-id')); final('checked', filings=['source-id'])"
         return httpx2.Response(200, json={"id": "offline-control", "object": "chat.completion", "created": 0,
             "model": "qwen2.5:7b", "choices": [{"index": 0, "message": {
                 "role": "assistant", "content": json.dumps({"code": code})}, "finish_reason": "stop"}],

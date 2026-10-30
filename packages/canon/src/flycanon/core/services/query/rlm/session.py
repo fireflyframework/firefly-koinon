@@ -604,6 +604,8 @@ class RLMSession:
                 raise TypeError("pages must contain integer indexes")
             if isinstance(docs, _ContentReads) and not docs.admits(filings):
                 return executor.reject_read(ReadRequiredFeedback().content())
+            if isinstance(docs, _ContentReads) and found and not filings:
+                return executor.reject_final_answer(FinalAnswerRequiredFeedback().content())
             citations = self._citations(filings, pages, docs, question)
             self._authorize_execution()
             return executor.halt({"answer": answer, "citations": citations, "no_answer": not found})

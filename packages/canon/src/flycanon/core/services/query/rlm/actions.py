@@ -82,5 +82,10 @@ class FinalAnswerRequiredFeedback:
     def content(self) -> str:
         return json.dumps({
             "origin": "orchestrator", "code": "RLM_FINAL_ANSWER_REQUIRED",
-            "message": "Execution rejected: final() requires a nonblank answer string before finalizing.",
+            "message": (
+                "Execution rejected: finalization requires a nonblank answer string. A positive document "
+                "conclusion with required provenance must cite at least one original document whose contents "
+                "were read. Supply those document identifiers explicitly; "
+                "metadata does not establish content use."
+            ),
         }, sort_keys=True, separators=(",", ":"))
