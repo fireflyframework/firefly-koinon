@@ -1,5 +1,9 @@
 <!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
-<ffk-side-panel [open]="open" [heading]="'Answer audit' | ffkText" (closed)="close()">
+<ffk-side-panel
+  [open]="open && !recordedSource()"
+  [heading]="'Answer audit' | ffkText"
+  (closed)="close()"
+>
   @if (message; as answer) {
     <div class="audit-tabs" role="tablist" [attr.aria-label]="'Audit sections' | ffkText">
       @for (item of tabs; track item) {
@@ -316,7 +320,7 @@
                 }
               </dl>
             </details>
-            <ffk-button variant="quiet" (click)="resourceRequested.emit(source.asset_id)">{{
+            <ffk-button variant="quiet" (click)="openSource(source)">{{
               'Open source' | ffkText
             }}</ffk-button>
             @if (source.kind === 'knowledge_version') {
@@ -887,3 +891,8 @@
     <p class="help">{{ 'Choose an answer to inspect its recorded activity.' | ffkText }}</p>
   }
 </ffk-side-panel>
+<ffk-recorded-document-source
+  [open]="open && !!recordedSource()"
+  [source]="recordedSource()"
+  (closed)="recordedSource.set(null)"
+/>

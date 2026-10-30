@@ -39,6 +39,8 @@ import type {
 import { KoinonOpenUiArtifact } from '@fireflyframework/koinon-angular/chat/evidence';
 import { KoinonAnswerAuditState } from './answer-audit-state';
 import { KoinonRecordedOrigin } from './recorded-origin';
+import { KoinonRecordedDocumentSource } from './recorded-document-source';
+import { hasRecordedDocumentIdentity } from './recorded-document-source-state';
 @Component({
   selector: 'ffk-answer-audit',
   imports: [
@@ -52,6 +54,7 @@ import { KoinonRecordedOrigin } from './recorded-origin';
     KoinonValuePipe,
     KoinonOpenUiArtifact,
     KoinonRecordedOrigin,
+    KoinonRecordedDocumentSource,
   ],
   providers: [KoinonAnswerAuditState],
   templateUrl: './answer-audit.html',
@@ -71,6 +74,7 @@ export class KoinonAnswerAudit implements OnChanges, OnDestroy {
   readonly tabs = ['overview', 'sources', 'execution'] as const;
   readonly tab = signal<'overview' | 'sources' | 'execution'>('overview');
   readonly sourceId = signal('');
+  readonly recordedSource = signal<SourceReference | null>(null);
   readonly privateId = signal('');
   readonly attemptIndex = signal<number | null>(null);
   readonly readIndex = signal<number | null>(null);
@@ -168,6 +172,7 @@ export class KoinonAnswerAudit implements OnChanges, OnDestroy {
     });
   }
   private clearSelection() {
+    this.recordedSource.set(null);
     this.privateId.set('');
     this.sourceId.set('');
     this.citationIndex.set(null);
@@ -197,6 +202,10 @@ export class KoinonAnswerAudit implements OnChanges, OnDestroy {
     this.clearSelection();
     this.state.clear();
     this.closed.emit();
+  }
+  openSource(source: SourceReference) {
+    if (hasRecordedDocumentIdentity(source)) this.recordedSource.set({ ...source });
+    else this.resourceRequested.emit(source.asset_id);
   }
   loadPage(page: number) {
     this.tasks.run(() => this.state.loadActivity(page));

@@ -1,0 +1,81 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<ffk-side-panel
+  [open]="open && !!state.source()"
+  [heading]="'Source used in this answer' | ffkText"
+  (closed)="close()"
+>
+  @if (state.source(); as source) {
+    <h3 class="source-title">{{ source.title }}</h3>
+    <p class="help">{{ 'This is the recorded version used to answer your question.' | ffkText }}</p>
+    @if (source.availability === 'changed') {
+      <p class="source-status"><ffk-icon name="history" />{{ 'Source has changed' | ffkText }}</p>
+    }
+    @if (source.recorded_page !== null && source.recorded_page !== undefined) {
+      <p class="location">{{ 'Recorded page' | ffkText }} {{ source.recorded_page }}</p>
+    }
+    @if (state.pending()) {
+      <ffk-skeleton height="3px" [label]="'Loading recorded source' | ffkText" />
+    }
+    @if (state.error()) {
+      <div class="source-error" role="alert">
+        <p>{{ state.error() | ffkText }}</p>
+        <ffk-button variant="quiet" [disabled]="state.pending()" (click)="retry()">
+          <ffk-icon name="refresh" />{{ 'Try again' | ffkText }}
+        </ffk-button>
+      </div>
+    }
+    @if (state.content(); as content) {
+      <section aria-label="Verified historical content">
+        <h4>{{ 'Verified source content' | ffkText }}</h4>
+        <div class="recorded-content">{{ content.text }}</div>
+      </section>
+    } @else if (source.quote) {
+      <section>
+        <h4>{{ 'Saved quotation' | ffkText }}</h4>
+        <blockquote>{{ source.quote }}</blockquote>
+      </section>
+    }
+    <details class="version-details">
+      <summary>{{ 'Version details' | ffkText }}</summary>
+      <dl>
+        <dt>{{ 'Original version' | ffkText }}</dt>
+        <dd>
+          <code>{{ source.source_version_id }}</code>
+        </dd>
+        <dt>{{ 'Recorded extraction' | ffkText }}</dt>
+        <dd>
+          <code>{{ source.extraction_id }}</code>
+        </dd>
+        <dt>{{ 'Immutable part' | ffkText }}</dt>
+        <dd>
+          <code>{{ source.source_part_id }}</code>
+        </dd>
+        <dt>{{ 'Fragment SHA-256' | ffkText }}</dt>
+        <dd>
+          <code>{{ source.source_part_sha256 }}</code>
+        </dd>
+        @if (state.content(); as content) {
+          <dt>{{ 'Original file SHA-256' | ffkText }}</dt>
+          <dd>
+            <code>{{ content.raw_sha256 }}</code>
+          </dd>
+          <dt>{{ 'Processed content SHA-256' | ffkText }}</dt>
+          <dd>
+            <code>{{ content.normalized_sha256 }}</code>
+          </dd>
+          @if (content.input_sha256 !== content.normalized_sha256) {
+            <dt>{{ 'Read view SHA-256' | ffkText }}</dt>
+            <dd>
+              <code>{{ content.input_sha256 }}</code>
+            </dd>
+          }
+        }
+      </dl>
+    </details>
+  }
+  <div panel-footer>
+    <ffk-button variant="quiet" (click)="close()">
+      <ffk-icon name="chevron-left" />{{ 'Back to sources' | ffkText }}
+    </ffk-button>
+  </div>
+</ffk-side-panel>

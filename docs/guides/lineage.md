@@ -184,3 +184,15 @@ var original = client.documents(tenantId).versionOriginal(documentId, sourceVers
 ```
 
 All three clients also provide typed exact-version, extraction-history and part-summary helpers. Java includes asynchronous variants. These reads preserve the saved source identity without rerunning retrieval, ingestion or a model.
+
+## Open the source used by an answer
+
+Open **Audit** below a saved response, select **Sources**, then choose **Open source**. A versioned document opens the exact retained fragment used by that response. **Back to sources** returns to the same audit. If the document has since changed, the panel labels that change while keeping the recorded content and page. An unknown original page stays unknown.
+
+The panel checks the returned document, source version, extraction, part and content digest against the saved reference. It verifies the text hash in the browser before displaying it. A mismatch or a permission failure shows an error without opening today's replacement. **Version details** contains the immutable identifiers and separate hashes for the original file, processed content and fragment.
+
+The following browser captures use controlled source receipts to illustrate the desktop and mobile layout. They demonstrate presentation and historical navigation, rather than an accepted live model conversation.
+
+![Historical source panel on desktop](../assets/screenshots/recorded-document-source-desktop.png)
+
+![Historical source panel in Spanish on mobile](../assets/screenshots/recorded-document-source-mobile.png)

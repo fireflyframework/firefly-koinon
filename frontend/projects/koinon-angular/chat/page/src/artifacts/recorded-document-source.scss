@@ -1,0 +1,91 @@
+/* Copyright 2026 Firefly Software Foundation
+ * SPDX-License-Identifier: Apache-2.0 */
+:host {
+  display: block;
+}
+.source-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+.help,
+.location {
+  color: var(--ui-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.source-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ui-accent);
+  font-size: 12px;
+}
+section {
+  margin: 24px 0;
+}
+h4 {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.recorded-content,
+blockquote {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+  font-size: 13px;
+}
+blockquote {
+  padding-left: 12px;
+  border-left: 2px solid var(--ui-line);
+  color: var(--ui-muted);
+}
+.source-error {
+  margin: 16px 0;
+  font-size: 13px;
+}
+.version-details {
+  border-top: 1px solid var(--ui-line);
+  padding-top: 16px;
+  margin-top: 24px;
+  font-size: 12px;
+}
+summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+dl {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 12px;
+  margin: 16px 0 0;
+}
+dt {
+  color: var(--ui-muted);
+}
+dd {
+  margin: 0;
+  min-width: 0;
+}
+code {
+  overflow-wrap: anywhere;
+  font-size: 11px;
+}
+[panel-footer] {
+  display: flex;
+  justify-content: flex-start;
+  padding-block: 12px;
+}
+@media (max-width: 400px) {
+  dl {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+  dd {
+    margin-bottom: 8px;
+  }
+}

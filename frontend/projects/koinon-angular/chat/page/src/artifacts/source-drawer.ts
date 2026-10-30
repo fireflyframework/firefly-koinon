@@ -11,6 +11,7 @@ import {
   PendingTasks,
   effect,
   inject,
+  signal,
 } from '@angular/core';
 import {
   KoinonButton,
@@ -21,9 +22,17 @@ import {
 import type { EvidenceManifest, SourceReference } from '@fireflyframework/koinon-sdk';
 import { KoinonKnowledgeArtifacts } from '../services/knowledge-artifacts';
 import type { ConversationSelection } from '../services/artifact-selections';
+import { KoinonRecordedDocumentSource } from './recorded-document-source';
+import { hasRecordedDocumentIdentity } from './recorded-document-source-state';
 @Component({
   selector: 'ffk-source-drawer',
-  imports: [KoinonButton, KoinonSidePanel, KoinonSkeleton, KoinonTextPipe],
+  imports: [
+    KoinonButton,
+    KoinonSidePanel,
+    KoinonSkeleton,
+    KoinonTextPipe,
+    KoinonRecordedDocumentSource,
+  ],
   providers: [KoinonKnowledgeArtifacts],
   templateUrl: './source-drawer.html',
   styleUrl: './artifact-panels.scss',
@@ -36,6 +45,7 @@ export class KoinonSourceDrawer implements OnChanges, OnDestroy {
   @Output() closed = new EventEmitter<void>();
   @Output() resourceRequested = new EventEmitter<SourceReference>();
   readonly state = inject(KoinonKnowledgeArtifacts);
+  readonly recordedSource = signal<SourceReference | null>(null);
   private readonly tasks = inject(PendingTasks);
   private scope = '';
   constructor() {
@@ -45,6 +55,7 @@ export class KoinonSourceDrawer implements OnChanges, OnDestroy {
   }
 
   ngOnChanges() {
+    this.recordedSource.set(null);
     this.state.reset();
     this.scope = this.state.scopeKey();
     if (this.open && !this.manifest && this.selection) this.load();
@@ -60,11 +71,14 @@ export class KoinonSourceDrawer implements OnChanges, OnDestroy {
     if (selection) this.tasks.run(() => this.state.sources(selection).then(() => undefined));
   }
   close() {
+    this.recordedSource.set(null);
     this.state.reset();
     this.closed.emit();
   }
   resource(source: SourceReference) {
-    if (!this.state.pending()) this.resourceRequested.emit(source);
+    if (this.state.pending()) return;
+    if (hasRecordedDocumentIdentity(source)) this.recordedSource.set({ ...source });
+    else this.resourceRequested.emit(source);
   }
   availability(source: SourceReference) {
     return source.availability === 'available'
