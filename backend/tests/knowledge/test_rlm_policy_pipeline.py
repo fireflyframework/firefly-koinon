@@ -50,7 +50,9 @@ from koinon.organization_knowledge.runtime import bind_snapshot
 
 @pytest.mark.parametrize("typed_terminal", [False, True])
 async def test_admitted_rlm_policy_executes_native_codeact_and_returns_exact_immutable_evidence(
-    tmp_path, monkeypatch, typed_terminal,
+    tmp_path,
+    monkeypatch,
+    typed_terminal,
 ):
     body = "Recorded scalar: 42"
     engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'combined-rlm.db'}")
@@ -83,27 +85,34 @@ async def test_admitted_rlm_policy_executes_native_codeact_and_returns_exact_imm
             rlm_max_depth=1,
         )
         baseline._agent_factory = application.get_bean(AgentFactory)
-        intake = IntakeService(
-            binary_normalizer=SimpleNamespace(
-                normalise=AsyncMock(
-                    return_value=[
-                        BinaryArtifact(
-                            bytes=body.encode(), kind="text", media_type="text/plain", filename="scalar.txt"
-                        )
-                    ]
-                )
-            ),
-            ingestion=IngestionService(loaders=registry, chunker=ParagraphChunker()),
-            loaders=registry,
-            embeddings=SimpleNamespace(model="controlled-no-network", embed=AsyncMock(return_value=[[1.0]])),
-            indexer=SimpleNamespace(replace_for_source=AsyncMock(return_value=1)),
-            metadata_extractor=SimpleNamespace(extract=Mock(return_value=SimpleNamespace(to_dict=dict))),
-            source_repository=sources,
-            chunk_repository=chunks,
-            audit=SimpleNamespace(record=AsyncMock()),
-            event_publisher=None,
-            object_store=objects,
-            settings=baseline,
+        intake = _versioned_intake(
+            dict(
+                binary_normalizer=SimpleNamespace(
+                    normalise=AsyncMock(
+                        return_value=[
+                            BinaryArtifact(
+                                bytes=body.encode(),
+                                kind="text",
+                                media_type="text/plain",
+                                filename="scalar.txt",
+                            )
+                        ]
+                    )
+                ),
+                ingestion=IngestionService(loaders=registry, chunker=ParagraphChunker()),
+                loaders=registry,
+                embeddings=SimpleNamespace(
+                    model="controlled-no-network", embed=AsyncMock(return_value=[[1.0]])
+                ),
+                indexer=SimpleNamespace(replace_for_source=AsyncMock(return_value=1)),
+                metadata_extractor=SimpleNamespace(extract=Mock(return_value=SimpleNamespace(to_dict=dict))),
+                source_repository=sources,
+                chunk_repository=chunks,
+                audit=SimpleNamespace(record=AsyncMock()),
+                event_publisher=None,
+                object_store=objects,
+                settings=baseline,
+            )
         )
         source = await intake.submit(
             request=SubmitSourceRequest(),
@@ -134,17 +143,26 @@ async def test_admitted_rlm_policy_executes_native_codeact_and_returns_exact_imm
             model_calls.append(info.model_settings)
             assert [tool.name for tool in info.function_tools] == ["python", "final_answer"]
             if typed_terminal and len(model_calls) == 2:
-                observed = [part for message in messages for part in message.parts
-                            if isinstance(part, ToolReturnPart)][-1]
+                observed = [
+                    part for message in messages for part in message.parts if isinstance(part, ToolReturnPart)
+                ][-1]
                 assert observed.tool_call_id == "controlled-python"
                 filing, answer = observed.content.strip().splitlines()
-                return ModelResponse(parts=[ToolCallPart("final_answer", {
-                    "answer": answer, "filings": [filing], "pages": [0],
-                }, "controlled-final")])
-            code = (
-                "key = docs.keys()[0]\ntext = docs.get(key)\n"
-                "value = text.rsplit(': ', 1)[1]\n"
-                + ("print(key); print(value)" if typed_terminal else "final(value, filings=[key], pages=[0])")
+                return ModelResponse(
+                    parts=[
+                        ToolCallPart(
+                            "final_answer",
+                            {
+                                "answer": answer,
+                                "filings": [filing],
+                                "pages": [0],
+                            },
+                            "controlled-final",
+                        )
+                    ]
+                )
+            code = "key = docs.keys()[0]\ntext = docs.get(key)\nvalue = text.rsplit(': ', 1)[1]\n" + (
+                "print(key); print(value)" if typed_terminal else "final(value, filings=[key], pages=[0])"
             )
             return ModelResponse(parts=[ToolCallPart("python", {"code": code}, "controlled-python")])
 
@@ -206,7 +224,10 @@ async def test_admitted_rlm_policy_executes_native_codeact_and_returns_exact_imm
         handlers.register_query_handler(AnswerKnowledgeHandler(dispatcher))
         handlers.register_query_handler(SearchKnowledgeHandler(SearchService(retrieval=retrieval), baseline))
         bus = DefaultQueryBus(handlers, caching_enabled=False)
+        from flycanon.core.services.sources.lineage.service import DocumentLineage
+
         beans = {
+            DocumentLineage: DocumentLineage(sources, objects),
             DefaultQueryBus: bus,
             CanonSettings: baseline,
             SourceRepository: sources,
@@ -280,9 +301,7 @@ async def test_admitted_rlm_policy_executes_native_codeact_and_returns_exact_imm
             "owner", "tenant", question="What is the recorded scalar?", answer=True
         )
         assert result.complete and result.data["answer"] == "42"
-        assert (
-            len(result.sources) == 1 and len(connection_calls) == len(budget_calls) == 1
-        )
+        assert len(result.sources) == 1 and len(connection_calls) == len(budget_calls) == 1
         assert len(model_calls) == (2 if typed_terminal else 1)
         assert pre_searches == []
         assert {
@@ -341,8 +360,10 @@ async def test_admitted_rlm_policy_executes_native_codeact_and_returns_exact_imm
         assert len(result.rlm_tools) == len(model_calls) and result.rlm_tools[-1].outcome == "halted"
         assert result.rlm_tools[-1].tool_name == ("final_answer" if typed_terminal else "python")
         assert result.rlm_tools[-1].source_ids == (str(source.id),)
-        assert any(read.stage == "rlm.root" and read.content_sha256 == result.rlm_tools[-1].request_sha256
-                   for read in result.native_reads)
+        assert any(
+            read.stage == "rlm.root" and read.content_sha256 == result.rlm_tools[-1].request_sha256
+            for read in result.native_reads
+        )
         assert any(
             read.stage == "rlm.read"
             and read.content_sha256 == sha256(body.encode()).hexdigest()
@@ -353,3 +374,15 @@ async def test_admitted_rlm_policy_executes_native_codeact_and_returns_exact_imm
     finally:
         await application.stop()
         await engine.dispose()
+
+
+def _versioned_intake(dependencies):
+    from flycanon.core.services.sources.intake_runtime import build_intake_components
+    from flycanon.core.services.sources.lineage.pipeline import DocumentLineagePipeline
+    from flycanon.core.services.sources.lineage.service import DocumentLineage
+
+    pipeline = DocumentLineagePipeline(
+        build_intake_components(**dependencies),
+        DocumentLineage(dependencies["source_repository"], dependencies["object_store"]),
+    )
+    return IntakeService(**dependencies, lineage_pipeline=pipeline, intake_policy=pipeline.components.policy)

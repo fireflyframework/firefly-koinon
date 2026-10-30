@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 """Bounded cloud byte transport shared by the native document and structured ports."""
 
-import asyncio
 import hashlib
 import hmac
 import importlib
@@ -13,6 +12,9 @@ from contextlib import suppress
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlsplit
+
+from koinon_storage.client_lifecycle import ClientLifecycle
+from koinon_storage.client_lifecycle import client_operation as _cloud_operation
 
 
 class ObjectTooLargeError(ValueError):
@@ -123,14 +125,27 @@ class CloudStore:
     remain responsible for abandoned SDK-managed resumable upload sessions.
     """
 
-    def __init__(self, profile: CloudProfile, *, client: Any = None):
+    def __init__(self, profile: CloudProfile, *, client: Any = None, owns_client: bool = True):
         profile.__post_init__()
         self.profile, self._client = profile, client
         self._credential = None
+        self._owns_client = owns_client if client is not None else True
+        self._lifecycle = ClientLifecycle()
         self._client_lock = threading.Lock()
         self.connection_string: str | None = None
         self.service_file: str | None = None
         self.encryption_scope: str | None = None
+
+    @property
+    def _closing(self):
+        return self._lifecycle.closing
+
+    @property
+    def _closed(self):
+        return self._lifecycle.closed
+
+    def _operation(self):
+        return self._lifecycle.operation()
 
     def _sdk(self):
         with self._client_lock:
@@ -241,27 +256,17 @@ class CloudStore:
         return status() if callable(status) else status
 
     async def _run(self, function):
-        task = asyncio.create_task(asyncio.to_thread(function))
-        try:
-            return await asyncio.shield(task)
-        except asyncio.CancelledError:
-            while not task.done():
-                try:
-                    await asyncio.shield(task)
-                except asyncio.CancelledError:
-                    continue
-                except Exception:
-                    break
-            with suppress(Exception):
-                task.result()
-            raise
-        except (ObjectTooLargeError, ObjectIntegrityError, ObjectCollisionError, FileNotFoundError):
-            raise
-        except Exception as error:
-            if self._status(error) == 404:
-                raise FileNotFoundError("Registered cloud object is unavailable") from None
-            raise OSError("Cloud object storage request failed") from None
+        with self._operation():
+            try:
+                return await self._lifecycle.run(function)
+            except (ObjectTooLargeError, ObjectIntegrityError, ObjectCollisionError, FileNotFoundError):
+                raise
+            except Exception as error:
+                if self._status(error) == 404:
+                    raise FileNotFoundError("Registered cloud object is unavailable") from None
+                raise OSError("Cloud object storage request failed") from None
 
+    @_cloud_operation
     async def put(self, key: str, data: bytes, content_type: str | None = None, *, kms_key_uri=None):
         full = self._full_key(key)
         if not isinstance(data, bytes) or len(data) > self.profile.max_object_bytes:
@@ -409,26 +414,30 @@ class CloudStore:
                 raise ObjectIntegrityError("Cloud object digest verification failed")
         return content
 
+    @_cloud_operation
     async def get_bounded(self, key: str, max_bytes: int) -> bytes:
         full = self._full_key(key)
         if type(max_bytes) is not int or not 0 <= max_bytes <= self.profile.max_object_bytes:
             raise ValueError("Cloud read requires a configured byte bound")
         return await self._run(lambda: self._read(full, max_bytes))
 
+    @_cloud_operation
     async def get(self, key: str) -> bytes:
         return await self.get_bounded(key, self.profile.max_object_bytes)
 
     def get_sync(self, key: str) -> bytes:
-        full = self._full_key(key)
-        try:
-            return self._read(full, self.profile.max_object_bytes)
-        except (ObjectTooLargeError, ObjectIntegrityError, FileNotFoundError):
-            raise
-        except Exception as error:
-            if self._status(error) == 404:
-                raise FileNotFoundError("Registered cloud object is unavailable") from None
-            raise OSError("Cloud object storage request failed") from None
+        with self._operation():
+            full = self._full_key(key)
+            try:
+                return self._read(full, self.profile.max_object_bytes)
+            except (ObjectTooLargeError, ObjectIntegrityError, FileNotFoundError):
+                raise
+            except Exception as error:
+                if self._status(error) == 404:
+                    raise FileNotFoundError("Registered cloud object is unavailable") from None
+                raise OSError("Cloud object storage request failed") from None
 
+    @_cloud_operation
     async def delete(self, key: str):
         full = self._full_key(key)
 
@@ -443,6 +452,7 @@ class CloudStore:
 
         await self._run(remove)
 
+    @_cloud_operation
     async def exists(self, key: str) -> bool:
         try:
             await self.head(key)
@@ -450,6 +460,7 @@ class CloudStore:
             return False
         return True
 
+    @_cloud_operation
     async def head(self, key: str):
         full = self._full_key(key)
 
@@ -462,18 +473,36 @@ class CloudStore:
 
         return await self._run(metadata)
 
+    @_cloud_operation
     async def purge_staging(self, key: str):
         validate_key(key)
 
     async def close(self):
+        """Drain admitted work, then release owned resources exactly once.
+
+        Supplying a client transfers ownership by default for compatibility.
+        Set ``owns_client=False`` when its lifecycle belongs to another bean.
+        """
+
         def release():
-            if self._client is not None:
-                self._client.close()
+            failure = None
+            if self._owns_client and self._client is not None:
+                try:
+                    self._client.close()
+                except BaseException as error:
+                    failure = error
             if self._credential is not None:
-                self._credential.close()
+                try:
+                    self._credential.close()
+                except BaseException as error:
+                    if failure is None:
+                        failure = error
+            if failure is not None:
+                raise failure
 
-        await self._run(release)
+        await self._lifecycle.close(release)
 
+    @_cloud_operation
     async def list_metadata(self, prefix: str):
         full = self._full_key(prefix, prefix=True)
 
@@ -496,6 +525,7 @@ class CloudStore:
 
         return await self._run(listing)
 
+    @_cloud_operation
     async def presign_get(self, key: str, ttl_s: int) -> str:
         from datetime import UTC, datetime, timedelta
 

@@ -8,11 +8,9 @@ from hashlib import sha256
 from typing import TYPE_CHECKING
 
 from pyfly.kernel import InvalidRequestException, ResourceNotFoundException
-from sqlalchemy import select
 
 from flycanon.core.services.sources.lineage.dtos import DocumentScope, WholeDocumentPart
-from flycanon.core.services.sources.lineage.service import conditions
-from flycanon.models.entities.source_lineage import source_artifacts, source_extractions, source_parts
+from flycanon.core.services.sources.lineage.ports import LineageQuery
 
 if TYPE_CHECKING:
     from flycanon.core.services.sources.lineage.whole_read import WholeDocumentReader
@@ -31,34 +29,27 @@ async def read_exact_parts(
         raise InvalidRequestException("Select from1 to100 distinct immutable parts", code="INVALID_PARTS")
     lineage = reader.lineage
     await lineage.require_schema()
-    async with lineage.sources.session() as session:
-        extraction = (
-            (
-                await session.execute(
-                    select(source_extractions).where(
-                        *conditions(source_extractions, scope, source_id),
-                        source_extractions.c.id == extraction_id,
-                        source_extractions.c.version_id == source_version_id,
-                        source_extractions.c.purpose == "whole_document_read",
-                    )
-                )
+    async with lineage.repository.read() as session:
+        extraction = await session.first(
+            LineageQuery(
+                "extraction",
+                scope,
+                source_id=source_id,
+                equal={
+                    "id": extraction_id,
+                    "version_id": source_version_id,
+                    "purpose": "whole_document_read",
+                },
             )
-            .mappings()
-            .first()
         )
-        requested = (
-            (
-                await session.execute(
-                    select(source_parts).where(
-                        *conditions(source_parts, scope, source_id),
-                        source_parts.c.extraction_id == extraction_id,
-                        source_parts.c.id.in_(part_ids),
-                        source_parts.c.kind == "page",
-                    )
-                )
+        requested = await session.all(
+            LineageQuery(
+                "part",
+                scope,
+                source_id=source_id,
+                equal={"extraction_id": extraction_id, "kind": "page"},
+                included={"id": part_ids},
             )
-            .mappings()
-            .all()
         )
         if extraction is None or len(requested) != len(part_ids):
             raise ResourceNotFoundException(
@@ -70,78 +61,54 @@ async def read_exact_parts(
             or projection.get("page_basis") != "recorded_loader"
         ):
             reader._unavailable("This historical document view has an unsupported recorded representation")
-        ingestion = (
-            (
-                await session.execute(
-                    select(source_extractions).where(
-                        *conditions(source_extractions, scope, source_id),
-                        source_extractions.c.id == projection.get("input_extraction_id"),
-                        source_extractions.c.version_id == source_version_id,
-                        source_extractions.c.purpose == "ingestion",
-                    )
-                )
+        ingestion = await session.first(
+            LineageQuery(
+                "extraction",
+                scope,
+                source_id=source_id,
+                equal={
+                    "id": projection.get("input_extraction_id"),
+                    "version_id": source_version_id,
+                    "purpose": "ingestion",
+                },
             )
-            .mappings()
-            .first()
         )
         if ingestion is None or ingestion["normalized_artifact_id"] != extraction["normalized_artifact_id"]:
             reader._unavailable("The immutable input extraction binding is unavailable")
-        normalized = (
-            (
-                await session.execute(
-                    select(source_artifacts).where(
-                        *conditions(source_artifacts, scope, source_id),
-                        source_artifacts.c.id == extraction["normalized_artifact_id"],
-                        source_artifacts.c.role == "normalized",
-                    )
-                )
+        normalized = await session.first(
+            LineageQuery(
+                "artifact",
+                scope,
+                source_id=source_id,
+                equal={"id": extraction["normalized_artifact_id"], "role": "normalized"},
             )
-            .mappings()
-            .first()
         )
-        output = (
-            (
-                await session.execute(
-                    select(source_artifacts).where(
-                        *conditions(source_artifacts, scope, source_id),
-                        source_artifacts.c.id == projection.get("output_artifact_id"),
-                        source_artifacts.c.role == "whole_document_view",
-                    )
-                )
+        output = await session.first(
+            LineageQuery(
+                "artifact",
+                scope,
+                source_id=source_id,
+                equal={"id": projection.get("output_artifact_id"), "role": "whole_document_view"},
             )
-            .mappings()
-            .first()
         )
-        pages = (
-            (
-                await session.execute(
-                    select(source_parts)
-                    .where(
-                        *conditions(source_parts, scope, source_id),
-                        source_parts.c.extraction_id == extraction_id,
-                        source_parts.c.kind == "page",
-                    )
-                    .order_by(source_parts.c.ordinal)
-                    .limit(reader.max_parts + 1)
-                )
+        pages = await session.all(
+            LineageQuery(
+                "part",
+                scope,
+                source_id=source_id,
+                order=("ordinal",),
+                limit=reader.max_parts + 1,
+                equal={"extraction_id": extraction_id, "kind": "page"},
             )
-            .mappings()
-            .all()
         )
-        sections = (
-            (
-                await session.execute(
-                    select(source_parts)
-                    .where(
-                        *conditions(source_parts, scope, source_id),
-                        source_parts.c.extraction_id == ingestion["id"],
-                        source_parts.c.kind == "section",
-                    )
-                    .limit(reader.max_parts + 1)
-                )
+        sections = await session.all(
+            LineageQuery(
+                "part",
+                scope,
+                source_id=source_id,
+                limit=reader.max_parts + 1,
+                equal={"extraction_id": ingestion["id"], "kind": "section"},
             )
-            .mappings()
-            .all()
         )
     if (
         normalized is None

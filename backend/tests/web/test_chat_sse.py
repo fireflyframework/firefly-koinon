@@ -120,6 +120,7 @@ def test_closing_stream_preserves_durable_run_and_revocation_stops_further_event
     from types import SimpleNamespace
     from unittest.mock import AsyncMock
 
+    from koinon.assistants.audit import AnswerAudits
     from koinon.assistants.controllers import AssistantController
     from koinon.assistants.history.service import ChatHistoryService
     from koinon.assistants.repositories import ChatRunRepository
@@ -150,7 +151,9 @@ def test_closing_stream_preserves_durable_run_and_revocation_stops_further_event
             )
         )
         controller = AssistantController(
-            context.get_bean(AssistantService), context.get_bean(ChatHistoryService)
+            context.get_bean(AssistantService),
+            context.get_bean(ChatHistoryService),
+            context.get_bean(AnswerAudits),
         )
         request = SimpleNamespace(headers={}, is_disconnected=AsyncMock(return_value=False))
         response = await controller.events("north", run, request)
@@ -174,6 +177,7 @@ def test_buffered_old_attempt_delta_is_dropped_when_a_retry_resets_the_message(c
     from types import SimpleNamespace
     from unittest.mock import AsyncMock
 
+    from koinon.assistants.audit import AnswerAudits
     from koinon.assistants.controllers import AssistantController
     from koinon.assistants.entities import ChatEvent
     from koinon.assistants.history.service import ChatHistoryService
@@ -203,7 +207,9 @@ def test_buffered_old_attempt_delta_is_dropped_when_a_retry_resets_the_message(c
             )
         )
         controller = AssistantController(
-            context.get_bean(AssistantService), context.get_bean(ChatHistoryService)
+            context.get_bean(AssistantService),
+            context.get_bean(ChatHistoryService),
+            context.get_bean(AnswerAudits),
         )
         response = await controller.events(
             "north", run_id, SimpleNamespace(headers={}, is_disconnected=AsyncMock(return_value=False))

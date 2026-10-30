@@ -90,6 +90,9 @@ from flycanon.core.services.retrieval import (
 )
 from flycanon.core.services.retrieval.query_expander import QueryExpander
 from flycanon.core.services.retrieval.reranker import build_reranker
+from flycanon.core.services.sources.intake_policy import SourceIntakePolicy, build_intake_policy
+from flycanon.core.services.sources.lineage.ports import LineagePersistence
+from flycanon.core.services.sources.lineage.service import DocumentLineage
 from flycanon.core.services.storage.factory import build_object_store
 from flycanon.core.services.storage.object_store import ObjectStore
 from flycanon.data import TenantGucCustomizer
@@ -109,6 +112,7 @@ from flycanon.models.repositories import (
     TaxonomyRepository,
     WorkspaceRepository,
 )
+from flycanon.models.repositories.lineage.repository import NativeLineageRepository
 from flycanon.web.conventions.api_key_middleware import ApiKeyPrincipalFilter
 from flycanon.web.conventions.idempotency import (
     IdempotencyStore,
@@ -367,6 +371,14 @@ class CanonCoreConfiguration:
     ) -> IngestionService:
         return IngestionService(loaders=loader_registry, chunker=chunker)
 
+    @bean(name="canon.intake_policy")
+    def intake_policy(self, settings: CanonSettings) -> SourceIntakePolicy:
+        return build_intake_policy(settings)
+
+    @bean(name="canon.lineage_repository")
+    def lineage_repository(self, source_repository: SourceRepository) -> LineagePersistence:
+        return NativeLineageRepository(source_repository)
+
     @bean(name="canon.object_store")
     def object_store(self, settings: CanonSettings) -> ObjectStore:
         return build_object_store(settings)
@@ -548,6 +560,7 @@ class CanonCoreConfiguration:
         object_store: ObjectStore,
         loader_registry: LoaderRegistry,
         corpus_page_cache: CorpusPageCache,
+        lineage: DocumentLineage,
     ) -> CanonCorpusBuilder:
         return CanonCorpusBuilder(
             source_repository=source_repository,
@@ -555,6 +568,7 @@ class CanonCoreConfiguration:
             object_store=object_store,
             registry=loader_registry,
             cache=corpus_page_cache,
+            lineage=lineage,
         )
 
     @bean(name="canon.rlm_chat_client")

@@ -36,32 +36,17 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from flycanon.core.services.ingestion.chunker import Chunker
 from flycanon.core.services.ingestion.errors import EmptySource, UnsupportedSourceKind
-from flycanon.core.services.ingestion.loaders import LoaderRegistry, Section
+from flycanon.core.services.ingestion.loaders import LoaderRegistry
+from flycanon.interfaces.dtos.ingestion import IngestionResult as IngestionResult
 from flycanon.interfaces.enums import SourceKind, SourceStatus
 from flycanon.models.entities.knowledge_chunk import KnowledgeChunkRow
 from flycanon.models.entities.source import SourceRow
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass(slots=True)
-class IngestionResult:
-    """The output of one ingestion call.
-
-    ``chunks`` is fresh on every call -- callers persist them through
-    :class:`ChunkRepository`. The ``source`` row is mutated in place
-    so callers can refresh status / counters in their own session.
-    """
-
-    source: SourceRow
-    chunks: list[KnowledgeChunkRow]
-    sections: tuple[Section, ...] = ()
-    chunk_section_indices: tuple[int | None, ...] = ()
 
 
 class IngestionService:
@@ -70,6 +55,10 @@ class IngestionService:
     def __init__(self, *, loaders: LoaderRegistry, chunker: Chunker) -> None:
         self._loaders = loaders
         self._chunker = chunker
+
+    @property
+    def chunker(self) -> Chunker:
+        return self._chunker
 
     def ingest(
         self,

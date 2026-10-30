@@ -17,6 +17,9 @@ import pyarrow.parquet as pq
 import pytest
 from starlette.requests import Request
 
+from flyquery.core.services.execution.ast_classifier import AstClassifier
+from flyquery.core.services.execution.duckdb_executor import DuckDBExecutor
+from flyquery.core.services.execution.scope_guard import ScopeGuard
 from flyquery.interfaces.sql_execute import SqlExecuteRequest
 from flyquery.web.controllers.sql_execute_controller import SqlExecuteController
 from flyquery.web.conventions import TenantContext
@@ -72,7 +75,16 @@ def controller(tmp_path):
         result_ttl_hours=1,
     )
     api = SqlExecuteController(
-        settings, Session, Store(), QueryRepository(), WorkspaceService(), TableRepository(), None
+        settings,
+        Session,
+        Store(),
+        QueryRepository(),
+        WorkspaceService(),
+        TableRepository(),
+        None,
+        AstClassifier(),
+        ScopeGuard(),
+        DuckDBExecutor(settings),
     )
     ctx = TenantContext(tenant_id="fixture", workspace_id=str(workspace), correlation_id="fixture")
     request = Request(
@@ -124,8 +136,6 @@ async def test_unregistered_dataset_cannot_get_a_fabricated_table_registration(t
 @pytest.mark.parametrize("stream", [False, True])
 @pytest.mark.asyncio
 async def test_native_statement_deadline_persists_failed_audit_without_result(tmp_path, stream):
-    from flyquery.core.services.execution.duckdb_executor import DuckDBExecutor
-
     api, request, dataset, workspace, ctx = controller(tmp_path)
     pq.write_table(pa.table({"id": list(range(1000))}), tmp_path / "orders.parquet")
     api._settings.default_statement_timeout_ms = 100

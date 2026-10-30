@@ -24,6 +24,8 @@ async def history(tmp_path):
     )
 
     from koinon.knowledge.document_history.native import NativeDocumentHistory
+    from koinon.knowledge.document_history.repositories import DocumentHistoryRepository
+    from koinon.knowledge.document_history.resources import DocumentHistoryResources
 
     engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'history.db'}")
     sessions = async_sessionmaker(engine)
@@ -137,11 +139,10 @@ async def history(tmp_path):
         "before_cursor_execute",
         lambda connection, cursor, statement, parameters, context, executemany: statements.append(statement),
     )
-    adapter = NativeDocumentHistory(SimpleNamespace())
+    adapter = NativeDocumentHistory(DocumentHistoryRepository(DocumentHistoryResources(lambda: lineage)))
     adapter.test_engine = engine
     adapter.test_objects = objects
     adapter.test_statements = statements
-    adapter._lineage = lambda: lineage
     try:
         yield adapter, dict(tenant_id="tenant", workspace_id="workspace", source_id="source", actor="reader")
     finally:
@@ -220,7 +221,9 @@ async def test_public_service_rechecks_binding_before_returning_retained_content
             predecessor_source_version_id=None,
         )
 
-    service = DocumentHistoryService(SimpleNamespace(_document=document), SimpleNamespace(version=version))
+    service = DocumentHistoryService(
+        SimpleNamespace(authorize_document_read=document), SimpleNamespace(version=version)
+    )
     with pytest.raises(AccessDenied):
         await service.version("reader", "tenant", "document", "version")
     assert calls == ["reader", "reader"]

@@ -10,7 +10,6 @@ from typing import NoReturn
 from uuid import NAMESPACE_URL, uuid4, uuid5
 
 from pyfly.kernel import DataIntegrityException, ResourceNotFoundException, ServiceUnavailableException
-from sqlalchemy import insert, select
 
 from flycanon.core.services.sources.lineage.capture import artifact
 from flycanon.core.services.sources.lineage.dtos import (
@@ -20,14 +19,8 @@ from flycanon.core.services.sources.lineage.dtos import (
     WholeDocumentPart,
     WholeDocumentRead,
 )
-from flycanon.core.services.sources.lineage.service import DocumentLineage, conditions, identity
-from flycanon.models.entities.source_lineage import (
-    source_artifacts,
-    source_events,
-    source_extractions,
-    source_parts,
-    source_steps,
-)
+from flycanon.core.services.sources.lineage.ports import LineageQuery
+from flycanon.core.services.sources.lineage.service import DocumentLineage, identity
 
 
 def canonical(value) -> bytes:
@@ -83,13 +76,15 @@ class WholeDocumentReader:
         from flycanon.core.services.sources.lineage.exact_parts import read_exact_parts
 
         await self.lineage.require_schema()
-        async with self.lineage.sources.session() as session:
+        async with self.lineage.repository.read() as session:
             purpose = await session.scalar(
-                select(source_extractions.c.purpose).where(
-                    *conditions(source_extractions, scope, source_id),
-                    source_extractions.c.id == extraction_id,
-                    source_extractions.c.version_id == source_version_id,
-                )
+                LineageQuery(
+                    "extraction",
+                    scope,
+                    source_id=source_id,
+                    equal={"id": extraction_id, "version_id": source_version_id},
+                ),
+                "purpose",
             )
         if purpose == "ingestion":
             from flycanon.core.services.sources.lineage.ingestion_parts import (
@@ -121,34 +116,21 @@ class WholeDocumentReader:
                 "This document needs an explicitly authorized versioned intake before whole-document answers"
             )
         version = await self.lineage.version(scope, source_id, head["version_id"])
-        async with self.lineage.sources.session() as session:
-            extraction = (
-                (
-                    await session.execute(
-                        select(source_extractions).where(
-                            *conditions(source_extractions, scope, source_id),
-                            source_extractions.c.id == head["extraction_id"],
-                            source_extractions.c.version_id == version["id"],
-                            source_extractions.c.purpose == "ingestion",
-                        )
-                    )
+        async with self.lineage.repository.read() as session:
+            extraction = await session.first(
+                LineageQuery(
+                    "extraction",
+                    scope,
+                    source_id=source_id,
+                    equal={"id": head["extraction_id"], "version_id": version["id"], "purpose": "ingestion"},
                 )
-                .mappings()
-                .first()
             )
             if extraction is None:
                 self._unavailable("The exact committed document extraction is unavailable")
-            normalized = (
-                (
-                    await session.execute(
-                        select(source_artifacts).where(
-                            *conditions(source_artifacts, scope, source_id),
-                            source_artifacts.c.id == extraction["normalized_artifact_id"],
-                        )
-                    )
+            normalized = await session.one(
+                LineageQuery(
+                    "artifact", scope, source_id=source_id, equal={"id": extraction["normalized_artifact_id"]}
                 )
-                .mappings()
-                .one()
             )
         return DocumentReadPin(
             source_id,
@@ -173,53 +155,38 @@ class WholeDocumentReader:
         if authorize is not None:
             await authorize()
         await self.lineage.require_schema()
-        async with self.lineage.sources.session() as session:
-            ingestion = (
-                (
-                    await session.execute(
-                        select(source_extractions).where(
-                            *conditions(source_extractions, scope, source_id),
-                            source_extractions.c.id == ingestion_extraction_id,
-                            source_extractions.c.version_id == source_version_id,
-                            source_extractions.c.purpose == "ingestion",
-                        )
-                    )
+        async with self.lineage.repository.read() as session:
+            ingestion = await session.first(
+                LineageQuery(
+                    "extraction",
+                    scope,
+                    source_id=source_id,
+                    equal={
+                        "id": ingestion_extraction_id,
+                        "version_id": source_version_id,
+                        "purpose": "ingestion",
+                    },
                 )
-                .mappings()
-                .first()
             )
             if ingestion is None:
                 raise ResourceNotFoundException(
                     "The exact committed document extraction is unavailable",
                     code="DOCUMENT_EXTRACTION_REQUIRED",
                 )
-            input_artifact = (
-                (
-                    await session.execute(
-                        select(source_artifacts).where(
-                            *conditions(source_artifacts, scope, source_id),
-                            source_artifacts.c.id == ingestion["normalized_artifact_id"],
-                        )
-                    )
+            input_artifact = await session.one(
+                LineageQuery(
+                    "artifact", scope, source_id=source_id, equal={"id": ingestion["normalized_artifact_id"]}
                 )
-                .mappings()
-                .one()
             )
-            sections = (
-                (
-                    await session.execute(
-                        select(source_parts)
-                        .where(
-                            *conditions(source_parts, scope, source_id),
-                            source_parts.c.extraction_id == ingestion_extraction_id,
-                            source_parts.c.kind == "section",
-                        )
-                        .order_by(source_parts.c.ordinal, source_parts.c.id)
-                        .limit(self.max_parts + 1)
-                    )
+            sections = await session.all(
+                LineageQuery(
+                    "part",
+                    scope,
+                    source_id=source_id,
+                    order=("ordinal", "id"),
+                    limit=self.max_parts + 1,
+                    equal={"extraction_id": ingestion_extraction_id, "kind": "section"},
                 )
-                .mappings()
-                .all()
             )
         version = await self.lineage.version(scope, source_id, source_version_id)
         if version["bytes"] > self.max_bytes or input_artifact["bytes"] > self.max_bytes:
@@ -307,12 +274,13 @@ class WholeDocumentReader:
             for index, page in enumerate(pages)
         ]
         try:
-            async with self.lineage.unit() as session:
+            async with self.lineage.repository.write() as session:
                 if authorize is not None:
                     await authorize()
-                await session.execute(insert(source_artifacts).values(**output))
-                await session.execute(
-                    insert(source_extractions).values(
+                await session.insert("artifact", dict(**output))
+                await session.insert(
+                    "extraction",
+                    dict(
                         id=extraction_id,
                         **base,
                         version_id=source_version_id,
@@ -336,11 +304,12 @@ class WholeDocumentReader:
                                 section["id"]: section["sha256"] for section in sections
                             },
                         },
-                    )
+                    ),
                 )
-                await session.execute(insert(source_parts), part_rows)
-                await session.execute(
-                    insert(source_steps).values(
+                await session.insert("part", part_rows)
+                await session.insert(
+                    "step",
+                    dict(
                         id=str(uuid4()),
                         **base,
                         extraction_id=extraction_id,
@@ -354,16 +323,17 @@ class WholeDocumentReader:
                             "section_ids_by_page": [page["section_ids"] for page in pages],
                             "loader_rerun": False,
                         },
-                    )
+                    ),
                 )
-                await session.execute(
-                    insert(source_events).values(
+                await session.insert(
+                    "event",
+                    dict(
                         id=str(uuid4()),
                         **base,
                         version_id=source_version_id,
                         extraction_id=extraction_id,
                         status="committed",
-                    )
+                    ),
                 )
         except DataIntegrityException:
             reused = await self._existing(
@@ -398,20 +368,18 @@ class WholeDocumentReader:
     async def _existing(
         self, scope, source_id, extraction_id, ingestion_id, version, normalized, signature, pages
     ):
-        async with self.lineage.sources.session() as session:
-            record = (
-                (
-                    await session.execute(
-                        select(source_extractions).where(
-                            *conditions(source_extractions, scope, source_id),
-                            source_extractions.c.id == extraction_id,
-                            source_extractions.c.version_id == version["id"],
-                            source_extractions.c.purpose == "whole_document_read",
-                        )
-                    )
+        async with self.lineage.repository.read() as session:
+            record = await session.first(
+                LineageQuery(
+                    "extraction",
+                    scope,
+                    source_id=source_id,
+                    equal={
+                        "id": extraction_id,
+                        "version_id": version["id"],
+                        "purpose": "whole_document_read",
+                    },
                 )
-                .mappings()
-                .first()
             )
             if record is None:
                 return None
@@ -425,33 +393,20 @@ class WholeDocumentReader:
                 or projection.get("section_ids_by_page") != [page["section_ids"] for page in pages]
             ):
                 self._unavailable("The stored whole-document view has an incompatible input binding")
-            output = (
-                (
-                    await session.execute(
-                        select(source_artifacts).where(
-                            *conditions(source_artifacts, scope, source_id),
-                            source_artifacts.c.id == projection.get("output_artifact_id"),
-                        )
-                    )
+            output = await session.first(
+                LineageQuery(
+                    "artifact", scope, source_id=source_id, equal={"id": projection.get("output_artifact_id")}
                 )
-                .mappings()
-                .first()
             )
-            rows = (
-                (
-                    await session.execute(
-                        select(source_parts)
-                        .where(
-                            *conditions(source_parts, scope, source_id),
-                            source_parts.c.extraction_id == extraction_id,
-                            source_parts.c.kind == "page",
-                        )
-                        .order_by(source_parts.c.ordinal)
-                        .limit(self.max_parts + 1)
-                    )
+            rows = await session.all(
+                LineageQuery(
+                    "part",
+                    scope,
+                    source_id=source_id,
+                    order=("ordinal",),
+                    limit=self.max_parts + 1,
+                    equal={"extraction_id": extraction_id, "kind": "page"},
                 )
-                .mappings()
-                .all()
             )
         if output is None or output["bytes"] > self.max_bytes or len(rows) != len(pages):
             self._unavailable("The complete recorded whole-document view is unavailable")

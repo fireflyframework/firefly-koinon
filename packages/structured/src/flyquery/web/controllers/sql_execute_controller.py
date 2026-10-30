@@ -120,6 +120,9 @@ class SqlExecuteController:
         workspace_service: WorkspaceService,
         table_repository: TableRepository,
         schema_snapshot_repository: SchemaSnapshotRepository,
+        ast_classifier: AstClassifier,
+        scope_guard: ScopeGuard,
+        executor: DuckDBExecutor,
     ) -> None:
         self._settings = settings
         self._session_factory = unwrap_sessions(session)
@@ -129,9 +132,9 @@ class SqlExecuteController:
         self._table_repo = table_repository
         self._snapshot_repo = schema_snapshot_repository
 
-        self._ast_classifier = AstClassifier()
-        self._scope_guard = ScopeGuard()
-        self._executor = DuckDBExecutor(settings)
+        self._ast_classifier = ast_classifier
+        self._scope_guard = scope_guard
+        self._executor = executor
 
     # ------------------------------------------------------------------
     # POST /api/v1/sql:execute  (sync)

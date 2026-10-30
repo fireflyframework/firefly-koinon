@@ -54,62 +54,49 @@ import logging
 import mimetypes
 import os
 import uuid
-from dataclasses import dataclass
 from typing import Any
 
-from pyfly.agentic.content.binary import BinaryArtifact, BinaryNormalizer
+from pyfly.agentic.content.binary import BinaryNormalizer
 from pyfly.container import service
 from pyfly.eda import EventPublisher
 from pyfly.kernel import DuplicateKeyException
 from sqlalchemy.exc import IntegrityError
 
 from flycanon.config import CanonSettings
+from flycanon.core.mappers.intake_mapper import _ancestry_metadata as _ancestry_metadata
+from flycanon.core.mappers.intake_mapper import _metadata_to_json as _metadata_to_json
+from flycanon.core.mappers.intake_mapper import _render_document as _render_document
 from flycanon.core.services.audit import AuditService
 from flycanon.core.services.embeddings import (
     EmbeddingRegistry,
     EmbeddingService,
-    EmbeddingSetBinding,
     EmbeddingSetService,
     bind_embedding_set,
 )
-from flycanon.core.services.ingestion import IngestionService, LoadedDocument
+from flycanon.core.services.ingestion import IngestionService
 from flycanon.core.services.ingestion.loaders import LoaderRegistry
 from flycanon.core.services.metadata import MetadataExtractor
-from flycanon.core.services.pii import (
-    PiiPolicy,
-    PiiPolicyViolation,
-    PiiScanner,
-    build_pii_scanner,
-)
-from flycanon.core.services.pii.scanner import redact as pii_redact
 from flycanon.core.services.retrieval import IndexService
 from flycanon.core.services.sources.errors import SourceNotFound
+from flycanon.core.services.sources.intake_events import publish_failure, publish_success
+from flycanon.core.services.sources.intake_policy import SourceIntakePolicy, build_intake_policy
+from flycanon.core.services.sources.intake_transforms import (
+    apply_pii_policy,
+    decode_for_scan,
+    embedder_for,
+    first_text,
+    merge_artifacts,
+)
+from flycanon.core.services.sources.lineage.pipeline import DocumentLineagePipeline
 from flycanon.core.services.storage.object_store import ObjectStore
-from flycanon.interfaces.dtos.source import SourceMetadata, SubmitSourceRequest
+from flycanon.interfaces.dtos.intake import SourceRemoval as SourceRemoval
+from flycanon.interfaces.dtos.source import SubmitSourceRequest
 from flycanon.interfaces.enums import SourceKind, SourceStatus
 from flycanon.models.entities.source import SourceRow
 from flycanon.models.repositories.chunk_repository import ChunkRepository
 from flycanon.models.repositories.source_repository import SourceRepository
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True, slots=True)
-class SourceRemoval:
-    """What :meth:`IntakeService.remove` actually did.
-
-    ``original_deleted`` is the fact the audit row, the ``SourceRemoved``
-    event and the workspace purge counter all report. It is returned
-    rather than left implicit so no caller has to guess it from the
-    row it read before the call: the purge service did exactly that in
-    the first 26.7.1 cut (counted ``object_store_key`` being set) and
-    reported ``originals_deleted: 2`` for two originals that were still
-    on disk, because the API process's object store was not the one the
-    worker had written to.
-    """
-
-    source_id: str
-    original_deleted: bool
 
 
 @service(name="canon.IntakeService")
@@ -132,7 +119,10 @@ class IntakeService:
         settings: CanonSettings,
         embedding_sets: EmbeddingSetService | None = None,
         embedding_registry: EmbeddingRegistry | None = None,
+        lineage_pipeline: DocumentLineagePipeline | None = None,
+        intake_policy: SourceIntakePolicy | None = None,
     ) -> None:
+        self._lineage_pipeline = lineage_pipeline
         self._binary_normalizer = binary_normalizer
         self._ingestion = ingestion
         self._loaders = loaders
@@ -150,32 +140,18 @@ class IntakeService:
         # embedder and a mock index keeps the pre-26.8.0 shape.
         self._embedding_sets = embedding_sets
         self._embedding_registry = embedding_registry
-        # Resolve the configured PII scanner once at construction.
-        # ``None`` when the scanner is disabled (or the policy is
-        # ``disabled``) -- the submit path short-circuits the check.
-        try:
-            policy = PiiPolicy(settings.pii_policy)
-        except ValueError:
-            policy = PiiPolicy.warn
-        self._pii_policy = policy
-        self._pii_scanner: PiiScanner | None = (
-            build_pii_scanner(settings.pii_scanner) if policy != PiiPolicy.disabled else None
+        policy = intake_policy or build_intake_policy(settings)
+        self._pii_policy = policy.value
+        self._pii_scanner = policy.scanner
+
+    async def _embedder_for(self, *, tenant_id: str, workspace_id: str):
+        return await embedder_for(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            embeddings=self._embeddings,
+            embedding_sets=self._embedding_sets,
+            embedding_registry=self._embedding_registry,
         )
-
-    async def _embedder_for(
-        self, *, tenant_id: str, workspace_id: str
-    ) -> tuple[EmbeddingSetBinding | None, EmbeddingService]:
-        """The workspace's embedding set and its embedder, minting the first set.
-
-        A workspace's very first ingest creates a set from the process default
-        and points the workspace at it, so a single-embedder deployment never
-        chooses a set and still gets one that records what produced its
-        vectors -- which is the whole point.
-        """
-        if self._embedding_sets is None or self._embedding_registry is None:
-            return None, self._embeddings
-        binding = await self._embedding_sets.ensure_active(tenant_id=tenant_id, workspace_id=workspace_id)
-        return binding, self._embedding_registry.for_binding(binding)
 
     async def submit(
         self,
@@ -194,12 +170,19 @@ class IntakeService:
     ) -> SourceRow:
         """Run the full intake pipeline and return the populated row."""
         if logical_source_key is not None:
-            from flycanon.core.services.sources.lineage.pipeline import DocumentLineagePipeline
-
-            return await DocumentLineagePipeline(self).run(
-                request=request, content=content, tenant_id=tenant_id, workspace_id=workspace_id,
-                actor=actor, filename=filename, content_type=content_type, logical_key=logical_source_key,
-                operation_id=operation_id or logical_source_key, authorize_commit=authorize_commit,
+            if self._lineage_pipeline is None:
+                raise RuntimeError("Provide the managed DocumentLineagePipeline for versioned source intake")
+            return await self._lineage_pipeline.run(
+                request=request,
+                content=content,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                actor=actor,
+                filename=filename,
+                content_type=content_type,
+                logical_key=logical_source_key,
+                operation_id=operation_id or logical_source_key,
+                authorize_commit=authorize_commit,
                 correlation_id=correlation_id,
             )
         artifacts = await self._binary_normalizer.normalise(
@@ -409,15 +392,23 @@ class IntakeService:
         commit to repair).
         """
         if logical_source_key is not None:
-            from flycanon.core.services.sources.lineage.pipeline import DocumentLineagePipeline
-
-            return await DocumentLineagePipeline(self).run(
-                request=request, content=content, tenant_id=tenant_id, workspace_id=workspace_id,
-                actor=actor, filename=filename, content_type=content_type, logical_key=logical_source_key,
-                operation_id=operation_id or str(uuid.uuid4()), source_id=source_id,
+            if self._lineage_pipeline is None:
+                raise RuntimeError("Provide the managed DocumentLineagePipeline for versioned source intake")
+            return await self._lineage_pipeline.run(
+                request=request,
+                content=content,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                actor=actor,
+                filename=filename,
+                content_type=content_type,
+                logical_key=logical_source_key,
+                operation_id=operation_id or str(uuid.uuid4()),
+                source_id=source_id,
                 expected_source_version_id=expected_source_version_id,
                 expected_extraction_id=expected_extraction_id,
-                authorize_commit=authorize_commit, correlation_id=correlation_id,
+                authorize_commit=authorize_commit,
+                correlation_id=correlation_id,
             )
         existing = await self._sources.get(
             source_id,
@@ -727,35 +718,8 @@ class IntakeService:
             return False
         return True
 
-    def _apply_pii_policy(
-        self,
-        content: bytes,
-        metadata: dict[str, Any],
-    ) -> tuple[bytes, dict[str, Any]]:
-        """Run the configured PII scan against ``content`` and apply the policy.
-
-        Returns ``(possibly-redacted-content, metadata-with-findings)``.
-        The scanner operates on the merged text (decoded UTF-8) so a
-        contaminated child artefact in an archive triggers the same
-        policy as a top-level hit. Raises :class:`PiiPolicyViolation`
-        when the policy is ``reject`` and findings are non-empty.
-        """
-        if self._pii_scanner is None or self._pii_policy == PiiPolicy.disabled:
-            return content, metadata
-        text_view = self._decode_for_scan(content)
-        findings = self._pii_scanner.scan(text_view)
-        if not findings:
-            return content, metadata
-        if self._pii_policy == PiiPolicy.reject:
-            raise PiiPolicyViolation(findings)
-        if self._pii_policy == PiiPolicy.redact:
-            redacted = pii_redact(text_view, findings)
-            content = redacted.encode("utf-8")
-        metadata.setdefault(
-            "pii_findings",
-            [{"kind": f.kind, "start": f.start, "end": f.end} for f in findings],
-        )
-        return content, metadata
+    def _apply_pii_policy(self, content: bytes, metadata: dict[str, Any]) -> tuple[bytes, dict[str, Any]]:
+        return apply_pii_policy(content, metadata, policy=self._pii_policy, scanner=self._pii_scanner)
 
     async def _store_original(
         self,
@@ -813,182 +777,25 @@ class IntakeService:
 
     @staticmethod
     def _decode_for_scan(content: bytes) -> str:
-        """Best-effort UTF-8 decode for the PII scanner.
-
-        Binary payloads (PDFs in their canonical form, images,
-        archives that didn't get expanded inline) decode as
-        ``replace`` -- the scanner runs against the parts of the
-        stream that ARE text, and the binary spans become
-        unmatchable byte runs.
-        """
-        try:
-            return content.decode("utf-8")
-        except (UnicodeDecodeError, AttributeError):
-            return content.decode("utf-8", errors="replace") if isinstance(content, bytes) else ""
+        return decode_for_scan(content)
 
     @staticmethod
     def _first_text(chunks: list[Any]) -> str:
-        """Return up to ~2 000 chars of the first ingested chunk's
-        text so the language detector has something to work with.
-        """
-        if not chunks:
-            return ""
-        body = getattr(chunks[0], "content", "") or ""
-        return body[:2000]
+        return first_text(chunks)
 
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
 
-    def _merge_artifacts(
-        self,
-        artifacts: list[BinaryArtifact],
-        original_filename: str | None,
-        observer=None,
-    ) -> tuple[SourceKind, bytes, dict[str, Any]]:
-        """Collapse a fan-out artifact list into a single content payload.
-
-        Single-artifact intakes pass through unchanged. Multi-artifact
-        intakes (archives, emails with attachments) get merged into
-        one Markdown document with ``## Artifact: <filename>`` section
-        markers separating constituents -- the chunker treats each
-        constituent as a sibling section, and the citation graph
-        records the ancestry on the source row's metadata.
-        """
-        if len(artifacts) == 1:
-            artifact = artifacts[0]
-            return SourceKind(artifact.kind), artifact.bytes, _ancestry_metadata([artifact])
-
-        merged_sections: list[str] = []
-        kind = SourceKind.archive
-        for index, artifact in enumerate(artifacts):
-            loader = self._loaders.get(SourceKind(artifact.kind))
-            if loader is None:
-                if observer is not None:
-                    observer(index, None, False, "loader_unavailable")
-                logger.warning(
-                    "intake skipping artifact kind=%s filename=%s -- no loader",
-                    artifact.kind,
-                    artifact.filename,
-                )
-                continue
-            try:
-                document = loader.load(artifact.bytes, filename=artifact.filename)
-            except Exception as exc:
-                if observer is not None:
-                    observer(index, None, False, "loader_failed")
-                logger.warning(
-                    "intake skipping artifact kind=%s filename=%s -- loader failed: %s",
-                    artifact.kind,
-                    artifact.filename,
-                    exc,
-                )
-                continue
-            rendered = _render_document(document, artifact_label=artifact.filename, index=index)
-            if rendered:
-                merged_sections.append(rendered)
-            if observer is not None:
-                observer(index, document, bool(rendered), None if rendered else "empty_extraction")
-
-        merged = "\n\n".join(merged_sections).encode("utf-8")
-        return kind, merged, _ancestry_metadata(artifacts)
+    def _merge_artifacts(self, artifacts, original_filename, observer=None):
+        return merge_artifacts(artifacts, original_filename, loaders=self._loaders, observer=observer)
 
     async def _publish_success(self, *, source: SourceRow, correlation_id: str | None) -> None:
-        if self._publisher is None:
-            return
-        try:
-            await self._publisher.publish(  # type: ignore[attr-defined]
-                destination=self._settings.ingest_topic,
-                event_type=self._settings.source_ingested_event,
-                payload={
-                    "source_id": source.id,
-                    "tenant_id": source.tenant_id,
-                    "workspace_id": source.workspace_id,
-                    "kind": source.kind,
-                    "content_sha256": source.content_sha256,
-                    "n_chunks": source.n_chunks,
-                },
-                headers={"correlation-id": correlation_id} if correlation_id else None,
-            )
-        except Exception as exc:
-            logger.warning("source.ingested publish failed source_id=%s: %s", source.id, exc)
+        await publish_success(self._publisher, self._settings, source=source, correlation_id=correlation_id)
 
     async def _publish_failure(
-        self,
-        *,
-        source: SourceRow,
-        exc: BaseException,
-        correlation_id: str | None,
+        self, *, source: SourceRow, exc: BaseException, correlation_id: str | None
     ) -> None:
-        if self._publisher is None:
-            return
-        try:
-            await self._publisher.publish(  # type: ignore[attr-defined]
-                destination=self._settings.ingest_topic,
-                event_type=self._settings.source_ingestion_failed_event,
-                payload={
-                    "source_id": source.id,
-                    "tenant_id": source.tenant_id,
-                    "workspace_id": source.workspace_id,
-                    "kind": source.kind,
-                    "code": getattr(exc, "code", "ingestion_failed"),
-                    "message": str(exc),
-                },
-                headers={"correlation-id": correlation_id} if correlation_id else None,
-            )
-        except Exception as inner:
-            logger.warning("source.failed publish failed source_id=%s: %s", source.id, inner)
-
-
-def _metadata_to_json(metadata: SourceMetadata) -> dict[str, Any]:
-    payload: dict[str, Any] = {}
-    if metadata.title:
-        payload["title"] = metadata.title
-    if metadata.author:
-        payload["author"] = metadata.author
-    if metadata.domain is not None:
-        payload["domain"] = metadata.domain.value
-    if metadata.jurisdiction is not None:
-        payload["jurisdiction"] = metadata.jurisdiction.value
-    if metadata.language:
-        payload["language"] = metadata.language
-    if metadata.tags:
-        payload["tags"] = list(metadata.tags)
-    if metadata.extra:
-        payload.update(metadata.extra)
-    return payload
-
-
-def _ancestry_metadata(artifacts: list[BinaryArtifact]) -> dict[str, Any]:
-    return {
-        "artifacts": [
-            {
-                "filename": artifact.filename,
-                "kind": artifact.kind,
-                "media_type": artifact.media_type,
-                "derived_from": list(artifact.derived_from),
-            }
-            for artifact in artifacts
-        ]
-    }
-
-
-def _render_document(
-    document: LoadedDocument,
-    *,
-    artifact_label: str,
-    index: int,
-) -> str:
-    if not document.sections:
-        if document.raw_text:
-            return f"## Artifact: {artifact_label}\n\n{document.raw_text.strip()}"
-        return ""
-    rendered_sections: list[str] = [f"## Artifact: {artifact_label}"]
-    if document.title:
-        rendered_sections.append(f"### {document.title}")
-    for section in document.sections:
-        if section.path:
-            for level, heading in enumerate(section.path, start=3):
-                rendered_sections.append(f"{'#' * min(level, 6)} {heading}")
-        rendered_sections.append(section.body.strip())
-    return "\n\n".join(rendered_sections)
+        await publish_failure(
+            self._publisher, self._settings, source=source, exc=exc, correlation_id=correlation_id
+        )

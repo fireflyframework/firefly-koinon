@@ -5,17 +5,14 @@
 from collections.abc import Sequence
 from dataclasses import replace
 
-from sqlalchemy import and_, select
-
 from flycanon.core.services.retrieval.retrieval_service import Hit
 from flycanon.core.services.sources.lineage.dtos import DocumentScope
 from flycanon.core.services.sources.lineage.ingestion_parts import (
     _unavailable,
-    chunk_records,
     validate_chunk,
 )
-from flycanon.core.services.sources.lineage.service import DocumentLineage, conditions
-from flycanon.models.entities.source_lineage import source_events, source_extractions, source_parts
+from flycanon.core.services.sources.lineage.ports import IngestionPartQuery
+from flycanon.core.services.sources.lineage.service import DocumentLineage
 
 _IMMUTABLE_KEYS = frozenset(
     {
@@ -44,34 +41,10 @@ async def bind_retrieval_parts(
     if not hits:
         return []
     await lineage.require_schema()
-    rows = await chunk_records(
-        lineage, scope, source_parts.c.projection_chunk_id.in_([h.chunk_id for h in hits])
+    rows = await lineage.repository.ingestion_chunks(
+        scope, IngestionPartQuery(projection_chunk_ids=tuple(hit.chunk_id for hit in hits))
     )
-    async with lineage.sources.session() as session:
-        versioned = set(
-            (
-                await session.scalars(
-                    select(source_extractions.c.source_id)
-                    .join(
-                        source_events,
-                        and_(
-                            source_events.c.extraction_id == source_extractions.c.id,
-                            source_events.c.version_id == source_extractions.c.version_id,
-                            *(
-                                source_events.c[key] == source_extractions.c[key]
-                                for key in ("tenant_id", "workspace_id", "source_id")
-                            ),
-                        ),
-                    )
-                    .where(
-                        *conditions(source_extractions, scope),
-                        source_extractions.c.purpose == "ingestion",
-                        source_extractions.c.source_id.in_([hit.source_id for hit in hits]),
-                        source_events.c.status == "committed",
-                    )
-                )
-            ).all()
-        )
+    versioned = await lineage.repository.committed_sources(scope, tuple(hit.source_id for hit in hits))
     parts = {}
     for row in rows:
         key = (row["source_id"], row["projection_chunk_id"])

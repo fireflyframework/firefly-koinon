@@ -21,6 +21,7 @@ class GcsObjectStore(CloudObjectStore):
         request_timeout_seconds=10,
         max_object_bytes=64 * 1024 * 1024,
         client=None,
+        owns_client=True,
     ):
         parsed = urlsplit(base)
         if parsed.scheme != "gs" or parsed.query or parsed.fragment or parsed.username or parsed.password:
@@ -34,5 +35,5 @@ class GcsObjectStore(CloudObjectStore):
             request_timeout_seconds=request_timeout_seconds,
             max_object_bytes=max_object_bytes,
         )
-        super().__init__(profile, presign_ttl_s=presign_ttl_s, client=client)
+        super().__init__(profile, presign_ttl_s=presign_ttl_s, client=client, owns_client=owns_client)
         self.native.service_file = service_file

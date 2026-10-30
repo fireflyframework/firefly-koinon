@@ -1144,7 +1144,7 @@ requires-dist = [
     { name = "pyarrow", specifier = ">=17.0" },
     { name = "pydantic", specifier = ">=2.10.0" },
     { name = "pydantic-settings", specifier = ">=2.7.0" },
-    { name = "pyfly", extras = ["fastapi", "observability", "security", "data-relational", "postgresql", "eda", "redis", "client", "scheduling", "cli", "agentic"], git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=be1c0475cd2d7d47cd44784acb9c4e4c2ad7fc95" },
+    { name = "pyfly", extras = ["fastapi", "observability", "security", "data-relational", "postgresql", "eda", "redis", "client", "scheduling", "cli", "agentic"], git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=611d010fc50acc61ba27d736e23a0e1dd80230d3" },
     { name = "pyright", marker = "extra == 'dev'", specifier = ">=1.1" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24" },
@@ -2932,8 +2932,8 @@ wheels = [
 
 [[package]]
 name = "pyfly"
-version = "26.10.16"
-source = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=be1c0475cd2d7d47cd44784acb9c4e4c2ad7fc95#be1c0475cd2d7d47cd44784acb9c4e4c2ad7fc95" }
+version = "26.10.18"
+source = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=611d010fc50acc61ba27d736e23a0e1dd80230d3#611d010fc50acc61ba27d736e23a0e1dd80230d3" }
 dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },

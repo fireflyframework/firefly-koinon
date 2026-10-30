@@ -139,7 +139,9 @@ async def test_rlm_hook_observes_committed_exact_view_before_model_and_not_metad
             assert scope.active and scope.observer is self
             assert meta.source_id == read.source_id == source.id
             assert tuple(page.text for page in read.pages) == ("safe complete text",)
-            assert all(page.part_id and page.sha256 == sha256(page.text.encode()).hexdigest() for page in read.pages)
+            assert all(
+                page.part_id and page.sha256 == sha256(page.text.encode()).hexdigest() for page in read.pages
+            )
             events.append(("parts", read.extraction_id))
 
         def document_extraction(self, source_id, version_id, extraction_id, scope):
@@ -269,8 +271,7 @@ async def test_real_zip_normalization_is_retained_without_reopening_raw_zip_as_t
     with ZipFile(body, "w") as archive:
         archive.writestr("alpha.txt", "alpha full text")
         archive.writestr("beta.txt", "beta full text")
-    intake = intake_fixture(lineage, repositories)
-    intake._binary_normalizer = BinaryNormalizer()
+    intake = intake_fixture(lineage, repositories, normalizer=BinaryNormalizer())
     source = await intake.submit(
         request=SubmitSourceRequest(),
         content=body.getvalue(),
@@ -298,11 +299,15 @@ async def test_real_zip_normalization_is_retained_without_reopening_raw_zip_as_t
 
 
 async def test_native_pii_redaction_is_not_bypassed_by_whole_document_read(lineage, repositories):
-    from flycanon.core.services.pii.scanner import PiiPolicy, RegexPiiScanner
+    from flycanon.config import CanonSettings
     from flycanon.core.services.sources.lineage.whole_read import WholeDocumentReader
 
-    intake = intake_fixture(lineage, repositories, normalized=b"Email owner@example.org for details.")
-    intake._pii_policy, intake._pii_scanner = PiiPolicy.redact, RegexPiiScanner()
+    intake = intake_fixture(
+        lineage,
+        repositories,
+        normalized=b"Email owner@example.org for details.",
+        settings=CanonSettings(store_originals=True, pii_policy="redact", pii_scanner="regex"),
+    )
     source = await submit(intake, content=b"Email owner@example.org for details.")
     scope = DocumentScope("t", "w", "actor")
     head = await lineage.head(scope, source.id)
@@ -533,7 +538,9 @@ async def test_versioned_citation_index_one_uses_real_part_for_recorded_page_sev
     )
     source = await submit(intake)
     observer = SimpleNamespace(
-        authorize=AsyncMock(), document_extraction=lambda *args: None, document_sync=lambda *args: None,
+        authorize=AsyncMock(),
+        document_extraction=lambda *args: None,
+        document_sync=lambda *args: None,
         document_view_parts=lambda *args: None,
     )
     with provenance.observe(observer, tenant_id="t", workspace_id="w", actor="actor"):

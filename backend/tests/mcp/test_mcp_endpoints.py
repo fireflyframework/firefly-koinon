@@ -177,7 +177,8 @@ def test_native_serve_passes_the_same_properties_to_the_public_pyfly_adapter(mon
 
 
 def test_native_server_choice_rejects_unknown_adapters_without_fallback():
-    from koinon.serve import application_server, event_loop
+    from pyfly.server import select_event_loop as event_loop
+    from pyfly.server import select_server as application_server
 
     with pytest.raises(ValueError):
         application_server("unknown")

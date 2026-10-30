@@ -1,4 +1,6 @@
 # Copyright 2024-2026 Firefly Software Foundation
+# Modifications Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,6 +31,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
+from pyfly.data.relational.datasource_registry import DataSourceRegistry
 from pyfly.data.transaction import infrastructure_unit
 from sqlalchemy import select
 from sqlalchemy import update as sa_update
@@ -56,8 +59,17 @@ class AgentTokenRepository:
         return self._engine
 
     @classmethod
-    def from_url(cls, database_url: str, *, echo: bool = False) -> AgentTokenRepository:
-        factory, engine = build_session_factory(database_url, echo=echo)
+    def from_url(
+        cls,
+        database_url: str,
+        *,
+        echo: bool = False,
+        registry: DataSourceRegistry | None = None,
+        datasource_name: str = "canon",
+    ) -> AgentTokenRepository:
+        factory, engine = build_session_factory(
+            database_url, echo=echo, registry=registry, datasource_name=datasource_name
+        )
         return cls(factory, engine=engine)
 
     # ------------------------------------------------------------------

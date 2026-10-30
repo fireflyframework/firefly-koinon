@@ -1,14 +1,15 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
 from koinon_storage.cloud import CloudStore, ObjectIntegrityError, ObjectTooLargeError
+from pyfly.context.lifecycle import pre_destroy
 
 from koinon.storage.ports import BlobIntegrityError, BlobTooLargeError
 from koinon.storage.settings import AttachmentStorageProfile
 
 
 class CloudBlobStore:
-    def __init__(self, profile: AttachmentStorageProfile, *, client=None):
-        self.native = CloudStore(profile.cloud_profile(), client=client)
+    def __init__(self, profile: AttachmentStorageProfile, *, client=None, owns_client=True):
+        self.native = CloudStore(profile.cloud_profile(), client=client, owns_client=owns_client)
 
     async def put(self, key, data, content_type=None):
         try:
@@ -29,3 +30,7 @@ class CloudBlobStore:
 
     async def purge_staging(self, key):
         await self.native.purge_staging(key)
+
+    @pre_destroy
+    async def close(self) -> None:
+        await self.native.close()

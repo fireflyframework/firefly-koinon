@@ -157,13 +157,7 @@ class NativeDomains:
             if arguments.get("_curated_retrieve") is not None and not arguments.get("source_ids"):
                 roles = []
             mode = policy.documents.answer_mode if policy else getattr(settings, "answer_mode", "rag")
-            purpose = (
-                "rlm"
-                if answer and mode == "rlm"
-                else "answer"
-                if answer
-                else "search"
-            )
+            purpose = "rlm" if answer and mode == "rlm" else "answer" if answer else "search"
             if answer:
                 if arguments.get("_curated_retrieve") is not None and purpose == "rlm":
                     raise ServiceUnavailableException(
@@ -175,7 +169,8 @@ class NativeDomains:
                 roles.append("documents.answer")
             expansion = (
                 policy.documents.query_expansion_enabled
-                if policy else getattr(settings, "query_expansion_enabled", False)
+                if policy
+                else getattr(settings, "query_expansion_enabled", False)
             )
             if expansion and "documents.answer" not in roles:
                 roles.append("documents.answer")
@@ -266,20 +261,9 @@ class NativeDomains:
                     port.reset_bindings(token)
 
     def _resolve(self, cls):
-        if self.container.contains_type(cls):
-            return self.container.resolve(cls)
-        candidates = [
-            kind
-            for kind in self.container.registered_types()
-            if issubclass(kind, cls) and not getattr(kind, "__pyfly_bean_name__", "").startswith("bff.")
-        ]
-        if candidates:
-            return self.container.resolve(candidates[0])
-        raise ServiceUnavailableException(
-            f"The retained {cls.__module__.split('.')[0]} pipeline is not enabled; "
-            "configure its native resources",
-            code="DOMAIN_PREREQUISITE_REQUIRED",
-        )
+        from koinon.knowledge.beans import native_bean
+
+        return native_bean(self.container, cls)
 
     async def ensure_workspace(self, *, domain, tenant_id, catalog_id, name, actor):
         if domain == "canon":
@@ -554,28 +538,37 @@ class NativeDomains:
         from flycanon.core.services.sources.lineage.dtos import DocumentScope
         from flycanon.core.services.sources.lineage.retrieval import bind_retrieval_parts
         from flycanon.core.services.sources.lineage.service import DocumentLineage
-        from flycanon.core.services.storage.object_store import ObjectStore
         from flycanon.interfaces.dtos.query import AnswerRequest, SearchRequest
-        from flycanon.models.repositories import SourceRepository
         from pyfly.cqrs import DefaultQueryBus
 
         if _capture is not None:
+
             async def resolve_retrieval_parts(hits, scope):
                 return await bind_retrieval_parts(
-                    DocumentLineage(self._resolve(SourceRepository), self._resolve(ObjectStore)),
-                    DocumentScope(tenant_id, workspace_id, actor), hits,
+                    self._resolve(DocumentLineage),
+                    DocumentScope(tenant_id, workspace_id, actor),
+                    hits,
                 )
 
             _capture.resolve_document_retrieval_parts = resolve_retrieval_parts
 
-        policy = request_knowledge_settings({
-            "_knowledge_settings_snapshot": _knowledge_settings_snapshot, "tenant_id": tenant_id,
-        })
+        policy = request_knowledge_settings(
+            {
+                "_knowledge_settings_snapshot": _knowledge_settings_snapshot,
+                "tenant_id": tenant_id,
+            }
+        )
         options = DocumentQueryOptions.model_validate(policy.documents.model_dump()) if policy else None
-        purpose, _ = self.model_requirements("canon", "search", {
-            "answer": answer, "source_ids": source_ids, "_curated_retrieve": _curated_retrieve,
-            "_knowledge_settings_snapshot": policy,
-        })
+        purpose, _ = self.model_requirements(
+            "canon",
+            "search",
+            {
+                "answer": answer,
+                "source_ids": source_ids,
+                "_curated_retrieve": _curated_retrieve,
+                "_knowledge_settings_snapshot": policy,
+            },
+        )
 
         if not source_ids and _curated_retrieve is None:
             raise InvalidRequestException(
@@ -617,7 +610,8 @@ class NativeDomains:
                     await bus.query(
                         AnswerKnowledgeQuery(
                             request=AnswerRequest(
-                                question=question, top_k=options.answer_top_k if options else min(limit, 40),
+                                question=question,
+                                top_k=options.answer_top_k if options else min(limit, 40),
                                 source_ids=source_ids,
                                 extended_reasoning=options.rlm_extended_reasoning if options else False,
                             ),
@@ -635,15 +629,19 @@ class NativeDomains:
                 if purpose == "rlm" and _capture is not None and not response["no_answer"]:
                     result["hits"] = [
                         {
-                            "chunk_id": read.source_part_id, "source_id": read.source_id,
-                            "content": read.quote, "score": 1.0, "page": None,
+                            "chunk_id": read.source_part_id,
+                            "source_id": read.source_id,
+                            "content": read.quote,
+                            "score": 1.0,
+                            "page": None,
                             "section_path": read.section,
                             "metadata": {
                                 "source_version_id": read.source_version_id,
                                 "extraction_id": read.extraction_id,
                                 "source_part_id": read.source_part_id,
                                 "source_part_sha256": read.source_part_sha256,
-                                "page_basis": "recorded_loader", "recorded_page": read.recorded_page,
+                                "page_basis": "recorded_loader",
+                                "recorded_page": read.recorded_page,
                             },
                         }
                         for read in _capture.documents.values()
@@ -656,32 +654,17 @@ class NativeDomains:
     async def document_revision(self, *, tenant_id, workspace_id, source_id, actor, lock=False):
         from flycanon.core.services.sources.lineage.dtos import DocumentScope
         from flycanon.core.services.sources.lineage.service import DocumentLineage
-        from flycanon.core.services.storage.object_store import ObjectStore
-        from flycanon.models.repositories import SourceRepository
 
         with native_scope("canon", tenant_id, workspace_id, actor):
-            lineage = DocumentLineage(self._resolve(SourceRepository), self._resolve(ObjectStore))
+            lineage = self._resolve(DocumentLineage)
             await lineage.require_schema()
             scope = DocumentScope(tenant_id, workspace_id, actor)
-            if lock:
-                from flycanon.core.services.sources.lineage.service import conditions
-                from flycanon.models.entities.source_lineage import source_heads
-                from sqlalchemy import select
+            async with lineage.repository.read() as unit:
+                from flycanon.core.services.sources.lineage.ports import LineageQuery
 
-                async with lineage.sources.session() as session:
-                    head = (
-                        (
-                            await session.execute(
-                                select(source_heads)
-                                .where(*conditions(source_heads, scope, source_id))
-                                .with_for_update(read=True)
-                            )
-                        )
-                        .mappings()
-                        .first()
-                    )
-            else:
-                head = await lineage.head(scope, source_id)
+                head = await unit.first(
+                    LineageQuery("head", scope, source_id=source_id, lock="share" if lock else None)
+                )
             return (
                 {"source_version_id": head["version_id"], "extraction_id": head["extraction_id"]}
                 if head
@@ -694,13 +677,9 @@ class NativeDomains:
         from flycanon.core.services.sources.lineage.dtos import DocumentScope
         from flycanon.core.services.sources.lineage.service import DocumentLineage
         from flycanon.core.services.sources.lineage.whole_read import WholeDocumentReader
-        from flycanon.core.services.storage.object_store import ObjectStore
-        from flycanon.models.repositories import SourceRepository
 
         with native_scope("canon", tenant_id, workspace_id, actor):
-            reader = WholeDocumentReader(
-                DocumentLineage(self._resolve(SourceRepository), self._resolve(ObjectStore))
-            )
+            reader = WholeDocumentReader(self._resolve(DocumentLineage))
             return await reader.resolve_parts(
                 DocumentScope(tenant_id, workspace_id, actor),
                 source_id=source_id,
@@ -1182,11 +1161,14 @@ class NativeDomains:
         _knowledge_settings_snapshot=None,
     ):
         from flyquery.core.services.datasets.dataset_service import DatasetService
-        from flyquery.web.controllers.query_controller import QueryController
+        from flyquery.core.services.query.runtime import StructuredQueryRuntimeFactory
 
-        policy = request_knowledge_settings({
-            "_knowledge_settings_snapshot": _knowledge_settings_snapshot, "tenant_id": tenant_id,
-        })
+        policy = request_knowledge_settings(
+            {
+                "_knowledge_settings_snapshot": _knowledge_settings_snapshot,
+                "tenant_id": tenant_id,
+            }
+        )
         with native_scope("structured", tenant_id, workspace_id, actor) as request:
             dataset = await self._resolve(DatasetService).get(UUID(dataset_id))
             if (
@@ -1243,33 +1225,29 @@ class NativeDomains:
             purpose, roles = self.model_requirements(
                 "structured", "query", {"_knowledge_settings_snapshot": policy}
             )
-            async with self.model_connections(
-                "structured",
-                tenant_id,
-                workspace_id,
-                actor,
-                purpose=purpose,
-                roles=roles,
-                catalog_workspace_id=catalog_workspace_id,
+            async with (
+                self.model_connections(
+                    "structured",
+                    tenant_id,
+                    workspace_id,
+                    actor,
+                    purpose=purpose,
+                    roles=roles,
+                    catalog_workspace_id=catalog_workspace_id,
+                ),
+                self._resolve(StructuredQueryRuntimeFactory).unit(
+                    settings_overrides=policy.structured.model_dump() if policy else None
+                ) as runtime,
             ):
-                controller = self._resolve(QueryController)
-                async with controller._session_factory() as session:
-                    if policy:
-                        effective_settings = controller._settings.model_copy(
-                            update=policy.structured.model_dump()
-                        )
-                        pipeline = controller._build_service(session, settings=effective_settings)
-                    else:
-                        pipeline = controller._build_service(session)
-                    result = await pipeline.answer(
-                        tenant_id=tenant_id,
-                        workspace_id=UUID(workspace_id),
-                        dataset_id=UUID(dataset_id),
-                        question=question,
-                        scopes={"flyquery.query:read", "flyquery.sql:execute"},
-                        dataset_allowlist=dataset_allowlist,
-                        conversation_id=UUID(conversation_id) if conversation_id else None,
-                    )
+                result = await runtime.pipeline.answer(
+                    tenant_id=tenant_id,
+                    workspace_id=UUID(workspace_id),
+                    dataset_id=UUID(dataset_id),
+                    question=question,
+                    scopes={"flyquery.query:read", "flyquery.sql:execute"},
+                    dataset_allowlist=dataset_allowlist,
+                    conversation_id=UUID(conversation_id) if conversation_id else None,
+                )
             output = _json(result)
             if _capture is not None:
                 _capture.query(tenant_id, workspace_id, actor, dataset_id, output)

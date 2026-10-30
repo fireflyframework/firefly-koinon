@@ -181,6 +181,28 @@ def _make_candidates(sql: str = "SELECT 1 AS v") -> GeneratedCandidates:
     )
 
 
+def _attach_runtime(controller):
+    """Install a managed-factory boundary while retaining transport assertions."""
+    from flyquery.core.services.query.runtime import StructuredQueryRuntimeFactory
+    from flyquery.data import StructuredSessionBinding
+
+    controller._runtime_factory = StructuredQueryRuntimeFactory(
+        settings=controller._settings,
+        sessions=StructuredSessionBinding(controller._session_factory),
+        object_store=controller._object_store,
+        query_repository=controller._query_repo,
+        semantic_repository=object(),
+        examples_service=controller._examples_service,
+        embedder=controller._embedder,
+        reranker=_FakeReranker(),
+        ast_classifier=controller._ast_classifier,
+        scope_guard=controller._scope_guard,
+        executor=controller._executor,
+        table_repository=object(),
+        conversation_service=object(),
+    )
+
+
 # ---------------------------------------------------------------------------
 # SSE generator tests using the _stream_events method directly
 # ---------------------------------------------------------------------------
@@ -228,27 +250,27 @@ async def test_sse_happy_path_emits_all_events():
     # Patch the agent builders and other components
     with (
         patch(
-            "flyquery.web.controllers.query_controller.build_grounding_agent",
+            "flyquery.core.services.query.runtime.build_grounding_agent",
             return_value=_FakeAgent(grounded),
         ),
         patch(
-            "flyquery.web.controllers.query_controller.build_generation_agent",
+            "flyquery.core.services.query.runtime.build_generation_agent",
             return_value=_FakeAgent(candidates),
         ),
-        patch("flyquery.web.controllers.query_controller.build_critic_agent", return_value=_FakeAgent(None)),
+        patch("flyquery.core.services.query.runtime.build_critic_agent", return_value=_FakeAgent(None)),
         patch(
-            "flyquery.web.controllers.query_controller.build_explainer_agent",
+            "flyquery.core.services.query.runtime.build_explainer_agent",
             return_value=_FakeAgent(explanation),
         ),
-        patch("flyquery.web.controllers.query_controller.HybridRetriever", return_value=_FakeRetriever()),
-        patch("flyquery.web.controllers.query_controller.TableResolver", return_value=_FakeTableResolver()),
-        patch("flyquery.web.controllers.query_controller.SearchIndex", return_value=MagicMock()),
-        patch("flyquery.web.controllers.query_controller.build_reranker", return_value=_FakeReranker()),
+        patch("flyquery.core.services.query.runtime.HybridRetriever", return_value=_FakeRetriever()),
+        patch("flyquery.core.services.query.runtime.TableResolver", return_value=_FakeTableResolver()),
+        patch("flyquery.core.services.query.runtime.SearchIndex", return_value=MagicMock()),
     ):
         from flyquery.interfaces.query import QueryRequest
 
         request = QueryRequest(dataset_id=uuid.uuid4(), question="how many orders?")
 
+        _attach_runtime(ctrl)
         frames = []
         async for frame in ctrl._stream_events(
             tenant_id="ten-a",
@@ -310,27 +332,27 @@ async def test_sse_emits_clarification_when_low_confidence():
 
     with (
         patch(
-            "flyquery.web.controllers.query_controller.build_grounding_agent",
+            "flyquery.core.services.query.runtime.build_grounding_agent",
             return_value=_FakeAgent(low_confidence_grounded),
         ),
         patch(
-            "flyquery.web.controllers.query_controller.build_generation_agent",
+            "flyquery.core.services.query.runtime.build_generation_agent",
             return_value=_FakeAgent(candidates),
         ),
-        patch("flyquery.web.controllers.query_controller.build_critic_agent", return_value=_FakeAgent(None)),
+        patch("flyquery.core.services.query.runtime.build_critic_agent", return_value=_FakeAgent(None)),
         patch(
-            "flyquery.web.controllers.query_controller.build_explainer_agent",
+            "flyquery.core.services.query.runtime.build_explainer_agent",
             return_value=_FakeAgent(explanation),
         ),
-        patch("flyquery.web.controllers.query_controller.HybridRetriever", return_value=_FakeRetriever()),
-        patch("flyquery.web.controllers.query_controller.TableResolver", return_value=_FakeTableResolver()),
-        patch("flyquery.web.controllers.query_controller.SearchIndex", return_value=MagicMock()),
-        patch("flyquery.web.controllers.query_controller.build_reranker", return_value=_FakeReranker()),
+        patch("flyquery.core.services.query.runtime.HybridRetriever", return_value=_FakeRetriever()),
+        patch("flyquery.core.services.query.runtime.TableResolver", return_value=_FakeTableResolver()),
+        patch("flyquery.core.services.query.runtime.SearchIndex", return_value=MagicMock()),
     ):
         from flyquery.interfaces.query import QueryRequest
 
         request = QueryRequest(dataset_id=uuid.uuid4(), question="show orders")
 
+        _attach_runtime(ctrl)
         frames = []
         async for frame in ctrl._stream_events(
             tenant_id="ten-a",
@@ -382,27 +404,27 @@ async def test_sse_no_clarification_when_high_confidence():
 
     with (
         patch(
-            "flyquery.web.controllers.query_controller.build_grounding_agent",
+            "flyquery.core.services.query.runtime.build_grounding_agent",
             return_value=_FakeAgent(grounded),
         ),
         patch(
-            "flyquery.web.controllers.query_controller.build_generation_agent",
+            "flyquery.core.services.query.runtime.build_generation_agent",
             return_value=_FakeAgent(candidates),
         ),
-        patch("flyquery.web.controllers.query_controller.build_critic_agent", return_value=_FakeAgent(None)),
+        patch("flyquery.core.services.query.runtime.build_critic_agent", return_value=_FakeAgent(None)),
         patch(
-            "flyquery.web.controllers.query_controller.build_explainer_agent",
+            "flyquery.core.services.query.runtime.build_explainer_agent",
             return_value=_FakeAgent(explanation),
         ),
-        patch("flyquery.web.controllers.query_controller.HybridRetriever", return_value=_FakeRetriever()),
-        patch("flyquery.web.controllers.query_controller.TableResolver", return_value=_FakeTableResolver()),
-        patch("flyquery.web.controllers.query_controller.SearchIndex", return_value=MagicMock()),
-        patch("flyquery.web.controllers.query_controller.build_reranker", return_value=_FakeReranker()),
+        patch("flyquery.core.services.query.runtime.HybridRetriever", return_value=_FakeRetriever()),
+        patch("flyquery.core.services.query.runtime.TableResolver", return_value=_FakeTableResolver()),
+        patch("flyquery.core.services.query.runtime.SearchIndex", return_value=MagicMock()),
     ):
         from flyquery.interfaces.query import QueryRequest
 
         request = QueryRequest(dataset_id=uuid.uuid4(), question="total revenue")
 
+        _attach_runtime(ctrl)
         frames = []
         async for frame in ctrl._stream_events(
             tenant_id="ten-a",
@@ -450,27 +472,27 @@ async def test_sse_final_frame_contains_answer_fields():
 
     with (
         patch(
-            "flyquery.web.controllers.query_controller.build_grounding_agent",
+            "flyquery.core.services.query.runtime.build_grounding_agent",
             return_value=_FakeAgent(grounded),
         ),
         patch(
-            "flyquery.web.controllers.query_controller.build_generation_agent",
+            "flyquery.core.services.query.runtime.build_generation_agent",
             return_value=_FakeAgent(candidates),
         ),
-        patch("flyquery.web.controllers.query_controller.build_critic_agent", return_value=_FakeAgent(None)),
+        patch("flyquery.core.services.query.runtime.build_critic_agent", return_value=_FakeAgent(None)),
         patch(
-            "flyquery.web.controllers.query_controller.build_explainer_agent",
+            "flyquery.core.services.query.runtime.build_explainer_agent",
             return_value=_FakeAgent(explanation),
         ),
-        patch("flyquery.web.controllers.query_controller.HybridRetriever", return_value=_FakeRetriever()),
-        patch("flyquery.web.controllers.query_controller.TableResolver", return_value=_FakeTableResolver()),
-        patch("flyquery.web.controllers.query_controller.SearchIndex", return_value=MagicMock()),
-        patch("flyquery.web.controllers.query_controller.build_reranker", return_value=_FakeReranker()),
+        patch("flyquery.core.services.query.runtime.HybridRetriever", return_value=_FakeRetriever()),
+        patch("flyquery.core.services.query.runtime.TableResolver", return_value=_FakeTableResolver()),
+        patch("flyquery.core.services.query.runtime.SearchIndex", return_value=MagicMock()),
     ):
         from flyquery.interfaces.query import QueryRequest
 
         request = QueryRequest(dataset_id=uuid.uuid4(), question="what is 42?")
 
+        _attach_runtime(ctrl)
         frames = []
         async for frame in ctrl._stream_events(
             tenant_id="ten-a",

@@ -554,11 +554,14 @@ class KnowledgeFacade:
                 code="DATASET_NOT_READY",
             )
 
-    async def _document(self, subject, tenant_id, document_id):
+    async def authorize_document_read(self, subject, tenant_id, document_id):
         chain = await self._chain(subject, tenant_id, document_id)
         if chain[0].kind != "document":
             raise InvalidHierarchy("Select a document", code="INVALID_DOCUMENT")
         return chain, await self.binding(tenant_id, document_id, "canon", entry=chain[0])
+
+    async def _document(self, subject, tenant_id, document_id):
+        return await self.authorize_document_read(subject, tenant_id, document_id)
 
     async def document_chunks(
         self, subject, tenant_id, document_id, *, offset=0, limit=50, page=None, section=None, q=None

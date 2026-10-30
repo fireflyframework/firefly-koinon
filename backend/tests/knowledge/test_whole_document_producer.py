@@ -38,32 +38,36 @@ async def test_whole_document_commit_precedes_real_receiver_and_model_context(tm
         sources, chunks = SourceRepository(sessions), ChunkRepository(sessions)
         objects = LocalFsObjectStore(str(tmp_path / "objects"))
         registry = default_registry()
-        intake = IntakeService(
-            binary_normalizer=SimpleNamespace(
-                normalise=AsyncMock(
-                    return_value=[
-                        BinaryArtifact(
-                            bytes=b"Exact normalized context",
-                            kind="text",
-                            media_type="text/plain",
-                            filename="one.txt",
-                        )
-                    ]
-                )
-            ),
-            ingestion=IngestionService(loaders=registry, chunker=ParagraphChunker()),
-            loaders=registry,
-            embeddings=SimpleNamespace(model="controlled-no-network", embed=AsyncMock(return_value=[[1.0]])),
-            indexer=SimpleNamespace(replace_for_source=AsyncMock(return_value=1)),
-            metadata_extractor=SimpleNamespace(
-                extract=Mock(return_value=SimpleNamespace(to_dict=lambda: {}))
-            ),
-            source_repository=sources,
-            chunk_repository=chunks,
-            audit=SimpleNamespace(record=AsyncMock()),
-            event_publisher=None,
-            object_store=objects,
-            settings=CanonSettings(store_originals=True, pii_policy="disabled"),
+        intake = _versioned_intake(
+            dict(
+                binary_normalizer=SimpleNamespace(
+                    normalise=AsyncMock(
+                        return_value=[
+                            BinaryArtifact(
+                                bytes=b"Exact normalized context",
+                                kind="text",
+                                media_type="text/plain",
+                                filename="one.txt",
+                            )
+                        ]
+                    )
+                ),
+                ingestion=IngestionService(loaders=registry, chunker=ParagraphChunker()),
+                loaders=registry,
+                embeddings=SimpleNamespace(
+                    model="controlled-no-network", embed=AsyncMock(return_value=[[1.0]])
+                ),
+                indexer=SimpleNamespace(replace_for_source=AsyncMock(return_value=1)),
+                metadata_extractor=SimpleNamespace(
+                    extract=Mock(return_value=SimpleNamespace(to_dict=lambda: {}))
+                ),
+                source_repository=sources,
+                chunk_repository=chunks,
+                audit=SimpleNamespace(record=AsyncMock()),
+                event_publisher=None,
+                object_store=objects,
+                settings=CanonSettings(store_originals=True, pii_policy="disabled"),
+            )
         )
         source = await intake.submit(
             request=SubmitSourceRequest(),
@@ -150,3 +154,15 @@ async def test_whole_document_commit_precedes_real_receiver_and_model_context(tm
         assert document_read.content_sha256 == sha256(actual.encode()).hexdigest()
     finally:
         await engine.dispose()
+
+
+def _versioned_intake(dependencies):
+    from flycanon.core.services.sources.intake_runtime import build_intake_components
+    from flycanon.core.services.sources.lineage.pipeline import DocumentLineagePipeline
+    from flycanon.core.services.sources.lineage.service import DocumentLineage
+
+    pipeline = DocumentLineagePipeline(
+        build_intake_components(**dependencies),
+        DocumentLineage(dependencies["source_repository"], dependencies["object_store"]),
+    )
+    return IntakeService(**dependencies, lineage_pipeline=pipeline, intake_policy=pipeline.components.policy)

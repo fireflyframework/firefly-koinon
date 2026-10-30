@@ -69,19 +69,21 @@ async def test_document_adapter_runs_retained_normalize_load_chunk_embed_index_a
 
     selected = Controlled(model="controlled", dimensions=128)
     objects = LocalFsObjectStore(str(tmp_path / "objects"))
-    intake = IntakeService(
-        binary_normalizer=BinaryNormalizer(config=BinaryConfig(max_bytes=1024)),
-        ingestion=IngestionService(loaders=loaders, chunker=ParagraphChunker(128, 16)),
-        loaders=loaders,
-        embeddings=EmbeddingService(embedder=embedder, model="test:controlled", dimensions=128),
-        indexer=IndexService(context=context, chunk_repository=chunks),
-        metadata_extractor=MetadataExtractor(),
-        source_repository=sources,
-        chunk_repository=chunks,
-        audit=AuditService(repository=audits, event_publisher=None, settings=settings),
-        event_publisher=SimpleNamespace(publish=AsyncMock()),
-        object_store=objects,
-        settings=settings,
+    intake = _versioned_intake(
+        dict(
+            binary_normalizer=BinaryNormalizer(config=BinaryConfig(max_bytes=1024)),
+            ingestion=IngestionService(loaders=loaders, chunker=ParagraphChunker(128, 16)),
+            loaders=loaders,
+            embeddings=EmbeddingService(embedder=embedder, model="test:controlled", dimensions=128),
+            indexer=IndexService(context=context, chunk_repository=chunks),
+            metadata_extractor=MetadataExtractor(),
+            source_repository=sources,
+            chunk_repository=chunks,
+            audit=AuditService(repository=audits, event_publisher=None, settings=settings),
+            event_publisher=SimpleNamespace(publish=AsyncMock()),
+            object_store=objects,
+            settings=settings,
+        )
     )
     container = SimpleNamespace(
         contains_type=lambda cls: cls is IntakeService,
@@ -119,11 +121,12 @@ async def test_document_adapter_runs_retained_normalize_load_chunk_embed_index_a
 
 
 def test_missing_native_domain_fails_actionably_instead_of_constructing_another_container():
+    from pyfly.container import Container
     from pyfly.kernel import ServiceUnavailableException
 
     from koinon.knowledge.adapters import NativeDomains
 
-    container = SimpleNamespace(contains_type=lambda cls: False, registered_types=lambda: [])
+    container = Container()
     with pytest.raises(ServiceUnavailableException, match="not enabled"):
         NativeDomains(container)._resolve(dict)
 
@@ -334,7 +337,7 @@ async def test_canonical_dataset_query_borrows_only_read_authority_even_for_an_a
     from uuid import uuid4
 
     from flyquery.core.services.datasets.dataset_service import DatasetService
-    from flyquery.web.controllers.query_controller import QueryController
+    from flyquery.core.services.query.runtime import StructuredQueryRuntimeFactory
     from flyquery.web.conventions.context import current_tenant_context
 
     from koinon.knowledge.adapters import NativeDomains
@@ -357,13 +360,10 @@ async def test_canonical_dataset_query_borrows_only_read_authority_even_for_an_a
         return {"query_id": str(uuid4()), "execution_status": "OK", "sql": "SELECT 1", "snapshot_pins": {}}
 
     @asynccontextmanager
-    async def session():
-        yield object()
+    async def unit(*, settings_overrides=None):
+        yield SimpleNamespace(pipeline=SimpleNamespace(answer=answer))
 
-    controller = SimpleNamespace(
-        _session_factory=session, _build_service=lambda selected: SimpleNamespace(answer=answer)
-    )
-    services = {DatasetService: datasets, QueryController: controller}
+    services = {DatasetService: datasets, StructuredQueryRuntimeFactory: SimpleNamespace(unit=unit)}
     domains = NativeDomains(
         SimpleNamespace(
             contains_type=lambda kind: kind in services,
@@ -389,3 +389,16 @@ async def test_canonical_dataset_query_borrows_only_read_authority_even_for_an_a
         actor="issuer|administrator",
     )
     assert observed == [{"flyquery.query:read", "flyquery.sql:execute"}]
+
+
+def _versioned_intake(dependencies):
+    from flycanon.core.services.sources.intake_runtime import build_intake_components
+    from flycanon.core.services.sources.intake_service import IntakeService
+    from flycanon.core.services.sources.lineage.pipeline import DocumentLineagePipeline
+    from flycanon.core.services.sources.lineage.service import DocumentLineage
+
+    pipeline = DocumentLineagePipeline(
+        build_intake_components(**dependencies),
+        DocumentLineage(dependencies["source_repository"], dependencies["object_store"]),
+    )
+    return IntakeService(**dependencies, lineage_pipeline=pipeline, intake_policy=pipeline.components.policy)

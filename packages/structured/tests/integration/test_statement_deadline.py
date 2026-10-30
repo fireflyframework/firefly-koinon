@@ -22,6 +22,9 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from starlette.requests import Request
 
+from flyquery.core.services.execution.ast_classifier import AstClassifier
+from flyquery.core.services.execution.duckdb_executor import DuckDBExecutor
+from flyquery.core.services.execution.scope_guard import ScopeGuard
 from flyquery.core.services.query.query_repository import QueryRepository
 from flyquery.core.services.tables.table_repository import TableRepository
 from flyquery.interfaces.sql_execute import SqlExecuteRequest
@@ -108,6 +111,9 @@ async def test_native_deadline_records_failed_query_in_postgres(tmp_path, stream
             WorkspaceFlag(),
             TableRepository(sessions),
             None,
+            AstClassifier(),
+            ScopeGuard(),
+            DuckDBExecutor(settings),
         )
         body = SqlExecuteRequest(
             dataset_id=dataset,

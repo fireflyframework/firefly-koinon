@@ -29,33 +29,11 @@ from __future__ import annotations
 import uuid
 
 from pyfly.container import rest_controller
-from pyfly.data.transaction import infrastructure_unit
 from pyfly.web import Body, PathVar, QueryParam, Valid, get_mapping, post_mapping, request_mapping
-from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
-from flyquery.config import FlyquerySettings
-from flyquery.core.agents.critic_agent import build_critic_agent
-from flyquery.core.agents.explainer_agent import build_explainer_agent
-from flyquery.core.agents.generation_agent import build_generation_agent
-from flyquery.core.agents.grounding_agent import build_grounding_agent
-from flyquery.core.services.examples.auto_learner import AutoLearner
-from flyquery.core.services.examples.examples_service import ExamplesService
-from flyquery.core.services.execution.ast_classifier import AstClassifier
-from flyquery.core.services.execution.duckdb_executor import DuckDBExecutor
-from flyquery.core.services.execution.scope_guard import ScopeGuard
-from flyquery.core.services.execution.table_resolver import TableResolver
 from flyquery.core.services.query.conversation_service import ConversationService
-from flyquery.core.services.query.query_repository import QueryRepository
-from flyquery.core.services.query.query_service import QueryService
-from flyquery.core.services.query.result_uploader import ResultUploader
-from flyquery.core.services.retrieval.embedder import Embedder
-from flyquery.core.services.retrieval.hybrid_retriever import HybridRetriever
-from flyquery.core.services.retrieval.reranker import build_reranker
-from flyquery.core.services.retrieval.search_index import SearchIndex
-from flyquery.core.services.semantic.semantic_repository import SemanticRepository
-from flyquery.core.services.storage.object_store import ObjectStore
-from flyquery.data import StructuredSessions, unwrap_sessions
+from flyquery.core.services.query.runtime import StructuredQueryRuntimeFactory
 from flyquery.interfaces.conversations import (
     ConversationCreate,
     ConversationRead,
@@ -82,81 +60,15 @@ def _parse_workspace_id(s: str) -> uuid.UUID:
 @rest_controller(name="structured.ConversationsController")
 @request_mapping("/api/v1/conversations")
 class ConversationsController:
-    """REST adapter for conversation CRUD and per-turn query dispatch.
-
-    The ``POST /turn`` route internally delegates to a freshly-built
-    ``QueryService`` (same pattern as ``QueryController``) so the full
-    Grounding → Generation → Exec → Critic → Explainer loop runs with
-    drill-down context loaded from the conversation.
-
-    :param settings: application settings
-    :param session: async session factory
-    :param object_store: blob store for result Parquet
-    :param query_repository: repository for flyquery_queries
-    :param conversation_service: service over flyquery_conversations
-    :param examples_service: needed by AutoLearner
-    :param embedder: OpenAI embedder for retrieval
-    """
+    """Conversation CRUD and turn dispatch through managed application services."""
 
     def __init__(
         self,
-        settings: FlyquerySettings,
-        session: StructuredSessions,
-        object_store: ObjectStore,
-        query_repository: QueryRepository,
-        semantic_repository: SemanticRepository,
+        runtime_factory: StructuredQueryRuntimeFactory,
         conversation_service: ConversationService,
-        examples_service: ExamplesService,
-        embedder: Embedder,
     ) -> None:
-        self._settings = settings
-        self._semantic_repo = semantic_repository
-        self._session_factory = unwrap_sessions(session)
-        self._object_store = object_store
-        self._query_repo = query_repository
+        self._runtime_factory = runtime_factory
         self._conversation_service = conversation_service
-        self._examples_service = examples_service
-        self._embedder = embedder
-
-        self._ast_classifier = AstClassifier()
-        self._scope_guard = ScopeGuard()
-        self._executor = DuckDBExecutor(settings)
-
-    def _build_query_service(self, db_session: AsyncSession) -> QueryService:
-        """Build a per-request QueryService with drill-down context support."""
-        index = SearchIndex(db_session)
-        retriever = HybridRetriever(
-            index=index,
-            embedder=self._embedder,
-            rrf_k=self._settings.rrf_k,
-        )
-        reranker = build_reranker(self._settings)
-        table_resolver = TableResolver(session=db_session, settings=self._settings)
-        uploader = ResultUploader(
-            object_store=self._object_store,
-            query_repo=self._query_repo,
-            settings=self._settings,
-        )
-        auto_learner = AutoLearner(examples_service=self._examples_service)
-
-        return QueryService(
-            retriever=retriever,
-            reranker=reranker,
-            grounding_agent=build_grounding_agent(self._settings),
-            generation_agent=build_generation_agent(self._settings),
-            critic_agent=build_critic_agent(self._settings),
-            explainer_agent=build_explainer_agent(self._settings),
-            ast_classifier=self._ast_classifier,
-            scope_guard=self._scope_guard,
-            table_resolver=table_resolver,
-            executor=self._executor,
-            query_repo=self._query_repo,
-            settings=self._settings,
-            result_uploader=uploader,
-            auto_learner=auto_learner,
-            conversation_service=self._conversation_service,
-            semantic_repo=self._semantic_repo,
-        )
 
     # ------------------------------------------------------------------
     # POST /api/v1/conversations  (create)
@@ -255,8 +167,8 @@ class ConversationsController:
         if conv is None:
             raise ResourceNotFound(f"conversation {conversation_id!r} not found")
 
-        async with infrastructure_unit(self._session_factory) as db_session:
-            svc = self._build_query_service(db_session)
+        async with self._runtime_factory.unit(with_conversation=True) as runtime:
+            svc = runtime.pipeline
             result = await svc.answer(
                 tenant_id=ctx.tenant_id,
                 workspace_id=workspace_id,

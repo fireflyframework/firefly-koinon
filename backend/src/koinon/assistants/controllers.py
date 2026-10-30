@@ -17,6 +17,7 @@ from pyfly.web.sse.adapters.starlette import make_sse_response
 from starlette.requests import Request
 from starlette.responses import JSONResponse, StreamingResponse
 
+from koinon.assistants.audit import AnswerAudits
 from koinon.assistants.dtos import RunInput, ThreadInput
 from koinon.assistants.history.service import ChatHistoryService
 from koinon.assistants.service import AssistantService
@@ -27,8 +28,8 @@ from koinon.security.identity import identity_from_request
 @rest_controller(name="assistants.controller")
 @request_mapping("/api/v1/tenants/{tenant_id}")
 class AssistantController:
-    def __init__(self, assistants: AssistantService, history: ChatHistoryService):
-        self.assistants, self.history = assistants, history
+    def __init__(self, assistants: AssistantService, history: ChatHistoryService, audits: AnswerAudits):
+        self.assistants, self.history, self.audits = assistants, history, audits
 
     @get_mapping("/chat/threads")
     async def threads(
@@ -179,11 +180,7 @@ class AssistantController:
 
     @get_mapping("/chat/runs/{run_id}/audit")
     async def audit(self, tenant_id: PathVar[str], run_id: PathVar[str], request: Request) -> JSONResponse:
-        from koinon.assistants.audit import AnswerAudits
-
         return JSONResponse(
-            await request.app.state.context.get_bean(AnswerAudits).get(
-                identity_from_request(request).subject, tenant_id, run_id
-            ),
+            await self.audits.get(identity_from_request(request).subject, tenant_id, run_id),
             headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"},
         )
