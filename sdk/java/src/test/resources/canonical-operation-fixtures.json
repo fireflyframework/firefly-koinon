@@ -2127,6 +2127,28 @@
             }
           ]
         }
+      ],
+      "rlm_tools": [
+        {
+          "result_id": "result_id-value",
+          "generation_id": "generation_id-value",
+          "tenant_id": "tenant_id-value",
+          "workspace_id": "workspace_id-value",
+          "source_ids": [
+            "source_ids-value"
+          ],
+          "tool_call_id": "tool_call_id-value",
+          "tool_name": "python",
+          "request_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "schema_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "arguments_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "result_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "result_kind": "tool_return",
+          "execution_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "outcome": "completed",
+          "execution_status": "execution_status-value",
+          "execution_state": "execution_state-value"
+        }
       ]
     },
     "status": 200,
@@ -3907,7 +3929,14 @@
       "omissions": [
         "omissions-value"
       ],
-      "expires_at": "2026-10-27T12:34:56Z"
+      "expires_at": "2026-10-27T12:34:56Z",
+      "identity": {
+        "product_name": "product_name-value",
+        "assistant_name": "assistant_name-value",
+        "branding_revision": 1,
+        "branding_origin": "deployment",
+        "branding_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
     },
     "status": 201,
     "encoding": "application/json",
@@ -6233,7 +6262,7 @@
       "dataset_id": "dataset_id-value",
       "file_version_id": "file_version_id-value",
       "filename": "filename-value",
-      "sha256": "sha256-value",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "byte_size": 1,
       "table_ids": [
         "table_ids-value"
@@ -6244,6 +6273,914 @@
     "encoding": "multipart/form-data",
     "precondition": false,
     "idempotency": true
+  },
+  {
+    "operation": "ExternalKnowledgeReviewController.stage",
+    "group": "ExternalReviewsApi",
+    "method": "stage",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/external-knowledge-reviews",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ExternalReviewInput",
+    "response": "ExternalReviewView",
+    "body": {
+      "id": "id-value",
+      "review": {
+        "id": "id-value",
+        "revision": 1,
+        "tenant_id": "tenant_id-value",
+        "owner_subject": "owner_subject-value",
+        "action": "create_draft",
+        "destination": {
+          "id": "id-value",
+          "workspace_id": "workspace_id-value",
+          "project_id": "project_id-value",
+          "name": "name-value",
+          "ancestry_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "target_item_id": "target_item_id-value",
+        "expected_version": 1,
+        "before": {
+          "title": "title-value",
+          "body": "body-value",
+          "summary": "summary-value",
+          "domain": "legal",
+          "tags": [
+            "tags-value"
+          ]
+        },
+        "after": {
+          "title": "title-value",
+          "body": "body-value",
+          "summary": "summary-value",
+          "domain": "legal",
+          "tags": [
+            "tags-value"
+          ]
+        },
+        "evidence": [
+          {
+            "kind": "user_statement",
+            "text": "text-value",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "author_subject": "author_subject-value",
+            "recorded_at": "2026-10-27T12:34:56Z",
+            "authority": "user_authored"
+          }
+        ],
+        "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "status": "preview",
+        "created_at": "2026-10-27T12:34:56Z",
+        "expires_at": "2026-10-27T12:34:56Z",
+        "receipt": {
+          "operation_id": "operation_id-value",
+          "intent_id": "intent_id-value",
+          "intent_revision": 1,
+          "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "item_id": "item_id-value",
+          "native_item_id": "native_item_id-value",
+          "native_version_id": "native_version_id-value",
+          "version": 1,
+          "serving_version": 1,
+          "action": "create_draft",
+          "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "evidence_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "committed_at": "2026-10-27T12:34:56Z",
+          "retrieval_state": "not_published",
+          "reason": "reason-value"
+        }
+      },
+      "status": "preview",
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "status": 201,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": true
+  },
+  {
+    "operation": "ExternalKnowledgeReviewController.get",
+    "group": "ExternalReviewsApi",
+    "method": "get",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/external-knowledge-reviews/review_id value",
+    "ids": {
+      "tenant_id": "tenant value",
+      "review_id": "review_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "ExternalReviewView",
+    "body": {
+      "id": "id-value",
+      "review": {
+        "id": "id-value",
+        "revision": 1,
+        "tenant_id": "tenant_id-value",
+        "owner_subject": "owner_subject-value",
+        "action": "create_draft",
+        "destination": {
+          "id": "id-value",
+          "workspace_id": "workspace_id-value",
+          "project_id": "project_id-value",
+          "name": "name-value",
+          "ancestry_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "target_item_id": "target_item_id-value",
+        "expected_version": 1,
+        "before": {
+          "title": "title-value",
+          "body": "body-value",
+          "summary": "summary-value",
+          "domain": "legal",
+          "tags": [
+            "tags-value"
+          ]
+        },
+        "after": {
+          "title": "title-value",
+          "body": "body-value",
+          "summary": "summary-value",
+          "domain": "legal",
+          "tags": [
+            "tags-value"
+          ]
+        },
+        "evidence": [
+          {
+            "kind": "user_statement",
+            "text": "text-value",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "author_subject": "author_subject-value",
+            "recorded_at": "2026-10-27T12:34:56Z",
+            "authority": "user_authored"
+          }
+        ],
+        "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "status": "preview",
+        "created_at": "2026-10-27T12:34:56Z",
+        "expires_at": "2026-10-27T12:34:56Z",
+        "receipt": {
+          "operation_id": "operation_id-value",
+          "intent_id": "intent_id-value",
+          "intent_revision": 1,
+          "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "item_id": "item_id-value",
+          "native_item_id": "native_item_id-value",
+          "native_version_id": "native_version_id-value",
+          "version": 1,
+          "serving_version": 1,
+          "action": "create_draft",
+          "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "evidence_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "committed_at": "2026-10-27T12:34:56Z",
+          "retrieval_state": "not_published",
+          "reason": "reason-value"
+        }
+      },
+      "status": "preview",
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "ExternalKnowledgeReviewController.approve",
+    "group": "ExternalReviewsApi",
+    "method": "approve",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/external-knowledge-reviews/review_id value/approve",
+    "ids": {
+      "tenant_id": "tenant value",
+      "review_id": "review_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ExternalReviewDecision",
+    "response": "KnowledgeCommitOutcome",
+    "body": {
+      "status": "committed",
+      "receipt": {
+        "operation_id": "operation_id-value",
+        "intent_id": "intent_id-value",
+        "intent_revision": 1,
+        "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "item_id": "item_id-value",
+        "native_item_id": "native_item_id-value",
+        "native_version_id": "native_version_id-value",
+        "version": 1,
+        "serving_version": 1,
+        "action": "create_draft",
+        "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "committed_at": "2026-10-27T12:34:56Z",
+        "retrieval_state": "not_published",
+        "reason": "reason-value"
+      }
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": true
+  },
+  {
+    "operation": "ExternalKnowledgeReviewController.cancel",
+    "group": "ExternalReviewsApi",
+    "method": "cancel",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/external-knowledge-reviews/review_id value/cancel",
+    "ids": {
+      "tenant_id": "tenant value",
+      "review_id": "review_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ExternalReviewDecision",
+    "response": "ExternalReviewView",
+    "body": {
+      "id": "id-value",
+      "review": {
+        "id": "id-value",
+        "revision": 1,
+        "tenant_id": "tenant_id-value",
+        "owner_subject": "owner_subject-value",
+        "action": "create_draft",
+        "destination": {
+          "id": "id-value",
+          "workspace_id": "workspace_id-value",
+          "project_id": "project_id-value",
+          "name": "name-value",
+          "ancestry_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "target_item_id": "target_item_id-value",
+        "expected_version": 1,
+        "before": {
+          "title": "title-value",
+          "body": "body-value",
+          "summary": "summary-value",
+          "domain": "legal",
+          "tags": [
+            "tags-value"
+          ]
+        },
+        "after": {
+          "title": "title-value",
+          "body": "body-value",
+          "summary": "summary-value",
+          "domain": "legal",
+          "tags": [
+            "tags-value"
+          ]
+        },
+        "evidence": [
+          {
+            "kind": "user_statement",
+            "text": "text-value",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "author_subject": "author_subject-value",
+            "recorded_at": "2026-10-27T12:34:56Z",
+            "authority": "user_authored"
+          }
+        ],
+        "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "status": "preview",
+        "created_at": "2026-10-27T12:34:56Z",
+        "expires_at": "2026-10-27T12:34:56Z",
+        "receipt": {
+          "operation_id": "operation_id-value",
+          "intent_id": "intent_id-value",
+          "intent_revision": 1,
+          "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "item_id": "item_id-value",
+          "native_item_id": "native_item_id-value",
+          "native_version_id": "native_version_id-value",
+          "version": 1,
+          "serving_version": 1,
+          "action": "create_draft",
+          "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "evidence_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "committed_at": "2026-10-27T12:34:56Z",
+          "retrieval_state": "not_published",
+          "reason": "reason-value"
+        }
+      },
+      "status": "preview",
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "ExternalFileReviewController.cleanup",
+    "group": "ExternalFileReviewsApi",
+    "method": "cleanup",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/external-file-reviews/cleanup",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ExternalFileCleanupInput",
+    "response": "ExternalFileCleanupResult",
+    "body": {
+      "reviews": [
+        {
+          "id": "id-value",
+          "status": "purging",
+          "processed_objects": 1,
+          "total_objects": 1
+        }
+      ]
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "ExternalFileReviewController.stage",
+    "group": "ExternalFileReviewsApi",
+    "method": "stage",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/external-file-reviews",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ExternalFileReviewInput",
+    "response": "ExternalFileReviewView",
+    "body": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "revision": 1,
+      "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "status": "uploading",
+      "filename": "filename-value",
+      "content_type": "content_type-value",
+      "mode": "document",
+      "size_bytes": 1,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "destination": {
+        "id": "id-value",
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "name": "name-value",
+        "ancestry_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "received_chunks": 1,
+      "total_chunks": 1,
+      "expires_at": "2026-10-27T12:34:56Z",
+      "submitted_by": "submitted_by-value",
+      "credential_id": "credential_id-value",
+      "application_id": "application_id-value",
+      "origin": "external_proposal",
+      "authority": "unverified",
+      "provider": null,
+      "model": null,
+      "source_id": "source_id-value",
+      "intake_status": "intake_status-value",
+      "receipt": {
+        "source": {
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "kind": "kind-value",
+          "name": "name-value",
+          "parent_id": "parent_id-value",
+          "workspace_id": "workspace_id-value",
+          "project_id": "project_id-value",
+          "description": "description-value",
+          "status": "status-value",
+          "created_by": "created_by-value",
+          "updated_by": "updated_by-value",
+          "metadata": {
+            "example": {
+              "decimal": "12345678901234567890.12345678901234567890",
+              "integer": "9007199254740993"
+            }
+          },
+          "created_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z"
+        },
+        "assets": [
+          {
+            "id": "id-value",
+            "tenant_id": "tenant_id-value",
+            "kind": "kind-value",
+            "name": "name-value",
+            "parent_id": "parent_id-value",
+            "workspace_id": "workspace_id-value",
+            "project_id": "project_id-value",
+            "description": "description-value",
+            "status": "status-value",
+            "created_by": "created_by-value",
+            "updated_by": "updated_by-value",
+            "metadata": {
+              "example": {
+                "decimal": "12345678901234567890.12345678901234567890",
+                "integer": "9007199254740993"
+              }
+            },
+            "created_at": "2026-10-27T12:34:56Z",
+            "updated_at": "2026-10-27T12:34:56Z"
+          }
+        ]
+      }
+    },
+    "status": 201,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": true
+  },
+  {
+    "operation": "ExternalFileReviewController.get",
+    "group": "ExternalFileReviewsApi",
+    "method": "get",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/external-file-reviews/review_id value",
+    "ids": {
+      "tenant_id": "tenant value",
+      "review_id": "review_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "ExternalFileReviewView",
+    "body": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "revision": 1,
+      "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "status": "uploading",
+      "filename": "filename-value",
+      "content_type": "content_type-value",
+      "mode": "document",
+      "size_bytes": 1,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "destination": {
+        "id": "id-value",
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "name": "name-value",
+        "ancestry_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "received_chunks": 1,
+      "total_chunks": 1,
+      "expires_at": "2026-10-27T12:34:56Z",
+      "submitted_by": "submitted_by-value",
+      "credential_id": "credential_id-value",
+      "application_id": "application_id-value",
+      "origin": "external_proposal",
+      "authority": "unverified",
+      "provider": null,
+      "model": null,
+      "source_id": "source_id-value",
+      "intake_status": "intake_status-value",
+      "receipt": {
+        "source": {
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "kind": "kind-value",
+          "name": "name-value",
+          "parent_id": "parent_id-value",
+          "workspace_id": "workspace_id-value",
+          "project_id": "project_id-value",
+          "description": "description-value",
+          "status": "status-value",
+          "created_by": "created_by-value",
+          "updated_by": "updated_by-value",
+          "metadata": {
+            "example": {
+              "decimal": "12345678901234567890.12345678901234567890",
+              "integer": "9007199254740993"
+            }
+          },
+          "created_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z"
+        },
+        "assets": [
+          {
+            "id": "id-value",
+            "tenant_id": "tenant_id-value",
+            "kind": "kind-value",
+            "name": "name-value",
+            "parent_id": "parent_id-value",
+            "workspace_id": "workspace_id-value",
+            "project_id": "project_id-value",
+            "description": "description-value",
+            "status": "status-value",
+            "created_by": "created_by-value",
+            "updated_by": "updated_by-value",
+            "metadata": {
+              "example": {
+                "decimal": "12345678901234567890.12345678901234567890",
+                "integer": "9007199254740993"
+              }
+            },
+            "created_at": "2026-10-27T12:34:56Z",
+            "updated_at": "2026-10-27T12:34:56Z"
+          }
+        ]
+      }
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "ExternalFileReviewController.chunk",
+    "group": "ExternalFileReviewsApi",
+    "method": "chunk",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/external-file-reviews/review_id value/chunks",
+    "ids": {
+      "tenant_id": "tenant value",
+      "review_id": "review_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ExternalFileChunkInput",
+    "response": "ExternalFileReviewView",
+    "body": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "revision": 1,
+      "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "status": "uploading",
+      "filename": "filename-value",
+      "content_type": "content_type-value",
+      "mode": "document",
+      "size_bytes": 1,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "destination": {
+        "id": "id-value",
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "name": "name-value",
+        "ancestry_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "received_chunks": 1,
+      "total_chunks": 1,
+      "expires_at": "2026-10-27T12:34:56Z",
+      "submitted_by": "submitted_by-value",
+      "credential_id": "credential_id-value",
+      "application_id": "application_id-value",
+      "origin": "external_proposal",
+      "authority": "unverified",
+      "provider": null,
+      "model": null,
+      "source_id": "source_id-value",
+      "intake_status": "intake_status-value",
+      "receipt": {
+        "source": {
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "kind": "kind-value",
+          "name": "name-value",
+          "parent_id": "parent_id-value",
+          "workspace_id": "workspace_id-value",
+          "project_id": "project_id-value",
+          "description": "description-value",
+          "status": "status-value",
+          "created_by": "created_by-value",
+          "updated_by": "updated_by-value",
+          "metadata": {
+            "example": {
+              "decimal": "12345678901234567890.12345678901234567890",
+              "integer": "9007199254740993"
+            }
+          },
+          "created_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z"
+        },
+        "assets": [
+          {
+            "id": "id-value",
+            "tenant_id": "tenant_id-value",
+            "kind": "kind-value",
+            "name": "name-value",
+            "parent_id": "parent_id-value",
+            "workspace_id": "workspace_id-value",
+            "project_id": "project_id-value",
+            "description": "description-value",
+            "status": "status-value",
+            "created_by": "created_by-value",
+            "updated_by": "updated_by-value",
+            "metadata": {
+              "example": {
+                "decimal": "12345678901234567890.12345678901234567890",
+                "integer": "9007199254740993"
+              }
+            },
+            "created_at": "2026-10-27T12:34:56Z",
+            "updated_at": "2026-10-27T12:34:56Z"
+          }
+        ]
+      }
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "ExternalFileReviewController.seal",
+    "group": "ExternalFileReviewsApi",
+    "method": "seal",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/external-file-reviews/review_id value/seal",
+    "ids": {
+      "tenant_id": "tenant value",
+      "review_id": "review_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "ExternalFileReviewView",
+    "body": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "revision": 1,
+      "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "status": "uploading",
+      "filename": "filename-value",
+      "content_type": "content_type-value",
+      "mode": "document",
+      "size_bytes": 1,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "destination": {
+        "id": "id-value",
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "name": "name-value",
+        "ancestry_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "received_chunks": 1,
+      "total_chunks": 1,
+      "expires_at": "2026-10-27T12:34:56Z",
+      "submitted_by": "submitted_by-value",
+      "credential_id": "credential_id-value",
+      "application_id": "application_id-value",
+      "origin": "external_proposal",
+      "authority": "unverified",
+      "provider": null,
+      "model": null,
+      "source_id": "source_id-value",
+      "intake_status": "intake_status-value",
+      "receipt": {
+        "source": {
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "kind": "kind-value",
+          "name": "name-value",
+          "parent_id": "parent_id-value",
+          "workspace_id": "workspace_id-value",
+          "project_id": "project_id-value",
+          "description": "description-value",
+          "status": "status-value",
+          "created_by": "created_by-value",
+          "updated_by": "updated_by-value",
+          "metadata": {
+            "example": {
+              "decimal": "12345678901234567890.12345678901234567890",
+              "integer": "9007199254740993"
+            }
+          },
+          "created_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z"
+        },
+        "assets": [
+          {
+            "id": "id-value",
+            "tenant_id": "tenant_id-value",
+            "kind": "kind-value",
+            "name": "name-value",
+            "parent_id": "parent_id-value",
+            "workspace_id": "workspace_id-value",
+            "project_id": "project_id-value",
+            "description": "description-value",
+            "status": "status-value",
+            "created_by": "created_by-value",
+            "updated_by": "updated_by-value",
+            "metadata": {
+              "example": {
+                "decimal": "12345678901234567890.12345678901234567890",
+                "integer": "9007199254740993"
+              }
+            },
+            "created_at": "2026-10-27T12:34:56Z",
+            "updated_at": "2026-10-27T12:34:56Z"
+          }
+        ]
+      }
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "ExternalFileReviewController.approve",
+    "group": "ExternalFileReviewsApi",
+    "method": "approve",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/external-file-reviews/review_id value/approve",
+    "ids": {
+      "tenant_id": "tenant value",
+      "review_id": "review_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ExternalReviewDecision",
+    "response": "ExternalFileReviewView",
+    "body": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "revision": 1,
+      "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "status": "uploading",
+      "filename": "filename-value",
+      "content_type": "content_type-value",
+      "mode": "document",
+      "size_bytes": 1,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "destination": {
+        "id": "id-value",
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "name": "name-value",
+        "ancestry_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "received_chunks": 1,
+      "total_chunks": 1,
+      "expires_at": "2026-10-27T12:34:56Z",
+      "submitted_by": "submitted_by-value",
+      "credential_id": "credential_id-value",
+      "application_id": "application_id-value",
+      "origin": "external_proposal",
+      "authority": "unverified",
+      "provider": null,
+      "model": null,
+      "source_id": "source_id-value",
+      "intake_status": "intake_status-value",
+      "receipt": {
+        "source": {
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "kind": "kind-value",
+          "name": "name-value",
+          "parent_id": "parent_id-value",
+          "workspace_id": "workspace_id-value",
+          "project_id": "project_id-value",
+          "description": "description-value",
+          "status": "status-value",
+          "created_by": "created_by-value",
+          "updated_by": "updated_by-value",
+          "metadata": {
+            "example": {
+              "decimal": "12345678901234567890.12345678901234567890",
+              "integer": "9007199254740993"
+            }
+          },
+          "created_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z"
+        },
+        "assets": [
+          {
+            "id": "id-value",
+            "tenant_id": "tenant_id-value",
+            "kind": "kind-value",
+            "name": "name-value",
+            "parent_id": "parent_id-value",
+            "workspace_id": "workspace_id-value",
+            "project_id": "project_id-value",
+            "description": "description-value",
+            "status": "status-value",
+            "created_by": "created_by-value",
+            "updated_by": "updated_by-value",
+            "metadata": {
+              "example": {
+                "decimal": "12345678901234567890.12345678901234567890",
+                "integer": "9007199254740993"
+              }
+            },
+            "created_at": "2026-10-27T12:34:56Z",
+            "updated_at": "2026-10-27T12:34:56Z"
+          }
+        ]
+      }
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": true
+  },
+  {
+    "operation": "ExternalFileReviewController.cancel",
+    "group": "ExternalFileReviewsApi",
+    "method": "cancel",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/external-file-reviews/review_id value/cancel",
+    "ids": {
+      "tenant_id": "tenant value",
+      "review_id": "review_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ExternalReviewDecision",
+    "response": "ExternalFileReviewView",
+    "body": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "revision": 1,
+      "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "status": "uploading",
+      "filename": "filename-value",
+      "content_type": "content_type-value",
+      "mode": "document",
+      "size_bytes": 1,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "destination": {
+        "id": "id-value",
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "name": "name-value",
+        "ancestry_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "received_chunks": 1,
+      "total_chunks": 1,
+      "expires_at": "2026-10-27T12:34:56Z",
+      "submitted_by": "submitted_by-value",
+      "credential_id": "credential_id-value",
+      "application_id": "application_id-value",
+      "origin": "external_proposal",
+      "authority": "unverified",
+      "provider": null,
+      "model": null,
+      "source_id": "source_id-value",
+      "intake_status": "intake_status-value",
+      "receipt": {
+        "source": {
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "kind": "kind-value",
+          "name": "name-value",
+          "parent_id": "parent_id-value",
+          "workspace_id": "workspace_id-value",
+          "project_id": "project_id-value",
+          "description": "description-value",
+          "status": "status-value",
+          "created_by": "created_by-value",
+          "updated_by": "updated_by-value",
+          "metadata": {
+            "example": {
+              "decimal": "12345678901234567890.12345678901234567890",
+              "integer": "9007199254740993"
+            }
+          },
+          "created_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z"
+        },
+        "assets": [
+          {
+            "id": "id-value",
+            "tenant_id": "tenant_id-value",
+            "kind": "kind-value",
+            "name": "name-value",
+            "parent_id": "parent_id-value",
+            "workspace_id": "workspace_id-value",
+            "project_id": "project_id-value",
+            "description": "description-value",
+            "status": "status-value",
+            "created_by": "created_by-value",
+            "updated_by": "updated_by-value",
+            "metadata": {
+              "example": {
+                "decimal": "12345678901234567890.12345678901234567890",
+                "integer": "9007199254740993"
+              }
+            },
+            "created_at": "2026-10-27T12:34:56Z",
+            "updated_at": "2026-10-27T12:34:56Z"
+          }
+        ]
+      }
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
   },
   {
     "operation": "KnowledgeIndexesController.list_indexes",
@@ -7157,6 +8094,281 @@
     "idempotency": false
   },
   {
+    "operation": "McpConnectionController.get",
+    "group": "McpApi",
+    "method": "connection",
+    "http": "GET",
+    "path": "/api/v1/mcp/connection",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "McpConnectionDescriptor",
+    "body": {
+      "enabled": false,
+      "local_only": false,
+      "endpoint": "endpoint-value",
+      "transport": "streamable-http",
+      "authentication": [
+        "personal_token"
+      ],
+      "clients": [
+        {
+          "client_id": "client_id-value",
+          "name": "name-value",
+          "scopes": [
+            "scopes-value"
+          ],
+          "client_auth": "public"
+        }
+      ],
+      "oauth_enabled": false,
+      "oauth_registration": "pre_registered",
+      "supported_scopes": [
+        "supported_scopes-value"
+      ],
+      "tools": [
+        {
+          "name": "name-value",
+          "required_scopes": [
+            "required_scopes-value"
+          ],
+          "access": "read",
+          "requires_app": false
+        }
+      ],
+      "review": {
+        "supported": false,
+        "mechanism": "mcp_apps",
+        "resource_uri": "ui://koinon/knowledge-review",
+        "mime_type": "text/html;profile=mcp-app",
+        "external_redirect": false,
+        "client_support": "not_observed"
+      },
+      "client_acceptance": "not_verified"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "BrandingDefaultsController.defaults",
+    "group": "BrandingDefaultsApi",
+    "method": "defaults",
+    "http": "GET",
+    "path": "/api/v1/branding/defaults",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "BrandingValues",
+    "body": {
+      "product_name": "product_name-value",
+      "assistant_name": "assistant_name-value",
+      "logo_light": "logo_light-value",
+      "logo_dark": "logo_dark-value",
+      "symbol": "symbol-value",
+      "favicon": "favicon-value",
+      "palette": {
+        "light": {
+          "surface": "surface-value",
+          "canvas": "canvas-value",
+          "text": "text-value",
+          "muted": "muted-value",
+          "line": "line-value",
+          "action": "action-value",
+          "action_text": "action_text-value",
+          "accent": "accent-value"
+        },
+        "dark": {
+          "surface": "surface-value",
+          "canvas": "canvas-value",
+          "text": "text-value",
+          "muted": "muted-value",
+          "line": "line-value",
+          "action": "action-value",
+          "action_text": "action_text-value",
+          "accent": "accent-value"
+        }
+      },
+      "font_family": "Manrope"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "OrganizationBrandingController.get",
+    "group": "OrganizationBrandingApi",
+    "method": "get",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/branding",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "OrganizationBranding",
+    "body": {
+      "tenant_id": "tenant_id-value",
+      "schema_version": 1,
+      "revision": 1,
+      "origin": "deployment",
+      "branding": {
+        "product_name": "product_name-value",
+        "assistant_name": "assistant_name-value",
+        "logo_light": "logo_light-value",
+        "logo_dark": "logo_dark-value",
+        "symbol": "symbol-value",
+        "favicon": "favicon-value",
+        "palette": {
+          "light": {
+            "surface": "surface-value",
+            "canvas": "canvas-value",
+            "text": "text-value",
+            "muted": "muted-value",
+            "line": "line-value",
+            "action": "action-value",
+            "action_text": "action_text-value",
+            "accent": "accent-value"
+          },
+          "dark": {
+            "surface": "surface-value",
+            "canvas": "canvas-value",
+            "text": "text-value",
+            "muted": "muted-value",
+            "line": "line-value",
+            "action": "action-value",
+            "action_text": "action_text-value",
+            "accent": "accent-value"
+          }
+        },
+        "font_family": "Manrope"
+      }
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "OrganizationBrandingController.update",
+    "group": "OrganizationBrandingApi",
+    "method": "update",
+    "http": "PUT",
+    "path": "/api/v1/tenants/tenant value/branding",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "OrganizationBrandingInput",
+    "response": "OrganizationBranding",
+    "body": {
+      "tenant_id": "tenant_id-value",
+      "schema_version": 1,
+      "revision": 1,
+      "origin": "deployment",
+      "branding": {
+        "product_name": "product_name-value",
+        "assistant_name": "assistant_name-value",
+        "logo_light": "logo_light-value",
+        "logo_dark": "logo_dark-value",
+        "symbol": "symbol-value",
+        "favicon": "favicon-value",
+        "palette": {
+          "light": {
+            "surface": "surface-value",
+            "canvas": "canvas-value",
+            "text": "text-value",
+            "muted": "muted-value",
+            "line": "line-value",
+            "action": "action-value",
+            "action_text": "action_text-value",
+            "accent": "accent-value"
+          },
+          "dark": {
+            "surface": "surface-value",
+            "canvas": "canvas-value",
+            "text": "text-value",
+            "muted": "muted-value",
+            "line": "line-value",
+            "action": "action-value",
+            "action_text": "action_text-value",
+            "accent": "accent-value"
+          }
+        },
+        "font_family": "Manrope"
+      }
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "OrganizationBrandingController.reset",
+    "group": "OrganizationBrandingApi",
+    "method": "reset",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/branding/reset",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "BrandingResetInput",
+    "response": "OrganizationBranding",
+    "body": {
+      "tenant_id": "tenant_id-value",
+      "schema_version": 1,
+      "revision": 1,
+      "origin": "deployment",
+      "branding": {
+        "product_name": "product_name-value",
+        "assistant_name": "assistant_name-value",
+        "logo_light": "logo_light-value",
+        "logo_dark": "logo_dark-value",
+        "symbol": "symbol-value",
+        "favicon": "favicon-value",
+        "palette": {
+          "light": {
+            "surface": "surface-value",
+            "canvas": "canvas-value",
+            "text": "text-value",
+            "muted": "muted-value",
+            "line": "line-value",
+            "action": "action-value",
+            "action_text": "action_text-value",
+            "accent": "accent-value"
+          },
+          "dark": {
+            "surface": "surface-value",
+            "canvas": "canvas-value",
+            "text": "text-value",
+            "muted": "muted-value",
+            "line": "line-value",
+            "action": "action-value",
+            "action_text": "action_text-value",
+            "accent": "accent-value"
+          }
+        },
+        "font_family": "Manrope"
+      }
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
     "operation": "OrganizationChatController.get",
     "group": "OrganizationChatApi",
     "method": "get",
@@ -7756,7 +8968,14 @@
       "omissions": [
         "omissions-value"
       ],
-      "expires_at": "2026-10-27T12:34:56Z"
+      "expires_at": "2026-10-27T12:34:56Z",
+      "identity": {
+        "product_name": "product_name-value",
+        "assistant_name": "assistant_name-value",
+        "branding_revision": 1,
+        "branding_origin": "deployment",
+        "branding_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
     },
     "status": 201,
     "encoding": "application/json",
@@ -7906,7 +9125,14 @@
           "availability": "available"
         }
       ],
-      "source_manifest_complete": false
+      "source_manifest_complete": false,
+      "identity": {
+        "product_name": "product_name-value",
+        "assistant_name": "assistant_name-value",
+        "branding_revision": 1,
+        "branding_origin": "deployment",
+        "branding_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
     },
     "status": 200,
     "encoding": "application/json",

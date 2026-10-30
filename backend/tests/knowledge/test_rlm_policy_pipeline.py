@@ -7,6 +7,7 @@ from hashlib import sha256
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
+import pytest
 from flycanon.config import CanonSettings
 from flycanon.core.agents.model_bindings import ModelBinding
 from flycanon.core.services.consolidation.prompt_loader import load_prompt
@@ -29,7 +30,7 @@ from flycanon.interfaces.dtos.source import SubmitSourceRequest
 from flycanon.models.entities import Base
 from flycanon.models.entities.source_lineage import metadata, source_extractions, source_parts
 from flycanon.models.repositories import ChunkRepository, SourceRepository
-from pydantic_ai.messages import ModelResponse, ToolCallPart
+from pydantic_ai.messages import ModelResponse, ToolCallPart, ToolReturnPart
 from pydantic_ai.models.function import FunctionModel
 from pyfly.agentic.content.binary import BinaryArtifact
 from pyfly.agentic.factory import AgentFactory
@@ -47,8 +48,9 @@ from koinon.organization_knowledge.dtos import OrganizationKnowledgeSnapshot, sn
 from koinon.organization_knowledge.runtime import bind_snapshot
 
 
+@pytest.mark.parametrize("typed_terminal", [False, True])
 async def test_admitted_rlm_policy_executes_native_codeact_and_returns_exact_immutable_evidence(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, typed_terminal,
 ):
     body = "Recorded scalar: 42"
     engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'combined-rlm.db'}")
@@ -130,10 +132,19 @@ async def test_admitted_rlm_policy_executes_native_codeact_and_returns_exact_imm
 
         def respond(messages, info):
             model_calls.append(info.model_settings)
-            assert [tool.name for tool in info.function_tools] == ["python"]
+            assert [tool.name for tool in info.function_tools] == ["python", "final_answer"]
+            if typed_terminal and len(model_calls) == 2:
+                observed = [part for message in messages for part in message.parts
+                            if isinstance(part, ToolReturnPart)][-1]
+                assert observed.tool_call_id == "controlled-python"
+                filing, answer = observed.content.strip().splitlines()
+                return ModelResponse(parts=[ToolCallPart("final_answer", {
+                    "answer": answer, "filings": [filing], "pages": [0],
+                }, "controlled-final")])
             code = (
                 "key = docs.keys()[0]\ntext = docs.get(key)\n"
-                "value = text.rsplit(': ', 1)[1]\nfinal(value, filings=[key], pages=[0])"
+                "value = text.rsplit(': ', 1)[1]\n"
+                + ("print(key); print(value)" if typed_terminal else "final(value, filings=[key], pages=[0])")
             )
             return ModelResponse(parts=[ToolCallPart("python", {"code": code}, "controlled-python")])
 
@@ -270,13 +281,14 @@ async def test_admitted_rlm_policy_executes_native_codeact_and_returns_exact_imm
         )
         assert result.complete and result.data["answer"] == "42"
         assert (
-            len(result.sources) == 1 and len(model_calls) == len(connection_calls) == len(budget_calls) == 1
+            len(result.sources) == 1 and len(connection_calls) == len(budget_calls) == 1
         )
+        assert len(model_calls) == (2 if typed_terminal else 1)
         assert pre_searches == []
         assert {
             key: budget_calls[0][key] for key in ("max_iters", "sub_budget", "max_depth", "sandbox_mode")
         } == {"max_iters": 6, "sub_budget": 0, "max_depth": 0, "sandbox_mode": "monty"}
-        assert model_calls == [{"temperature": 0.0, "max_tokens": 96}]
+        assert model_calls == [{"temperature": 0.0, "max_tokens": 96}] * len(model_calls)
         assert (
             baseline.answer_mode,
             baseline.rlm_max_iters,
@@ -326,6 +338,11 @@ async def test_admitted_rlm_policy_executes_native_codeact_and_returns_exact_imm
         assert citation["metadata"]["source_part_id"] == recorded.source_part_id
         assert citation["metadata"]["source_part_sha256"] == recorded.source_part_sha256
         assert any(read.stage == "rlm.root" for read in result.native_reads)
+        assert len(result.rlm_tools) == len(model_calls) and result.rlm_tools[-1].outcome == "halted"
+        assert result.rlm_tools[-1].tool_name == ("final_answer" if typed_terminal else "python")
+        assert result.rlm_tools[-1].source_ids == (str(source.id),)
+        assert any(read.stage == "rlm.root" and read.content_sha256 == result.rlm_tools[-1].request_sha256
+                   for read in result.native_reads)
         assert any(
             read.stage == "rlm.read"
             and read.content_sha256 == sha256(body.encode()).hexdigest()

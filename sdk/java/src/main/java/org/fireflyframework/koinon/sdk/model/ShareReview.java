@@ -19,8 +19,10 @@ public record ShareReview(
     @JsonProperty("source_manifest_complete") Boolean sourceManifestComplete,
     @JsonProperty("recipient_policy") ShareRecipientPolicy recipientPolicy,
     @JsonProperty("omissions") List<String> omissions,
-    @JsonProperty("expires_at") Instant expiresAt
+    @JsonProperty("expires_at") Instant expiresAt,
+    @JsonProperty("identity") ConversationIdentity identity
 ) {
+    public ShareReview(String id, String revision, String title, Long messageCount, Long sourceCount, List<ConversationMessage> messages, List<SourceReference> sources, Boolean sourceManifestComplete, ShareRecipientPolicy recipientPolicy, List<String> omissions, Instant expiresAt){this(id,revision,title,messageCount,sourceCount,messages,sources,sourceManifestComplete,recipientPolicy,omissions,expiresAt,null);}
     public ShareReview {
         messages=messages==null?null:List.copyOf(messages);
         sources=sources==null?null:List.copyOf(sources);

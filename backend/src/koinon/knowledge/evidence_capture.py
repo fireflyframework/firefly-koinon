@@ -134,13 +134,16 @@ def failed_receipt(error, receipt, tenant_id, chain=None, binding=None):
         False,
         tuple(reads),
         canonical_dataset_attempts(receipt, chain, binding) if chain is not None else receipt.sql_attempts,
+        tuple(receipt.rlm_tools) if receipt.rlm_tools is not None else None,
     )
     failure.denied = isinstance(error, ForbiddenException)
     return failure
 
 
 def checked_capture(receipt, *arguments):
-    capture = CapturedEvidence(*arguments)
+    capture = CapturedEvidence(*arguments, rlm_tools=(
+        tuple(receipt.rlm_tools) if receipt.rlm_tools is not None else None
+    ))
     receipt.budget.envelope(capture)
     return capture
 

@@ -4,6 +4,7 @@
 
 import json
 from dataclasses import dataclass
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -14,6 +15,40 @@ class PythonAction(BaseModel):
     code: str = Field(
         min_length=1, pattern=r"\S", description="Python source to execute with the supplied helpers"
     )
+
+
+class FinalAnswerAction(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True, frozen=True)
+
+    answer: str
+    filings: str | list[str] | None = None
+    pages: int | list[int | None] | None = None
+    found: bool = True
+
+
+class RlmToolReceipt(BaseModel):
+    """A genuine function call and its actual VM outcome, without model reasoning."""
+
+    model_config = ConfigDict(extra="forbid", strict=True, frozen=True)
+
+    tool_call_id: str = Field(min_length=1, max_length=256)
+    tool_name: Literal["python", "final_answer"]
+    request_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    schema_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    arguments_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    result_sha256: str = Field(pattern=r"^[0-9a-f]{64}$", description=(
+        "SHA-256 of the actual ToolReturnPart JSON serialization, sorted keys, compact UTF-8."
+    ))
+    result_kind: Literal["tool_return", "accepted_final", "execution_failure"] = Field(description=(
+        "tool_return is preserved into subsequent SDK history. accepted_final and execution_failure "
+        "seal the actual host result locally without asserting a subsequent provider delivery."
+    ))
+    execution_sha256: str = Field(pattern=r"^[0-9a-f]{64}$", description=(
+        "SHA-256 of the exact public VM feed dataclass, sorted keys, compact UTF-8."
+    ))
+    outcome: Literal["completed", "rejected", "failed", "halted"]
+    execution_status: str = Field(min_length=1, max_length=32)
+    execution_state: str = Field(min_length=1, max_length=32)
 
 
 NATIVE_JSON_INSTRUCTIONS = (

@@ -49,6 +49,9 @@ def render_transcript(
         {
             "id": message.id,
             "role": message.role,
+            "display_name": "You" if message.role == "user" else (
+                snapshot.identity.assistant_name if snapshot.identity else "koinon"
+            ),
             "text": message.text,
             "status": message.status,
             "revision": message.revision,
@@ -70,6 +73,7 @@ def render_transcript(
         "sources": sources,
         "source_manifest_complete": snapshot.source_manifest_complete if include_evidence else False,
         "omissions": omissions,
+        "identity": snapshot.identity.model_dump(mode="json") if snapshot.identity else None,
     }
     if format == "json":
         return RenderedExport(
@@ -85,9 +89,13 @@ def render_transcript(
         "Revision: " + snapshot.revision,
         "",
     ]
+    if snapshot.identity:
+        lines.extend(["Product: " + _markdown(snapshot.identity.product_name), ""])
     for message in snapshot.messages:
-        label = "You" if message.role == "user" else "koinon"
-        lines.extend(["## " + label, "", _markdown(message.text), ""])
+        label = "You" if message.role == "user" else (
+            snapshot.identity.assistant_name if snapshot.identity else "koinon"
+        )
+        lines.extend(["## " + _markdown(label), "", _markdown(message.text), ""])
         if message.status != "completed":
             lines.extend(["Answer status: " + message.status, ""])
     if sources:

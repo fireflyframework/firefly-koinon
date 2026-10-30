@@ -1,5 +1,7 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
+import type {ExternalFileCleanupInput,ExternalFileCleanupResult,ExternalFileReviewInput,ExternalFileChunkInput,ExternalFileReviewView,McpConnectionDescriptor,ExternalReviewInput,ExternalReviewDecision,ExternalReviewView} from './generated.js';
+import type {BrandingValues,OrganizationBranding,OrganizationBrandingInput,BrandingResetInput} from './generated.js';
 import type {OrganizationChatSettings,OrganizationChatSettingsInput} from './generated.js';
 import type {OrganizationKnowledgeSettings,OrganizationKnowledgeSettingsInput} from './generated.js';
 import type {AnswerAudit} from './generated.js';
@@ -33,6 +35,15 @@ type OrganizationSettingsApi<T,I,F extends boolean>={
  update:(tenantId:string,input:I,options?:RequestOptions)=>Promise<T>;
 };
 export class KoinonClient {
+ get branding(){
+  const transport=this.options.transport;
+  return {
+   defaults:(options:RequestOptions={})=>transport.request<BrandingValues>('GET','/branding/defaults',options),
+   get:(tenantId:string,options:RequestOptions={})=>transport.request<OrganizationBranding>('GET',tenant(tenantId)+'/branding',options),
+   update:(tenantId:string,input:OrganizationBrandingInput,options:RequestOptions={})=>transport.request<OrganizationBranding>('PUT',tenant(tenantId)+'/branding',{...options,body:input}),
+   reset:(tenantId:string,input:BrandingResetInput,options:RequestOptions={})=>transport.request<OrganizationBranding>('POST',tenant(tenantId)+'/branding/reset',{...options,body:input}),
+  };
+ }
  get organizationKnowledge(){
   return this.organizationSettings<OrganizationKnowledgeSettings,OrganizationKnowledgeSettingsInput,false>('/knowledge/settings',false);
  }
@@ -43,6 +54,9 @@ export class KoinonClient {
    update:(tenantId:string,input:I,options:RequestOptions={})=>transport.request<T>('PUT',tenant(tenantId)+suffix,{...options,body:input}),
   } as OrganizationSettingsApi<T,I,F>;
  }
+ readonly mcp;
+ readonly externalReviews;
+ readonly externalFileReviews;
  readonly knowledgeIntents;
  readonly knowledgeItems;
  readonly catalog;
@@ -84,6 +98,22 @@ export class KoinonClient {
     update:(tenantId:string,workspaceId:string,termId:string,input:GlossaryTermUpdate,expectedUpdatedAt:string,options:RequestOptions={})=>transport.request<GlossaryTermRead>('PUT',path+'/'+id(termId),{...options,body:input,headers:headers(tenantId,workspaceId,options,expectedUpdatedAt)}),
     remove:(tenantId:string,workspaceId:string,termId:string,expectedUpdatedAt:string,options:RequestOptions={})=>transport.request<void>('DELETE',path+'/'+id(termId),{...options,headers:headers(tenantId,workspaceId,options,expectedUpdatedAt)}),
    };
+  };
+  this.mcp={connection:(options:RequestOptions={})=>transport.request<McpConnectionDescriptor>('GET','/mcp/connection',options)};
+  this.externalFileReviews={
+   cleanup:(tenantId:string,input:ExternalFileCleanupInput,options:RequestOptions={})=>transport.request<ExternalFileCleanupResult>('POST',`${tenant(tenantId)}/external-file-reviews/cleanup`,{...options,body:input}),
+   stage:(tenantId:string,input:ExternalFileReviewInput,idempotencyKey:string,options:RequestOptions={})=>transport.request<ExternalFileReviewView>('POST',`${tenant(tenantId)}/external-file-reviews`,{...options,body:input,headers:{...options.headers,'Idempotency-Key':idempotencyKey}}),
+   get:(tenantId:string,reviewId:string,options:RequestOptions={})=>transport.request<ExternalFileReviewView>('GET',`${tenant(tenantId)}/external-file-reviews/${id(reviewId)}`,options),
+   chunk:(tenantId:string,reviewId:string,input:ExternalFileChunkInput,options:RequestOptions={})=>transport.request<ExternalFileReviewView>('POST',`${tenant(tenantId)}/external-file-reviews/${id(reviewId)}/chunks`,{...options,body:input}),
+   seal:(tenantId:string,reviewId:string,options:RequestOptions={})=>transport.request<ExternalFileReviewView>('POST',`${tenant(tenantId)}/external-file-reviews/${id(reviewId)}/seal`,options),
+   approve:(tenantId:string,reviewId:string,input:ExternalReviewDecision,idempotencyKey:string,options:RequestOptions={})=>transport.request<ExternalFileReviewView>('POST',`${tenant(tenantId)}/external-file-reviews/${id(reviewId)}/approve`,{...options,body:input,headers:{...options.headers,'Idempotency-Key':idempotencyKey}}),
+   cancel:(tenantId:string,reviewId:string,input:ExternalReviewDecision,options:RequestOptions={})=>transport.request<ExternalFileReviewView>('POST',`${tenant(tenantId)}/external-file-reviews/${id(reviewId)}/cancel`,{...options,body:input}),
+  };
+  this.externalReviews={
+   stage:(tenantId:string,input:ExternalReviewInput,idempotencyKey:string,options:RequestOptions={})=>transport.request<ExternalReviewView>('POST',`${tenant(tenantId)}/external-knowledge-reviews`,{...options,body:input,headers:{...options.headers,'Idempotency-Key':idempotencyKey}}),
+   get:(tenantId:string,reviewId:string,options:RequestOptions={})=>transport.request<ExternalReviewView>('GET',`${tenant(tenantId)}/external-knowledge-reviews/${id(reviewId)}`,options),
+   approve:(tenantId:string,reviewId:string,input:ExternalReviewDecision,idempotencyKey:string,options:RequestOptions={})=>transport.request<KnowledgeCommitOutcome>('POST',`${tenant(tenantId)}/external-knowledge-reviews/${id(reviewId)}/approve`,{...options,body:input,headers:{...options.headers,'Idempotency-Key':idempotencyKey}}),
+   cancel:(tenantId:string,reviewId:string,input:ExternalReviewDecision,options:RequestOptions={})=>transport.request<ExternalReviewView>('POST',`${tenant(tenantId)}/external-knowledge-reviews/${id(reviewId)}/cancel`,{...options,body:input}),
   };
   this.organizationChat=this.organizationSettings<OrganizationChatSettings,OrganizationChatSettingsInput,true>('/chat/settings',true);
   this.structured={glossary:glossary(false),agentGlossary:glossary(true)};

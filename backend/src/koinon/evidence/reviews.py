@@ -17,12 +17,14 @@ from pyfly.kernel import (
 from koinon.catalog.errors import AccessDenied
 from koinon.catalog.service import CatalogService
 from koinon.evidence.access import EvidenceAccess
-from koinon.evidence.dtos import SourceReference
+from koinon.evidence.dtos import ConversationIdentity, ConversationSnapshot, SourceReference
 from koinon.evidence.entities import EvidenceReview
 from koinon.evidence.ports import ConversationSnapshotPort, SourceResolverPort, StoredResultPort
 from koinon.evidence.repositories import EvidenceReviewRepository
 from koinon.evidence.settings import EvidenceSettings
 from koinon.exports.dtos import MessageSelection, QueryResultExportInput
+from koinon.organization_branding.dtos import encode_branding
+from koinon.organization_branding.service import OrganizationBrandingService
 
 
 def digest(value):
@@ -42,9 +44,26 @@ class EvidenceReviews:
         snapshots: Provider[ConversationSnapshotPort | None],
         sources: Provider[SourceResolverPort | None],
         results: Provider[StoredResultPort | None],
+        branding: Provider[OrganizationBrandingService | None],
     ):
         self.reviews, self.access, self.catalog, self.settings = reviews, access, catalog, settings
         self.snapshots, self.sources, self.results = snapshots, sources, results
+        self.branding = branding
+
+    async def _identity(self, subject, tenant_id):
+        service = self.branding.get()
+        if service is None:
+            raise ServiceUnavailableException(
+                "Organization identity is unavailable", code="BRANDING_UNAVAILABLE"
+            )
+        value = await service.get(subject, tenant_id)
+        return ConversationIdentity(
+            product_name=value.branding.product_name,
+            assistant_name=value.branding.assistant_name,
+            branding_revision=value.revision,
+            branding_origin=value.origin,
+            branding_sha256=hashlib.sha256(encode_branding(value.branding).encode("ascii")).hexdigest(),
+        )
 
     async def _conversation(self, subject, tenant_id, request, purpose):
         port = self.snapshots.get()
@@ -162,6 +181,7 @@ class EvidenceReviews:
                 "Finish or wait for an existing review before creating another", code="REVIEW_LIMIT_REACHED"
             )
         snapshot = await self._conversation(subject, tenant_id, request, purpose)
+        snapshot = snapshot.model_copy(update={"identity": await self._identity(subject, tenant_id)})
         grant = await self.catalog.restriction.grant(subject) if self.catalog.restriction else None
         payload = snapshot.model_dump(mode="json")
         values = request.model_dump(mode="json")
@@ -207,10 +227,15 @@ class EvidenceReviews:
                 thread_id=row.request_json["thread_id"], message_ids=row.request_json["message_ids"]
             )
             snapshot = await self._conversation(subject, tenant_id, request, purpose)
-        if (
-            digest({"request": row.request_json, "snapshot": snapshot.model_dump(mode="json")})
-            != row.revision
-        ):
+        payload = snapshot.model_dump(mode="json")
+        if isinstance(snapshot, ConversationSnapshot):
+            # The reviewed identity is immutable; older hashes predate this field entirely.
+            if "identity" in row.snapshot_json:
+                recorded = ConversationSnapshot.model_validate(row.snapshot_json).identity
+                payload["identity"] = recorded.model_dump(mode="json") if recorded else None
+            else:
+                payload.pop("identity", None)
+        if digest({"request": row.request_json, "snapshot": payload}) != row.revision:
             raise ConflictException(
                 "The conversation or its sources changed; review it again", code="REVIEW_STALE"
             )

@@ -4,7 +4,14 @@ from typing import Literal
 
 from pydantic import AwareDatetime, Field
 
-from koinon.evidence.dtos import ConversationMessage, Frozen, Identifier, Revision, SourceReference
+from koinon.evidence.dtos import (
+    ConversationIdentity,
+    ConversationMessage,
+    Frozen,
+    Identifier,
+    Revision,
+    SourceReference,
+)
 from koinon.exports.dtos import Input, MessageSelection
 
 
@@ -31,6 +38,7 @@ class ShareReview(Frozen):
     recipient_policy: Literal["organization_current_acl"] = "organization_current_acl"
     omissions: tuple[str, ...] = ()
     expires_at: AwareDatetime
+    identity: ConversationIdentity | None = None
 
 
 class Share(Frozen):
@@ -49,6 +57,7 @@ class SharedConversation(Frozen):
     messages: tuple[ConversationMessage, ...]
     sources: tuple[SourceReference, ...]
     source_manifest_complete: bool
+    identity: ConversationIdentity | None = None
 
 
 class SharePage(Frozen):

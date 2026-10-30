@@ -58,6 +58,8 @@ class NativeEvidenceReceipt:
         self.document_origins: dict[tuple[str, str], tuple[str, str, str, str]] = {}
         self.snapshots: list[SnapshotRead] = []
         self.native_reads: list[NativeReadFingerprint] = []
+        self.rlm_tools = None
+        self._pending_rlm_tools = 0
         self.document_contexts: dict[str, NativeDatabaseContext] = {}
         self.source_contexts: dict[str, NativeDatabaseContext] = {}
         self.source_origins: dict[str, NativeReadOrigin] = {}
@@ -538,6 +540,30 @@ class NativeEvidenceReceipt:
         from koinon.knowledge.rlm_provenance import document_execution_read
 
         document_execution_read(self, meta, read, scope)
+
+    def document_tool_start(self, scope):
+        from koinon.knowledge.rlm_provenance import tool_scope
+
+        tool_scope(self, scope)
+        self.budget.check(self, minimum_tools=1)
+        self._pending_rlm_tools += 1
+
+    def document_tool(self, receipt, scope):
+        from flycanon.core.services.query.rlm.actions import RlmToolReceipt
+
+        from koinon.knowledge.capture_dtos import NativeRlmTool
+        from koinon.knowledge.rlm_provenance import tool_scope
+
+        tool_scope(self, scope)
+        if self._pending_rlm_tools < 1 or type(receipt) is not RlmToolReceipt:
+            raise ServiceUnavailableException(
+                "Tool receipt has no admitted action", code="EVIDENCE_UNAVAILABLE",
+            )
+        row = NativeRlmTool(**receipt.model_dump(), tenant_id=scope.tenant_id,
+                            workspace_id=scope.workspace_id, source_ids=tuple(sorted(scope.source_ids)))
+        self._pending_rlm_tools -= 1
+        self.budget.check(self, tools=[row])
+        self.rlm_tools = [*(self.rlm_tools or []), row]
 
     def document_extraction(self, source_id, source_version_id, extraction_id, scope):
         from flycanon.core.services.query.provenance import current

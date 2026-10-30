@@ -12,6 +12,8 @@ from koinon.security.settings import _endpoint
 MCP_SCOPES = frozenset(
     {
         "catalog:read",
+        "catalog:write",
+        "ingest:write",
         "knowledge:search",
         "query:execute",
         "chat:use",

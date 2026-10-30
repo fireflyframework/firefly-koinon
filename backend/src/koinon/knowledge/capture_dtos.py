@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 from dataclasses import dataclass
 
+from flycanon.core.services.query.rlm.actions import RlmToolReceipt
+from pydantic import Field
+
 from koinon.evidence.dtos import SourceReference
 
 
@@ -12,6 +15,13 @@ class CapturedEvidence:
     complete: bool
     native_reads: tuple["NativeReadFingerprint", ...] = ()
     sql_attempts: tuple["NativeSqlAttempt", ...] = ()
+    rlm_tools: tuple["NativeRlmTool", ...] | None = None
+
+
+class NativeRlmTool(RlmToolReceipt):
+    tenant_id: str = Field(min_length=1, max_length=64)
+    workspace_id: str = Field(min_length=1, max_length=64)
+    source_ids: tuple[str, ...] = Field(min_length=1, max_length=500)
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,6 +139,7 @@ class NativeCaptureLimits:
     sources: int = 500
     receipt_bytes: int = 524288
     ids_per_read: int = 500
+    tools: int = 256
 
     def __post_init__(self):
         for name, maximum in (
@@ -137,6 +148,7 @@ class NativeCaptureLimits:
             ("sources", 500),
             ("receipt_bytes", 524288),
             ("ids_per_read", 500),
+            ("tools", 256),
         ):
             value = getattr(self, name)
             if type(value) is not int or not (1 if name == "ids_per_read" else 0) <= value <= maximum:

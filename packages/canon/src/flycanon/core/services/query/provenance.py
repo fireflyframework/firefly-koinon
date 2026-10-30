@@ -158,6 +158,33 @@ def model(stage, content):
             scope.observer.document_sync(stage, content, tuple(sorted(scope.source_ids)), scope)
 
 
+def tool(receipt):
+    """Persist an actual provider action separately from document/model reads."""
+    scope = current()
+    if scope is not None:
+        hook = getattr(scope.observer, "document_tool", None)
+        if not callable(hook):
+            raise ServiceUnavailableException(
+                "Native tool provenance observer is required", code="EVIDENCE_UNAVAILABLE",
+            )
+        with scope.lock:
+            authority(scope)
+            hook(receipt, scope)
+
+
+def before_tool():
+    scope = current()
+    if scope is not None:
+        hook = getattr(scope.observer, "document_tool_start", None)
+        if not callable(hook):
+            raise ServiceUnavailableException(
+                "Native tool admission observer is required", code="EVIDENCE_UNAVAILABLE",
+            )
+        with scope.lock:
+            authority(scope)
+            hook(scope)
+
+
 async def corpus(docs):
     scope = current()
     if scope is None:

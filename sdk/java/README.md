@@ -48,6 +48,9 @@ The client closes its own connections and outstanding requests. If you inject an
 | Accessor | Operations |
 | --- | --- |
 | `platform()` | Authorized context and capabilities |
+| `mcp()` | Trusted deployment connection metadata, registered public client details and server capabilities |
+| `externalReviews(tenant)` | Stage/read exact external text proposals and apply nonce-bound decisions |
+| `externalFileReviews(tenant)` | Stage/chunk/seal/read reviewed files, exact decisions and administrator cleanup |
 | `profile()` | Your profile, preferences and avatar |
 | `tokens()` | Scope descriptors, token creation, listing and revocation |
 | `catalog(tenant)` | Browse, create, update, archive, restore and delete catalog entries |
@@ -133,3 +136,11 @@ Export/share creation requires a reviewed snapshot and matching revision. Downlo
 `chat(tenant).audit(runId)` returns the owner-authorized `AnswerAudit`. Receipt presence and `source_provenance_complete` are separate; null completeness means historical data was not recorded. Used source revisions and private-file SHA/revisions remain immutable, while current availability is checked separately. SQL attempts retain the actual submitted statement, execution outcome and referenced table snapshots. Recorded DuckDB database/catalog context identifies imported-snapshot execution, not a live query against an original remote database. Original connection/file lineage remains null when it was not observed. A generation with no recorded end time must not be presented as completed. Proposal-only responses use `review_required` and require a separate explicit confirmation.
 
 `client.organizationChat(tenant).get(OrganizationChatFilter.empty().withWorkspaceId(workspace))` reads the saved organization default. Update with `OrganizationChatSettingsInput.empty().withDefaultAgentId(agentId).withExpectedRevision(current.revision())`; use `clearDefaultAgentId()` for explicit null. The server requires organization-level `agents:write` and rejects stale revisions. Explicit run submissions continue supplying `agent_id`; the default does not grant knowledge access.
+
+## External knowledge reviews
+
+`externalReviews(tenant).stage/get/approve/cancel` uses named request and response records. `ExternalReviewInput.sourceReceiptIds` selects server-issued MCP read receipts; the server rejects forged, expired or foreign capabilities and rechecks source revisions. Raw source references and user-authored origins cannot be supplied through that input.
+
+`externalFileReviews(tenant).stage/get/chunk/seal/approve/cancel` covers private staged bytes and exact approved ingestion. `cleanup` is explicit administrator maintenance for eligible staged objects. Each operation has a typed asynchronous counterpart. Pending/unresolved outcomes and nullable receipts remain explicit; writes are not replayed automatically.
+
+An approval needs the exact revision, digest and component-only nonce. No public challenge reader or autonomous human-confirmation helper is supplied. MCP OAuth resource credentials cannot be used as ordinary API bearer tokens. See the [MCP knowledge-management guide](../../docs/guides/mcp-knowledge-management.md) for the embedded component and retention boundaries.

@@ -13,7 +13,7 @@ public record KnowledgeIntent(
     @JsonProperty("revision") Long revision,
     @JsonProperty("tenant_id") String tenantId,
     @JsonProperty("owner_subject") String ownerSubject,
-    @JsonProperty("action") KnowledgeCommitReceiptAction action,
+    @JsonProperty("action") ExternalReviewInputAction action,
     @JsonProperty("destination") KnowledgeDestination destination,
     @JsonProperty("target_item_id") String targetItemId,
     @JsonProperty("expected_version") Long expectedVersion,
@@ -21,7 +21,7 @@ public record KnowledgeIntent(
     @JsonProperty("after") KnowledgeContent after,
     @JsonProperty("evidence") List<KnowledgeEvidence> evidence,
     @JsonProperty("authorization_digest") String authorizationDigest,
-    @JsonProperty("status") KnowledgeIntentStatus status,
+    @JsonProperty("status") ExternalReviewViewStatus status,
     @JsonProperty("created_at") Instant createdAt,
     @JsonProperty("expires_at") Instant expiresAt,
     @JsonProperty("receipt") KnowledgeCommitReceipt receipt

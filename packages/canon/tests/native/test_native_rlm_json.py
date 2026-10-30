@@ -68,6 +68,12 @@ class Observer:
     def document_sync(self, stage, content, sources, scope):
         self.events.append((stage, content))
 
+    def document_tool_start(self, scope):
+        pass
+
+    def document_tool(self, receipt, scope):
+        pass
+
 
 async def run(session, observer):
     with provenance.observe(observer, tenant_id="fixture", workspace_id="workspace", actor="owner"):
@@ -844,7 +850,6 @@ async def test_secure_extraction_workflow_reaches_actual_transport_without_extra
 
 @pytest.mark.parametrize("mode", ["native", "default"])
 async def test_extraction_workflow_actual_sdk_wire_matches_recorded_prompt(factory, monkeypatch, mode):
-    import ast
 
     wires = []
 
@@ -876,6 +881,8 @@ async def test_extraction_workflow_actual_sdk_wire_matches_recorded_prompt(facto
         if mode == "native":
             assert wires[0]["messages"] == json.loads(observer.events[0][1])["messages"]
         else:
-            assert system == ast.literal_eval(observer.events[0][1])[0]
+            manifest = json.loads(observer.events[0][1])
+            assert manifest["protocol"] == "function_tools"
+            assert system == manifest["sdk_messages"][0]["parts"][0]["content"]
     finally:
         await selected.client.close()

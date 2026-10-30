@@ -16,6 +16,14 @@ class ConsentViewer:
 
 PERMISSIONS = {
     "catalog:read": ("Browse your knowledge", "View files, folders and recorded source details."),
+    "catalog:write": (
+        "Prepare knowledge changes",
+        "Propose changes within this space for your separate review.",
+    ),
+    "ingest:write": (
+        "Maintain approved knowledge",
+        "Apply only the exact content you approve in the in-chat review.",
+    ),
     "knowledge:search": ("Search documents", "Find relevant passages in documents you can access."),
     "query:execute": ("Query datasets", "Run read-only queries and view their results and sources."),
     "chat:use": ("Use knowledge agents", "Ask configured agents questions and inspect your answer audits."),

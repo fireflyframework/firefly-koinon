@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import importlib
+import json
 import math
 import threading
 import time
@@ -73,6 +74,9 @@ class _Docs:
 docs = _Docs()
 """
 
+_TERMINAL_CALLBACK = "_koinon_terminal_answer"
+_TERMINAL_SOURCE = _TERMINAL_CALLBACK + "()"
+
 
 class MontyExecutor:
     """No raw runner, host object, asynchronous bridge, or replacement VM exists here."""
@@ -89,6 +93,11 @@ class MontyExecutor:
         self._api: Any = None
         self._fatal: Exception | None = None
         self._started = False
+        self._pending_terminal: str | None = None
+        self._terminal_invoked = False
+        self._terminal_result: Any = None
+        self._terminal_feed = None
+        self.last_feed = None
 
     def start(self):
         if self._started:
@@ -117,7 +126,10 @@ class MontyExecutor:
                 max_external_calls=256, max_suspensions=4096, max_output_bytes=1024**2,
                 max_value_bytes=8 * 1024**2,
             )
-            functions = {name: self._guarded(function) for name, function in self.functions.items()}
+            if _TERMINAL_CALLBACK in self.functions:
+                raise unavailable("A reserved terminal callback cannot be supplied")
+            functions = {name: self._guarded(function, name) for name, function in self.functions.items()}
+            functions[_TERMINAL_CALLBACK] = self._guarded(self._finish_terminal, _TERMINAL_CALLBACK)
             session = cast(
                 "ExecutionSession", environment.create_session(external_functions=functions, limits=limits),
             )
@@ -137,12 +149,15 @@ class MontyExecutor:
                 raise
             raise unavailable() from error
 
-    def _guarded(self, function):
+    def _guarded(self, function, name):
         def invoke(*args, **kwargs):
             try:
                 self.tree.callback()
                 self.authorize()
                 self.tree.check()
+                if ((self._pending_terminal is not None and name != _TERMINAL_CALLBACK)
+                        or self._pending_terminal is None and name == _TERMINAL_CALLBACK):
+                    raise unavailable("The terminal callback phase does not admit this operation")
             except Exception as error:
                 self._fatal = error
                 return self._api.ExecutionReject(
@@ -160,6 +175,39 @@ class MontyExecutor:
                 return self._api.ExecutionReject("RLM_EXECUTION_UNAVAILABLE", "Execution cannot continue.")
         return invoke
 
+    def _finish_terminal(self):
+        if self._pending_terminal is None or self._terminal_invoked:
+            raise unavailable("A terminal payload can only be consumed once")
+        self._terminal_invoked = True
+        self._terminal_result = self.functions["final"](**json.loads(self._pending_terminal))
+        return self._terminal_result
+
+    def run_terminal(self, payload):
+        self.tree.check()
+        if self._pending_terminal is not None:
+            raise unavailable("A terminal feed is already active")
+        self._pending_terminal = json.dumps(payload, ensure_ascii=False, allow_nan=False)
+        self._terminal_invoked = False
+        self._terminal_result = None
+        try:
+            result = self.run_block(_TERMINAL_SOURCE)
+            self._terminal_feed = result
+            if not self._terminal_invoked or type(self._terminal_result) not in (
+                self._api.ExecutionHalt, self._api.ExecutionReject,
+            ):
+                self.close()
+                raise unavailable("The terminal feed did not invoke the admitted final callback")
+            if type(self._terminal_result) is self._api.ExecutionHalt and (
+                result.status != self._api.ExecutionFeedStatus.HALTED
+                or result.result.output != self._terminal_result.value
+            ):
+                self.close()
+                raise unavailable("The terminal feed did not preserve its accepted outcome")
+            return result
+        finally:
+            self._pending_terminal = None
+            self._terminal_result = None
+
     def halt(self, value):
         return self._api.ExecutionHalt(value)
 
@@ -172,7 +220,8 @@ class MontyExecutor:
     def read_required(self, result, message):
         return any(
             type(feedback) is self._api.ExecutionFeedback
-            and feedback.code == "RLM_DOCUMENT_READ_REQUIRED" and feedback.function_name == "final"
+            and feedback.code == "RLM_DOCUMENT_READ_REQUIRED"
+            and feedback.function_name == (_TERMINAL_CALLBACK if result is self._terminal_feed else "final")
             and type(feedback.call_index) is int and feedback.call_index > 0 and feedback.message == message
             for feedback in result.feedback
         )
@@ -180,7 +229,8 @@ class MontyExecutor:
     def final_answer_required(self, result, message):
         return any(
             type(feedback) is self._api.ExecutionFeedback
-            and feedback.code == "RLM_FINAL_ANSWER_REQUIRED" and feedback.function_name == "final"
+            and feedback.code == "RLM_FINAL_ANSWER_REQUIRED"
+            and feedback.function_name == (_TERMINAL_CALLBACK if result is self._terminal_feed else "final")
             and type(feedback.call_index) is int and feedback.call_index > 0 and feedback.message == message
             for feedback in result.feedback
         )
@@ -190,6 +240,7 @@ class MontyExecutor:
         if self._session is None:
             raise unavailable("The execution session is not open")
         result = self._session.feed(code, inputs=inputs)
+        self.last_feed = result
         if self._fatal is not None:
             self._fatal.__dict__["execution_feedback"] = result.feedback
             self.close()
@@ -205,5 +256,7 @@ class MontyExecutor:
         return result
 
     def close(self):
+        self._pending_terminal = None
+        self._terminal_result = None
         if self._session is not None:
             self._session.close()

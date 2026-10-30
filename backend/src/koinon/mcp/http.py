@@ -37,6 +37,10 @@ class McpHttpBoundary:
             return await JSONResponse({"code": "MCP_COOKIES_FORBIDDEN"}, status_code=400)(
                 scope, receive, private_send
             )
+        if scope.get("method") == "GET":
+            # Legacy SSE channels have SDK session admission bounds; keeping an operation
+            # permit for their lifetime would prevent their own subsequent tool calls.
+            return await self.app(scope, receive, private_send)
         if self.capacity.locked():
             return await JSONResponse(
                 {"code": "MCP_CAPACITY_REACHED"}, status_code=429, headers={"Retry-After": "1"}

@@ -50,6 +50,12 @@ class Observer:
     def document_sync(self, *args):
         pass
 
+    def document_tool_start(self, scope):
+        pass
+
+    def document_tool(self, receipt, scope):
+        pass
+
 
 @contextmanager
 def required_scope(observer=None):

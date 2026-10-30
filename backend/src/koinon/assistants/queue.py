@@ -325,7 +325,7 @@ class AssistantQueue:
         values = {}
         from dataclasses import asdict
 
-        from koinon.assistants.audit_dtos import NativeReadReceipt, SqlAttemptReceipt
+        from koinon.assistants.audit_dtos import NativeReadReceipt, RlmToolReceipt, SqlAttemptReceipt
 
         try:
             reads = [
@@ -336,9 +336,16 @@ class AssistantQueue:
                 SqlAttemptReceipt(result_id=result_id, generation_id=generation_id, **asdict(row))
                 for row in capture.sql_attempts
             ]
+            tools = [RlmToolReceipt(result_id=result_id, generation_id=generation_id,
+                                    **row.model_dump(mode="json")) for row in capture.rlm_tools or ()]
             if (
                 len(reads) > 512
                 or len(attempts) > 128
+                or len(tools) > 256
+                or any(row.tenant_id != run.tenant_id for row in tools)
+                or any(not set(row.source_ids) <= {
+                    source for read in reads for source in read.source_ids
+                } for row in tools)
                 or any(row.tenant_id != run.tenant_id for row in reads)
                 or len({row.ordinal for row in attempts}) != len(attempts)
             ):
@@ -362,6 +369,8 @@ class AssistantQueue:
                     raise ValueError("Invalid native receipt resource")
             values["native_reads"] = [row.model_dump(mode="json", by_alias=True) for row in reads]
             values["sql_attempts"] = [row.model_dump(mode="json", by_alias=True) for row in attempts]
+            if capture.rlm_tools is not None:
+                values["rlm_tools"] = [row.model_dump(mode="json") for row in tools]
         except (TypeError, ValueError) as error:
             raise InvalidRequestException(
                 "Native read receipt is invalid", code="EVIDENCE_CAPTURE_INVALID"
@@ -378,6 +387,7 @@ class AssistantQueue:
         rows = await self.assistants.active_results(run)
         reads = 1000 - sum(len(row.payload.get("native_reads", [])) for row in rows)
         attempts = 1000 - sum(len(row.payload.get("sql_attempts", [])) for row in rows)
+        tools = 1000 - sum(len(row.payload.get("rlm_tools") or []) for row in rows)
         sources = {
             value["id"] for row in rows for value in row.payload.get("source_manifest", {}).get("sources", [])
         }
@@ -392,6 +402,7 @@ class AssistantQueue:
             sources=500 - len(sources),
             receipt_bytes=524288,
             ids_per_read=500,
+            tools=min(256, max(0, tools)),
         )
 
     async def check_audit_budget(self, run, payload):
@@ -405,6 +416,7 @@ class AssistantQueue:
         if (
             sum(len(row.get("native_reads", [])) for row in values) > 1000
             or sum(len(row.get("sql_attempts", [])) for row in values) > 1000
+            or sum(len(row.get("rlm_tools") or []) for row in values) > 1000
             or len(sources) > 500
         ):
             raise ServiceUnavailableException(

@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "api_prefix": "/api/v1",
   "status": "Canonical API contract; development snapshot",
-  "canonical_operation_count": 144,
+  "canonical_operation_count": 160,
   "qualified_compatibility_operations": [
     {
       "operation": "GlossaryController.list_terms",
@@ -4638,6 +4638,404 @@
       ]
     },
     {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/external-knowledge-reviews",
+      "category": "canonical",
+      "operation": "ExternalKnowledgeReviewController.stage",
+      "source": "backend/src/koinon/knowledge/external_reviews/controllers.py",
+      "line": 21,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ExternalReviewInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "stage_external_review",
+      "sdk_typescript": "externalReviews.stage",
+      "sdk_java": "client.externalReviews.stage",
+      "request_schema": "ExternalReviewInput",
+      "response_schema": "ExternalReviewView",
+      "success_status": 201,
+      "source_sha256": "888c00a236b4fb98b89578ede935e014b59b7bcb74677b2e4e295d3adae2392c",
+      "encoding": "application/json",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/external-knowledge-reviews/{review_id}",
+      "category": "canonical",
+      "operation": "ExternalKnowledgeReviewController.get",
+      "source": "backend/src/koinon/knowledge/external_reviews/controllers.py",
+      "line": 35,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "review_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "external_review",
+      "sdk_typescript": "externalReviews.get",
+      "sdk_java": "client.externalReviews.get",
+      "request_schema": null,
+      "response_schema": "ExternalReviewView",
+      "success_status": 200,
+      "source_sha256": "888c00a236b4fb98b89578ede935e014b59b7bcb74677b2e4e295d3adae2392c",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/external-knowledge-reviews/{review_id}/approve",
+      "category": "canonical",
+      "operation": "ExternalKnowledgeReviewController.approve",
+      "source": "backend/src/koinon/knowledge/external_reviews/controllers.py",
+      "line": 41,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "review_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ExternalReviewDecision]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "approve_external_review",
+      "sdk_typescript": "externalReviews.approve",
+      "sdk_java": "client.externalReviews.approve",
+      "request_schema": "ExternalReviewDecision",
+      "response_schema": "KnowledgeCommitOutcome",
+      "success_status": 200,
+      "source_sha256": "888c00a236b4fb98b89578ede935e014b59b7bcb74677b2e4e295d3adae2392c",
+      "success_statuses": [
+        200,
+        202
+      ],
+      "encoding": "application/json",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/external-knowledge-reviews/{review_id}/cancel",
+      "category": "canonical",
+      "operation": "ExternalKnowledgeReviewController.cancel",
+      "source": "backend/src/koinon/knowledge/external_reviews/controllers.py",
+      "line": 58,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "review_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ExternalReviewDecision]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "cancel_external_review",
+      "sdk_typescript": "externalReviews.cancel",
+      "sdk_java": "client.externalReviews.cancel",
+      "request_schema": "ExternalReviewDecision",
+      "response_schema": "ExternalReviewView",
+      "success_status": 200,
+      "source_sha256": "888c00a236b4fb98b89578ede935e014b59b7bcb74677b2e4e295d3adae2392c",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/external-file-reviews/cleanup",
+      "category": "canonical",
+      "operation": "ExternalFileReviewController.cleanup",
+      "source": "backend/src/koinon/knowledge/external_reviews/file_controllers.py",
+      "line": 26,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ExternalFileCleanupInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "cleanup_external_file_reviews",
+      "sdk_typescript": "externalFileReviews.cleanup",
+      "sdk_java": "client.externalFileReviews.cleanup",
+      "request_schema": "ExternalFileCleanupInput",
+      "response_schema": "ExternalFileCleanupResult",
+      "success_status": 200,
+      "source_sha256": "8fddc1ad27fd99e48ca1add1b65b6cad0798e6aa8772b1dfcf5e6b428493b43a",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/external-file-reviews",
+      "category": "canonical",
+      "operation": "ExternalFileReviewController.stage",
+      "source": "backend/src/koinon/knowledge/external_reviews/file_controllers.py",
+      "line": 36,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ExternalFileReviewInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "stage_external_file_review",
+      "sdk_typescript": "externalFileReviews.stage",
+      "sdk_java": "client.externalFileReviews.stage",
+      "request_schema": "ExternalFileReviewInput",
+      "response_schema": "ExternalFileReviewView",
+      "success_status": 201,
+      "source_sha256": "8fddc1ad27fd99e48ca1add1b65b6cad0798e6aa8772b1dfcf5e6b428493b43a",
+      "encoding": "application/json",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}",
+      "category": "canonical",
+      "operation": "ExternalFileReviewController.get",
+      "source": "backend/src/koinon/knowledge/external_reviews/file_controllers.py",
+      "line": 50,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "review_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "external_file_review",
+      "sdk_typescript": "externalFileReviews.get",
+      "sdk_java": "client.externalFileReviews.get",
+      "request_schema": null,
+      "response_schema": "ExternalFileReviewView",
+      "success_status": 200,
+      "source_sha256": "8fddc1ad27fd99e48ca1add1b65b6cad0798e6aa8772b1dfcf5e6b428493b43a",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}/chunks",
+      "category": "canonical",
+      "operation": "ExternalFileReviewController.chunk",
+      "source": "backend/src/koinon/knowledge/external_reviews/file_controllers.py",
+      "line": 56,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "review_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ExternalFileChunkInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "upload_external_file_chunk",
+      "sdk_typescript": "externalFileReviews.chunk",
+      "sdk_java": "client.externalFileReviews.chunk",
+      "request_schema": "ExternalFileChunkInput",
+      "response_schema": "ExternalFileReviewView",
+      "success_status": 200,
+      "source_sha256": "8fddc1ad27fd99e48ca1add1b65b6cad0798e6aa8772b1dfcf5e6b428493b43a",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}/seal",
+      "category": "canonical",
+      "operation": "ExternalFileReviewController.seal",
+      "source": "backend/src/koinon/knowledge/external_reviews/file_controllers.py",
+      "line": 70,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "review_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "seal_external_file_review",
+      "sdk_typescript": "externalFileReviews.seal",
+      "sdk_java": "client.externalFileReviews.seal",
+      "request_schema": null,
+      "response_schema": "ExternalFileReviewView",
+      "success_status": 200,
+      "source_sha256": "8fddc1ad27fd99e48ca1add1b65b6cad0798e6aa8772b1dfcf5e6b428493b43a",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}/approve",
+      "category": "canonical",
+      "operation": "ExternalFileReviewController.approve",
+      "source": "backend/src/koinon/knowledge/external_reviews/file_controllers.py",
+      "line": 76,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "review_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ExternalReviewDecision]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "approve_external_file_review",
+      "sdk_typescript": "externalFileReviews.approve",
+      "sdk_java": "client.externalFileReviews.approve",
+      "request_schema": "ExternalReviewDecision",
+      "response_schema": "ExternalFileReviewView",
+      "success_status": 200,
+      "source_sha256": "8fddc1ad27fd99e48ca1add1b65b6cad0798e6aa8772b1dfcf5e6b428493b43a",
+      "success_statuses": [
+        200,
+        202
+      ],
+      "encoding": "application/json",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}/cancel",
+      "category": "canonical",
+      "operation": "ExternalFileReviewController.cancel",
+      "source": "backend/src/koinon/knowledge/external_reviews/file_controllers.py",
+      "line": 93,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "review_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ExternalReviewDecision]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "cancel_external_file_review",
+      "sdk_typescript": "externalFileReviews.cancel",
+      "sdk_java": "client.externalFileReviews.cancel",
+      "request_schema": "ExternalReviewDecision",
+      "response_schema": "ExternalFileReviewView",
+      "success_status": 200,
+      "source_sha256": "8fddc1ad27fd99e48ca1add1b65b6cad0798e6aa8772b1dfcf5e6b428493b43a",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
       "method": "GET",
       "path": "/api/v1/tenants/{tenant_id}/knowledge-indexes",
       "category": "canonical",
@@ -5352,6 +5750,134 @@
       "response_schema": "TableColumnBindingPage",
       "success_status": 200,
       "source_sha256": "d759c25229cdf4d1a0f99b628cd660604272935cddb743f5c3b86c5940ab9bc1",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/mcp/connection",
+      "category": "canonical",
+      "operation": "McpConnectionController.get",
+      "source": "backend/src/koinon/mcp/controllers.py",
+      "line": 19,
+      "parameters": [],
+      "return_annotation": "McpConnectionDescriptor",
+      "sdk_python": "mcp_connection",
+      "sdk_typescript": "mcp.connection",
+      "sdk_java": "client.mcp.connection",
+      "request_schema": null,
+      "response_schema": "McpConnectionDescriptor",
+      "success_status": 200,
+      "source_sha256": "4ea9c4cfedd5b8b4167702ff99c8b943543fd978320876451a4d4d9ed7c2261b",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/branding/defaults",
+      "category": "canonical",
+      "operation": "BrandingDefaultsController.defaults",
+      "source": "backend/src/koinon/organization_branding/controllers.py",
+      "line": 24,
+      "parameters": [],
+      "return_annotation": "BrandingValues",
+      "sdk_python": "branding_defaults",
+      "sdk_typescript": "branding.defaults",
+      "sdk_java": "client.brandingDefaults.defaults",
+      "request_schema": null,
+      "response_schema": "BrandingValues",
+      "success_status": 200,
+      "source_sha256": "be1fd620d2b3a519110890ca062bc4732527eec64b49598379c9f4cb37c97ded",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/branding",
+      "category": "canonical",
+      "operation": "OrganizationBrandingController.get",
+      "source": "backend/src/koinon/organization_branding/controllers.py",
+      "line": 35,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "OrganizationBranding",
+      "sdk_python": "organization_branding",
+      "sdk_typescript": "branding.get",
+      "sdk_java": "client.organizationBranding.get",
+      "request_schema": null,
+      "response_schema": "OrganizationBranding",
+      "success_status": 200,
+      "source_sha256": "be1fd620d2b3a519110890ca062bc4732527eec64b49598379c9f4cb37c97ded",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/tenants/{tenant_id}/branding",
+      "category": "canonical",
+      "operation": "OrganizationBrandingController.update",
+      "source": "backend/src/koinon/organization_branding/controllers.py",
+      "line": 39,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[OrganizationBrandingInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "OrganizationBranding",
+      "sdk_python": "update_organization_branding",
+      "sdk_typescript": "branding.update",
+      "sdk_java": "client.organizationBranding.update",
+      "request_schema": "OrganizationBrandingInput",
+      "response_schema": "OrganizationBranding",
+      "success_status": 200,
+      "source_sha256": "be1fd620d2b3a519110890ca062bc4732527eec64b49598379c9f4cb37c97ded",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/branding/reset",
+      "category": "canonical",
+      "operation": "OrganizationBrandingController.reset",
+      "source": "backend/src/koinon/organization_branding/controllers.py",
+      "line": 45,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[BrandingResetInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "OrganizationBranding",
+      "sdk_python": "reset_organization_branding",
+      "sdk_typescript": "branding.reset",
+      "sdk_java": "client.organizationBranding.reset",
+      "request_schema": "BrandingResetInput",
+      "response_schema": "OrganizationBranding",
+      "success_status": 200,
+      "source_sha256": "be1fd620d2b3a519110890ca062bc4732527eec64b49598379c9f4cb37c97ded",
       "encoding": "application/json",
       "headers": []
     },

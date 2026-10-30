@@ -29,7 +29,8 @@ def render(contract: dict) -> str:
         ),
         "",
         (
-            "[Download the operation manifest](sdk-contract.json). "
+            "[Download the operation manifest](sdk-contract.json) and "
+            "[complete wire schemas](sdk-schemas.json). "
             "The maintained generator checks source mappings and schemas without starting the backend."
         ),
         "",
@@ -65,6 +66,15 @@ def render(contract: dict) -> str:
         [
             "",
             "## Request behavior",
+            "",
+            (
+                "New conversation export and share reviews save a nullable typed `identity` with product/assistant names, "
+                "organization branding revision/origin and configuration digest. The review revision binds that identity; "
+                "later organization changes do not rewrite saved reviews, exports or shared conversations. "
+                "Historical null means not recorded. JSON exports retain machine roles and separate display names. "
+                "See the [three-language export and sharing workflows](../guides/exports-sharing.md) for "
+                "preview, explicit confirmation, authenticated download and recipient reads."
+            ),
             "",
             (
                 "Dataset file append requires a stable Idempotency-Key, accepts one bounded multipart file and returns its canonical file-version "
@@ -110,6 +120,7 @@ def main() -> None:
     targets = {
         ROOT / "docs/reference/sdk-api.md": render(json.loads(source.read_text())),
         ROOT / "docs/reference/sdk-contract.json": source.read_text(),
+        ROOT / "docs/reference/sdk-schemas.json": (ROOT / "sdk/contract/schemas.json").read_text(),
     }
     for path, content in targets.items():
         if arguments.check:

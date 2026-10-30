@@ -69,6 +69,7 @@ async def reviews(tmp_path):
     for package in (
         "koinon.catalog",
         "koinon.profiles",
+        "koinon.organization_branding",
         "koinon.tokens",
         "koinon.evidence",
         "koinon.exports",

@@ -5,7 +5,26 @@ import secrets
 
 import pytest
 from pyfly.config.properties.data import RelationalProperties
+from pyfly.config.properties.server import resolve_app_port
 from pyfly.core import Config
+
+
+def test_mcp_environment_aliases_are_resolved_without_changing_native_listener(monkeypatch):
+    monkeypatch.setenv("KOINON_OIDC_ISSUER", "https://identity.example/realm")
+    monkeypatch.setenv("KOINON_DATABASE_URL", "sqlite+aiosqlite:///./configuration-only.db")
+    monkeypatch.setenv("KOINON_MCP_ENABLED", "true")
+    monkeypatch.setenv("KOINON_MCP_PUBLIC_URL", "https://knowledge.example/mcp")
+    monkeypatch.setenv("PYFLY_SERVER_HOST", "127.0.0.1")
+    monkeypatch.setenv("PYFLY_SERVER_PORT", "19221")
+    from koinon.operations.configuration import environment_configuration
+
+    values = environment_configuration()
+    assert values["koinon"]["mcp"]["enabled"] is True
+    assert values["koinon"]["mcp"]["public_url"] == "https://knowledge.example/mcp"
+    assert resolve_app_port(Config(values)) == 19221
+    monkeypatch.setenv("KOINON_MCP_ENABLED", "not-a-boolean")
+    with pytest.raises(ValueError):
+        environment_configuration()
 
 
 def test_native_file_preserves_oidc_and_exact_named_pools_until_explicit_alias_override(

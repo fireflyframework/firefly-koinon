@@ -44,6 +44,7 @@ from flycanon.core.agents.model_bindings import (
 from flycanon.core.agents.provenance import settings_digest
 from flycanon.core.services.query.rlm.actions import (
     NATIVE_JSON_INSTRUCTIONS,
+    FinalAnswerAction,
     FinalAnswerRequiredFeedback,
     PythonAction,
     ReadRequiredFeedback,
@@ -112,6 +113,17 @@ def _native_manifest(messages, settings, parameters) -> str:
     })
 
 
+def _tools_manifest(messages, settings, parameters) -> str:
+    if settings_digest(settings) is None:
+        raise _protocol_error()
+    return _canonical({
+        "protocol": "function_tools",
+        "sdk_messages": ModelMessagesTypeAdapter.dump_python(messages, mode="json"),
+        "request_parameters": TypeAdapter(ModelRequestParameters).dump_python(parameters, mode="json"),
+        "model_settings_sha256": settings_digest(settings),
+    })
+
+
 class RequiredRlmBindingClient:
     """A provider-free product bootstrap; the answer adapter borrows the request connection."""
 
@@ -142,6 +154,7 @@ class NativeRlmChatClient:
         self._borrowed = False
         self._binding_scope: BindingScope | None = None
         self.action_protocol = "function_tools"
+        self._tool_ids: frozenset[str] = frozenset()
 
     @classmethod
     def from_binding(cls, factory: AgentFactory) -> NativeRlmChatClient:
@@ -156,6 +169,7 @@ class NativeRlmChatClient:
         client._loop = scope.loop
         client.root_model = client.sub_model = binding.model.model_name
         client.action_protocol = "native_json" if binding.output_mode == "native" else "function_tools"
+        client._tool_ids = frozenset()
         construction = (
             {"instructions": NATIVE_JSON_INSTRUCTIONS,
              "output_type": NativeOutput(PythonAction, name="PythonAction", template=False)}
@@ -184,6 +198,7 @@ class NativeRlmChatClient:
     def fork(self) -> NativeRlmChatClient:
         sibling = copy.copy(self)
         sibling._ledger = TokenLedger(dict.fromkeys(self._agents, (0.0, 0.0)))
+        sibling._tool_ids = frozenset()
         return sibling
 
     def reset_tokens(self) -> None:
@@ -319,6 +334,83 @@ class NativeRlmChatClient:
             "action_id": "native-json-" + uuid4().hex, "json": raw, "code": action.code}],
             "stop_reason": "action"}
 
+    def prepare_tools(self, messages, system, tools, max_tokens=1500):
+        if self.action_protocol != "function_tools":
+            raise _protocol_error()
+        name, selected = self._model(None, self.root_model)
+        bound = binding_for("documents.rlm") if self._borrowed else None
+        options = stage_settings(bound, max_tokens) if bound else {"max_tokens": max_tokens}
+        parameters = ModelRequestParameters(
+            allow_text_output=False,
+            function_tools=[ToolDefinition(
+                name=tool["name"], description=tool.get("description"),
+                parameters_json_schema=copy.deepcopy(tool["input_schema"]),
+            ) for tool in tools],
+        )
+        settings, prepared = selected.prepare_request(cast(ModelSettings, options), parameters)
+        applied, snapshot = copy.deepcopy((dict(settings or {}), prepared))
+        again_settings, again_parameters = selected.prepare_request(
+            cast(ModelSettings, copy.deepcopy(applied)), copy.deepcopy(snapshot),
+        )
+        if (again_parameters != snapshot or dict(again_settings or {}) != applied
+                or snapshot.output_object is not None or snapshot.prompted_output_instructions):
+            raise _protocol_error()
+        history = copy.deepcopy(self._messages(messages, system))
+        return _NativeRequest(
+            self, name, selected, history, applied, snapshot,
+            _tools_manifest(history, applied, snapshot),
+        )
+
+    def request_tools(self, request: _NativeRequest) -> dict:
+        name, selected = self._model(None, self.root_model)
+        if request.owner is not self or selected is not request.model or name != request.name:
+            raise _protocol_error()
+        messages, settings, parameters = copy.deepcopy(
+            (request.messages, request.settings, request.parameters),
+        )
+        if _tools_manifest(messages, settings, parameters) != request.manifest:
+            raise _protocol_error()
+        response = self._request(selected, messages, settings, parameters)
+        self._ledger.record(name, input_tokens=response.usage.input_tokens,
+                            output_tokens=response.usage.output_tokens)
+        response_ids = [part.tool_call_id for part in response.parts if isinstance(part, ToolCallPart)]
+        previous_ids = self._tool_ids
+        self._tool_ids = self._tool_ids.union(response_ids)
+        if (any(type(value) is not str or not value.strip() or len(value) > 256
+                or value in previous_ids for value in response_ids)
+                or len(set(response_ids)) != len(response_ids)):
+            raise _protocol_error()
+        blocks = []
+        admitted = {tool.name for tool in parameters.function_tools}
+        for part in response.parts:
+            if isinstance(part, TextPart):
+                blocks.append({"type": "text", "text": part.content})
+            elif isinstance(part, ToolCallPart):
+                try:
+                    arguments = part.args_as_dict(raise_if_invalid=True)
+                    if part.tool_name == "final_answer":
+                        FinalAnswerAction.model_validate(arguments)
+                    elif part.tool_name == "python":
+                        PythonAction.model_validate(arguments)
+                    else:
+                        raise ValueError("Unadmitted tool")
+                except (ValueError, AssertionError, TypeError):
+                    raise _protocol_error() from None
+                if part.tool_name not in admitted:
+                    raise _protocol_error()
+                blocks.append({"type": "tool_use", "name": part.tool_name,
+                               "id": part.tool_call_id, "input": copy.deepcopy(arguments)})
+        calls = [block for block in blocks if block["type"] == "tool_use"]
+        old_ids = {part.tool_call_id for message in messages for part in message.parts
+                   if isinstance(part, ToolCallPart)}
+        identifiers = [call["id"] for call in calls]
+        if (not calls or any(type(value) is not str or not value.strip() or len(value) > 256
+                             or value in old_ids for value in identifiers)
+                or len(set(identifiers)) != len(identifiers)
+                or any(call["name"] == "final_answer" for call in calls) and len(calls) != 1):
+            raise _protocol_error()
+        return {"content": blocks, "stop_reason": "tool_use"}
+
     def _request(self, selected, messages, options, parameters):
         try:
             running = asyncio.get_running_loop()
@@ -366,14 +458,18 @@ class NativeRlmChatClient:
                     identifier = block["tool_use_id"]
                     if identifier not in calls:
                         raise ValueError("RLM tool result has no preceding admitted tool call")
-                    parts.append(
-                        ToolReturnPart(
-                            calls[identifier],
-                            str(block.get("content", "")),
-                            identifier,
-                            outcome="failed" if block.get("is_error") else "success",
-                        )
-                    )
+                    recorded = block.get("sdk_result")
+                    if recorded is not None:
+                        if (type(recorded) is not ToolReturnPart
+                                or recorded.tool_name != calls[identifier]
+                                or recorded.tool_call_id != identifier
+                                or recorded.content != str(block.get("content", ""))
+                                or recorded.outcome != ("failed" if block.get("is_error") else "success")):
+                            raise _protocol_error()
+                        parts.append(copy.deepcopy(recorded))
+                    else:
+                        parts.append(ToolReturnPart(calls[identifier], str(block.get("content", "")),
+                            identifier, outcome="failed" if block.get("is_error") else "success"))
                 else:
                     raise ValueError("Unsupported RLM transcript content block")
             output.append(ModelResponse(parts=parts) if role == "assistant" else ModelRequest(parts=parts))

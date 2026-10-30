@@ -4,6 +4,7 @@
 
 import runpy
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -23,6 +24,8 @@ def configured_client(tmp_path, monkeypatch, request, *, oauth=False):
             "public_url": "http://127.0.0.1:18781/mcp",
             "allowed_hosts": ["testserver"],
         }
+        if isinstance(getattr(request, "param", None), dict):
+            config["koinon"]["mcp"].update(request.param)
         if oauth:
             from cryptography.fernet import Fernet
 
@@ -42,7 +45,8 @@ def configured_client(tmp_path, monkeypatch, request, *, oauth=False):
         return original(config)
 
     monkeypatch.setattr(koinon.app, "create_application", enabled)
-    yield from _fixture["client"].__wrapped__(tmp_path, monkeypatch, request)
+    base_request = SimpleNamespace() if isinstance(getattr(request, "param", None), dict) else request
+    yield from _fixture["client"].__wrapped__(tmp_path, monkeypatch, base_request)
 
 
 @pytest.fixture

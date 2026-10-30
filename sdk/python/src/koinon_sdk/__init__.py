@@ -7,6 +7,7 @@ from koinon_sdk.answer_audit import (
     NativeReadReceipt,
     NativeTableSnapshot,
     PrivateFileReceipt,
+    RlmToolReceipt,
     SqlAttemptReceipt,
 )
 from koinon_sdk.attachments import (
@@ -103,6 +104,8 @@ from koinon_sdk.curated import (
     CommittedKnowledge,
     ConversationOrigin,
     DocumentEvidence,
+    ExternalProposalEvidence,
+    ExternalProposalOrigin,
     KnowledgeCancellation,
     KnowledgeCommitOutcome,
     KnowledgeCommitReceipt,
@@ -122,6 +125,7 @@ from koinon_sdk.curated import (
 )
 from koinon_sdk.dataset_files import DatasetFileAppendResult
 from koinon_sdk.evidence import (
+    ConversationIdentity,
     ConversationMessage,
     EvidenceManifest,
     EvidencePresentation,
@@ -144,6 +148,17 @@ from koinon_sdk.exports import (
     MessageSelection,
     QueryResultExportInput,
 )
+from koinon_sdk.external_file_reviews import (
+    ExternalFileCatalogEntry,
+    ExternalFileChunkInput,
+    ExternalFileCleanupInput,
+    ExternalFileCleanupResult,
+    ExternalFileCleanupReview,
+    ExternalFileReceipt,
+    ExternalFileReviewInput,
+    ExternalFileReviewView,
+)
+from koinon_sdk.external_reviews import ExternalReviewDecision, ExternalReviewInput, ExternalReviewView
 from koinon_sdk.glossary import GlossaryPage, GlossaryTermCreate, GlossaryTermRead, GlossaryTermUpdate
 from koinon_sdk.identity import (
     EntraCredential,
@@ -182,6 +197,13 @@ from koinon_sdk.indexes import (
     KnowledgeIndexView,
     NativeIndexChoice,
     NativeIndexPage,
+)
+from koinon_sdk.mcp import (
+    McpConnectionDescriptor,
+    McpReadReceipt,
+    McpRegisteredClient,
+    McpReviewSupport,
+    McpToolCapability,
 )
 from koinon_sdk.models import (
     AgentConfiguration,
@@ -263,6 +285,15 @@ from koinon_sdk.models import (
     UserProfile,
     ValidationResult,
 )
+from koinon_sdk.organization_branding import (
+    BrandingInputValues,
+    BrandingPalette,
+    BrandingPalettes,
+    BrandingResetInput,
+    BrandingValues,
+    OrganizationBranding,
+    OrganizationBrandingInput,
+)
 from koinon_sdk.organization_chat import OrganizationChatSettings, OrganizationChatSettingsInput
 from koinon_sdk.organization_knowledge import (
     DocumentKnowledgeBounds,
@@ -310,6 +341,14 @@ from koinon_sdk.streaming import (
 )
 
 __all__ = [
+    "BrandingInputValues",
+    "RlmToolReceipt",
+    "BrandingPalette",
+    "BrandingPalettes",
+    "BrandingResetInput",
+    "BrandingValues",
+    "OrganizationBranding",
+    "OrganizationBrandingInput",
     "DocumentKnowledgeBounds",
     "DocumentKnowledgeCapabilities",
     "DocumentKnowledgeSettings",
@@ -370,6 +409,7 @@ __all__ = [
     "ResultColumn",
     "StoredResult",
     "ConversationMessage",
+    "ConversationIdentity",
     "SourceReference",
     "EvidencePresentation",
     "EvidenceManifest",
@@ -584,4 +624,27 @@ __all__ = [
     "KnowledgeItemSummary",
     "KnowledgeItemPage",
     "KnowledgeCommitOutcome",
+]
+
+__all__ += [
+    "McpConnectionDescriptor",
+    "McpRegisteredClient",
+    "McpReviewSupport",
+    "McpToolCapability",
+    "ExternalReviewInput",
+    "ExternalReviewDecision",
+    "ExternalReviewView",
+    "ExternalFileReviewInput",
+    "ExternalFileChunkInput",
+    "ExternalFileReviewView",
+    "ExternalFileReceipt",
+    "ExternalFileCatalogEntry",
+    "ExternalProposalOrigin",
+    "ExternalProposalEvidence",
+]
+__all__ += [
+    "McpReadReceipt",
+    "ExternalFileCleanupInput",
+    "ExternalFileCleanupReview",
+    "ExternalFileCleanupResult",
 ]

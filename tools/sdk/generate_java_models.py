@@ -50,6 +50,7 @@ names = {
         "ReasoningEffort": ["none", "minimal", "low", "medium", "high", "xhigh"],
         "OutputVerbosity": ["low", "medium", "high"],
         "ModelOutputMode": ["default", "native"],
+        "BrandingValuesFontFamily": ["Manrope"],
         "ExecutionStatus": ["OK", "REFINED_OK", "FAILED", "REJECTED_BY_FIREWALL"],
         "ChartHint": ["line", "bar", "table", "pie", "none"],
         "EvidenceKind": ["search", "query", "schema", "lineage", "attachment", "proposal"],
@@ -112,6 +113,9 @@ def java_type(s, owner="", field=""):
         return union
     if "$ref" in s:
         name = s["$ref"].split("/")[-1]
+        if owner == "OrganizationBrandingInput" and field == "branding" and name == "BrandingInputValues":
+            # Server-only decode staging keeps the existing structurally identical client input.
+            return "BrandingValues"
         if name == "JsonValue":
             return "JsonNode"
         if name.startswith("Page_"):
@@ -233,6 +237,14 @@ for name, definition in defs.items():
             "    public AttachmentObservation { configured = Boolean.TRUE.equals(configured); }\n"
             "    public AttachmentObservation(Boolean available, String reason) {\n"
             "        this(available, reason, false);\n    }\n"
+        )
+    if name in {"ConversationSnapshot", "ExportReview", "ShareReview", "SharedConversation"}:
+        assert fields[-1][0] == "identity"
+        previous = fields[:-1]
+        body += (
+            "    public " + name + "("
+            + ", ".join(kind + " " + key for _, key, kind, _, _ in previous)
+            + "){this(" + ",".join(key for _, key, _, _, _ in previous) + ",null);}\n"
         )
     for wire, key, kind, raw, wrapped in fields:
         if wrapped:

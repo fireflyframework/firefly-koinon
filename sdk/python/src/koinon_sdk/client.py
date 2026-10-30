@@ -83,6 +83,14 @@ from koinon_sdk.exports import (
     ExportReviewInput,
     MessageSelection,
 )
+from koinon_sdk.external_file_reviews import (
+    ExternalFileChunkInput,
+    ExternalFileCleanupInput,
+    ExternalFileCleanupResult,
+    ExternalFileReviewInput,
+    ExternalFileReviewView,
+)
+from koinon_sdk.external_reviews import ExternalReviewDecision, ExternalReviewInput, ExternalReviewView
 from koinon_sdk.glossary import GlossaryPage, GlossaryTermCreate, GlossaryTermRead, GlossaryTermUpdate
 from koinon_sdk.identity import (
     IdentityActivation,
@@ -109,6 +117,7 @@ from koinon_sdk.indexes import (
     NativeIndexChoice,
     NativeIndexPage,
 )
+from koinon_sdk.mcp import McpConnectionDescriptor
 from koinon_sdk.models import (
     AgentConfiguration,
     AgentInput,
@@ -148,6 +157,12 @@ from koinon_sdk.models import (
     UploadResponse,
     UserProfile,
     ValidationResult,
+)
+from koinon_sdk.organization_branding import (
+    BrandingResetInput,
+    BrandingValues,
+    OrganizationBranding,
+    OrganizationBrandingInput,
 )
 from koinon_sdk.organization_chat import OrganizationChatSettings, OrganizationChatSettingsInput
 from koinon_sdk.organization_knowledge import (
@@ -622,6 +637,129 @@ class KoinonClient:
             await self._request(
                 "POST",
                 self._tenant(tenant_id) + "/knowledge-intents",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def cleanup_external_file_reviews(
+        self, tenant_id: str, value: ExternalFileCleanupInput
+    ) -> ExternalFileCleanupResult:
+        return ExternalFileCleanupResult.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/external-file-reviews/cleanup",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def stage_external_file_review(
+        self, tenant_id: str, value: ExternalFileReviewInput, *, idempotency_key: str
+    ) -> ExternalFileReviewView:
+        return ExternalFileReviewView.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/external-file-reviews",
+                json=value.model_dump(mode="json", exclude_unset=True),
+                headers={"Idempotency-Key": idempotency_key},
+            )
+        )
+
+    async def external_file_review(self, tenant_id: str, review_id: str) -> ExternalFileReviewView:
+        return ExternalFileReviewView.model_validate(
+            await self._request(
+                "GET", self._tenant(tenant_id) + "/external-file-reviews/" + quote(review_id, safe="")
+            )
+        )
+
+    async def upload_external_file_chunk(
+        self, tenant_id: str, review_id: str, value: ExternalFileChunkInput
+    ) -> ExternalFileReviewView:
+        return ExternalFileReviewView.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/external-file-reviews/" + quote(review_id, safe="") + "/chunks",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def seal_external_file_review(self, tenant_id: str, review_id: str) -> ExternalFileReviewView:
+        return ExternalFileReviewView.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/external-file-reviews/" + quote(review_id, safe="") + "/seal",
+            )
+        )
+
+    async def approve_external_file_review(
+        self, tenant_id: str, review_id: str, value: ExternalReviewDecision, *, idempotency_key: str
+    ) -> ExternalFileReviewView:
+        return ExternalFileReviewView.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/external-file-reviews/" + quote(review_id, safe="") + "/approve",
+                json=value.model_dump(mode="json", exclude_unset=True),
+                headers={"Idempotency-Key": idempotency_key},
+            )
+        )
+
+    async def cancel_external_file_review(
+        self, tenant_id: str, review_id: str, value: ExternalReviewDecision
+    ) -> ExternalFileReviewView:
+        return ExternalFileReviewView.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/external-file-reviews/" + quote(review_id, safe="") + "/cancel",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def mcp_connection(self) -> McpConnectionDescriptor:
+        return McpConnectionDescriptor.model_validate(await self._request("GET", "/mcp/connection"))
+
+    async def stage_external_review(
+        self, tenant_id: str, value: ExternalReviewInput, *, idempotency_key: str
+    ) -> ExternalReviewView:
+        return ExternalReviewView.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/external-knowledge-reviews",
+                json=value.model_dump(mode="json", exclude_unset=True),
+                headers={"Idempotency-Key": idempotency_key},
+            )
+        )
+
+    async def external_review(self, tenant_id: str, review_id: str) -> ExternalReviewView:
+        return ExternalReviewView.model_validate(
+            await self._request(
+                "GET", self._tenant(tenant_id) + "/external-knowledge-reviews/" + quote(review_id, safe="")
+            )
+        )
+
+    async def approve_external_review(
+        self, tenant_id: str, review_id: str, value: ExternalReviewDecision, *, idempotency_key: str
+    ) -> KnowledgeCommitOutcome:
+        return TypeAdapter(KnowledgeCommitOutcome).validate_python(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id)
+                + "/external-knowledge-reviews/"
+                + quote(review_id, safe="")
+                + "/approve",
+                json=value.model_dump(mode="json", exclude_unset=True),
+                headers={"Idempotency-Key": idempotency_key},
+            )
+        )
+
+    async def cancel_external_review(
+        self, tenant_id: str, review_id: str, value: ExternalReviewDecision
+    ) -> ExternalReviewView:
+        return ExternalReviewView.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id)
+                + "/external-knowledge-reviews/"
+                + quote(review_id, safe="")
+                + "/cancel",
                 json=value.model_dump(mode="json", exclude_unset=True),
             )
         )
@@ -1169,6 +1307,36 @@ class KoinonClient:
         }
         return Page[Person].model_validate(
             await self._request("GET", self._tenant(tenant_id) + "/people", params=filters)
+        )
+
+    async def branding_defaults(self) -> BrandingValues:
+        return BrandingValues.model_validate(await self._request("GET", "branding/defaults"))
+
+    async def organization_branding(self, tenant_id: str) -> OrganizationBranding:
+        return OrganizationBranding.model_validate(
+            await self._request("GET", self._tenant(tenant_id) + "/branding")
+        )
+
+    async def update_organization_branding(
+        self, tenant_id: str, value: OrganizationBrandingInput
+    ) -> OrganizationBranding:
+        return OrganizationBranding.model_validate(
+            await self._request(
+                "PUT",
+                self._tenant(tenant_id) + "/branding",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def reset_organization_branding(
+        self, tenant_id: str, value: BrandingResetInput
+    ) -> OrganizationBranding:
+        return OrganizationBranding.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/branding/reset",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
         )
 
     async def organization_knowledge_settings(self, tenant_id: str) -> OrganizationKnowledgeSettings:

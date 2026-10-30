@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from typing import Annotated, Literal
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 Identifier = Annotated[str, Field(min_length=1, max_length=64)]
 Revision = Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
@@ -107,6 +107,21 @@ class ConversationMessage(Frozen):
     presentation: Presentation | None = None
 
 
+class ConversationIdentity(Frozen):
+    product_name: str = Field(min_length=1, max_length=64, strict=True)
+    assistant_name: str = Field(min_length=1, max_length=64, strict=True)
+    branding_revision: int = Field(ge=0, le=2147483647, strict=True)
+    branding_origin: Literal["deployment", "organization"]
+    branding_sha256: Revision
+
+    @field_validator("product_name", "assistant_name")
+    @classmethod
+    def printable_name(cls, value: str) -> str:
+        if not value.isprintable() or not value.strip():
+            raise ValueError("Names must contain printable text")
+        return value
+
+
 class ConversationSnapshot(Frozen):
     thread_id: Identifier
     tenant_id: Identifier
@@ -117,6 +132,10 @@ class ConversationSnapshot(Frozen):
     sources: tuple[SourceReference, ...] = Field(default=(), max_length=500)
     source_manifest_complete: bool = False
     originating_token_ids: tuple[Identifier, ...] = Field(default=(), max_length=200, repr=False)
+    identity: ConversationIdentity | None = Field(default=None, description=(
+        "Presentation identity recorded when the export or share review was created. "
+        "Null means historical identity was not recorded; it never uses today's branding."
+    ))
 
 
 class ResultColumn(Frozen):

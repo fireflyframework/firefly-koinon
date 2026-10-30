@@ -415,7 +415,7 @@ class CatalogService:
         if self.restriction:
             await self.restriction.resource(subject, entry, write=True)
         self.require_knowledge_review(entry.kind)
-        if entry.metadata_json.get("_koinon_intake"):
+        if entry.metadata_json.get("_koinon_intake") or entry.metadata_json.get("_koinon_external_review"):
             raise ConflictException(
                 "Retained intake receipts cannot be deleted", code="INTAKE_RECEIPT_IMMUTABLE"
             )

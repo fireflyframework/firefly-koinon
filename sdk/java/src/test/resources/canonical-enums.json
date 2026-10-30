@@ -75,6 +75,9 @@
     "revoked",
     "expired"
   ],
+  "BrandingValuesFontFamily": [
+    "Manrope"
+  ],
   "CatalogProposalKind": [
     "catalog"
   ],
@@ -108,6 +111,10 @@
   "ConversationExportInputFormat": [
     "markdown",
     "json"
+  ],
+  "KnowledgeSettingsOrigin": [
+    "deployment",
+    "organization"
   ],
   "ConversationMessageStatus": [
     "completed",
@@ -175,6 +182,39 @@
     "selected_messages",
     "bounded",
     "unknown"
+  ],
+  "ExternalFileCleanupReviewStatus": [
+    "purging",
+    "purged"
+  ],
+  "ExternalFileReviewViewStatus": [
+    "uploading",
+    "preview",
+    "ingesting",
+    "committed",
+    "cancelled",
+    "unresolved"
+  ],
+  "ExternalFileReviewViewOrigin": [
+    "external_proposal"
+  ],
+  "ExternalFileReviewViewAuthority": [
+    "unverified"
+  ],
+  "ExternalReviewInputAction": [
+    "create_draft",
+    "create_published",
+    "update_draft",
+    "update_published",
+    "publish_draft"
+  ],
+  "ExternalReviewViewStatus": [
+    "preview",
+    "committing",
+    "committed",
+    "cancelled",
+    "stale",
+    "unresolved"
   ],
   "FieldSchemaType": [
     "text",
@@ -251,13 +291,6 @@
   "KeycloakCredentialKind": [
     "keycloak"
   ],
-  "KnowledgeCommitReceiptAction": [
-    "create_draft",
-    "create_published",
-    "update_draft",
-    "update_published",
-    "publish_draft"
-  ],
   "KnowledgeCommitReceiptRetrievalState": [
     "not_published",
     "lexical_ready",
@@ -282,14 +315,6 @@
     "security",
     "other"
   ],
-  "KnowledgeIntentStatus": [
-    "preview",
-    "committing",
-    "committed",
-    "cancelled",
-    "stale",
-    "unresolved"
-  ],
   "RoleKind": [
     "embedding",
     "generative"
@@ -309,6 +334,51 @@
   "KnowledgeVersionViewPublication": [
     "draft",
     "published"
+  ],
+  "McpConnectionDescriptorTransport": [
+    "streamable-http"
+  ],
+  "McpConnectionDescriptorAuthentication": [
+    "personal_token",
+    "oauth"
+  ],
+  "McpConnectionDescriptorOauthRegistration": [
+    "pre_registered"
+  ],
+  "McpConnectionDescriptorClientAcceptance": [
+    "not_verified"
+  ],
+  "McpReadReceiptReason": [
+    "incomplete_or_unsupported_source_manifest",
+    "source_manifest_limit_or_missing_revision",
+    "receipt_byte_limit",
+    "active_receipt_limit",
+    "source_reuse_scope_required",
+    "capture_unavailable",
+    "transitive_lineage_unqualified",
+    "catalog_is_not_source_evidence"
+  ],
+  "McpRegisteredClientClientAuth": [
+    "public",
+    "confidential"
+  ],
+  "McpReviewSupportMechanism": [
+    "mcp_apps"
+  ],
+  "McpReviewSupportResourceUri": [
+    "ui://koinon/knowledge-review"
+  ],
+  "McpReviewSupportMimeType": [
+    "text/html;profile=mcp-app"
+  ],
+  "McpReviewSupportClientSupport": [
+    "not_observed"
+  ],
+  "McpToolCapabilityAccess": [
+    "read",
+    "query",
+    "proposal",
+    "app_only"
   ],
   "MembershipOrigin": [
     "manual",
@@ -340,9 +410,6 @@
     "tenant",
     "none"
   ],
-  "NativeAdapterProfileStatus": [
-    "unverified"
-  ],
   "NativeReadReceiptDomain": [
     "documents",
     "structured",
@@ -364,10 +431,6 @@
     "needs_setup",
     "unverified",
     "ready"
-  ],
-  "KnowledgeSettingsOrigin": [
-    "deployment",
-    "organization"
   ],
   "PendingKnowledgeCommitStatus": [
     "pending"
@@ -419,6 +482,21 @@
   ],
   "ReplaceTableAction": [
     "replace_table"
+  ],
+  "RlmToolReceiptToolName": [
+    "python",
+    "final_answer"
+  ],
+  "RlmToolReceiptResultKind": [
+    "tool_return",
+    "accepted_final",
+    "execution_failure"
+  ],
+  "RlmToolReceiptOutcome": [
+    "completed",
+    "rejected",
+    "failed",
+    "halted"
   ],
   "SetupCheckCapability": [
     "chat",

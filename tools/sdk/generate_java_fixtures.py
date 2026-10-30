@@ -43,6 +43,8 @@ def fixture(s, field="", depth=0):
             depth + 1,
         )
     t = s.get("type")
+    if t == "null":
+        return None
     if t == "object":
         if "properties" in s:
             return {k: fixture(v, k, depth + 1) for k, v in s["properties"].items()}
@@ -61,9 +63,9 @@ def fixture(s, field="", depth=0):
     if t == "number":
         return max(s.get("minimum", 0.25), 0.25)
     if t == "string":
-        if s.get("pattern") == "^[a-f0-9]{64}$":
+        if s.get("pattern") in {"^[a-f0-9]{64}$", "^[0-9a-f]{64}$"}:
             return "a" * 64
-        return (
+        value = (
             "2026-10-27T12:34:56Z"
             if field
             in {
@@ -77,6 +79,8 @@ def fixture(s, field="", depth=0):
             or s.get("format") == "date-time"
             else field + "-value"
         )
+        value = value.ljust(s.get("minLength", 0), "x")
+        return value[:s["maxLength"]] if "maxLength" in s else value
     return {"decimal": "12345678901234567890.12345678901234567890"}
 
 

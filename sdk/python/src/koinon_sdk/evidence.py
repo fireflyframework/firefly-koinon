@@ -3,7 +3,7 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/evidence/dtos.py
-SHA256: 879a5edfc94c73bf0405b557ee624e4f15eb66a51bd7e0911069173bf57de866
+SHA256: e95d948c2c9a430a4a9707ac40176377aab17ffdf31ee221342e0e4bd63cb9fa
 
 Server authorization and semantic validation remain authoritative.
 """
@@ -74,6 +74,14 @@ class ConversationMessage(Frozen):
     presentation: EvidencePresentation | None = None
 
 
+class ConversationIdentity(Frozen):
+    product_name: str = Field(min_length=1, max_length=64, strict=True)
+    assistant_name: str = Field(min_length=1, max_length=64, strict=True)
+    branding_revision: int = Field(ge=0, le=2147483647, strict=True)
+    branding_origin: Literal["deployment", "organization"]
+    branding_sha256: Revision
+
+
 class ConversationSnapshot(Frozen):
     thread_id: Identifier
     tenant_id: Identifier
@@ -84,6 +92,14 @@ class ConversationSnapshot(Frozen):
     sources: tuple[SourceReference, ...] = Field(default=(), max_length=500)
     source_manifest_complete: bool = False
     originating_token_ids: tuple[Identifier, ...] = Field(default=(), max_length=200, repr=False)
+    identity: ConversationIdentity | None = Field(
+        default=None,
+        description=(
+            "Presentation identity recorded when the export or share review was cre"
+            "ated. Null means historical identity was not recorded; it never uses t"
+            "oday's branding."
+        ),
+    )
 
 
 class ResultColumn(Frozen):

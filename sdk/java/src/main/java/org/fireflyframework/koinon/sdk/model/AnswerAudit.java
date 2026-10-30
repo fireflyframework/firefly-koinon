@@ -16,7 +16,8 @@ public record AnswerAudit(
     @JsonProperty("sources") List<SourceReference> sources,
     @JsonProperty("private_files") List<PrivateFileReceipt> privateFiles,
     @JsonProperty("native_reads") List<NativeReadReceipt> nativeReads,
-    @JsonProperty("sql_attempts") List<SqlAttemptReceipt> sqlAttempts
+    @JsonProperty("sql_attempts") List<SqlAttemptReceipt> sqlAttempts,
+    @JsonProperty("rlm_tools") List<RlmToolReceipt> rlmTools
 ) {
     public AnswerAudit {
         generations=generations==null?null:List.copyOf(generations);
@@ -24,6 +25,7 @@ public record AnswerAudit(
         privateFiles=privateFiles==null?null:List.copyOf(privateFiles);
         nativeReads=nativeReads==null?null:List.copyOf(nativeReads);
         sqlAttempts=sqlAttempts==null?null:List.copyOf(sqlAttempts);
+        rlmTools=rlmTools==null?null:List.copyOf(rlmTools);
     }
 
 }

@@ -91,6 +91,7 @@ class KnowledgeExports:
             completeness="selected_messages",
             omissions=tuple(omissions),
             expires_at=row.expires_at,
+            identity=snapshot.identity,
         )
 
     async def _result_preview(self, subject, tenant_id, body):

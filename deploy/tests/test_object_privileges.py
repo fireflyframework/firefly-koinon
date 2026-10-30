@@ -60,6 +60,15 @@ def test_organization_chat_setting_preserves_revision_history_on_reprovisioning(
     ]
 
 
+def test_organization_branding_reset_preserves_monotonic_revision_history():
+    connection = Statements()
+    module.grant_table(connection, "koinon_organization_branding", "example_runtime")
+    assert connection.items == [
+        'REVOKE ALL ON TABLE public."koinon_organization_branding" FROM "example_runtime"',
+        'GRANT SELECT,INSERT,UPDATE ON TABLE public."koinon_organization_branding" TO "example_runtime"',
+    ]
+
+
 def test_outbox_publisher_cannot_read_or_reseed_delivery_sequence():
     connection = Statements()
     module.grant_sequence(connection, "canon_knowledge_outbox_deliveries_id_seq", "example_runtime")

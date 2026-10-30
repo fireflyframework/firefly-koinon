@@ -6,10 +6,16 @@ import argparse
 import copy
 import ast
 import hashlib
+import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCES = {
+    "external_file_reviews": "backend/src/koinon/knowledge/external_reviews/file_dtos.py",
+    "mcp": "backend/src/koinon/mcp/dtos.py",
+    "external_reviews": "backend/src/koinon/knowledge/external_reviews/dtos.py",
+    "organization_branding": "backend/src/koinon/organization_branding/dtos.py",
     "organization_knowledge": "backend/src/koinon/organization_knowledge/dtos.py",
     "organization_chat": "backend/src/koinon/organization_chat/dtos.py",
     "authorized_applications": "backend/src/koinon/authorized_applications/dtos.py",
@@ -40,6 +46,15 @@ def render(source):
             elif isinstance(node, ast.ClassDef) and node.name == "Presentation":
                 node.name = "EvidencePresentation"
     declarations = []
+    if source.parent.name == "organization_branding":
+        image_tree = ast.parse(source.with_name("images.py").read_text())
+        limit = next(
+            node for node in image_tree.body
+            if isinstance(node, ast.Assign)
+            and any(isinstance(target, ast.Name) and target.id == "MAX_DATA_URL_LENGTH" for target in node.targets)
+        )
+        assert isinstance(ast.literal_eval(limit.value), int)
+        declarations.append(limit)
     inputs = {"StrictInput"}
     for node in tree.body:
         if isinstance(node, ast.Assign) and all(
@@ -49,6 +64,8 @@ def render(source):
         elif isinstance(node, ast.ClassDef) and node.name not in {
             "StrictInput",
             "AttachmentHistorySummary",
+            "ExternalReviewChallenge",
+            "ExternalFileReviewChallenge",
         }:
             bases = [ast.unparse(base) for base in node.bases]
             has_input_config = any(
@@ -78,6 +95,8 @@ def render(source):
                 else original
                 for base, original in zip(bases, node.bases, strict=True)
             ]
+            if source.parent.name == "external_reviews" and (node.name.endswith("Input") or node.name == "ExternalReviewDecision"):
+                node.bases = [ast.Name(id="InputModel", ctx=ast.Load())]
             node.decorator_list = []
             node.body = [
                 item
@@ -115,9 +134,12 @@ def render(source):
     declared = {node.name for node in module.body if isinstance(node, ast.ClassDef)}
     declared.update(target.id for node in module.body if isinstance(node, ast.Assign) for target in node.targets if isinstance(target, ast.Name))
     names -= declared
-    available["koinon_sdk.evidence"] = ["ConversationMessage", "Frozen", "Identifier", "Revision", "SourceReference", "StoredResult"]
+    available["koinon_sdk.evidence"] = ["ConversationIdentity", "ConversationMessage", "Frozen", "Identifier", "Revision", "SourceReference", "StoredResult"]
     available["koinon_sdk.exports"] = ["Input", "MessageSelection"]
     available["koinon_sdk.organization_knowledge"] = ["OrganizationKnowledgeSnapshot"]
+    if source.parent.name == "external_reviews":
+        available["koinon_sdk.evidence"] = ["SourceReference"]
+        available["koinon_sdk.curated"] = ["Action", "Frozen", "Identifier", "KnowledgeContent", "KnowledgeIntent", "KnowledgeDestination", "Sha256"]
     imports = "\n".join(
         "from " + key + " import " + ", ".join(name for name in values if name in names)
         for key, values in available.items()
@@ -131,7 +153,32 @@ def render(source):
         "Server authorization and semantic validation remain authoritative.\n"
         '"""\n'
     )
-    return HEADER + description + imports + "\n\n\n" + ast.unparse(module) + "\n"
+    content = HEADER + description + imports + "\n\n\n" + ast.unparse(module) + "\n"
+    organized = subprocess.run(
+        [sys.executable, "-B", "-m", "ruff", "check", "--select", "I", "--fix", "--stdin-filename", str(ROOT / "sdk/python/src/koinon_sdk/_generated.py")],
+        input=content, text=True, capture_output=True, check=True,
+    ).stdout
+    formatted = subprocess.run(
+        [sys.executable, "-B", "-m", "ruff", "format", "--stdin-filename", str(ROOT / "sdk/python/src/koinon_sdk/_generated.py")],
+        input=organized, text=True, capture_output=True, check=True,
+    ).stdout
+    lines = []
+    for line in formatted.splitlines():
+        if len(line) > 110 and line.lstrip().startswith("description="):
+            indent = line[:len(line) - len(line.lstrip())]
+            literal = line.strip().removeprefix("description=")
+            suffix = "," if literal.endswith(",") else ""
+            value = ast.literal_eval(literal.removesuffix(","))
+            lines.append(indent + "description=(")
+            lines.extend(indent + "    " + repr(value[index:index + 70])
+                         for index in range(0, len(value), 70))
+            lines.append(indent + ")" + suffix)
+        else:
+            lines.append(line)
+    return subprocess.run(
+        [sys.executable, "-B", "-m", "ruff", "format", "--stdin-filename", str(ROOT / "sdk/python/src/koinon_sdk/_generated.py")],
+        input="\n".join(lines) + "\n", text=True, capture_output=True, check=True,
+    ).stdout
 
 
 def main():

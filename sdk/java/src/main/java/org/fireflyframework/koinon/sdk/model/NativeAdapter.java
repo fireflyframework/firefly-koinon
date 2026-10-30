@@ -11,7 +11,7 @@ public record NativeAdapter(
     @JsonProperty("read_only") Boolean readOnly,
     @JsonProperty("model_class") String modelClass,
     @JsonProperty("provider_identity") String providerIdentity,
-    @JsonProperty("profile_status") NativeAdapterProfileStatus profileStatus,
+    @JsonProperty("profile_status") ExternalFileReviewViewAuthority profileStatus,
     @JsonProperty("reason") String reason
 ) {
 

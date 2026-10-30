@@ -62,6 +62,18 @@ def test_fresh_structured_bootstrap_has_no_executable_default_password():
     assert "PASSWORD '" not in source
 
 
+def test_first_local_startup_binds_the_listener_announced_to_mcp(tmp_path):
+    directory = module.generate(tmp_path / "new-private")
+    runtime = dict(line.split("=", 1) for line in (directory / "runtime.env").read_text().splitlines())
+    assert runtime["PYFLY_SERVER_HOST"] == "127.0.0.1"
+    assert runtime["PYFLY_SERVER_PORT"] == "18781"
+    assert runtime["KOINON_MCP_ENABLED"] == "true"
+    assert "KOINON_MCP_PUBLIC_URL" not in runtime
+    service = (DEPLOY / "production/backend.service").read_text()
+    assert "-m koinon.serve" in service
+    assert "-m uvicorn" not in service
+
+
 def test_backup_preserves_explicit_tls_options_and_rejects_unknown_options():
     from sqlalchemy.engine import make_url
 

@@ -2,9 +2,9 @@
 
 Python, Java and TypeScript expose the same canonical headless API. The table records concrete SDK methods; it does not count browser-only authentication or retained domain routes outside this contract.
 
-This development contract contains 144 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
+This development contract contains 160 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
 
-[Download the operation manifest](sdk-contract.json). The maintained generator checks source mappings and schemas without starting the backend.
+[Download the operation manifest](sdk-contract.json) and [complete wire schemas](sdk-schemas.json). The maintained generator checks source mappings and schemas without starting the backend.
 
 | API operation | Python client | TypeScript client | Java client | Response |
 | --- | --- | --- | --- | --- |
@@ -116,6 +116,17 @@ This development contract contains 144 operations. Resource operations require t
 | `GET /api/v1/tenants/{tenant_id}/knowledge-items/{item_id}` | `knowledge_item` | `knowledgeItems.get` | `client.knowledgeItems.get` | `KnowledgeItemView` |
 | `GET /api/v1/tenants/{tenant_id}/knowledge-items/{item_id}/versions/{version}` | `knowledge_version` | `knowledgeItems.version` | `client.knowledgeItems.version` | `KnowledgeItemView` |
 | `POST /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/files` | `append_dataset_file` | `dataset.appendFile` | `client.datasets.appendFile` | `DatasetFileAppendResult` |
+| `POST /api/v1/tenants/{tenant_id}/external-knowledge-reviews` | `stage_external_review` | `externalReviews.stage` | `client.externalReviews.stage` | `ExternalReviewView` |
+| `GET /api/v1/tenants/{tenant_id}/external-knowledge-reviews/{review_id}` | `external_review` | `externalReviews.get` | `client.externalReviews.get` | `ExternalReviewView` |
+| `POST /api/v1/tenants/{tenant_id}/external-knowledge-reviews/{review_id}/approve` | `approve_external_review` | `externalReviews.approve` | `client.externalReviews.approve` | `KnowledgeCommitOutcome` |
+| `POST /api/v1/tenants/{tenant_id}/external-knowledge-reviews/{review_id}/cancel` | `cancel_external_review` | `externalReviews.cancel` | `client.externalReviews.cancel` | `ExternalReviewView` |
+| `POST /api/v1/tenants/{tenant_id}/external-file-reviews/cleanup` | `cleanup_external_file_reviews` | `externalFileReviews.cleanup` | `client.externalFileReviews.cleanup` | `ExternalFileCleanupResult` |
+| `POST /api/v1/tenants/{tenant_id}/external-file-reviews` | `stage_external_file_review` | `externalFileReviews.stage` | `client.externalFileReviews.stage` | `ExternalFileReviewView` |
+| `GET /api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}` | `external_file_review` | `externalFileReviews.get` | `client.externalFileReviews.get` | `ExternalFileReviewView` |
+| `POST /api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}/chunks` | `upload_external_file_chunk` | `externalFileReviews.chunk` | `client.externalFileReviews.chunk` | `ExternalFileReviewView` |
+| `POST /api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}/seal` | `seal_external_file_review` | `externalFileReviews.seal` | `client.externalFileReviews.seal` | `ExternalFileReviewView` |
+| `POST /api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}/approve` | `approve_external_file_review` | `externalFileReviews.approve` | `client.externalFileReviews.approve` | `ExternalFileReviewView` |
+| `POST /api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}/cancel` | `cancel_external_file_review` | `externalFileReviews.cancel` | `client.externalFileReviews.cancel` | `ExternalFileReviewView` |
 | `GET /api/v1/tenants/{tenant_id}/knowledge-indexes` | `knowledge_indexes` | `knowledgeIndexes.list` | `client.knowledgeIndexes.list` | `IndexPage` |
 | `GET /api/v1/tenants/{tenant_id}/knowledge-index-choices` | `native_index_choices` | `knowledgeIndexes.choices` | `client.knowledgeIndexes.choices` | `NativeIndexPage` |
 | `GET /api/v1/tenants/{tenant_id}/knowledge-index-choices/{choice_id}` | `native_index_choice` | `knowledgeIndexes.choice` | `client.knowledgeIndexes.choice` | `NativeIndexChoice` |
@@ -131,6 +142,11 @@ This development contract contains 144 operations. Resource operations require t
 | `POST /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates/cells` | `table_coordinate_cells` | `dataset.tableCoordinateCells` | `client.datasets.tableCoordinateCells` | `TableCoordinateSelection` |
 | `GET /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates/rows` | `table_coordinate_rows` | `dataset.tableCoordinateRows` | `client.datasets.tableCoordinateRows` | `TableRowRangePage` |
 | `GET /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates/columns` | `table_coordinate_columns` | `dataset.tableCoordinateColumns` | `client.datasets.tableCoordinateColumns` | `TableColumnBindingPage` |
+| `GET /api/v1/mcp/connection` | `mcp_connection` | `mcp.connection` | `client.mcp.connection` | `McpConnectionDescriptor` |
+| `GET /api/v1/branding/defaults` | `branding_defaults` | `branding.defaults` | `client.brandingDefaults.defaults` | `BrandingValues` |
+| `GET /api/v1/tenants/{tenant_id}/branding` | `organization_branding` | `branding.get` | `client.organizationBranding.get` | `OrganizationBranding` |
+| `PUT /api/v1/tenants/{tenant_id}/branding` | `update_organization_branding` | `branding.update` | `client.organizationBranding.update` | `OrganizationBranding` |
+| `POST /api/v1/tenants/{tenant_id}/branding/reset` | `reset_organization_branding` | `branding.reset` | `client.organizationBranding.reset` | `OrganizationBranding` |
 | `GET /api/v1/tenants/{tenant_id}/chat/settings` | `organization_chat_settings` | `organizationChat.get` | `client.organizationChat.get` | `OrganizationChatSettings` |
 | `PUT /api/v1/tenants/{tenant_id}/chat/settings` | `update_organization_chat_settings` | `organizationChat.update` | `client.organizationChat.update` | `OrganizationChatSettings` |
 | `GET /api/v1/tenants/{tenant_id}/knowledge/settings` | `organization_knowledge_settings` | `organizationKnowledge.get` | `client.organizationKnowledge.get` | `OrganizationKnowledgeSettings` |
@@ -173,6 +189,8 @@ These operations use the original structured service behind resource admission. 
 Glossary list totals can be unknown. Honor returned `limit`, `offset` and `has_more`; do not invent a total or slice another page in the client.
 
 ## Request behavior
+
+New conversation export and share reviews save a nullable typed `identity` with product/assistant names, organization branding revision/origin and configuration digest. The review revision binds that identity; later organization changes do not rewrite saved reviews, exports or shared conversations. Historical null means not recorded. JSON exports retain machine roles and separate display names. See the [three-language export and sharing workflows](../guides/exports-sharing.md) for preview, explicit confirmation, authenticated download and recipient reads.
 
 Dataset file append requires a stable Idempotency-Key, accepts one bounded multipart file and returns its canonical file-version and new table identities. Existing snapshots are retained. Native sections commit independently; pending or failed intake blocks dataset query/schema until reconciliation. Exact key/payload replays recheck permissions and return the stored completed receipt without native work. There is no automatic retry, bulk/async intake or public recovery helper. PostgreSQL concurrency and configured-provider acceptance remain separate qualification gates.
 

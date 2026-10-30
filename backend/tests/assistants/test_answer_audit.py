@@ -12,6 +12,40 @@ from koinon.evidence.ports import SourceResolverPort
 from koinon.knowledge.capture_dtos import CapturedEvidence, NativeReadFingerprint, NativeSqlAttempt
 
 
+@pytest.mark.parametrize("outcome", ["completed", "rejected", "failed", "halted"])
+async def test_typed_rlm_tool_receipts_survive_queue_audit_and_access_checks(assistants, outcome):
+    from koinon.assistants.audit import AnswerAudits
+    from koinon.knowledge.capture_dtos import NativeRlmTool
+
+    _, context, run, entry, data, source = await fixture(assistants)
+    resolver = type("ControlledSources", (), {})()
+    resolver.resolve = AsyncMock(return_value=(source,))
+    context.container.register_instance(SourceResolverPort, resolver)
+    queue = context.get_bean(AssistantQueue)
+    read = NativeReadFingerprint(
+        "rlm.root", "documents", "north", entry.workspace_id, entry.id, "a" * 64, ("native-source",), (),
+    )
+    tool = NativeRlmTool(tenant_id="north", workspace_id="native", source_ids=("native-source",),
+        tool_call_id="genuine-provider-id", tool_name="final_answer", request_sha256="a" * 64,
+        schema_sha256="b" * 64, arguments_sha256="c" * 64, result_sha256="d" * 64,
+        result_kind="accepted_final" if outcome == "halted" else "tool_return", execution_sha256="e" * 64,
+        outcome=outcome, execution_status={"failed": "error"}.get(outcome, outcome),
+        execution_state="halted" if outcome == "halted" else "ready")
+    capture = CapturedEvidence(data, (source,), outcome != "failed", (read,), (), (tool,))
+    if outcome == "failed":
+        await queue.observation(run.id, "proposal-worker", "search", [entry.id], capture=capture)
+    else:
+        await queue.evidence(run.id, "proposal-worker", "search", data, [entry.id], capture=capture)
+    audit = await context.get_bean(AnswerAudits).get("issuer|admin", "north", run.id)
+    result = audit["rlm_tools"][0]
+    assert result["tool_call_id"] == "genuine-provider-id" and result["outcome"] == outcome
+    assert result["arguments_sha256"] == "c" * 64 and result["result_sha256"] == "d" * 64
+    assert result["result_id"] == audit["native_reads"][0]["result_id"]
+    assert len(audit["native_reads"]) == 1 and audit["sql_attempts"] == []
+    with pytest.raises(AccessDenied):
+        await context.get_bean(AnswerAudits).get("issuer|viewer", "north", run.id)
+
+
 async def test_owner_audit_preserves_used_revision_when_current_source_changes(assistants):
     from koinon.assistants.audit import AnswerAudits
 
@@ -68,6 +102,7 @@ async def test_legacy_audit_is_not_backfilled_from_current_configuration(assista
     assert audit["provenance_status"] == "not_recorded"
     assert audit["generations"] == []
     assert audit["sources"] == []
+    assert audit["rlm_tools"] is None
 
 
 async def test_foreign_native_receipt_is_rejected_before_persistence(assistants):

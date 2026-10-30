@@ -223,6 +223,12 @@ class _ProtocolObserver:
     def document_sync(self, stage, content, sources, scope):
         self.stages.append(stage)
 
+    def document_tool_start(self, scope):
+        pass
+
+    def document_tool(self, receipt, scope):
+        pass
+
 
 async def _observed_text_run(session, observer):
     from flycanon.core.services.query import provenance
@@ -288,7 +294,7 @@ async def test_native_engine_exhausted_protocol_budget_never_executes_or_forces_
 
     def respond(messages, info):
         requests.append(messages)
-        assert [tool.name for tool in info.function_tools] == ["python"]
+        assert [tool.name for tool in info.function_tools] == ["python", "final_answer"]
         return ModelResponse(parts=[TextPart("```python\nopen('/etc/passwd')\n```")],
                              usage=RequestUsage(input_tokens=10, output_tokens=2))
 
@@ -340,7 +346,7 @@ async def test_native_engine_protocol_correction_cannot_add_a_forced_final_after
 
     def respond(messages, info):
         requests.append(messages)
-        assert [tool.name for tool in info.function_tools] == ["python"]
+        assert [tool.name for tool in info.function_tools] == ["python", "final_answer"]
         parts = [TextPart("Use the document")] if len(requests) == 1 else [
             ToolCallPart("python", {"code": "print(text)"}, "valid-progress")
         ]

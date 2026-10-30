@@ -1,11 +1,13 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
+import math
 from dataclasses import dataclass, field
 from urllib.parse import urlsplit
 
 from mcp.server.transport_security import TransportSecuritySettings
 from pyfly.core import config_properties
 
+from koinon.mcp.endpoints import is_local_host, validate_mcp_url
 from koinon.security.settings import _endpoint
 
 
@@ -20,12 +22,18 @@ class McpSettings:
     max_response_bytes: int = 2097152
     timeout_seconds: float = 30
     max_concurrency: int = 8
+    max_sessions: int = 128
+    session_idle_timeout_seconds: float = 900
+
+    @property
+    def local_only(self) -> bool:
+        return is_local_host(urlsplit(self.public_url).hostname)
 
     def __post_init__(self):
         if self.enabled:
             if not self.public_url:
                 raise ValueError("MCP public_url is required when enabled")
-            _endpoint(self.public_url)
+            validate_mcp_url(self.public_url)
             parsed = urlsplit(self.public_url)
             if parsed.path != "/mcp" or parsed.query:
                 raise ValueError("MCP public_url must have the exact /mcp path without query")
@@ -42,6 +50,11 @@ class McpSettings:
             and 1024 <= self.max_response_bytes <= 16777216
             and 1 <= self.timeout_seconds <= 120
             and 1 <= self.max_concurrency <= 64
+            and type(self.max_sessions) is int
+            and 1 <= self.max_sessions <= 4096
+            and type(self.session_idle_timeout_seconds) in (int, float)
+            and 30 <= self.session_idle_timeout_seconds <= 3600
+            and math.isfinite(self.session_idle_timeout_seconds)
         ):
             raise ValueError("MCP runtime limits are outside supported bounds")
 

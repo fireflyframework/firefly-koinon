@@ -18,7 +18,12 @@ def add(controller, group, methods):
         mapping[controller + "." + key] = (group, value)
 
 
+add("McpConnectionController", "McpApi", {"get": "connection"})
+add("ExternalKnowledgeReviewController", "ExternalReviewsApi", {"stage": "stage", "get": "get", "approve": "approve", "cancel": "cancel"})
+add("ExternalFileReviewController", "ExternalFileReviewsApi", {"cleanup": "cleanup", "stage": "stage", "get": "get", "chunk": "chunk", "seal": "seal", "approve": "approve", "cancel": "cancel"})
 add("OrganizationChatController", "OrganizationChatApi", {"get": "get", "update": "update"})
+add("BrandingDefaultsController", "BrandingDefaultsApi", {"defaults": "defaults"})
+add("OrganizationBrandingController", "OrganizationBrandingApi", {"get": "get", "update": "update", "reset": "reset"})
 add("OrganizationKnowledgeController", "OrganizationKnowledgeApi", {"get": "get", "update": "update"})
 add("AuditController", "AuditApi", {"audit": "list"})
 add("DatasetFilesController", "DatasetsApi", {"append": "appendFile"})

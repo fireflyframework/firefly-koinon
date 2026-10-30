@@ -20,8 +20,27 @@ from koinon_sdk import contracts, models, indexes, identity, attachments, eviden
 from koinon_sdk.client import KoinonClient
 from koinon_sdk import coordinates, curated, dataset_files, authorized_applications, organization_chat
 from koinon_sdk import organization_knowledge
+from koinon_sdk import organization_branding, mcp, external_reviews, external_file_reviews
 
 rows = """
+ExternalFileReviewController.cleanup|cleanup_external_file_reviews|externalFileReviews.cleanup|ExternalFileCleanupInput|ExternalFileCleanupResult
+ExternalFileReviewController.stage|stage_external_file_review|externalFileReviews.stage|ExternalFileReviewInput|ExternalFileReviewView
+ExternalFileReviewController.get|external_file_review|externalFileReviews.get|-|ExternalFileReviewView
+ExternalFileReviewController.chunk|upload_external_file_chunk|externalFileReviews.chunk|ExternalFileChunkInput|ExternalFileReviewView
+ExternalFileReviewController.seal|seal_external_file_review|externalFileReviews.seal|-|ExternalFileReviewView
+ExternalFileReviewController.approve|approve_external_file_review|externalFileReviews.approve|ExternalReviewDecision|ExternalFileReviewView
+ExternalFileReviewController.cancel|cancel_external_file_review|externalFileReviews.cancel|ExternalReviewDecision|ExternalFileReviewView
+
+McpConnectionController.get|mcp_connection|mcp.connection|-|McpConnectionDescriptor
+ExternalKnowledgeReviewController.stage|stage_external_review|externalReviews.stage|ExternalReviewInput|ExternalReviewView
+ExternalKnowledgeReviewController.get|external_review|externalReviews.get|-|ExternalReviewView
+ExternalKnowledgeReviewController.approve|approve_external_review|externalReviews.approve|ExternalReviewDecision|KnowledgeCommitOutcome
+ExternalKnowledgeReviewController.cancel|cancel_external_review|externalReviews.cancel|ExternalReviewDecision|ExternalReviewView
+
+BrandingDefaultsController.defaults|branding_defaults|branding.defaults|-|BrandingValues
+OrganizationBrandingController.get|organization_branding|branding.get|-|OrganizationBranding
+OrganizationBrandingController.update|update_organization_branding|branding.update|OrganizationBrandingInput|OrganizationBranding
+OrganizationBrandingController.reset|reset_organization_branding|branding.reset|BrandingResetInput|OrganizationBranding
 OrganizationKnowledgeController.get|organization_knowledge_settings|organizationKnowledge.get|-|OrganizationKnowledgeSettings
 OrganizationKnowledgeController.update|update_organization_knowledge_settings|organizationKnowledge.update|OrganizationKnowledgeSettingsInput|OrganizationKnowledgeSettings
 OrganizationChatController.get|organization_chat_settings|organizationChat.get|-|OrganizationChatSettings
@@ -307,7 +326,7 @@ for op in inventory["operations"]:
         success_status=status,
         source_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
     )
-    if op["operation"] == "CuratedKnowledgeController.confirm":
+    if op["operation"] in {"CuratedKnowledgeController.confirm", "ExternalKnowledgeReviewController.approve", "ExternalFileReviewController.approve"}:
         op["success_statuses"] = [200, 202]
     defaults = (
         {
@@ -350,7 +369,7 @@ for op in inventory["operations"]:
         else ["If-None-Match (optional; avatars only)"]
         if response == "BinaryDownload" and "avatar" in op["path"]
         else ["Idempotency-Key (required; caller-supplied stable operation key)"]
-        if op["operation"] in {"KnowledgeIndexesController.create", "KnowledgeIndexesController.resume", "ChatAttachmentsController.upload", "ChatAttachmentsController.retry", "ChatAttachmentsController.knowledge", "CuratedKnowledgeController.confirm", "DatasetFilesController.append"}
+        if op["operation"] in {"KnowledgeIndexesController.create", "KnowledgeIndexesController.resume", "ChatAttachmentsController.upload", "ChatAttachmentsController.retry", "ChatAttachmentsController.knowledge", "CuratedKnowledgeController.confirm", "DatasetFilesController.append", "ExternalKnowledgeReviewController.stage", "ExternalKnowledgeReviewController.approve", "ExternalFileReviewController.stage", "ExternalFileReviewController.approve"}
         else []
     )
     if op["operation"] in {"ContentController.document", "ContentController.reingest_document"}:
@@ -360,7 +379,7 @@ assert not mapping, mapping
 assert not unmapped, "Canonical API operations awaiting typed SDK mapping: " + ", ".join(unmapped)
 
 classes = {}
-for module in (models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files, authorized_applications, organization_chat, organization_knowledge):
+for module in (models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files, authorized_applications, organization_chat, organization_knowledge, organization_branding, mcp, external_reviews, external_file_reviews):
     classes.update(
         {
             name: value

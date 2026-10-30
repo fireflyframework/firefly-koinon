@@ -118,6 +118,9 @@ def environment_configuration() -> dict:
     )
     koinon = base.setdefault("koinon", {})
     koinon["security"] = asdict(security)
+    mcp = koinon.setdefault("mcp", {})
+    mcp["enabled"] = boolean(value("MCP_ENABLED", "koinon.mcp.enabled", False), "MCP_ENABLED")
+    mcp["public_url"] = string("MCP_PUBLIC_URL", "koinon.mcp.public_url")
     koinon.setdefault("legacy", {})["enabled"] = boolean(
         value("LEGACY_ENABLED", "koinon.legacy.enabled", True), "LEGACY_ENABLED"
     )

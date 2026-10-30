@@ -73,9 +73,11 @@ class NativeCaptureBudget:
         snapshots=(),
         reads=(),
         attempts=(),
+        tools=(),
         data=None,
         minimum_reads=0,
         minimum_attempts=0,
+        minimum_tools=0,
         minimum_sources=0,
         attempt_updates=None,
     ):
@@ -89,6 +91,8 @@ class NativeCaptureBudget:
         for index, value in (attempt_updates or {}).items():
             prospective_attempts[index] = value
         prospective_attempts.extend(attempts)
+        prospective_tools = [*(receipt.rlm_tools or []), *tools]
+        reserved_tools = getattr(receipt, "_pending_rlm_tools", 0) + minimum_tools
         sources = [
             source.model_dump(mode="json")
             for source in {
@@ -139,16 +143,19 @@ class NativeCaptureBudget:
         if (
             len(prospective_reads) + minimum_reads > self.limits.reads
             or len(prospective_attempts) + minimum_attempts > self.limits.attempts
+            or len(prospective_tools) + reserved_tools > self.limits.tools
             or len(sources) + minimum_sources > self.limits.sources
             or any(len(row.source_ids) > self.limits.ids_per_read for row in prospective_reads)
         ):
             raise NativeCaptureBudgetExceeded()
-        self._bytes(data or {}, sources, prospective_reads, prospective_attempts)
+        self._bytes(data or {}, sources, prospective_reads, prospective_attempts, prospective_tools,
+                    reserved_tools)
 
     def envelope(self, capture):
         if (
             len(capture.native_reads) > self.limits.reads
             or len(capture.sql_attempts) > self.limits.attempts
+            or len(capture.rlm_tools or ()) > self.limits.tools
             or len(capture.sources) > self.limits.sources
         ):
             raise NativeCaptureBudgetExceeded()
@@ -157,9 +164,10 @@ class NativeCaptureBudget:
             [row.model_dump(mode="json") for row in capture.sources],
             capture.native_reads,
             capture.sql_attempts,
+            capture.rlm_tools or (),
         )
 
-    def _bytes(self, data, sources, reads, attempts):
+    def _bytes(self, data, sources, reads, attempts, tools=(), minimum_tools=0):
         def wire(row):
             return {**asdict(row), "result_id": "0" * 64, "generation_id": "0" * 64}
 
@@ -171,9 +179,12 @@ class NativeCaptureBudget:
             "source_manifest": {"version": 1, "complete": False, "sources": sources},
             "native_reads": [wire(row) for row in reads],
             "sql_attempts": [wire(row) for row in attempts],
+            "rlm_tools": [{**row.model_dump(mode="json"), "result_id": "0" * 64,
+                           "generation_id": "0" * 64} for row in tools],
         }
         # Queue identities/envelope and not-yet-observed engine identifiers are reserved before entry.
         size = len(json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(", ", ": ")).encode())
         size += 2048 + 256 * (len(reads) + len(attempts)) + 1536 * len(attempts)
+        size += 256 * len(tools) + 65536 * minimum_tools
         if size > self.limits.receipt_bytes or len(json.dumps(data)) > self.limits.receipt_bytes:
             raise NativeCaptureBudgetExceeded()

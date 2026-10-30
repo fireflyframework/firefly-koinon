@@ -39,6 +39,18 @@ def _page(value):
     return value
 
 
+def tool_scope(receipt, scope):
+    if (scope is None or provenance.current() is not scope or not scope.active or receipt.closed
+            or scope.observer is not receipt or scope.task is not receipt.owner
+            or scope.task.done() or scope.task.cancelling() or scope.loop.is_closed()
+            or get_ident() not in scope.threads or scope.tenant_id != receipt.tenant_id
+            or scope.actor != receipt.subject or not scope.source_ids
+            or any((scope.workspace_id, source) not in receipt.canonical_documents
+                   or scope.allowed_sources is not None and source not in scope.allowed_sources
+                   for source in scope.source_ids)):
+        raise unavailable()
+
+
 def document_view_parts(receipt, meta, read, scope):
     if (
         provenance.current() is not scope

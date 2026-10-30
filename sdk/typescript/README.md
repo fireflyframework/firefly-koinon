@@ -63,3 +63,11 @@ Coordinate reads pin an exact snapshot and use named parser/dependency/header-ce
 Knowledge intents are private previews, not repository writes. Confirmation requires explicit user consent bound to the reviewed revision and digest, plus current write permissions. A typed `pending` response means the commit outcome is unresolved; it must not be shown as confirmed or retried as a new write. Drafts preserve the current published serving version. Curated knowledge sharing/export and deriving a new item from another knowledge version remain explicitly unqualified.
 
 `client.organizationChat.get(tenant, {workspace_id, project_id})` reads the saved organization default. `client.organizationChat.update(tenant, {default_agent_id: agentId, expected_revision: current.revision})` updates it; pass explicit null to clear. The server requires organization-level `agents:write` and rejects stale revisions. Standard chat uses this default only when `can_run` is true; explicit run submissions still supply an actual `agent_id`.
+
+## MCP and external review APIs
+
+`client.mcp.connection()` returns the trusted deployment endpoint, public registered-client metadata and server capabilities without credentials. `client.externalReviews.stage/get/approve/cancel` handles typed external text reviews; `source_receipt_ids` selects actual server-issued MCP receipts and never accepts invented raw references.
+
+`client.externalFileReviews.stage/get/chunk/seal/approve/cancel` covers private bounded file staging and its exact reviewed ingestion. `cleanup` is explicit administrator maintenance for eligible staged objects. Unknown receipts and source IDs remain nullable. A pending or unresolved outcome is not a successful commit and is never automatically replayed.
+
+Approval requires the exact revision/digest and component-only nonce. The public SDK has no challenge reader or automatic human-confirmation helper. MCP OAuth resource tokens are separate from API bearer tokens. See the [MCP knowledge-management guide](../../docs/guides/mcp-knowledge-management.md) for the embedded review, file picker, scope and retention boundaries.

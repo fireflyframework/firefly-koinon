@@ -44,6 +44,9 @@ def generate(directory: Path):
         "KOINON_SCHEMA_POLICY": "validate",
         "KOINON_MASTER_KEY": master_key,
         "KOINON_ASSISTANTS_ALLOWED_PROVIDER_HOSTS": '["127.0.0.1","localhost"]',
+        "PYFLY_SERVER_HOST": "127.0.0.1",
+        "PYFLY_SERVER_PORT": "18781",
+        "KOINON_MCP_ENABLED": "true",
     }
     for key, role in (
         ("KOINON_DATABASE_URL", "koinon_catalog"),

@@ -6,5 +6,5 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 
 @JsonTypeInfo(use=JsonTypeInfo.Id.NAME,include=JsonTypeInfo.As.EXISTING_PROPERTY,property="kind",visible=true)
-@JsonSubTypes({@JsonSubTypes.Type(value=UserStatementEvidence.class,name="user_statement"),@JsonSubTypes.Type(value=DocumentEvidence.class,name="document_passage"),@JsonSubTypes.Type(value=StructuredEvidence.class,name="structured_snapshot")})
-public sealed interface KnowledgeEvidence permits UserStatementEvidence,DocumentEvidence,StructuredEvidence {}
+@JsonSubTypes({@JsonSubTypes.Type(value=UserStatementEvidence.class,name="user_statement"),@JsonSubTypes.Type(value=DocumentEvidence.class,name="document_passage"),@JsonSubTypes.Type(value=StructuredEvidence.class,name="structured_snapshot"),@JsonSubTypes.Type(value=ExternalProposalEvidence.class,name="external_proposal")})
+public sealed interface KnowledgeEvidence permits UserStatementEvidence,DocumentEvidence,StructuredEvidence,ExternalProposalEvidence {}

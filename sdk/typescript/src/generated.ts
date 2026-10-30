@@ -21,6 +21,7 @@ export interface AnswerAudit {
  "private_files"?: Array<PrivateFileReceipt>;
  "native_reads"?: Array<NativeReadReceipt>;
  "sql_attempts"?: Array<SqlAttemptReceipt>;
+ "rlm_tools"?: Array<RlmToolReceipt> | null;
 }
 export interface AttachmentCapabilities {
  "storage": AttachmentObservation;
@@ -137,6 +138,43 @@ export interface AuthorizedApplication {
  "last_used_at": string | null;
  "revoked_at": string | null;
 }
+export interface BrandingInputValues {
+ "product_name"?: string;
+ "assistant_name"?: string;
+ "logo_light"?: string | null;
+ "logo_dark"?: string | null;
+ "symbol"?: string | null;
+ "favicon"?: string | null;
+ "palette"?: BrandingPalettes;
+ "font_family"?: "Manrope";
+}
+export interface BrandingPalette {
+ "surface": string;
+ "canvas": string;
+ "text": string;
+ "muted": string;
+ "line": string;
+ "action": string;
+ "action_text": string;
+ "accent": string;
+}
+export interface BrandingPalettes {
+ "light"?: BrandingPalette;
+ "dark"?: BrandingPalette;
+}
+export interface BrandingResetInput {
+ "expected_revision": number;
+}
+export interface BrandingValues {
+ "product_name"?: string;
+ "assistant_name"?: string;
+ "logo_light"?: string | null;
+ "logo_dark"?: string | null;
+ "symbol"?: string | null;
+ "favicon"?: string | null;
+ "palette"?: BrandingPalettes;
+ "font_family"?: "Manrope";
+}
 export interface CatalogProposal {
  "id": string;
  "run_id": string;
@@ -170,6 +208,13 @@ export interface ConversationExportInput {
  "format": "markdown" | "json";
  "include_evidence"?: boolean;
 }
+export interface ConversationIdentity {
+ "product_name": string;
+ "assistant_name": string;
+ "branding_revision": number;
+ "branding_origin": "deployment" | "organization";
+ "branding_sha256": string;
+}
 export interface ConversationMessage {
  "id": string;
  "role": "user" | "assistant";
@@ -197,6 +242,7 @@ export interface ConversationSnapshot {
  "sources"?: Array<SourceReference>;
  "source_manifest_complete"?: boolean;
  "originating_token_ids"?: Array<string>;
+ "identity"?: ConversationIdentity | null;
 }
 export interface CoordinateCellPosition {
  "row": number;
@@ -361,8 +407,117 @@ export interface ExportReview {
  "result"?: StoredResult | null;
  "omissions"?: Array<string>;
  "expires_at": string;
+ "identity"?: ConversationIdentity | null;
 }
 export type ExportReviewRequest = ConversationExportInput | QueryResultExportInput;
+export interface ExternalFileCatalogEntry {
+ "id": string;
+ "tenant_id": string;
+ "kind": string;
+ "name": string;
+ "parent_id": string | null;
+ "workspace_id": string;
+ "project_id": string | null;
+ "description": string;
+ "status": string;
+ "created_by": string;
+ "updated_by": string;
+ "metadata": Record<string,Json>;
+ "created_at": string;
+ "updated_at": string;
+}
+export interface ExternalFileChunkInput {
+ "index": number;
+ "data_base64": string;
+ "sha256": string;
+}
+export interface ExternalFileCleanupInput {
+ "review_ids": Array<string>;
+ "max_objects"?: number;
+}
+export interface ExternalFileCleanupResult {
+ "reviews": Array<ExternalFileCleanupReview>;
+}
+export interface ExternalFileCleanupReview {
+ "id": string;
+ "status": "purging" | "purged";
+ "processed_objects": number;
+ "total_objects": number;
+}
+export interface ExternalFileReceipt {
+ "source": ExternalFileCatalogEntry;
+ "assets": Array<ExternalFileCatalogEntry>;
+}
+export interface ExternalFileReviewInput {
+ "filename": string;
+ "content_type"?: string | null;
+ "mode": "document" | "dataset";
+ "destination_id": string;
+ "size_bytes": number;
+ "sha256": string;
+}
+export interface ExternalFileReviewView {
+ "id": string;
+ "tenant_id": string;
+ "revision": number;
+ "authorization_digest": string;
+ "status": "uploading" | "preview" | "ingesting" | "committed" | "cancelled" | "unresolved";
+ "filename": string;
+ "content_type": string | null;
+ "mode": "document" | "dataset";
+ "size_bytes": number;
+ "sha256": string;
+ "destination": KnowledgeDestination;
+ "received_chunks": number;
+ "total_chunks": number;
+ "expires_at": string;
+ "submitted_by": string;
+ "credential_id": string;
+ "application_id": string | null;
+ "origin"?: "external_proposal";
+ "authority"?: "unverified";
+ "provider"?: null;
+ "model"?: null;
+ "source_id"?: string | null;
+ "intake_status"?: string | null;
+ "receipt"?: ExternalFileReceipt | null;
+}
+export interface ExternalProposalEvidence {
+ "kind"?: "external_proposal";
+ "text": string;
+ "sha256": string;
+ "submitted_by": string;
+ "credential_id": string;
+ "application_id"?: string | null;
+ "source_receipt_ids"?: Array<string>;
+ "recorded_at": string;
+ "authority"?: "unverified";
+ "provider"?: null;
+ "model"?: null;
+}
+export interface ExternalProposalOrigin {
+ "kind": "external_proposal";
+ "source_receipt_ids"?: Array<string>;
+}
+export interface ExternalReviewDecision {
+ "expected_revision": number;
+ "authorization_digest": string;
+ "nonce": string;
+}
+export interface ExternalReviewInput {
+ "action": "create_draft" | "create_published" | "update_draft" | "update_published" | "publish_draft";
+ "destination_id": string;
+ "target_item_id"?: string | null;
+ "expected_version"?: number | null;
+ "content": KnowledgeContent;
+ "source_receipt_ids"?: Array<string>;
+}
+export interface ExternalReviewView {
+ "id": string;
+ "review": KnowledgeIntent;
+ "status": "preview" | "committing" | "committed" | "cancelled" | "stale" | "unresolved";
+ "expires_at": string;
+}
 export interface Frozen {
 }
 export interface GenerationReceipt {
@@ -689,7 +844,7 @@ export interface KnowledgeIntent {
  "expected_version"?: number | null;
  "before"?: KnowledgeContent | null;
  "after": KnowledgeContent;
- "evidence": Array<UserStatementEvidence | DocumentEvidence | StructuredEvidence>;
+ "evidence": Array<UserStatementEvidence | DocumentEvidence | StructuredEvidence | ExternalProposalEvidence>;
  "authorization_digest": string;
  "status": "preview" | "committing" | "committed" | "cancelled" | "stale" | "unresolved";
  "created_at": string;
@@ -702,7 +857,7 @@ export interface KnowledgeIntentInput {
  "target_item_id"?: string | null;
  "expected_version"?: number | null;
  "content": KnowledgeContent;
- "origin": UserStatementOrigin | ConversationOrigin;
+ "origin": UserStatementOrigin | ConversationOrigin | ExternalProposalOrigin;
 }
 export interface KnowledgeItemPage {
  "items": Array<KnowledgeItemSummary>;
@@ -747,12 +902,54 @@ export interface KnowledgeVersionView {
  "publication": "draft" | "published";
  "serving": boolean;
  "content": KnowledgeContent;
- "evidence": Array<UserStatementEvidence | DocumentEvidence | StructuredEvidence>;
+ "evidence": Array<UserStatementEvidence | DocumentEvidence | StructuredEvidence | ExternalProposalEvidence>;
  "content_sha256": string;
  "evidence_sha256": string;
  "operation_id": string;
  "author_subject": string;
  "committed_at": string;
+}
+export interface McpConnectionDescriptor {
+ "enabled": boolean;
+ "local_only"?: boolean;
+ "endpoint": string | null;
+ "transport"?: "streamable-http";
+ "authentication": Array<"personal_token" | "oauth">;
+ "clients"?: Array<McpRegisteredClient>;
+ "oauth_enabled": boolean;
+ "oauth_registration": "pre_registered" | null;
+ "supported_scopes": Array<string>;
+ "tools": Array<McpToolCapability>;
+ "review": McpReviewSupport;
+ "client_acceptance"?: "not_verified";
+}
+export interface McpReadReceipt {
+ "status": "recorded" | "not_recorded";
+ "id"?: string | null;
+ "sha256"?: string | null;
+ "expires_at"?: string | null;
+ "sources"?: Array<SourceReference>;
+ "reason"?: "incomplete_or_unsupported_source_manifest" | "source_manifest_limit_or_missing_revision" | "receipt_byte_limit" | "active_receipt_limit" | "source_reuse_scope_required" | "capture_unavailable" | "transitive_lineage_unqualified" | "catalog_is_not_source_evidence" | null;
+}
+export interface McpRegisteredClient {
+ "client_id": string;
+ "name": string;
+ "scopes": Array<string>;
+ "client_auth": "public" | "confidential";
+}
+export interface McpReviewSupport {
+ "supported": boolean;
+ "mechanism"?: "mcp_apps";
+ "resource_uri"?: "ui://koinon/knowledge-review";
+ "mime_type"?: "text/html;profile=mcp-app";
+ "external_redirect"?: false;
+ "client_support"?: "not_observed";
+}
+export interface McpToolCapability {
+ "name": string;
+ "required_scopes": Array<string>;
+ "access": "read" | "query" | "proposal" | "app_only";
+ "requires_app"?: boolean;
 }
 export interface MessageSelection {
  "thread_id": string;
@@ -823,6 +1020,17 @@ export interface NativeTableSnapshot {
  "table_id": string;
  "table_name": string;
  "snapshot_id": string;
+}
+export interface OrganizationBranding {
+ "tenant_id": string;
+ "schema_version"?: 1;
+ "revision": number;
+ "origin": "deployment" | "organization";
+ "branding": BrandingValues;
+}
+export interface OrganizationBrandingInput {
+ "expected_revision": number;
+ "branding": BrandingInputValues;
 }
 export interface OrganizationChatSettings {
  "tenant_id": string;
@@ -973,6 +1181,24 @@ export interface ResultColumn {
  "name": string;
  "data_type": string;
 }
+export interface RlmToolReceipt {
+ "result_id": string;
+ "generation_id"?: string | null;
+ "tenant_id": string;
+ "workspace_id": string;
+ "source_ids": Array<string>;
+ "tool_call_id": string;
+ "tool_name": "python" | "final_answer";
+ "request_sha256": string;
+ "schema_sha256": string;
+ "arguments_sha256": string;
+ "result_sha256": string;
+ "result_kind": "tool_return" | "accepted_final" | "execution_failure";
+ "execution_sha256": string;
+ "outcome": "completed" | "rejected" | "failed" | "halted";
+ "execution_status": string;
+ "execution_state": string;
+}
 export interface Share {
  "id": string;
  "title": string;
@@ -1008,6 +1234,7 @@ export interface ShareReview {
  "recipient_policy"?: "organization_current_acl";
  "omissions"?: Array<string>;
  "expires_at": string;
+ "identity"?: ConversationIdentity | null;
 }
 export interface ShareReviewInput {
  "thread_id": string;
@@ -1018,6 +1245,7 @@ export interface SharedConversation {
  "messages": Array<ConversationMessage>;
  "sources": Array<SourceReference>;
  "source_manifest_complete": boolean;
+ "identity"?: ConversationIdentity | null;
 }
 export interface SourceReference {
  "id": string;

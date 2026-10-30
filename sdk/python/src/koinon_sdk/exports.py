@@ -3,7 +3,7 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/exports/dtos.py
-SHA256: d8939718d9d9ba63942129e1e00eaea6d80888d0c64d9e179d6e8c3ff3c368f7
+SHA256: fe525b40ca458f0d51cefc2550b1322b3e5f04a0c67cd1d30a6bc1fa6d4583c9
 
 Server authorization and semantic validation remain authoritative.
 """
@@ -14,6 +14,7 @@ from pydantic import AwareDatetime, Field, RootModel
 
 from koinon_sdk._base import InputModel
 from koinon_sdk.evidence import (
+    ConversationIdentity,
     ConversationMessage,
     Frozen,
     Identifier,
@@ -76,6 +77,7 @@ class ExportReview(Frozen):
     result: StoredResult | None = None
     omissions: tuple[str, ...] = ()
     expires_at: AwareDatetime
+    identity: ConversationIdentity | None = None
 
 
 class Export(Frozen):
