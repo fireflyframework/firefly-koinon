@@ -16,4 +16,4 @@ Read the [documentation](docs/index.md), [headless integration guide](docs/guide
 
 Code uses [Apache-2.0](LICENSE). Firefly names and marks remain protected trademarks; the code license grants no trademark rights.
 
-Copyright 2026 Firefly Software Foundation · Made with ♥
+Copyright 2026 Firefly Software Foundation. Made with ♥.

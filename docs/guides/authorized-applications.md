@@ -14,9 +14,21 @@ An application registration does not grant access to anyone's knowledge. A user'
 
 ## Connect an application
 
+Open **Authorized applications** in your account and select **Connect an app** to see this installation's MCP URL and registered OAuth client IDs. Select Claude or ChatGPT to follow the matching setup steps. The endpoint comes from your deployment configuration; it is not a fixed koinon service address. Client IDs identify an application and are safe to copy; confidential client secrets must come from the deployment operator through a protected channel.
+
+![Connection instructions use this installation's URL and registered client](../assets/screenshots/mcp-connection.png)
+
+*The actual account interface using controlled service responses and example deployment details. Real client account linking is qualified separately.*
+
+A local installation displays its local MCP address and explains which clients can reach it. A desktop client on the server computer can use that address. Hosted chat applications need a reachable HTTPS address supplied by your deployment operator. See [MCP configuration](../operations/mcp-authentication.md) for startup settings and reverse-proxy deployment.
+
+![Local connection details distinguish desktop access from hosted chat applications](../assets/screenshots/mcp-local-connection.png)
+
+*The connection panel in a local interface test with controlled service data. This image does not establish a connection from a hosted chat application.*
+
 Start the connection in a client configured for your koinon MCP endpoint. Sign in through your organization's identity provider. The consent screen shows your stored profile, account and avatar so you can check which identity is authorizing access.
 
-Choose an organization and space, read the requested permissions, then select **Connect**. **Cancel** returns a denial to the registered client and creates no credential. Knowledge changes still require the separate exact-content authorization workflow; connecting an application never supplies that consent.
+Choose an organization and space, read the requested permissions, then select **Connect**. **Cancel** returns a denial to the registered client and creates no credential. Knowledge changes still require the separate exact-content authorization workflow; connecting an application never supplies that consent. Use the [in-chat review](mcp-knowledge-management.md) to inspect and approve a proposal without leaving Claude or ChatGPT.
 
 The server consumes the short-lived authorization code, creates the private application credential and records the connection in one transaction. A failed issuance leaves no partial connection or consumed code. The client receives a credential bound to that application, the configured MCP resource and the recorded authorization.
 

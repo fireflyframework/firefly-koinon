@@ -1,5 +1,7 @@
 # Profiles and personal access tokens
 
+For file uploads, catalog maintenance, administrator operations and examples in all three SDK languages, see [API permissions and writes](../guides/api-permissions.md). The token form groups reading, knowledge maintenance, organization management and profile access. Choosing **Administration** explicitly removes resource limits and selects available organization permissions; review and narrow that selection before creating a token.
+
 A profile belongs to the canonical verified issuer/subject pair. Initial display name and locale come only from verified identity claims; self edits never change identity, roles or memberships. Use `GET/PATCH /api/v1/profile` or the browser BFF projection. Allowed preferences are `display_name`, `locale`, `time_zone` and `response_language`; timezone values must exist in the IANA database. Machine-readable API values remain canonical. Applications apply formatting in their presentation layer and preserve per-answer presentation metadata when available.
 
 Upload an avatar as raw PNG, JPEG or WebP bytes to `POST /profile/avatar` with the corresponding Content-Type. The limit is 2 MiB and 4096 pixels per side. Animated images and SVG are rejected. The service creates a fresh JPEG thumbnail of at most 128 pixels per side, strips metadata and stores only that thumbnail in PostgreSQL. It never fetches an external avatar URL. Authenticated GET returns JPEG with private conditional caching; DELETE removes it. Directory avatars are reauthorized before even a conditional 304 response.

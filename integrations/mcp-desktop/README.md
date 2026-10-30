@@ -27,6 +27,12 @@ Initialization is local. The bridge contacts the configured endpoint only when t
 
 Tool results pass to the host assistant and its configured model provider. Review the host's policy and your operator's data-handling policy before use. Retrieved text is untrusted source data, not instructions. A server can expose additional capabilities; inspect the discovered contract before using them.
 
+### In-chat review support
+
+The bridge forwards the MCP Apps HTML capability only when the desktop host advertises `io.modelcontextprotocol/ui` with the `text/html;profile=mcp-app` MIME type. It preserves app-only tool visibility, review resources, and private result metadata. A review nonce stays in `_meta`; the bridge does not copy it into visible content or structured results. The host remains responsible for displaying the app and keeping private metadata out of model context, as defined by the [MCP Apps specification](https://github.com/modelcontextprotocol/ext-apps/blob/main/specification/2026-01-26/apps.mdx).
+
+A host without that capability can use the server's supported read tools. It cannot approve a knowledge change through this bridge. There is no automatic approval or browser-review fallback. Local protocol tests cover capability forwarding; acceptance in a particular desktop application requires a separate host test.
+
 ## Build and verify
 
 ```sh

@@ -40,18 +40,28 @@ markdown_extensions:
 nav:
   - Start: index.md
   - Use koinon:
+      - Visual walkthrough: guides/interface-tour.md
       - Library: guides/library.md
+      - Intake formats: guides/intake-formats.md
       - Versions and lineage: guides/lineage.md
       - Agents and chat: guides/agents.md
       - Exports, sharing and sources: guides/exports-sharing.md
   - Configure:
       - Administration: guides/administration.md
+      - Identity and appearance: operations/identity-appearance.md
       - Profiles and API tokens: operations/profiles-and-tokens.md
       - Authorized applications: guides/authorized-applications.md
   - Integrate:
       - Headless API and SDK: guides/headless.md
+      - API permissions and writes: guides/api-permissions.md
+      - Python SDK: guides/headless-python.md
+      - TypeScript SDK: guides/headless-typescript.md
+      - Java SDK: guides/headless-java.md
       - API and SDK reference: reference/sdk-api.md
       - Embedded components: guides/embedding.md
+      - Connect Claude: guides/connect-claude.md
+      - Connect ChatGPT: guides/connect-chatgpt.md
+      - In-chat knowledge management: guides/mcp-knowledge-management.md
       - Desktop MCP extension: integrations/desktop.md
       - Integration data flow and privacy: integrations/privacy.md
   - Understand:

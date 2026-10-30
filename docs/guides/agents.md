@@ -2,7 +2,7 @@
 
 An agent combines a configured model, allowed read tools and a knowledge scope. The same API serves the management application, embedded components and headless consumers.
 
-An organization operator selects the default chat agent once in **Settings → Agents**. Standard chat uses this saved organization setting across conversations; choose the folder or items relevant to the question. Review the default agent's setup checks before starting. An agent cannot grant access: every tool checks current persisted permissions and source ancestry. Dataset queries require query permission as well as read access.
+An organization operator selects the default chat agent once by opening **Settings** and selecting **Agents**. Standard chat uses this saved organization setting across conversations; choose the folder or items relevant to the question. Review the default agent's setup checks before starting. An agent cannot grant access: every tool checks current persisted permissions and source ancestry. Dataset queries require query permission as well as read access.
 
 ## Organization chat default
 
@@ -55,6 +55,12 @@ SQL highlighting preserves the recorded statement exactly and renders it as text
 ## Read the audit without the frontend
 
 The same owner audit is available through the authenticated SDK. The response contains typed generation, source, private-file, native-read and SQL-attempt receipts. Reading it checks current and originating authority; it does not call a model or rerun a query.
+
+New function-tool RLM executions also record `rlm_tools`. Each receipt binds the actual provider `tool_call_id`, tool name (`python` or `final_answer`), prepared request/schema/arguments fingerprints, the actual SDK return fingerprint and a separate fingerprint of the public VM execution result. Tenant, native workspace, admitted source scope, result and generation identities keep the action attached to its execution. Admitted source scope alone does not prove that every source was read; use the separate native execution-read evidence for actual content use.
+
+`result_kind: tool_return` records the SDK return preserved in subsequent model history. `accepted_final` records the terminal result accepted by the same VM; it does not claim another provider request received it. `execution_failure` records the observed execution failure without inventing provider delivery. `outcome`, `execution_status` and `execution_state` preserve rejected, failed and halted results separately. The typed `final_answer` tool passes text as data and uses the same read, citation and current-permission checks as the guest final helper.
+
+Historical `rlm_tools: null` means no trace was recorded. An empty or populated list does not establish that an interrupted generation has a complete trace. These records contain observable tool execution metadata, not hidden model reasoning or a confidence score. RLM tool limits and SQL-attempt limits are independent; both share the bounded evidence envelope. Saving a configuration or passing a local SDK test does not qualify a real model's tool behavior.
 
 ```python
 audit = await client.run_audit(tenant_id, run_id)

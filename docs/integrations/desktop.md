@@ -25,3 +25,7 @@ Other compatible MCP hosts can launch the extracted `server/index.cjs` with Node
 The bridge initializes locally and contacts the configured endpoint only when the host requests tools, resources, or prompts. It rejects redirects and URLs containing credentials, query parameters, or fragments. Requests use a 30-second timeout. HTTPS is required; an explicit environment-only loopback HTTP override exists for development and is absent from desktop configuration.
 
 Read the [integration data flow and privacy notes](privacy.md) before connecting sensitive knowledge. For build instructions, packaging checks, and dependency provenance, see `integrations/mcp-desktop/README.md` in the repository.
+
+## Reviewed knowledge management
+
+A compatible host can render the remote server's embedded review for text creation/updates and file uploads. The bridge forwards tool results and resources; the host must preserve MCP Apps private metadata and app-only visibility. Installation alone does not establish that capability. A PAT needs the exact write and supporting-evidence scopes, intersected with the current user's role and resource bounds. See [managing knowledge inside an MCP conversation](../guides/mcp-knowledge-management.md) and the dedicated [Claude](../guides/connect-claude.md) and [ChatGPT](../guides/connect-chatgpt.md) connection guides.

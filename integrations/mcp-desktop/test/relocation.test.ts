@@ -15,11 +15,20 @@ import { CallToolRequestSchema, ListToolsRequestSchema, ListResourcesRequestSche
 
 test('relocated bundle forwards authenticated discovery, tools, resources, and prompts without local dependencies', async () => {
   let requests = 0;
+  const initializations: Record<string, unknown>[] = [];
   const http = createServer(async (req, res) => {
     requests++;
     assert.equal(req.url, '/mcp');
     assert.equal(req.headers.authorization, 'Bearer relocation-test-token');
     if (req.method === 'GET') { res.writeHead(405).end(); return; }
+    let parsedBody: unknown;
+    if (req.method === 'POST') {
+      const body: Buffer[] = [];
+      for await (const chunk of req) body.push(Buffer.from(chunk));
+      const message = JSON.parse(Buffer.concat(body).toString());
+      parsedBody = message;
+      if (message.method === 'initialize') initializations.push(message.params.capabilities);
+    }
     const server = new Server({ name: 'test-upstream', version: '1.0.0' }, { capabilities: { tools: {}, resources: {}, prompts: {} } });
     server.setRequestHandler(ListToolsRequestSchema, () => ({ tools: [{ name: 'koinon_context', description: 'Remote contract', inputSchema: { type: 'object', additionalProperties: false } }] }));
     server.setRequestHandler(CallToolRequestSchema, (request) => ({ content: [{ type: 'text', text: JSON.stringify(request.params) }] }));
@@ -31,7 +40,7 @@ test('relocated bundle forwards authenticated discovery, tools, resources, and p
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
     await server.connect(transport);
     res.on('close', () => { void server.close(); });
-    await transport.handleRequest(req, res);
+    await transport.handleRequest(req, res, parsedBody);
   });
   await new Promise<void>((done) => http.listen(0, '127.0.0.1', done));
   const address = http.address();
@@ -47,11 +56,16 @@ test('relocated bundle forwards authenticated discovery, tools, resources, and p
     }, stderr: 'pipe' });
     let stderr = '';
     transport.stderr?.on('data', (chunk) => { stderr += String(chunk); });
-    client = new Client({ name: 'installation-smoke', version: '1.0.0' });
+    client = new Client({ name: 'installation-smoke', version: '1.0.0' }, {
+      capabilities: { extensions: { 'io.modelcontextprotocol/ui': { mimeTypes: ['text/html;profile=mcp-app'] } } },
+    });
     await client.connect(transport);
     assert.equal(requests, 0, 'starting and initializing locally must not connect upstream');
     assert.equal(client.getServerVersion()?.title, 'koinon');
     assert.equal((await client.listTools()).tools[0].name, 'koinon_context');
+    assert.deepEqual(initializations, [{ extensions: {
+      'io.modelcontextprotocol/ui': { mimeTypes: ['text/html;profile=mcp-app'] },
+    } }]);
     const result = await client.callTool({ name: 'koinon_context', arguments: {} });
     assert.match(JSON.stringify(result), /koinon_context/);
     assert.equal((await client.listResources()).resources[0].uri, 'koinon://guide');
