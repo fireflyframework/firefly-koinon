@@ -6,7 +6,7 @@ import sqlalchemy as sa
 from alembic import op
 from pyfly.data.relational.sqlalchemy import UtcDateTime
 
-revision = "koinon_0022_organization_directory"
+revision = "koinon_0022_org_directory"
 down_revision = "koinon_0021_mcp_oauth_clients"
 branch_labels = None
 depends_on = None

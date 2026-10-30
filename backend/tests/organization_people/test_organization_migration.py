@@ -17,7 +17,7 @@ def test_additive_migration_creates_only_directory_tables_and_scoped_foreign_key
     spec = importlib.util.spec_from_file_location("organization_migration", MIGRATION)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    assert module.revision == "koinon_0022_organization_directory"
+    assert module.revision == "koinon_0022_org_directory"
     assert module.down_revision == "koinon_0021_mcp_oauth_clients"
     engine = sa.create_engine("sqlite:///:memory:")
     with engine.begin() as connection:
