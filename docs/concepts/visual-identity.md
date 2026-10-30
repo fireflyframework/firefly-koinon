@@ -1,6 +1,16 @@
 # Visual identity
 
-Koinon uses the Firefly family identity: Manrope, a charcoal and paper palette, and amber accents. The documentation uses the same family lockup as the product: the Firefly wordmark, a divider and the koinon wordmark.
+koinon uses the Firefly family identity: Manrope, a charcoal and paper palette, and amber accents. The documentation uses the same family lockup as the product: the Firefly wordmark, a divider and the koinon wordmark.
+
+## Product positioning
+
+Lead with **Your corporate brain.** The product name remains **koinon**, written in lowercase. The positioning describes its role: bringing organizational documents, datasets and reviewed knowledge together, with sources people can inspect.
+
+Explain that role through concrete actions: find a document, query a dataset, ask a question, inspect its evidence or review a proposed update. Keep the familiar **Library**, **Chat** and **Settings** labels. Integrators can use the same knowledge capabilities through the headless API, typed SDKs or embedded components.
+
+Distinguish reviewed knowledge from a model’s proposal. Proposed changes require human approval; the positioning must not imply that koinon independently decides what the organization knows. Describe access controls and provenance in terms of their actual behavior, and keep runtime qualification statements explicit.
+
+Use the existing linked-o symbol and Firefly family lockup to express the idea. Do not replace them with a brain illustration or change the typography, colors or logo geometry to support the positioning.
 
 ## Logos
 
@@ -24,7 +34,7 @@ Body text uses weight 400. Navigation and headings use stronger weights from the
 | Amber | `#ffb34a` | Brand accent and links on dark surfaces |
 | Gold | `#855414` | Links on light surfaces |
 
-The appearance control switches between light and dark reading surfaces. Keyboard focus, search and the navigation drawer remain available at mobile widths. The footer carries the copyright holders, Apache License 2.0 and a small animated heart. Reduced-motion preferences disable its animation and interface transitions.
+The appearance control switches between light and dark reading surfaces. Keyboard focus, search and the navigation drawer remain available at mobile widths. The footer carries the foundation copyright, Apache License 2.0 and a small animated heart. Reduced-motion preferences disable its animation and interface transitions.
 
 ## Product layout and component boundaries
 
