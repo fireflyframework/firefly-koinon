@@ -31,7 +31,7 @@ export const IDENTITY_SPANISH: Readonly<Record<string, string>> = {
   'Text must meet 4.5:1 contrast on both backgrounds.':
     'El texto debe cumplir un contraste de 4,5:1 en ambos fondos.',
   Pass: 'Correcto',
-  'Needs attention': 'Revisar',
+  'Needs attention': 'Requiere atención',
   'Your changes are not saved yet.': 'Los cambios aún no se han guardado.',
   'Your organization identity is up to date.': 'La identidad de la organización está actualizada.',
   'Preview your identity': 'Ver la identidad',
@@ -115,7 +115,7 @@ export const IDENTITY_SPANISH: Readonly<Record<string, string>> = {
   'The handbook is in your shared library.': 'El manual está en la biblioteca compartida.',
   'View source': 'Ver fuente',
   Ask: 'Pregunta a',
-  Message: 'Mensaje para',
+  Message: 'Escribe a',
   'Branding changes appearance. Access rules and source attribution stay in place.':
     'La identidad modifica la apariencia. Se mantienen las reglas de acceso y la atribución de las fuentes.',
   'Use deployment defaults': 'Usar la identidad de la instalación',
@@ -144,5 +144,5 @@ export const IDENTITY_SPANISH: Readonly<Record<string, string>> = {
     'El texto del botón necesita un contraste mínimo de 4,5:1.',
   'Links and focus indicators need a contrast ratio of at least 4.5:1.':
     'Los enlaces y los indicadores de foco necesitan un contraste mínimo de 4,5:1.',
-  'Welcome to {product}': 'Te damos la bienvenida a {product}',
+  'Welcome to {product}': 'Bienvenido a {product}',
 };
