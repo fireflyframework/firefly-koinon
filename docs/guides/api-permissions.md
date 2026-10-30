@@ -26,7 +26,7 @@ These interface screenshots use controlled review data. They do not contain a us
 | Configure providers and agents | `providers:write`, `agents:write` | Organization scope |
 | Manage source connections, indexes, or durable jobs | `sources:configure`, `indexes:manage`, `jobs:manage`, as needed | Organization scope; job resources must also be readable |
 | Read organization activity | `audit:read` | Organization scope |
-| Manage members, organization settings, or corporate identity | `members:write`, `settings:write`, `identity:manage`, as needed | Organization scope |
+| Manage members or organization settings | `members:write`, `settings:write`, as needed | Organization scope |
 | Read or edit the token owner's profile | `profile:read`, `profile:write` | The authenticated user only; editing adds `profile:read` |
 
 The token form obtains available scopes from the API for the selected organization and workspace. Dependencies are included in the issued receipt. `exports:write` also adds `exports:read` and `catalog:read`; `shares:write` adds `shares:read`, `chat:use` and `catalog:read`. Management scopes cannot be combined with workspace or asset restrictions to disguise an organization-wide operation as a resource-limited grant.
@@ -46,6 +46,8 @@ Asset bounds admit selected documents, datasets or curated knowledge items and t
 Workspace membership still limits where a capability applies. Issuance cannot exceed current permissions; authentication and service authorization recheck them afterward. Downgrading a user's role removes the corresponding authority from existing tokens. Revocation and expiry prevent further authentication. An in-flight operation may have its own commit-time authorization and revision checks; never treat a successful earlier request as a permanent grant.
 
 Personal token creation, listing and revocation require a verified interactive identity. A personal token cannot create or manage other tokens. For a connected client that needs an authorization flow, use [authorized applications](authorized-applications.md), with explicit user consent, rather than passing around another user's personal secret.
+
+Corporate identity provider administration, directory group discovery, group-to-role mappings and corporate profile mappings require an ordinary verified identity with the appropriate organization authority. Personal tokens and application credentials cannot perform these operations, even with `identity:manage`. This restriction does not prevent scoped tokens from managing ordinary memberships or permitted organization settings.
 
 OAuth application registration is also an identity-only administration operation. Its [typed SDK methods](register-applications.md#use-the-typed-sdks) require an ordinary verified administrator identity and organization-level `identity:manage`; personal tokens and application credentials cannot list, create, edit or rotate registrations. Current organization members can read the safe connection descriptor without receiving secrets or additional permissions.
 

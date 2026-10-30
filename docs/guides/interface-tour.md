@@ -51,7 +51,7 @@ An organization administrator or appropriately authorized operator opens **Setti
 
 Configure in dependency order:
 
-1. **People & access:** establish the intended roles and workspace bounds. Follow the [administration guide](administration.md) for invitations and directory-managed access.
+1. **Access:** establish the intended roles and workspace bounds. Use the separate **People** and **Organization structure** sections for positions and reporting relationships. Follow the [administration guide](administration.md) for invitations and directory-managed access.
 2. **Providers:** connect an approved model provider and validate its observed capabilities. A discovered model name does not prove that streaming, tools or image input work.
 3. **Knowledge models:** assign the document and dataset model roles exposed by the server, including embeddings where required. Existing indexed knowledge must retain a compatible embedding space.
 4. **Agents:** configure the organization's default chat agent and its authorized knowledge tools. End users do not need to choose an agent in each conversation.
@@ -64,7 +64,7 @@ Settings changes require their own permission. Being an administrator in one wor
 
 ## 5. Apply your organization's visual identity
 
-Open **Settings**, choose **Organization** and select **Identity & appearance**. The **Identity** tab edits the product and assistant names, light/dark logos, assistant symbol and browser icon. Drag an image onto the relevant asset or choose a file. The checkerboard helps inspect transparency.
+Open **Settings** and select **Identity & appearance** in the **Organization** group. The **Identity** tab edits the product and assistant names, light/dark logos, assistant symbol and browser icon. Drag an image onto the relevant asset or choose a file. The checkerboard helps inspect transparency.
 
 [![Identity names and logos beside a live chat preview](../assets/screenshots/identity-editor.png)](../assets/screenshots/identity-editor.png)
 

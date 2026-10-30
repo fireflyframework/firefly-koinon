@@ -1,12 +1,12 @@
 # Identity and appearance
 
-Administrators can adapt the installed product to their organization by opening **Settings**, choosing **Organization** and selecting **Identity & appearance**. Change the product name, assistant name, light and dark logos, assistant symbol, browser icon and both color palettes. The preview changes as you edit; other screens change only after **Save changes** succeeds. **Discard changes** restores the last saved values.
+Administrators can adapt the installed product to their organization by opening **Settings** and selecting **Identity & appearance** in the **Organization** group. Change the product name, assistant name, light and dark logos, assistant symbol, browser icon and both color palettes. The preview changes as you edit; other screens change only after **Save changes** succeeds. **Discard changes** restores the last saved values.
 
 Organization changes require `settings:write` for the organization. Workspace administration alone does not grant this permission. Existing catalog, knowledge, query or chat scopes allow reading the identity only within an authorized organization. Branding never grants knowledge access or changes source attribution.
 
 ## Configure the identity visually
 
-1. Open **Settings**, choose **Organization** and select **Identity & appearance**. Confirm the organization shown below the heading.
+1. Open **Settings** and select **Identity & appearance** in the **Organization** group. Confirm the organization shown below the heading.
 2. In **Identity**, enter the product and assistant names. Upload or drop each logo/icon onto its own field. Light and dark assets have separate previews; transparent areas use a checkerboard.
 3. Open **Colors**. Enter a brand color and choose **Apply to both themes** to generate readable action and link colors without saving. Then select **Light** or **Dark** to refine each token. The readability panel reports the measured ratios.
 4. Switch the live preview between **Chat**, **Navigation** and **Sign-in**. On mobile, expand **Preview your identity** when needed; it does not occupy the form by default. The sign-in preview uses the installation identity, as explained below.

@@ -110,7 +110,7 @@ OpenUI artifacts contain only registered component names and evidence references
 
 ## Deploy only what you need
 
-Run the API with `koinon.main:app` and the independent worker with `python -m koinon.assistants.worker`, using runtime credentials and the same protected configuration. Run migrations separately with deployment authority. The worker needs configured knowledge and model providers; it has no dependency on the management application. See [production deployment](../operations/production.md) for identity, storage, sessions and secret management.
+Start the API with `python -m koinon.serve` through the native framework launcher and the independent worker with `python -m koinon.assistants.worker`, using runtime credentials and the same protected configuration. The ASGI entry point remains `koinon.main:app` for embedding. Run migrations separately with deployment authority. The worker needs configured knowledge and model providers; it has no dependency on the management application. See [production deployment](../operations/production.md) for identity, storage, sessions and secret management.
 
 Qualification is recorded separately for SDK packaging, native API authorization, local provider generation, embedded UI and production deployment. Passing a mock HTTP test does not establish provider readiness.
 

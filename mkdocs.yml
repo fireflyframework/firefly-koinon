@@ -50,16 +50,30 @@ nav:
       - Exports, sharing and sources: guides/exports-sharing.md
   - Configure:
       - Administration: guides/administration.md
+      - Guided configuration: guides/knowledge-setup.md
       - Identity and appearance: operations/identity-appearance.md
       - Profiles and API tokens: operations/profiles-and-tokens.md
+      - People and organization: guides/people-and-organization.md
       - Authorized applications: guides/authorized-applications.md
       - Register applications: guides/register-applications.md
   - Integrate:
       - Headless API and SDK: guides/headless.md
       - API permissions and writes: guides/api-permissions.md
-      - Python SDK: guides/headless-python.md
-      - TypeScript SDK: guides/headless-typescript.md
-      - Java SDK: guides/headless-java.md
+      - Python SDK:
+          - Start: guides/headless-python.md
+          - Knowledge: guides/python-knowledge.md
+          - Conversations: guides/python-conversations.md
+          - Administration: guides/python-administration.md
+      - TypeScript SDK:
+          - Start: guides/headless-typescript.md
+          - Knowledge: guides/typescript-knowledge.md
+          - Conversations: guides/typescript-conversations.md
+          - Administration: guides/typescript-administration.md
+      - Java SDK:
+          - Start with Java 21+: guides/headless-java.md
+          - Knowledge: guides/java-knowledge.md
+          - Conversations: guides/java-conversations.md
+          - Administration and operations: guides/java-operations.md
       - API and SDK reference: reference/sdk-api.md
       - Embedded components: guides/embedding.md
       - Connect Claude: guides/connect-claude.md
@@ -69,6 +83,7 @@ nav:
       - Integration data flow and privacy: integrations/privacy.md
   - Understand:
       - Architecture: concepts/architecture.md
+      - Agents, embeddings and knowledge engines: concepts/knowledge-runtime.md
       - Backend structure: concepts/backend-structure.md
       - MCP architecture: architecture/mcp.md
       - Visual identity: concepts/visual-identity.md
@@ -79,6 +94,8 @@ nav:
       - Configuration and observations: operations/configuration.md
       - Organization knowledge behavior: operations/organization-knowledge.md
       - File persistence and storage: operations/storage.md
+      - Configure storage providers: operations/storage-configuration.md
+      - Storage migration and ECM: operations/storage-migration-ecm.md
       - MCP authentication: operations/mcp-authentication.md
       - Migrations: operations/migrations.md
       - Backup and restore: operations/backup-restore.md

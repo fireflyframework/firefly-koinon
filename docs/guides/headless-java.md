@@ -1,109 +1,82 @@
-# Java: paging, intake and streamed answers
+<!-- Copyright 2026 Firefly Software Foundation -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+# Java SDK
 
-The Java 21 SDK uses the JDK HTTP client and Jackson. Build and install from the trusted repository with `mvn -f sdk/java/pom.xml install`, then use `org.fireflyframework:koinon-sdk:26.10.0-alpha.1` in your application's Maven dependencies. This installs a development artifact in your local repository; it does not publish to Maven Central.
+Build a Java application or service against the same typed, authorized API used by the koinon interface. The SDK requires **Java 21 or later**, uses the JDK HTTP client and Jackson, and does not depend on the backend or a web framework. It provides synchronous methods, `CompletableFuture` methods, bounded file downloads and demand-driven SSE streams.
 
-Set `KOINON_API_URL` to the root ending in `/api/v1`, `KOINON_TOKEN` to a scoped personal or API-audience OIDC access token, and `KOINON_TENANT_ID` and `KOINON_WORKSPACE_ID` to authorized identifiers. Replace the environment token supplier with your identity provider's renewal supplier in a long-running service. Each request obtains a fresh value from the supplier.
+## Install from the repository
 
-Save this as `HeadlessKnowledge.java` inside your Java project. Its `main` method only reads the authorized context and browses documents. Invoke upload and answer helpers explicitly when your product has the destination and scope selected.
+From the repository root, with JDK 21 or later and Maven available:
+
+```sh
+mvn --batch-mode --no-transfer-progress -f sdk/java/pom.xml verify
+mvn --batch-mode --no-transfer-progress -f sdk/java/pom.xml install
+```
+
+Add the locally installed artifact to your application:
+
+```xml
+<dependency>
+  <groupId>org.fireflyframework</groupId>
+  <artifactId>koinon-sdk</artifactId>
+  <version>26.10.0-alpha.1</version>
+</dependency>
+```
+
+This is a development artifact; local installation does not publish it to Maven Central. The POM compiles with `--release 21`, all compiler warnings enabled and warnings treated as errors. CI has Java 21 and 25 jobs. Your application's compiler target must also be Java 21 or later. Package checks, hosted CI results and live deployment acceptance are separate evidence.
+
+## Authenticate and browse
+
+Set `KOINON_API_URL` to the API root ending in `/api/v1`, `KOINON_TOKEN` to your credential, and `KOINON_TENANT_ID` and `KOINON_WORKSPACE_ID` to authorized identifiers. Store credentials in your application's secret store. Do not put them in source code, exception logs or a URL.
+
+Use a scoped personal API token or a verified OIDC access token issued for the API audience. A token's authority is the intersection of its scopes, its saved organization/workspace/asset bounds, and the user's current permissions. A wide token does not elevate the user's role. A role downgrade or resource departure can make a later request fail even after an earlier request succeeded. See [API permissions and writes](api-permissions.md) for the role matrix and scope dependencies.
+
+Save the following complete example as `JavaQuickstart.java`. Its `main` only reads the authorized context and document catalog; it does not upload, generate an answer or change configuration.
 
 ```java
-import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Flow;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import org.fireflyframework.koinon.sdk.KoinonClient;
 import org.fireflyframework.koinon.sdk.Pages;
-import org.fireflyframework.koinon.sdk.model.*;
+import org.fireflyframework.koinon.sdk.model.CatalogFilter;
 
-public final class HeadlessKnowledge {
+public final class JavaQuickstart {
     private static String required(String name) {
         String value = System.getenv(name);
-        if (value == null || value.isBlank()) throw new IllegalStateException("Set " + name);
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException("Set " + name);
+        }
         return value;
-    }
-
-    public static void browse(KoinonClient client, String tenant, String workspace) {
-        var filter = CatalogFilter.empty().withWorkspaceId(workspace).withKind("document")
-            .withPageSize(25).withSort("name").withOrder("asc");
-        for (var document : Pages.numbered(page -> client.catalog(tenant).list(filter.withPage(page)), 1)) {
-            System.out.println(document.id() + " " + document.name());
-        }
-    }
-
-    public static void uploadFiles(KoinonClient client, String tenant, String workspace,
-            String project, String collection, List<Path> files, UploadMode mode,
-            Consumer<UploadResponse> acceptedReceipt) throws IOException {
-        if (files.isEmpty() || files.size() > 16) throw new IllegalArgumentException("Choose 1 to 16 files");
-        for (Path file : files) {
-            if (!Files.isRegularFile(file) || Files.size(file) > 32L * 1024 * 1024) {
-                throw new IllegalArgumentException("Choose regular files up to 32 MiB");
-            }
-        }
-        for (Path file : files) {
-            var receipt = client.sources(tenant).upload(new SourceUpload(file,
-                "application/octet-stream", workspace, project, collection, mode));
-            acceptedReceipt.accept(receipt);
-        }
-    }
-
-    public static AnswerAudit ask(KoinonClient client, String tenant,
-            KnowledgeScope scope, String question) throws Exception {
-        var settings = client.organizationChat(tenant).get(OrganizationChatFilter.empty()
-            .withWorkspaceId(scope.workspaceId()).withProjectId(scope.projectId()));
-        if (!Boolean.TRUE.equals(settings.canRun()) || settings.defaultAgentId() == null) {
-            throw new IllegalStateException("An operator must configure the organization's chat agent");
-        }
-        var thread = client.chat(tenant).createThread(ThreadInput.empty()
-            .withTitle("Knowledge question").withScope(scope));
-        var run = client.chat(tenant).submit(thread.id(), RunInput.empty()
-            .withAgentId(settings.defaultAgentId()).withMessage(question).withScope(scope)
-            .withClientRequestId(UUID.randomUUID().toString()).withAttachmentIds(List.of()));
-        var completed = new CompletableFuture<Void>();
-        try (var stream = client.chat(tenant).events(run.runId())) {
-            stream.subscribe(new Flow.Subscriber<StreamEvent>() {
-                private Flow.Subscription subscription;
-                public void onSubscribe(Flow.Subscription value) {
-                    subscription = value;
-                    value.request(1);
-                }
-                public void onNext(StreamEvent event) {
-                    System.out.println(event.id() + " " + event.type());
-                    if ("completed".equals(event.type())) completed.complete(null);
-                    else if ("failed".equals(event.type()) || "cancelled".equals(event.type())) {
-                        completed.completeExceptionally(new IOException("Run ended: " + event.type()));
-                    }
-                    if (completed.isDone()) subscription.cancel();
-                    else subscription.request(1);
-                }
-                public void onError(Throwable error) { completed.completeExceptionally(error); }
-                public void onComplete() {
-                    if (!completed.isDone()) completed.completeExceptionally(
-                        new IOException("Stream ended without a completed event"));
-                }
-            });
-            completed.get(180, TimeUnit.SECONDS);
-        }
-        return client.chat(tenant).audit(run.runId());
     }
 
     public static void main(String[] args) {
         try (var client = KoinonClient.builder(URI.create(required("KOINON_API_URL")))
                 .bearerToken(() -> required("KOINON_TOKEN")).build()) {
             client.platform().context();
-            browse(client, required("KOINON_TENANT_ID"), required("KOINON_WORKSPACE_ID"));
+            String tenant = required("KOINON_TENANT_ID");
+            var filter = CatalogFilter.empty()
+                .withWorkspaceId(required("KOINON_WORKSPACE_ID"))
+                .withKind("document").withPageSize(25).withSort("name").withOrder("asc");
+            for (var entry : Pages.numbered(
+                    page -> client.catalog(tenant).list(filter.withPage(page)), 1)) {
+                System.out.println(entry.id() + " " + entry.name());
+            }
         }
     }
 }
 ```
 
-The client and stream are `AutoCloseable`. Each event requests the next item only after processing the previous one. Timeout or stream closure releases the HTTP connection; it does not cancel the server's durable run. When a user requests cancellation, call `client.chat(tenant).cancel(runId)`. To resume intentionally, pass `RequestOptions.defaults().lastEventId(lastProcessedId)` to `events`. Replace partial presentation state on `message_reset`.
+The supplier is called for each HTTP request, including stream subscription. In a long-running service, replace the environment lookup with your identity system's access-token supplier and renewal policy. The SDK does not implement sign-in, token refresh or role assignment. Personal-token creation and corporate identity/profile-mapping administration require the appropriate ordinary verified identity; a personal token cannot bootstrap those privileges. MCP resource credentials are not ordinary API bearer tokens.
 
-`uploadFiles` invokes a receipt consumer after each accepted item, so your application can record partial success before continuing. Choose `UploadMode.DOCUMENT` or `UploadMode.DATASET` for the supported intake. Keep the files stable during upload. This sequential client loop supplies neither a durable batch queue nor automatic retry after an unknown outcome. The server enforces its own intake and authorization limits.
+The client is `AutoCloseable`. It closes its own HTTP client and outstanding requests. If you inject an `HttpClient`, keep redirects disabled and close it yourself after closing the SDK. Redirect rejection keeps bearer credentials on the configured API origin.
 
-The SDK also provides asynchronous resource methods returning `CompletableFuture<T>`. Inspect messages with `client.chat(tenant).messages(threadId)` and saved tool payloads with `.result(runId, resultId)`. The [typed audit](agents.md#read-the-audit-without-the-frontend) keeps admitted scope, observed reads and nullable historical fields separate. See [reviewed exports and shares](exports-sharing.md) and the [complete method reference](../reference/sdk-api.md).
+## Choose a workflow
+
+| Task | Guide |
+| --- | --- |
+| Create destinations, upload files, change content, append a dataset file, inspect immutable versions and lineage | [Knowledge and files](java-knowledge.md) |
+| Submit a scoped run, consume SSE, inspect answer audit and review proposals, exports or shares | [Conversations and reviewed actions](java-conversations.md) |
+| Configure agents and knowledge behavior, manage organization metadata, use async calls and handle errors or bounded downloads | [Operations and reliability](java-operations.md) |
+| Understand embeddings, retrieval, RAG and RLM behavior before choosing configuration | [Knowledge runtime](../concepts/knowledge-runtime.md) |
+| Find every method, input record and response type | [API and SDK reference](../reference/sdk-api.md) |
+
+Each guide uses existing typed methods and keeps mutations in explicitly called helpers. Choose the destination and current permission scope before calling a write helper. The SDK has no automatic write retry, forced revision overwrite, background batch transaction or model-readiness guarantee.

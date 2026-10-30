@@ -1,8 +1,23 @@
+<!-- Copyright 2026 Firefly Software Foundation -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # File persistence and shared private storage
 
-Koinon retains original documents and dataset files. Document lineage also retains raw, merged and normalized artifacts; structured ingestion retains Parquet snapshots and query-result objects. PostgreSQL stores catalog bindings, metadata, hashes, versions and job state. Private chat attachments have a separate original/normalized blob store with SQL ownership, expiry and parsing state.
+koinon retains original documents and dataset files. Document lineage also retains raw, merged and normalized artifacts; structured ingestion retains Parquet snapshots and query-result objects. Private chat attachments have a separate original/normalized blob store with SQL ownership, expiry and parsing state.
+
+| Durable state | Responsibility |
+| --- | --- |
+| Document store | Original versions, normalized/artifact bytes and replay inputs bound to recorded source/version/extraction identities. |
+| Structured store | Original files, registered table snapshots and stored query-result objects. |
+| Private attachment store | Registered owner/thread-scoped original and normalized bytes, including bounded staging. |
+| PostgreSQL datasources | Catalog/permission bindings, hashes, versions, source text/projections, native indexes, jobs, conversations, review/audit records and account data such as sanitized avatars and encrypted credentials. |
+
+Recoverable knowledge needs both the database state and its referenced bytes, plus separately protected encryption material. A metadata dump is not a file backup, and a bucket copy is not an authorization/lineage restore. See [exact configuration for all four backends](storage-configuration.md), [migration and ECM integration](storage-migration-ecm.md) and [backup/recovery](backup-restore.md).
 
 All three domains support local storage, S3, Azure Blob Storage and Google Cloud Storage. The production example retains explicit local roots. Cloud configuration is opt-in and does not move existing data. Private attachments select their own profile under `koinon.storage.attachments`; an absent private root never creates an implicit temporary store.
+
+The local document selector is `localfs`; structured/private profiles use `local`. S3 structured storage uses a native `s3://bucket/prefix` root, while document/private profiles have separate bucket/prefix fields. See the configuration guide before copying fields across domains. A valid profile, installed SDK, live provider access, restore success and workload throughput are separate observations.
+
+## Private attachment local and S3 storage
 
 ```yaml
 koinon:
@@ -62,7 +77,7 @@ Attachment observations distinguish optional `configured` (default false) from n
 
 ## Azure Blob Storage and Google Cloud Storage
 
-Install the backend with `uv sync --extra storage-azure` or `uv sync --extra storage-gcs` before selecting a provider. Both extras can be installed together. Native document and structured distributions expose the same optional extras. The independent `firefly-koinon-storage` package supplies the shared byte transport; it imports no backend, database or model code. SDKs, clients and credentials are resolved only when an object operation is requested. Configuration and capability observations do not contact cloud providers.
+Install the backend from the repository root with `uv sync --project backend --locked --extra storage-azure` or `uv sync --project backend --locked --extra storage-gcs` before selecting a provider. Both extras can be installed together. Native document and structured distributions expose the same optional extras. The independent `firefly-koinon-storage` package supplies the shared byte transport; it imports no backend, database or model code. SDKs, clients and credentials are resolved only when an object operation is requested. Configuration and capability observations do not contact cloud providers.
 
 Each domain is independent. Use `documents`, `structured` or `attachments` under `koinon.storage` with the following Azure profile, choosing a separate prefix for each domain:
 
@@ -159,7 +174,7 @@ These lifecycle changes have source regression coverage. Their inclusion in the 
 
 Canonical library upload currently accepts one file up to 32 MiB and executes ingestion in that request. It is not a durable bulk import contract. The retained structured package has bulk handlers, but exposing them would not supply canonical authorization, atomic admission or distributed backpressure automatically.
 
-The next bulk contract should admit a bounded manifest with required idempotency key and request digest, stage immutable originals, persist stable batch/item IDs, then return 202. Leased workers should process bounded items/stages, preserve actor/token identity, recheck authority before publication, fence stale attempts and retry only incomplete items. Status must distinguish queued/running/succeeded/failed/cancelled and support authorized per-item retry/cancel with partial success. Query batches need their own item, concurrency, result-size, time and provider budgets while retaining read-only SQL and evidence. No large-scale throughput claim follows from the storage adapter alone.
+For multiple files, bound the caller's queue and per-file bytes, process explicitly authorized destinations, persist each accepted receipt and reconcile ambiguous outcomes before advancing. Do not replay an entire list after a timeout or assume a plain upload has idempotency. Query batches also need caller-owned item, concurrency, result-size and time budgets while retaining read-only SQL and evidence. No durable bulk-import, automatic recovery or large-scale throughput claim follows from the storage adapter alone. See the [Python](../guides/python-knowledge.md), [TypeScript](../guides/typescript-knowledge.md) and [Java](../guides/java-knowledge.md) content-management guides.
 
 Provider behavior follows the [official S3 GetObject contract](https://docs.aws.amazon.com/boto3/latest/reference/services/s3/client/get_object.html). No cloud operation is performed by reading this guide or loading configuration.
 
