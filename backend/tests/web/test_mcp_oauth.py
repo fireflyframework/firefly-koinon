@@ -117,12 +117,266 @@ def exchange(client, code, **overrides):
             client.cookies.jar.set_cookie(cookie)
 
 
+def registered(oauth, *, client_type="public"):
+    response = oauth.post(
+        "/api/v1/tenants/north/mcp/oauth-clients",
+        json={
+            "name": "Organization research client",
+            "client_type": client_type,
+            "redirect_uris": ["https://client.example/callback"],
+            "scopes": ["catalog:read", "knowledge:search"],
+        },
+        headers=bearer(),
+    )
+    assert response.status_code == 201, response.text
+    assert "no-store" in response.headers["cache-control"]
+    return response.json()
+
+
+def organization_code(oauth, client_id):
+    response = authorize(oauth, client_id=client_id)
+    assert response.status_code == 200, response.text
+    request_id = re.search(r'name="request_id" value="([^"]+)"', response.text)[1]
+    granted = oauth.post(
+        "/oauth2/mcp/authorize",
+        data={
+            "request_id": request_id,
+            "decision": "allow",
+            "tenant_id": "north",
+            "workspace_id": oauth.workspace_id,
+            "_csrf": oauth.cookies.get("XSRF-TOKEN"),
+        },
+        follow_redirects=False,
+    )
+    assert granted.status_code == 302, granted.text
+    return parse_qs(urlsplit(granted.headers["location"]).query)["code"][0]
+
+
+def test_org_admin_owns_public_client_without_exposing_installation_configuration(oauth):
+    issued = registered(oauth)
+    assert issued["client_secret"] is None
+    client = issued["client"]
+    assert client["tenant_id"] == "north" and client["revision"] == 1
+    page = oauth.get("/api/v1/tenants/north/mcp/oauth-clients", headers=bearer())
+    assert page.status_code == 200 and page.json()["items"] == [client]
+    assert oauth.get("/api/v1/tenants/south/mcp/oauth-clients", headers=bearer()).status_code == 403
+    readiness = oauth.get("/api/v1/tenants/north/mcp/oauth-clients/readiness", headers=bearer())
+    assert readiness.status_code == 200 and readiness.json()["ready"] is True
+    assert "encryption_key" not in readiness.text and "client_secret" not in page.text
+    descriptor = oauth.get("/api/v1/tenants/north/mcp/connection", headers=bearer())
+    assert descriptor.status_code == 200
+    assert descriptor.json()["clients"] == [
+        {
+            "client_id": client["client_id"],
+            "name": client["name"],
+            "scopes": client["scopes"],
+            "client_auth": "public",
+        },
+        {
+            "client_id": "test-chat-client",
+            "name": "Test Chat Client",
+            "scopes": ["catalog:read", "knowledge:search"],
+            "client_auth": "public",
+        },
+    ]
+    assert oauth.get("/api/v1/tenants/south/mcp/connection", headers=bearer()).status_code == 403
+
+
+def test_organization_client_can_exchange_only_with_current_registration(oauth):
+    client = registered(oauth)["client"]
+    code = organization_code(oauth, client["client_id"])
+    updated = oauth.patch(
+        f"/api/v1/tenants/north/mcp/oauth-clients/{client['id']}",
+        json={"expected_revision": 1, "name": "Updated organization client"},
+        headers=bearer(),
+    )
+    assert updated.status_code == 200 and updated.json()["revision"] == 2
+    assert exchange(oauth, code, client_id=client["client_id"]).status_code == 400
+
+
+def test_disabled_registration_invalidates_existing_opaque_and_canonical_application_credentials(oauth):
+    from pyfly.kernel import UnauthorizedException
+
+    from koinon.mcp_auth.service import McpOAuthService
+    from koinon.tokens.service import PersonalTokenService
+
+    client = registered(oauth)["client"]
+    response = exchange(oauth, organization_code(oauth, client["client_id"]), client_id=client["client_id"])
+    assert response.status_code == 200, response.text
+    opaque = response.json()["access_token"]
+    service = oauth.native_app.state.context.get_bean(McpOAuthService)
+    canonical = oauth.portal.call(service.canonical_bearer, opaque)
+    applications = oauth.get("/api/v1/authorized-applications", headers=bearer()).json()["items"]
+    application_id = applications[0]["id"]
+    updated = oauth.patch(
+        f"/api/v1/tenants/north/mcp/oauth-clients/{client['id']}",
+        json={"expected_revision": 1, "enabled": False},
+        headers=bearer(),
+    )
+    assert updated.status_code == 200
+    connections = oauth.get("/api/v1/authorized-applications", headers=bearer()).json()["items"]
+    assert connections[0]["status"] == "revoked"
+    with pytest.raises(UnauthorizedException):
+        oauth.portal.call(service.authenticate, opaque)
+    tokens = oauth.native_app.state.context.get_bean(PersonalTokenService)
+    with pytest.raises(UnauthorizedException):
+        oauth.portal.call(
+            lambda: tokens.authenticate(canonical, purpose="application", application_id=application_id)
+        )
+
+
+def test_confidential_registration_secret_is_once_only_and_required_for_exchange(oauth):
+    issued = registered(oauth, client_type="confidential")
+    client, secret = issued["client"], issued["client_secret"]
+    assert secret and secret not in str(client)
+    detail = oauth.get(f"/api/v1/tenants/north/mcp/oauth-clients/{client['id']}", headers=bearer())
+    assert secret not in detail.text and "client_secret" not in detail.text
+    code = organization_code(oauth, client["client_id"])
+    assert exchange(oauth, code, client_id=client["client_id"]).status_code == 401
+    assert exchange(oauth, code, client_id=client["client_id"], client_secret=secret).status_code == 200
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"redirect_uris": ["https://*.example/callback"]},
+        {"scopes": ["catalog:read", "ingest:write"]},
+        {"name": "\n"},
+        {"enabled": None},
+    ],
+)
+def test_invalid_admin_patch_is_a_validation_error_without_changing_registration(oauth, changes):
+    client = registered(oauth)["client"]
+    response = oauth.patch(
+        f"/api/v1/tenants/north/mcp/oauth-clients/{client['id']}",
+        json={"expected_revision": 1, **changes},
+        headers=bearer(),
+    )
+    assert response.status_code in {400, 422}, response.text
+    unchanged = oauth.get(f"/api/v1/tenants/north/mcp/oauth-clients/{client['id']}", headers=bearer())
+    assert unchanged.json() == client
+
+
+def test_reenabling_a_registration_never_resurrects_previously_revoked_connections(oauth):
+    from pyfly.kernel import UnauthorizedException
+
+    from koinon.mcp_auth.service import McpOAuthService
+
+    client = registered(oauth)["client"]
+    response = exchange(oauth, organization_code(oauth, client["client_id"]), client_id=client["client_id"])
+    opaque = response.json()["access_token"]
+    path = f"/api/v1/tenants/north/mcp/oauth-clients/{client['id']}"
+    for revision, enabled in ((1, False), (2, True)):
+        assert (
+            oauth.patch(
+                path, json={"expected_revision": revision, "enabled": enabled}, headers=bearer()
+            ).status_code
+            == 200
+        )
+    service = oauth.native_app.state.context.get_bean(McpOAuthService)
+    with pytest.raises(UnauthorizedException):
+        oauth.portal.call(service.authenticate, opaque)
+    connections = oauth.get("/api/v1/authorized-applications", headers=bearer()).json()["items"]
+    assert connections[0]["status"] == "revoked"
+
+
+def test_consent_for_managed_client_cannot_switch_to_another_membership_tenant(oauth):
+    from koinon.catalog.entities import Membership, Tenant
+    from koinon.catalog.repositories import MembershipRepository, TenantRepository
+    from koinon.catalog.service import CatalogService
+
+    context = oauth.native_app.state.context
+    oauth.portal.call(context.get_bean(TenantRepository).save, Tenant(id="south", name="South"))
+    oauth.portal.call(
+        context.get_bean(MembershipRepository).save,
+        Membership(
+            id="south-admin",
+            subject=ISSUER + "|admin",
+            tenant_id="south",
+            role="admin",
+        ),
+    )
+    space = oauth.portal.call(
+        lambda: context.get_bean(CatalogService).create(
+            ISSUER + "|admin",
+            "south",
+            kind="workspace",
+            name="South",
+        )
+    )
+    client = registered(oauth)["client"]
+    response = authorize(oauth, client_id=client["client_id"])
+    assert space.id not in response.text
+    request_id = re.search(r'name="request_id" value="([^"]+)"', response.text)[1]
+    denied = oauth.post(
+        "/oauth2/mcp/authorize",
+        data={
+            "request_id": request_id,
+            "decision": "allow",
+            "tenant_id": "south",
+            "workspace_id": space.id,
+            "_csrf": oauth.cookies.get("XSRF-TOKEN"),
+        },
+        follow_redirects=False,
+    )
+    assert denied.status_code == 403 and "location" not in denied.headers
+
+
+def test_regular_member_discovers_safe_org_clients_but_cannot_manage_them(oauth):
+    client = registered(oauth)["client"]
+    response = oauth.get("/api/v1/tenants/north/mcp/connection", headers=bearer("viewer"))
+    assert response.status_code == 200
+    assert "no-store" in response.headers.get("cache-control", "")
+    visible = next(value for value in response.json()["clients"] if value["client_id"] == client["client_id"])
+    assert set(visible) == {"client_id", "name", "scopes", "client_auth"}
+    assert oauth.get("/api/v1/tenants/north/mcp/oauth-clients", headers=bearer("viewer")).status_code == 403
+    assert oauth.get("/api/v1/tenants/north/mcp/connection", headers=bearer("outsider")).status_code == 403
+
+
+def test_delegated_token_cannot_manage_clients_and_descriptor_respects_its_tenant(oauth):
+    from datetime import UTC, datetime, timedelta
+
+    issued = oauth.post(
+        "/api/v1/tokens",
+        headers=bearer(),
+        json={
+            "name": "Scoped API",
+            "tenant_id": "north",
+            "scopes": ["catalog:read", "identity:manage"],
+            "expires_at": (datetime.now(UTC) + timedelta(hours=1)).isoformat(),
+        },
+    )
+    assert issued.status_code == 201, issued.text
+    headers = {"Authorization": "Bearer " + issued.json()["token"]}
+    assert oauth.get("/api/v1/tenants/north/mcp/oauth-clients", headers=headers).status_code == 403
+    assert oauth.get("/api/v1/tenants/north/mcp/connection", headers=headers).status_code == 200
+    assert oauth.get("/api/v1/tenants/south/mcp/connection", headers=headers).status_code == 403
+
+
+def test_rotation_revokes_previous_secret_and_pending_authorization_code(oauth):
+    issued = registered(oauth, client_type="confidential")
+    client, old_secret = issued["client"], issued["client_secret"]
+    code = organization_code(oauth, client["client_id"])
+    rotated = oauth.post(
+        f"/api/v1/tenants/north/mcp/oauth-clients/{client['id']}/rotate-secret",
+        headers=bearer(),
+        json={"expected_revision": 1},
+    )
+    assert rotated.status_code == 200, rotated.text
+    secret = rotated.json()["client_secret"]
+    assert secret != old_secret and rotated.json()["client"]["revision"] == 2
+    assert exchange(oauth, code, client_id=client["client_id"], client_secret=old_secret).status_code == 401
+    assert exchange(oauth, code, client_id=client["client_id"], client_secret=secret).status_code == 400
+
+
 def test_code_only_discovery_uses_configured_urls_and_never_claims_registration(oauth):
     discovery = oauth.get("/.well-known/oauth-protected-resource/mcp")
     assert "set-cookie" not in discovery.headers
     resource = discovery.json()
     assert resource["resource"] == "http://127.0.0.1:18781/mcp"
-    assert resource["scopes_supported"] == ["catalog:read", "knowledge:search"]
+    from koinon.mcp_auth.settings import MCP_SCOPES
+
+    assert resource["scopes_supported"] == sorted(MCP_SCOPES)
     issuer = resource["authorization_servers"][0]
     metadata = oauth.get("/.well-known/oauth-authorization-server/oauth2/mcp").json()
     assert metadata["issuer"] == issuer

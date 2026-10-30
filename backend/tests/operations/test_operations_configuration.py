@@ -9,6 +9,26 @@ from pyfly.config.properties.server import resolve_app_port
 from pyfly.core import Config
 
 
+def test_generated_oauth_aliases_bind_native_settings_without_exposing_key(monkeypatch):
+    from cryptography.fernet import Fernet
+
+    from koinon.mcp_auth.settings import McpOAuthSettings
+    from koinon.operations.configuration import environment_configuration
+
+    key = Fernet.generate_key().decode()
+    monkeypatch.setenv("KOINON_OIDC_ISSUER", "https://identity.example/realm")
+    monkeypatch.setenv("KOINON_DATABASE_URL", "sqlite+aiosqlite:///./configuration-only.db")
+    monkeypatch.setenv("KOINON_MCP_ENABLED", "true")
+    monkeypatch.setenv("KOINON_MCP_OAUTH_ENABLED", "true")
+    monkeypatch.setenv("KOINON_MCP_OAUTH_ENCRYPTION_KEY", key)
+    settings = Config(environment_configuration()).bind(McpOAuthSettings)
+    assert settings.enabled is True and settings.encryption_key == key and settings.clients == []
+    assert key not in repr(settings)
+    monkeypatch.setenv("KOINON_MCP_OAUTH_ENABLED", "invalid")
+    with pytest.raises(ValueError):
+        environment_configuration()
+
+
 def test_mcp_environment_aliases_are_resolved_without_changing_native_listener(monkeypatch):
     monkeypatch.setenv("KOINON_OIDC_ISSUER", "https://identity.example/realm")
     monkeypatch.setenv("KOINON_DATABASE_URL", "sqlite+aiosqlite:///./configuration-only.db")

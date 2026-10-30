@@ -89,6 +89,7 @@ class AuthorizedApplicationService:
         workspace_name,
         scopes,
         expires_at,
+        client_registration=None,
     ):
         await self.profiles.lock_owner(subject)
         prior = list(
@@ -126,6 +127,7 @@ class AuthorizedApplicationService:
                 workspace_id=workspace_id,
                 workspace_name=workspace_name,
                 scopes=sorted(set(scopes)),
+                client_registration=client_registration,
                 connected_at=datetime.now(UTC),
                 expires_at=expires_at,
             )

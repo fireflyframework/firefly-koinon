@@ -121,6 +121,11 @@ def environment_configuration() -> dict:
     mcp = koinon.setdefault("mcp", {})
     mcp["enabled"] = boolean(value("MCP_ENABLED", "koinon.mcp.enabled", False), "MCP_ENABLED")
     mcp["public_url"] = string("MCP_PUBLIC_URL", "koinon.mcp.public_url")
+    oauth = mcp.setdefault("oauth", {})
+    oauth["enabled"] = boolean(
+        value("MCP_OAUTH_ENABLED", "koinon.mcp.oauth.enabled", False), "MCP_OAUTH_ENABLED"
+    )
+    oauth["encryption_key"] = string("MCP_OAUTH_ENCRYPTION_KEY", "koinon.mcp.oauth.encryption_key")
     koinon.setdefault("legacy", {})["enabled"] = boolean(
         value("LEGACY_ENABLED", "koinon.legacy.enabled", True), "LEGACY_ENABLED"
     )

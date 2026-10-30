@@ -86,5 +86,3 @@ class McpOAuthSettings:
                 not isinstance(secret_hash, str) or not re.fullmatch(r"[0-9a-f]{64}", secret_hash)
             ):
                 raise ValueError("MCP OAuth client secrets must be SHA-256 digests")
-        if not identifiers:
-            raise ValueError("Enable MCP OAuth only with pre-registered clients")

@@ -35,6 +35,8 @@ def generate(directory: Path):
         write(name, value)
     master_key = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode()
     write("master_key", master_key)
+    mcp_oauth_key = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode()
+    write("mcp_oauth_key", mcp_oauth_key)
     runtime = {
         "KOINON_OIDC_ISSUER": "http://127.0.0.1:18784/realms/koinon",
         "KOINON_OIDC_CLIENT_ID": "koinon-browser",
@@ -47,6 +49,8 @@ def generate(directory: Path):
         "PYFLY_SERVER_HOST": "127.0.0.1",
         "PYFLY_SERVER_PORT": "18781",
         "KOINON_MCP_ENABLED": "true",
+        "KOINON_MCP_OAUTH_ENABLED": "true",
+        "KOINON_MCP_OAUTH_ENCRYPTION_KEY": mcp_oauth_key,
     }
     for key, role in (
         ("KOINON_DATABASE_URL", "koinon_catalog"),

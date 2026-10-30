@@ -17,6 +17,7 @@ from koinon.authorized_applications.entities import credential_matches
 from koinon.authorized_applications.repositories import AuthorizedApplicationRepository
 from koinon.catalog.errors import AccessDenied
 from koinon.catalog.service import CatalogService
+from koinon.mcp_applications.authority import McpOAuthClientAuthority
 from koinon.profiles.service import ProfileService
 from koinon.tokens.entities import PersonalToken
 from koinon.tokens.mappers import token_dto
@@ -62,9 +63,11 @@ class PersonalTokenService:
         settings: TokenSettings,
         profiles: ProfileService,
         applications: AuthorizedApplicationRepository | None = None,
+        registrations: McpOAuthClientAuthority | None = None,
     ):
         self.repository, self.catalog, self.settings, self.profiles = repository, catalog, settings, profiles
         self.applications = applications
+        self.registrations = registrations
 
     async def list(self, subject: str) -> list[dict]:
         return [token_dto(row) for row in await self.repository.find_all(subject=subject, purpose="personal")]
@@ -223,6 +226,11 @@ class PersonalTokenService:
                 raise ValueError("Invalid token")
             application = None
             if purpose == "application":
+                candidate = await self.applications.find_by_id(application_id) if self.applications else None
+                if candidate is not None and candidate.client_registration is not None:
+                    if self.registrations is None:
+                        raise ValueError("OAuth registration authority is unavailable")
+                    await self.registrations.validate_application(candidate)
                 # Revoke/reconnect lock the grant before credentials. Keep that order even when
                 # last-use writes are throttled, including repeated authentication in one unit.
                 application = (

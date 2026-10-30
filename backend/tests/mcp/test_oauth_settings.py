@@ -29,7 +29,6 @@ def valid(**changes):
     [
         {"encryption_key": ""},
         {"encryption_key": "invalid"},
-        {"clients": []},
         {"code_ttl_seconds": 301},
         {"code_ttl_seconds": True},
         {"access_ttl_seconds": 120.5},

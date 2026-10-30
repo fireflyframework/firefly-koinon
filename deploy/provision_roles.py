@@ -43,6 +43,7 @@ def grant_table(connection, table, role, *, document_control=False):
         "koinon_organization_branding",
         "koinon_external_knowledge_reviews",
         "koinon_external_file_reviews",
+        "koinon_mcp_oauth_clients",
     }
     outbox = table.startswith("canon_knowledge_outbox_")
     if immutable or receipt or outbox:

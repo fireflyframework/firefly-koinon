@@ -19,6 +19,7 @@ class AuthorizedApplication(Base):
     workspace_id: Mapped[str] = mapped_column(String(64))
     workspace_name: Mapped[str] = mapped_column(String(255))
     scopes: Mapped[list] = mapped_column(JSON)
+    client_registration: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     connected_at: Mapped[datetime] = mapped_column(UtcDateTime())
     expires_at: Mapped[datetime] = mapped_column(UtcDateTime(), index=True)
     revoked_at: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)

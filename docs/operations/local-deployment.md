@@ -131,6 +131,10 @@ For a reverse proxy, configure the exact HTTPS endpoint with `KOINON_MCP_PUBLIC_
 
 The fallback port belongs to the listener inside the process. Docker port mappings, container ingress, and public proxies can expose a different address or port. Set `KOINON_MCP_PUBLIC_URL` to that exact external URL ending in `/mcp`. Use HTTPS outside loopback development. A local-only endpoint is a connection hint for the process environment. It does not prove that a browser, container host, or external client can reach it.
 
+Fresh local configuration also enables MCP OAuth and creates a dedicated private `mcp_oauth_key`. Its runtime variables are `KOINON_MCP_OAUTH_ENABLED` and `KOINON_MCP_OAUTH_ENCRYPTION_KEY`. This key is separate from the master key and must be preserved with the other installation secrets. An empty application registry grants no client access. Organization administrators register exact client callbacks and knowledge scope ceilings through the authenticated application administration API.
+
+Existing installations are not rewritten. An operator must provision the MCP OAuth encryption key and enable the endpoint once before OAuth connections become available. The organization readiness response reports missing configuration without returning keys. Administrators cannot change the installation issuer or encryption key. Deployment-supplied static registrations remain read-only; managed application registration does not enable dynamic OAuth client registration.
+
 In a **second terminal**, set the same three path variables and start the worker:
 
 ```sh

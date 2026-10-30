@@ -17,9 +17,10 @@ from pyfly.kernel import UnauthorizedException
 from koinon.authorized_applications.service import AuthorizedApplicationService
 from koinon.catalog.service import CatalogService
 from koinon.mcp.settings import McpSettings
+from koinon.mcp_applications.authority import McpOAuthClientAuthority
 from koinon.mcp_auth.entities import McpAuthorization
 from koinon.mcp_auth.repositories import McpAuthorizationRepository
-from koinon.mcp_auth.settings import McpOAuthSettings
+from koinon.mcp_auth.settings import MCP_SCOPES, McpOAuthSettings
 from koinon.tokens.service import DEPENDENCIES, PREFIX, PersonalTokenService
 
 MCP_PREFIX = "koinon_mcp_"
@@ -51,10 +52,12 @@ class McpOAuthService:
         tokens: PersonalTokenService,
         catalog: CatalogService,
         applications: AuthorizedApplicationService,
+        registrations: McpOAuthClientAuthority,
     ):
         self.settings, self.mcp = settings, mcp
         self.repository, self.tokens, self.catalog = repository, tokens, catalog
         self.applications = applications
+        self.registrations = registrations
         if settings.enabled and not mcp.enabled:
             raise ValueError("MCP OAuth requires the MCP endpoint to be enabled")
 
@@ -75,22 +78,22 @@ class McpOAuthService:
         if not self.settings.enabled or not self.mcp.enabled:
             raise OAuthError("not_found", 404)
 
-    def client(self, identifier: str) -> dict:
+    async def client(self, identifier: str) -> dict:
         self.require_enabled()
-        for value in self.settings.clients:
-            if value["client_id"] == identifier:
-                return value
-        raise OAuthError("invalid_client")
+        try:
+            return await self.registrations.resolve(identifier)
+        except ValueError:
+            raise OAuthError("invalid_client") from None
+
+    async def current_client(self, identifier, tenant_id, snapshot):
+        self.require_enabled()
+        try:
+            return await self.registrations.validate(identifier, tenant_id, snapshot)
+        except ValueError:
+            raise OAuthError("invalid_grant") from None
 
     def metadata(self):
         self.require_enabled()
-        methods = (
-            {"client_secret_post", "client_secret_basic"}
-            if any(client.get("client_secret_hash") for client in self.settings.clients)
-            else set()
-        )
-        if any(not client.get("client_secret_hash") for client in self.settings.clients):
-            methods.add("none")
         return {
             "issuer": self.issuer,
             "authorization_endpoint": self.issuer + "/authorize",
@@ -99,8 +102,8 @@ class McpOAuthService:
             "grant_types_supported": ["authorization_code"],
             "code_challenge_methods_supported": ["S256"],
             "authorization_response_iss_parameter_supported": True,
-            "token_endpoint_auth_methods_supported": sorted(methods),
-            "scopes_supported": sorted({s for client in self.settings.clients for s in client["scopes"]}),
+            "token_endpoint_auth_methods_supported": ["client_secret_basic", "client_secret_post", "none"],
+            "scopes_supported": sorted(MCP_SCOPES),
         }
 
     def resource_metadata(self):
@@ -113,8 +116,8 @@ class McpOAuthService:
             "resource_name": "firefly koinon",
         }
 
-    def validate_request(self, params: dict):
-        client = self.client(params.get("client_id", ""))
+    async def validate_request(self, params: dict):
+        client = await self.client(params.get("client_id", ""))
         if set(params) - {
             "client_id",
             "redirect_uri",
@@ -150,10 +153,13 @@ class McpOAuthService:
 
     @transactional
     async def begin(self, subject: str, params: dict):
-        client, scopes = self.validate_request(params)
+        client, scopes = await self.validate_request(params)
         choices = []
         tenants = {member.tenant_id for member in await self.catalog.memberships(subject)}
         for tenant in sorted(tenants):
+            registration = self.registrations.snapshot(client)
+            if registration is not None and tenant != registration["tenant_id"]:
+                continue
             organization = await self.catalog.tenant_repository.find_by_id(tenant)
             for space in await self.catalog.list(subject, tenant, kind="workspace"):
                 permitted = await self.catalog.permissions(subject, tenant, space.id)
@@ -177,6 +183,7 @@ class McpOAuthService:
                 client_id=client["client_id"],
                 status="pending",
                 request_json={**params, "scope": " ".join(sorted(scopes))},
+                client_registration=self.registrations.snapshot(client),
                 expires_at=datetime.now(UTC) + timedelta(minutes=10),
             )
         )
@@ -192,8 +199,13 @@ class McpOAuthService:
             or row.expires_at <= datetime.now(UTC)
         ):
             raise OAuthError()
-        client = self.client(row.client_id)
         params = row.request_json
+        snapshot = row.client_registration
+        client = await self.current_client(
+            row.client_id,
+            snapshot["tenant_id"] if isinstance(snapshot, dict) else tenant_id,
+            snapshot,
+        )
         if params["redirect_uri"] not in client["redirect_uris"] or params["resource"] != self.mcp.public_url:
             raise OAuthError()
         response = {"iss": self.issuer}
@@ -205,6 +217,8 @@ class McpOAuthService:
             return redirect_url(params["redirect_uri"], {**response, "error": "access_denied"})
         if decision != "allow" or not tenant_id or not workspace_id:
             raise OAuthError()
+        if snapshot is not None and tenant_id != snapshot["tenant_id"]:
+            raise OAuthError("access_denied", 403)
         scopes = params["scope"].split()
         if not set(scopes) <= set(client["scopes"]):
             raise OAuthError("invalid_scope")
@@ -234,7 +248,7 @@ class McpOAuthService:
 
     @transactional
     async def exchange(self, params: dict, *, client_secret: str = ""):
-        client = self.client(params.get("client_id", ""))
+        client = await self.client(params.get("client_id", ""))
         expected = client.get("client_secret_hash")
         if expected and not hmac.compare_digest(expected, digest(client_secret)):
             raise OAuthError("invalid_client", 401)
@@ -280,6 +294,11 @@ class McpOAuthService:
             or not isinstance(grant["workspace_ids"][0], str)
         ):
             raise OAuthError("invalid_grant")
+        client = await self.current_client(
+            row.client_id,
+            grant["tenant_id"],
+            row.client_registration,
+        )
         if not await self.repository.transition(row.id, row.subject, "code", status="used"):
             raise OAuthError("invalid_grant")
         expires = datetime.now(UTC) + timedelta(seconds=self.settings.access_ttl_seconds)
@@ -294,6 +313,7 @@ class McpOAuthService:
             workspace_name=grant["workspace_name"],
             scopes=original["scope"].split(),
             expires_at=expires,
+            client_registration=self.registrations.snapshot(client),
         )
         payload = json.dumps(
             {
@@ -302,6 +322,7 @@ class McpOAuthService:
                 "aud": self.mcp.public_url,
                 "client_id": client["client_id"],
                 "exp": int(expires.timestamp()),
+                "client_registration": self.registrations.snapshot(client),
             },
             separators=(",", ":"),
         ).encode()
@@ -335,7 +356,7 @@ class McpOAuthService:
                 or not payload["pat"].startswith(PREFIX)
             ):
                 raise ValueError()
-            client = self.client(payload.get("client_id", ""))
+            client = await self.client(payload.get("client_id", ""))
             context = await self.tokens.authenticate(
                 payload["pat"], purpose="application", application_id=payload.get("grant_id")
             )
@@ -344,8 +365,10 @@ class McpOAuthService:
                 application is None
                 or application.client_id != client["client_id"]
                 or application.resource != payload["aud"]
+                or application.client_registration != payload.get("client_registration")
             ):
                 raise ValueError()
+            client = await self.registrations.validate_application(application)
             grant = context.attributes["koinon_token"]
             if not isinstance(grant, dict) or not set(grant["scopes"]) <= set(client["scopes"]):
                 raise ValueError()
@@ -373,7 +396,7 @@ class McpOAuthService:
                     ttl=self.settings.access_ttl_seconds,
                 )
             )
-            client = self.client(payload["client_id"])
+            client = await self.client(payload["client_id"])
             return set(required_scopes) <= set(client["scopes"])
         except (UnauthorizedException, ValueError, TypeError, KeyError, InvalidToken, UnicodeError):
             return False
