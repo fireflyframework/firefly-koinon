@@ -1,4 +1,5 @@
 # Copyright 2024-2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -156,7 +157,7 @@ class SandboxExecutor:
         # ``pass_fds`` keeps the child socket fd open across the fork/exec; every
         # other parent fd is closed by ``close_fds`` (subprocess default True).
         self._proc = subprocess.Popen(
-            [sys.executable, "-m", "flycanon.core.services.query.rlm.sandbox.runner"],
+            [sys.executable, "-B", "-m", "flycanon.core.services.query.rlm.sandbox.runner"],
             env=env,
             pass_fds=(child_fd,),
             close_fds=True,
