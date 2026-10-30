@@ -107,6 +107,8 @@ class OrganizationPeopleController:
         request: Request,
         workspace_id: QueryParam[str | None] = None,
     ) -> OrganizationPerson:
+        if person_id == "me":
+            return await self.self(tenant_id, request, workspace_id=workspace_id)
         return browser(
             await self.people.get(
                 organization_identity(request, tenant_id, workspace_id).subject,

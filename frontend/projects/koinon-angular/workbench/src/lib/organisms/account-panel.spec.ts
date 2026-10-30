@@ -17,7 +17,7 @@ describe('token issuance context', () => {
     });
     const tenant = signal('north');
     const organizationPermissions = signal(new Set(['catalog:read', 'members:write']));
-    const createToken = vi.fn(async () => null);
+    const createToken = vi.fn<KoinonAccount['createToken']>(async () => null);
     const items = [
       { id: 'catalog:read', name: 'Browse', dependencies: [] },
       { id: 'members:write', name: 'People', dependencies: [] },
@@ -85,6 +85,56 @@ describe('token issuance context', () => {
     expect(createToken).not.toHaveBeenCalled();
     expect(panel.scopeIds).toEqual(['catalog:read']);
     expect(panel.formError()).toContain('permissions changed');
+  });
+  it('never reveals a one-time token returned after the organization changed', async () => {
+    const { panel, tenant, createToken } = setup();
+    let finish!: (value: Awaited<ReturnType<KoinonAccount['createToken']>>) => void;
+    createToken.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const pending = panel.createToken();
+    tenant.set('south');
+    finish({
+      id: 't1',
+      name: 'Integration',
+      tenant_id: 'north',
+      token: 'alice-private-secret',
+      prefix: 'koinon',
+      scopes: ['catalog:read'],
+      workspace_ids: ['workspace-a'],
+      asset_ids: null,
+      expires_at: '2027-01-01T00:00:00Z',
+      revoked_at: null,
+      last_used_at: null,
+      created_at: '2026-10-30T00:00:00Z',
+    });
+    await pending;
+    expect(panel.secret()).toBe('');
+    expect(panel.formError()).toContain('access context');
+  });
+  it('hides an already issued secret immediately when the organization changes', async () => {
+    const { panel, tenant, createToken } = setup();
+    createToken.mockResolvedValueOnce({
+      id: 't1',
+      name: 'Integration',
+      tenant_id: 'north',
+      token: 'alice-private-secret',
+      prefix: 'koinon',
+      scopes: ['catalog:read'],
+      workspace_ids: ['workspace-a'],
+      asset_ids: null,
+      expires_at: '2027-01-01T00:00:00Z',
+      revoked_at: null,
+      last_used_at: null,
+      created_at: '2026-10-30T00:00:00Z',
+    });
+    await panel.createToken();
+    expect(panel.secret()).toBe('alice-private-secret');
+    tenant.set('south');
+    expect(panel.secret()).toBe('');
   });
   it('preserves explicitly reviewed workspace and asset limits on a valid request', async () => {
     const { panel, createToken } = setup();

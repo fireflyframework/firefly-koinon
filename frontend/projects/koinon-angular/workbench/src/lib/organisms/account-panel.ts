@@ -7,12 +7,16 @@ import {
   PendingTasks,
   inject,
   signal,
+  computed,
+  effect,
+  untracked,
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { KoinonOrganizationInformation } from './organization-information';
 import { KoinonPhotoDraft } from '../services/photo-draft';
+import { KoinonClientContext } from '../services/client-context';
 import { KoinonAccount } from '../services/account';
 import { KoinonFacade } from '../koinon-facade';
 import { KoinonI18n, KoinonTextPipe, KoinonDatePipe } from '../foundations/i18n';
@@ -52,10 +56,16 @@ export class KoinonAccountPanel implements OnInit, OnChanges {
   readonly i18n = inject(KoinonI18n);
   private readonly tasks = inject(PendingTasks);
   private readonly document = inject(DOCUMENT);
+  private readonly clients = inject(KoinonClientContext, { optional: true });
   readonly tab = signal<'profile' | 'tokens' | 'applications'>('profile');
   readonly initializing = signal(true);
   readonly creating = signal(false);
-  readonly secret = signal('');
+  private readonly issuedSecret = signal('');
+  private secretIdentity = '';
+  readonly secret = computed(() => {
+    const value = this.issuedSecret();
+    return this.secretIdentity === this.tokenIdentity() ? value : '';
+  });
   readonly copied = signal(false);
   readonly formError = signal('');
   readonly revoking = signal('');
@@ -84,6 +94,30 @@ export class KoinonAccountPanel implements OnInit, OnChanges {
       ...Intl.supportedValuesOf('timeZone'),
     ]),
   ];
+  private tokenIdentity() {
+    return JSON.stringify([
+      this.f.context()?.subject,
+      this.f.tenantId(),
+      this.clients?.revision(),
+      this.workspaceBound ? this.f.workspaceId() : null,
+      this.assetBound ? this.selectedAsset()?.id : null,
+      this.availableScopes()
+        .map((scope) => scope.id)
+        .sort(),
+    ]);
+  }
+  constructor() {
+    effect(() => {
+      const key = this.tokenIdentity();
+      untracked(() => {
+        if (this.secretIdentity && key !== this.secretIdentity) {
+          this.issuedSecret.set('');
+          this.secretIdentity = '';
+          this.copied.set(false);
+        }
+      });
+    });
+  }
   ngOnChanges() {
     if (!this.initializing()) this.tasks.run(() => this.showTab(this.initialTab));
   }
@@ -111,7 +145,7 @@ export class KoinonAccountPanel implements OnInit, OnChanges {
   async showTab(tab: 'profile' | 'tokens' | 'applications') {
     this.tab.set(tab);
     this.formError.set('');
-    this.secret.set('');
+    this.issuedSecret.set('');
     this.creating.set(false);
     if (tab === 'tokens') {
       await this.account.loadTokens({ page: 1 });
@@ -180,7 +214,7 @@ export class KoinonAccountPanel implements OnInit, OnChanges {
       .slice(0, 10);
     this.creating.set(true);
     this.formError.set('');
-    this.secret.set('');
+    this.issuedSecret.set('');
     this.copied.set(false);
     this.scopeNotice.set('');
   }
@@ -314,6 +348,7 @@ export class KoinonAccountPanel implements OnInit, OnChanges {
       );
       return;
     }
+    const requestIdentity = this.tokenIdentity();
     const created = await this.account.createToken({
       name: this.tokenName.trim(),
       tenant_id: this.f.tenantId(),
@@ -322,8 +357,17 @@ export class KoinonAccountPanel implements OnInit, OnChanges {
       workspace_ids: this.workspaceBound ? [this.tokenContext.workspace] : null,
       asset_ids: this.assetBound ? [this.tokenContext.asset] : null,
     });
+    if (this.tokenIdentity() !== requestIdentity) {
+      this.issuedSecret.set('');
+      this.creating.set(false);
+      this.formError.set(
+        'Your access context changed. Cancel and start a new token to review its access.',
+      );
+      return;
+    }
     if (created) {
-      this.secret.set(created.token);
+      this.secretIdentity = requestIdentity;
+      this.issuedSecret.set(created.token);
       this.creating.set(false);
     }
   }
@@ -338,7 +382,7 @@ export class KoinonAccountPanel implements OnInit, OnChanges {
     }
   }
   clearSecret() {
-    this.secret.set('');
+    this.issuedSecret.set('');
     this.copied.set(false);
   }
   async revoke(id: string) {

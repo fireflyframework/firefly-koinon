@@ -264,3 +264,58 @@ it('never sends a staged photo to a newly bound account before the identity effe
     vi.unstubAllGlobals();
   }
 });
+
+it('withholds a created token when identity changes during its follow-up list read', async () => {
+  let finish: ((value: unknown) => void) | undefined;
+  const account = setup(<T>(method: HttpMethod) =>
+    method === 'POST'
+      ? Promise.resolve({ token: 'alice-private-secret' } as T)
+      : new Promise<T>((resolve) => {
+          finish = resolve as (value: unknown) => void;
+        }),
+  );
+  const pending = account.createToken({
+    name: 'Automation',
+    tenant_id: 'north',
+    scopes: ['catalog:read'],
+    expires_at: '2027-01-01T00:00:00Z',
+  });
+  await vi.waitFor(() => expect(finish).toBeDefined());
+  TestBed.inject(KoinonFacade).context.set({
+    subject: 'bob',
+    tenants: [],
+    memberships: [],
+    workspaces: [],
+    workspace_permissions: {},
+  });
+  TestBed.tick();
+  finish!({ items: [] });
+  expect(await pending).toBeNull();
+});
+it('does not display a revoke notice after its follow-up list crosses organizations', async () => {
+  let finish: ((value: unknown) => void) | undefined;
+  const account = setup(<T>(method: HttpMethod) =>
+    method === 'DELETE'
+      ? Promise.resolve(undefined as T)
+      : new Promise<T>((resolve) => {
+          finish = resolve as (value: unknown) => void;
+        }),
+  );
+  const pending = account.revokeToken('alice-token');
+  await vi.waitFor(() => expect(finish).toBeDefined());
+  TestBed.inject(KoinonFacade).tenantId.set('different');
+  finish!({ items: [] });
+  expect(await pending).toBe(false);
+  expect(account.notice()).not.toBe('Token revoked.');
+});
+
+it('retains the personal profile and photo when only the knowledge workspace changes', async () => {
+  const account = setup(async <T>() => profile as T);
+  await account.load();
+  account.avatar.set('blob:personal-photo');
+  TestBed.tick();
+  TestBed.inject(KoinonFacade).workspaceId.set('another-workspace');
+  TestBed.tick();
+  expect(account.profile()?.display_name).toBe('Alex Rivera');
+  expect(account.avatar()).toBe('blob:personal-photo');
+});
