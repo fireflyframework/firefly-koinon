@@ -63,7 +63,20 @@
       <p class="notice" role="status">{{ c.notice() | ffkText }}</p>
     }
     @if (!editor()) {
-      @if (section() === 'identity') {<ffk-identity-appearance/>}
+      @if (section() === 'identity') {
+        <ffk-identity-appearance />
+      }
+      @if (section() === 'applications') {
+        @defer (when section() === 'applications') {
+          <ffk-mcp-applications />
+        } @loading {
+          <ffk-skeleton width="60%" height="12px" [label]="'Opening settings section' | ffkText" />
+        } @error {
+          <p role="alert">
+            {{ 'This section could not be opened. Refresh this page and try again.' | ffkText }}
+          </p>
+        }
+      }
       @if (section() === 'providers') {
         <header class="section-heading">
           <div>
@@ -754,7 +767,7 @@
               <p>
                 {{ connection.provider }}
                 @if (connection.model_id) {
-                 , {{ connection.model_id }}
+                  , {{ connection.model_id }}
                 }
               </p>
               <p>{{ connection.reason }}</p>

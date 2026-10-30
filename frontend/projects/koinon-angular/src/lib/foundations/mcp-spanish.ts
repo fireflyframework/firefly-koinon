@@ -1,6 +1,14 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 export const MCP_SPANISH: Readonly<Record<string, string>> = {
+  'Use the applications registered for your current organization. Your deployment controls the server URL.':
+    'Usa las aplicaciones registradas para tu organización actual. El despliegue controla la URL del servidor.',
+  'Your account or organization changed. Reload the connection details.':
+    'Tu cuenta u organización ha cambiado. Actualiza los datos de conexión.',
+  'Choose an organization to load its connection details.':
+    'Elige una organización para cargar sus datos de conexión.',
+  'Ask an organization administrator to register your chat application under Settings, Applications with its exact callback URL.':
+    'Pide a un administrador de la organización que registre tu aplicación de chat en Configuración, Aplicaciones con su URL de callback exacta.',
   'Connect an app': 'Conectar una aplicación',
   'Connect Claude or ChatGPT': 'Conectar Claude o ChatGPT',
   'Use this installation’s connection details. Your organization controls the server URL.':

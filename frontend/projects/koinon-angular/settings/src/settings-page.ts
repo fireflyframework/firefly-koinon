@@ -1,9 +1,5 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
-import {
-  KoinonTextPipe,
-  KoinonI18n,
-  KoinonValuePipe,
-} from '@fireflyframework/koinon-angular';
+import { KoinonTextPipe, KoinonI18n, KoinonValuePipe } from '@fireflyframework/koinon-angular';
 import {
   Component,
   ChangeDetectionStrategy,
@@ -51,13 +47,17 @@ import type {
 } from '@fireflyframework/koinon-sdk';
 import { KoinonOrganizationChatSettings } from './organization-chat-settings';
 import { KoinonIdentityAppearance } from './identity-appearance';
+import { KoinonMcpApplications } from './mcp-applications';
 import { KoinonConfiguration } from './configuration';
+import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
+registerKoinonSpanish({ Applications: 'Aplicaciones' });
 @Component({
   selector: 'ffk-settings-page',
   imports: [
     KoinonIdentityAppearance,
+    KoinonMcpApplications,
     KoinonTextPipe,
-      KoinonValuePipe,
+    KoinonValuePipe,
     FormsModule,
     KoinonButton,
     KoinonBadge,
@@ -137,7 +137,7 @@ export class KoinonSettingsPage implements OnInit {
         ) ?? [],
   );
   readonly groups = [
-    { id: 'organization', label: 'Organization', sections: ['people','identity'] },
+    { id: 'organization', label: 'Organization', sections: ['people', 'identity', 'applications'] },
     {
       id: 'knowledge',
       label: 'Knowledge & AI',
@@ -146,8 +146,14 @@ export class KoinonSettingsPage implements OnInit {
     { id: 'operations', label: 'Operations', sections: ['audit', 'operations'] },
   ];
   readonly tabs = [
-    { id: 'identity', label: 'Identity & appearance', permission: 'settings:write', icon: 'palette' },
+    {
+      id: 'identity',
+      label: 'Identity & appearance',
+      permission: 'settings:write',
+      icon: 'palette',
+    },
     { id: 'people', label: 'People & access', permission: 'members:write', icon: 'users' },
+    { id: 'applications', label: 'Applications', permission: 'identity:manage', icon: 'grid' },
     {
       id: 'sources',
       label: 'Sources & connections',
@@ -181,9 +187,7 @@ export class KoinonSettingsPage implements OnInit {
     return this.allowed(tab.permission) || (tab.id === 'models' && this.allowed('settings:write'));
   }
   tabsFor(group: { sections: string[] }) {
-    return this.tabs.filter(
-      (tab) => group.sections.includes(tab.id) && this.tabAllowed(tab),
-    );
+    return this.tabs.filter((tab) => group.sections.includes(tab.id) && this.tabAllowed(tab));
   }
   async openSection(section: string) {
     if (!this.tabs.some((tab) => tab.id === section && this.tabAllowed(tab))) return;

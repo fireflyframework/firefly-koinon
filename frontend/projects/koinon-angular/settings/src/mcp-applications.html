@@ -1,0 +1,586 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<header class="heading">
+  <div>
+    <h2>{{ 'Applications' | ffkText }}</h2>
+    <p>{{ 'Register the applications your organization can connect to koinon.' | ffkText }}</p>
+  </div>
+  @if (!editor()) {
+    <ffk-button
+      variant="primary"
+      icon="plus"
+      [disabled]="!state.canWrite() || !!state.secret()"
+      (click)="beginCreate()"
+      >{{ 'Register application' | ffkText }}</ffk-button
+    >
+  }
+</header>
+@if (state.error()) {
+  <p class="feedback attention" role="alert">
+    <ffk-icon name="alert" />{{ state.error() | ffkText }}
+  </p>
+}
+@if (state.notice()) {
+  <p class="feedback" role="status"><ffk-icon name="check" />{{ state.notice() | ffkText }}</p>
+}
+@if (state.stale()) {
+  <ffk-button
+    icon="refresh"
+    [disabled]="state.saving() || state.loading()"
+    (click)="state.reload()"
+    >{{ 'Reload applications' | ffkText }}</ffk-button
+  >
+}
+@if (state.readiness(); as readiness) {
+  @if (!readiness.ready) {
+    <section class="setup-message" aria-labelledby="applications-setup-title">
+      <ffk-icon name="settings" />
+      <div>
+        <h3 id="applications-setup-title">{{ 'Deployment setup required' | ffkText }}</h3>
+        <p>
+          {{
+            'A deployment administrator must complete these settings before applications can connect.'
+              | ffkText
+          }}
+        </p>
+        <ul>
+          @for (missing of readiness.missing_configuration; track missing) {
+            <li>{{ setupLabels[missing] | ffkText }}</li>
+          }
+        </ul>
+      </div>
+    </section>
+  }
+}
+@if (state.secret(); as credential) {
+  <section class="secret-panel" aria-labelledby="application-secret-title">
+    <div class="panel-heading">
+      <div>
+        <h3 id="application-secret-title">{{ 'Save this client secret' | ffkText }}</h3>
+        <p>
+          {{ 'It is shown only in this view. Store it securely before you close it.' | ffkText }}
+        </p>
+      </div>
+      <ffk-icon name="shield" />
+    </div>
+    <dl>
+      <dt>{{ 'Client ID' | ffkText }}</dt>
+      <dd>
+        <code>{{ credential.client.client_id }}</code>
+      </dd>
+    </dl>
+    <label for="application-secret">{{ 'Client secret' | ffkText }}</label>
+    <div class="secret-value">
+      <input
+        id="application-secret"
+        readonly
+        autocomplete="off"
+        spellcheck="false"
+        [type]="revealSecret() ? 'text' : 'password'"
+        [value]="credential.client_secret ?? ''"
+      /><ffk-button variant="quiet" (click)="revealSecret.set(!revealSecret())">{{
+        (revealSecret() ? 'Hide secret' : 'Reveal secret') | ffkText
+      }}</ffk-button>
+    </div>
+    <div class="actions">
+      <ffk-button icon="copy" (click)="copySecret()">{{ 'Copy secret' | ffkText }}</ffk-button
+      ><ffk-button variant="quiet" icon="close" (click)="dismissSecret()">{{
+        'I saved the secret' | ffkText
+      }}</ffk-button>
+    </div>
+    @if (localNotice()) {
+      <p role="status">{{ localNotice() | ffkText }}</p>
+    }
+  </section>
+}
+@if (editor()) {
+  <section class="editor" aria-labelledby="application-editor-title">
+    <div class="panel-heading">
+      <div>
+        <h3 id="application-editor-title">
+          {{ (editor() === 'create' ? 'Register application' : 'Edit application') | ffkText }}
+        </h3>
+        <p>
+          {{
+            'Applications receive only the access their users approve. Organization permissions still apply.'
+              | ffkText
+          }}
+        </p>
+      </div>
+      <ffk-button
+        variant="quiet"
+        icon="close"
+        [label]="'Close application editor' | ffkText"
+        [disabled]="state.saving()"
+        (click)="closeEditor()"
+      />
+    </div>
+    <ol class="steps" [attr.aria-label]="'Application setup steps' | ffkText">
+      @for (
+        label of ['Application details', 'Allowed access', 'Review application'];
+        track label;
+        let index = $index
+      ) {
+        <li
+          [class.current]="step() === index + 1"
+          [attr.aria-current]="step() === index + 1 ? 'step' : null"
+        >
+          <span>{{ index + 1 }}</span
+          >{{ label | ffkText }}
+        </li>
+      }
+    </ol>
+    @if (step() === 1) {
+      <div class="form-grid">
+        <label
+          >{{ 'Application name' | ffkText
+          }}<input
+            maxlength="120"
+            [attr.aria-label]="'Application name' | ffkText"
+            autocomplete="off"
+            [ngModel]="name()"
+            (ngModelChange)="name.set($event)"
+            [attr.aria-invalid]="!!nameProblem()"
+            aria-describedby="application-name-help"
+          /><small id="application-name-help">{{
+            'Use a name people will recognize when they connect.' | ffkText
+          }}</small></label
+        >
+        <fieldset class="client-types" [disabled]="editor() === 'edit'">
+          <legend>{{ 'Application type' | ffkText }}</legend>
+          <label
+            ><input
+              type="radio"
+              name="client-type"
+              value="public"
+              [ngModel]="clientType()"
+              (ngModelChange)="clientType.set($event)"
+            /><span
+              ><strong>{{ 'Public application' | ffkText }}</strong
+              ><small>{{
+                'Desktop or browser applications that cannot safely store a secret. Uses PKCE.'
+                  | ffkText
+              }}</small></span
+            ></label
+          >
+          <label
+            ><input
+              type="radio"
+              name="client-type"
+              value="confidential"
+              [ngModel]="clientType()"
+              (ngModelChange)="clientType.set($event)"
+            /><span
+              ><strong>{{ 'Confidential application' | ffkText }}</strong
+              ><small>{{
+                'A server application that can securely store a client secret. Uses PKCE and a secret.'
+                  | ffkText
+              }}</small></span
+            ></label
+          >
+        </fieldset>
+        <label class="full"
+          >{{ 'Callback URLs' | ffkText
+          }}<textarea
+            [attr.aria-label]="'Callback URLs' | ffkText"
+            rows="3"
+            spellcheck="false"
+            autocapitalize="off"
+            [ngModel]="callbacks()"
+            (ngModelChange)="callbacks.set($event)"
+            aria-describedby="application-callback-help"
+            [attr.aria-invalid]="!!callbackProblem()"
+          ></textarea
+          ><small id="application-callback-help">{{
+            'Paste the exact callback URLs provided by the application, one per line. Up to eight URLs.'
+              | ffkText
+          }}</small></label
+        >
+        @if (callbacks() && callbackProblem()) {
+          <p class="field-error full" role="alert">{{ callbackProblem() | ffkText }}</p>
+        }
+        @if (editor() === 'edit') {
+          <label class="check full"
+            ><input type="checkbox" [ngModel]="enabled()" (ngModelChange)="enabled.set($event)" />{{
+              'Application enabled' | ffkText
+            }}</label
+          >
+        }
+      </div>
+    }
+    @if (step() === 2) {
+      <p>
+        {{
+          'Choose the maximum access this application may request. Users approve their own connection separately.'
+            | ffkText
+        }}
+      </p>
+      <fieldset class="scope-list">
+        <legend class="sr-only">{{ 'Allowed access' | ffkText }}</legend>
+        @for (option of scopeOptions; track option.id) {
+          <label
+            ><input
+              type="checkbox"
+              [checked]="scopes().includes(option.id)"
+              [attr.aria-label]="option.label | ffkText"
+              [disabled]="option.id === 'catalog:read'"
+              (change)="scope(option.id, $event)"
+            /><span
+              ><strong>{{ option.label | ffkText }}</strong
+              ><small>{{ option.help | ffkText }}</small></span
+            ><code>{{ option.id }}</code></label
+          >
+        }
+      </fieldset>
+    }
+    @if (step() === 3) {
+      <dl class="review-summary">
+        <dt>{{ 'Application name' | ffkText }}</dt>
+        <dd>{{ name().trim() }}</dd>
+        <dt>{{ 'Application type' | ffkText }}</dt>
+        <dd>
+          {{
+            (clientType() === 'public' ? 'Public application' : 'Confidential application')
+              | ffkText
+          }}
+        </dd>
+        <dt>{{ 'Callback URLs' | ffkText }}</dt>
+        <dd class="lines">{{ callbacks().trim() }}</dd>
+        <dt>{{ 'Allowed access' | ffkText }}</dt>
+        <dd>
+          @for (option of scopeOptions; track option.id) {
+            @if (scopes().includes(option.id)) {
+              <span class="scope-label">{{ option.label | ffkText }}</span>
+            }
+          }
+        </dd>
+      </dl>
+      @if (editor() === 'edit') {
+        <p class="feedback attention">
+          <ffk-icon name="unlink" />{{
+            'Saving changes revokes all existing connections to this application. Users must connect again.'
+              | ffkText
+          }}
+        </p>
+      }
+      <label class="check acknowledgement"
+        ><input
+          type="checkbox"
+          [ngModel]="acknowledged()"
+          (ngModelChange)="acknowledged.set($event)"
+        />{{
+          (editor() === 'create'
+            ? 'I reviewed the callbacks and allowed access.'
+            : 'I reviewed these changes and understand that existing connections will be revoked.'
+          ) | ffkText
+        }}</label
+      >
+    }
+    <footer class="actions">
+      <ffk-button
+        variant="quiet"
+        icon="close"
+        [disabled]="state.saving()"
+        (click)="closeEditor()"
+        >{{ 'Cancel' | ffkText }}</ffk-button
+      ><span class="spacer"></span>
+      @if (step() > 1) {
+        <ffk-button icon="chevron-left" [disabled]="state.saving()" (click)="previous()">{{
+          'Back' | ffkText
+        }}</ffk-button>
+      }
+      @if (step() < 3) {
+        <ffk-button variant="primary" [disabled]="!valid() || state.saving()" (click)="next()">{{
+          'Continue' | ffkText
+        }}</ffk-button>
+      } @else {
+        <ffk-button
+          variant="primary"
+          icon="check"
+          [loading]="state.saving()"
+          [disabled]="!acknowledged() || !state.canWrite()"
+          (click)="save()"
+          >{{
+            (editor() === 'create' ? 'Register application' : 'Save changes') | ffkText
+          }}</ffk-button
+        >
+      }
+    </footer>
+  </section>
+} @else {
+  <fieldset class="filters" [disabled]="state.saving() || !!state.secret()">
+    <legend class="sr-only">{{ 'Application filters' | ffkText }}</legend>
+    <ffk-search-field
+      [value]="query"
+      (valueChange)="query = $event"
+      [label]="'Search applications' | ffkText"
+      [placeholder]="'Name or client ID' | ffkText"
+      [actionLabel]="'Apply application filter' | ffkText"
+      (searchSubmitted)="filter()"
+    />
+    <label
+      >{{ 'Status' | ffkText
+      }}<select
+        [disabled]="state.saving()"
+        [ngModel]="state.filter().status"
+        name="status"
+        [attr.aria-label]="'Status' | ffkText"
+        (ngModelChange)="status($event)"
+      >
+        <option value="all">{{ 'All applications' | ffkText }}</option>
+        <option value="enabled">{{ 'Enabled' | ffkText }}</option>
+        <option value="disabled">{{ 'Disabled' | ffkText }}</option>
+      </select></label
+    >
+    <label
+      >{{ 'Sort by' | ffkText
+      }}<select
+        [disabled]="state.saving()"
+        [ngModel]="state.filter().sort"
+        name="sort"
+        [attr.aria-label]="'Sort by' | ffkText"
+        (ngModelChange)="sort($event)"
+      >
+        <option value="name">{{ 'Name' | ffkText }}</option>
+        <option value="updated_at">{{ 'Last updated' | ffkText }}</option>
+      </select></label
+    >
+    <label
+      >{{ 'Order' | ffkText
+      }}<select
+        [disabled]="state.saving()"
+        [ngModel]="state.filter().order"
+        name="order"
+        [attr.aria-label]="'Order' | ffkText"
+        (ngModelChange)="order($event)"
+      >
+        <option value="asc">{{ 'Ascending' | ffkText }}</option>
+        <option value="desc">{{ 'Descending' | ffkText }}</option>
+      </select></label
+    >
+  </fieldset>
+  <div
+    class="table-wrap"
+    tabindex="0"
+    [attr.aria-label]="'Organization applications' | ffkText"
+    [attr.aria-busy]="state.loading()"
+  >
+    <table>
+      <thead>
+        <tr>
+          <th>{{ 'Application' | ffkText }}</th>
+          <th>{{ 'Type' | ffkText }}</th>
+          <th>{{ 'Status' | ffkText }}</th>
+          <th>{{ 'Last updated' | ffkText }}</th>
+          <th>
+            <span class="sr-only">{{ 'Actions' | ffkText }}</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of state.page().items; track row.id) {
+          <tr>
+            <td>
+              <strong>{{ row.name }}</strong
+              ><code>{{ row.client_id }}</code
+              ><small
+                >{{ row.redirect_uris.length }}
+                {{
+                  (row.redirect_uris.length === 1 ? 'callback URL' : 'callback URLs') | ffkText
+                }}</small
+              >
+            </td>
+            <td [attr.data-label]="'Type' | ffkText">
+              {{ (row.client_type === 'public' ? 'Public' : 'Confidential') | ffkText }}
+            </td>
+            <td [attr.data-label]="'Status' | ffkText">
+              <ffk-badge [tone]="row.enabled ? 'ready' : 'neutral'">{{
+                (row.enabled ? 'Enabled' : 'Disabled') | ffkText
+              }}</ffk-badge>
+            </td>
+            <td [attr.data-label]="'Last updated' | ffkText">
+              {{ row.updated_at | ffkDate: undefined : 'datetime'
+              }}<small>{{ row.updated_by }}</small>
+            </td>
+            <td>
+              <ffk-button
+                variant="quiet"
+                icon="settings"
+                [label]="('Manage application' | ffkText) + ' ' + row.name"
+                [disabled]="state.saving()"
+                (click)="open(row.id)"
+                >{{ 'Manage' | ffkText }}</ffk-button
+              >
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="empty">
+              <ffk-icon [name]="state.loading() ? 'refresh' : 'grid'" />
+              <h3>
+                {{
+                  (state.loading()
+                    ? 'Loading applications'
+                    : !state.loaded()
+                      ? 'Refresh the application list'
+                      : state.filter().q || state.filter().status !== 'all'
+                        ? 'No matching applications'
+                        : 'No registered applications'
+                  ) | ffkText
+                }}
+              </h3>
+              <p>
+                {{
+                  (state.loading()
+                    ? 'Retrieving the current organization applications.'
+                    : !state.loaded()
+                      ? 'Reload to see the current applications after your changes.'
+                      : state.filter().q || state.filter().status !== 'all'
+                        ? 'Try another name, client ID or status.'
+                        : 'Register an application to let people connect it to this organization.'
+                  ) | ffkText
+                }}
+              </p>
+              @if (!state.loading() && !state.loaded()) {
+                <ffk-button
+                  icon="refresh"
+                  [disabled]="state.saving() || !!state.secret()"
+                  (click)="state.reload()"
+                  >{{ 'Reload applications' | ffkText }}</ffk-button
+                >
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <ffk-pagination
+    [page]="state.page()"
+    [label]="'Applications' | ffkText"
+    [loading]="state.loading() || state.saving() || !!state.secret()"
+    (pageChanged)="state.load({ page: $event })"
+    (sizeChanged)="state.load({ page: 1, page_size: $event })"
+  />
+  @if (state.detailLoading()) {
+    <p role="status">{{ 'Loading application details' | ffkText }}</p>
+  }
+  @if (state.detail(); as detail) {
+    <section class="detail" aria-labelledby="application-detail-title">
+      <div class="panel-heading">
+        <div>
+          <h3 id="application-detail-title">{{ detail.name }}</h3>
+          <p>{{ 'Application registration' | ffkText }} {{ detail.revision }}</p>
+        </div>
+        <ffk-button
+          icon="close"
+          variant="quiet"
+          [label]="'Close application details' | ffkText"
+          [disabled]="state.saving()"
+          (click)="state.closeDetail(); confirmation.set(null)"
+        />
+      </div>
+      <dl class="review-summary">
+        <dt>{{ 'Client ID' | ffkText }}</dt>
+        <dd>
+          <code>{{ detail.client_id }}</code>
+        </dd>
+        <dt>{{ 'Callback URLs' | ffkText }}</dt>
+        <dd>
+          @for (url of detail.redirect_uris; track url) {
+            <span class="scope-label">{{ url }}</span>
+          }
+        </dd>
+        <dt>{{ 'Allowed access' | ffkText }}</dt>
+        <dd>
+          @for (scope of detail.scopes; track scope) {
+            <code class="scope-label">{{ scope }}</code>
+          }
+        </dd>
+      </dl>
+      <div class="actions">
+        <ffk-button
+          icon="settings"
+          [disabled]="!state.canWrite() || !!state.secret()"
+          (click)="beginEdit()"
+          >{{ 'Edit application' | ffkText }}</ffk-button
+        >
+        @if (detail.enabled) {
+          <ffk-button
+            icon="unlink"
+            variant="quiet"
+            [disabled]="!state.canWrite() || !!state.secret()"
+            (click)="confirm('disable')"
+            >{{ 'Disable application' | ffkText }}</ffk-button
+          >
+        }
+        @if (detail.client_type === 'confidential') {
+          <ffk-button
+            icon="refresh"
+            variant="quiet"
+            [disabled]="!state.canWrite() || !!state.secret()"
+            (click)="confirm('rotate')"
+            >{{ 'Rotate client secret' | ffkText }}</ffk-button
+          >
+        }
+      </div>
+      @if (confirmation(); as action) {
+        <section class="confirmation" aria-labelledby="application-confirm-title">
+          <h4 id="application-confirm-title">
+            {{
+              (action.kind === 'disable'
+                ? 'Disable this application?'
+                : 'Replace this client secret?'
+              ) | ffkText
+            }}
+          </h4>
+          <p>
+            {{
+              'All existing connections to this application will be revoked. Users must connect again.'
+                | ffkText
+            }}
+          </p>
+          @if (action.kind === 'rotate') {
+            <p>
+              {{
+                'The old secret stops working immediately. Update the application with the new secret.'
+                  | ffkText
+              }}
+            </p>
+          }
+          <label class="check"
+            ><input
+              type="checkbox"
+              [ngModel]="acknowledged()"
+              (ngModelChange)="acknowledged.set($event)"
+            />{{ 'I understand that existing connections will be revoked.' | ffkText }}</label
+          >
+          <div class="actions">
+            <ffk-button
+              variant="quiet"
+              icon="close"
+              [disabled]="state.saving()"
+              (click)="confirmation.set(null)"
+              >{{ 'Cancel' | ffkText }}</ffk-button
+            ><ffk-button
+              variant="danger"
+              [icon]="action.kind === 'disable' ? 'unlink' : 'refresh'"
+              [loading]="state.saving()"
+              [disabled]="!acknowledged() || !state.canWrite()"
+              (click)="applyConfirmation()"
+              >{{
+                (action.kind === 'disable' ? 'Disable application' : 'Rotate client secret')
+                  | ffkText
+              }}</ffk-button
+            >
+          </div>
+        </section>
+      }
+    </section>
+  }
+  <p class="deployment-note">
+    <ffk-icon name="info" />{{
+      'Deployment-configured applications remain read-only and are managed by your deployment administrator.'
+        | ffkText
+    }}
+  </p>
+}

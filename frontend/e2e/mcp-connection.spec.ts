@@ -19,7 +19,7 @@ for (const width of [1440, 390])
   }) => {
     await page.setViewportSize({ width, height: 1100 });
     await setup(page);
-    await page.route('**/bff/api/v1/mcp/connection', (r) =>
+    await page.route('**/bff/api/v1/tenants/tenant-one/mcp/connection', (r) =>
       r.fulfill({
         json: {
           enabled: true,
@@ -76,7 +76,7 @@ test('disabled MCP gives an operator action without suggesting an unusable conne
   page,
 }) => {
   await setup(page);
-  await page.route('**/bff/api/v1/mcp/connection', (r) =>
+  await page.route('**/bff/api/v1/tenants/tenant-one/mcp/connection', (r) =>
     r.fulfill({
       json: {
         enabled: false,
@@ -115,7 +115,7 @@ test('local listener URL explains desktop access without promising hosted connec
 }) => {
   await page.setViewportSize({ width: 1440, height: 1100 });
   await setup(page);
-  await page.route('**/bff/api/v1/mcp/connection', (route) =>
+  await page.route('**/bff/api/v1/tenants/tenant-one/mcp/connection', (route) =>
     route.fulfill({
       json: {
         enabled: true,

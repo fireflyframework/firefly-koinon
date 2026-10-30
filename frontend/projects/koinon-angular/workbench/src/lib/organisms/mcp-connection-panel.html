@@ -5,7 +5,7 @@
       <h3>{{ 'Connect Claude or ChatGPT' | ffkText }}</h3>
       <p>
         {{
-          'Use this installation’s connection details. Your organization controls the server URL.'
+          'Use the applications registered for your current organization. Your deployment controls the server URL.'
             | ffkText
         }}
       </p>
@@ -121,7 +121,7 @@
           @if (!registrations().length) {
             <p class="help">
               {{
-                'Ask your administrator for the registered OAuth client ID and exact callback setup for your chat application.'
+                'Ask an organization administrator to register your chat application under Settings, Applications with its exact callback URL.'
                   | ffkText
               }}
             </p>

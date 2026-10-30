@@ -51,11 +51,16 @@ export class KoinonMcpConnectionPanel implements OnInit, OnDestroy {
       this.value.set(null);
       this.registrationId = '';
       this.loading.set(false);
-      this.notice.set('Your account changed. Reload the connection details.');
+      this.error.set('');
+      this.notice.set('Your account or organization changed. Reload the connection details.');
     });
   }
   private key() {
-    return (this.facade.context()?.subject ?? '') + ':' + this.clients.revision();
+    return JSON.stringify([
+      this.facade.context()?.subject ?? '',
+      this.facade.tenantId(),
+      this.clients.revision(),
+    ]);
   }
   ngOnInit() {
     this.tasks.run(() => this.load());
@@ -67,15 +72,24 @@ export class KoinonMcpConnectionPanel implements OnInit, OnDestroy {
   }
   async load() {
     const request = ++this.request,
-      key = this.key();
+      key = this.key(),
+      tenantId = this.facade.tenantId();
     this.abort?.abort();
     this.abort = new AbortController();
     this.value.set(null);
     this.loading.set(true);
     this.error.set('');
     this.notice.set('');
+    this.registrationId = '';
+    if (!tenantId) {
+      this.loading.set(false);
+      this.error.set('Choose an organization to load its connection details.');
+      return;
+    }
     try {
-      const value = await this.clients.get().mcp.connection({ signal: this.abort.signal });
+      const value = await this.clients.get().mcp.organizationConnection(tenantId, {
+        signal: this.abort.signal,
+      });
       if (!this.alive || request !== this.request || key !== this.key()) return;
       if (typeof value.enabled !== 'boolean' || !Array.isArray(value.authentication))
         throw new Error('Incomplete connection details');
