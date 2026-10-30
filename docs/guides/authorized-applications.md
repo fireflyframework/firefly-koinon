@@ -6,7 +6,7 @@ Use **Authorized applications** in your account to review applications connected
 
 | Concept | Managed by | Purpose |
 | --- | --- | --- |
-| Registered application | Deployment operator | Identifies a client, its exact callback URLs and the permissions it may request |
+| Registered application | Organization administrator | Identifies a client, its exact callback URLs and the permissions it may request |
 | Authorized connection | The signed-in user | Grants that application access to one selected space, within the user's current permissions |
 | API token | The signed-in user | Supplies an explicitly scoped credential to a script, SDK or client configured manually |
 
@@ -14,7 +14,7 @@ An application registration does not grant access to anyone's knowledge. A user'
 
 ## Connect an application
 
-Open **Authorized applications** in your account and select **Connect an app** to see this installation's MCP URL and registered OAuth client IDs. Select Claude or ChatGPT to follow the matching setup steps. The endpoint comes from your deployment configuration; it is not a fixed koinon service address. Client IDs identify an application and are safe to copy; confidential client secrets must come from the deployment operator through a protected channel.
+Open **Authorized applications** in your account and select **Connect an app** to see this installation's MCP URL and the enabled OAuth registrations for your current organization. Select Claude or ChatGPT to follow the matching setup steps. The endpoint comes from your deployment configuration or native listener; it is not a fixed koinon service address. Client IDs identify an application and are safe to copy. An administrator registers applications under **Settings**, in **Applications**, and supplies confidential client secrets through a protected channel. See [Register an application](register-applications.md).
 
 ![Connection instructions use this installation's URL and registered client](../assets/screenshots/mcp-connection.png)
 
@@ -52,6 +52,6 @@ Keep manually created credentials under **API tokens**. A desktop bridge configu
 
 The Python, TypeScript and Java SDKs expose typed list, detail and revoke methods for authorized applications. These are personal account operations and require a verified interactive user identity. A personal token or application credential cannot manage authorizations, and there is no SDK shortcut that approves browser consent.
 
-Operators configure registration, resource URLs and encryption under [MCP authentication](../operations/mcp-authentication.md). Protocol and interface tests use owned fixtures; actual hosted-client linking, identity-provider login and deployment acceptance remain separate qualification steps.
+Organization administrators [manage registrations](register-applications.md) in Settings. Operators configure installation resource URLs and encryption under [MCP authentication](../operations/mcp-authentication.md). Protocol and interface tests use owned fixtures; actual hosted-client linking, identity-provider login and deployment acceptance remain separate qualification steps.
 
 Copyright 2026 Firefly Software Foundation. Licensed under Apache-2.0. Made with <3.

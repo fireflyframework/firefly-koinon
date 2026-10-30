@@ -6,11 +6,12 @@ Use koinon's remote MCP endpoint to retrieve organization knowledge from ChatGPT
 
 ## Prepare the connection
 
-Ask the deployment operator for:
+Open your koinon avatar menu, select **Authorized applications**, then **Connect an app**. The connection panel provides:
 
-- The full reachable HTTPS MCP URL, such as `https://knowledge.example.org/mcp`.
-- A pre-registered OAuth client ID and, for a confidential client, its securely delivered client secret.
-- The organization and space you are expected to access, and the operations your role permits.
+- The installation's exact MCP URL. A hosted ChatGPT connection requires a reachable HTTPS address, such as `https://knowledge.example.org/mcp`.
+- The enabled OAuth client registrations for your current organization and their client IDs.
+
+An organization administrator [registers the application](register-applications.md) under **Settings**, in **Applications**, and supplies any confidential client secret through a protected channel. Confirm the intended organization, space and operations before connecting. Client registration does not grant membership or additional permissions.
 
 The domain above is an example, not a supplied hosted service. The product can also display a listener-derived local endpoint marked `local_only`; that address is for the local computer and cannot serve ChatGPT cloud connections. Use a reachable HTTPS deployment URL for this connection. The server uses Streamable HTTP. Compatible legacy clients negotiate MCP Apps during initialization; modern clients can declare capabilities per request. Its public URL and OAuth resource must match exactly. Deployment, identity-provider login and client availability must be verified in your environment.
 

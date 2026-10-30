@@ -15,7 +15,7 @@ The server supports retrieval, governed dataset queries and reviewed knowledge c
 
 ## Connect the remote endpoint
 
-Ask your operator for the deployment's full MCP URL, for example `https://knowledge.example.org/mcp`, and its pre-registered OAuth client configuration. The example domain is a placeholder, not a hosted koinon service. A listener-derived endpoint marked `local_only` is usable from the local computer; it does not establish reachability from Claude cloud. The desktop bridge can use a suitable endpoint reachable from your computer.
+In koinon, open your avatar menu, select **Authorized applications**, then **Connect an app**. Copy the deployment's full MCP URL and select the registered client for your organization. An organization administrator can [register the application](register-applications.md) under **Settings**, in **Applications**; they provide any confidential secret directly to Claude's protected configuration. A URL such as `https://knowledge.example.org/mcp` is a placeholder, not a hosted koinon service. A listener-derived endpoint marked `local_only` is usable from the local computer; it does not establish reachability from Claude cloud. The desktop bridge can use a suitable endpoint reachable from your computer.
 
 Claude's remote connection originates from Anthropic infrastructure, including when using Claude Desktop. Your operator must provide network reachability; a URL that works only through your laptop's VPN is insufficient. See [Anthropic's remote-connector documentation](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp).
 

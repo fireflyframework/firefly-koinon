@@ -47,6 +47,8 @@ Workspace membership still limits where a capability applies. Issuance cannot ex
 
 Personal token creation, listing and revocation require a verified interactive identity. A personal token cannot create or manage other tokens. For a connected client that needs an authorization flow, use [authorized applications](authorized-applications.md), with explicit user consent, rather than passing around another user's personal secret.
 
+OAuth application registration is also an identity-only administration operation. Its [typed SDK methods](register-applications.md#use-the-typed-sdks) require an ordinary verified administrator identity and organization-level `identity:manage`; personal tokens and application credentials cannot list, create, edit or rotate registrations. Current organization members can read the safe connection descriptor without receiving secrets or additional permissions.
+
 ## Write through the SDK
 
 The following helpers deliberately perform writes only when called. They create a project and collection within an **existing authorized workspace**, rename the collection, and upload one file into that destination. Pass the client initialized in the [headless guide](headless.md); provide a workspace-scoped `ingest:write` token and an ordinary input file of at most 32 MiB. The server enforces its own limits and configured extractors.

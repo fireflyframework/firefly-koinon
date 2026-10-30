@@ -51,6 +51,7 @@ nav:
       - Identity and appearance: operations/identity-appearance.md
       - Profiles and API tokens: operations/profiles-and-tokens.md
       - Authorized applications: guides/authorized-applications.md
+      - Register applications: guides/register-applications.md
   - Integrate:
       - Headless API and SDK: guides/headless.md
       - API permissions and writes: guides/api-permissions.md

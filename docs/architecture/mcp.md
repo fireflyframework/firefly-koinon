@@ -80,6 +80,10 @@ The host must declare the `io.modelcontextprotocol/ui` extension with the exact 
 
 `GET /api/v1/mcp/connection` exposes the trusted deployment URL, permitted server capabilities and configured public OAuth client ID/name/scopes/authentication type. It never returns a client secret or hash and does not grant the current user additional permissions. See the [Claude](../guides/connect-claude.md) and [ChatGPT](../guides/connect-chatgpt.md) guides.
 
+`GET /api/v1/tenants/{tenant_id}/mcp/connection` additionally projects the enabled OAuth registrations belonging to that organization after checking current membership and credential bounds. The account connection panel uses this tenant descriptor. The `mcp_applications` domain owns the organization registry, its DTOs, controllers, native repositories and current-authority service. Registration administration requires an ordinary verified identity and organization `identity:manage`; it is separate from the user's `authorized_applications` grants and from outbound corporate identity providers.
+
+Requests, authorization codes, grants and resource bearers pin the organization's registration revision and configuration digest. Current authority is rechecked before consent, code exchange, bearer authentication and governed operations. A registration change or secret rotation revokes its existing grants and credentials atomically. Static deployment clients retain their existing path and are not silently reassigned to an organization. See [Register an application](../guides/register-applications.md) for the visual and typed SDK workflows.
+
 ## Legacy session compatibility and scaling
 
 Legacy clients negotiate MCP Apps through `initialize`. Their sessions retain that declaration using the official SDK's bounded session manager. Native bearer authentication projects the actual current credential fingerprint, issuer and subject into SDK session ownership; a different credential cannot reuse a session. Every request and canonical operation still rechecks authentication and current permissions. Session IDs do not replace bearer credentials.
