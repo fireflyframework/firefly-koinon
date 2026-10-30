@@ -7,6 +7,8 @@ repo_url: https://github.com/fireflyframework/firefly-koinon
 repo_name: fireflyframework/firefly-koinon
 copyright: Copyright 2026 Firefly Software Foundation
 strict: true
+exclude_docs: |
+  /superpowers/
 theme:
   name: material
   custom_dir: docs_theme

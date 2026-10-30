@@ -145,6 +145,16 @@ Controlled provider tests and actual SDKs against fixture-owned loopback HTTP co
 
 The implementation follows the [Azure block-blob create and download contract](https://learn.microsoft.com/en-us/python/api/azure-storage-blob/azure.storage.blob.blobclient), [GCS generation preconditions](https://cloud.google.com/storage/docs/request-preconditions) and [GCS resumable session contract](https://cloud.google.com/storage/docs/performing-resumable-uploads). Loading configuration performs no provider operation.
 
+## Temporary files during structured intake
+
+Structured intake stores the original in the configured object store before handing its local working copy to the parser. The asynchronous worker loads that durable original when it needs to process the file; it does not depend on a temporary path from the upload request. Removing a working copy does not remove the registered original, its metadata or a published snapshot.
+
+The current candidate reserves unique Parquet working files with owner-only `0600` permissions. CSV, JSON and spreadsheet conversion preserve those permissions when DuckDB writes the output. Column renaming uses its own private sibling file. The parser owns incomplete and skipped outputs; a successful return transfers only the files needed by subsequent stages. Each consumer cleans up after it finishes, including failure and cancellation paths. A failed section does not remove a running sibling's input. Cleanup attempts continue for independent parsed outputs if removal is denied; the denied file may remain and require operator attention.
+
+Cancellation waits for an active native reader to finish before releasing the paths it uses. Shutdown timeouts are therefore soft while that operation drains. Configure a process supervisor for a hard shutdown deadline and an installation-owned private temporary directory for working files. Abrupt process termination can leave local files behind; automatic cleanup after a hard stop and Windows behavior have not been qualified. Never point a temporary-file cleanup job at the durable storage roots.
+
+These lifecycle changes have source regression coverage. Their inclusion in the candidate does not establish deployment to an existing installation; the [qualification record](qualification.md) distinguishes source checks from managed rollout.
+
 ## Bulk work remains separate
 
 Canonical library upload currently accepts one file up to 32 MiB and executes ingestion in that request. It is not a durable bulk import contract. The retained structured package has bulk handlers, but exposing them would not supply canonical authorization, atomic admission or distributed backpressure automatically.
