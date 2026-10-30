@@ -6,6 +6,7 @@ import type {McpOAuthClientFilter} from './types.js';
 import type {BrandingValues,OrganizationBranding,OrganizationBrandingInput,BrandingResetInput} from './generated.js';
 import type {OrganizationChatSettings,OrganizationChatSettingsInput} from './generated.js';
 import type {OrganizationKnowledgeSettings,OrganizationKnowledgeSettingsInput} from './generated.js';
+import type {DocumentVersion,DocumentVersionPage,DocumentExtractionPage,DocumentPartPage,DocumentPartContent} from './generated.js';
 import type {AnswerAudit} from './generated.js';
 import type {AuthorizedApplication} from './generated.js';
 import type {AuthorizedApplicationFilter} from './types.js';
@@ -267,7 +268,14 @@ export class KoinonClient {
    archive:(tenantId:string,entryId:string,options:RequestOptions={})=>transport.request<CatalogEntry>('POST',`${tenant(tenantId)}/catalog/${id(entryId)}/archive`,options),
   };
   this.sources={uploadFile:(tenantId:string,input:SourceUploadInput,options:RequestOptions={})=>{const body=multipart(input.file,input.filename);for(const key of ['workspace_id','project_id','parent_id','mode'] as const)body.set(key,input[key]);return transport.request<UploadResponse>('POST',`${tenant(tenantId)}/sources/upload`,{...options,body});},upload:(tenantId:string,form:FormData,options:RequestOptions={})=>transport.request<UploadResponse>('POST',`${tenant(tenantId)}/sources/upload`,{...options,body:form})};
+  const versionPath=(tenantId:string,documentId:string,versionId?:string)=>`${tenant(tenantId)}/documents/${id(documentId)}/versions${versionId===undefined?'':'/'+id(versionId)}`;
   this.documents={
+   versions:(tenantId:string,documentId:string,filter:{page?:number;page_size?:number}={},options:RequestOptions={})=>transport.request<DocumentVersionPage>('GET',versionPath(tenantId,documentId),{...options,query:{...filter}}),
+   version:(tenantId:string,documentId:string,versionId:string,options:RequestOptions={})=>transport.request<DocumentVersion>('GET',versionPath(tenantId,documentId,versionId),options),
+   extractions:(tenantId:string,documentId:string,versionId:string,filter:{page?:number;page_size?:number}={},options:RequestOptions={})=>transport.request<DocumentExtractionPage>('GET',versionPath(tenantId,documentId,versionId)+'/extractions',{...options,query:{...filter}}),
+   parts:(tenantId:string,documentId:string,versionId:string,extractionId:string,filter:{page?:number;page_size?:number;kind?:'artifact'|'section'|'chunk'|'page'}={},options:RequestOptions={})=>transport.request<DocumentPartPage>('GET',versionPath(tenantId,documentId,versionId)+'/extractions/'+id(extractionId)+'/parts',{...options,query:{...filter}}),
+   part:(tenantId:string,documentId:string,versionId:string,extractionId:string,partId:string,options:RequestOptions={})=>transport.request<DocumentPartContent>('GET',versionPath(tenantId,documentId,versionId)+'/extractions/'+id(extractionId)+'/parts/'+id(partId),options),
+   versionOriginal:(tenantId:string,documentId:string,versionId:string,options:RequestOptions={})=>transport.request<BinaryDownload>('GET',versionPath(tenantId,documentId,versionId)+'/original',{...options,responseType:'download'}),
    download:(tenantId:string,documentId:string,options:RequestOptions={})=>transport.request<BinaryDownload>('GET',`${tenant(tenantId)}/documents/${id(documentId)}/original`,{...options,responseType:'download'}),
    replace:(tenantId:string,documentId:string,file:Blob,input:ContentPrecondition,options:RequestOptions={})=>{const body=multipart(file,input.filename);body.set('acknowledge_chunk_invalidation',String(input.acknowledge_chunk_invalidation??false));return transport.request<ContentUpdate>('POST',`${tenant(tenantId)}/documents/${id(documentId)}/content`,{...options,body,headers:{...options.headers,...documentRevisionHeaders(input),'If-Match':match(input.expected_sha256)}});},
    reingest:(tenantId:string,documentId:string,input:ContentPrecondition,options:RequestOptions={})=>transport.request<ContentUpdate>('POST',`${tenant(tenantId)}/documents/${id(documentId)}/reingest`,{...options,body:{acknowledge_chunk_invalidation:input.acknowledge_chunk_invalidation??false},headers:{...options.headers,...documentRevisionHeaders(input),'If-Match':match(input.expected_sha256)}}),

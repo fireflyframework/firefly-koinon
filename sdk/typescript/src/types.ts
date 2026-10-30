@@ -1,6 +1,6 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
-import type {AttachmentCapabilities,AttachmentHistorySummary,CatalogProposal,ProposalUpdate,OrganizationKnowledgeSnapshot,McpOAuthClientInput} from './generated.js';
+import type {AttachmentCapabilities,AttachmentHistorySummary,CatalogProposal,ProposalUpdate,OrganizationKnowledgeSnapshot,McpOAuthClientInput,SourceReference} from './generated.js';
 export type Json = null | boolean | number | string | Json[] | {[key:string]:Json};
 export type ResourceKind = 'workspace'|'project'|'collection'|'corpus'|'source'|'document'|'dataset'|'chunk'|'table'|'index_version'|'query_session';
 export interface CatalogEntry {
@@ -25,7 +25,7 @@ export interface ProviderCapability {id:string;name:string;kind:string;configure
 export interface Capabilities {attachments?:AttachmentCapabilities;catalog?:{ready:boolean};agentic?:{configured:boolean;verified:boolean};domains?:Record<string,DomainCapability>;providers:ProviderCapability[];features:{id:string;name:string;available:boolean;reason?:string|null}[]}
 export interface Citation {id?:string;source_id?:string;asset_id?:string;document_id?:string;chunk_id?:string;title?:string;text?:string;page?:number|null;section?:string|null;url?:string|null}
 export interface SearchRequest {question:string;workspace_id?:string;project_id?:string;collection_id?:string;asset_ids?:string[];limit?:number;answer?:boolean}
-export interface SearchHit {id:string;title:string;text:string;score?:number|null;asset_id:string;source_id?:string;citations?:Citation[]}
+export interface SearchHit {id:string;title:string;text:string;score?:number|null;asset_id:string;source_id?:string;source_reference?:SourceReference|null;citations?:Citation[]}
 export interface SearchResponse {knowledge_settings_snapshot?:OrganizationKnowledgeSnapshot|null;hits:SearchHit[];answer?:string;citations?:Citation[]}
 export interface QueryRequest {dataset_id:string;question?:string;conversation_id?:string|null;sql?:string|null}
 export interface QueryResponse {knowledge_settings_snapshot?:OrganizationKnowledgeSnapshot|null;query_id:string;sql?:string|null;execution_status:'OK'|'REFINED_OK'|'FAILED'|'REJECTED_BY_FIREWALL'|null;preview?:Record<string,Json>[]|null;row_count?:number|null;truncated?:boolean;elapsed_ms?:number|null;chart_hint?:'line'|'bar'|'table'|'pie'|'none'|null;explanation?:string|null;clarification?:ClarificationFrame|null;grounded_summary?:Record<string,Json>|null;usage?:UsageSummary|null;snapshot_pins?:Record<string,string>;citations?:Citation[]}

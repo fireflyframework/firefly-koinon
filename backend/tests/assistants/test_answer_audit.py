@@ -94,6 +94,59 @@ async def test_owner_audit_preserves_used_revision_when_current_source_changes(a
         await context.get_bean(AnswerAudits).get("issuer|admin", "north", run.id)
 
 
+async def test_ordinary_search_part_receipt_survives_persistence_audit_and_conversation_snapshot(assistants):
+    from hashlib import sha256
+
+    from koinon.assistants.audit import AnswerAudits
+    from koinon.evidence.dtos import SourceReference
+    from koinon.evidence.ports import ConversationSnapshotPort
+
+    service, context, run, entry, data, _ = await fixture(assistants)
+    source = SourceReference(
+        id="immutable-part", asset_id=entry.id, source_id=entry.parent_id, title="Recorded document title",
+        kind="document", source_version_id="version", extraction_id="ingestion", source_part_id="part",
+        source_part_sha256=sha256(b"Verified native chunk").hexdigest(),
+        used_revision="source-part-sha256:" + sha256(b"Verified native chunk").hexdigest(),
+        quote="Verified native chunk", recorded_page=7, page_basis="recorded_loader",
+        section="Recorded scope",
+    )
+    context.container.register_instance(SourceResolverPort, SimpleSources(source))
+    queue = context.get_bean(AssistantQueue)
+    read = NativeReadFingerprint(
+        "retrieval", "documents", "north", entry.workspace_id, entry.id, "b" * 64, ("native-source",), (),
+        read_kind="document_extraction", source_version_id="version", extraction_id="ingestion",
+    )
+    result_id = await queue.evidence(run.id, "proposal-worker", "search", data, [entry.id],
+                                     capture=CapturedEvidence(data, (source,), True, (read,)))
+    await queue.policy(run.id, "proposal-worker", {"outcome": "grounded"})
+    await queue.finish(run.id, "proposal-worker")
+    message = await service.message_repository.find_by_id(run.message_id)
+    message.artifacts = [value for value in message.artifacts if value["id"] == result_id]
+    await service.message_repository.save(message)
+    audit = await context.get_bean(AnswerAudits).get("issuer|admin", "north", run.id)
+    saved = audit["sources"][0]
+    assert saved["source_part_id"] == "part" and saved["chunk_id"] is None
+    assert saved["source_version_id"] == "version" and saved["extraction_id"] == "ingestion"
+    assert saved["title"] == "Recorded document title" and saved["quote"] == "Verified native chunk"
+    assert saved["availability"] == "changed" and saved["recorded_page"] == 7
+    assert audit["native_reads"][0]["extraction_id"] == "ingestion" and audit["rlm_tools"] is None
+    snapshot = await context.get_bean(ConversationSnapshotPort).snapshot(
+        "issuer|admin", "north", run.thread_id, [run.message_id],
+    )
+    assert snapshot.source_manifest_complete and snapshot.sources == (source,)
+
+
+class SimpleSources:
+    def __init__(self, source):
+        self.source = source
+
+    async def resolve(self, subject, tenant_id, sources):
+        return (self.source.model_copy(update={
+            "availability": "changed", "current_revision": None, "title": "Today's title",
+            "quote": "Today's passage", "recorded_page": 99,
+        }),)
+
+
 async def test_legacy_audit_is_not_backfilled_from_current_configuration(assistants):
     from koinon.assistants.audit import AnswerAudits
 

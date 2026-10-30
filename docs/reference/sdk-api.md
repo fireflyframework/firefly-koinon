@@ -2,7 +2,7 @@
 
 Python, Java and TypeScript expose the same canonical headless API. The table records concrete SDK methods; it does not count browser-only authentication or retained domain routes outside this contract.
 
-This development contract contains 167 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
+This development contract contains 173 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
 
 [Download the operation manifest](sdk-contract.json) and [complete wire schemas](sdk-schemas.json). The maintained generator checks source mappings and schemas without starting the backend.
 
@@ -116,6 +116,12 @@ This development contract contains 167 operations. Resource operations require t
 | `GET /api/v1/tenants/{tenant_id}/knowledge-items/{item_id}` | `knowledge_item` | `knowledgeItems.get` | `client.knowledgeItems.get` | `KnowledgeItemView` |
 | `GET /api/v1/tenants/{tenant_id}/knowledge-items/{item_id}/versions/{version}` | `knowledge_version` | `knowledgeItems.version` | `client.knowledgeItems.version` | `KnowledgeItemView` |
 | `POST /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/files` | `append_dataset_file` | `dataset.appendFile` | `client.datasets.appendFile` | `DatasetFileAppendResult` |
+| `GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions` | `document_versions` | `documents.versions` | `client.documents.versions` | `DocumentVersionPage` |
+| `GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}` | `document_version` | `documents.version` | `client.documents.version` | `DocumentVersion` |
+| `GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/extractions` | `document_extractions` | `documents.extractions` | `client.documents.extractions` | `DocumentExtractionPage` |
+| `GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/extractions/{extraction_id}/parts` | `document_parts` | `documents.parts` | `client.documents.parts` | `DocumentPartPage` |
+| `GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/extractions/{extraction_id}/parts/{source_part_id}` | `document_part` | `documents.part` | `client.documents.part` | `DocumentPartContent` |
+| `GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/original` | `document_version_original` | `documents.versionOriginal` | `client.documents.versionOriginal` | `BinaryDownload` |
 | `POST /api/v1/tenants/{tenant_id}/external-knowledge-reviews` | `stage_external_review` | `externalReviews.stage` | `client.externalReviews.stage` | `ExternalReviewView` |
 | `GET /api/v1/tenants/{tenant_id}/external-knowledge-reviews/{review_id}` | `external_review` | `externalReviews.get` | `client.externalReviews.get` | `ExternalReviewView` |
 | `POST /api/v1/tenants/{tenant_id}/external-knowledge-reviews/{review_id}/approve` | `approve_external_review` | `externalReviews.approve` | `client.externalReviews.approve` | `KnowledgeCommitOutcome` |

@@ -420,14 +420,38 @@ class KnowledgeFacade:
                 if source_id not in admitted:
                     raise AccessDenied("Domain returned an unadmitted source", code="DOMAIN_SCOPE_MISMATCH")
                 asset, source = admitted[source_id]
+                identifier = str(hit.get("chunk_id") or hit.get("id"))
+                observed = _capture.documents.get(identifier)
+                source_reference = None
+                if observed is not None:
+                    content = hit.get("content")
+                    if (
+                        observed.workspace_id != native_workspace or observed.source_id != source_id
+                        or observed.chunk_id != identifier or not isinstance(content, str)
+                        or observed.digest != sha256(content.encode()).hexdigest()
+                        or observed.quote != content[:8000]
+                    ):
+                        raise AccessDenied(
+                            "Search hit differs from its observed source", code="EVIDENCE_UNAVAILABLE"
+                        )
+                    from koinon.knowledge.evidence_capture import document_reference
+
+                    source_reference = document_reference(
+                        observed, asset_id=asset.id, source_id=source.id, title=asset.name[:255]
+                    ).model_dump(mode="json")
+                elif any(row.workspace_id == native_workspace for row in _capture.documents.values()):
+                    raise AccessDenied(
+                        "Search hit has no matching source observation", code="EVIDENCE_UNAVAILABLE"
+                    )
                 hits.append(
                     {
-                        "id": str(hit.get("chunk_id") or hit.get("id")),
+                        "id": identifier,
                         "title": asset.name,
                         "text": hit.get("content", ""),
                         "score": hit.get("score", 0),
                         "asset_id": asset.id,
                         "source_id": source.id,
+                        "source_reference": source_reference,
                     }
                 )
             for citation in result.get("citations", []):

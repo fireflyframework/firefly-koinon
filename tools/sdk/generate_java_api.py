@@ -127,6 +127,7 @@ add(
     {"search": "search", "query": "query", "lineage": "lineage"},
 )
 add("KnowledgeController", "DatasetsApi", {"schema": "schema"})
+add("DocumentHistoryController", "DocumentsApi", {"versions":"versions", "version":"version", "extractions":"extractions", "parts":"parts", "part":"part", "original":"versionOriginal"})
 add("TableProvenanceController", "DatasetsApi", {"snapshot": "tableProvenance", "history": "tableSnapshots"})
 add("TableCoordinateController", "DatasetsApi", {"manifest":"tableCoordinates", "cells":"tableCoordinateCells", "rows":"tableCoordinateRows", "columns":"tableCoordinateColumns"})
 add("CuratedKnowledgeController", "KnowledgeIntentsApi", {"preview":"preview", "intent":"get", "confirm":"confirm", "cancel":"cancel"})
@@ -187,6 +188,9 @@ def upper(s):
 
 
 filters = {
+    "DocumentHistoryController.versions": "DocumentHistoryFilter",
+    "DocumentHistoryController.extractions": "DocumentHistoryFilter",
+    "DocumentHistoryController.parts": "DocumentPartFilter",
     "McpOAuthClientController.page": "McpOAuthClientFilter",
     "OrganizationChatController.get": "OrganizationChatFilter",
     "AuthorizedApplicationController.list": "AuthorizedApplicationFilter",

@@ -1,5 +1,5 @@
 {
-  "definition_count": 306,
+  "definition_count": 315,
   "excluded_definitions": [
     "AttachmentUpload",
     "AvatarUpload",
@@ -2041,6 +2041,53 @@
         "availability": "available"
       }
     },
+    "DocumentExtraction": {
+      "document_id": "document_id-value",
+      "catalog_source_id": "catalog_source_id-value",
+      "native_source_id": "native_source_id-value",
+      "source_version_id": "source_version_id-value",
+      "extraction_id": "extraction_id-value",
+      "purpose": "purpose-value",
+      "coverage": "coverage-value",
+      "normalized_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "created_at": "2026-10-27T12:34:56Z",
+      "predecessor_extraction_id": "predecessor_extraction_id-value"
+    },
+    "DocumentExtractionPage": {
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1,
+      "has_next": false,
+      "has_previous": false,
+      "items": [
+        {
+          "document_id": "document_id-value",
+          "catalog_source_id": "catalog_source_id-value",
+          "native_source_id": "native_source_id-value",
+          "source_version_id": "source_version_id-value",
+          "extraction_id": "extraction_id-value",
+          "purpose": "purpose-value",
+          "coverage": "coverage-value",
+          "normalized_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": "2026-10-27T12:34:56Z",
+          "predecessor_extraction_id": "predecessor_extraction_id-value"
+        }
+      ]
+    },
+    "DocumentHistoryIdentity": {
+      "document_id": "document_id-value",
+      "catalog_source_id": "catalog_source_id-value",
+      "native_source_id": "native_source_id-value"
+    },
+    "DocumentHistoryPagination": {
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1,
+      "has_next": false,
+      "has_previous": false
+    },
     "DocumentKnowledgeBounds": {
       "retrieval_top_k": {
         "minimum": 1,
@@ -2141,8 +2188,104 @@
       "rlm_self_consistency": 1,
       "rlm_extended_reasoning": false
     },
+    "DocumentPartContent": {
+      "document_id": "document_id-value",
+      "catalog_source_id": "catalog_source_id-value",
+      "native_source_id": "native_source_id-value",
+      "source_version_id": "source_version_id-value",
+      "extraction_id": "extraction_id-value",
+      "source_part_id": "source_part_id-value",
+      "kind": "chunk",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "text": "text-value",
+      "recorded_page": 1,
+      "page_basis": "recorded_loader",
+      "raw_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "normalized_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "DocumentPartPage": {
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1,
+      "has_next": false,
+      "has_previous": false,
+      "items": [
+        {
+          "document_id": "document_id-value",
+          "catalog_source_id": "catalog_source_id-value",
+          "native_source_id": "native_source_id-value",
+          "source_version_id": "source_version_id-value",
+          "extraction_id": "extraction_id-value",
+          "source_part_id": "source_part_id-value",
+          "kind": "artifact",
+          "ordinal": 1,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "recorded_page": 1,
+          "page_basis": "recorded_loader",
+          "char_start": 1,
+          "char_end": 1,
+          "offset_basis": "offset_basis-value",
+          "created_at": "2026-10-27T12:34:56Z"
+        }
+      ]
+    },
+    "DocumentPartSummary": {
+      "document_id": "document_id-value",
+      "catalog_source_id": "catalog_source_id-value",
+      "native_source_id": "native_source_id-value",
+      "source_version_id": "source_version_id-value",
+      "extraction_id": "extraction_id-value",
+      "source_part_id": "source_part_id-value",
+      "kind": "artifact",
+      "ordinal": 1,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "recorded_page": 1,
+      "page_basis": "recorded_loader",
+      "char_start": 1,
+      "char_end": 1,
+      "offset_basis": "offset_basis-value",
+      "created_at": "2026-10-27T12:34:56Z"
+    },
     "DocumentReingestInput": {
       "acknowledge_chunk_invalidation": false
+    },
+    "DocumentVersion": {
+      "document_id": "document_id-value",
+      "catalog_source_id": "catalog_source_id-value",
+      "native_source_id": "native_source_id-value",
+      "source_version_id": "source_version_id-value",
+      "filename": "filename-value",
+      "media_type": "media_type-value",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "byte_size": 1,
+      "actor": "actor-value",
+      "created_at": "2026-10-27T12:34:56Z",
+      "predecessor_source_version_id": "predecessor_source_version_id-value"
+    },
+    "DocumentVersionPage": {
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1,
+      "has_next": false,
+      "has_previous": false,
+      "items": [
+        {
+          "document_id": "document_id-value",
+          "catalog_source_id": "catalog_source_id-value",
+          "native_source_id": "native_source_id-value",
+          "source_version_id": "source_version_id-value",
+          "filename": "filename-value",
+          "media_type": "media_type-value",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "byte_size": 1,
+          "actor": "actor-value",
+          "created_at": "2026-10-27T12:34:56Z",
+          "predecessor_source_version_id": "predecessor_source_version_id-value"
+        }
+      ]
     },
     "DomainCapability": {
       "installed": false,
@@ -2245,6 +2388,31 @@
             "asset_id": "asset_id-value",
             "source_id": "source_id-value",
             "score": 0.25,
+            "source_reference": {
+              "id": "id-value",
+              "asset_id": "asset_id-value",
+              "source_id": "source_id-value",
+              "title": "title-value",
+              "kind": "document",
+              "knowledge_item_id": "knowledge_item_id-value",
+              "knowledge_version_id": "knowledge_version_id-value",
+              "knowledge_version": 1,
+              "source_version_id": "source_version_id-value",
+              "extraction_id": "extraction_id-value",
+              "source_part_id": "source_part_id-value",
+              "source_part_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "recorded_page": 1,
+              "page_basis": "recorded_loader",
+              "used_revision": "used_revision-value",
+              "snapshot_id": "snapshot_id-value",
+              "query_id": "query_id-value",
+              "chunk_id": "chunk_id-value",
+              "page": 1,
+              "section": "section-value",
+              "quote": "quote-value",
+              "current_revision": "current_revision-value",
+              "availability": "available"
+            },
             "citations": [
               {
                 "document_id": "document_id-value",
@@ -5803,6 +5971,31 @@
       "asset_id": "asset_id-value",
       "source_id": "source_id-value",
       "score": 0.25,
+      "source_reference": {
+        "id": "id-value",
+        "asset_id": "asset_id-value",
+        "source_id": "source_id-value",
+        "title": "title-value",
+        "kind": "document",
+        "knowledge_item_id": "knowledge_item_id-value",
+        "knowledge_version_id": "knowledge_version_id-value",
+        "knowledge_version": 1,
+        "source_version_id": "source_version_id-value",
+        "extraction_id": "extraction_id-value",
+        "source_part_id": "source_part_id-value",
+        "source_part_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "recorded_page": 1,
+        "page_basis": "recorded_loader",
+        "used_revision": "used_revision-value",
+        "snapshot_id": "snapshot_id-value",
+        "query_id": "query_id-value",
+        "chunk_id": "chunk_id-value",
+        "page": 1,
+        "section": "section-value",
+        "quote": "quote-value",
+        "current_revision": "current_revision-value",
+        "availability": "available"
+      },
       "citations": [
         {
           "document_id": "document_id-value",
@@ -5868,6 +6061,31 @@
           "asset_id": "asset_id-value",
           "source_id": "source_id-value",
           "score": 0.25,
+          "source_reference": {
+            "id": "id-value",
+            "asset_id": "asset_id-value",
+            "source_id": "source_id-value",
+            "title": "title-value",
+            "kind": "document",
+            "knowledge_item_id": "knowledge_item_id-value",
+            "knowledge_version_id": "knowledge_version_id-value",
+            "knowledge_version": 1,
+            "source_version_id": "source_version_id-value",
+            "extraction_id": "extraction_id-value",
+            "source_part_id": "source_part_id-value",
+            "source_part_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "recorded_page": 1,
+            "page_basis": "recorded_loader",
+            "used_revision": "used_revision-value",
+            "snapshot_id": "snapshot_id-value",
+            "query_id": "query_id-value",
+            "chunk_id": "chunk_id-value",
+            "page": 1,
+            "section": "section-value",
+            "quote": "quote-value",
+            "current_revision": "current_revision-value",
+            "availability": "available"
+          },
           "citations": [
             {
               "document_id": "document_id-value",

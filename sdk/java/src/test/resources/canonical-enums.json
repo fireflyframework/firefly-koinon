@@ -168,6 +168,19 @@
   "DocumentKnowledgeCapabilitiesRlmRecordedViewsReason": [
     "RLM_DOCUMENT_VIEWS_REQUIRED"
   ],
+  "DocumentPartContentKind": [
+    "chunk",
+    "page"
+  ],
+  "SourceReferencePageBasis": [
+    "recorded_loader"
+  ],
+  "DocumentPartSummaryKind": [
+    "artifact",
+    "section",
+    "chunk",
+    "page"
+  ],
   "EntraCredentialKind": [
     "entra"
   ],
@@ -539,9 +552,6 @@
     "document",
     "dataset",
     "knowledge_version"
-  ],
-  "SourceReferencePageBasis": [
-    "recorded_loader"
   ],
   "SourceReferenceAvailability": [
     "available",

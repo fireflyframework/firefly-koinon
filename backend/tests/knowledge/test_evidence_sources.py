@@ -37,21 +37,22 @@ def prepared():
     return NativeSourceResolver(knowledge, domains, SimpleNamespace()), knowledge, repository
 
 
-async def test_native_document_quote_and_title_override_untrusted_citation_presentation():
+async def test_source_replay_preserves_saved_presentation_and_unknown_historical_page():
     service, _, _ = prepared()
     ref = SourceReference(
         id="citation",
         asset_id="document",
         source_id="source",
-        title="Forged title",
+        title="Recorded title",
         kind="document",
         chunk_id="chunk",
         quote="Verified native",
         used_revision="a" * 64,
     )
     (actual,) = await service.resolve("owner", "tenant", (ref,))
-    assert actual.title == "Actual title" and actual.quote == "Verified native"
-    assert actual.current_revision == "a" * 64 and actual.availability == "available" and actual.page == 2
+    assert actual.title == "Recorded title" and actual.quote == "Verified native"
+    assert actual.current_revision == "a" * 64 and actual.availability == "available"
+    assert actual.page is None and actual.section is None
 
 
 async def test_mixed_foreign_source_is_denied_before_any_native_content_read():
@@ -80,7 +81,9 @@ async def test_reingested_missing_chunk_never_becomes_a_fabricated_current_quote
     )
     (current,) = await service.resolve("owner", "tenant", (ref,))
     assert (
-        current.availability == "changed" and current.current_revision == "a" * 64 and current.quote is None
+        current.availability == "changed"
+        and current.current_revision == "a" * 64
+        and current.quote == "Old historical quote"
     )
 
 
@@ -115,3 +118,15 @@ async def test_captured_chunk_revision_uses_exact_chunk_hash_not_current_origina
     assert (
         missing.availability == "changed" and missing.current_revision is None and missing.quote == original
     )
+
+
+async def test_legacy_native_read_never_fills_unrecorded_coordinates_from_current_chunks():
+    service, knowledge, _ = prepared()
+    ref = SourceReference(
+        id="legacy", asset_id="document", title="Not recorded", kind="document", chunk_id="chunk",
+        used_revision="a" * 64,
+    )
+    resolved = await service.document("owner", "tenant", ref, knowledge.binding.return_value)
+    assert resolved["quote"] is None and resolved["page"] is None and resolved["section"] is None
+    (actual,) = await service.resolve("owner", "tenant", (ref,))
+    assert actual.source_id is None and actual.title == "Not recorded"

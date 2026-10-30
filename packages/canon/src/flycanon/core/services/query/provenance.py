@@ -253,6 +253,17 @@ async def database(session, rows):
     )
 
 
+async def bind_retrieval_parts(hits):
+    scope = current()
+    if scope is not None:
+        hook = getattr(scope.observer, "document_retrieval_parts", None)
+        if callable(hook):
+            await scope.observer.authorize()
+            bound: Any = hook(hits, scope)
+            return await bound
+    return hits
+
+
 def hydrated(hits):
     scope = current()
     if scope is not None:

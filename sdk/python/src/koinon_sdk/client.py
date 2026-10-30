@@ -74,6 +74,13 @@ from koinon_sdk.curated import (
     KnowledgeItemView,
 )
 from koinon_sdk.dataset_files import DatasetFileAppendResult
+from koinon_sdk.document_history import (
+    DocumentExtractionPage,
+    DocumentPartContent,
+    DocumentPartPage,
+    DocumentVersion,
+    DocumentVersionPage,
+)
 from koinon_sdk.evidence import EvidenceManifest
 from koinon_sdk.exports import (
     Export,
@@ -1024,6 +1031,112 @@ class KoinonClient:
                 + "/snapshots",
                 params={"page": page, "page_size": page_size},
             )
+        )
+
+    def _document_version_path(
+        self, tenant_id: str, document_id: str, source_version_id: str | None = None
+    ) -> str:
+        path = self._tenant(tenant_id) + "/documents/" + quote(document_id, safe="") + "/versions"
+        return path + "/" + quote(source_version_id, safe="") if source_version_id is not None else path
+
+    async def document_versions(
+        self,
+        tenant_id: str,
+        document_id: str,
+        *,
+        page: int = 1,
+        page_size: int = 25,
+    ) -> DocumentVersionPage:
+        return DocumentVersionPage.model_validate(
+            await self._request(
+                "GET",
+                self._document_version_path(tenant_id, document_id),
+                params={"page": page, "page_size": page_size},
+            )
+        )
+
+    async def document_version(
+        self,
+        tenant_id: str,
+        document_id: str,
+        source_version_id: str,
+    ) -> DocumentVersion:
+        return DocumentVersion.model_validate(
+            await self._request(
+                "GET",
+                self._document_version_path(tenant_id, document_id, source_version_id),
+            )
+        )
+
+    async def document_extractions(
+        self,
+        tenant_id: str,
+        document_id: str,
+        source_version_id: str,
+        *,
+        page: int = 1,
+        page_size: int = 25,
+    ) -> DocumentExtractionPage:
+        return DocumentExtractionPage.model_validate(
+            await self._request(
+                "GET",
+                self._document_version_path(tenant_id, document_id, source_version_id) + "/extractions",
+                params={"page": page, "page_size": page_size},
+            )
+        )
+
+    async def document_parts(
+        self,
+        tenant_id: str,
+        document_id: str,
+        source_version_id: str,
+        extraction_id: str,
+        *,
+        kind: Literal["artifact", "section", "chunk", "page"] | None = None,
+        page: int = 1,
+        page_size: int = 25,
+    ) -> DocumentPartPage:
+        filters: dict[str, int | str] = {"page": page, "page_size": page_size}
+        if kind is not None:
+            filters["kind"] = kind
+        return DocumentPartPage.model_validate(
+            await self._request(
+                "GET",
+                self._document_version_path(tenant_id, document_id, source_version_id)
+                + "/extractions/"
+                + quote(extraction_id, safe="")
+                + "/parts",
+                params=filters,
+            )
+        )
+
+    async def document_part(
+        self,
+        tenant_id: str,
+        document_id: str,
+        source_version_id: str,
+        extraction_id: str,
+        source_part_id: str,
+    ) -> DocumentPartContent:
+        return DocumentPartContent.model_validate(
+            await self._request(
+                "GET",
+                self._document_version_path(tenant_id, document_id, source_version_id)
+                + "/extractions/"
+                + quote(extraction_id, safe="")
+                + "/parts/"
+                + quote(source_part_id, safe=""),
+            )
+        )
+
+    async def document_version_original(
+        self,
+        tenant_id: str,
+        document_id: str,
+        source_version_id: str,
+    ) -> BinaryDownload:
+        return await self._download(
+            self._document_version_path(tenant_id, document_id, source_version_id) + "/original",
         )
 
     async def document_chunks(

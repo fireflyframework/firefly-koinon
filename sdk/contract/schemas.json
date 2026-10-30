@@ -4587,6 +4587,217 @@
       "title": "DocumentEvidence",
       "type": "object"
     },
+    "DocumentExtraction": {
+      "additionalProperties": true,
+      "properties": {
+        "document_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Document Id",
+          "type": "string"
+        },
+        "catalog_source_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Catalog Source Id",
+          "type": "string"
+        },
+        "native_source_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Native Source Id",
+          "type": "string"
+        },
+        "source_version_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Source Version Id",
+          "type": "string"
+        },
+        "extraction_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Extraction Id",
+          "type": "string"
+        },
+        "purpose": {
+          "maxLength": 32,
+          "minLength": 1,
+          "title": "Purpose",
+          "type": "string"
+        },
+        "coverage": {
+          "maxLength": 32,
+          "minLength": 1,
+          "title": "Coverage",
+          "type": "string"
+        },
+        "normalized_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Normalized Sha256",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "predecessor_extraction_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Predecessor Extraction Id"
+        }
+      },
+      "required": [
+        "document_id",
+        "catalog_source_id",
+        "native_source_id",
+        "source_version_id",
+        "extraction_id",
+        "purpose",
+        "coverage",
+        "normalized_sha256",
+        "created_at"
+      ],
+      "title": "DocumentExtraction",
+      "type": "object"
+    },
+    "DocumentExtractionPage": {
+      "additionalProperties": true,
+      "properties": {
+        "total": {
+          "minimum": 0,
+          "title": "Total",
+          "type": "integer"
+        },
+        "page": {
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "pages": {
+          "minimum": 0,
+          "title": "Pages",
+          "type": "integer"
+        },
+        "has_next": {
+          "title": "Has Next",
+          "type": "boolean"
+        },
+        "has_previous": {
+          "title": "Has Previous",
+          "type": "boolean"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/DocumentExtraction"
+          },
+          "maxItems": 100,
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "total",
+        "page",
+        "page_size",
+        "pages",
+        "has_next",
+        "has_previous",
+        "items"
+      ],
+      "title": "DocumentExtractionPage",
+      "type": "object"
+    },
+    "DocumentHistoryIdentity": {
+      "additionalProperties": true,
+      "properties": {
+        "document_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Document Id",
+          "type": "string"
+        },
+        "catalog_source_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Catalog Source Id",
+          "type": "string"
+        },
+        "native_source_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Native Source Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "document_id",
+        "catalog_source_id",
+        "native_source_id"
+      ],
+      "title": "DocumentHistoryIdentity",
+      "type": "object"
+    },
+    "DocumentHistoryPagination": {
+      "additionalProperties": true,
+      "properties": {
+        "total": {
+          "minimum": 0,
+          "title": "Total",
+          "type": "integer"
+        },
+        "page": {
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "pages": {
+          "minimum": 0,
+          "title": "Pages",
+          "type": "integer"
+        },
+        "has_next": {
+          "title": "Has Next",
+          "type": "boolean"
+        },
+        "has_previous": {
+          "title": "Has Previous",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "total",
+        "page",
+        "page_size",
+        "pages",
+        "has_next",
+        "has_previous"
+      ],
+      "title": "DocumentHistoryPagination",
+      "type": "object"
+    },
     "DocumentKnowledgeBounds": {
       "additionalProperties": false,
       "properties": {
@@ -4777,6 +4988,313 @@
       "title": "DocumentKnowledgeSettings",
       "type": "object"
     },
+    "DocumentPartContent": {
+      "additionalProperties": true,
+      "properties": {
+        "document_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Document Id",
+          "type": "string"
+        },
+        "catalog_source_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Catalog Source Id",
+          "type": "string"
+        },
+        "native_source_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Native Source Id",
+          "type": "string"
+        },
+        "source_version_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Source Version Id",
+          "type": "string"
+        },
+        "extraction_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Extraction Id",
+          "type": "string"
+        },
+        "source_part_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Source Part Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "chunk",
+            "page"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 1000000,
+          "title": "Text",
+          "type": "string"
+        },
+        "recorded_page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recorded Page"
+        },
+        "page_basis": {
+          "const": "recorded_loader",
+          "title": "Page Basis",
+          "type": "string"
+        },
+        "raw_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Raw Sha256",
+          "type": "string"
+        },
+        "normalized_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Normalized Sha256",
+          "type": "string"
+        },
+        "input_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Input Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "document_id",
+        "catalog_source_id",
+        "native_source_id",
+        "source_version_id",
+        "extraction_id",
+        "source_part_id",
+        "kind",
+        "sha256",
+        "text",
+        "page_basis",
+        "raw_sha256",
+        "normalized_sha256",
+        "input_sha256"
+      ],
+      "title": "DocumentPartContent",
+      "type": "object"
+    },
+    "DocumentPartPage": {
+      "additionalProperties": true,
+      "properties": {
+        "total": {
+          "minimum": 0,
+          "title": "Total",
+          "type": "integer"
+        },
+        "page": {
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "pages": {
+          "minimum": 0,
+          "title": "Pages",
+          "type": "integer"
+        },
+        "has_next": {
+          "title": "Has Next",
+          "type": "boolean"
+        },
+        "has_previous": {
+          "title": "Has Previous",
+          "type": "boolean"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/DocumentPartSummary"
+          },
+          "maxItems": 100,
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "total",
+        "page",
+        "page_size",
+        "pages",
+        "has_next",
+        "has_previous",
+        "items"
+      ],
+      "title": "DocumentPartPage",
+      "type": "object"
+    },
+    "DocumentPartSummary": {
+      "additionalProperties": true,
+      "properties": {
+        "document_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Document Id",
+          "type": "string"
+        },
+        "catalog_source_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Catalog Source Id",
+          "type": "string"
+        },
+        "native_source_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Native Source Id",
+          "type": "string"
+        },
+        "source_version_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Source Version Id",
+          "type": "string"
+        },
+        "extraction_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Extraction Id",
+          "type": "string"
+        },
+        "source_part_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Source Part Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "artifact",
+            "section",
+            "chunk",
+            "page"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "ordinal": {
+          "minimum": 0,
+          "title": "Ordinal",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "recorded_page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recorded Page"
+        },
+        "page_basis": {
+          "anyOf": [
+            {
+              "const": "recorded_loader",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page Basis"
+        },
+        "char_start": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Char Start"
+        },
+        "char_end": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Char End"
+        },
+        "offset_basis": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Offset Basis"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "document_id",
+        "catalog_source_id",
+        "native_source_id",
+        "source_version_id",
+        "extraction_id",
+        "source_part_id",
+        "kind",
+        "ordinal",
+        "sha256",
+        "created_at"
+      ],
+      "title": "DocumentPartSummary",
+      "type": "object"
+    },
     "DocumentReingestInput": {
       "additionalProperties": false,
       "properties": {
@@ -4787,6 +5305,167 @@
         }
       },
       "title": "DocumentReingestInput",
+      "type": "object"
+    },
+    "DocumentVersion": {
+      "additionalProperties": true,
+      "properties": {
+        "document_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Document Id",
+          "type": "string"
+        },
+        "catalog_source_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Catalog Source Id",
+          "type": "string"
+        },
+        "native_source_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Native Source Id",
+          "type": "string"
+        },
+        "source_version_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Source Version Id",
+          "type": "string"
+        },
+        "filename": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Filename"
+        },
+        "media_type": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Media Type"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "byte_size": {
+          "minimum": 0,
+          "title": "Byte Size",
+          "type": "integer"
+        },
+        "actor": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Actor"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "predecessor_source_version_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Predecessor Source Version Id"
+        }
+      },
+      "required": [
+        "document_id",
+        "catalog_source_id",
+        "native_source_id",
+        "source_version_id",
+        "sha256",
+        "byte_size",
+        "created_at"
+      ],
+      "title": "DocumentVersion",
+      "type": "object"
+    },
+    "DocumentVersionPage": {
+      "additionalProperties": true,
+      "properties": {
+        "total": {
+          "minimum": 0,
+          "title": "Total",
+          "type": "integer"
+        },
+        "page": {
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "pages": {
+          "minimum": 0,
+          "title": "Pages",
+          "type": "integer"
+        },
+        "has_next": {
+          "title": "Has Next",
+          "type": "boolean"
+        },
+        "has_previous": {
+          "title": "Has Previous",
+          "type": "boolean"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/DocumentVersion"
+          },
+          "maxItems": 100,
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "total",
+        "page",
+        "page_size",
+        "pages",
+        "has_next",
+        "has_previous",
+        "items"
+      ],
+      "title": "DocumentVersionPage",
       "type": "object"
     },
     "DomainCapability": {
@@ -16156,6 +16835,17 @@
           "default": null,
           "title": "Score"
         },
+        "source_reference": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceReference"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "citations": {
           "items": {
             "$ref": "#/$defs/Citation"
@@ -20146,6 +20836,33 @@
     },
     "McpOAuthClientPage": {
       "$ref": "#/$defs/McpOAuthClientPage"
+    },
+    "DocumentHistoryIdentity": {
+      "$ref": "#/$defs/DocumentHistoryIdentity"
+    },
+    "DocumentVersion": {
+      "$ref": "#/$defs/DocumentVersion"
+    },
+    "DocumentExtraction": {
+      "$ref": "#/$defs/DocumentExtraction"
+    },
+    "DocumentPartSummary": {
+      "$ref": "#/$defs/DocumentPartSummary"
+    },
+    "DocumentPartContent": {
+      "$ref": "#/$defs/DocumentPartContent"
+    },
+    "DocumentHistoryPagination": {
+      "$ref": "#/$defs/DocumentHistoryPagination"
+    },
+    "DocumentVersionPage": {
+      "$ref": "#/$defs/DocumentVersionPage"
+    },
+    "DocumentExtractionPage": {
+      "$ref": "#/$defs/DocumentExtractionPage"
+    },
+    "DocumentPartPage": {
+      "$ref": "#/$defs/DocumentPartPage"
     },
     "Page[AuditEvent]": {
       "$ref": "#/$defs/Page_AuditEvent_"

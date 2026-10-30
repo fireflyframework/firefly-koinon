@@ -20,6 +20,7 @@ enums = {
 names = {
     tuple(sorted(v)): k
     for k, v in {
+        "SourceReferencePageBasis": ["recorded_loader"],
         "ResourceKind": [
             "workspace",
             "project",
@@ -240,6 +241,15 @@ for name, definition in defs.items():
     )
     copies = []
     accessors = []
+    if name == "SearchHit":
+        previous = [field for field in fields if field[0] != "source_reference"]
+        body += (
+            "    public SearchHit("
+            + ", ".join(kind + " " + key for _, key, kind, _, _ in previous)
+            + "){this("
+            + ",".join("null" if wire == "source_reference" else key for wire, key, _, _, _ in fields)
+            + ");}\n"
+        )
     if name == "AttachmentObservation":
         body += (
             "    public AttachmentObservation { configured = Boolean.TRUE.equals(configured); }\n"

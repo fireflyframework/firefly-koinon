@@ -308,6 +308,40 @@ export interface DocumentEvidence {
  "kind"?: "document_passage";
  "source": SourceReference;
 }
+export interface DocumentExtraction {
+ "document_id": string;
+ "catalog_source_id": string;
+ "native_source_id": string;
+ "source_version_id": string;
+ "extraction_id": string;
+ "purpose": string;
+ "coverage": string;
+ "normalized_sha256": string;
+ "created_at": string;
+ "predecessor_extraction_id"?: string | null;
+}
+export interface DocumentExtractionPage {
+ "total": number;
+ "page": number;
+ "page_size": number;
+ "pages": number;
+ "has_next": boolean;
+ "has_previous": boolean;
+ "items": Array<DocumentExtraction>;
+}
+export interface DocumentHistoryIdentity {
+ "document_id": string;
+ "catalog_source_id": string;
+ "native_source_id": string;
+}
+export interface DocumentHistoryPagination {
+ "total": number;
+ "page": number;
+ "page_size": number;
+ "pages": number;
+ "has_next": boolean;
+ "has_previous": boolean;
+}
 export interface DocumentKnowledgeBounds {
  "retrieval_top_k": KnowledgeIntegerBounds;
  "retrieval_per_query_k": KnowledgeIntegerBounds;
@@ -341,6 +375,70 @@ export interface DocumentKnowledgeSettings {
  "rlm_max_depth": number;
  "rlm_self_consistency": number;
  "rlm_extended_reasoning": boolean;
+}
+export interface DocumentPartContent {
+ "document_id": string;
+ "catalog_source_id": string;
+ "native_source_id": string;
+ "source_version_id": string;
+ "extraction_id": string;
+ "source_part_id": string;
+ "kind": "chunk" | "page";
+ "sha256": string;
+ "text": string;
+ "recorded_page"?: number | null;
+ "page_basis": "recorded_loader";
+ "raw_sha256": string;
+ "normalized_sha256": string;
+ "input_sha256": string;
+}
+export interface DocumentPartPage {
+ "total": number;
+ "page": number;
+ "page_size": number;
+ "pages": number;
+ "has_next": boolean;
+ "has_previous": boolean;
+ "items": Array<DocumentPartSummary>;
+}
+export interface DocumentPartSummary {
+ "document_id": string;
+ "catalog_source_id": string;
+ "native_source_id": string;
+ "source_version_id": string;
+ "extraction_id": string;
+ "source_part_id": string;
+ "kind": "artifact" | "section" | "chunk" | "page";
+ "ordinal": number;
+ "sha256": string;
+ "recorded_page"?: number | null;
+ "page_basis"?: "recorded_loader" | null;
+ "char_start"?: number | null;
+ "char_end"?: number | null;
+ "offset_basis"?: string | null;
+ "created_at": string;
+}
+export interface DocumentVersion {
+ "document_id": string;
+ "catalog_source_id": string;
+ "native_source_id": string;
+ "source_version_id": string;
+ "filename"?: string | null;
+ "media_type"?: string | null;
+ "sha256": string;
+ "byte_size": number;
+ "actor"?: string | null;
+ "created_at": string;
+ "predecessor_source_version_id"?: string | null;
+}
+export interface DocumentVersionPage {
+ "total": number;
+ "page": number;
+ "page_size": number;
+ "pages": number;
+ "has_next": boolean;
+ "has_previous": boolean;
+ "items": Array<DocumentVersion>;
 }
 export interface EntraCredential {
  "kind": "entra";

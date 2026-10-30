@@ -99,3 +99,27 @@ async def test_revoked_originating_token_blocks_snapshot_before_delivery(assista
         await context.get_bean(ConversationSnapshotPort).snapshot(
             "issuer|viewer", "north", thread["id"], [run.message_id]
         )
+
+
+async def test_legacy_missing_source_title_is_not_inferred_from_current_catalog():
+    from koinon.assistants.snapshots import ConversationSnapshots
+
+    result = SimpleNamespace(
+        id="result", run_id="run", kind="search",
+        payload={"asset_ids": ["document"], "data": {"hits": [
+            {"asset_id": "document", "id": "old-chunk", "text": "Recorded old passage"},
+        ]}},
+    )
+    service = SimpleNamespace(
+        results=SimpleNamespace(find_all=AsyncMock(return_value=[result])),
+        validate_scope=AsyncMock(),
+        catalog=SimpleNamespace(get=AsyncMock(return_value=SimpleNamespace(
+            id="document", kind="document", name="Today's renamed document",
+        ))),
+    )
+    run = SimpleNamespace(id="run", scope={})
+    message = SimpleNamespace(artifacts=[{"id": "result", "kind": "openui", "run_id": "run"}],
+                              role="assistant")
+    refs, _, complete = await ConversationSnapshots(service, None)._sources("owner", "tenant", run, message)
+    assert not complete and refs[0].title == "Not recorded"
+    assert refs[0].quote == "Recorded old passage" and refs[0].source_version_id is None

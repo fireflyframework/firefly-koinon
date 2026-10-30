@@ -124,6 +124,15 @@ from koinon_sdk.curated import (
     UserStatementOrigin,
 )
 from koinon_sdk.dataset_files import DatasetFileAppendResult
+from koinon_sdk.document_history import (
+    DocumentExtraction,
+    DocumentExtractionPage,
+    DocumentPartContent,
+    DocumentPartPage,
+    DocumentPartSummary,
+    DocumentVersion,
+    DocumentVersionPage,
+)
 from koinon_sdk.evidence import (
     ConversationIdentity,
     ConversationMessage,
@@ -669,4 +678,15 @@ __all__ += [
     "McpOAuthClientRevision",
     "McpOAuthClientValues",
     "McpOAuthScope",
+]
+
+
+__all__ += [
+    "DocumentVersion",
+    "DocumentVersionPage",
+    "DocumentExtraction",
+    "DocumentExtractionPage",
+    "DocumentPartSummary",
+    "DocumentPartPage",
+    "DocumentPartContent",
 ]

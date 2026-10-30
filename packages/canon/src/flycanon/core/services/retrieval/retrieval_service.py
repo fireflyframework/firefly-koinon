@@ -421,6 +421,7 @@ class RetrievalService:
                     metadata=metadata,
                 )
             )
+        hits = await provenance.bind_retrieval_parts(hits)
         provenance.hydrated(hits)
         return hits
 

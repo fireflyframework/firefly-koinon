@@ -315,8 +315,12 @@ class NativeKnowledgeEvidence:
             if arguments.get("answer", False):
                 from koinon.knowledge.rlm_provenance import verified_rlm_answer
 
-                complete = complete and verified_rlm_answer(receipt, data, admitted)
-                if any(row.stage.startswith("rlm.") for row in receipt.native_reads):
+                rlm = any(row.stage.startswith("rlm.") for row in receipt.native_reads)
+                complete = complete and (
+                    verified_rlm_answer(receipt, data, admitted)
+                    if rlm else receipt.verified_document_answer(data)
+                )
+                if rlm:
                     used = execution_views(receipt)
                     used_assets = {
                         chain[0].id for key, (chain, _) in admitted.items() if key in used

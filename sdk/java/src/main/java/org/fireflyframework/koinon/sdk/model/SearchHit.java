@@ -15,8 +15,10 @@ public record SearchHit(
     @JsonProperty("asset_id") String assetId,
     @JsonProperty("source_id") String sourceId,
     @JsonProperty("score") BigDecimal score,
+    @JsonProperty("source_reference") SourceReference sourceReference,
     @JsonProperty("citations") List<Citation> citations
 ) {
+    public SearchHit(String id, String title, String text, String assetId, String sourceId, BigDecimal score, List<Citation> citations){this(id,title,text,assetId,sourceId,score,null,citations);}
     public SearchHit {
         citations=citations==null?null:List.copyOf(citations);
     }

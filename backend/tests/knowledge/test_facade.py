@@ -208,6 +208,68 @@ async def test_search_uses_binding_and_limits_native_sources_before_retrieval(co
         await facade.search("issuer|reader", "north", question="facts")
 
 
+@pytest.mark.parametrize("answer", [False, True])
+async def test_direct_search_exposes_the_observed_immutable_source_reference(context, answer):
+    from hashlib import sha256
+
+    from koinon.knowledge.capture_dtos import DocumentRead
+
+    facade, _, domains, tree, _ = context
+    uploaded = await upload(context)
+
+    async def search(**arguments):
+        capture = arguments["_capture"]
+        capture.documents["projection"] = DocumentRead(
+            "native-workspace", "native-source", "projection", sha256(b"Exact immutable text").hexdigest(),
+            "Exact immutable text", None, "Recorded section", "version", "ingestion", "part",
+            sha256(b"Exact immutable text").hexdigest(), 7,
+        )
+        return {"hits": [{"chunk_id": "projection", "source_id": "native-source",
+                          "content": "Exact immutable text", "score": 0.9,
+                          "metadata": {"source_version_id": "forged-version", "source_part_id": "forged"}}],
+                "answer": "Recorded answer", "citations": []}
+
+    domains.search.side_effect = search
+    response = await facade.search("issuer|reader", "north", question="facts", answer=answer,
+                                   workspace_id=tree["workspace"].id)
+    found = response["hits"][0]
+    assert found["id"] == "projection" and found["text"] == "Exact immutable text"
+    reference = found["source_reference"]
+    assert reference["asset_id"] == uploaded["assets"][0]["id"]
+    assert reference["source_id"] == uploaded["source"]["id"]
+    assert (reference["source_version_id"], reference["extraction_id"], reference["source_part_id"]) == (
+        "version", "ingestion", "part",
+    )
+    assert reference["chunk_id"] is None and reference["recorded_page"] == 7
+    assert reference["quote"] == "Exact immutable text" and reference["availability"] == "unverified"
+
+
+@pytest.mark.parametrize("tamper", ["workspace", "source", "id", "text"])
+async def test_direct_search_rejects_hits_that_differ_from_their_observed_receipt(context, tamper):
+    from hashlib import sha256
+
+    from koinon.catalog.errors import AccessDenied
+    from koinon.knowledge.capture_dtos import DocumentRead
+
+    facade, _, domains, _, _ = context
+    await upload(context)
+
+    async def search(**arguments):
+        arguments["_capture"].documents["projection"] = DocumentRead(
+            "wrong-space" if tamper == "workspace" else "native-workspace",
+            "wrong-source" if tamper == "source" else "native-source",
+            "projection", sha256(b"Exact text").hexdigest(), "Exact text", None, None,
+            "version", "ingestion", "part", sha256(b"Exact text").hexdigest(), None,
+        )
+        return {"hits": [{"chunk_id": "wrong-id" if tamper == "id" else "projection",
+                          "source_id": "native-source",
+                          "content": "Unobserved text" if tamper == "text" else "Exact text"}]}
+
+    domains.search.side_effect = search
+    with pytest.raises(AccessDenied):
+        await facade.search("issuer|reader", "north", question="facts")
+
+
 async def test_dataset_query_requires_role_and_uses_durable_native_identity(context):
     from koinon.catalog.errors import AccessDenied
 

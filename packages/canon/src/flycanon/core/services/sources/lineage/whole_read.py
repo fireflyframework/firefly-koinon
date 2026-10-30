@@ -82,6 +82,28 @@ class WholeDocumentReader:
     ) -> tuple[WholeDocumentPart, ...]:
         from flycanon.core.services.sources.lineage.exact_parts import read_exact_parts
 
+        await self.lineage.require_schema()
+        async with self.lineage.sources.session() as session:
+            purpose = await session.scalar(
+                select(source_extractions.c.purpose).where(
+                    *conditions(source_extractions, scope, source_id),
+                    source_extractions.c.id == extraction_id,
+                    source_extractions.c.version_id == source_version_id,
+                )
+            )
+        if purpose == "ingestion":
+            from flycanon.core.services.sources.lineage.ingestion_parts import (
+                read_exact_ingestion_chunk_parts,
+            )
+
+            return await read_exact_ingestion_chunk_parts(
+                self,
+                scope,
+                source_id=source_id,
+                source_version_id=source_version_id,
+                extraction_id=extraction_id,
+                part_ids=part_ids,
+            )
         return await read_exact_parts(
             self,
             scope,

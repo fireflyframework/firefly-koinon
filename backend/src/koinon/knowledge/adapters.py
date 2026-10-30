@@ -551,8 +551,22 @@ class NativeDomains:
         from flycanon.core.services.query.handlers import AnswerKnowledgeQuery, SearchKnowledgeQuery
         from flycanon.core.services.query.runtime import DocumentQueryOptions
         from flycanon.core.services.retrieval import curated_corpus
+        from flycanon.core.services.sources.lineage.dtos import DocumentScope
+        from flycanon.core.services.sources.lineage.retrieval import bind_retrieval_parts
+        from flycanon.core.services.sources.lineage.service import DocumentLineage
+        from flycanon.core.services.storage.object_store import ObjectStore
         from flycanon.interfaces.dtos.query import AnswerRequest, SearchRequest
+        from flycanon.models.repositories import SourceRepository
         from pyfly.cqrs import DefaultQueryBus
+
+        if _capture is not None:
+            async def resolve_retrieval_parts(hits, scope):
+                return await bind_retrieval_parts(
+                    DocumentLineage(self._resolve(SourceRepository), self._resolve(ObjectStore)),
+                    DocumentScope(tenant_id, workspace_id, actor), hits,
+                )
+
+            _capture.resolve_document_retrieval_parts = resolve_retrieval_parts
 
         policy = request_knowledge_settings({
             "_knowledge_settings_snapshot": _knowledge_settings_snapshot, "tenant_id": tenant_id,

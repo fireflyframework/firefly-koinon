@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "api_prefix": "/api/v1",
   "status": "Canonical API contract; development snapshot",
-  "canonical_operation_count": 167,
+  "canonical_operation_count": 173,
   "qualified_compatibility_operations": [
     {
       "operation": "GlossaryController.list_terms",
@@ -4636,6 +4636,295 @@
       "headers": [
         "Idempotency-Key (required; caller-supplied stable operation key)"
       ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/documents/{document_id}/versions",
+      "category": "canonical",
+      "operation": "DocumentHistoryController.versions",
+      "source": "backend/src/koinon/knowledge/document_history/controllers.py",
+      "line": 28,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "document_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "DocumentVersionPage",
+      "sdk_python": "document_versions",
+      "sdk_typescript": "documents.versions",
+      "sdk_java": "client.documents.versions",
+      "request_schema": null,
+      "response_schema": "DocumentVersionPage",
+      "success_status": 200,
+      "source_sha256": "383a9d953d2dfb15c6330943bd3ab2e4d0fde956147a89bab3c41f10431db7d2",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}",
+      "category": "canonical",
+      "operation": "DocumentHistoryController.version",
+      "source": "backend/src/koinon/knowledge/document_history/controllers.py",
+      "line": 45,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "document_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "source_version_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "DocumentVersion",
+      "sdk_python": "document_version",
+      "sdk_typescript": "documents.version",
+      "sdk_java": "client.documents.version",
+      "request_schema": null,
+      "response_schema": "DocumentVersion",
+      "success_status": 200,
+      "source_sha256": "383a9d953d2dfb15c6330943bd3ab2e4d0fde956147a89bab3c41f10431db7d2",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/extractions",
+      "category": "canonical",
+      "operation": "DocumentHistoryController.extractions",
+      "source": "backend/src/koinon/knowledge/document_history/controllers.py",
+      "line": 60,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "document_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "source_version_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "DocumentExtractionPage",
+      "sdk_python": "document_extractions",
+      "sdk_typescript": "documents.extractions",
+      "sdk_java": "client.documents.extractions",
+      "request_schema": null,
+      "response_schema": "DocumentExtractionPage",
+      "success_status": 200,
+      "source_sha256": "383a9d953d2dfb15c6330943bd3ab2e4d0fde956147a89bab3c41f10431db7d2",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/extractions/{extraction_id}/parts",
+      "category": "canonical",
+      "operation": "DocumentHistoryController.parts",
+      "source": "backend/src/koinon/knowledge/document_history/controllers.py",
+      "line": 79,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "document_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "source_version_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "extraction_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "kind",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "DocumentPartPage",
+      "sdk_python": "document_parts",
+      "sdk_typescript": "documents.parts",
+      "sdk_java": "client.documents.parts",
+      "request_schema": null,
+      "response_schema": "DocumentPartPage",
+      "success_status": 200,
+      "source_sha256": "383a9d953d2dfb15c6330943bd3ab2e4d0fde956147a89bab3c41f10431db7d2",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/extractions/{extraction_id}/parts/{source_part_id}",
+      "category": "canonical",
+      "operation": "DocumentHistoryController.part",
+      "source": "backend/src/koinon/knowledge/document_history/controllers.py",
+      "line": 102,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "document_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "source_version_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "extraction_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "source_part_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "DocumentPartContent",
+      "sdk_python": "document_part",
+      "sdk_typescript": "documents.part",
+      "sdk_java": "client.documents.part",
+      "request_schema": null,
+      "response_schema": "DocumentPartContent",
+      "success_status": 200,
+      "source_sha256": "383a9d953d2dfb15c6330943bd3ab2e4d0fde956147a89bab3c41f10431db7d2",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/original",
+      "category": "canonical",
+      "operation": "DocumentHistoryController.original",
+      "source": "backend/src/koinon/knowledge/document_history/controllers.py",
+      "line": 121,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "document_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "source_version_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "document_version_original",
+      "sdk_typescript": "documents.versionOriginal",
+      "sdk_java": "client.documents.versionOriginal",
+      "request_schema": null,
+      "response_schema": "BinaryDownload",
+      "success_status": 200,
+      "source_sha256": "383a9d953d2dfb15c6330943bd3ab2e4d0fde956147a89bab3c41f10431db7d2",
+      "encoding": "binary",
+      "headers": []
     },
     {
       "method": "POST",
