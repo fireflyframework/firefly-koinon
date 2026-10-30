@@ -43,12 +43,17 @@ for (const input of Object.keys(bundle.metafile.inputs).sort()) {
   if (dependencies.has(packagePath)) continue;
   const metadata = JSON.parse(await readFile(join(root, packagePath, 'package.json'), 'utf8'));
   const entry = lock.packages[packagePath];
+  if (!entry || entry.version !== metadata.version ||
+      typeof entry.resolved !== 'string' || !entry.resolved.trim() ||
+      typeof entry.integrity !== 'string' || !entry.integrity.trim()) {
+    throw new Error(`Missing or inconsistent lock provenance for ${metadata.name}`);
+  }
   let licenseText = '';
   for (const name of ['LICENSE', 'LICENSE.txt', 'LICENSE.md', 'license', 'LICENSE-MIT', 'COPYING']) {
     try { licenseText = await readFile(join(root, packagePath, name), 'utf8'); break; } catch {}
   }
   if (!licenseText) throw new Error(`Missing license text for ${metadata.name}`);
-  dependencies.set(packagePath, { name: metadata.name, version: metadata.version, license: metadata.license, resolved: entry?.resolved, integrity: entry?.integrity, licenseText });
+  dependencies.set(packagePath, { name: metadata.name, version: metadata.version, license: metadata.license, resolved: entry.resolved, integrity: entry.integrity, licenseText });
 }
 const provenance = [...dependencies.values()].sort((a, b) => a.name.localeCompare(b.name));
 await writeFile(join(out, 'DEPENDENCIES.json'), JSON.stringify(provenance.map(({ licenseText, ...metadata }) => metadata), null, 2) + '\n');

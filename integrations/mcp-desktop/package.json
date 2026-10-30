@@ -9,18 +9,24 @@
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "npm run build && tsx --test test/*.test.ts",
-    "validate": "mcpb validate build/manifest.json",
+    "validate": "node scripts/validate.mjs",
     "package": "npm run typecheck && npm test && npm run validate && python3 scripts/package.py",
     "smoke": "tsx --test test/relocation.test.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.32.2"
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "zod": "4.6.6"
   },
   "devDependencies": {
     "@anthropic-ai/mcpb": "2.1.2",
     "@types/node": "26.0.0",
-    "esbuild": "0.28.0",
-    "tsx": "4.21.0",
+    "esbuild": "0.28.2",
+    "tsx": "4.23.15",
     "typescript": "6.0.2"
+  },
+  "overrides": {
+    "external-editor@3.1.0": {
+      "tmp": "0.2.7"
+    }
   }
 }
