@@ -26,6 +26,7 @@ import asyncio
 import logging
 import uuid
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from pyfly.container import service as service_bean
@@ -135,28 +136,32 @@ class IngestService:
             workspace_storage_used_bytes=storage_used,
         )
 
-        # Track storage usage
-        await self._workspace_service.track_storage(workspace_id, recv.size_bytes)
+        try:
+            # Track storage usage
+            await self._workspace_service.track_storage(workspace_id, recv.size_bytes)
 
-        # --- Stage 2: parse ---
-        parsed_tables = await run_parse(
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            dataset_id=dataset_id,
-            file_id=recv.file_id,
-            local_temp_path=recv.local_temp_path,
-            file_format=recv.file_format,
-            compression=recv.compression,
-            object_store=self._object_store,
-            session_factory=self._session_factory,
-            settings=self._settings,
-            existing_table_id=None,
-            dataset_name=dataset_name,
-            workspace_locale=locale,
-            original_filename=filename,
-            append_only=append_only,
-            max_tables=max_tables,
-        )
+            # --- Stage 2: parse ---
+            parsed_tables = await run_parse(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                dataset_id=dataset_id,
+                file_id=recv.file_id,
+                local_temp_path=recv.local_temp_path,
+                file_format=recv.file_format,
+                compression=recv.compression,
+                object_store=self._object_store,
+                session_factory=self._session_factory,
+                settings=self._settings,
+                existing_table_id=None,
+                dataset_name=dataset_name,
+                workspace_locale=locale,
+                original_filename=filename,
+                append_only=append_only,
+                max_tables=max_tables,
+            )
+        finally:
+            Path(recv.local_temp_path).unlink(missing_ok=True)
+
         if max_tables is not None and len(parsed_tables) > max_tables:
             raise PayloadTooLargeException(
                 "File contains more tables than this intake permits", code="DATASET_FILE_TABLE_LIMIT"
@@ -368,27 +373,30 @@ class IngestService:
             workspace_storage_used_bytes=storage_used,
         )
 
-        await self._workspace_service.track_storage(workspace_id, recv.size_bytes)
+        try:
+            await self._workspace_service.track_storage(workspace_id, recv.size_bytes)
 
-        # Stage 2 (re-upload into existing slot)
-        parsed_tables = await run_parse(
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            dataset_id=dataset_id,
-            file_id=recv.file_id,
-            local_temp_path=recv.local_temp_path,
-            file_format=recv.file_format,
-            compression=recv.compression,
-            object_store=self._object_store,
-            session_factory=self._session_factory,
-            settings=self._settings,
-            existing_table_id=table_id,
-            target_sheet_or_json_path=target_sheet_or_json_path,
-            target_name=target_name,
-            dataset_name=dataset_name,
-            workspace_locale=locale,
-            original_filename=filename,
-        )
+            # Stage 2 (re-upload into existing slot)
+            parsed_tables = await run_parse(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                dataset_id=dataset_id,
+                file_id=recv.file_id,
+                local_temp_path=recv.local_temp_path,
+                file_format=recv.file_format,
+                compression=recv.compression,
+                object_store=self._object_store,
+                session_factory=self._session_factory,
+                settings=self._settings,
+                existing_table_id=table_id,
+                target_sheet_or_json_path=target_sheet_or_json_path,
+                target_name=target_name,
+                dataset_name=dataset_name,
+                workspace_locale=locale,
+                original_filename=filename,
+            )
+        finally:
+            Path(recv.local_temp_path).unlink(missing_ok=True)
 
         # Same parallel fan-out as the fresh-upload path.
         ingested_raw = await asyncio.gather(

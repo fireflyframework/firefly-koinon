@@ -55,7 +55,7 @@ class ReceiveResult:
     content_hash_sha256: str
     size_bytes: int
     object_store_key: str
-    # Temp file on local FS holding the raw upload (available during this request)
+    # Owned raw upload copy; the caller must unlink it after parsing.
     local_temp_path: str
 
 
@@ -96,41 +96,50 @@ async def run_receive(
 
     # --- 6. Write local temp copy for pipeline stages (avoids re-downloading) ---
     fd, local_temp_path = tempfile.mkstemp(suffix=ext)
-    with os.fdopen(fd, "wb") as stream:
-        stream.write(file_bytes)
+    try:
+        try:
+            stream = os.fdopen(fd, "wb")
+        except BaseException:
+            os.close(fd)
+            raise
+        with stream:
+            stream.write(file_bytes)
 
-    # --- 7. Insert flyquery_files row ---
-    file_repo = FileRepository(session_factory)
-    await file_repo.insert_received(
-        file_id=file_id,
-        tenant_id=tenant_id,
-        workspace_id=workspace_id,
-        dataset_id=dataset_id,
-        original_filename=filename,
-        file_format=file_format,
-        compression=compression,
-        size_bytes=size_bytes,
-        content_hash_sha256=content_hash,
-        object_store_key=object_store_key,
-        uploaded_by=actor,
-    )
+        # --- 7. Insert flyquery_files row ---
+        file_repo = FileRepository(session_factory)
+        await file_repo.insert_received(
+            file_id=file_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            dataset_id=dataset_id,
+            original_filename=filename,
+            file_format=file_format,
+            compression=compression,
+            size_bytes=size_bytes,
+            content_hash_sha256=content_hash,
+            object_store_key=object_store_key,
+            uploaded_by=actor,
+        )
 
-    logger.info(
-        "stage=receive file_id=%s format=%s compression=%s size=%d",
-        file_id,
-        file_format,
-        compression,
-        size_bytes,
-    )
-    return ReceiveResult(
-        file_id=file_id,
-        file_format=file_format,
-        compression=compression,
-        content_hash_sha256=content_hash,
-        size_bytes=size_bytes,
-        object_store_key=object_store_key,
-        local_temp_path=local_temp_path,
-    )
+        logger.info(
+            "stage=receive file_id=%s format=%s compression=%s size=%d",
+            file_id,
+            file_format,
+            compression,
+            size_bytes,
+        )
+        return ReceiveResult(
+            file_id=file_id,
+            file_format=file_format,
+            compression=compression,
+            content_hash_sha256=content_hash,
+            size_bytes=size_bytes,
+            object_store_key=object_store_key,
+            local_temp_path=local_temp_path,
+        )
+    except BaseException:
+        Path(local_temp_path).unlink(missing_ok=True)
+        raise
 
 
 def _pick_ext(filename: str, file_format: str, compression: str) -> str:

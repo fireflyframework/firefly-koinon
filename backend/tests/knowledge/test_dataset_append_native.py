@@ -71,13 +71,19 @@ async def test_native_append_verifies_scoped_active_dataset_and_retains_all_tabl
     dataset_service.create.assert_not_awaited()
 
 
-async def test_native_append_limit_fails_before_describe_embed_or_publish(monkeypatch):
+async def test_native_append_limit_fails_before_describe_embed_or_publish(monkeypatch, tmp_path):
     from flyquery.config import FlyquerySettings
     from flyquery.core.services.ingestion import ingest_service as module
     from pyfly.kernel import PayloadTooLargeException
 
+    received_copy = tmp_path / "received.xlsx"
+    received_copy.write_bytes(b"123")
     received = SimpleNamespace(
-        file_id=uuid4(), size_bytes=3, local_temp_path="input", file_format="xlsx", compression="none"
+        file_id=uuid4(),
+        size_bytes=3,
+        local_temp_path=str(received_copy),
+        file_format="xlsx",
+        compression="none",
     )
     monkeypatch.setattr(module, "run_receive", AsyncMock(return_value=received))
     monkeypatch.setattr(module, "run_parse", AsyncMock(return_value=[object(), object()]))
@@ -98,3 +104,4 @@ async def test_native_append_limit_fails_before_describe_embed_or_publish(monkey
             max_tables=1,
         )
     process.assert_not_awaited()
+    assert not received_copy.exists()

@@ -1,3 +1,5 @@
+# Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Firefly Software Foundation
 # Modifications Copyright 2026 Firefly Software Foundation
 #
@@ -37,9 +39,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import time
 import uuid
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import sqlalchemy as sa
@@ -414,89 +418,95 @@ class IngestWorker:
         # PARSE_AND_INGEST re-queue path still get a fresh receive (which
         # is what they want -- new file_id + new snapshot version).
         already_received = bool(request_json.get("already_received"))
-        if already_received:
-            # Synthesise a ReceiveResult-ish shim so the rest of the
-            # function keeps using the same field names. We need a local
-            # temp file for the parse stage; persist the bytes once here.
-            import tempfile as _tempfile
+        owned_temp_path: str | None = None
+        try:
+            if already_received:
+                # Synthesise a ReceiveResult-ish shim so the rest of the
+                # function keeps using the same field names. We need a local
+                # temp file for the parse stage; persist the bytes once here.
+                import tempfile as _tempfile
 
-            ext = _suffix_from_key(str(file_info["object_store_key"]))
-            fd, local_temp_path = _tempfile.mkstemp(suffix=ext)
-            try:
-                with open(fd, "wb") as fh:
-                    fh.write(file_bytes)
-            except Exception:
-                import os as _os
+                ext = _suffix_from_key(str(file_info["object_store_key"]))
+                fd, local_temp_path = _tempfile.mkstemp(suffix=ext)
+                owned_temp_path = local_temp_path
+                try:
+                    stream = os.fdopen(fd, "wb")
+                except BaseException:
+                    os.close(fd)
+                    raise
+                with stream:
+                    stream.write(file_bytes)
+                from flyquery.core.services.ingestion.format_detect import detect_format
 
-                _os.close(fd)
-                raise
-            from flyquery.core.services.ingestion.format_detect import detect_format
+                file_format, compression = detect_format(file_info["original_filename"], file_bytes[:512])
+                recv = _AlreadyReceived(
+                    file_id=uuid.UUID(str(file_info["id"])),
+                    file_format=file_format,
+                    compression=compression,
+                    size_bytes=len(file_bytes),
+                    object_store_key=str(file_info["object_store_key"]),
+                    local_temp_path=local_temp_path,
+                )
+                await emit_stage(
+                    ingest_job_id=job_id,
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    stage="received",
+                    message="stage 1 skipped (already received via async upload)",
+                    payload={"file_id": str(recv.file_id), "skipped": True},
+                    session_factory=self._session_factory,
+                )
+                # Storage already tracked by the endpoint -- do NOT track again.
+            else:
+                recv = await run_receive(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    dataset_id=dataset_id,
+                    filename=file_info["original_filename"],
+                    file_bytes=file_bytes,
+                    actor="system:structured-worker",
+                    object_store=object_store,
+                    session_factory=self._session_factory,
+                    settings=self._settings,
+                    workspace_storage_used_bytes=storage_used,
+                )
+                owned_temp_path = recv.local_temp_path
+                await emit_stage(
+                    ingest_job_id=job_id,
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    stage="received",
+                    message="stage 1 complete",
+                    payload={"file_id": str(recv.file_id)},
+                    session_factory=self._session_factory,
+                )
+                await ws_service.track_storage(workspace_id, recv.size_bytes)
 
-            file_format, compression = detect_format(file_info["original_filename"], file_bytes[:512])
-            recv = _AlreadyReceived(
-                file_id=uuid.UUID(str(file_info["id"])),
-                file_format=file_format,
-                compression=compression,
-                size_bytes=len(file_bytes),
-                object_store_key=str(file_info["object_store_key"]),
-                local_temp_path=local_temp_path,
-            )
-            await emit_stage(
-                ingest_job_id=job_id,
-                tenant_id=tenant_id,
-                workspace_id=workspace_id,
-                stage="received",
-                message="stage 1 skipped (already received via async upload)",
-                payload={"file_id": str(recv.file_id), "skipped": True},
-                session_factory=self._session_factory,
-            )
-            # Storage already tracked by the endpoint -- do NOT track again.
-        else:
-            recv = await run_receive(
+            # Stage 2: parse
+            await self._check_cancelled(job_id)
+            existing_table_id = uuid.UUID(str(table_id_raw)) if table_id_raw else None
+            dataset_name = request_json.get("dataset_name", "dataset")
+            locale = request_json.get("locale", self._settings.default_locale)
+
+            parsed_tables = await run_parse(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
                 dataset_id=dataset_id,
-                filename=file_info["original_filename"],
-                file_bytes=file_bytes,
-                actor="system:structured-worker",
+                file_id=recv.file_id,
+                local_temp_path=recv.local_temp_path,
+                file_format=recv.file_format,
+                compression=recv.compression,
                 object_store=object_store,
                 session_factory=self._session_factory,
                 settings=self._settings,
-                workspace_storage_used_bytes=storage_used,
+                existing_table_id=existing_table_id,
+                dataset_name=dataset_name,
+                workspace_locale=locale,
+                original_filename=file_info["original_filename"],
             )
-            await emit_stage(
-                ingest_job_id=job_id,
-                tenant_id=tenant_id,
-                workspace_id=workspace_id,
-                stage="received",
-                message="stage 1 complete",
-                payload={"file_id": str(recv.file_id)},
-                session_factory=self._session_factory,
-            )
-            await ws_service.track_storage(workspace_id, recv.size_bytes)
-
-        # Stage 2: parse
-        await self._check_cancelled(job_id)
-        existing_table_id = uuid.UUID(str(table_id_raw)) if table_id_raw else None
-        dataset_name = request_json.get("dataset_name", "dataset")
-        locale = request_json.get("locale", self._settings.default_locale)
-
-        parsed_tables = await run_parse(
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            dataset_id=dataset_id,
-            file_id=recv.file_id,
-            local_temp_path=recv.local_temp_path,
-            file_format=recv.file_format,
-            compression=recv.compression,
-            object_store=object_store,
-            session_factory=self._session_factory,
-            settings=self._settings,
-            existing_table_id=existing_table_id,
-            dataset_name=dataset_name,
-            workspace_locale=locale,
-            original_filename=file_info["original_filename"],
-        )
+        finally:
+            if owned_temp_path is not None:
+                Path(owned_temp_path).unlink(missing_ok=True)
         await emit_stage(
             ingest_job_id=job_id,
             tenant_id=tenant_id,
