@@ -1,8 +1,6 @@
 # firefly koinon
 
-![firefly koinon](brand/repository-banner.svg)
-
-**Your corporate brain.**
+![firefly koinon, your corporate brain](brand/repository-banner.svg)
 
 koinon brings documents, datasets and reviewed knowledge into one place so people can find what their organization knows, ask questions and inspect the evidence behind an answer.
 
