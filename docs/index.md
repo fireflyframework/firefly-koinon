@@ -8,8 +8,8 @@ Library keeps sources organized. Chat helps you explore them. Settings gives adm
 
 Take the [visual walkthrough](guides/interface-tour.md) for guided screenshots of configuration and everyday use. Start with the [library guide](guides/library.md) if you use knowledge. Read the [setup guide](guides/administration.md) if you configure the product. Integrators can use the [headless API and SDK](guides/headless.md) or [embed components](guides/embedding.md) inside another product.
 
-!!! warning "Development qualification"
-    Implementation and integrated acceptance are in progress. No qualified product release exists yet. The [qualification record](operations/qualification.md) distinguishes executed checks from pending provider, deployment and migration acceptance.
+!!! warning "Evaluation release"
+    Version 26.10.0-alpha.1 is intended for evaluation. Production acceptance and migration parity remain incomplete. The [qualification record](operations/qualification.md) distinguishes executed checks from pending provider, deployment and migration acceptance.
 
 | Your task | Start here |
 | --- | --- |

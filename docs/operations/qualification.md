@@ -2,7 +2,7 @@
 
 This page separates checks on the current candidate from earlier checks on the owned management environment. Passing an isolated test does not deploy that change or qualify an external client.
 
-## Current native runtime candidate
+## Evaluation release 26.10.0-alpha.1
 
 The current backend uses official pyfly 26.10.18 and the native server launcher, managed dependency injection, named datasource resources and framework transactions. Its four installed product packages passed 3,912 tests, with 48 existing opt-in or infrastructure skips. Another 19 deployment-utility checks passed with one local nginx skip. All five installed namespace trees matched their wheel bytes; 33,564 environment files and their modes remained unchanged through the suites, with isolated Python, no source import path and no bytecode artifacts.
 
@@ -10,14 +10,14 @@ The current backend uses official pyfly 26.10.18 and the native server launcher,
 | --- | --- | --- |
 | Immutable RAG and history | Source and installed tests cover retained version, extraction and exact-part bindings, historical reads and current authorization. | A fresh ordinary intake-to-chat model journey on the final deployed revision. |
 | Organization directory | Independent backend review passes 145 tests; tenant visibility, current permissions, revision conflicts, hierarchy cycles and source ownership have explicit regressions. | Final deployed UI and provider synchronization acceptance. |
-| Typed headless SDKs | 188 canonical operations and 331 schemas. Python, TypeScript and Java suites pass 149, 43 and 1,120 tests. Installed Python/npm packages and an external Java 21 consumer pass. | Published final SDK artifacts and configured-service acceptance of the release. |
+| Typed headless SDKs | 188 canonical operations and 331 schemas. Python, TypeScript and Java suites pass 149, 43 and 1,120 tests. Installed Python/npm packages and an external Java 21 consumer pass. | Package-registry publication and configured-service acceptance of the release. |
 | Retained-data PostgreSQL rehearsal | An owned database clone reached native directory revision 22 while document and structured histories remained at 20 and 17. Four new table grants and 20 read-only runtime-role probes passed. Existing data, owners, grants, roles and six object inventories were preserved; original services were untouched. | Deployment to the retained management services remains separate. |
 | Migration regression | The first directory attempt exposed a 34-character revision identifier exceeding PostgreSQL's 32-character version column. A read-only comparison confirmed rollback to the exact prior clone state. The corrected 25-character identifier passed the real successor rehearsal; all three histories now have a width regression. | Further migrations require their own qualification. |
-| Interface | The four-column people view passes desktop/mobile controlled browser flows. The reviewed source includes cache invalidation after server denial, provider-selection fencing and synchronous avatar identity checks. | Final mobile-filter, complete browser and deployed capture checks are being finalized. |
+| Interface | The four-column people view passes desktop/mobile controlled browser flows. The reviewed source includes cache invalidation after server denial, provider-selection fencing and synchronous avatar identity checks. | Controlled browser coverage includes desktop/mobile directory, filters, photos, management, custom elements and a packed Angular consumer. Fresh deployed captures remain separate. |
 
 The framework release is [published with verified assets](https://github.com/fireflyframework/fireflyframework-pyfly/releases/tag/v26.10.18). This does not publish or deploy koinon itself. Product source, installed runtime, real-provider behavior, interface fixtures, retained-service deployment, external clients and package-registry publication remain distinct checks.
 
-The following capabilities still require explicit qualification or implementation before they can be claimed as complete: curated-knowledge RLM, general durable bulk intake/query batches, complete retained-domain parity, external-provider/client acceptance and the current CIAM profile-synchronization expansion. Their configuration and integration guides must preserve those limits. The current [candidate pull request](https://github.com/fireflyframework/firefly-koinon/pull/13) tracks implementation and hosted checks.
+The following capabilities still require explicit qualification or implementation before they can be claimed as complete: curated-knowledge RLM, general durable bulk intake/query batches, complete retained-domain parity, external-provider/client acceptance and the current CIAM profile-synchronization expansion. Their configuration and integration guides must preserve those limits. The [delivery pull request](https://github.com/fireflyframework/firefly-koinon/pull/13) tracks implementation and hosted checks.
 
 ## Earlier isolated candidate, October 30, 2026
 
@@ -176,6 +176,6 @@ The required engine now rejects legacy execution, unexecuted plaintext and unres
 
 ## Product acceptance still required
 
-The original capability review still contains partial and missing product workflows, including dataset-append recovery/async/bulk intake, the remaining curated lifecycle transitions and semantic authoring. Complete migration parity, external identity-provider acceptance, production capacity and the product package release remain separate acceptance steps. The original projects must remain available until the replacement has passed those steps.
+The original capability review still contains partial and missing product workflows, including dataset-append recovery/async/bulk intake, the remaining curated lifecycle transitions and semantic authoring. Complete migration parity, external identity-provider acceptance, production capacity and a production release remain separate acceptance steps. The original projects must remain available until the replacement has passed those steps.
 
 Copyright 2026 Firefly Software Foundation. Licensed under Apache-2.0. Made with <3.
