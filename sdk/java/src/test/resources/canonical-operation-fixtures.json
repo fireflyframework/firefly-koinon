@@ -2,6 +2,7 @@
   {
     "operation": "AuditController.audit",
     "group": "AuditApi",
+    "group_scoped": true,
     "method": "list",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/audit",
@@ -79,6 +80,7 @@
   {
     "operation": "CatalogController.catalog_list",
     "group": "CatalogApi",
+    "group_scoped": true,
     "method": "list",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/catalog",
@@ -168,6 +170,7 @@
   {
     "operation": "CatalogController.catalog_create",
     "group": "CatalogApi",
+    "group_scoped": true,
     "method": "create",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/catalog",
@@ -207,6 +210,7 @@
   {
     "operation": "CatalogController.catalog_get",
     "group": "CatalogApi",
+    "group_scoped": true,
     "method": "get",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/catalog/entry_id value",
@@ -247,6 +251,7 @@
   {
     "operation": "CatalogController.catalog_patch",
     "group": "CatalogApi",
+    "group_scoped": true,
     "method": "update",
     "http": "PATCH",
     "path": "/api/v1/tenants/tenant value/catalog/entry_id value",
@@ -287,6 +292,7 @@
   {
     "operation": "CatalogController.catalog_archive",
     "group": "CatalogApi",
+    "group_scoped": true,
     "method": "archive",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/catalog/entry_id value/archive",
@@ -327,6 +333,7 @@
   {
     "operation": "CatalogController.catalog_restore",
     "group": "CatalogApi",
+    "group_scoped": true,
     "method": "restore",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/catalog/entry_id value/restore",
@@ -367,6 +374,7 @@
   {
     "operation": "CatalogController.catalog_delete",
     "group": "CatalogApi",
+    "group_scoped": true,
     "method": "delete",
     "http": "DELETE",
     "path": "/api/v1/tenants/tenant value/catalog/entry_id value",
@@ -387,6 +395,7 @@
   {
     "operation": "ContextController.context",
     "group": "PlatformApi",
+    "group_scoped": false,
     "method": "context",
     "http": "GET",
     "path": "/api/v1/context",
@@ -463,6 +472,7 @@
   {
     "operation": "JobController.list",
     "group": "JobsApi",
+    "group_scoped": true,
     "method": "list",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/jobs",
@@ -535,6 +545,7 @@
   {
     "operation": "JobController.get",
     "group": "JobsApi",
+    "group_scoped": true,
     "method": "get",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/jobs/job_id value",
@@ -573,6 +584,7 @@
   {
     "operation": "JobController.cancel",
     "group": "JobsApi",
+    "group_scoped": true,
     "method": "cancel",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/jobs/job_id value/cancel",
@@ -611,6 +623,7 @@
   {
     "operation": "MembershipController.members",
     "group": "MembersApi",
+    "group_scoped": true,
     "method": "list",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/members",
@@ -684,6 +697,7 @@
   {
     "operation": "MembershipController.member_create",
     "group": "MembersApi",
+    "group_scoped": true,
     "method": "add",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/members",
@@ -715,6 +729,7 @@
   {
     "operation": "MembershipController.member_patch",
     "group": "MembersApi",
+    "group_scoped": true,
     "method": "update",
     "http": "PATCH",
     "path": "/api/v1/tenants/tenant value/members/member_id value",
@@ -747,6 +762,7 @@
   {
     "operation": "MembershipController.member_delete",
     "group": "MembersApi",
+    "group_scoped": true,
     "method": "remove",
     "http": "DELETE",
     "path": "/api/v1/tenants/tenant value/members/member_id value",
@@ -767,6 +783,7 @@
   {
     "operation": "MembershipController.invitations_list",
     "group": "InvitationsApi",
+    "group_scoped": true,
     "method": "list",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/invitations",
@@ -838,6 +855,7 @@
   {
     "operation": "MembershipController.invitation_create",
     "group": "InvitationsApi",
+    "group_scoped": true,
     "method": "create",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/invitations",
@@ -872,6 +890,7 @@
   {
     "operation": "MembershipController.invitation_revoke",
     "group": "InvitationsApi",
+    "group_scoped": true,
     "method": "revoke",
     "http": "DELETE",
     "path": "/api/v1/tenants/tenant value/invitations/invitation_id value",
@@ -892,6 +911,7 @@
   {
     "operation": "MembershipController.invitation_inspect",
     "group": "InvitationAccessApi",
+    "group_scoped": false,
     "method": "inspect",
     "http": "POST",
     "path": "/api/v1/invitations/inspect",
@@ -919,6 +939,7 @@
   {
     "operation": "MembershipController.invitation_redeem",
     "group": "InvitationAccessApi",
+    "group_scoped": false,
     "method": "redeem",
     "http": "POST",
     "path": "/api/v1/invitations/redeem",
@@ -950,6 +971,7 @@
   {
     "operation": "AgentController.agents",
     "group": "AgentsApi",
+    "group_scoped": true,
     "method": "list",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/agents",
@@ -1094,6 +1116,7 @@
   {
     "operation": "AgentController.agent_create",
     "group": "AgentsApi",
+    "group_scoped": true,
     "method": "create",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/agents",
@@ -1194,6 +1217,7 @@
   {
     "operation": "AgentController.agent_update",
     "group": "AgentsApi",
+    "group_scoped": true,
     "method": "update",
     "http": "PATCH",
     "path": "/api/v1/tenants/tenant value/agents/agent_id value",
@@ -1295,6 +1319,7 @@
   {
     "operation": "AgentController.agent_validate",
     "group": "AgentsApi",
+    "group_scoped": true,
     "method": "validate",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/agents/agent_id value/validate",
@@ -1396,6 +1421,7 @@
   {
     "operation": "AssistantController.threads",
     "group": "ChatApi",
+    "group_scoped": true,
     "method": "threads",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/chat/threads",
@@ -1478,6 +1504,7 @@
   {
     "operation": "AssistantController.thread_create",
     "group": "ChatApi",
+    "group_scoped": true,
     "method": "createThread",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/chat/threads",
@@ -1514,6 +1541,7 @@
   {
     "operation": "AssistantController.messages",
     "group": "ChatApi",
+    "group_scoped": true,
     "method": "messages",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/chat/threads/thread_id value/messages",
@@ -1642,6 +1670,7 @@
   {
     "operation": "AssistantController.submit",
     "group": "ChatApi",
+    "group_scoped": true,
     "method": "submit",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/chat/threads/thread_id value/runs",
@@ -1667,6 +1696,7 @@
   {
     "operation": "AssistantController.cancel",
     "group": "ChatApi",
+    "group_scoped": true,
     "method": "cancel",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/chat/runs/run_id value/cancel",
@@ -1692,6 +1722,7 @@
   {
     "operation": "AssistantController.retry",
     "group": "ChatApi",
+    "group_scoped": true,
     "method": "retry",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/chat/runs/run_id value/retry",
@@ -1717,6 +1748,7 @@
   {
     "operation": "AssistantController.events",
     "group": "ChatApi",
+    "group_scoped": true,
     "method": "events",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/chat/runs/run_id value/events",
@@ -1793,6 +1825,7 @@
   {
     "operation": "AssistantController.result",
     "group": "ChatApi",
+    "group_scoped": true,
     "method": "result",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/chat/runs/run_id value/results/result_id value",
@@ -1889,6 +1922,7 @@
   {
     "operation": "AssistantController.activities",
     "group": "ChatApi",
+    "group_scoped": true,
     "method": "activities",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/chat/runs/run_id value/activity",
@@ -1957,6 +1991,7 @@
   {
     "operation": "AssistantController.audit",
     "group": "ChatApi",
+    "group_scoped": true,
     "method": "audit",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/chat/runs/run_id value/audit",
@@ -2159,6 +2194,7 @@
   {
     "operation": "ChatHistoryController.folders",
     "group": "ChatFoldersApi",
+    "group_scoped": true,
     "method": "list",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/chat/folders",
@@ -2238,6 +2274,7 @@
   {
     "operation": "ChatHistoryController.create_folder",
     "group": "ChatFoldersApi",
+    "group_scoped": true,
     "method": "create",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/chat/folders",
@@ -2273,6 +2310,7 @@
   {
     "operation": "ChatHistoryController.folder",
     "group": "ChatFoldersApi",
+    "group_scoped": true,
     "method": "get",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/chat/folders/folder_id value",
@@ -2309,6 +2347,7 @@
   {
     "operation": "ChatHistoryController.patch_folder",
     "group": "ChatFoldersApi",
+    "group_scoped": true,
     "method": "update",
     "http": "PATCH",
     "path": "/api/v1/tenants/tenant value/chat/folders/folder_id value",
@@ -2345,6 +2384,7 @@
   {
     "operation": "ChatHistoryController.delete_folder",
     "group": "ChatFoldersApi",
+    "group_scoped": true,
     "method": "delete",
     "http": "DELETE",
     "path": "/api/v1/tenants/tenant value/chat/folders/folder_id value",
@@ -2367,6 +2407,7 @@
   {
     "operation": "ChatHistoryController.thread",
     "group": "ChatApi",
+    "group_scoped": true,
     "method": "get",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/chat/threads/thread_id value",
@@ -2404,6 +2445,7 @@
   {
     "operation": "ChatHistoryController.patch_thread",
     "group": "ChatApi",
+    "group_scoped": true,
     "method": "update",
     "http": "PATCH",
     "path": "/api/v1/tenants/tenant value/chat/threads/thread_id value",
@@ -2441,6 +2483,7 @@
   {
     "operation": "ChatHistoryController.title_suggestion",
     "group": "ChatApi",
+    "group_scoped": true,
     "method": "suggestTitle",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/chat/threads/thread_id value/title-suggestion",
@@ -2464,6 +2507,7 @@
   {
     "operation": "CatalogProposalController.get",
     "group": "ChatProposalsApi",
+    "group_scoped": true,
     "method": "get",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/chat/runs/run_id value/proposals/proposal_id value",
@@ -2504,6 +2548,7 @@
   {
     "operation": "CatalogProposalController.confirm",
     "group": "ChatProposalsApi",
+    "group_scoped": true,
     "method": "confirm",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/chat/runs/run_id value/proposals/proposal_id value/confirm",
@@ -2544,6 +2589,7 @@
   {
     "operation": "CatalogProposalController.cancel",
     "group": "ChatProposalsApi",
+    "group_scoped": true,
     "method": "cancel",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/chat/runs/run_id value/proposals/proposal_id value/cancel",
@@ -2584,6 +2630,7 @@
   {
     "operation": "ProviderController.configuration",
     "group": "ConfigurationApi",
+    "group_scoped": true,
     "method": "get",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/configuration",
@@ -2826,6 +2873,7 @@
   {
     "operation": "ProviderController.provider_create",
     "group": "ProvidersApi",
+    "group_scoped": true,
     "method": "create",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/providers",
@@ -2917,6 +2965,7 @@
   {
     "operation": "ProviderController.provider_update",
     "group": "ProvidersApi",
+    "group_scoped": true,
     "method": "update",
     "http": "PUT",
     "path": "/api/v1/tenants/tenant value/providers/provider_id value",
@@ -3009,6 +3058,7 @@
   {
     "operation": "ProviderController.provider_validate",
     "group": "ProvidersApi",
+    "group_scoped": true,
     "method": "validate",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/providers/provider_id value/validate",
@@ -3048,6 +3098,7 @@
   {
     "operation": "AuthorizedApplicationController.list",
     "group": "AuthorizedApplicationsApi",
+    "group_scoped": false,
     "method": "list",
     "http": "GET",
     "path": "/api/v1/authorized-applications",
@@ -3126,6 +3177,7 @@
   {
     "operation": "AuthorizedApplicationController.detail",
     "group": "AuthorizedApplicationsApi",
+    "group_scoped": false,
     "method": "get",
     "http": "GET",
     "path": "/api/v1/authorized-applications/application_id value",
@@ -3163,6 +3215,7 @@
   {
     "operation": "AuthorizedApplicationController.revoke",
     "group": "AuthorizedApplicationsApi",
+    "group_scoped": false,
     "method": "revoke",
     "http": "DELETE",
     "path": "/api/v1/authorized-applications/application_id value",
@@ -3183,6 +3236,7 @@
   {
     "operation": "CorporateIdentityController.list",
     "group": "IdentityApi",
+    "group_scoped": true,
     "method": "list",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/identity/providers",
@@ -3254,6 +3308,7 @@
   {
     "operation": "CorporateIdentityController.create",
     "group": "IdentityApi",
+    "group_scoped": true,
     "method": "create",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/identity/providers",
@@ -3311,6 +3366,7 @@
   {
     "operation": "CorporateIdentityController.get",
     "group": "IdentityApi",
+    "group_scoped": true,
     "method": "get",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/identity/providers/provider_id value",
@@ -3369,6 +3425,7 @@
   {
     "operation": "CorporateIdentityController.update",
     "group": "IdentityApi",
+    "group_scoped": true,
     "method": "update",
     "http": "PATCH",
     "path": "/api/v1/tenants/tenant value/identity/providers/provider_id value",
@@ -3427,6 +3484,7 @@
   {
     "operation": "CorporateIdentityController.test",
     "group": "IdentityApi",
+    "group_scoped": true,
     "method": "test",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/identity/providers/provider_id value/test",
@@ -3464,6 +3522,7 @@
   {
     "operation": "CorporateIdentityController.test_status",
     "group": "IdentityApi",
+    "group_scoped": true,
     "method": "testStatus",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/identity/providers/provider_id value/tests/validation_id value",
@@ -3502,6 +3561,7 @@
   {
     "operation": "CorporateIdentityController.groups",
     "group": "IdentityApi",
+    "group_scoped": true,
     "method": "groups",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/identity/providers/provider_id value/groups",
@@ -3537,6 +3597,7 @@
   {
     "operation": "CorporateIdentityController.mappings",
     "group": "IdentityApi",
+    "group_scoped": true,
     "method": "mappings",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/identity/providers/provider_id value/mappings",
@@ -3581,6 +3642,7 @@
   {
     "operation": "CorporateIdentityController.mapping_create",
     "group": "IdentityApi",
+    "group_scoped": true,
     "method": "createMapping",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/identity/providers/provider_id value/mappings",
@@ -3611,6 +3673,7 @@
   {
     "operation": "CorporateIdentityController.mapping_update",
     "group": "IdentityApi",
+    "group_scoped": true,
     "method": "updateMapping",
     "http": "PATCH",
     "path": "/api/v1/tenants/tenant value/identity/providers/provider_id value/mappings/mapping_id value",
@@ -3642,6 +3705,7 @@
   {
     "operation": "CorporateIdentityController.mapping_remove",
     "group": "IdentityApi",
+    "group_scoped": true,
     "method": "removeMapping",
     "http": "DELETE",
     "path": "/api/v1/tenants/tenant value/identity/providers/provider_id value/mappings/mapping_id value",
@@ -3665,6 +3729,7 @@
   {
     "operation": "CorporateIdentityController.activate",
     "group": "IdentityApi",
+    "group_scoped": true,
     "method": "activate",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/identity/providers/provider_id value/activate",
@@ -3723,6 +3788,7 @@
   {
     "operation": "CorporateIdentityController.disable",
     "group": "IdentityApi",
+    "group_scoped": true,
     "method": "disable",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/identity/providers/provider_id value/disable",
@@ -3781,6 +3847,7 @@
   {
     "operation": "EvidenceController.conversation",
     "group": "EvidenceApi",
+    "group_scoped": true,
     "method": "conversation",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/evidence/conversations",
@@ -3833,6 +3900,7 @@
   {
     "operation": "ExportController.review",
     "group": "ExportsApi",
+    "group_scoped": true,
     "method": "review",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/exports/reviews",
@@ -3946,6 +4014,7 @@
   {
     "operation": "ExportController.create",
     "group": "ExportsApi",
+    "group_scoped": true,
     "method": "create",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/exports",
@@ -3977,6 +4046,7 @@
   {
     "operation": "ExportController.list",
     "group": "ExportsApi",
+    "group_scoped": true,
     "method": "list",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/exports",
@@ -4021,6 +4091,7 @@
   {
     "operation": "ExportController.get",
     "group": "ExportsApi",
+    "group_scoped": true,
     "method": "get",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/exports/export_id value",
@@ -4053,6 +4124,7 @@
   {
     "operation": "ExportController.download",
     "group": "ExportsApi",
+    "group_scoped": true,
     "method": "download",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/exports/export_id value/download",
@@ -4073,6 +4145,7 @@
   {
     "operation": "ExportController.cancel",
     "group": "ExportsApi",
+    "group_scoped": true,
     "method": "cancel",
     "http": "DELETE",
     "path": "/api/v1/tenants/tenant value/exports/export_id value",
@@ -4093,6 +4166,7 @@
   {
     "operation": "ChatAttachmentsController.capabilities",
     "group": "ChatAttachmentsApi",
+    "group_scoped": true,
     "method": "capabilities",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/chat/threads/thread_id value/attachments/capabilities",
@@ -4162,6 +4236,7 @@
   {
     "operation": "ChatAttachmentsController.upload",
     "group": "ChatAttachmentsApi",
+    "group_scoped": true,
     "method": "upload",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/chat/threads/thread_id value/attachments",
@@ -4207,6 +4282,7 @@
   {
     "operation": "ChatAttachmentsController.list_files",
     "group": "ChatAttachmentsApi",
+    "group_scoped": true,
     "method": "list",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/chat/threads/thread_id value/attachments",
@@ -4266,6 +4342,7 @@
   {
     "operation": "ChatAttachmentsController.get",
     "group": "ChatAttachmentsApi",
+    "group_scoped": true,
     "method": "get",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/chat/threads/thread_id value/attachments/attachment_id value",
@@ -4312,6 +4389,7 @@
   {
     "operation": "ChatAttachmentsController.original",
     "group": "ChatAttachmentsApi",
+    "group_scoped": true,
     "method": "original",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/chat/threads/thread_id value/attachments/attachment_id value/original",
@@ -4333,6 +4411,7 @@
   {
     "operation": "ChatAttachmentsController.chunks",
     "group": "ChatAttachmentsApi",
+    "group_scoped": true,
     "method": "chunks",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/chat/threads/thread_id value/attachments/attachment_id value/chunks",
@@ -4379,6 +4458,7 @@
   {
     "operation": "ChatAttachmentsController.cancel",
     "group": "ChatAttachmentsApi",
+    "group_scoped": true,
     "method": "cancel",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/chat/threads/thread_id value/attachments/attachment_id value/cancel",
@@ -4425,6 +4505,7 @@
   {
     "operation": "ChatAttachmentsController.retry",
     "group": "ChatAttachmentsApi",
+    "group_scoped": true,
     "method": "retry",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/chat/threads/thread_id value/attachments/attachment_id value/retry",
@@ -4471,6 +4552,7 @@
   {
     "operation": "ChatAttachmentsController.delete",
     "group": "ChatAttachmentsApi",
+    "group_scoped": true,
     "method": "remove",
     "http": "DELETE",
     "path": "/api/v1/tenants/tenant value/chat/threads/thread_id value/attachments/attachment_id value",
@@ -4494,6 +4576,7 @@
   {
     "operation": "ChatAttachmentsController.knowledge",
     "group": "ChatAttachmentsApi",
+    "group_scoped": true,
     "method": "promote",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/chat/threads/thread_id value/attachments/attachment_id value/knowledge",
@@ -4632,6 +4715,7 @@
   {
     "operation": "KnowledgeConnectionsController.roles",
     "group": "KnowledgeConnectionsApi",
+    "group_scoped": true,
     "method": "roles",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/knowledge-roles",
@@ -4688,6 +4772,7 @@
   {
     "operation": "KnowledgeConnectionsController.list_connections",
     "group": "KnowledgeConnectionsApi",
+    "group_scoped": true,
     "method": "list",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/knowledge-connections",
@@ -4769,6 +4854,7 @@
   {
     "operation": "KnowledgeConnectionsController.create",
     "group": "KnowledgeConnectionsApi",
+    "group_scoped": true,
     "method": "create",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/knowledge-connections",
@@ -4813,6 +4899,7 @@
   {
     "operation": "KnowledgeConnectionsController.update",
     "group": "KnowledgeConnectionsApi",
+    "group_scoped": true,
     "method": "update",
     "http": "PUT",
     "path": "/api/v1/tenants/tenant value/knowledge-connections/connection_id value",
@@ -4858,6 +4945,7 @@
   {
     "operation": "KnowledgeConnectionsController.get",
     "group": "KnowledgeConnectionsApi",
+    "group_scoped": true,
     "method": "get",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/knowledge-connections/connection_id value",
@@ -4903,6 +4991,7 @@
   {
     "operation": "KnowledgeConnectionsController.delete",
     "group": "KnowledgeConnectionsApi",
+    "group_scoped": true,
     "method": "remove",
     "http": "DELETE",
     "path": "/api/v1/tenants/tenant value/knowledge-connections/connection_id value",
@@ -4927,6 +5016,7 @@
   {
     "operation": "KnowledgeController.upload",
     "group": "SourcesApi",
+    "group_scoped": true,
     "method": "upload",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/sources/upload",
@@ -4992,6 +5082,7 @@
   {
     "operation": "KnowledgeController.search",
     "group": "KnowledgeApi",
+    "group_scoped": true,
     "method": "search",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/search",
@@ -5081,6 +5172,7 @@
   {
     "operation": "KnowledgeController.query",
     "group": "KnowledgeApi",
+    "group_scoped": true,
     "method": "query",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/query",
@@ -5183,6 +5275,7 @@
   {
     "operation": "KnowledgeController.schema",
     "group": "DatasetsApi",
+    "group_scoped": true,
     "method": "schema",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/datasets/dataset_id value/schema",
@@ -5221,6 +5314,7 @@
   {
     "operation": "KnowledgeController.lineage",
     "group": "KnowledgeApi",
+    "group_scoped": true,
     "method": "lineage",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/lineage",
@@ -5257,6 +5351,7 @@
   {
     "operation": "KnowledgeController.document_chunks",
     "group": "DocumentsApi",
+    "group_scoped": true,
     "method": "chunks",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/documents/document_id value/chunks",
@@ -5306,6 +5401,7 @@
   {
     "operation": "KnowledgeController.document_original",
     "group": "DocumentsApi",
+    "group_scoped": true,
     "method": "original",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/documents/document_id value/original",
@@ -5326,6 +5422,7 @@
   {
     "operation": "ContentController.reingest_document",
     "group": "DocumentsApi",
+    "group_scoped": true,
     "method": "reingest",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/documents/document_id value/reingest",
@@ -5442,6 +5539,7 @@
   {
     "operation": "ContentController.reingest_table",
     "group": "DatasetsApi",
+    "group_scoped": true,
     "method": "reingestTable",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/datasets/dataset_id value/tables/table_id value/reingest",
@@ -5559,6 +5657,7 @@
   {
     "operation": "ContentController.document",
     "group": "DocumentsApi",
+    "group_scoped": true,
     "method": "replace",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/documents/document_id value/content",
@@ -5675,6 +5774,7 @@
   {
     "operation": "ContentController.table",
     "group": "DatasetsApi",
+    "group_scoped": true,
     "method": "replaceTable",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/datasets/dataset_id value/tables/table_id value/content",
@@ -5792,6 +5892,7 @@
   {
     "operation": "CuratedKnowledgeController.preview",
     "group": "KnowledgeIntentsApi",
+    "group_scoped": true,
     "method": "preview",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/knowledge-intents",
@@ -5875,6 +5976,7 @@
   {
     "operation": "CuratedKnowledgeController.intent",
     "group": "KnowledgeIntentsApi",
+    "group_scoped": true,
     "method": "get",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/knowledge-intents/intent_id value",
@@ -5959,6 +6061,7 @@
   {
     "operation": "CuratedKnowledgeController.confirm",
     "group": "KnowledgeIntentsApi",
+    "group_scoped": true,
     "method": "confirm",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/knowledge-intents/intent_id value/confirm",
@@ -5998,6 +6101,7 @@
   {
     "operation": "CuratedKnowledgeController.cancel",
     "group": "KnowledgeIntentsApi",
+    "group_scoped": true,
     "method": "cancel",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/knowledge-intents/intent_id value/cancel",
@@ -6082,6 +6186,7 @@
   {
     "operation": "CuratedKnowledgeController.list",
     "group": "KnowledgeItemsApi",
+    "group_scoped": true,
     "method": "list",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/knowledge-items",
@@ -6128,6 +6233,7 @@
   {
     "operation": "CuratedKnowledgeController.get",
     "group": "KnowledgeItemsApi",
+    "group_scoped": true,
     "method": "get",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/knowledge-items/item_id value",
@@ -6187,6 +6293,7 @@
   {
     "operation": "CuratedKnowledgeController.version",
     "group": "KnowledgeItemsApi",
+    "group_scoped": true,
     "method": "version",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/knowledge-items/item_id value/versions/2",
@@ -6247,6 +6354,7 @@
   {
     "operation": "DatasetFilesController.append",
     "group": "DatasetsApi",
+    "group_scoped": true,
     "method": "appendFile",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/datasets/dataset_id value/files",
@@ -6277,6 +6385,7 @@
   {
     "operation": "ExternalKnowledgeReviewController.stage",
     "group": "ExternalReviewsApi",
+    "group_scoped": true,
     "method": "stage",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/external-knowledge-reviews",
@@ -6365,6 +6474,7 @@
   {
     "operation": "ExternalKnowledgeReviewController.get",
     "group": "ExternalReviewsApi",
+    "group_scoped": true,
     "method": "get",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/external-knowledge-reviews/review_id value",
@@ -6454,6 +6564,7 @@
   {
     "operation": "ExternalKnowledgeReviewController.approve",
     "group": "ExternalReviewsApi",
+    "group_scoped": true,
     "method": "approve",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/external-knowledge-reviews/review_id value/approve",
@@ -6493,6 +6604,7 @@
   {
     "operation": "ExternalKnowledgeReviewController.cancel",
     "group": "ExternalReviewsApi",
+    "group_scoped": true,
     "method": "cancel",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/external-knowledge-reviews/review_id value/cancel",
@@ -6582,6 +6694,7 @@
   {
     "operation": "ExternalFileReviewController.cleanup",
     "group": "ExternalFileReviewsApi",
+    "group_scoped": true,
     "method": "cleanup",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/external-file-reviews/cleanup",
@@ -6610,6 +6723,7 @@
   {
     "operation": "ExternalFileReviewController.stage",
     "group": "ExternalFileReviewsApi",
+    "group_scoped": true,
     "method": "stage",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/external-file-reviews",
@@ -6705,6 +6819,7 @@
   {
     "operation": "ExternalFileReviewController.get",
     "group": "ExternalFileReviewsApi",
+    "group_scoped": true,
     "method": "get",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/external-file-reviews/review_id value",
@@ -6801,6 +6916,7 @@
   {
     "operation": "ExternalFileReviewController.chunk",
     "group": "ExternalFileReviewsApi",
+    "group_scoped": true,
     "method": "chunk",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/external-file-reviews/review_id value/chunks",
@@ -6897,6 +7013,7 @@
   {
     "operation": "ExternalFileReviewController.seal",
     "group": "ExternalFileReviewsApi",
+    "group_scoped": true,
     "method": "seal",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/external-file-reviews/review_id value/seal",
@@ -6993,6 +7110,7 @@
   {
     "operation": "ExternalFileReviewController.approve",
     "group": "ExternalFileReviewsApi",
+    "group_scoped": true,
     "method": "approve",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/external-file-reviews/review_id value/approve",
@@ -7089,6 +7207,7 @@
   {
     "operation": "ExternalFileReviewController.cancel",
     "group": "ExternalFileReviewsApi",
+    "group_scoped": true,
     "method": "cancel",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/external-file-reviews/review_id value/cancel",
@@ -7185,6 +7304,7 @@
   {
     "operation": "KnowledgeIndexesController.list_indexes",
     "group": "KnowledgeIndexesApi",
+    "group_scoped": true,
     "method": "list",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/knowledge-indexes",
@@ -7251,6 +7371,7 @@
   {
     "operation": "KnowledgeIndexesController.choices",
     "group": "KnowledgeIndexesApi",
+    "group_scoped": true,
     "method": "choices",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/knowledge-index-choices",
@@ -7308,6 +7429,7 @@
   {
     "operation": "KnowledgeIndexesController.choice",
     "group": "KnowledgeIndexesApi",
+    "group_scoped": true,
     "method": "choice",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/knowledge-index-choices/choice_id value",
@@ -7353,6 +7475,7 @@
   {
     "operation": "KnowledgeIndexesController.get",
     "group": "KnowledgeIndexesApi",
+    "group_scoped": true,
     "method": "get",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/knowledge-indexes/index_id value",
@@ -7404,6 +7527,7 @@
   {
     "operation": "KnowledgeIndexesController.plan",
     "group": "KnowledgeIndexesApi",
+    "group_scoped": true,
     "method": "plan",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/knowledge-indexes/plan",
@@ -7441,6 +7565,7 @@
   {
     "operation": "KnowledgeIndexesController.create",
     "group": "KnowledgeIndexesApi",
+    "group_scoped": true,
     "method": "create",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/knowledge-indexes",
@@ -7494,6 +7619,7 @@
   {
     "operation": "KnowledgeIndexesController.activate",
     "group": "KnowledgeIndexesApi",
+    "group_scoped": true,
     "method": "activate",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/knowledge-indexes/index_id value/activate",
@@ -7545,6 +7671,7 @@
   {
     "operation": "KnowledgeIndexesController.cancel",
     "group": "KnowledgeIndexesApi",
+    "group_scoped": true,
     "method": "cancel",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/knowledge-indexes/index_id value/cancel",
@@ -7596,6 +7723,7 @@
   {
     "operation": "KnowledgeIndexesController.resume",
     "group": "KnowledgeIndexesApi",
+    "group_scoped": true,
     "method": "resume",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/knowledge-indexes/index_id value/resume",
@@ -7650,6 +7778,7 @@
   {
     "operation": "TableProvenanceController.snapshot",
     "group": "DatasetsApi",
+    "group_scoped": true,
     "method": "tableProvenance",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/datasets/dataset_id value/tables/table_id value/provenance",
@@ -7730,6 +7859,7 @@
   {
     "operation": "TableProvenanceController.history",
     "group": "DatasetsApi",
+    "group_scoped": true,
     "method": "tableSnapshots",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/datasets/dataset_id value/tables/table_id value/snapshots",
@@ -7794,6 +7924,7 @@
   {
     "operation": "TableCoordinateController.manifest",
     "group": "DatasetsApi",
+    "group_scoped": true,
     "method": "tableCoordinates",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/datasets/dataset_id value/tables/table_id value/coordinates",
@@ -7854,6 +7985,7 @@
   {
     "operation": "TableCoordinateController.cells",
     "group": "DatasetsApi",
+    "group_scoped": true,
     "method": "tableCoordinateCells",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/datasets/dataset_id value/tables/table_id value/coordinates/cells",
@@ -7932,6 +8064,7 @@
   {
     "operation": "TableCoordinateController.rows",
     "group": "DatasetsApi",
+    "group_scoped": true,
     "method": "tableCoordinateRows",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/datasets/dataset_id value/tables/table_id value/coordinates/rows",
@@ -8010,6 +8143,7 @@
   {
     "operation": "TableCoordinateController.columns",
     "group": "DatasetsApi",
+    "group_scoped": true,
     "method": "tableCoordinateColumns",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/datasets/dataset_id value/tables/table_id value/coordinates/columns",
@@ -8096,6 +8230,7 @@
   {
     "operation": "McpConnectionController.get",
     "group": "McpApi",
+    "group_scoped": false,
     "method": "connection",
     "http": "GET",
     "path": "/api/v1/mcp/connection",
@@ -8155,8 +8290,314 @@
     "idempotency": false
   },
   {
+    "operation": "McpOrganizationConnectionController.get",
+    "group": "McpApi",
+    "group_scoped": false,
+    "method": "organizationConnection",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/mcp/connection",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "McpConnectionDescriptor",
+    "body": {
+      "enabled": false,
+      "local_only": false,
+      "endpoint": "endpoint-value",
+      "transport": "streamable-http",
+      "authentication": [
+        "personal_token"
+      ],
+      "clients": [
+        {
+          "client_id": "client_id-value",
+          "name": "name-value",
+          "scopes": [
+            "scopes-value"
+          ],
+          "client_auth": "public"
+        }
+      ],
+      "oauth_enabled": false,
+      "oauth_registration": "pre_registered",
+      "supported_scopes": [
+        "supported_scopes-value"
+      ],
+      "tools": [
+        {
+          "name": "name-value",
+          "required_scopes": [
+            "required_scopes-value"
+          ],
+          "access": "read",
+          "requires_app": false
+        }
+      ],
+      "review": {
+        "supported": false,
+        "mechanism": "mcp_apps",
+        "resource_uri": "ui://koinon/knowledge-review",
+        "mime_type": "text/html;profile=mcp-app",
+        "external_redirect": false,
+        "client_support": "not_observed"
+      },
+      "client_acceptance": "not_verified"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "McpOAuthClientController.readiness",
+    "group": "McpOAuthClientsApi",
+    "group_scoped": true,
+    "method": "readiness",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/mcp/oauth-clients/readiness",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "McpOAuthClientReadiness",
+    "body": {
+      "ready": false,
+      "endpoint_enabled": false,
+      "oauth_enabled": false,
+      "encryption_configured": false,
+      "missing_configuration": [
+        "mcp_endpoint"
+      ],
+      "static_clients_read_only": false
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "McpOAuthClientController.page",
+    "group": "McpOAuthClientsApi",
+    "group_scoped": true,
+    "method": "list",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/mcp/oauth-clients",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {
+      "q": "q value",
+      "status": "enabled",
+      "page": 2,
+      "page_size": 2,
+      "sort": "updated_at",
+      "order": "desc"
+    },
+    "filter": "McpOAuthClientFilter",
+    "request": null,
+    "response": "McpOAuthClientPage",
+    "body": {
+      "items": [
+        {
+          "name": "name-value",
+          "redirect_uris": [
+            "redirect_uris-value"
+          ],
+          "scopes": [
+            "catalog:read"
+          ],
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "client_id": "client_id-value",
+          "client_type": "public",
+          "enabled": false,
+          "revision": 1,
+          "created_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z",
+          "created_by": "created_by-value",
+          "updated_by": "updated_by-value"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "McpOAuthClientController.create",
+    "group": "McpOAuthClientsApi",
+    "group_scoped": true,
+    "method": "create",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/mcp/oauth-clients",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "McpOAuthClientInput",
+    "response": "McpOAuthClientCredential",
+    "body": {
+      "client": {
+        "name": "name-value",
+        "redirect_uris": [
+          "redirect_uris-value"
+        ],
+        "scopes": [
+          "catalog:read"
+        ],
+        "id": "id-value",
+        "tenant_id": "tenant_id-value",
+        "client_id": "client_id-value",
+        "client_type": "public",
+        "enabled": false,
+        "revision": 1,
+        "created_at": "2026-10-27T12:34:56Z",
+        "updated_at": "2026-10-27T12:34:56Z",
+        "created_by": "created_by-value",
+        "updated_by": "updated_by-value"
+      },
+      "client_secret": "client_secret-value"
+    },
+    "status": 201,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "McpOAuthClientController.retrieve",
+    "group": "McpOAuthClientsApi",
+    "group_scoped": true,
+    "method": "get",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/mcp/oauth-clients/client_id value",
+    "ids": {
+      "tenant_id": "tenant value",
+      "client_id": "client_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "McpOAuthClient",
+    "body": {
+      "name": "name-value",
+      "redirect_uris": [
+        "redirect_uris-value"
+      ],
+      "scopes": [
+        "catalog:read"
+      ],
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "client_id": "client_id-value",
+      "client_type": "public",
+      "enabled": false,
+      "revision": 1,
+      "created_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z",
+      "created_by": "created_by-value",
+      "updated_by": "updated_by-value"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "McpOAuthClientController.update",
+    "group": "McpOAuthClientsApi",
+    "group_scoped": true,
+    "method": "update",
+    "http": "PATCH",
+    "path": "/api/v1/tenants/tenant value/mcp/oauth-clients/client_id value",
+    "ids": {
+      "tenant_id": "tenant value",
+      "client_id": "client_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "McpOAuthClientPatch",
+    "response": "McpOAuthClient",
+    "body": {
+      "name": "name-value",
+      "redirect_uris": [
+        "redirect_uris-value"
+      ],
+      "scopes": [
+        "catalog:read"
+      ],
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "client_id": "client_id-value",
+      "client_type": "public",
+      "enabled": false,
+      "revision": 1,
+      "created_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z",
+      "created_by": "created_by-value",
+      "updated_by": "updated_by-value"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "McpOAuthClientController.rotate_secret",
+    "group": "McpOAuthClientsApi",
+    "group_scoped": true,
+    "method": "rotateSecret",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/mcp/oauth-clients/client_id value/rotate-secret",
+    "ids": {
+      "tenant_id": "tenant value",
+      "client_id": "client_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "McpOAuthClientRevision",
+    "response": "McpOAuthClientCredential",
+    "body": {
+      "client": {
+        "name": "name-value",
+        "redirect_uris": [
+          "redirect_uris-value"
+        ],
+        "scopes": [
+          "catalog:read"
+        ],
+        "id": "id-value",
+        "tenant_id": "tenant_id-value",
+        "client_id": "client_id-value",
+        "client_type": "public",
+        "enabled": false,
+        "revision": 1,
+        "created_at": "2026-10-27T12:34:56Z",
+        "updated_at": "2026-10-27T12:34:56Z",
+        "created_by": "created_by-value",
+        "updated_by": "updated_by-value"
+      },
+      "client_secret": "client_secret-value"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
     "operation": "BrandingDefaultsController.defaults",
     "group": "BrandingDefaultsApi",
+    "group_scoped": false,
     "method": "defaults",
     "http": "GET",
     "path": "/api/v1/branding/defaults",
@@ -8206,6 +8647,7 @@
   {
     "operation": "OrganizationBrandingController.get",
     "group": "OrganizationBrandingApi",
+    "group_scoped": true,
     "method": "get",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/branding",
@@ -8261,6 +8703,7 @@
   {
     "operation": "OrganizationBrandingController.update",
     "group": "OrganizationBrandingApi",
+    "group_scoped": true,
     "method": "update",
     "http": "PUT",
     "path": "/api/v1/tenants/tenant value/branding",
@@ -8316,6 +8759,7 @@
   {
     "operation": "OrganizationBrandingController.reset",
     "group": "OrganizationBrandingApi",
+    "group_scoped": true,
     "method": "reset",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/branding/reset",
@@ -8371,6 +8815,7 @@
   {
     "operation": "OrganizationChatController.get",
     "group": "OrganizationChatApi",
+    "group_scoped": true,
     "method": "get",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/chat/settings",
@@ -8400,6 +8845,7 @@
   {
     "operation": "OrganizationChatController.update",
     "group": "OrganizationChatApi",
+    "group_scoped": true,
     "method": "update",
     "http": "PUT",
     "path": "/api/v1/tenants/tenant value/chat/settings",
@@ -8426,6 +8872,7 @@
   {
     "operation": "OrganizationKnowledgeController.get",
     "group": "OrganizationKnowledgeApi",
+    "group_scoped": true,
     "method": "get",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/knowledge/settings",
@@ -8555,6 +9002,7 @@
   {
     "operation": "OrganizationKnowledgeController.update",
     "group": "OrganizationKnowledgeApi",
+    "group_scoped": true,
     "method": "update",
     "http": "PUT",
     "path": "/api/v1/tenants/tenant value/knowledge/settings",
@@ -8684,6 +9132,7 @@
   {
     "operation": "ProfileController.get",
     "group": "ProfileApi",
+    "group_scoped": false,
     "method": "get",
     "http": "GET",
     "path": "/api/v1/profile",
@@ -8711,6 +9160,7 @@
   {
     "operation": "ProfileController.update",
     "group": "ProfileApi",
+    "group_scoped": false,
     "method": "update",
     "http": "PATCH",
     "path": "/api/v1/profile",
@@ -8738,6 +9188,7 @@
   {
     "operation": "ProfileController.avatar",
     "group": "ProfileApi",
+    "group_scoped": false,
     "method": "avatar",
     "http": "GET",
     "path": "/api/v1/profile/avatar",
@@ -8757,6 +9208,7 @@
   {
     "operation": "ProfileController.set_avatar",
     "group": "ProfileApi",
+    "group_scoped": false,
     "method": "uploadAvatar",
     "http": "POST",
     "path": "/api/v1/profile/avatar",
@@ -8784,6 +9236,7 @@
   {
     "operation": "ProfileController.delete_avatar",
     "group": "ProfileApi",
+    "group_scoped": false,
     "method": "deleteAvatar",
     "http": "DELETE",
     "path": "/api/v1/profile/avatar",
@@ -8811,6 +9264,7 @@
   {
     "operation": "ProfileController.people",
     "group": "PeopleApi",
+    "group_scoped": true,
     "method": "list",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/people",
@@ -8876,6 +9330,7 @@
   {
     "operation": "ProfileController.person_avatar",
     "group": "PeopleApi",
+    "group_scoped": true,
     "method": "avatar",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/people/profile_id value/avatar",
@@ -8898,6 +9353,7 @@
   {
     "operation": "ShareController.review",
     "group": "SharesApi",
+    "group_scoped": true,
     "method": "review",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/shares/reviews",
@@ -8985,6 +9441,7 @@
   {
     "operation": "ShareController.create",
     "group": "SharesApi",
+    "group_scoped": true,
     "method": "create",
     "http": "POST",
     "path": "/api/v1/tenants/tenant value/shares",
@@ -9013,6 +9470,7 @@
   {
     "operation": "ShareController.list",
     "group": "SharesApi",
+    "group_scoped": true,
     "method": "list",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/shares",
@@ -9054,6 +9512,7 @@
   {
     "operation": "ShareController.get",
     "group": "SharesApi",
+    "group_scoped": true,
     "method": "get",
     "http": "GET",
     "path": "/api/v1/tenants/tenant value/shares/share_id value",
@@ -9142,6 +9601,7 @@
   {
     "operation": "ShareController.revoke",
     "group": "SharesApi",
+    "group_scoped": true,
     "method": "revoke",
     "http": "DELETE",
     "path": "/api/v1/tenants/tenant value/shares/share_id value",
@@ -9162,6 +9622,7 @@
   {
     "operation": "PersonalTokenController.list",
     "group": "TokensApi",
+    "group_scoped": false,
     "method": "list",
     "http": "GET",
     "path": "/api/v1/tokens",
@@ -9241,6 +9702,7 @@
   {
     "operation": "PersonalTokenController.scopes",
     "group": "TokensApi",
+    "group_scoped": false,
     "method": "scopes",
     "http": "GET",
     "path": "/api/v1/tokens/scopes",
@@ -9275,6 +9737,7 @@
   {
     "operation": "PersonalTokenController.create",
     "group": "TokensApi",
+    "group_scoped": false,
     "method": "create",
     "http": "POST",
     "path": "/api/v1/tokens",
@@ -9313,6 +9776,7 @@
   {
     "operation": "PersonalTokenController.revoke",
     "group": "TokensApi",
+    "group_scoped": false,
     "method": "revoke",
     "http": "DELETE",
     "path": "/api/v1/tokens/token_id value",
@@ -9333,6 +9797,7 @@
   {
     "operation": "CapabilitiesController.capabilities",
     "group": "PlatformApi",
+    "group_scoped": false,
     "method": "capabilities",
     "http": "GET",
     "path": "/api/v1/capabilities",

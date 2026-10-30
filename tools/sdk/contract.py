@@ -21,8 +21,17 @@ from koinon_sdk.client import KoinonClient
 from koinon_sdk import coordinates, curated, dataset_files, authorized_applications, organization_chat
 from koinon_sdk import organization_knowledge
 from koinon_sdk import organization_branding, mcp, external_reviews, external_file_reviews
+from koinon_sdk import mcp_applications
 
 rows = """
+McpOAuthClientController.readiness|mcp_oauth_clients_readiness|mcpOAuthClients.readiness|-|McpOAuthClientReadiness
+McpOAuthClientController.page|mcp_oauth_clients|mcpOAuthClients.list|-|McpOAuthClientPage
+McpOAuthClientController.create|create_mcp_oauth_client|mcpOAuthClients.create|McpOAuthClientInput|McpOAuthClientCredential
+McpOAuthClientController.retrieve|mcp_oauth_client|mcpOAuthClients.get|-|McpOAuthClient
+McpOAuthClientController.update|update_mcp_oauth_client|mcpOAuthClients.update|McpOAuthClientPatch|McpOAuthClient
+McpOAuthClientController.rotate_secret|rotate_mcp_oauth_client_secret|mcpOAuthClients.rotateSecret|McpOAuthClientRevision|McpOAuthClientCredential
+McpOrganizationConnectionController.get|organization_mcp_connection|mcp.organizationConnection|-|McpConnectionDescriptor
+
 ExternalFileReviewController.cleanup|cleanup_external_file_reviews|externalFileReviews.cleanup|ExternalFileCleanupInput|ExternalFileCleanupResult
 ExternalFileReviewController.stage|stage_external_file_review|externalFileReviews.stage|ExternalFileReviewInput|ExternalFileReviewView
 ExternalFileReviewController.get|external_file_review|externalFileReviews.get|-|ExternalFileReviewView
@@ -379,7 +388,7 @@ assert not mapping, mapping
 assert not unmapped, "Canonical API operations awaiting typed SDK mapping: " + ", ".join(unmapped)
 
 classes = {}
-for module in (models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files, authorized_applications, organization_chat, organization_knowledge, organization_branding, mcp, external_reviews, external_file_reviews):
+for module in (models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files, authorized_applications, organization_chat, organization_knowledge, organization_branding, mcp, external_reviews, external_file_reviews, mcp_applications):
     classes.update(
         {
             name: value

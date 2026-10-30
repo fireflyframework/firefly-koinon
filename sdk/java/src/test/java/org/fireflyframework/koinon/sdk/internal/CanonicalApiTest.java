@@ -148,7 +148,7 @@ final class CanonicalApiTest {
                 codec)) {
       Class<?> group =
           Class.forName("org.fireflyframework.koinon.sdk.api." + op.path("group").asText());
-      boolean scoped = op.path("path").asText().contains("/tenants/");
+      boolean scoped = op.path("group_scoped").asBoolean();
       Object api =
           scoped
               ? group

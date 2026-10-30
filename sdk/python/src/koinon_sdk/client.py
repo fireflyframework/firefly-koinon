@@ -118,6 +118,15 @@ from koinon_sdk.indexes import (
     NativeIndexPage,
 )
 from koinon_sdk.mcp import McpConnectionDescriptor
+from koinon_sdk.mcp_applications import (
+    McpOAuthClient,
+    McpOAuthClientCredential,
+    McpOAuthClientInput,
+    McpOAuthClientPage,
+    McpOAuthClientPatch,
+    McpOAuthClientReadiness,
+    McpOAuthClientRevision,
+)
 from koinon_sdk.models import (
     AgentConfiguration,
     AgentInput,
@@ -715,6 +724,93 @@ class KoinonClient:
 
     async def mcp_connection(self) -> McpConnectionDescriptor:
         return McpConnectionDescriptor.model_validate(await self._request("GET", "/mcp/connection"))
+
+    async def organization_mcp_connection(self, tenant_id: str) -> McpConnectionDescriptor:
+        return McpConnectionDescriptor.model_validate(
+            await self._request("GET", self._tenant(tenant_id) + "/mcp/connection")
+        )
+
+    async def mcp_oauth_clients_readiness(self, tenant_id: str) -> McpOAuthClientReadiness:
+        return McpOAuthClientReadiness.model_validate(
+            await self._request("GET", self._tenant(tenant_id) + "/mcp/oauth-clients/readiness")
+        )
+
+    async def mcp_oauth_clients(
+        self,
+        tenant_id: str,
+        *,
+        q: str = "",
+        status: Literal["all", "enabled", "disabled"] = "all",
+        page: int = 1,
+        page_size: int = 25,
+        sort: Literal["name", "updated_at"] = "name",
+        order: Literal["asc", "desc"] = "asc",
+    ) -> McpOAuthClientPage:
+        return McpOAuthClientPage.model_validate(
+            await self._request(
+                "GET",
+                self._tenant(tenant_id) + "/mcp/oauth-clients",
+                params={
+                    "q": q,
+                    "status": status,
+                    "page": page,
+                    "page_size": page_size,
+                    "sort": sort,
+                    "order": order,
+                },
+            )
+        )
+
+    async def create_mcp_oauth_client(
+        self,
+        tenant_id: str,
+        value: McpOAuthClientInput,
+    ) -> McpOAuthClientCredential:
+        return McpOAuthClientCredential.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/mcp/oauth-clients",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def mcp_oauth_client(self, tenant_id: str, client_id: str) -> McpOAuthClient:
+        return McpOAuthClient.model_validate(
+            await self._request(
+                "GET", self._tenant(tenant_id) + "/mcp/oauth-clients/" + quote(client_id, safe="")
+            )
+        )
+
+    async def update_mcp_oauth_client(
+        self,
+        tenant_id: str,
+        client_id: str,
+        value: McpOAuthClientPatch,
+    ) -> McpOAuthClient:
+        return McpOAuthClient.model_validate(
+            await self._request(
+                "PATCH",
+                self._tenant(tenant_id) + "/mcp/oauth-clients/" + quote(client_id, safe=""),
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def rotate_mcp_oauth_client_secret(
+        self,
+        tenant_id: str,
+        client_id: str,
+        value: McpOAuthClientRevision,
+    ) -> McpOAuthClientCredential:
+        return McpOAuthClientCredential.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id)
+                + "/mcp/oauth-clients/"
+                + quote(client_id, safe="")
+                + "/rotate-secret",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
 
     async def stage_external_review(
         self, tenant_id: str, value: ExternalReviewInput, *, idempotency_key: str

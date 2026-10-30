@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "api_prefix": "/api/v1",
   "status": "Canonical API contract; development snapshot",
-  "canonical_operation_count": 160,
+  "canonical_operation_count": 167,
   "qualified_compatibility_operations": [
     {
       "operation": "GlossaryController.list_terms",
@@ -5769,6 +5769,266 @@
       "response_schema": "McpConnectionDescriptor",
       "success_status": 200,
       "source_sha256": "4ea9c4cfedd5b8b4167702ff99c8b943543fd978320876451a4d4d9ed7c2261b",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/mcp/connection",
+      "category": "canonical",
+      "operation": "McpOrganizationConnectionController.get",
+      "source": "backend/src/koinon/mcp_applications/controllers.py",
+      "line": 37,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "organization_mcp_connection",
+      "sdk_typescript": "mcp.organizationConnection",
+      "sdk_java": "client.mcp.organizationConnection",
+      "request_schema": null,
+      "response_schema": "McpConnectionDescriptor",
+      "success_status": 200,
+      "source_sha256": "8fa73cf4654c35a103fc5fac6e6d24fad12d248d0e3e11330dd9ca50c2e6d0d0",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/mcp/oauth-clients/readiness",
+      "category": "canonical",
+      "operation": "McpOAuthClientController.readiness",
+      "source": "backend/src/koinon/mcp_applications/controllers.py",
+      "line": 50,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "mcp_oauth_clients_readiness",
+      "sdk_typescript": "mcpOAuthClients.readiness",
+      "sdk_java": "client.mcpOAuthClients.readiness",
+      "request_schema": null,
+      "response_schema": "McpOAuthClientReadiness",
+      "success_status": 200,
+      "source_sha256": "8fa73cf4654c35a103fc5fac6e6d24fad12d248d0e3e11330dd9ca50c2e6d0d0",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/mcp/oauth-clients",
+      "category": "canonical",
+      "operation": "McpOAuthClientController.page",
+      "source": "backend/src/koinon/mcp_applications/controllers.py",
+      "line": 54,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "q",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "status",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "all"
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        },
+        {
+          "name": "sort",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "name"
+        },
+        {
+          "name": "order",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "asc"
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "mcp_oauth_clients",
+      "sdk_typescript": "mcpOAuthClients.list",
+      "sdk_java": "client.mcpOAuthClients.list",
+      "request_schema": null,
+      "response_schema": "McpOAuthClientPage",
+      "success_status": 200,
+      "source_sha256": "8fa73cf4654c35a103fc5fac6e6d24fad12d248d0e3e11330dd9ca50c2e6d0d0",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/mcp/oauth-clients",
+      "category": "canonical",
+      "operation": "McpOAuthClientController.create",
+      "source": "backend/src/koinon/mcp_applications/controllers.py",
+      "line": 81,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[McpOAuthClientInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "create_mcp_oauth_client",
+      "sdk_typescript": "mcpOAuthClients.create",
+      "sdk_java": "client.mcpOAuthClients.create",
+      "request_schema": "McpOAuthClientInput",
+      "response_schema": "McpOAuthClientCredential",
+      "success_status": 201,
+      "source_sha256": "8fa73cf4654c35a103fc5fac6e6d24fad12d248d0e3e11330dd9ca50c2e6d0d0",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/mcp/oauth-clients/{client_id}",
+      "category": "canonical",
+      "operation": "McpOAuthClientController.retrieve",
+      "source": "backend/src/koinon/mcp_applications/controllers.py",
+      "line": 93,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "client_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "mcp_oauth_client",
+      "sdk_typescript": "mcpOAuthClients.get",
+      "sdk_java": "client.mcpOAuthClients.get",
+      "request_schema": null,
+      "response_schema": "McpOAuthClient",
+      "success_status": 200,
+      "source_sha256": "8fa73cf4654c35a103fc5fac6e6d24fad12d248d0e3e11330dd9ca50c2e6d0d0",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/tenants/{tenant_id}/mcp/oauth-clients/{client_id}",
+      "category": "canonical",
+      "operation": "McpOAuthClientController.update",
+      "source": "backend/src/koinon/mcp_applications/controllers.py",
+      "line": 102,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "client_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[McpOAuthClientPatch]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "update_mcp_oauth_client",
+      "sdk_typescript": "mcpOAuthClients.update",
+      "sdk_java": "client.mcpOAuthClients.update",
+      "request_schema": "McpOAuthClientPatch",
+      "response_schema": "McpOAuthClient",
+      "success_status": 200,
+      "source_sha256": "8fa73cf4654c35a103fc5fac6e6d24fad12d248d0e3e11330dd9ca50c2e6d0d0",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/mcp/oauth-clients/{client_id}/rotate-secret",
+      "category": "canonical",
+      "operation": "McpOAuthClientController.rotate_secret",
+      "source": "backend/src/koinon/mcp_applications/controllers.py",
+      "line": 119,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "client_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[McpOAuthClientRevision]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "rotate_mcp_oauth_client_secret",
+      "sdk_typescript": "mcpOAuthClients.rotateSecret",
+      "sdk_java": "client.mcpOAuthClients.rotateSecret",
+      "request_schema": "McpOAuthClientRevision",
+      "response_schema": "McpOAuthClientCredential",
+      "success_status": 200,
+      "source_sha256": "8fa73cf4654c35a103fc5fac6e6d24fad12d248d0e3e11330dd9ca50c2e6d0d0",
       "encoding": "application/json",
       "headers": []
     },

@@ -19,6 +19,8 @@ def add(controller, group, methods):
 
 
 add("McpConnectionController", "McpApi", {"get": "connection"})
+add("McpOrganizationConnectionController", "McpApi", {"get": "organizationConnection"})
+add("McpOAuthClientController", "McpOAuthClientsApi", {"readiness": "readiness", "page": "list", "create": "create", "retrieve": "get", "update": "update", "rotate_secret": "rotateSecret"})
 add("ExternalKnowledgeReviewController", "ExternalReviewsApi", {"stage": "stage", "get": "get", "approve": "approve", "cancel": "cancel"})
 add("ExternalFileReviewController", "ExternalFileReviewsApi", {"cleanup": "cleanup", "stage": "stage", "get": "get", "chunk": "chunk", "seal": "seal", "approve": "approve", "cancel": "cancel"})
 add("OrganizationChatController", "OrganizationChatApi", {"get": "get", "update": "update"})
@@ -185,6 +187,7 @@ def upper(s):
 
 
 filters = {
+    "McpOAuthClientController.page": "McpOAuthClientFilter",
     "OrganizationChatController.get": "OrganizationChatFilter",
     "AuthorizedApplicationController.list": "AuthorizedApplicationFilter",
     "TableCoordinateController.manifest": "TableCoordinateFilter",
@@ -248,6 +251,9 @@ for name, queries in filter_defs.items():
             ("InvitationFilter", "status"): "InvitationStatus",
             ("IndexFilter", "domain"): "KnowledgeDomain",
             ("IndexScope", "domain"): "KnowledgeDomain",
+            ("McpOAuthClientFilter", "status"): "McpOAuthClientStatus",
+            ("McpOAuthClientFilter", "sort"): "McpOAuthClientSort",
+            ("McpOAuthClientFilter", "order"): "McpOAuthClientOrder",
         }.get((name, wire), kind)
         fields.append((wire, camel(wire), kind, p.get("required", False)))
     body = (
@@ -294,7 +300,7 @@ for name, queries in filter_defs.items():
     for wire, n, t, required in fields:
         encoded = (
             n + ".value()"
-            if t in {"MembershipRole", "MembershipScope", "InvitationStatus", "KnowledgeDomain"}
+            if t in {"MembershipRole", "MembershipScope", "InvitationStatus", "KnowledgeDomain", "McpOAuthClientStatus", "McpOAuthClientSort", "McpOAuthClientOrder"}
             else "String.valueOf(" + n + ")"
         )
         if required:
@@ -341,8 +347,10 @@ for op in ops:
         + "."
         + method
     )
+group_scopes = {group: all("{tenant_id}" in operation["path"] for operation, _ in entries)
+                for group, entries in groups.items()}
 for group, operations in groups.items():
-    scoped = any("{tenant_id}" in o["path"] for o, _ in operations)
+    scoped = group_scopes[group]
     body = (
         header
         + "package org.fireflyframework.koinon.sdk.api;\nimport org.fireflyframework.koinon.sdk.*;\nimport org.fireflyframework.koinon.sdk.internal.Transport;\nimport org.fireflyframework.koinon.sdk.model.*;\nimport java.nio.file.Path;\nimport java.util.*;\nimport java.util.concurrent.CompletableFuture;\npublic final class "
@@ -361,7 +369,8 @@ for group, operations in groups.items():
     for op, method in operations:
         result = rtype(op)
         path = op["path"].removeprefix("/api/v1")
-        path = path.replace("/tenants/{tenant_id}", "")
+        if scoped:
+            path = path.replace("/tenants/{tenant_id}", "")
         params = []
         integer_paths = {p["name"] for p in op["parameters"] if p["location"] == "path" and "int" in p["annotation"]}
         path_expr = "prefix+"
@@ -374,7 +383,7 @@ for group, operations in groups.items():
             if p
         )
         for p in op["parameters"]:
-            if p["location"] == "path" and p["name"] != "tenant_id":
+            if p["location"] == "path" and (p["name"] != "tenant_id" or not scoped):
                 params.append(("Long" if p["name"] in integer_paths else "String", camel(p["name"])))
         request = op.get("request_schema")
         queries = [p for p in op["parameters"] if p["location"] == "query"]

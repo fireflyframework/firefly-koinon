@@ -10406,6 +10406,416 @@
       "title": "McpConnectionDescriptor",
       "type": "object"
     },
+    "McpOAuthClient": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "redirect_uris": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8,
+          "minItems": 1,
+          "title": "Redirect Uris",
+          "type": "array"
+        },
+        "scopes": {
+          "items": {
+            "enum": [
+              "catalog:read",
+              "catalog:write",
+              "ingest:write",
+              "knowledge:search",
+              "query:execute",
+              "chat:use",
+              "evidence:read"
+            ],
+            "type": "string"
+          },
+          "maxItems": 7,
+          "minItems": 1,
+          "title": "Scopes",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "tenant_id": {
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "client_id": {
+          "title": "Client Id",
+          "type": "string"
+        },
+        "client_type": {
+          "enum": [
+            "public",
+            "confidential"
+          ],
+          "title": "Client Type",
+          "type": "string"
+        },
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "revision": {
+          "title": "Revision",
+          "type": "integer"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        },
+        "created_by": {
+          "title": "Created By",
+          "type": "string"
+        },
+        "updated_by": {
+          "title": "Updated By",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "redirect_uris",
+        "scopes",
+        "id",
+        "tenant_id",
+        "client_id",
+        "client_type",
+        "enabled",
+        "revision",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by"
+      ],
+      "title": "McpOAuthClient",
+      "type": "object"
+    },
+    "McpOAuthClientCredential": {
+      "additionalProperties": false,
+      "properties": {
+        "client": {
+          "$ref": "#/$defs/McpOAuthClient"
+        },
+        "client_secret": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Client Secret"
+        }
+      },
+      "required": [
+        "client"
+      ],
+      "title": "McpOAuthClientCredential",
+      "type": "object"
+    },
+    "McpOAuthClientInput": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "redirect_uris": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8,
+          "minItems": 1,
+          "title": "Redirect Uris",
+          "type": "array"
+        },
+        "scopes": {
+          "items": {
+            "enum": [
+              "catalog:read",
+              "catalog:write",
+              "ingest:write",
+              "knowledge:search",
+              "query:execute",
+              "chat:use",
+              "evidence:read"
+            ],
+            "type": "string"
+          },
+          "maxItems": 7,
+          "minItems": 1,
+          "title": "Scopes",
+          "type": "array"
+        },
+        "client_type": {
+          "enum": [
+            "public",
+            "confidential"
+          ],
+          "title": "Client Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "redirect_uris",
+        "scopes",
+        "client_type"
+      ],
+      "title": "McpOAuthClientInput",
+      "type": "object"
+    },
+    "McpOAuthClientPage": {
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/McpOAuthClient"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "total": {
+          "title": "Total",
+          "type": "integer"
+        },
+        "page": {
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "pages": {
+          "title": "Pages",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size",
+        "pages"
+      ],
+      "title": "McpOAuthClientPage",
+      "type": "object"
+    },
+    "McpOAuthClientPatch": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "maximum": 2147483646,
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 120,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "redirect_uris": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 8,
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Redirect Uris"
+        },
+        "scopes": {
+          "anyOf": [
+            {
+              "items": {
+                "enum": [
+                  "catalog:read",
+                  "catalog:write",
+                  "ingest:write",
+                  "knowledge:search",
+                  "query:execute",
+                  "chat:use",
+                  "evidence:read"
+                ],
+                "type": "string"
+              },
+              "maxItems": 7,
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scopes"
+        },
+        "enabled": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enabled"
+        }
+      },
+      "required": [
+        "expected_revision"
+      ],
+      "title": "McpOAuthClientPatch",
+      "type": "object"
+    },
+    "McpOAuthClientReadiness": {
+      "additionalProperties": false,
+      "properties": {
+        "ready": {
+          "title": "Ready",
+          "type": "boolean"
+        },
+        "endpoint_enabled": {
+          "title": "Endpoint Enabled",
+          "type": "boolean"
+        },
+        "oauth_enabled": {
+          "title": "Oauth Enabled",
+          "type": "boolean"
+        },
+        "encryption_configured": {
+          "title": "Encryption Configured",
+          "type": "boolean"
+        },
+        "missing_configuration": {
+          "items": {
+            "enum": [
+              "mcp_endpoint",
+              "oauth_enabled",
+              "oauth_encryption_key"
+            ],
+            "type": "string"
+          },
+          "title": "Missing Configuration",
+          "type": "array"
+        },
+        "static_clients_read_only": {
+          "default": true,
+          "title": "Static Clients Read Only",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "ready",
+        "endpoint_enabled",
+        "oauth_enabled",
+        "encryption_configured",
+        "missing_configuration"
+      ],
+      "title": "McpOAuthClientReadiness",
+      "type": "object"
+    },
+    "McpOAuthClientRevision": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "maximum": 2147483646,
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "expected_revision"
+      ],
+      "title": "McpOAuthClientRevision",
+      "type": "object"
+    },
+    "McpOAuthClientValues": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "redirect_uris": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8,
+          "minItems": 1,
+          "title": "Redirect Uris",
+          "type": "array"
+        },
+        "scopes": {
+          "items": {
+            "enum": [
+              "catalog:read",
+              "catalog:write",
+              "ingest:write",
+              "knowledge:search",
+              "query:execute",
+              "chat:use",
+              "evidence:read"
+            ],
+            "type": "string"
+          },
+          "maxItems": 7,
+          "minItems": 1,
+          "title": "Scopes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "redirect_uris",
+        "scopes"
+      ],
+      "title": "McpOAuthClientValues",
+      "type": "object"
+    },
     "McpReadReceipt": {
       "additionalProperties": true,
       "properties": {
@@ -19712,6 +20122,30 @@
     },
     "ExternalFileCleanupResult": {
       "$ref": "#/$defs/ExternalFileCleanupResult"
+    },
+    "McpOAuthClientValues": {
+      "$ref": "#/$defs/McpOAuthClientValues"
+    },
+    "McpOAuthClientInput": {
+      "$ref": "#/$defs/McpOAuthClientInput"
+    },
+    "McpOAuthClientRevision": {
+      "$ref": "#/$defs/McpOAuthClientRevision"
+    },
+    "McpOAuthClientPatch": {
+      "$ref": "#/$defs/McpOAuthClientPatch"
+    },
+    "McpOAuthClient": {
+      "$ref": "#/$defs/McpOAuthClient"
+    },
+    "McpOAuthClientCredential": {
+      "$ref": "#/$defs/McpOAuthClientCredential"
+    },
+    "McpOAuthClientReadiness": {
+      "$ref": "#/$defs/McpOAuthClientReadiness"
+    },
+    "McpOAuthClientPage": {
+      "$ref": "#/$defs/McpOAuthClientPage"
     },
     "Page[AuditEvent]": {
       "$ref": "#/$defs/Page_AuditEvent_"

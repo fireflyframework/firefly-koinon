@@ -33,6 +33,8 @@ public final class KoinonClient implements AutoCloseable {
 
   public McpApi mcp() { return new McpApi(transport); }
 
+  public McpOAuthClientsApi mcpOAuthClients(String tenant) { return new McpOAuthClientsApi(transport, tenant); }
+
   public ExternalReviewsApi externalReviews(String tenant) { return new ExternalReviewsApi(transport, tenant); }
 
   public ExternalFileReviewsApi externalFileReviews(String tenant) { return new ExternalFileReviewsApi(transport, tenant); }

@@ -205,6 +205,17 @@ from koinon_sdk.mcp import (
     McpReviewSupport,
     McpToolCapability,
 )
+from koinon_sdk.mcp_applications import (
+    McpOAuthClient,
+    McpOAuthClientCredential,
+    McpOAuthClientInput,
+    McpOAuthClientPage,
+    McpOAuthClientPatch,
+    McpOAuthClientReadiness,
+    McpOAuthClientRevision,
+    McpOAuthClientValues,
+    McpOAuthScope,
+)
 from koinon_sdk.models import (
     AgentConfiguration,
     AgenticCapability,
@@ -647,4 +658,15 @@ __all__ += [
     "ExternalFileCleanupInput",
     "ExternalFileCleanupReview",
     "ExternalFileCleanupResult",
+]
+__all__ += [
+    "McpOAuthClient",
+    "McpOAuthClientCredential",
+    "McpOAuthClientInput",
+    "McpOAuthClientPage",
+    "McpOAuthClientPatch",
+    "McpOAuthClientReadiness",
+    "McpOAuthClientRevision",
+    "McpOAuthClientValues",
+    "McpOAuthScope",
 ]

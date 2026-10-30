@@ -12,7 +12,11 @@ defs = json.loads(schema_path.read_text())["$defs"]
 out = root / "src/main/java/org/fireflyframework/koinon/sdk/model"
 out.mkdir(parents=True, exist_ok=True)
 header = "// Copyright 2026 Firefly Software Foundation\n// SPDX-License-Identifier: Apache-2.0\npackage org.fireflyframework.koinon.sdk.model;\n\n"
-enums = {}
+enums = {
+    "McpOAuthClientStatus": ["all", "enabled", "disabled"],
+    "McpOAuthClientSort": ["name", "updated_at"],
+    "McpOAuthClientOrder": ["asc", "desc"],
+}
 names = {
     tuple(sorted(v)): k
     for k, v in {
@@ -44,6 +48,8 @@ names = {
         "ObservationStatus": ["passed", "failed", "unknown"],
         "KnowledgeDomain": ["documents", "structured"],
         "KnowledgeAnswerMode": ["rag", "rlm"],
+        "McpOAuthScope": ["catalog:read", "catalog:write", "ingest:write", "knowledge:search", "query:execute", "chat:use", "evidence:read"],
+        "McpRegisteredClientClientAuth": ["public", "confidential"],
         "KnowledgeSettingsOrigin": ["deployment", "organization"],
         "ConnectionMode": ["provider", "current_agent"],
         "RoleKind": ["embedding", "generative"],
@@ -201,7 +207,9 @@ for name, definition in defs.items():
     properties = definition.get("properties")
     if properties is None:
         continue
-    if definition.get("additionalProperties") is False:
+    if definition.get("additionalProperties") is False and name not in {
+        "McpOAuthClient", "McpOAuthClientCredential", "McpOAuthClientReadiness", "McpOAuthClientPage",
+    }:
         request_names.add(name)
     fields = []
     for wire, value in properties.items():
@@ -337,7 +345,7 @@ for name, definition in defs.items():
                     + ",".join("null" if k == key else k for _, k, _, _, _ in fields)
                     + ");}\n"
                 )
-    if name not in {"TokenCreated", "InvitationCreated", "InvitationToken"} and any(value.get("format") == "password" for value in properties.values()):
+    if name not in {"TokenCreated", "InvitationCreated", "InvitationToken"} and (name == "McpOAuthClientCredential" or any(value.get("format") == "password" for value in properties.values())):
         body += '    @Override public String toString(){return "' + name + '[credentials=<redacted>]";}\n'
     if name == "TokenCreated":
         body += '    @Override public String toString(){return "TokenCreated[id="+id+", token=<redacted>]";}\n'

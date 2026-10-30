@@ -14,4 +14,8 @@ public McpConnectionDescriptor connection(RequestOptions options){Objects.requir
 public McpConnectionDescriptor connection(){return connection(RequestOptions.defaults());}
 public CompletableFuture<McpConnectionDescriptor> connectionAsync(RequestOptions options){Objects.requireNonNull(options);return transport.jsonAsync("GET",prefix+"/mcp/connection",null,options,transport.type(McpConnectionDescriptor.class));}
 public CompletableFuture<McpConnectionDescriptor> connectionAsync(){return connectionAsync(RequestOptions.defaults());}
+public McpConnectionDescriptor organizationConnection(String tenantId,RequestOptions options){Objects.requireNonNull(options);return transport.json("GET",prefix+"/tenants/"+Transport.id(tenantId)+"/mcp/connection",null,options,transport.type(McpConnectionDescriptor.class));}
+public McpConnectionDescriptor organizationConnection(String tenantId){return organizationConnection(tenantId,RequestOptions.defaults());}
+public CompletableFuture<McpConnectionDescriptor> organizationConnectionAsync(String tenantId,RequestOptions options){Objects.requireNonNull(options);return transport.jsonAsync("GET",prefix+"/tenants/"+Transport.id(tenantId)+"/mcp/connection",null,options,transport.type(McpConnectionDescriptor.class));}
+public CompletableFuture<McpConnectionDescriptor> organizationConnectionAsync(String tenantId){return organizationConnectionAsync(tenantId,RequestOptions.defaults());}
 }

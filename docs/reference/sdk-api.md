@@ -2,7 +2,7 @@
 
 Python, Java and TypeScript expose the same canonical headless API. The table records concrete SDK methods; it does not count browser-only authentication or retained domain routes outside this contract.
 
-This development contract contains 160 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
+This development contract contains 167 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
 
 [Download the operation manifest](sdk-contract.json) and [complete wire schemas](sdk-schemas.json). The maintained generator checks source mappings and schemas without starting the backend.
 
@@ -143,6 +143,13 @@ This development contract contains 160 operations. Resource operations require t
 | `GET /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates/rows` | `table_coordinate_rows` | `dataset.tableCoordinateRows` | `client.datasets.tableCoordinateRows` | `TableRowRangePage` |
 | `GET /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates/columns` | `table_coordinate_columns` | `dataset.tableCoordinateColumns` | `client.datasets.tableCoordinateColumns` | `TableColumnBindingPage` |
 | `GET /api/v1/mcp/connection` | `mcp_connection` | `mcp.connection` | `client.mcp.connection` | `McpConnectionDescriptor` |
+| `GET /api/v1/tenants/{tenant_id}/mcp/connection` | `organization_mcp_connection` | `mcp.organizationConnection` | `client.mcp.organizationConnection` | `McpConnectionDescriptor` |
+| `GET /api/v1/tenants/{tenant_id}/mcp/oauth-clients/readiness` | `mcp_oauth_clients_readiness` | `mcpOAuthClients.readiness` | `client.mcpOAuthClients.readiness` | `McpOAuthClientReadiness` |
+| `GET /api/v1/tenants/{tenant_id}/mcp/oauth-clients` | `mcp_oauth_clients` | `mcpOAuthClients.list` | `client.mcpOAuthClients.list` | `McpOAuthClientPage` |
+| `POST /api/v1/tenants/{tenant_id}/mcp/oauth-clients` | `create_mcp_oauth_client` | `mcpOAuthClients.create` | `client.mcpOAuthClients.create` | `McpOAuthClientCredential` |
+| `GET /api/v1/tenants/{tenant_id}/mcp/oauth-clients/{client_id}` | `mcp_oauth_client` | `mcpOAuthClients.get` | `client.mcpOAuthClients.get` | `McpOAuthClient` |
+| `PATCH /api/v1/tenants/{tenant_id}/mcp/oauth-clients/{client_id}` | `update_mcp_oauth_client` | `mcpOAuthClients.update` | `client.mcpOAuthClients.update` | `McpOAuthClient` |
+| `POST /api/v1/tenants/{tenant_id}/mcp/oauth-clients/{client_id}/rotate-secret` | `rotate_mcp_oauth_client_secret` | `mcpOAuthClients.rotateSecret` | `client.mcpOAuthClients.rotateSecret` | `McpOAuthClientCredential` |
 | `GET /api/v1/branding/defaults` | `branding_defaults` | `branding.defaults` | `client.brandingDefaults.defaults` | `BrandingValues` |
 | `GET /api/v1/tenants/{tenant_id}/branding` | `organization_branding` | `branding.get` | `client.organizationBranding.get` | `OrganizationBranding` |
 | `PUT /api/v1/tenants/{tenant_id}/branding` | `update_organization_branding` | `branding.update` | `client.organizationBranding.update` | `OrganizationBranding` |

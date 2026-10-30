@@ -49,6 +49,7 @@ The client closes its own connections and outstanding requests. If you inject an
 | --- | --- |
 | `platform()` | Authorized context and capabilities |
 | `mcp()` | Trusted deployment connection metadata, registered public client details and server capabilities |
+| `mcpOAuthClients(tenant)` | Organization OAuth registrations, readiness, paging and revision-bound changes |
 | `externalReviews(tenant)` | Stage/read exact external text proposals and apply nonce-bound decisions |
 | `externalFileReviews(tenant)` | Stage/chunk/seal/read reviewed files, exact decisions and administrator cleanup |
 | `profile()` | Your profile, preferences and avatar |
@@ -140,6 +141,8 @@ Export/share creation requires a reviewed snapshot and matching revision. Downlo
 ## External knowledge reviews
 
 `externalReviews(tenant).stage/get/approve/cancel` uses named request and response records. `ExternalReviewInput.sourceReceiptIds` selects server-issued MCP read receipts; the server rejects forged, expired or foreign capabilities and rechecks source revisions. Raw source references and user-authored origins cannot be supplied through that input.
+
+`mcp().organizationConnection(tenant)` adds enabled organization registrations after current membership and credential-bound checks. `mcpOAuthClients(tenant).readiness/list/create/get/update/rotateSecret` provides synchronous and asynchronous typed administration methods. Management requires an interactive user identity with organization identity-management permission; personal and application credentials cannot manage registrations. `McpOAuthClientFilter` has named status, sort and order enums. Updates and rotation require the current revision. Confidential creation and rotation return the new secret once, while details and lists omit it. Changing a registration revokes its existing connections; users must reconnect.
 
 `externalFileReviews(tenant).stage/get/chunk/seal/approve/cancel` covers private staged bytes and exact approved ingestion. `cleanup` is explicit administrator maintenance for eligible staged objects. Each operation has a typed asynchronous counterpart. Pending/unresolved outcomes and nullable receipts remain explicit; writes are not replayed automatically.
 

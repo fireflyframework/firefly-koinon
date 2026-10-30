@@ -1,6 +1,8 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 import type {ExternalFileCleanupInput,ExternalFileCleanupResult,ExternalFileReviewInput,ExternalFileChunkInput,ExternalFileReviewView,McpConnectionDescriptor,ExternalReviewInput,ExternalReviewDecision,ExternalReviewView} from './generated.js';
+import type {McpOAuthClient,McpOAuthClientCredential,McpOAuthClientInput,McpOAuthClientPage,McpOAuthClientPatch,McpOAuthClientReadiness,McpOAuthClientRevision} from './generated.js';
+import type {McpOAuthClientFilter} from './types.js';
 import type {BrandingValues,OrganizationBranding,OrganizationBrandingInput,BrandingResetInput} from './generated.js';
 import type {OrganizationChatSettings,OrganizationChatSettingsInput} from './generated.js';
 import type {OrganizationKnowledgeSettings,OrganizationKnowledgeSettingsInput} from './generated.js';
@@ -55,6 +57,7 @@ export class KoinonClient {
   } as OrganizationSettingsApi<T,I,F>;
  }
  readonly mcp;
+ readonly mcpOAuthClients;
  readonly externalReviews;
  readonly externalFileReviews;
  readonly knowledgeIntents;
@@ -99,7 +102,18 @@ export class KoinonClient {
     remove:(tenantId:string,workspaceId:string,termId:string,expectedUpdatedAt:string,options:RequestOptions={})=>transport.request<void>('DELETE',path+'/'+id(termId),{...options,headers:headers(tenantId,workspaceId,options,expectedUpdatedAt)}),
    };
   };
-  this.mcp={connection:(options:RequestOptions={})=>transport.request<McpConnectionDescriptor>('GET','/mcp/connection',options)};
+  this.mcp={
+   connection:(options:RequestOptions={})=>transport.request<McpConnectionDescriptor>('GET','/mcp/connection',options),
+   organizationConnection:(tenantId:string,options:RequestOptions={})=>transport.request<McpConnectionDescriptor>('GET',tenant(tenantId)+'/mcp/connection',options),
+  };
+  this.mcpOAuthClients={
+   readiness:(tenantId:string,options:RequestOptions={})=>transport.request<McpOAuthClientReadiness>('GET',tenant(tenantId)+'/mcp/oauth-clients/readiness',options),
+   list:(tenantId:string,options:RequestOptions&{query?:McpOAuthClientFilter}={})=>transport.request<McpOAuthClientPage>('GET',tenant(tenantId)+'/mcp/oauth-clients',options),
+   create:(tenantId:string,input:McpOAuthClientInput,options:RequestOptions={})=>transport.request<McpOAuthClientCredential>('POST',tenant(tenantId)+'/mcp/oauth-clients',{...options,body:input}),
+   get:(tenantId:string,clientId:string,options:RequestOptions={})=>transport.request<McpOAuthClient>('GET',tenant(tenantId)+'/mcp/oauth-clients/'+id(clientId),options),
+   update:(tenantId:string,clientId:string,input:McpOAuthClientPatch,options:RequestOptions={})=>transport.request<McpOAuthClient>('PATCH',tenant(tenantId)+'/mcp/oauth-clients/'+id(clientId),{...options,body:input}),
+   rotateSecret:(tenantId:string,clientId:string,input:McpOAuthClientRevision,options:RequestOptions={})=>transport.request<McpOAuthClientCredential>('POST',tenant(tenantId)+'/mcp/oauth-clients/'+id(clientId)+'/rotate-secret',{...options,body:input}),
+  };
   this.externalFileReviews={
    cleanup:(tenantId:string,input:ExternalFileCleanupInput,options:RequestOptions={})=>transport.request<ExternalFileCleanupResult>('POST',`${tenant(tenantId)}/external-file-reviews/cleanup`,{...options,body:input}),
    stage:(tenantId:string,input:ExternalFileReviewInput,idempotencyKey:string,options:RequestOptions={})=>transport.request<ExternalFileReviewView>('POST',`${tenant(tenantId)}/external-file-reviews`,{...options,body:input,headers:{...options.headers,'Idempotency-Key':idempotencyKey}}),

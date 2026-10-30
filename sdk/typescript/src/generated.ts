@@ -923,6 +923,61 @@ export interface McpConnectionDescriptor {
  "review": McpReviewSupport;
  "client_acceptance"?: "not_verified";
 }
+export interface McpOAuthClient {
+ "name": string;
+ "redirect_uris": Array<string>;
+ "scopes": Array<"catalog:read" | "catalog:write" | "ingest:write" | "knowledge:search" | "query:execute" | "chat:use" | "evidence:read">;
+ "id": string;
+ "tenant_id": string;
+ "client_id": string;
+ "client_type": "public" | "confidential";
+ "enabled": boolean;
+ "revision": number;
+ "created_at": string;
+ "updated_at": string;
+ "created_by": string;
+ "updated_by": string;
+}
+export interface McpOAuthClientCredential {
+ "client": McpOAuthClient;
+ "client_secret"?: string | null;
+}
+export interface McpOAuthClientInput {
+ "name": string;
+ "redirect_uris": Array<string>;
+ "scopes": Array<"catalog:read" | "catalog:write" | "ingest:write" | "knowledge:search" | "query:execute" | "chat:use" | "evidence:read">;
+ "client_type": "public" | "confidential";
+}
+export interface McpOAuthClientPage {
+ "items": Array<McpOAuthClient>;
+ "total": number;
+ "page": number;
+ "page_size": number;
+ "pages": number;
+}
+export interface McpOAuthClientPatch {
+ "expected_revision": number;
+ "name"?: string | null;
+ "redirect_uris"?: Array<string> | null;
+ "scopes"?: Array<"catalog:read" | "catalog:write" | "ingest:write" | "knowledge:search" | "query:execute" | "chat:use" | "evidence:read"> | null;
+ "enabled"?: boolean | null;
+}
+export interface McpOAuthClientReadiness {
+ "ready": boolean;
+ "endpoint_enabled": boolean;
+ "oauth_enabled": boolean;
+ "encryption_configured": boolean;
+ "missing_configuration": Array<"mcp_endpoint" | "oauth_enabled" | "oauth_encryption_key">;
+ "static_clients_read_only"?: boolean;
+}
+export interface McpOAuthClientRevision {
+ "expected_revision": number;
+}
+export interface McpOAuthClientValues {
+ "name": string;
+ "redirect_uris": Array<string>;
+ "scopes": Array<"catalog:read" | "catalog:write" | "ingest:write" | "knowledge:search" | "query:execute" | "chat:use" | "evidence:read">;
+}
 export interface McpReadReceipt {
  "status": "recorded" | "not_recorded";
  "id"?: string | null;

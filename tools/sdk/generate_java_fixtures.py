@@ -128,6 +128,8 @@ for op in ops:
         queries.update(role="viewer", scope="workspace")
     if op["operation"] == "MembershipController.invitations_list":
         queries["status"] = "pending"
+    if op["operation"] == "McpOAuthClientController.page":
+        queries.update(status="enabled", sort="updated_at", order="desc")
     path = op["path"]
     ids = {
         p["name"]: 2 if "int" in p["annotation"] else p["name"] + " value"
@@ -148,6 +150,7 @@ for op in ops:
         {
             "operation": op["operation"],
             "group": group,
+            "group_scoped": api["group_scopes"][group],
             "method": method,
             "http": op["method"],
             "path": path,

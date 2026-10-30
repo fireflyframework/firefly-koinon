@@ -1,4 +1,17 @@
 {
+  "McpOAuthClientStatus": [
+    "all",
+    "enabled",
+    "disabled"
+  ],
+  "McpOAuthClientSort": [
+    "name",
+    "updated_at"
+  ],
+  "McpOAuthClientOrder": [
+    "asc",
+    "desc"
+  ],
   "AddKnowledgeAction": [
     "add"
   ],
@@ -348,6 +361,24 @@
   "McpConnectionDescriptorClientAcceptance": [
     "not_verified"
   ],
+  "McpOAuthScope": [
+    "catalog:read",
+    "catalog:write",
+    "ingest:write",
+    "knowledge:search",
+    "query:execute",
+    "chat:use",
+    "evidence:read"
+  ],
+  "McpRegisteredClientClientAuth": [
+    "public",
+    "confidential"
+  ],
+  "McpOAuthClientReadinessMissingConfiguration": [
+    "mcp_endpoint",
+    "oauth_enabled",
+    "oauth_encryption_key"
+  ],
   "McpReadReceiptReason": [
     "incomplete_or_unsupported_source_manifest",
     "source_manifest_limit_or_missing_revision",
@@ -357,10 +388,6 @@
     "capture_unavailable",
     "transitive_lineage_unqualified",
     "catalog_is_not_source_evidence"
-  ],
-  "McpRegisteredClientClientAuth": [
-    "public",
-    "confidential"
   ],
   "McpReviewSupportMechanism": [
     "mcp_apps"
