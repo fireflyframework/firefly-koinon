@@ -1,3 +1,5 @@
+# Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Firefly Software Foundation
 # Modifications Copyright 2026 Firefly Software Foundation
 #
@@ -31,7 +33,6 @@ Persists to flyquery_schema_objects.profile_json.
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 import re
@@ -41,6 +42,8 @@ from typing import Any
 import sqlalchemy as sa
 from pyfly.data.transaction import infrastructure_unit
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from flyquery.core.services.ingestion.native_call import run_native
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +159,7 @@ async def run_profile(
         col_name: str = col["qualified_name"].rsplit(".", 1)[-1]
         data_type: str = col["data_type"] or ""
 
-        profile = await asyncio.to_thread(
+        profile = await run_native(
             _profile_column_sync, parquet_key, col_name, data_type, n_rows_actual
         )
         if profile is not None:
@@ -168,7 +171,7 @@ async def run_profile(
     # column). Purely structural (value containment) -- no name/vocabulary
     # heuristics -- so it generalises to any self-referencing hierarchy.
     try:
-        refs = await asyncio.to_thread(_detect_self_references, parquet_key, computed, n_rows_actual)
+        refs = await run_native(_detect_self_references, parquet_key, computed, n_rows_actual)
         for ref_col, entity_col in refs.items():
             computed[ref_col][2]["references_column"] = entity_col
     except Exception as exc:  # noqa: BLE001 -- detection is best-effort

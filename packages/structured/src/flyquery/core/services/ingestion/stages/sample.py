@@ -29,7 +29,6 @@ explicitly opts out. Redact/reject never retain samples from a flagged column.
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 import uuid
@@ -39,6 +38,7 @@ import sqlalchemy as sa
 from pyfly.data.transaction import infrastructure_unit
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from flyquery.core.services.ingestion.native_call import run_native
 from flyquery.core.services.ingestion.stages.pii_tag import _apply_tag_and_policy
 from flyquery.core.services.pii.factory import build_pii_scanner
 
@@ -81,7 +81,7 @@ async def run_sample(
             continue
 
         # Read raw values from Parquet
-        raw_values = await asyncio.to_thread(_read_parquet_column, parquet_key, col_name, n)
+        raw_values = await run_native(_read_parquet_column, parquet_key, col_name, n)
 
         if not raw_values:
             continue

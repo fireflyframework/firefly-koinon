@@ -18,7 +18,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 import re
 import tempfile
@@ -30,6 +29,7 @@ from flyquery.core.services.ingestion.coordinates import (
     RowRange,
     input_digest,
 )
+from flyquery.core.services.ingestion.native_call import run_native
 from flyquery.core.services.ingestion.reader import (
     ColumnSchema,
     MaterialiseResult,
@@ -42,7 +42,7 @@ class JsonReader:
     formats = ("json", "jsonl")
 
     async def enumerate_tables(self, source_path: str, rules: TableExtractionRules) -> list[ProposedTable]:
-        return await asyncio.to_thread(self._enumerate_sync, source_path, rules)
+        return await run_native(self._enumerate_sync, source_path, rules)
 
     async def materialise(
         self,
@@ -54,7 +54,7 @@ class JsonReader:
         type_infer_sample_rows: int,
         max_title_rows: int = 3,
     ) -> MaterialiseResult:
-        return await asyncio.to_thread(
+        return await run_native(
             self._materialise_sync,
             source_path,
             table,
@@ -181,7 +181,7 @@ class JsonReader:
                     f"COPY (SELECT * FROM read_json_auto('{src}', "
                     f"sample_size={type_infer_sample_rows}, "
                     f"format='auto')) "
-                    f"TO '{tgt}' (FORMAT PARQUET, COMPRESSION 'snappy')"
+                    f"TO '{tgt}' (FORMAT PARQUET, COMPRESSION 'snappy', USE_TMP_FILE false)"
                 )
                 rows_ct_row = conn.execute(
                     "SELECT count(*) FROM read_parquet(?)", [target_parquet_key]

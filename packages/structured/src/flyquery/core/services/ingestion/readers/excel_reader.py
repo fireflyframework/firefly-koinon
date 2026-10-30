@@ -56,7 +56,6 @@ to the pre-section behavior.
 
 from __future__ import annotations
 
-import asyncio
 import datetime
 import re
 import tempfile
@@ -69,6 +68,7 @@ from flyquery.core.services.ingestion.coordinates import (
     MaterializationCoordinates,
     input_digest,
 )
+from flyquery.core.services.ingestion.native_call import run_native
 from flyquery.core.services.ingestion.reader import (
     ColumnSchema,
     MaterialiseResult,
@@ -204,7 +204,7 @@ class ExcelReader:
     formats = ("xlsx", "xls", "ods")
 
     async def enumerate_tables(self, source_path: str, rules: TableExtractionRules) -> list[ProposedTable]:
-        return await asyncio.to_thread(self._enumerate_sync, source_path, rules)
+        return await run_native(self._enumerate_sync, source_path, rules)
 
     async def materialise(
         self,
@@ -216,7 +216,7 @@ class ExcelReader:
         type_infer_sample_rows: int,
         max_title_rows: int = 3,
     ) -> MaterialiseResult:
-        return await asyncio.to_thread(
+        return await run_native(
             self._materialise_sync,
             source_path,
             table,

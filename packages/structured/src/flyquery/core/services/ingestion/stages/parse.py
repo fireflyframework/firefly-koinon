@@ -28,6 +28,7 @@ from __future__ import annotations
 import hashlib
 import inspect
 import logging
+import os
 import re
 import tempfile
 import uuid
@@ -47,6 +48,7 @@ from flyquery.core.agents.column_name_proposer_agent import (
 )
 from flyquery.core.services.ingestion import lineage
 from flyquery.core.services.ingestion.compression import decompress_to_temp
+from flyquery.core.services.ingestion.native_call import run_native
 from flyquery.core.services.ingestion.reader import (
     ColumnSchema,
     MaterialiseResult,
@@ -152,12 +154,11 @@ async def _rename_parquet_columns(
     Uses DuckDB's ``COPY (SELECT col0 AS new0, col1 AS new1, ...) TO file``
     so the type information from the materialise step is preserved.
     """
-    import asyncio
-
     import duckdb
 
     def _sync() -> None:
         conn = duckdb.connect()
+        tmp_path: str | None = None
         try:
             conn.execute("SET preserve_insertion_order=true")
             select_clauses = []
@@ -166,18 +167,23 @@ async def _rename_parquet_columns(
                 target_identifier = new.replace('"', '""')
                 select_clauses.append(f'"{source_identifier}" AS "{target_identifier}"')
             sel = ", ".join(select_clauses)
-            tmp_path = parquet_path + ".rename.tmp"
+            fd, tmp_path = tempfile.mkstemp(suffix=".rename.tmp", dir=Path(parquet_path).parent)
+            os.close(fd)
             src = parquet_path.replace("'", "''")
             tgt = tmp_path.replace("'", "''")
             conn.execute(
                 f"COPY (SELECT {sel} FROM read_parquet('{src}')) "
-                f"TO '{tgt}' (FORMAT PARQUET, COMPRESSION 'snappy')"
+                f"TO '{tgt}' (FORMAT PARQUET, COMPRESSION 'snappy', USE_TMP_FILE false)"
             )
             Path(tmp_path).replace(parquet_path)
         finally:
-            conn.close()
+            try:
+                conn.close()
+            finally:
+                if tmp_path is not None:
+                    Path(tmp_path).unlink(missing_ok=True)
 
-    await asyncio.to_thread(_sync)
+    await run_native(_sync)
 
 
 async def _read_parquet_sample(parquet_path: str, n_rows: int = 5) -> tuple[list[str], list[list[Any]]]:
@@ -187,8 +193,6 @@ async def _read_parquet_sample(parquet_path: str, n_rows: int = 5) -> tuple[list
     each inner list has up to ``n_rows`` cell values pulled from the head
     of the Parquet.
     """
-    import asyncio
-
     import duckdb
 
     def _sync() -> tuple[list[str], list[list[Any]]]:
@@ -205,7 +209,7 @@ async def _read_parquet_sample(parquet_path: str, n_rows: int = 5) -> tuple[list
         finally:
             conn.close()
 
-    return await asyncio.to_thread(_sync)
+    return await run_native(_sync)
 
 
 async def _propose_meaningful_column_names(
@@ -421,6 +425,7 @@ async def run_parse(
     else:
         decompressed_path = local_temp_path
     cleanup_decompressed = decompressed_path != local_temp_path
+    owned_outputs: set[str] = set()
 
     try:
         await lineage.emit(
@@ -524,7 +529,9 @@ async def run_parse(
             # un-sniffable CSV after compaction) are logged and skipped
             # rather than aborting the whole upload -- a 60-section file
             # with 1 quirky section should still ingest the other 59.
-            local_parquet = tempfile.mktemp(suffix=".parquet")  # noqa: S306
+            fd, local_parquet = tempfile.mkstemp(suffix=".parquet")
+            owned_outputs.add(local_parquet)
+            os.close(fd)
             reader_file = inspect.getsourcefile(type(reader))
             run_id = await lineage.emit(
                 "begin_section",
@@ -638,7 +645,10 @@ async def run_parse(
             except Exception:
                 # Materialise / upload failed; clean up the temp file
                 # immediately since no downstream stage will use it.
-                Path(local_parquet).unlink(missing_ok=True)
+                try:
+                    Path(local_parquet).unlink(missing_ok=True)
+                except OSError:
+                    logger.warning("stage=parse local_parquet_cleanup_failed")
                 raise
 
             # Insert or verify flyquery_tables row. When a row already
@@ -695,11 +705,27 @@ async def run_parse(
                 parquet_key,
             )
 
+        returned_outputs = {table.local_parquet_path for table in parsed if table.local_parquet_path}
+        for path in owned_outputs - returned_outputs:
+            Path(path).unlink(missing_ok=True)
+        if cleanup_decompressed:
+            Path(decompressed_path).unlink(missing_ok=True)
+            cleanup_decompressed = False
+        # Transfer only after every cleanup that can fail before the return.
+        owned_outputs.clear()
         return parsed
 
     finally:
+        for path in owned_outputs:
+            try:
+                Path(path).unlink(missing_ok=True)
+            except OSError:
+                logger.warning("stage=parse local_parquet_cleanup_failed")
         if cleanup_decompressed:
-            Path(decompressed_path).unlink(missing_ok=True)
+            try:
+                Path(decompressed_path).unlink(missing_ok=True)
+            except OSError:
+                logger.warning("stage=parse decompressed_cleanup_failed")
 
 
 async def _next_version(
