@@ -13,7 +13,7 @@ Restore checking creates a fresh uniquely named database and uses `pg_restore --
 
 Back up blob/object storage and its versioning policy consistently with metadata. Back up the identity database, realm/client settings and secret-manager recovery material separately. Redis AOF improves local durability but is not an independent backup. Define recovery-point/recovery-time objectives, scheduled archive verification, retention and access controls with your operator.
 
-The [storage configuration guide](storage-configuration.md) identifies the three independent stores and their credentials. Follow the [storage migration and ECM guide](storage-migration-ecm.md) to inventory registered keys, compare exact bytes, qualify runtime-role access and preserve external integration records. The database restore command above does not copy objects, rewrite snapshot URIs or synchronize ECM permissions.
+The [storage configuration guide](storage-configuration.md) identifies the three independent stores and their credentials. Follow [storage migration and recovery](storage-migration.md) to inventory registered keys, compare exact bytes and qualify runtime-role access. The [ECM guide](ecm-integration.md) covers external integration records and permissions. The database restore command above does not copy objects, rewrite snapshot URIs or synchronize ECM permissions.
 
 A local drill restored the owned application archive into a new database and checked all three revision histories plus two fictional tenants. A second drill included native revision `koinon_0003_assistants` and both current knowledge heads. Repeat the drill after release/schema changes. Do not restore over a retained deployment to test recovery.
 

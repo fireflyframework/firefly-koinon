@@ -26,6 +26,8 @@ import {
 } from '@fireflyframework/koinon-angular';
 import { KoinonModelOptionsForm } from './model-options-form';
 import { describeModelOptions, parseModelOptions, type ModelOptionValues } from './model-options';
+import { KoinonOrganizationPeople } from './organization-directory';
+import { KoinonOrganizationStructure } from './organization-structure';
 import { KoinonPeopleAccess } from './people-access';
 import { KoinonAuditPanel } from './audit-panel';
 import { KoinonKnowledgeModels } from './knowledge-models';
@@ -50,7 +52,8 @@ import { KoinonIdentityAppearance } from './identity-appearance';
 import { KoinonMcpApplications } from './mcp-applications';
 import { KoinonConfiguration } from './configuration';
 import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
-registerKoinonSpanish({ Applications: 'Aplicaciones' });
+import { ORGANIZATION_SPANISH } from './organization-spanish';
+registerKoinonSpanish({ ...ORGANIZATION_SPANISH, Applications: 'Aplicaciones' });
 @Component({
   selector: 'ffk-settings-page',
   imports: [
@@ -71,6 +74,8 @@ registerKoinonSpanish({ Applications: 'Aplicaciones' });
     KoinonKnowledgeModels,
     KoinonKnowledgeBehavior,
     KoinonPeopleAccess,
+    KoinonOrganizationPeople,
+    KoinonOrganizationStructure,
     KoinonAuditPanel,
     KoinonModelOptionsForm,
     KoinonOrganizationChatSettings,
@@ -137,7 +142,11 @@ export class KoinonSettingsPage implements OnInit {
         ) ?? [],
   );
   readonly groups = [
-    { id: 'organization', label: 'Organization', sections: ['people', 'identity', 'applications'] },
+    {
+      id: 'organization',
+      label: 'Organization',
+      sections: ['people', 'structure', 'access', 'identity', 'applications'],
+    },
     {
       id: 'knowledge',
       label: 'Knowledge & AI',
@@ -152,7 +161,14 @@ export class KoinonSettingsPage implements OnInit {
       permission: 'settings:write',
       icon: 'palette',
     },
-    { id: 'people', label: 'People & access', permission: 'members:write', icon: 'users' },
+    { id: 'people', label: 'People', permission: 'members:write', icon: 'users' },
+    {
+      id: 'structure',
+      label: 'Organization structure',
+      permission: 'members:write',
+      icon: 'lineage',
+    },
+    { id: 'access', label: 'Access', permission: 'members:write', icon: 'shield' },
     { id: 'applications', label: 'Applications', permission: 'identity:manage', icon: 'grid' },
     {
       id: 'sources',
@@ -184,6 +200,8 @@ export class KoinonSettingsPage implements OnInit {
     );
   }
   tabAllowed(tab: { id: string; permission: string }) {
+    if (['people', 'structure'].includes(tab.id))
+      return this.f.tenantPermissions().has('members:write');
     return this.allowed(tab.permission) || (tab.id === 'models' && this.allowed('settings:write'));
   }
   tabsFor(group: { sections: string[] }) {
@@ -196,7 +214,7 @@ export class KoinonSettingsPage implements OnInit {
     this.editor.set(null);
     this.formError.set('');
     if (section === 'agents') await this.c.loadAgents();
-    if (section === 'people') await this.f.loadMembers();
+    if (section === 'access') await this.f.loadMembers();
     if (section === 'operations') await this.f.loadJobs();
     if (section === 'storage') await this.c.load();
     if (section === 'sources') await this.loadSources();

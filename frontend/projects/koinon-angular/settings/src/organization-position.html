@@ -1,0 +1,168 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<section class="detail-editor" [attr.aria-label]="'Organization information' | ffkText">
+  <header class="directory-heading">
+    <div>
+      <h3 tabindex="-1">{{ person.display_name || ('Name unavailable' | ffkText) }}</h3>
+      <p>{{ 'Organization information' | ffkText }}</p>
+    </div>
+    <ffk-button
+      variant="quiet"
+      icon="close"
+      [label]="'Close position editor' | ffkText"
+      [disabled]="s.pending()"
+      (click)="closed.emit()"
+    />
+  </header>
+  <p class="help">
+    {{
+      'Position and reporting lines do not change access permissions. Manage permissions in Access.'
+        | ffkText
+    }}
+  </p>
+  @if (person.source === 'provider') {
+    <div class="source-notice">
+      <strong
+        >{{ 'Managed by' | ffkText }}
+        {{ person.provider_name || ('Identity provider' | ffkText) }}</strong
+      >
+      <p>
+        {{
+          'Mapped fields are read-only. Choose local management only if your organization should maintain these values here.'
+            | ffkText
+        }}
+      </p>
+      <label class="check"
+        ><input
+          type="checkbox"
+          [(ngModel)]="manageLocally"
+          [disabled]="s.pending() || !!managedProviderId"
+        />{{ 'Manage locally' | ffkText }}</label
+      >
+    </div>
+  }
+  @if (canChooseSource()) {
+    <div class="source-notice">
+      <ffk-button variant="quiet" [disabled]="s.pending()" (click)="s.loadProviders()">{{
+        'Choose identity source' | ffkText
+      }}</ffk-button>
+      @if (s.providers()) {
+        <label
+          >{{ 'Identity source' | ffkText
+          }}<select
+            [disabled]="s.pending()"
+            [(ngModel)]="managedProviderId"
+            (ngModelChange)="manageLocally = false"
+          >
+            <option value="">{{ 'Keep current source' | ffkText }}</option>
+            @for (provider of s.providers()?.items ?? []; track provider.id) {
+              @if (provider.status === 'active') {
+                <option [value]="provider.id">{{ provider.name }}</option>
+              }
+            }
+          </select></label
+        >
+      }
+      <ffk-pagination
+        [page]="s.providers()"
+        [loading]="s.pending()"
+        [showPageSize]="false"
+        [label]="'Identity providers' | ffkText"
+        (pageChanged)="providerPage($event)"
+      />
+      @if (managedProviderId) {
+        <p>
+          {{
+            'Existing values are kept. The selected provider can update mapped fields after the next verified sign-in. An enabled profile mapping is required.'
+              | ffkText
+          }}
+        </p>
+      }
+    </div>
+  }
+  <form (ngSubmit)="save()">
+    <label
+      >{{ 'Job title' | ffkText
+      }}<input
+        name="job-title"
+        [(ngModel)]="title"
+        maxlength="160"
+        [disabled]="managed('job_title') || s.pending()"
+    /></label>
+    <div>
+      <span>{{ 'Team or unit' | ffkText }}</span>
+      <p>{{ unit?.name || ('Not provided' | ffkText) }}</p>
+      <div class="row-actions">
+        <ffk-button
+          variant="quiet"
+          [disabled]="managed('unit_id') || s.pending()"
+          (click)="unitPicker.set(!unitPicker())"
+          >{{ 'Choose unit' | ffkText }}</ffk-button
+        ><ffk-button
+          variant="quiet"
+          [disabled]="managed('unit_id') || s.pending() || !unit"
+          (click)="unit = null"
+          >{{ 'Clear unit' | ffkText }}</ffk-button
+        >
+      </div>
+    </div>
+    @if (unitPicker()) {
+      <ffk-organization-unit-browser [picking]="true" (unitSelected)="chooseUnit($event)" />
+    }
+    <div>
+      <span>{{ 'Manager' | ffkText }}</span>
+      <p>{{ manager?.display_name || ('Not provided' | ffkText) }}</p>
+      <div class="row-actions">
+        <ffk-button
+          variant="quiet"
+          [disabled]="managed('manager_id') || s.pending()"
+          (click)="managerPicker.set(!managerPicker()); findManagers()"
+          >{{ 'Choose manager' | ffkText }}</ffk-button
+        ><ffk-button
+          variant="quiet"
+          [disabled]="managed('manager_id') || s.pending() || !manager"
+          (click)="manager = null"
+          >{{ 'Clear manager' | ffkText }}</ffk-button
+        >
+      </div>
+    </div>
+    @if (managerPicker()) {
+      <section class="picker">
+        <div class="directory-search">
+          <label
+            >{{ 'Find a manager' | ffkText
+            }}<input name="manager-search" [(ngModel)]="managerQuery" maxlength="160" /></label
+          ><ffk-button (click)="findManagers()">{{ 'Search' | ffkText }}</ffk-button>
+        </div>
+        <ul class="branch-list">
+          @for (
+            candidate of s.managerChoices()?.items ?? [];
+            track candidate.id || candidate.profile_id || $index
+          ) {
+            @if (candidate.id && candidate.id !== person.id) {
+              <li>
+                <span>{{ candidate.display_name || ('Name unavailable' | ffkText) }}</span
+                ><ffk-button variant="quiet" (click)="chooseManager(candidate)">{{
+                  'Choose' | ffkText
+                }}</ffk-button>
+              </li>
+            }
+          }
+        </ul>
+        <ffk-pagination
+          [page]="s.managerChoices()"
+          [showPageSize]="false"
+          [label]="'Managers' | ffkText"
+          (pageChanged)="findManagers($event)"
+        />
+      </section>
+    }
+    <div class="row-actions">
+      <ffk-button variant="quiet" [disabled]="s.pending()" (click)="closed.emit()">{{
+        'Cancel' | ffkText
+      }}</ffk-button
+      ><ffk-button type="submit" variant="primary" [loading]="s.pending()">{{
+        'Save organization information' | ffkText
+      }}</ffk-button>
+    </div>
+  </form>
+</section>

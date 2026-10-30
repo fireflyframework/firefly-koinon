@@ -93,9 +93,12 @@ nav:
       - Production: operations/production.md
       - Configuration and observations: operations/configuration.md
       - Organization knowledge behavior: operations/organization-knowledge.md
-      - File persistence and storage: operations/storage.md
-      - Configure storage providers: operations/storage-configuration.md
-      - Storage migration and ECM: operations/storage-migration-ecm.md
+      - Storage and ECM:
+          - Overview: operations/storage.md
+          - Configure providers: operations/storage-configuration.md
+          - Durability and limits: operations/storage-behavior.md
+          - Migration and recovery: operations/storage-migration.md
+          - Connect an ECM: operations/ecm-integration.md
       - MCP authentication: operations/mcp-authentication.md
       - Migrations: operations/migrations.md
       - Backup and restore: operations/backup-restore.md

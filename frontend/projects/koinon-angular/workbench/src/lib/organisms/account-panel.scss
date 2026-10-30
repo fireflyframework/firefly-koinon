@@ -306,3 +306,18 @@ legend {
     flex: 1;
   }
 }
+
+.photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.photo-picker {
+  min-height: 44px;
+  align-items: center;
+}
+h2 {
+  font: 600 17px/1.5 var(--ffk-font);
+  margin: 0 0 8px;
+}

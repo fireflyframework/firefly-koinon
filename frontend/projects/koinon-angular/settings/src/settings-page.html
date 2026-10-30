@@ -662,7 +662,17 @@
         </p>
       </section>
     }
-    @if (!editor() && section() === 'people') {
+    @if (!editor() && section() === 'people' && f.tenantPermissions().has('members:write')) {
+      @defer (when section() === 'people') {
+        <ffk-organization-directory />
+      }
+    }
+    @if (!editor() && section() === 'structure' && f.tenantPermissions().has('members:write')) {
+      @defer (when section() === 'structure') {
+        <ffk-organization-structure />
+      }
+    }
+    @if (!editor() && section() === 'access') {
       <ffk-people-access [invitationBaseUrl]="actions?.invitationBaseUrl?.() ?? ''" />
     }
     @if (!editor() && section() === 'storage') {

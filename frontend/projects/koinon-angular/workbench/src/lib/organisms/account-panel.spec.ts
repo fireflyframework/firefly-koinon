@@ -3,6 +3,7 @@
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { KoinonAccountPanel } from './account-panel';
+import { KoinonPhotoDraft } from '../services/photo-draft';
 import { KoinonAccount } from '../services/account';
 import { KoinonFacade } from '../koinon-facade';
 
@@ -23,6 +24,7 @@ describe('token issuance context', () => {
     ];
     TestBed.configureTestingModule({
       providers: [
+        { provide: KoinonPhotoDraft, useValue: {} },
         {
           provide: KoinonAccount,
           useValue: { tokenScopes: signal({ items, max_lifetime_days: 90 }), createToken },

@@ -47,10 +47,17 @@
   }
 } @else if (tab() === 'profile') {
   @if (account.profile()) {
+    <h2>{{ 'Personal profile' | ffkText }}</h2>
+    <p class="help">
+      {{ 'Your name, photo and preferences apply to your account across organizations.' | ffkText }}
+    </p>
     <div class="photo">
       <div class="avatar">
-        @if (account.avatar()) {
-          <img [src]="account.avatar()" [alt]="'Profile photo' | ffkText" />
+        @if (photo.avatarPreview() || account.avatar()) {
+          <img
+            [src]="photo.avatarPreview() || account.avatar()"
+            [alt]="'Profile photo' | ffkText"
+          />
         } @else {
           <span>{{ initials() }}</span>
         }
@@ -66,7 +73,22 @@
             (change)="avatarChanged($event)"
         /></label>
         <p>{{ 'PNG, JPEG or WebP. Maximum 2 MiB.' | ffkText }}</p>
-        @if (account.profile()?.avatar_version) {
+        @if (photo.avatarPreview()) {
+          <div class="photo-actions">
+            <ffk-button
+              variant="quiet"
+              [disabled]="account.pending()"
+              (click)="photo.cancelAvatar()"
+              >{{ 'Cancel' | ffkText }}</ffk-button
+            >
+            <ffk-button
+              variant="primary"
+              [loading]="account.pending()"
+              (click)="photo.saveAvatar()"
+              >{{ 'Save photo' | ffkText }}</ffk-button
+            >
+          </div>
+        } @else if (account.profile()?.avatar_version) {
           <ffk-button
             variant="quiet"
             [disabled]="account.pending()"
@@ -96,7 +118,7 @@
             <option value="es-CO">Español (Colombia)</option>
             <option value="es-AR">Español (Argentina)</option>
             @if (!['en-US', 'en-GB', 'es-ES', 'es-MX', 'es-CO', 'es-AR'].includes(locale)) {
-              <option [value]="locale">{{ locale }}</option>
+              <option [value]="locale">{{ languageName(locale) }}</option>
             }
           </select></label
         ><label
@@ -113,10 +135,11 @@
             [(ngModel)]="responseLanguage"
             [disabled]="account.pending()"
           >
+            <option value="auto">{{ 'Automatic' | ffkText }}</option>
             <option value="en">{{ 'English' | ffkText }}</option>
             <option value="es">{{ 'Spanish' | ffkText }}</option>
-            @if (!['en', 'es'].includes(responseLanguage)) {
-              <option [value]="responseLanguage">{{ responseLanguage }}</option>
+            @if (!['auto', 'en', 'es'].includes(responseLanguage)) {
+              <option [value]="responseLanguage">{{ languageName(responseLanguage) }}</option>
             }
           </select></label
         >
@@ -133,6 +156,7 @@
         }}</ffk-button>
       </div>
     </form>
+    <ffk-organization-information />
   } @else {
     <div class="empty">
       <p>

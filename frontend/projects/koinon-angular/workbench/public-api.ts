@@ -58,3 +58,5 @@ export {
   validateBranding,
   PALETTE_FIELDS,
 } from './src/lib/services/branding-values';
+
+export { KoinonOrganizationDirectory } from './src/lib/services/organization-directory';

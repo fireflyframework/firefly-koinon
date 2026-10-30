@@ -169,7 +169,7 @@ async function fixture(page: Page, spanish = false) {
 async function open(page: Page) {
   await page.goto('/');
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await page.getByRole('button', { name: 'People & access', exact: true }).click();
+  await page.getByRole('button', { name: 'Access', exact: true }).click();
   await expect(page.locator('ffk-people-access h2')).toHaveText('People & access');
 }
 
@@ -290,8 +290,8 @@ for (const variant of [
     if (variant.width < 700)
       await page
         .getByLabel(variant.spanish ? 'Sección de configuración' : 'Settings section')
-        .selectOption('people');
-    else await page.getByRole('button', { name: 'People & access', exact: true }).click();
+        .selectOption('access');
+    else await page.getByRole('button', { name: 'Access', exact: true }).click();
     const panel = page.locator('ffk-people-access');
     await expect(panel.locator('tbody tr').first()).toBeVisible();
     const overflow = await page.evaluate(() => {

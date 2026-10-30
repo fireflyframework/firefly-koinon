@@ -11,6 +11,8 @@ import {
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { KoinonOrganizationInformation } from './organization-information';
+import { KoinonPhotoDraft } from '../services/photo-draft';
 import { KoinonAccount } from '../services/account';
 import { KoinonFacade } from '../koinon-facade';
 import { KoinonI18n, KoinonTextPipe, KoinonDatePipe } from '../foundations/i18n';
@@ -28,6 +30,7 @@ import {
   selector: 'ffk-account-panel',
   imports: [
     FormsModule,
+    KoinonOrganizationInformation,
     KoinonTextPipe,
     KoinonDatePipe,
     KoinonButton,
@@ -35,6 +38,7 @@ import {
     KoinonPagination,
     KoinonAuthorizedApplicationsPanel,
   ],
+  providers: [KoinonPhotoDraft],
   templateUrl: './account-panel.html',
   styleUrl: './account-panel.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,6 +47,7 @@ export class KoinonAccountPanel implements OnInit, OnChanges {
   @Input() pageMode = false;
   @Input() initialTab: 'profile' | 'tokens' | 'applications' = 'profile';
   readonly account = inject(KoinonAccount);
+  readonly photo = inject(KoinonPhotoDraft);
   readonly f = inject(KoinonFacade);
   readonly i18n = inject(KoinonI18n);
   private readonly tasks = inject(PendingTasks);
@@ -129,10 +134,21 @@ export class KoinonAccountPanel implements OnInit, OnChanges {
     )
       this.fillProfile();
   }
+  languageName(value: string) {
+    if (value === 'auto') return this.i18n.text('Automatic');
+    try {
+      return (
+        new Intl.DisplayNames([this.i18n.preferences().locale], { type: 'language' }).of(value) ||
+        this.i18n.text('Other language')
+      );
+    } catch {
+      return this.i18n.text('Other language');
+    }
+  }
   async avatarChanged(event: Event) {
     const input = event.target as HTMLInputElement,
       file = input.files?.[0];
-    if (file) await this.account.uploadAvatar(file);
+    if (file) this.photo.stageAvatar(file);
     input.value = '';
   }
   initials() {

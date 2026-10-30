@@ -4,7 +4,7 @@
 
 Storage location and cloud identity are deployment configuration. A personal API token, organization administrator role or model-provider credential cannot change a bucket, container, mount or cloud IAM policy. API callers use authorized content operations; operators configure the byte stores used by the API and workers.
 
-Read the [persistence overview](storage.md) before changing an existing installation. Configuration selects a binding; it does not copy retained objects or rewrite historical database references. Use the [migration and ECM guide](storage-migration-ecm.md) for that separate work.
+Read the [persistence overview](storage.md) before changing an existing installation. Configuration selects a binding; it does not copy retained objects or rewrite historical database references. Follow [migration and recovery](storage-migration.md) when moving an existing store, or [ECM integration](ecm-integration.md) when connecting an external content system.
 
 ## Choose the domain and backend
 
