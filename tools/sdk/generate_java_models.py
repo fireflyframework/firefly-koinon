@@ -20,6 +20,12 @@ enums = {
 names = {
     tuple(sorted(v)): k
     for k, v in {
+        "OrganizationUnitKind": ["division", "department", "team"],
+        "OrganizationDirectoryVisibility": ["administrators", "shared_workspaces"],
+        "OrganizationManagedField": ["job_title", "unit_id", "manager_id"],
+        "OrganizationPersonSource": ["unassigned", "manual", "provider"],
+        "OrganizationObservationStatus": ["not_observed", "current", "unavailable"],
+        "OrganizationMappingSource": ["verified_claims"],
         "SourceReferencePageBasis": ["recorded_loader"],
         "ResourceKind": [
             "workspace",

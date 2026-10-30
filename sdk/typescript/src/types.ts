@@ -137,3 +137,7 @@ export type ExportFilter = {q?:string;status?:'all'|'ready'|'cancelled'|'expired
 export type ShareFilter = {q?:string;status?:'all'|'active'|'revoked'|'expired';page?:number;page_size?:number};
 
 export type AgentFilter = StatusFilter & {workspace_id?:string;project_id?:string};
+
+export interface OrganizationPeopleFilter {workspace_id?:string;q?:string;job_title?:string;unit_id?:string;department_id?:string;manager_id?:string;unassigned?:boolean;page?:number;page_size?:number}
+export interface OrganizationUnitFilter {workspace_id?:string;parent_id?:string;q?:string;page?:number;page_size?:number}
+export interface OrganizationReportsFilter {workspace_id?:string;page?:number;page_size?:number}

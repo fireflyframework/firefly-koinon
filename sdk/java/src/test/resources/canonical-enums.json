@@ -472,6 +472,33 @@
     "unverified",
     "ready"
   ],
+  "OrganizationDirectoryVisibility": [
+    "administrators",
+    "shared_workspaces"
+  ],
+  "OrganizationPersonSource": [
+    "unassigned",
+    "manual",
+    "provider"
+  ],
+  "OrganizationManagedField": [
+    "job_title",
+    "unit_id",
+    "manager_id"
+  ],
+  "OrganizationObservationStatus": [
+    "not_observed",
+    "current",
+    "unavailable"
+  ],
+  "OrganizationMappingSource": [
+    "verified_claims"
+  ],
+  "OrganizationUnitKind": [
+    "division",
+    "department",
+    "team"
+  ],
   "PendingKnowledgeCommitStatus": [
     "pending"
   ],

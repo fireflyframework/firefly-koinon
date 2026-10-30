@@ -9420,6 +9420,618 @@
     "idempotency": false
   },
   {
+    "operation": "OrganizationPeopleController.self",
+    "group": "OrganizationPeopleApi",
+    "group_scoped": true,
+    "method": "me",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/organization/people/me",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {
+      "workspace_id": "workspace_id value"
+    },
+    "filter": "OrganizationScopeFilter",
+    "request": null,
+    "response": "OrganizationPerson",
+    "body": {
+      "id": "id-value",
+      "profile_id": "profile_id-value",
+      "display_name": "display_name-value",
+      "avatar_url": "avatar_url-value",
+      "avatar_version": "avatar_version-value",
+      "job_title": "job_title-value",
+      "unit": {
+        "id": "id-value",
+        "name": "name-value",
+        "kind": "division"
+      },
+      "department": {
+        "id": "id-value",
+        "name": "name-value",
+        "kind": "division"
+      },
+      "manager": {
+        "id": "id-value",
+        "display_name": "display_name-value"
+      },
+      "manager_unavailable": false,
+      "revision": 1,
+      "source": "unassigned",
+      "provider_id": "provider_id-value",
+      "provider_name": "provider_name-value",
+      "managed_fields": [
+        "job_title"
+      ],
+      "observed_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z",
+      "observation_status": "not_observed"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "OrganizationPeopleController.page",
+    "group": "OrganizationPeopleApi",
+    "group_scoped": true,
+    "method": "list",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/organization/people",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {
+      "workspace_id": "workspace_id value",
+      "q": "q value",
+      "job_title": "job_title value",
+      "unit_id": "unit_id value",
+      "department_id": "department_id value",
+      "manager_id": "manager_id value",
+      "unassigned": false,
+      "page": 2,
+      "page_size": 2
+    },
+    "filter": "OrganizationPeopleFilter",
+    "request": null,
+    "response": "OrganizationPersonPage",
+    "body": {
+      "items": [
+        {
+          "id": "id-value",
+          "profile_id": "profile_id-value",
+          "display_name": "display_name-value",
+          "avatar_url": "avatar_url-value",
+          "avatar_version": "avatar_version-value",
+          "job_title": "job_title-value",
+          "unit": {
+            "id": "id-value",
+            "name": "name-value",
+            "kind": "division"
+          },
+          "department": {
+            "id": "id-value",
+            "name": "name-value",
+            "kind": "division"
+          },
+          "manager": {
+            "id": "id-value",
+            "display_name": "display_name-value"
+          },
+          "manager_unavailable": false,
+          "revision": 1,
+          "source": "unassigned",
+          "provider_id": "provider_id-value",
+          "provider_name": "provider_name-value",
+          "managed_fields": [
+            "job_title"
+          ],
+          "observed_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z",
+          "observation_status": "not_observed"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "OrganizationPeopleController.create",
+    "group": "OrganizationPeopleApi",
+    "group_scoped": true,
+    "method": "create",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/organization/people",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "OrganizationPersonCreate",
+    "response": "OrganizationPerson",
+    "body": {
+      "id": "id-value",
+      "profile_id": "profile_id-value",
+      "display_name": "display_name-value",
+      "avatar_url": "avatar_url-value",
+      "avatar_version": "avatar_version-value",
+      "job_title": "job_title-value",
+      "unit": {
+        "id": "id-value",
+        "name": "name-value",
+        "kind": "division"
+      },
+      "department": {
+        "id": "id-value",
+        "name": "name-value",
+        "kind": "division"
+      },
+      "manager": {
+        "id": "id-value",
+        "display_name": "display_name-value"
+      },
+      "manager_unavailable": false,
+      "revision": 1,
+      "source": "unassigned",
+      "provider_id": "provider_id-value",
+      "provider_name": "provider_name-value",
+      "managed_fields": [
+        "job_title"
+      ],
+      "observed_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z",
+      "observation_status": "not_observed"
+    },
+    "status": 201,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "OrganizationPeopleController.get",
+    "group": "OrganizationPeopleApi",
+    "group_scoped": true,
+    "method": "get",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/organization/people/person_id value",
+    "ids": {
+      "tenant_id": "tenant value",
+      "person_id": "person_id value"
+    },
+    "query": {
+      "workspace_id": "workspace_id value"
+    },
+    "filter": "OrganizationScopeFilter",
+    "request": null,
+    "response": "OrganizationPerson",
+    "body": {
+      "id": "id-value",
+      "profile_id": "profile_id-value",
+      "display_name": "display_name-value",
+      "avatar_url": "avatar_url-value",
+      "avatar_version": "avatar_version-value",
+      "job_title": "job_title-value",
+      "unit": {
+        "id": "id-value",
+        "name": "name-value",
+        "kind": "division"
+      },
+      "department": {
+        "id": "id-value",
+        "name": "name-value",
+        "kind": "division"
+      },
+      "manager": {
+        "id": "id-value",
+        "display_name": "display_name-value"
+      },
+      "manager_unavailable": false,
+      "revision": 1,
+      "source": "unassigned",
+      "provider_id": "provider_id-value",
+      "provider_name": "provider_name-value",
+      "managed_fields": [
+        "job_title"
+      ],
+      "observed_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z",
+      "observation_status": "not_observed"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "OrganizationPeopleController.update",
+    "group": "OrganizationPeopleApi",
+    "group_scoped": true,
+    "method": "update",
+    "http": "PATCH",
+    "path": "/api/v1/tenants/tenant value/organization/people/person_id value",
+    "ids": {
+      "tenant_id": "tenant value",
+      "person_id": "person_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "OrganizationPersonPatch",
+    "response": "OrganizationPerson",
+    "body": {
+      "id": "id-value",
+      "profile_id": "profile_id-value",
+      "display_name": "display_name-value",
+      "avatar_url": "avatar_url-value",
+      "avatar_version": "avatar_version-value",
+      "job_title": "job_title-value",
+      "unit": {
+        "id": "id-value",
+        "name": "name-value",
+        "kind": "division"
+      },
+      "department": {
+        "id": "id-value",
+        "name": "name-value",
+        "kind": "division"
+      },
+      "manager": {
+        "id": "id-value",
+        "display_name": "display_name-value"
+      },
+      "manager_unavailable": false,
+      "revision": 1,
+      "source": "unassigned",
+      "provider_id": "provider_id-value",
+      "provider_name": "provider_name-value",
+      "managed_fields": [
+        "job_title"
+      ],
+      "observed_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z",
+      "observation_status": "not_observed"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "OrganizationPeopleController.avatar",
+    "group": "OrganizationPeopleApi",
+    "group_scoped": true,
+    "method": "avatar",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/organization/people/person_id value/avatar",
+    "ids": {
+      "tenant_id": "tenant value",
+      "person_id": "person_id value"
+    },
+    "query": {
+      "workspace_id": "workspace_id value"
+    },
+    "filter": "OrganizationScopeFilter",
+    "request": null,
+    "response": "BinaryDownload",
+    "body": null,
+    "status": 200,
+    "encoding": "binary",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "OrganizationPeopleController.reports",
+    "group": "OrganizationPeopleApi",
+    "group_scoped": true,
+    "method": "reports",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/organization/people/person_id value/reports",
+    "ids": {
+      "tenant_id": "tenant value",
+      "person_id": "person_id value"
+    },
+    "query": {
+      "workspace_id": "workspace_id value",
+      "page": 2,
+      "page_size": 2
+    },
+    "filter": "OrganizationReportsFilter",
+    "request": null,
+    "response": "OrganizationPersonPage",
+    "body": {
+      "items": [
+        {
+          "id": "id-value",
+          "profile_id": "profile_id-value",
+          "display_name": "display_name-value",
+          "avatar_url": "avatar_url-value",
+          "avatar_version": "avatar_version-value",
+          "job_title": "job_title-value",
+          "unit": {
+            "id": "id-value",
+            "name": "name-value",
+            "kind": "division"
+          },
+          "department": {
+            "id": "id-value",
+            "name": "name-value",
+            "kind": "division"
+          },
+          "manager": {
+            "id": "id-value",
+            "display_name": "display_name-value"
+          },
+          "manager_unavailable": false,
+          "revision": 1,
+          "source": "unassigned",
+          "provider_id": "provider_id-value",
+          "provider_name": "provider_name-value",
+          "managed_fields": [
+            "job_title"
+          ],
+          "observed_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z",
+          "observation_status": "not_observed"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "OrganizationPeopleController.units",
+    "group": "OrganizationPeopleApi",
+    "group_scoped": true,
+    "method": "units",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/organization/units",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {
+      "workspace_id": "workspace_id value",
+      "parent_id": "parent_id value",
+      "q": "q value",
+      "page": 2,
+      "page_size": 2
+    },
+    "filter": "OrganizationUnitFilter",
+    "request": null,
+    "response": "OrganizationUnitPage",
+    "body": {
+      "items": [
+        {
+          "id": "id-value",
+          "name": "name-value",
+          "kind": "division",
+          "updated_at": "2026-10-27T12:34:56Z",
+          "tenant_id": "tenant_id-value",
+          "parent_id": "parent_id-value",
+          "revision": 1,
+          "provider_id": "provider_id-value",
+          "has_children": false
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "OrganizationPeopleController.create_unit",
+    "group": "OrganizationPeopleApi",
+    "group_scoped": true,
+    "method": "createUnit",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/organization/units",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "OrganizationUnitInput",
+    "response": "OrganizationUnit",
+    "body": {
+      "id": "id-value",
+      "name": "name-value",
+      "kind": "division",
+      "updated_at": "2026-10-27T12:34:56Z",
+      "tenant_id": "tenant_id-value",
+      "parent_id": "parent_id-value",
+      "revision": 1,
+      "provider_id": "provider_id-value",
+      "has_children": false
+    },
+    "status": 201,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "OrganizationPeopleController.update_unit",
+    "group": "OrganizationPeopleApi",
+    "group_scoped": true,
+    "method": "updateUnit",
+    "http": "PATCH",
+    "path": "/api/v1/tenants/tenant value/organization/units/unit_id value",
+    "ids": {
+      "tenant_id": "tenant value",
+      "unit_id": "unit_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "OrganizationUnitPatch",
+    "response": "OrganizationUnit",
+    "body": {
+      "id": "id-value",
+      "name": "name-value",
+      "kind": "division",
+      "updated_at": "2026-10-27T12:34:56Z",
+      "tenant_id": "tenant_id-value",
+      "parent_id": "parent_id-value",
+      "revision": 1,
+      "provider_id": "provider_id-value",
+      "has_children": false
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "OrganizationPeopleController.delete_unit",
+    "group": "OrganizationPeopleApi",
+    "group_scoped": true,
+    "method": "deleteUnit",
+    "http": "DELETE",
+    "path": "/api/v1/tenants/tenant value/organization/units/unit_id value",
+    "ids": {
+      "tenant_id": "tenant value",
+      "unit_id": "unit_id value"
+    },
+    "query": {
+      "expected_revision": 2
+    },
+    "filter": "OrganizationUnitDeleteFilter",
+    "request": null,
+    "response": "void",
+    "body": null,
+    "status": 204,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "OrganizationPeopleController.settings",
+    "group": "OrganizationPeopleApi",
+    "group_scoped": true,
+    "method": "settings",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/organization/directory-settings",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "OrganizationDirectorySettings",
+    "body": {
+      "tenant_id": "tenant_id-value",
+      "visibility": "administrators",
+      "revision": 1
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "OrganizationPeopleController.update_settings",
+    "group": "OrganizationPeopleApi",
+    "group_scoped": true,
+    "method": "updateSettings",
+    "http": "PATCH",
+    "path": "/api/v1/tenants/tenant value/organization/directory-settings",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "OrganizationDirectorySettingsInput",
+    "response": "OrganizationDirectorySettings",
+    "body": {
+      "tenant_id": "tenant_id-value",
+      "visibility": "administrators",
+      "revision": 1
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "OrganizationPeopleController.mapping",
+    "group": "OrganizationPeopleApi",
+    "group_scoped": true,
+    "method": "mapping",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/organization/profile-mappings/provider_id value",
+    "ids": {
+      "tenant_id": "tenant value",
+      "provider_id": "provider_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "OrganizationProfileMapping",
+    "body": {
+      "tenant_id": "tenant_id-value",
+      "provider_id": "provider_id-value",
+      "revision": 1,
+      "enabled": false,
+      "fields": {
+        "job_title": "job_title-value",
+        "unit_external_key": "unit_external_key-value",
+        "manager_external_subject": "manager_external_subject-value"
+      },
+      "source": "verified_claims"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "OrganizationPeopleController.update_mapping",
+    "group": "OrganizationPeopleApi",
+    "group_scoped": true,
+    "method": "updateMapping",
+    "http": "PUT",
+    "path": "/api/v1/tenants/tenant value/organization/profile-mappings/provider_id value",
+    "ids": {
+      "tenant_id": "tenant value",
+      "provider_id": "provider_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "OrganizationProfileMappingInput",
+    "response": "OrganizationProfileMapping",
+    "body": {
+      "tenant_id": "tenant_id-value",
+      "provider_id": "provider_id-value",
+      "revision": 1,
+      "enabled": false,
+      "fields": {
+        "job_title": "job_title-value",
+        "unit_external_key": "unit_external_key-value",
+        "manager_external_subject": "manager_external_subject-value"
+      },
+      "source": "verified_claims"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
     "operation": "ProfileController.get",
     "group": "ProfileApi",
     "group_scoped": false,

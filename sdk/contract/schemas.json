@@ -13334,6 +13334,61 @@
       "title": "OrganizationChatSettingsInput",
       "type": "object"
     },
+    "OrganizationDirectorySettings": {
+      "additionalProperties": true,
+      "properties": {
+        "tenant_id": {
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "visibility": {
+          "default": "administrators",
+          "enum": [
+            "administrators",
+            "shared_workspaces"
+          ],
+          "title": "Visibility",
+          "type": "string"
+        },
+        "revision": {
+          "default": 0,
+          "maximum": 2147483647,
+          "minimum": 0,
+          "title": "Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "tenant_id"
+      ],
+      "title": "OrganizationDirectorySettings",
+      "type": "object"
+    },
+    "OrganizationDirectorySettingsInput": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "maximum": 2147483646,
+          "minimum": 0,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "visibility": {
+          "enum": [
+            "administrators",
+            "shared_workspaces"
+          ],
+          "title": "Visibility",
+          "type": "string"
+        }
+      },
+      "required": [
+        "expected_revision",
+        "visibility"
+      ],
+      "title": "OrganizationDirectorySettingsInput",
+      "type": "object"
+    },
     "OrganizationKnowledgeCapabilities": {
       "additionalProperties": false,
       "properties": {
@@ -13475,6 +13530,822 @@
         "digest"
       ],
       "title": "OrganizationKnowledgeSnapshot",
+      "type": "object"
+    },
+    "OrganizationPerson": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Id"
+        },
+        "profile_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Profile Id"
+        },
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        },
+        "avatar_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Avatar Url"
+        },
+        "avatar_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Avatar Version"
+        },
+        "job_title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Job Title"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OrganizationUnitSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "department": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OrganizationUnitSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "manager": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OrganizationPersonReference"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "manager_unavailable": {
+          "default": false,
+          "title": "Manager Unavailable",
+          "type": "boolean"
+        },
+        "revision": {
+          "default": 0,
+          "maximum": 2147483647,
+          "minimum": 0,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "source": {
+          "default": "unassigned",
+          "enum": [
+            "unassigned",
+            "manual",
+            "provider"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "provider_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provider Id"
+        },
+        "provider_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provider Name"
+        },
+        "managed_fields": {
+          "items": {
+            "enum": [
+              "job_title",
+              "unit_id",
+              "manager_id"
+            ],
+            "type": "string"
+          },
+          "title": "Managed Fields",
+          "type": "array"
+        },
+        "observed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observed At"
+        },
+        "updated_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Updated At"
+        },
+        "observation_status": {
+          "default": "not_observed",
+          "enum": [
+            "not_observed",
+            "current",
+            "unavailable"
+          ],
+          "title": "Observation Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "display_name"
+      ],
+      "title": "OrganizationPerson",
+      "type": "object"
+    },
+    "OrganizationPersonCreate": {
+      "additionalProperties": false,
+      "properties": {
+        "profile_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Profile Id"
+        },
+        "subject": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 3,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Subject"
+        },
+        "job_title": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Job Title"
+        },
+        "unit_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit Id"
+        },
+        "manager_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Manager Id"
+        }
+      },
+      "title": "OrganizationPersonCreate",
+      "type": "object"
+    },
+    "OrganizationPersonPage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/OrganizationPerson"
+          },
+          "maxItems": 50,
+          "title": "Items",
+          "type": "array"
+        },
+        "total": {
+          "minimum": 0,
+          "title": "Total",
+          "type": "integer"
+        },
+        "page": {
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "maximum": 50,
+          "minimum": 1,
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "pages": {
+          "minimum": 0,
+          "title": "Pages",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size",
+        "pages"
+      ],
+      "title": "OrganizationPersonPage",
+      "type": "object"
+    },
+    "OrganizationPersonPatch": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "maximum": 2147483646,
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "job_title": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Job Title"
+        },
+        "unit_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit Id"
+        },
+        "manager_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Manager Id"
+        },
+        "manage_locally": {
+          "default": false,
+          "title": "Manage Locally",
+          "type": "boolean"
+        },
+        "managed_provider_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Managed Provider Id"
+        }
+      },
+      "required": [
+        "expected_revision"
+      ],
+      "title": "OrganizationPersonPatch",
+      "type": "object"
+    },
+    "OrganizationPersonReference": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "display_name"
+      ],
+      "title": "OrganizationPersonReference",
+      "type": "object"
+    },
+    "OrganizationProfileFields": {
+      "additionalProperties": false,
+      "properties": {
+        "job_title": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z][A-Za-z0-9_]{0,79}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Job Title"
+        },
+        "unit_external_key": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z][A-Za-z0-9_]{0,79}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit External Key"
+        },
+        "manager_external_subject": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z][A-Za-z0-9_]{0,79}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Manager External Subject"
+        }
+      },
+      "title": "OrganizationProfileFields",
+      "type": "object"
+    },
+    "OrganizationProfileMapping": {
+      "additionalProperties": true,
+      "properties": {
+        "tenant_id": {
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "provider_id": {
+          "title": "Provider Id",
+          "type": "string"
+        },
+        "revision": {
+          "default": 0,
+          "maximum": 2147483647,
+          "minimum": 0,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "fields": {
+          "$ref": "#/$defs/OrganizationProfileFields"
+        },
+        "source": {
+          "const": "verified_claims",
+          "default": "verified_claims",
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tenant_id",
+        "provider_id"
+      ],
+      "title": "OrganizationProfileMapping",
+      "type": "object"
+    },
+    "OrganizationProfileMappingInput": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "maximum": 2147483646,
+          "minimum": 0,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "fields": {
+          "$ref": "#/$defs/OrganizationProfileFields"
+        }
+      },
+      "required": [
+        "expected_revision",
+        "enabled",
+        "fields"
+      ],
+      "title": "OrganizationProfileMappingInput",
+      "type": "object"
+    },
+    "OrganizationUnit": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "division",
+            "department",
+            "team"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "updated_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Updated At"
+        },
+        "tenant_id": {
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Id"
+        },
+        "revision": {
+          "maximum": 2147483647,
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "provider_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provider Id"
+        },
+        "has_children": {
+          "default": false,
+          "title": "Has Children",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "kind",
+        "tenant_id",
+        "revision"
+      ],
+      "title": "OrganizationUnit",
+      "type": "object"
+    },
+    "OrganizationUnitInput": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "kind": {
+          "default": "department",
+          "enum": [
+            "division",
+            "department",
+            "team"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Id"
+        },
+        "provider_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provider Id"
+        },
+        "external_key": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "External Key"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "OrganizationUnitInput",
+      "type": "object"
+    },
+    "OrganizationUnitPage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/OrganizationUnit"
+          },
+          "maxItems": 50,
+          "title": "Items",
+          "type": "array"
+        },
+        "total": {
+          "minimum": 0,
+          "title": "Total",
+          "type": "integer"
+        },
+        "page": {
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "maximum": 50,
+          "minimum": 1,
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "pages": {
+          "minimum": 0,
+          "title": "Pages",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size",
+        "pages"
+      ],
+      "title": "OrganizationUnitPage",
+      "type": "object"
+    },
+    "OrganizationUnitPatch": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "maximum": 2147483646,
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "kind": {
+          "anyOf": [
+            {
+              "enum": [
+                "division",
+                "department",
+                "team"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Kind"
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Id"
+        }
+      },
+      "required": [
+        "expected_revision"
+      ],
+      "title": "OrganizationUnitPatch",
+      "type": "object"
+    },
+    "OrganizationUnitSummary": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "division",
+            "department",
+            "team"
+          ],
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "kind"
+      ],
+      "title": "OrganizationUnitSummary",
+      "type": "object"
+    },
+    "Output": {
+      "additionalProperties": true,
+      "properties": {},
+      "title": "Output",
       "type": "object"
     },
     "Page": {
@@ -20863,6 +21734,54 @@
     },
     "DocumentPartPage": {
       "$ref": "#/$defs/DocumentPartPage"
+    },
+    "Output": {
+      "$ref": "#/$defs/Output"
+    },
+    "OrganizationUnitSummary": {
+      "$ref": "#/$defs/OrganizationUnitSummary"
+    },
+    "OrganizationPersonReference": {
+      "$ref": "#/$defs/OrganizationPersonReference"
+    },
+    "OrganizationPerson": {
+      "$ref": "#/$defs/OrganizationPerson"
+    },
+    "OrganizationPersonCreate": {
+      "$ref": "#/$defs/OrganizationPersonCreate"
+    },
+    "OrganizationPersonPatch": {
+      "$ref": "#/$defs/OrganizationPersonPatch"
+    },
+    "OrganizationUnitInput": {
+      "$ref": "#/$defs/OrganizationUnitInput"
+    },
+    "OrganizationUnitPatch": {
+      "$ref": "#/$defs/OrganizationUnitPatch"
+    },
+    "OrganizationUnit": {
+      "$ref": "#/$defs/OrganizationUnit"
+    },
+    "OrganizationPersonPage": {
+      "$ref": "#/$defs/OrganizationPersonPage"
+    },
+    "OrganizationUnitPage": {
+      "$ref": "#/$defs/OrganizationUnitPage"
+    },
+    "OrganizationDirectorySettings": {
+      "$ref": "#/$defs/OrganizationDirectorySettings"
+    },
+    "OrganizationDirectorySettingsInput": {
+      "$ref": "#/$defs/OrganizationDirectorySettingsInput"
+    },
+    "OrganizationProfileFields": {
+      "$ref": "#/$defs/OrganizationProfileFields"
+    },
+    "OrganizationProfileMappingInput": {
+      "$ref": "#/$defs/OrganizationProfileMappingInput"
+    },
+    "OrganizationProfileMapping": {
+      "$ref": "#/$defs/OrganizationProfileMapping"
     },
     "Page[AuditEvent]": {
       "$ref": "#/$defs/Page_AuditEvent_"

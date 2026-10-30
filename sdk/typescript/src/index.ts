@@ -1,5 +1,7 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
+import {createLazyOrganizationPeopleApi} from './organization-loader.js';
+export type {OrganizationPeopleApi} from './organization-people.js';
 import type {ExternalFileCleanupInput,ExternalFileCleanupResult,ExternalFileReviewInput,ExternalFileChunkInput,ExternalFileReviewView,McpConnectionDescriptor,ExternalReviewInput,ExternalReviewDecision,ExternalReviewView} from './generated.js';
 import type {McpOAuthClient,McpOAuthClientCredential,McpOAuthClientInput,McpOAuthClientPage,McpOAuthClientPatch,McpOAuthClientReadiness,McpOAuthClientRevision} from './generated.js';
 import type {McpOAuthClientFilter} from './types.js';
@@ -79,6 +81,7 @@ export class KoinonClient {
  readonly tokens;
  readonly authorizedApplications;
  readonly organizationChat;
+ readonly organizationPeople;
  readonly people;
  readonly knowledgeConnections;
  readonly knowledgeIndexes;
@@ -176,6 +179,7 @@ export class KoinonClient {
    activate:(tenantId:string,providerId:string,input:IdentityActivation,options:RequestOptions={})=>transport.request<IdentityProvider>('POST',`${tenant(tenantId)}/identity/providers/${id(providerId)}/activate`,{...options,body:input}),
    disable:(tenantId:string,providerId:string,input:IdentityRevision,options:RequestOptions={})=>transport.request<IdentityProvider>('POST',`${tenant(tenantId)}/identity/providers/${id(providerId)}/disable`,{...options,body:input}),
   };
+  this.organizationPeople=createLazyOrganizationPeopleApi(transport);
   this.people={
    list:(tenantId:string,filter:{workspace_id?:string;q?:string;limit?:number;after?:string|undefined}={},options:RequestOptions={})=>transport.request<Page<Person>>('GET',`${tenant(tenantId)}/people`,{...options,query:{...filter}}),
    avatar:(tenantId:string,profileId:string,workspaceId?:string,options:RequestOptions={})=>transport.request<BinaryDownload>('GET',`${tenant(tenantId)}/people/${id(profileId)}/avatar`,{...options,query:{workspace_id:workspaceId},responseType:'download'}),

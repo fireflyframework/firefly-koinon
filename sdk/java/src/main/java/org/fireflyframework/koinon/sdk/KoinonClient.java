@@ -47,6 +47,10 @@ public final class KoinonClient implements AutoCloseable {
     return new ProfileApi(transport);
   }
 
+  public OrganizationPeopleApi organizationPeople(String tenant) {
+    return new OrganizationPeopleApi(transport, tenant);
+  }
+
   public TokensApi tokens() {
     return new TokensApi(transport);
   }

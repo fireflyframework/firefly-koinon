@@ -4448,6 +4448,15 @@
       "default_agent_id": "default_agent_id-value",
       "expected_revision": 1
     },
+    "OrganizationDirectorySettings": {
+      "tenant_id": "tenant_id-value",
+      "visibility": "administrators",
+      "revision": 1
+    },
+    "OrganizationDirectorySettingsInput": {
+      "expected_revision": 1,
+      "visibility": "administrators"
+    },
     "OrganizationKnowledgeCapabilities": {
       "documents": {
         "answer_modes": [
@@ -4697,6 +4706,174 @@
       },
       "digest": "2d828ceecae2f7188752442624651e0e3e02c525cddf3908caf4fa10fe6b5fc5"
     },
+    "OrganizationPerson": {
+      "id": "id-value",
+      "profile_id": "profile_id-value",
+      "display_name": "display_name-value",
+      "avatar_url": "avatar_url-value",
+      "avatar_version": "avatar_version-value",
+      "job_title": "job_title-value",
+      "unit": {
+        "id": "id-value",
+        "name": "name-value",
+        "kind": "division"
+      },
+      "department": {
+        "id": "id-value",
+        "name": "name-value",
+        "kind": "division"
+      },
+      "manager": {
+        "id": "id-value",
+        "display_name": "display_name-value"
+      },
+      "manager_unavailable": false,
+      "revision": 1,
+      "source": "unassigned",
+      "provider_id": "provider_id-value",
+      "provider_name": "provider_name-value",
+      "managed_fields": [
+        "job_title"
+      ],
+      "observed_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z",
+      "observation_status": "not_observed"
+    },
+    "OrganizationPersonCreate": {
+      "profile_id": "profile_id-value",
+      "subject": "subject-value",
+      "job_title": "job_title-value",
+      "unit_id": "unit_id-value",
+      "manager_id": "manager_id-value"
+    },
+    "OrganizationPersonPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "profile_id": "profile_id-value",
+          "display_name": "display_name-value",
+          "avatar_url": "avatar_url-value",
+          "avatar_version": "avatar_version-value",
+          "job_title": "job_title-value",
+          "unit": {
+            "id": "id-value",
+            "name": "name-value",
+            "kind": "division"
+          },
+          "department": {
+            "id": "id-value",
+            "name": "name-value",
+            "kind": "division"
+          },
+          "manager": {
+            "id": "id-value",
+            "display_name": "display_name-value"
+          },
+          "manager_unavailable": false,
+          "revision": 1,
+          "source": "unassigned",
+          "provider_id": "provider_id-value",
+          "provider_name": "provider_name-value",
+          "managed_fields": [
+            "job_title"
+          ],
+          "observed_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z",
+          "observation_status": "not_observed"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "OrganizationPersonPatch": {
+      "expected_revision": 1,
+      "job_title": "job_title-value",
+      "unit_id": "unit_id-value",
+      "manager_id": "manager_id-value",
+      "manage_locally": false,
+      "managed_provider_id": "managed_provider_id-value"
+    },
+    "OrganizationPersonReference": {
+      "id": "id-value",
+      "display_name": "display_name-value"
+    },
+    "OrganizationProfileFields": {
+      "job_title": "job_title-value",
+      "unit_external_key": "unit_external_key-value",
+      "manager_external_subject": "manager_external_subject-value"
+    },
+    "OrganizationProfileMapping": {
+      "tenant_id": "tenant_id-value",
+      "provider_id": "provider_id-value",
+      "revision": 1,
+      "enabled": false,
+      "fields": {
+        "job_title": "job_title-value",
+        "unit_external_key": "unit_external_key-value",
+        "manager_external_subject": "manager_external_subject-value"
+      },
+      "source": "verified_claims"
+    },
+    "OrganizationProfileMappingInput": {
+      "expected_revision": 1,
+      "enabled": false,
+      "fields": {
+        "job_title": "job_title-value",
+        "unit_external_key": "unit_external_key-value",
+        "manager_external_subject": "manager_external_subject-value"
+      }
+    },
+    "OrganizationUnit": {
+      "id": "id-value",
+      "name": "name-value",
+      "kind": "division",
+      "updated_at": "2026-10-27T12:34:56Z",
+      "tenant_id": "tenant_id-value",
+      "parent_id": "parent_id-value",
+      "revision": 1,
+      "provider_id": "provider_id-value",
+      "has_children": false
+    },
+    "OrganizationUnitInput": {
+      "name": "name-value",
+      "kind": "division",
+      "parent_id": "parent_id-value",
+      "provider_id": "provider_id-value",
+      "external_key": "external_key-value"
+    },
+    "OrganizationUnitPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "name": "name-value",
+          "kind": "division",
+          "updated_at": "2026-10-27T12:34:56Z",
+          "tenant_id": "tenant_id-value",
+          "parent_id": "parent_id-value",
+          "revision": 1,
+          "provider_id": "provider_id-value",
+          "has_children": false
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "OrganizationUnitPatch": {
+      "expected_revision": 1,
+      "name": "name-value",
+      "kind": "division",
+      "parent_id": "parent_id-value"
+    },
+    "OrganizationUnitSummary": {
+      "id": "id-value",
+      "name": "name-value",
+      "kind": "division"
+    },
+    "Output": {},
     "Page": {
       "summaries": {
         "example": {

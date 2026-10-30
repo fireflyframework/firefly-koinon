@@ -53,7 +53,9 @@ def test_source_head_allows_pointer_updates_but_cannot_be_deleted():
 
 def test_organization_chat_setting_preserves_revision_history_on_reprovisioning():
     connection = Statements()
-    module.grant_table(connection, "koinon_organization_chat_settings", "example_runtime")
+    module.grant_table(
+        connection, "koinon_organization_chat_settings", "example_runtime"
+    )
     assert connection.items == [
         'REVOKE ALL ON TABLE public."koinon_organization_chat_settings" FROM "example_runtime"',
         'GRANT SELECT,INSERT,UPDATE ON TABLE public."koinon_organization_chat_settings" TO "example_runtime"',
@@ -71,8 +73,27 @@ def test_organization_branding_reset_preserves_monotonic_revision_history():
 
 def test_outbox_publisher_cannot_read_or_reseed_delivery_sequence():
     connection = Statements()
-    module.grant_sequence(connection, "canon_knowledge_outbox_deliveries_id_seq", "example_runtime")
+    module.grant_sequence(
+        connection, "canon_knowledge_outbox_deliveries_id_seq", "example_runtime"
+    )
     assert connection.items == [
         'REVOKE ALL ON SEQUENCE public."canon_knowledge_outbox_deliveries_id_seq" FROM "example_runtime"',
         'GRANT USAGE ON SEQUENCE public."canon_knowledge_outbox_deliveries_id_seq" TO "example_runtime"',
+    ]
+
+
+@pytest.mark.parametrize(
+    "table",
+    [
+        "koinon_organization_people",
+        "koinon_organization_directory_settings",
+        "koinon_organization_profile_mappings",
+    ],
+)
+def test_organization_metadata_cannot_be_deleted_by_runtime_reprovisioning(table):
+    connection = Statements()
+    module.grant_table(connection, table, "example_runtime")
+    assert connection.items == [
+        f'REVOKE ALL ON TABLE public."{table}" FROM "example_runtime"',
+        f'GRANT SELECT,INSERT,UPDATE ON TABLE public."{table}" TO "example_runtime"',
     ]

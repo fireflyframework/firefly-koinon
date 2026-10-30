@@ -29,6 +29,16 @@ try {
   await writeFile(path.join(consumer, 'policy-consumer.ts'), `
 import {KoinonClient,type OrganizationKnowledgeSettingsInput,type OrganizationKnowledgeSnapshot,type SearchResponse,type AnswerAudit} from '@fireflyframework/koinon-sdk';
 declare const client:KoinonClient;
+async function position(tenant:string){
+ const page=await client.organizationPeople.list(tenant,{q:'Alex',page:1,page_size:25});
+ const person=page.items.find(item=>item.id!==null);
+ if(person?.id && person.revision!==undefined){
+  return client.organizationPeople.update(tenant,person.id,{
+   expected_revision:person.revision,job_title:'Knowledge Operations Lead',manager_id:null});
+ }
+}
+// @ts-expect-error Positions cannot change authorization roles.
+client.organizationPeople.update('north','person',{expected_revision:1,roles:['admin']});
 async function policy(tenant:string){
  const current=await client.organizationKnowledge.get(tenant);
  const input:OrganizationKnowledgeSettingsInput={expected_revision:current.revision,documents:{...current.documents,answer_mode:'rag'},structured:current.structured};

@@ -22,8 +22,25 @@ from koinon_sdk import coordinates, curated, dataset_files, authorized_applicati
 from koinon_sdk import organization_knowledge
 from koinon_sdk import organization_branding, mcp, external_reviews, external_file_reviews
 from koinon_sdk import mcp_applications, document_history
+from koinon_sdk import organization_people
 
 rows = """
+OrganizationPeopleController.self|organization_person_self|organizationPeople.me|-|OrganizationPerson
+OrganizationPeopleController.page|organization_people|organizationPeople.list|-|OrganizationPersonPage
+OrganizationPeopleController.create|create_organization_person|organizationPeople.create|OrganizationPersonCreate|OrganizationPerson
+OrganizationPeopleController.get|organization_person|organizationPeople.get|-|OrganizationPerson
+OrganizationPeopleController.update|update_organization_person|organizationPeople.update|OrganizationPersonPatch|OrganizationPerson
+OrganizationPeopleController.avatar|organization_person_avatar|organizationPeople.avatar|-|BinaryDownload
+OrganizationPeopleController.reports|organization_person_reports|organizationPeople.reports|-|OrganizationPersonPage
+OrganizationPeopleController.units|organization_units|organizationPeople.units|-|OrganizationUnitPage
+OrganizationPeopleController.create_unit|create_organization_unit|organizationPeople.createUnit|OrganizationUnitInput|OrganizationUnit
+OrganizationPeopleController.update_unit|update_organization_unit|organizationPeople.updateUnit|OrganizationUnitPatch|OrganizationUnit
+OrganizationPeopleController.delete_unit|delete_organization_unit|organizationPeople.deleteUnit|-|void
+OrganizationPeopleController.settings|organization_directory_settings|organizationPeople.settings|-|OrganizationDirectorySettings
+OrganizationPeopleController.update_settings|update_organization_directory_settings|organizationPeople.updateSettings|OrganizationDirectorySettingsInput|OrganizationDirectorySettings
+OrganizationPeopleController.mapping|organization_profile_mapping|organizationPeople.mapping|-|OrganizationProfileMapping
+OrganizationPeopleController.update_mapping|update_organization_profile_mapping|organizationPeople.updateMapping|OrganizationProfileMappingInput|OrganizationProfileMapping
+
 DocumentHistoryController.versions|document_versions|documents.versions|-|DocumentVersionPage
 DocumentHistoryController.version|document_version|documents.version|-|DocumentVersion
 DocumentHistoryController.extractions|document_extractions|documents.extractions|-|DocumentExtractionPage
@@ -395,7 +412,7 @@ assert not mapping, mapping
 assert not unmapped, "Canonical API operations awaiting typed SDK mapping: " + ", ".join(unmapped)
 
 classes = {}
-for module in (models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files, authorized_applications, organization_chat, organization_knowledge, organization_branding, mcp, external_reviews, external_file_reviews, mcp_applications, document_history):
+for module in (models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files, authorized_applications, organization_chat, organization_knowledge, organization_branding, mcp, external_reviews, external_file_reviews, mcp_applications, document_history, organization_people):
     classes.update(
         {
             name: value

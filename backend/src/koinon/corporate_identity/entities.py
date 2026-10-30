@@ -3,13 +3,16 @@
 from datetime import UTC, datetime
 
 from pyfly.data.relational.sqlalchemy import Base, UtcDateTime
-from sqlalchemy import JSON, ForeignKey, LargeBinary, String, UniqueConstraint
+from sqlalchemy import JSON, ForeignKey, Index, LargeBinary, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 
 class CorporateProvider(Base):
     __tablename__ = "koinon_identity_providers"
-    __table_args__ = (UniqueConstraint("tenant_id", "source_key", name="uq_koinon_identity_source"),)
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "source_key", name="uq_koinon_identity_source"),
+        Index("uq_identity_provider_tenant_id", "tenant_id", "id", unique=True),
+    )
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("lattice_tenants.id"), index=True)
     kind: Mapped[str] = mapped_column(String(32))

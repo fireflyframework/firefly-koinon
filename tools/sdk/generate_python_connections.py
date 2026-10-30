@@ -12,6 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCES = {
+    "organization_people": "backend/src/koinon/organization_people/dtos.py",
     "document_history": "backend/src/koinon/knowledge/document_history/dtos.py",
     "mcp_applications": "backend/src/koinon/mcp_applications/dtos.py",
     "external_file_reviews": "backend/src/koinon/knowledge/external_reviews/file_dtos.py",
@@ -107,6 +108,8 @@ def render(source):
                     and isinstance(item.target, ast.Name)
                     and item.target.id != "model_config")
                 or (source.parent.name == "organization_knowledge" and node.name == "KnowledgePolicyValue"
+                    and isinstance(item, ast.Assign))
+                or (source.parent.name == "organization_people" and node.name == "Input"
                     and isinstance(item, ast.Assign))
             ] or [ast.Pass()]
             if source.parent.name == "curated" and node.name == "KnowledgeConfirmation":

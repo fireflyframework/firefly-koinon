@@ -181,9 +181,28 @@ from koinon_sdk.organization_branding import (
     OrganizationBrandingInput,
 )
 from koinon_sdk.organization_chat import OrganizationChatSettings, OrganizationChatSettingsInput
+from koinon_sdk.organization_filters import (
+    OrganizationPeopleFilter,
+    OrganizationReportsFilter,
+    OrganizationUnitFilter,
+)
 from koinon_sdk.organization_knowledge import (
     OrganizationKnowledgeSettings,
     OrganizationKnowledgeSettingsInput,
+)
+from koinon_sdk.organization_people import (
+    OrganizationDirectorySettings,
+    OrganizationDirectorySettingsInput,
+    OrganizationPerson,
+    OrganizationPersonCreate,
+    OrganizationPersonPage,
+    OrganizationPersonPatch,
+    OrganizationProfileMapping,
+    OrganizationProfileMappingInput,
+    OrganizationUnit,
+    OrganizationUnitInput,
+    OrganizationUnitPage,
+    OrganizationUnitPatch,
 )
 from koinon_sdk.proposals import CatalogProposal, ProposalConfirmation, ProposalRevision
 from koinon_sdk.provenance import TableProvenance, TableSnapshotPage
@@ -1516,6 +1535,155 @@ class KoinonClient:
         }
         return Page[Person].model_validate(
             await self._request("GET", self._tenant(tenant_id) + "/people", params=filters)
+        )
+
+    async def organization_person_self(
+        self, tenant_id: str, *, workspace_id: str | None = None
+    ) -> OrganizationPerson:
+        return OrganizationPerson.model_validate(
+            await self._request(
+                "GET",
+                self._tenant(tenant_id) + "/organization/people/me",
+                params={"workspace_id": workspace_id} if workspace_id is not None else {},
+            )
+        )
+
+    async def organization_people(
+        self, tenant_id: str, **filters: Unpack[OrganizationPeopleFilter]
+    ) -> OrganizationPersonPage:
+        return OrganizationPersonPage.model_validate(
+            await self._request("GET", self._tenant(tenant_id) + "/organization/people", params=filters)
+        )
+
+    async def create_organization_person(
+        self, tenant_id: str, value: OrganizationPersonCreate
+    ) -> OrganizationPerson:
+        return OrganizationPerson.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/organization/people",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def organization_person(
+        self, tenant_id: str, person_id: str, *, workspace_id: str | None = None
+    ) -> OrganizationPerson:
+        return OrganizationPerson.model_validate(
+            await self._request(
+                "GET",
+                self._tenant(tenant_id) + "/organization/people/" + quote(person_id, safe=""),
+                params={"workspace_id": workspace_id} if workspace_id is not None else {},
+            )
+        )
+
+    async def update_organization_person(
+        self, tenant_id: str, person_id: str, value: OrganizationPersonPatch
+    ) -> OrganizationPerson:
+        return OrganizationPerson.model_validate(
+            await self._request(
+                "PATCH",
+                self._tenant(tenant_id) + "/organization/people/" + quote(person_id, safe=""),
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def organization_person_avatar(
+        self,
+        tenant_id: str,
+        person_id: str,
+        *,
+        workspace_id: str | None = None,
+        if_none_match: str | None = None,
+    ) -> BinaryDownload:
+        return await self._download(
+            self._tenant(tenant_id) + "/organization/people/" + quote(person_id, safe="") + "/avatar",
+            params={"workspace_id": workspace_id} if workspace_id is not None else None,
+            if_none_match=if_none_match,
+        )
+
+    async def organization_person_reports(
+        self, tenant_id: str, person_id: str, **filters: Unpack[OrganizationReportsFilter]
+    ) -> OrganizationPersonPage:
+        return OrganizationPersonPage.model_validate(
+            await self._request(
+                "GET",
+                self._tenant(tenant_id) + "/organization/people/" + quote(person_id, safe="") + "/reports",
+                params=filters,
+            )
+        )
+
+    async def organization_units(
+        self, tenant_id: str, **filters: Unpack[OrganizationUnitFilter]
+    ) -> OrganizationUnitPage:
+        return OrganizationUnitPage.model_validate(
+            await self._request("GET", self._tenant(tenant_id) + "/organization/units", params=filters)
+        )
+
+    async def create_organization_unit(
+        self, tenant_id: str, value: OrganizationUnitInput
+    ) -> OrganizationUnit:
+        return OrganizationUnit.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/organization/units",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def update_organization_unit(
+        self, tenant_id: str, unit_id: str, value: OrganizationUnitPatch
+    ) -> OrganizationUnit:
+        return OrganizationUnit.model_validate(
+            await self._request(
+                "PATCH",
+                self._tenant(tenant_id) + "/organization/units/" + quote(unit_id, safe=""),
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def delete_organization_unit(self, tenant_id: str, unit_id: str, *, expected_revision: int) -> None:
+        await self._request(
+            "DELETE",
+            self._tenant(tenant_id) + "/organization/units/" + quote(unit_id, safe=""),
+            params={"expected_revision": expected_revision},
+        )
+
+    async def organization_directory_settings(self, tenant_id: str) -> OrganizationDirectorySettings:
+        return OrganizationDirectorySettings.model_validate(
+            await self._request("GET", self._tenant(tenant_id) + "/organization/directory-settings")
+        )
+
+    async def update_organization_directory_settings(
+        self, tenant_id: str, value: OrganizationDirectorySettingsInput
+    ) -> OrganizationDirectorySettings:
+        return OrganizationDirectorySettings.model_validate(
+            await self._request(
+                "PATCH",
+                self._tenant(tenant_id) + "/organization/directory-settings",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def organization_profile_mapping(
+        self, tenant_id: str, provider_id: str
+    ) -> OrganizationProfileMapping:
+        return OrganizationProfileMapping.model_validate(
+            await self._request(
+                "GET",
+                self._tenant(tenant_id) + "/organization/profile-mappings/" + quote(provider_id, safe=""),
+            )
+        )
+
+    async def update_organization_profile_mapping(
+        self, tenant_id: str, provider_id: str, value: OrganizationProfileMappingInput
+    ) -> OrganizationProfileMapping:
+        return OrganizationProfileMapping.model_validate(
+            await self._request(
+                "PUT",
+                self._tenant(tenant_id) + "/organization/profile-mappings/" + quote(provider_id, safe=""),
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
         )
 
     async def branding_defaults(self) -> BrandingValues:

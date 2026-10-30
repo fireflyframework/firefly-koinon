@@ -1197,6 +1197,15 @@ export interface OrganizationChatSettingsInput {
  "default_agent_id": string | null;
  "expected_revision": number;
 }
+export interface OrganizationDirectorySettings {
+ "tenant_id": string;
+ "visibility"?: "administrators" | "shared_workspaces";
+ "revision"?: number;
+}
+export interface OrganizationDirectorySettingsInput {
+ "expected_revision": number;
+ "visibility": "administrators" | "shared_workspaces";
+}
 export interface OrganizationKnowledgeCapabilities {
  "documents": DocumentKnowledgeCapabilities;
  "structured": StructuredKnowledgeCapabilities;
@@ -1223,6 +1232,108 @@ export interface OrganizationKnowledgeSnapshot {
  "documents": DocumentKnowledgeSettings;
  "structured": StructuredKnowledgeSettings;
  "digest": string;
+}
+export interface OrganizationPerson {
+ "id"?: string | null;
+ "profile_id"?: string | null;
+ "display_name": string;
+ "avatar_url"?: string | null;
+ "avatar_version"?: string | null;
+ "job_title"?: string | null;
+ "unit"?: OrganizationUnitSummary | null;
+ "department"?: OrganizationUnitSummary | null;
+ "manager"?: OrganizationPersonReference | null;
+ "manager_unavailable"?: boolean;
+ "revision"?: number;
+ "source"?: "unassigned" | "manual" | "provider";
+ "provider_id"?: string | null;
+ "provider_name"?: string | null;
+ "managed_fields"?: Array<"job_title" | "unit_id" | "manager_id">;
+ "observed_at"?: string | null;
+ "updated_at"?: string | null;
+ "observation_status"?: "not_observed" | "current" | "unavailable";
+}
+export interface OrganizationPersonCreate {
+ "profile_id"?: string | null;
+ "subject"?: string | null;
+ "job_title"?: string | null;
+ "unit_id"?: string | null;
+ "manager_id"?: string | null;
+}
+export interface OrganizationPersonPage {
+ "items": Array<OrganizationPerson>;
+ "total": number;
+ "page": number;
+ "page_size": number;
+ "pages": number;
+}
+export interface OrganizationPersonPatch {
+ "expected_revision": number;
+ "job_title"?: string | null;
+ "unit_id"?: string | null;
+ "manager_id"?: string | null;
+ "manage_locally"?: boolean;
+ "managed_provider_id"?: string | null;
+}
+export interface OrganizationPersonReference {
+ "id": string;
+ "display_name": string;
+}
+export interface OrganizationProfileFields {
+ "job_title"?: string | null;
+ "unit_external_key"?: string | null;
+ "manager_external_subject"?: string | null;
+}
+export interface OrganizationProfileMapping {
+ "tenant_id": string;
+ "provider_id": string;
+ "revision"?: number;
+ "enabled"?: boolean;
+ "fields"?: OrganizationProfileFields;
+ "source"?: "verified_claims";
+}
+export interface OrganizationProfileMappingInput {
+ "expected_revision": number;
+ "enabled": boolean;
+ "fields": OrganizationProfileFields;
+}
+export interface OrganizationUnit {
+ "id": string;
+ "name": string;
+ "kind": "division" | "department" | "team";
+ "updated_at"?: string | null;
+ "tenant_id": string;
+ "parent_id"?: string | null;
+ "revision": number;
+ "provider_id"?: string | null;
+ "has_children"?: boolean;
+}
+export interface OrganizationUnitInput {
+ "name": string;
+ "kind"?: "division" | "department" | "team";
+ "parent_id"?: string | null;
+ "provider_id"?: string | null;
+ "external_key"?: string | null;
+}
+export interface OrganizationUnitPage {
+ "items": Array<OrganizationUnit>;
+ "total": number;
+ "page": number;
+ "page_size": number;
+ "pages": number;
+}
+export interface OrganizationUnitPatch {
+ "expected_revision": number;
+ "name"?: string | null;
+ "kind"?: "division" | "department" | "team" | null;
+ "parent_id"?: string | null;
+}
+export interface OrganizationUnitSummary {
+ "id": string;
+ "name": string;
+ "kind": "division" | "department" | "team";
+}
+export interface Output {
 }
 export interface PendingKnowledgeCommit {
  "status"?: "pending";

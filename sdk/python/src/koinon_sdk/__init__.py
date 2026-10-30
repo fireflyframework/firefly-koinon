@@ -315,6 +315,11 @@ from koinon_sdk.organization_branding import (
     OrganizationBrandingInput,
 )
 from koinon_sdk.organization_chat import OrganizationChatSettings, OrganizationChatSettingsInput
+from koinon_sdk.organization_filters import (
+    OrganizationPeopleFilter,
+    OrganizationReportsFilter,
+    OrganizationUnitFilter,
+)
 from koinon_sdk.organization_knowledge import (
     DocumentKnowledgeBounds,
     DocumentKnowledgeCapabilities,
@@ -328,6 +333,23 @@ from koinon_sdk.organization_knowledge import (
     StructuredKnowledgeBounds,
     StructuredKnowledgeCapabilities,
     StructuredKnowledgeSettings,
+)
+from koinon_sdk.organization_people import (
+    OrganizationDirectorySettings,
+    OrganizationDirectorySettingsInput,
+    OrganizationPerson,
+    OrganizationPersonCreate,
+    OrganizationPersonPage,
+    OrganizationPersonPatch,
+    OrganizationPersonReference,
+    OrganizationProfileFields,
+    OrganizationProfileMapping,
+    OrganizationProfileMappingInput,
+    OrganizationUnit,
+    OrganizationUnitInput,
+    OrganizationUnitPage,
+    OrganizationUnitPatch,
+    OrganizationUnitSummary,
 )
 from koinon_sdk.pagination import (
     cursor_pages,
@@ -689,4 +711,25 @@ __all__ += [
     "DocumentPartSummary",
     "DocumentPartPage",
     "DocumentPartContent",
+]
+
+__all__ += [
+    "OrganizationDirectorySettings",
+    "OrganizationDirectorySettingsInput",
+    "OrganizationPeopleFilter",
+    "OrganizationPerson",
+    "OrganizationPersonCreate",
+    "OrganizationPersonPage",
+    "OrganizationPersonPatch",
+    "OrganizationPersonReference",
+    "OrganizationProfileFields",
+    "OrganizationProfileMapping",
+    "OrganizationProfileMappingInput",
+    "OrganizationReportsFilter",
+    "OrganizationUnit",
+    "OrganizationUnitFilter",
+    "OrganizationUnitInput",
+    "OrganizationUnitPage",
+    "OrganizationUnitPatch",
+    "OrganizationUnitSummary",
 ]

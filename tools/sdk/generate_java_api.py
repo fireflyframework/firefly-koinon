@@ -27,6 +27,12 @@ add("OrganizationChatController", "OrganizationChatApi", {"get": "get", "update"
 add("BrandingDefaultsController", "BrandingDefaultsApi", {"defaults": "defaults"})
 add("OrganizationBrandingController", "OrganizationBrandingApi", {"get": "get", "update": "update", "reset": "reset"})
 add("OrganizationKnowledgeController", "OrganizationKnowledgeApi", {"get": "get", "update": "update"})
+add("OrganizationPeopleController", "OrganizationPeopleApi", {
+    "self": "me", "page": "list", "create": "create", "get": "get", "update": "update",
+    "avatar": "avatar", "reports": "reports", "units": "units", "create_unit": "createUnit",
+    "update_unit": "updateUnit", "delete_unit": "deleteUnit", "settings": "settings",
+    "update_settings": "updateSettings", "mapping": "mapping", "update_mapping": "updateMapping",
+})
 add("AuditController", "AuditApi", {"audit": "list"})
 add("DatasetFilesController", "DatasetsApi", {"append": "appendFile"})
 add(
@@ -188,6 +194,13 @@ def upper(s):
 
 
 filters = {
+    "OrganizationPeopleController.self": "OrganizationScopeFilter",
+    "OrganizationPeopleController.get": "OrganizationScopeFilter",
+    "OrganizationPeopleController.avatar": "OrganizationScopeFilter",
+    "OrganizationPeopleController.page": "OrganizationPeopleFilter",
+    "OrganizationPeopleController.reports": "OrganizationReportsFilter",
+    "OrganizationPeopleController.units": "OrganizationUnitFilter",
+    "OrganizationPeopleController.delete_unit": "OrganizationUnitDeleteFilter",
     "DocumentHistoryController.versions": "DocumentHistoryFilter",
     "DocumentHistoryController.extractions": "DocumentHistoryFilter",
     "DocumentHistoryController.parts": "DocumentPartFilter",

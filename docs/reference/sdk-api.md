@@ -2,7 +2,7 @@
 
 Python, Java and TypeScript expose the same canonical headless API. The table records concrete SDK methods; it does not count browser-only authentication or retained domain routes outside this contract.
 
-This development contract contains 173 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
+This development contract contains 188 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
 
 [Download the operation manifest](sdk-contract.json) and [complete wire schemas](sdk-schemas.json). The maintained generator checks source mappings and schemas without starting the backend.
 
@@ -164,6 +164,21 @@ This development contract contains 173 operations. Resource operations require t
 | `PUT /api/v1/tenants/{tenant_id}/chat/settings` | `update_organization_chat_settings` | `organizationChat.update` | `client.organizationChat.update` | `OrganizationChatSettings` |
 | `GET /api/v1/tenants/{tenant_id}/knowledge/settings` | `organization_knowledge_settings` | `organizationKnowledge.get` | `client.organizationKnowledge.get` | `OrganizationKnowledgeSettings` |
 | `PUT /api/v1/tenants/{tenant_id}/knowledge/settings` | `update_organization_knowledge_settings` | `organizationKnowledge.update` | `client.organizationKnowledge.update` | `OrganizationKnowledgeSettings` |
+| `GET /api/v1/tenants/{tenant_id}/organization/people/me` | `organization_person_self` | `organizationPeople.me` | `client.organizationPeople.me` | `OrganizationPerson` |
+| `GET /api/v1/tenants/{tenant_id}/organization/people` | `organization_people` | `organizationPeople.list` | `client.organizationPeople.list` | `OrganizationPersonPage` |
+| `POST /api/v1/tenants/{tenant_id}/organization/people` | `create_organization_person` | `organizationPeople.create` | `client.organizationPeople.create` | `OrganizationPerson` |
+| `GET /api/v1/tenants/{tenant_id}/organization/people/{person_id}` | `organization_person` | `organizationPeople.get` | `client.organizationPeople.get` | `OrganizationPerson` |
+| `PATCH /api/v1/tenants/{tenant_id}/organization/people/{person_id}` | `update_organization_person` | `organizationPeople.update` | `client.organizationPeople.update` | `OrganizationPerson` |
+| `GET /api/v1/tenants/{tenant_id}/organization/people/{person_id}/avatar` | `organization_person_avatar` | `organizationPeople.avatar` | `client.organizationPeople.avatar` | `BinaryDownload` |
+| `GET /api/v1/tenants/{tenant_id}/organization/people/{person_id}/reports` | `organization_person_reports` | `organizationPeople.reports` | `client.organizationPeople.reports` | `OrganizationPersonPage` |
+| `GET /api/v1/tenants/{tenant_id}/organization/units` | `organization_units` | `organizationPeople.units` | `client.organizationPeople.units` | `OrganizationUnitPage` |
+| `POST /api/v1/tenants/{tenant_id}/organization/units` | `create_organization_unit` | `organizationPeople.createUnit` | `client.organizationPeople.createUnit` | `OrganizationUnit` |
+| `PATCH /api/v1/tenants/{tenant_id}/organization/units/{unit_id}` | `update_organization_unit` | `organizationPeople.updateUnit` | `client.organizationPeople.updateUnit` | `OrganizationUnit` |
+| `DELETE /api/v1/tenants/{tenant_id}/organization/units/{unit_id}` | `delete_organization_unit` | `organizationPeople.deleteUnit` | `client.organizationPeople.deleteUnit` | `void` |
+| `GET /api/v1/tenants/{tenant_id}/organization/directory-settings` | `organization_directory_settings` | `organizationPeople.settings` | `client.organizationPeople.settings` | `OrganizationDirectorySettings` |
+| `PATCH /api/v1/tenants/{tenant_id}/organization/directory-settings` | `update_organization_directory_settings` | `organizationPeople.updateSettings` | `client.organizationPeople.updateSettings` | `OrganizationDirectorySettings` |
+| `GET /api/v1/tenants/{tenant_id}/organization/profile-mappings/{provider_id}` | `organization_profile_mapping` | `organizationPeople.mapping` | `client.organizationPeople.mapping` | `OrganizationProfileMapping` |
+| `PUT /api/v1/tenants/{tenant_id}/organization/profile-mappings/{provider_id}` | `update_organization_profile_mapping` | `organizationPeople.updateMapping` | `client.organizationPeople.updateMapping` | `OrganizationProfileMapping` |
 | `GET /api/v1/profile` | `profile` | `profile.get` | `client.profile.get` | `UserProfile` |
 | `PATCH /api/v1/profile` | `update_profile` | `profile.update` | `client.profile.update` | `UserProfile` |
 | `GET /api/v1/profile/avatar` | `avatar_download` | `profile.avatarDownload` | `client.profile.avatar` | `BinaryDownload` |

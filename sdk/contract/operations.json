@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "api_prefix": "/api/v1",
   "status": "Canonical API contract; development snapshot",
-  "canonical_operation_count": 173,
+  "canonical_operation_count": 188,
   "qualified_compatibility_operations": [
     {
       "operation": "GlossaryController.list_terms",
@@ -1322,7 +1322,7 @@
       "category": "canonical",
       "operation": "AssistantController.threads",
       "source": "backend/src/koinon/assistants/controllers.py",
-      "line": 34,
+      "line": 35,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1408,7 +1408,7 @@
       "request_schema": null,
       "response_schema": "Page[ChatThread]",
       "success_status": 200,
-      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
+      "source_sha256": "9fa9314543321790b21a061cb1c89e14945ff1f4f7f1a3343503f27394a8d730",
       "encoding": "application/json",
       "headers": []
     },
@@ -1418,7 +1418,7 @@
       "category": "canonical",
       "operation": "AssistantController.thread_create",
       "source": "backend/src/koinon/assistants/controllers.py",
-      "line": 65,
+      "line": 66,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1440,7 +1440,7 @@
       "request_schema": "ThreadInput",
       "response_schema": "ChatThread",
       "success_status": 201,
-      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
+      "source_sha256": "9fa9314543321790b21a061cb1c89e14945ff1f4f7f1a3343503f27394a8d730",
       "encoding": "application/json",
       "headers": []
     },
@@ -1450,7 +1450,7 @@
       "category": "canonical",
       "operation": "AssistantController.messages",
       "source": "backend/src/koinon/assistants/controllers.py",
-      "line": 75,
+      "line": 76,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1486,7 +1486,7 @@
       "request_schema": null,
       "response_schema": "Page[ChatMessage]",
       "success_status": 200,
-      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
+      "source_sha256": "9fa9314543321790b21a061cb1c89e14945ff1f4f7f1a3343503f27394a8d730",
       "encoding": "application/json",
       "headers": []
     },
@@ -1496,7 +1496,7 @@
       "category": "canonical",
       "operation": "AssistantController.submit",
       "source": "backend/src/koinon/assistants/controllers.py",
-      "line": 88,
+      "line": 89,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1524,7 +1524,7 @@
       "request_schema": "RunInput",
       "response_schema": "ChatRun",
       "success_status": 202,
-      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
+      "source_sha256": "9fa9314543321790b21a061cb1c89e14945ff1f4f7f1a3343503f27394a8d730",
       "encoding": "application/json",
       "headers": []
     },
@@ -1534,7 +1534,7 @@
       "category": "canonical",
       "operation": "AssistantController.cancel",
       "source": "backend/src/koinon/assistants/controllers.py",
-      "line": 99,
+      "line": 100,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1556,7 +1556,7 @@
       "request_schema": null,
       "response_schema": "ChatRun",
       "success_status": 200,
-      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
+      "source_sha256": "9fa9314543321790b21a061cb1c89e14945ff1f4f7f1a3343503f27394a8d730",
       "encoding": "application/json",
       "headers": []
     },
@@ -1566,7 +1566,7 @@
       "category": "canonical",
       "operation": "AssistantController.retry",
       "source": "backend/src/koinon/assistants/controllers.py",
-      "line": 103,
+      "line": 104,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1588,7 +1588,7 @@
       "request_schema": null,
       "response_schema": "ChatRun",
       "success_status": 202,
-      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
+      "source_sha256": "9fa9314543321790b21a061cb1c89e14945ff1f4f7f1a3343503f27394a8d730",
       "encoding": "application/json",
       "headers": []
     },
@@ -1598,7 +1598,7 @@
       "category": "canonical",
       "operation": "AssistantController.events",
       "source": "backend/src/koinon/assistants/controllers.py",
-      "line": 107,
+      "line": 108,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1620,7 +1620,7 @@
       "request_schema": null,
       "response_schema": "StreamEvent",
       "success_status": 200,
-      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
+      "source_sha256": "9fa9314543321790b21a061cb1c89e14945ff1f4f7f1a3343503f27394a8d730",
       "encoding": "text/event-stream",
       "headers": [
         "Last-Event-ID (last fully processed opaque event ID)"
@@ -1632,7 +1632,7 @@
       "category": "canonical",
       "operation": "AssistantController.result",
       "source": "backend/src/koinon/assistants/controllers.py",
-      "line": 160,
+      "line": 161,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1660,7 +1660,7 @@
       "request_schema": null,
       "response_schema": "EvidenceResult",
       "success_status": 200,
-      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
+      "source_sha256": "9fa9314543321790b21a061cb1c89e14945ff1f4f7f1a3343503f27394a8d730",
       "encoding": "application/json",
       "headers": []
     },
@@ -1670,7 +1670,7 @@
       "category": "canonical",
       "operation": "AssistantController.activities",
       "source": "backend/src/koinon/assistants/controllers.py",
-      "line": 168,
+      "line": 169,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1706,7 +1706,7 @@
       "request_schema": null,
       "response_schema": "Page[ToolActivity]",
       "success_status": 200,
-      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
+      "source_sha256": "9fa9314543321790b21a061cb1c89e14945ff1f4f7f1a3343503f27394a8d730",
       "encoding": "application/json",
       "headers": []
     },
@@ -1716,7 +1716,7 @@
       "category": "canonical",
       "operation": "AssistantController.audit",
       "source": "backend/src/koinon/assistants/controllers.py",
-      "line": 181,
+      "line": 182,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1738,7 +1738,7 @@
       "request_schema": null,
       "response_schema": "AnswerAudit",
       "success_status": 200,
-      "source_sha256": "597ee70c47d8221fd4c031ca2c662a0b7a3f1d10517b073ba1b4aa860d2b168a",
+      "source_sha256": "9fa9314543321790b21a061cb1c89e14945ff1f4f7f1a3343503f27394a8d730",
       "encoding": "application/json",
       "headers": []
     },
@@ -6557,6 +6557,628 @@
       "response_schema": "OrganizationKnowledgeSettings",
       "success_status": 200,
       "source_sha256": "9ab094768b9c3f891d2ae4a990e18e81df935c50b2a7a1a3fdf9aeb2c972247c",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/organization/people/me",
+      "category": "canonical",
+      "operation": "OrganizationPeopleController.self",
+      "source": "backend/src/koinon/organization_people/controllers.py",
+      "line": 50,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "OrganizationPerson",
+      "sdk_python": "organization_person_self",
+      "sdk_typescript": "organizationPeople.me",
+      "sdk_java": "client.organizationPeople.me",
+      "request_schema": null,
+      "response_schema": "OrganizationPerson",
+      "success_status": 200,
+      "source_sha256": "a9e7af2770e6f77ac0f170724b50a73ca7b9f403c2d3c2581a9c2c471b4c47cf",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/organization/people",
+      "category": "canonical",
+      "operation": "OrganizationPeopleController.page",
+      "source": "backend/src/koinon/organization_people/controllers.py",
+      "line": 59,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "q",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "job_title",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "unit_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "department_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "manager_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "unassigned",
+          "annotation": "QueryParam[bool]",
+          "location": "query",
+          "required": false,
+          "default": false
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "OrganizationPersonPage",
+      "sdk_python": "organization_people",
+      "sdk_typescript": "organizationPeople.list",
+      "sdk_java": "client.organizationPeople.list",
+      "request_schema": null,
+      "response_schema": "OrganizationPersonPage",
+      "success_status": 200,
+      "source_sha256": "a9e7af2770e6f77ac0f170724b50a73ca7b9f403c2d3c2581a9c2c471b4c47cf",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/organization/people",
+      "category": "canonical",
+      "operation": "OrganizationPeopleController.create",
+      "source": "backend/src/koinon/organization_people/controllers.py",
+      "line": 92,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[OrganizationPersonCreate]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "OrganizationPerson",
+      "sdk_python": "create_organization_person",
+      "sdk_typescript": "organizationPeople.create",
+      "sdk_java": "client.organizationPeople.create",
+      "request_schema": "OrganizationPersonCreate",
+      "response_schema": "OrganizationPerson",
+      "success_status": 201,
+      "source_sha256": "a9e7af2770e6f77ac0f170724b50a73ca7b9f403c2d3c2581a9c2c471b4c47cf",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/organization/people/{person_id}",
+      "category": "canonical",
+      "operation": "OrganizationPeopleController.get",
+      "source": "backend/src/koinon/organization_people/controllers.py",
+      "line": 103,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "person_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "OrganizationPerson",
+      "sdk_python": "organization_person",
+      "sdk_typescript": "organizationPeople.get",
+      "sdk_java": "client.organizationPeople.get",
+      "request_schema": null,
+      "response_schema": "OrganizationPerson",
+      "success_status": 200,
+      "source_sha256": "a9e7af2770e6f77ac0f170724b50a73ca7b9f403c2d3c2581a9c2c471b4c47cf",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/tenants/{tenant_id}/organization/people/{person_id}",
+      "category": "canonical",
+      "operation": "OrganizationPeopleController.update",
+      "source": "backend/src/koinon/organization_people/controllers.py",
+      "line": 121,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "person_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[OrganizationPersonPatch]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "OrganizationPerson",
+      "sdk_python": "update_organization_person",
+      "sdk_typescript": "organizationPeople.update",
+      "sdk_java": "client.organizationPeople.update",
+      "request_schema": "OrganizationPersonPatch",
+      "response_schema": "OrganizationPerson",
+      "success_status": 200,
+      "source_sha256": "a9e7af2770e6f77ac0f170724b50a73ca7b9f403c2d3c2581a9c2c471b4c47cf",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/organization/people/{person_id}/avatar",
+      "category": "canonical",
+      "operation": "OrganizationPeopleController.avatar",
+      "source": "backend/src/koinon/organization_people/controllers.py",
+      "line": 136,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "person_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "organization_person_avatar",
+      "sdk_typescript": "organizationPeople.avatar",
+      "sdk_java": "client.organizationPeople.avatar",
+      "request_schema": null,
+      "response_schema": "BinaryDownload",
+      "success_status": 200,
+      "source_sha256": "a9e7af2770e6f77ac0f170724b50a73ca7b9f403c2d3c2581a9c2c471b4c47cf",
+      "encoding": "binary",
+      "headers": [
+        "If-None-Match (optional; avatars only)"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/organization/people/{person_id}/reports",
+      "category": "canonical",
+      "operation": "OrganizationPeopleController.reports",
+      "source": "backend/src/koinon/organization_people/controllers.py",
+      "line": 152,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "person_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "OrganizationPersonPage",
+      "sdk_python": "organization_person_reports",
+      "sdk_typescript": "organizationPeople.reports",
+      "sdk_java": "client.organizationPeople.reports",
+      "request_schema": null,
+      "response_schema": "OrganizationPersonPage",
+      "success_status": 200,
+      "source_sha256": "a9e7af2770e6f77ac0f170724b50a73ca7b9f403c2d3c2581a9c2c471b4c47cf",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/organization/units",
+      "category": "canonical",
+      "operation": "OrganizationPeopleController.units",
+      "source": "backend/src/koinon/organization_people/controllers.py",
+      "line": 174,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "parent_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "q",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "OrganizationUnitPage",
+      "sdk_python": "organization_units",
+      "sdk_typescript": "organizationPeople.units",
+      "sdk_java": "client.organizationPeople.units",
+      "request_schema": null,
+      "response_schema": "OrganizationUnitPage",
+      "success_status": 200,
+      "source_sha256": "a9e7af2770e6f77ac0f170724b50a73ca7b9f403c2d3c2581a9c2c471b4c47cf",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/organization/units",
+      "category": "canonical",
+      "operation": "OrganizationPeopleController.create_unit",
+      "source": "backend/src/koinon/organization_people/controllers.py",
+      "line": 195,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[OrganizationUnitInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "OrganizationUnit",
+      "sdk_python": "create_organization_unit",
+      "sdk_typescript": "organizationPeople.createUnit",
+      "sdk_java": "client.organizationPeople.createUnit",
+      "request_schema": "OrganizationUnitInput",
+      "response_schema": "OrganizationUnit",
+      "success_status": 201,
+      "source_sha256": "a9e7af2770e6f77ac0f170724b50a73ca7b9f403c2d3c2581a9c2c471b4c47cf",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/tenants/{tenant_id}/organization/units/{unit_id}",
+      "category": "canonical",
+      "operation": "OrganizationPeopleController.update_unit",
+      "source": "backend/src/koinon/organization_people/controllers.py",
+      "line": 203,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "unit_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[OrganizationUnitPatch]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "OrganizationUnit",
+      "sdk_python": "update_organization_unit",
+      "sdk_typescript": "organizationPeople.updateUnit",
+      "sdk_java": "client.organizationPeople.updateUnit",
+      "request_schema": "OrganizationUnitPatch",
+      "response_schema": "OrganizationUnit",
+      "success_status": 200,
+      "source_sha256": "a9e7af2770e6f77ac0f170724b50a73ca7b9f403c2d3c2581a9c2c471b4c47cf",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/tenants/{tenant_id}/organization/units/{unit_id}",
+      "category": "canonical",
+      "operation": "OrganizationPeopleController.delete_unit",
+      "source": "backend/src/koinon/organization_people/controllers.py",
+      "line": 215,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "unit_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "expected_revision",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": true
+        }
+      ],
+      "return_annotation": "None",
+      "sdk_python": "delete_organization_unit",
+      "sdk_typescript": "organizationPeople.deleteUnit",
+      "sdk_java": "client.organizationPeople.deleteUnit",
+      "request_schema": null,
+      "response_schema": "void",
+      "success_status": 204,
+      "source_sha256": "a9e7af2770e6f77ac0f170724b50a73ca7b9f403c2d3c2581a9c2c471b4c47cf",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/organization/directory-settings",
+      "category": "canonical",
+      "operation": "OrganizationPeopleController.settings",
+      "source": "backend/src/koinon/organization_people/controllers.py",
+      "line": 230,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "OrganizationDirectorySettings",
+      "sdk_python": "organization_directory_settings",
+      "sdk_typescript": "organizationPeople.settings",
+      "sdk_java": "client.organizationPeople.settings",
+      "request_schema": null,
+      "response_schema": "OrganizationDirectorySettings",
+      "success_status": 200,
+      "source_sha256": "a9e7af2770e6f77ac0f170724b50a73ca7b9f403c2d3c2581a9c2c471b4c47cf",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/tenants/{tenant_id}/organization/directory-settings",
+      "category": "canonical",
+      "operation": "OrganizationPeopleController.update_settings",
+      "source": "backend/src/koinon/organization_people/controllers.py",
+      "line": 234,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[OrganizationDirectorySettingsInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "OrganizationDirectorySettings",
+      "sdk_python": "update_organization_directory_settings",
+      "sdk_typescript": "organizationPeople.updateSettings",
+      "sdk_java": "client.organizationPeople.updateSettings",
+      "request_schema": "OrganizationDirectorySettingsInput",
+      "response_schema": "OrganizationDirectorySettings",
+      "success_status": 200,
+      "source_sha256": "a9e7af2770e6f77ac0f170724b50a73ca7b9f403c2d3c2581a9c2c471b4c47cf",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/organization/profile-mappings/{provider_id}",
+      "category": "canonical",
+      "operation": "OrganizationPeopleController.mapping",
+      "source": "backend/src/koinon/organization_people/controllers.py",
+      "line": 242,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "provider_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "OrganizationProfileMapping",
+      "sdk_python": "organization_profile_mapping",
+      "sdk_typescript": "organizationPeople.mapping",
+      "sdk_java": "client.organizationPeople.mapping",
+      "request_schema": null,
+      "response_schema": "OrganizationProfileMapping",
+      "success_status": 200,
+      "source_sha256": "a9e7af2770e6f77ac0f170724b50a73ca7b9f403c2d3c2581a9c2c471b4c47cf",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/tenants/{tenant_id}/organization/profile-mappings/{provider_id}",
+      "category": "canonical",
+      "operation": "OrganizationPeopleController.update_mapping",
+      "source": "backend/src/koinon/organization_people/controllers.py",
+      "line": 248,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "provider_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[OrganizationProfileMappingInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "OrganizationProfileMapping",
+      "sdk_python": "update_organization_profile_mapping",
+      "sdk_typescript": "organizationPeople.updateMapping",
+      "sdk_java": "client.organizationPeople.updateMapping",
+      "request_schema": "OrganizationProfileMappingInput",
+      "response_schema": "OrganizationProfileMapping",
+      "success_status": 200,
+      "source_sha256": "a9e7af2770e6f77ac0f170724b50a73ca7b9f403c2d3c2581a9c2c471b4c47cf",
       "encoding": "application/json",
       "headers": []
     },
