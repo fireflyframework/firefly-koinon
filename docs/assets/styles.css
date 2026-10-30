@@ -9,6 +9,7 @@ body, input, button, select, textarea { font-family: var(--md-text-font); }
 .md-typeset h1 { color: var(--md-default-fg-color); }
 .md-typeset { line-height: 1.7; }
 .md-typeset table:not([class]) { font-size: .72rem; }
+.md-typeset table:not([class]) code { white-space: nowrap; word-break: normal; }
 .md-typeset img { border-radius: .4rem; }
 .md-header__button.md-logo { display: flex; align-items: center; flex-shrink: 0; margin-right: auto; }
 .md-header__button.md-logo img { width: clamp(7.56rem, 28.08vw, 10.8rem); height: 2.16rem; object-fit: contain; background: transparent; padding: 0; }

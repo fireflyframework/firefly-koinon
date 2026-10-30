@@ -8,11 +8,13 @@ Read the [persistence overview](storage.md) before changing an existing installa
 
 ## Choose the domain and backend
 
-| Domain | File prefix | Local selector | Cloud selectors | Stored data |
+All three profiles belong under `koinon.storage` in the deployment configuration.
+
+| Domain | Profile | Local selector | Cloud selectors | Stored data |
 | --- | --- | --- | --- | --- |
-| Documents | `koinon.storage.documents` | `localfs` | `s3`, `azure`, `gcs` | Original versions, normalization/artifact bytes and replay inputs. |
-| Structured | `koinon.storage.structured` | `local` | `s3`, `azure`, `gcs` | Original files, registered Parquet snapshots and query-result objects. |
-| Private chat files | `koinon.storage.attachments` | `local` | `s3`, `azure`, `gcs` | Owner/thread-scoped originals, normalized bytes and registered staging. |
+| Documents | `documents` | `localfs` | `s3`, `azure`, `gcs` | Original versions, normalization/artifact bytes and replay inputs. |
+| Structured | `structured` | `local` | `s3`, `azure`, `gcs` | Original files, registered Parquet snapshots and query-result objects. |
+| Private chat files | `attachments` | `local` | `s3`, `azure`, `gcs` | Owner/thread-scoped originals, normalized bytes and registered staging. |
 
 These are independent profiles. Choose distinct roots or prefixes and bind every reader/worker to the same intended profile. PostgreSQL remains required for ownership, versions, text/projections, catalog bindings, jobs and indexes; cloud objects do not replace those databases.
 
