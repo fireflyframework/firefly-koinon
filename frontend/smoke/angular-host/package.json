@@ -12,7 +12,7 @@
     "@angular/core": "22.2.3",
     "@angular/forms": "22.2.3",
     "@angular/platform-browser": "22.2.3",
-    "@fireflyframework/koinon-angular": "file:../../dist/fireflyframework-koinon-angular-26.10.0-alpha.2.tgz",
+    "@fireflyframework/koinon-angular": "file:../../dist/fireflyframework-koinon-angular-26.10.1.tgz",
     "@fireflyframework/koinon-sdk": "file:../../../sdk/typescript",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"

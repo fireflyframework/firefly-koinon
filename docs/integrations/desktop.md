@@ -1,6 +1,6 @@
 # Desktop MCP extension
 
-The firefly koinon desktop extension connects a compatible MCP desktop host to an operator-managed koinon MCP endpoint. The package is an unreleased alpha integration. The bridge uses the official TypeScript MCP SDK and forwards remote tools, resources, and prompts. The server remains responsible for schemas, permissions, and knowledge access.
+The firefly koinon 26.10.1 desktop extension connects a compatible MCP desktop host to an operator-managed koinon MCP endpoint. The bridge uses the official TypeScript MCP SDK and forwards remote tools, resources, and prompts. The server remains responsible for schemas, permissions, and knowledge access.
 
 ## Install in Claude Desktop
 

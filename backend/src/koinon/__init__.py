@@ -2,4 +2,4 @@
 # SPDX-License-Identifier: Apache-2.0
 """firefly koinon: a shared home for structured and unstructured knowledge."""
 
-__version__ = "26.10.0a2"
+__version__ = "26.10.1"

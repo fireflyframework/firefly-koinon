@@ -1024,7 +1024,7 @@ wheels = [
 
 [[package]]
 name = "firefly-koinon-storage"
-version = "26.10.0a2"
+version = "26.10.1"
 source = { editable = "../storage" }
 
 [package.optional-dependencies]
@@ -1050,7 +1050,7 @@ provides-extras = ["azure", "gcs", "dev"]
 
 [[package]]
 name = "firefly-koinon-structured"
-version = "26.10.0a2"
+version = "26.10.1"
 source = { editable = "." }
 dependencies = [
     { name = "aiofiles" },
