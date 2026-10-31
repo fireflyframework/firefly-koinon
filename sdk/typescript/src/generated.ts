@@ -16,6 +16,7 @@ export interface AnswerAudit {
  "provenance_status": "recorded" | "not_recorded";
  "source_provenance_complete"?: boolean | null;
  "knowledge_settings_snapshot"?: OrganizationKnowledgeSnapshot | null;
+ "memory"?: MemoryReceipt | null;
  "generations"?: Array<GenerationReceipt>;
  "sources"?: Array<SourceReference>;
  "private_files"?: Array<PrivateFileReceipt>;
@@ -146,7 +147,7 @@ export interface BrandingInputValues {
  "symbol"?: string | null;
  "favicon"?: string | null;
  "palette"?: BrandingPalettes;
- "font_family"?: "Manrope";
+ "font_family"?: "Manrope" | "Inter";
 }
 export interface BrandingPalette {
  "surface": string;
@@ -173,7 +174,7 @@ export interface BrandingValues {
  "symbol"?: string | null;
  "favicon"?: string | null;
  "palette"?: BrandingPalettes;
- "font_family"?: "Manrope";
+ "font_family"?: "Manrope" | "Inter";
 }
 export interface CatalogProposal {
  "id": string;
@@ -350,6 +351,7 @@ export interface DatasetFileAppendResult {
 export interface DocumentEvidence {
  "kind"?: "document_passage";
  "source": SourceReference;
+ "basis"?: "direct" | "remembered_context";
 }
 export interface DocumentExtraction {
  "document_id": string;
@@ -929,6 +931,7 @@ export interface KnowledgeConfirmation {
  "confirm": true;
  "expected_revision": number;
  "authorization_digest": string;
+ "include_remembered_context"?: boolean;
 }
 export interface KnowledgeContent {
  "title": string;
@@ -993,6 +996,7 @@ export interface KnowledgeIntent {
  "after": KnowledgeContent;
  "evidence": Array<UserStatementEvidence | DocumentEvidence | StructuredEvidence | ExternalProposalEvidence>;
  "authorization_digest": string;
+ "remembered_context_present"?: boolean;
  "status": "preview" | "committing" | "committed" | "cancelled" | "stale" | "unresolved";
  "created_at": string;
  "expires_at": string;
@@ -1004,6 +1008,7 @@ export interface KnowledgeIntentInput {
  "target_item_id"?: string | null;
  "expected_version"?: number | null;
  "content": KnowledgeContent;
+ "include_remembered_context"?: boolean;
  "origin": UserStatementOrigin | ConversationOrigin | ExternalProposalOrigin;
 }
 export interface KnowledgeItemPage {
@@ -1152,6 +1157,38 @@ export interface McpToolCapability {
  "access": "read" | "query" | "proposal" | "app_only";
  "requires_app"?: boolean;
 }
+export interface MemoryReceipt {
+ "validation_mode"?: "generation" | "historical_replay";
+ "generation_id": string;
+ "policy_version"?: 1;
+ "mode": "current_thread" | "personal_project";
+ "folder_id"?: string | null;
+ "folder_revision"?: number | null;
+ "scope_sha256": string;
+ "manifest_sha256": string;
+ "organization_policy_revision": number;
+ "effective_policy": OrganizationMemoryPolicy;
+ "turns"?: Array<MemoryTurnReference>;
+ "dependency_count": number;
+ "context_available"?: boolean;
+ "unavailable_dependency_count"?: number;
+ "created_at": string;
+}
+export interface MemoryTurnReference {
+ "run_id": string;
+ "generation_id"?: string | null;
+ "thread_id": string;
+ "conversation_title": string;
+ "user_created_at": string;
+ "user_message_id": string;
+ "user_sha256": string;
+ "answer_message_id": string;
+ "answer_sha256": string;
+ "answer_included"?: boolean;
+ "availability"?: "available" | "archived" | "deleted" | "moved" | "memory_disabled" | "changed" | "unverified";
+}
+export interface MemoryValue {
+}
 export interface MessageSelection {
  "thread_id": string;
  "message_ids": Array<string>;
@@ -1238,12 +1275,14 @@ export interface OrganizationChatSettings {
  "default_agent_id": string | null;
  "revision": number;
  "configured": boolean;
+ "memory"?: OrganizationMemoryPolicy;
  "can_run": boolean;
  "status": "unconfigured" | "unavailable" | "disabled" | "needs_setup" | "unverified" | "ready";
 }
 export interface OrganizationChatSettingsInput {
  "default_agent_id": string | null;
  "expected_revision": number;
+ "memory"?: OrganizationMemoryPolicyInput;
 }
 export interface OrganizationDirectorySettings {
  "tenant_id": string;
@@ -1280,6 +1319,18 @@ export interface OrganizationKnowledgeSnapshot {
  "documents": DocumentKnowledgeSettings;
  "structured": StructuredKnowledgeSettings;
  "digest": string;
+}
+export interface OrganizationMemoryPolicy {
+ "allow_project_memory"?: boolean;
+ "max_history_messages"?: number;
+ "max_history_tokens"?: number;
+ "max_project_memory_messages"?: number;
+}
+export interface OrganizationMemoryPolicyInput {
+ "allow_project_memory"?: boolean;
+ "max_history_messages"?: number;
+ "max_history_tokens"?: number;
+ "max_project_memory_messages"?: number;
 }
 export interface OrganizationPerson {
  "id"?: string | null;
@@ -1555,6 +1606,7 @@ export interface ShareCreate {
  "expected_revision": string;
  "expires_in_hours"?: number;
  "recipient_policy"?: "organization_current_acl";
+ "include_remembered_context"?: boolean;
 }
 export interface SharePage {
  "items": Array<Share>;
@@ -1572,6 +1624,7 @@ export interface ShareReview {
  "messages": Array<ConversationMessage>;
  "sources": Array<SourceReference>;
  "source_manifest_complete": boolean;
+ "remembered_context_present"?: boolean;
  "recipient_policy"?: "organization_current_acl";
  "omissions"?: Array<string>;
  "expires_at": string;
@@ -1653,6 +1706,7 @@ export interface StoredResult {
 export interface StructuredEvidence {
  "kind"?: "structured_snapshot";
  "source": SourceReference;
+ "basis"?: "direct" | "remembered_context";
 }
 export interface StructuredKnowledgeBounds {
  "top_k_schema": KnowledgeIntegerBounds;

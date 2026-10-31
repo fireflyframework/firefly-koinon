@@ -178,7 +178,7 @@ add(
 
 
 add("ChatAttachmentsController", "ChatAttachmentsApi", {"capabilities":"capabilities", "upload":"upload", "list_files":"list", "get":"get", "original":"original", "chunks":"chunks", "cancel":"cancel", "retry":"retry", "delete":"remove", "knowledge":"promote"})
-add("ChatHistoryController", "ChatApi", {"thread":"get", "patch_thread":"update", "title_suggestion":"suggestTitle"})
+add("ChatHistoryController", "ChatApi", {"thread":"get", "patch_thread":"update", "delete_thread":"delete", "title_suggestion":"suggestTitle"})
 add("ChatHistoryController", "ChatFoldersApi", {"folders":"list", "create_folder":"create", "folder":"get", "patch_folder":"update", "delete_folder":"delete"})
 add("KnowledgeIndexesController", "KnowledgeIndexesApi", {"list_indexes":"list", "choices":"choices", "choice":"choice", "get":"get", "plan":"plan", "create":"create", "activate":"activate", "cancel":"cancel", "resume":"resume"})
 add("CorporateIdentityController", "IdentityApi", {"list":"list", "create":"create", "get":"get", "update":"update", "test":"test", "test_status":"testStatus", "groups":"groups", "mappings":"mappings", "mapping_create":"createMapping", "mapping_update":"updateMapping", "mapping_remove":"removeMapping", "activate":"activate", "disable":"disable"})
@@ -228,6 +228,7 @@ filters = {
     "ChatAttachmentsController.delete": "AttachmentDeleteFilter",
     "ChatHistoryController.folders": "FolderFilter",
     "ChatHistoryController.delete_folder": "FolderDeleteFilter",
+    "ChatHistoryController.delete_thread": "ThreadDeleteFilter",
     "KnowledgeIndexesController.list_indexes": "IndexFilter",
     "KnowledgeIndexesController.choices": "IndexFilter",
     "KnowledgeIndexesController.choice": "IndexScope",

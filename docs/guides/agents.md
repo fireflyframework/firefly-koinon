@@ -24,6 +24,8 @@ The Chat sidebar separates recent unfiled conversations from expandable folders.
 
 Conversation titles can be edited. When a title suggestion is available, review it before saving; a revision conflict requires reloading the current title. The sidebar chevron hides history while keeping the conversation and composer available. Mobile history opens as a focus-managed drawer.
 
+For personal context across your own chats, enable memory explicitly in the folder's settings. Organization limits, current source permissions and exact knowledge scope still apply. The [conversation memory guide](conversation-memory.md) explains configuration, context receipts, deletion and the same operations through all three SDKs.
+
 ## Code in chat messages
 
 Wrap code in matching backtick or tilde fences and put its language after the opening fence, such as `python`, `php` or `sql`. Supported names and aliases receive syntax colors. An omitted or unknown language stays plain text; chat does not guess the language. While an answer streams, an open fence includes the text received so far. Inline code notation remains prose.
@@ -39,6 +41,16 @@ Use the composer's **+** menu, drag files onto the composer, or paste an image w
 Files belong to their authenticated owner and conversation. Uploading does not publish a file to the organization Library. Each message sends an explicit ordered selection of file IDs. Removing a selected file deletes its private original; leaving the conversation clears the editor selection without publishing its files. Expired or deleted originals cannot be reused for a new answer. Saved owner-visible messages retain safe file metadata and identify files that are no longer available.
 
 Private-file runs currently expose the private-file retrieval tool. A new combined query across private files and organizational datasets requires a separate execution path; private content must not enter shared query history. Use the Library upload flow to publish knowledge intentionally, with the destination and required write permissions.
+
+## Save a reviewed answer as knowledge
+
+Authors with current chat, catalog and ingestion permissions can choose **Save as knowledge** below one completed assistant reply. The panel copies only that selected reply into an editable proposal. Add a title, edit the text and use the existing folder picker to select a collection or corpus. **Draft** is the default; drafts stay out of retrieval.
+
+Choose **Review proposal** to obtain the server's destination, before/after content and supporting evidence. This step does not save or publish knowledge. Review the returned content, then use **Confirm and save draft**. To publish instead, choose **Published knowledge** before requesting the preview and separately select **Confirm and publish** after reviewing it.
+
+When the preview includes remembered context, an additional consent checkbox starts unchecked. Review and approve that context before confirming. Editing, replacing or refreshing a review clears the checkbox. The original chats stay private, and current source permissions still apply. **Cancel proposal** cancels the exact reviewed revision without confirming it.
+
+A denied preview preserves the edited form so you can correct the destination or access. A changed or expired review requires a new preview and decision. If the saved outcome is pending or unknown, use **Check save status**; the interface does not automatically repeat confirmation. Changing organization, knowledge scope or selected reply clears the private review and consent.
 
 ## Tool activity
 

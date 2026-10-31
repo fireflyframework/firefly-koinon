@@ -10,6 +10,7 @@ def folder_dto(folder: ChatFolder, *, conversation_count: int = 0) -> dict:
         "parent_id": folder.parent_id,
         "scope": folder.scope,
         "revision": folder.revision,
+        "memory_enabled": folder.memory_enabled,
         "conversation_count": conversation_count,
         "created_at": folder.created_at.isoformat(),
         "updated_at": folder.updated_at.isoformat(),

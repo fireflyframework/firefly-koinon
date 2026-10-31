@@ -160,12 +160,14 @@ class FolderCreate(InputModel):
     name: str = Field(min_length=1, max_length=120)
     parent_id: str | None = None
     scope: KnowledgeScope | None = None
+    memory_enabled: bool = Field(default=False, strict=True)
 
 
 class FolderPatch(InputModel):
     expected_revision: int = Field(ge=1, strict=True)
     name: str | None = None
     parent_id: str | None = None
+    memory_enabled: bool = Field(default=False, strict=True)
 
 
 class ThreadPatch(InputModel):

@@ -15,6 +15,7 @@ from koinon.catalog.invitation_dtos import InvitationCreated, InvitationInput, I
 from koinon.catalog.invitation_entities import Invitation
 from koinon.catalog.invitation_repository import InvitationRepository
 from koinon.catalog.service import CatalogService
+from koinon.security.authority import primary_authority
 
 
 def invitation_dto(row: Invitation) -> dict:
@@ -86,7 +87,7 @@ class InvitationService:
         )
         return InvitationCreated(invitation=InvitationOutput(**invitation_dto(row)), token=SecretStr(token))
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def page(
         self, actor: str, tenant_id: str, *, workspace_id=None, status="pending", page=1, page_size=25
     ) -> dict:
@@ -130,7 +131,7 @@ class InvitationService:
                 raise unavailable()
         return row
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def inspect(self, actor: str, token: str) -> dict:
         row = await self._available(actor, token)
         tenant = await self.catalog.tenant_repository.find_by_id(row.tenant_id)

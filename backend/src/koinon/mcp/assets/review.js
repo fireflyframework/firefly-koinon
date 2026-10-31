@@ -101,6 +101,8 @@
     const data = object(value);
     if (!data) return;
     lastPresentation = value;
+    if (data["font_family"] === "Inter" || data["font_family"] === "Manrope")
+      document.documentElement.style.setProperty("--interface-font", data["font_family"]);
     if (typeof data["product_name"] === "string") {
       set("product-name", data["product_name"]);
       byId("product-name").title = data["product_name"];
@@ -494,7 +496,7 @@
     "ui/initialize",
     {
       protocolVersion: "2026-01-26",
-      appInfo: { name: "koinon knowledge review", version: "26.10.1" },
+      appInfo: { name: byId("product-name").textContent + " review", version: "26.10.1" },
       appCapabilities: {},
     },
     4500,

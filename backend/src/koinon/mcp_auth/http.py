@@ -14,6 +14,8 @@ from starlette.routing import Route
 from koinon.catalog.errors import AccessDenied
 from koinon.mcp_auth.presentation import ConsentViewer, consent_page
 from koinon.mcp_auth.service import McpOAuthService, OAuthError
+from koinon.organization_branding.presentation import font_asset, palette_css
+from koinon.organization_branding.service import OrganizationBrandingService
 from koinon.profiles.service import ProfileService
 from koinon.security.identity import identity_from_request
 
@@ -113,6 +115,9 @@ def install_oauth(app, context):
     def service():
         return context.get_bean(McpOAuthService)
 
+    def branding():
+        return context.get_bean(OrganizationBrandingService).defaults
+
     async def respond(handler):
         try:
             return await handler()
@@ -123,7 +128,9 @@ def install_oauth(app, context):
 
     async def protected_resource(request):
         async def handle():
-            return JSONResponse(service().resource_metadata(), headers=HEADERS)
+            return JSONResponse(
+                {**service().resource_metadata(), "resource_name": branding().product_name}, headers=HEADERS
+            )
 
         return await respond(handle)
 
@@ -163,7 +170,13 @@ def install_oauth(app, context):
                 name = name if isinstance(name, str) and name.strip() else account
                 viewer = ConsentViewer(name, account, profile.get("avatar_version"))
                 html = consent_page(
-                    request_id, client, scopes, choices, getattr(request.state, "csrf_token", ""), viewer
+                    request_id,
+                    client,
+                    scopes,
+                    choices,
+                    getattr(request.state, "csrf_token", ""),
+                    viewer,
+                    branding(),
                 )
                 headers = {
                     **HEADERS,
@@ -215,19 +228,60 @@ def install_oauth(app, context):
 
     async def font(request):
         service().require_enabled()
-        return FileResponse(Path(__file__).parent / "assets" / "manrope.woff2", media_type="font/woff2")
+        return FileResponse(font_asset(branding().font_family), media_type="font/woff2", headers=HEADERS)
+
+    def raster(value):
+        return Response(base64.b64decode(value.split(",", 1)[1]), media_type="image/png", headers=HEADERS)
 
     async def logo(request):
         service().require_enabled()
-        return FileResponse(Path(__file__).parent / "assets" / "logo.svg", media_type="image/svg+xml")
+        values = branding()
+        if values.logo_light or values.logo_dark:
+            return raster(values.logo_light or values.logo_dark)
+        if values.product_name != "koinon":
+            return Response(status_code=404, headers=HEADERS)
+        return FileResponse(
+            Path(__file__).parent / "assets" / "logo.svg", media_type="image/svg+xml", headers=HEADERS
+        )
 
     async def logo_dark(request):
         service().require_enabled()
-        return FileResponse(Path(__file__).parent / "assets" / "logo-dark.svg", media_type="image/svg+xml")
+        values = branding()
+        if values.logo_dark or values.logo_light:
+            return raster(values.logo_dark or values.logo_light)
+        if values.product_name != "koinon":
+            return Response(status_code=404, headers=HEADERS)
+        return FileResponse(
+            Path(__file__).parent / "assets" / "logo-dark.svg", media_type="image/svg+xml", headers=HEADERS
+        )
+
+    async def icon(request):
+        service().require_enabled()
+        value = branding().favicon or branding().symbol
+        return raster(value) if value else Response(status_code=404, headers=HEADERS)
 
     async def style(request):
         service().require_enabled()
-        return FileResponse(Path(__file__).parent / "assets" / "consent.css", media_type="text/css")
+        css = (Path(__file__).parent / "assets" / "consent.css").read_text()
+        css = css.replace("Manrope", branding().font_family)
+        if branding().font_family == "Inter":
+            css = css.replace("200 800", "100 900")
+        css += palette_css(
+            branding(),
+            {
+                "--canvas": "canvas",
+                "--surface": "surface",
+                "--ink": "text",
+                "--muted": "muted",
+                "--line": "line",
+                "--amber": "action",
+                "--action-ink": "action_text",
+                "--focus": "accent",
+                "--soft": "canvas",
+            },
+            dark="@media(prefers-color-scheme:dark){:root{__PALETTE__}}",
+        )
+        return Response(css, media_type="text/css", headers=HEADERS)
 
     async def avatar(request):
         async def handle():
@@ -254,6 +308,7 @@ def install_oauth(app, context):
         ("/oauth2/mcp/font", font, ["GET"]),
         ("/oauth2/mcp/logo", logo, ["GET"]),
         ("/oauth2/mcp/logo-dark", logo_dark, ["GET"]),
+        ("/oauth2/mcp/icon", icon, ["GET"]),
         ("/oauth2/mcp/style", style, ["GET"]),
         ("/oauth2/mcp/avatar", avatar, ["GET"]),
     ):

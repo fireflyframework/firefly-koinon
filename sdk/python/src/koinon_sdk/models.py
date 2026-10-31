@@ -615,6 +615,7 @@ class ChatFolder(ResponseModel):
     parent_id: str | None
     scope: KnowledgeScope
     revision: int
+    memory_enabled: bool = False
     conversation_count: int
     created_at: str
     updated_at: str

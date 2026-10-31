@@ -54,6 +54,7 @@ export class KoinonShareReview implements OnChanges, OnDestroy {
   private readonly facade = inject(KoinonFacade);
   private scope = '';
   hours = 24;
+  includeRememberedContext = false;
   readonly copied = signal(false);
   readonly localError = signal('');
   constructor() {
@@ -65,6 +66,7 @@ export class KoinonShareReview implements OnChanges, OnDestroy {
     if (changes['open'] || changes['selection']) {
       this.state.reset();
       this.scope = this.state.scopeKey();
+      this.includeRememberedContext = false;
     }
     this.copied.set(false);
     this.localError.set('');
@@ -73,13 +75,15 @@ export class KoinonShareReview implements OnChanges, OnDestroy {
     this.state.reset();
   }
   review() {
+    this.includeRememberedContext = false;
     const selection = this.selection;
     if (selection) this.tasks.run(() => this.state.reviewShare(selection).then(() => undefined));
   }
   create() {
     if (!Number.isInteger(this.hours) || this.hours < 1 || this.hours > 168) return;
+    if (this.state.shareReview()?.remembered_context_present && !this.includeRememberedContext) return;
     this.tasks.run(async () => {
-      const value = await this.state.createShare(this.hours);
+      const value = await this.state.createShare(this.hours, this.includeRememberedContext);
       if (value) this.shareCreated.emit(value);
     });
   }
@@ -125,6 +129,7 @@ export class KoinonShareReview implements OnChanges, OnDestroy {
     });
   }
   close() {
+    this.includeRememberedContext = false;
     this.state.reset();
     this.closed.emit();
   }

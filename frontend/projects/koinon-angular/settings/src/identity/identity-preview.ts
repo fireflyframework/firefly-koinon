@@ -7,6 +7,8 @@ import {
   Output,
   EventEmitter,
   computed,
+  effect,
+  inject,
   signal,
 } from '@angular/core';
 import { NgStyle } from '@angular/common';
@@ -16,6 +18,7 @@ import {
   brandImage,
   brandSymbol,
   previewBrandStyles,
+  KoinonFontLoader,
 } from '@fireflyframework/koinon-angular/workbench';
 import type { BrandingValues } from '@fireflyframework/koinon-sdk';
 export type IdentitySurface = 'navigation' | 'chat' | 'sign-in';
@@ -25,6 +28,7 @@ export type IdentitySurface = 'navigation' | 'chat' | 'sign-in';
   templateUrl: './identity-preview.html',
   styleUrl: './identity-preview.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [KoinonFontLoader],
 })
 export class KoinonIdentityPreview {
   @Input({ required: true }) set value(value: BrandingValues) {
@@ -37,7 +41,14 @@ export class KoinonIdentityPreview {
     this.mode.set(value);
   }
   @Input() installationReady = false;
-  @Input() brandBase = '/assets/brand';
+  @Input() set brandBase(value: string) {
+    this.assetBase.set(value);
+  }
+  get brandBase() {
+    return this.assetBase();
+  }
+  private readonly assetBase = signal('/assets/brand');
+  private readonly font = inject(KoinonFontLoader);
   @Output() themeChanged = new EventEmitter<'light' | 'dark'>();
   readonly identity = signal(resolveBranding({}));
   readonly installation = signal(resolveBranding({}));
@@ -47,6 +58,9 @@ export class KoinonIdentityPreview {
     this.surface() === 'sign-in' ? this.installation() : this.identity(),
   );
   readonly styles = computed(() => previewBrandStyles(this.valueShown(), this.mode()));
+  constructor() {
+    effect(() => void this.font.load(this.assetBase(), this.valueShown().font_family));
+  }
   logo() {
     return brandImage(this.valueShown(), this.mode(), this.brandBase);
   }

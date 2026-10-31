@@ -14,6 +14,7 @@ async function groupedFixture(page: Page) {
     parent_id,
     scope: { workspace_id: 'workspace-one', project_id: 'project-one' },
     revision: 1,
+    memory_enabled: false,
     conversation_count: 0,
     created_at: stamp,
     updated_at: stamp,
@@ -104,6 +105,7 @@ async function groupedFixture(page: Page) {
         const parent = folders.find((row) => row.id === body['parent_id']);
         const row = folder('created-' + folders.length, String(body['name']), parent?.id ?? null);
         row.scope = parent?.scope ?? (body['scope'] as ChatFolder['scope']) ?? {};
+        row.memory_enabled = body['memory_enabled'] === true;
         folders.push(row);
         return json(row, 201);
       }
@@ -154,7 +156,8 @@ async function groupedFixture(page: Page) {
           folders.splice(folders.indexOf(row), 1);
           return json(null, 204);
         }
-        row.name = String(body['name']);
+        if ('name' in body) row.name = String(body['name']);
+        if ('memory_enabled' in body) row.memory_enabled = body['memory_enabled'] === true;
         row.revision++;
       }
       return json(row);
@@ -218,6 +221,12 @@ async function groupedFixture(page: Page) {
       if (threadMatch[2] === 'messages') return json({ items: [], next_cursor: null });
       if (threadMatch[2] === 'title-suggestion')
         return json({ title: 'Reviewed AI proposal', based_on_revision: row.revision });
+      if (method === 'DELETE') {
+        if (Number(url.searchParams.get('expected_revision')) !== row.revision)
+          return json({ code: 'CONFLICT', detail: 'Conversation changed' }, 409);
+        threads.splice(threads.indexOf(row), 1);
+        return json(null, 204);
+      }
       if (method === 'PATCH') {
         if (conflict) {
           conflict = false;
@@ -275,7 +284,10 @@ async function capture(page: Page, name: string) {
       'position:fixed;bottom:0;left:0;right:0;height:22px;background:#10110f;color:#f3f1eb;text-align:center;font:10px/22px sans-serif;z-index:99999';
     document.body.append(strip);
   });
-  const folder = resolve('../../control/frontend-captures/conversation-sidebar');
+  await page.locator('dialog[open]').evaluateAll(async (panels) => {
+    await Promise.all(panels.flatMap((panel) => panel.getAnimations().map((animation) => animation.finished.catch(() => undefined))));
+  });
+  const folder = resolve('../../control/personal-project-memory-20261030/frontend-captures-round2');
   await mkdir(folder, { recursive: true });
   await page.screenshot({ path: resolve(folder, name), fullPage: true, animations: 'disabled' });
 }
@@ -344,7 +356,7 @@ test('folder create rename and removal preserve conversations with revision bodi
   await sidebar
     .getByRole('button', { name: 'Folder actions, Acceptance folder', exact: true })
     .click();
-  await sidebar.getByRole('menuitem', { name: 'Rename', exact: true }).click();
+  await sidebar.getByRole('menuitem', { name: 'Folder settings', exact: true }).click();
   dialog = sidebar.getByRole('dialog');
   await dialog.getByLabel('Folder name', { exact: true }).fill('Renamed folder');
   await dialog.getByRole('button', { name: 'Save changes', exact: true }).click();
@@ -397,4 +409,105 @@ test('sidebar touch actions are at least 44px and the boundary control has its o
       await context.close();
     }
   }
+});
+
+test('folder memory needs an explicit saved choice and cancellation keeps it disabled', async ({ page }) => {
+  const api = await groupedFixture(page);
+  const sidebar = await openSidebar(page);
+  const open = async () => {
+    await sidebar.getByRole('button', { name: 'Folder actions, Research', exact: true }).click();
+    await sidebar.getByRole('menuitem', { name: 'Folder settings', exact: true }).click();
+    return sidebar.getByRole('dialog');
+  };
+  let dialog = await open();
+  const memory = dialog.getByRole('checkbox', { name: /Use memory from my chats/ });
+  await expect(memory).not.toBeChecked();
+  await memory.check();
+  expect(api.folders.find(row => row.id === 'research')?.memory_enabled).toBe(false);
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  dialog = await open();
+  await expect(dialog.getByRole('checkbox', { name: /Use memory from my chats/ })).not.toBeChecked();
+  await dialog.getByRole('checkbox', { name: /Use memory from my chats/ }).check();
+  await capture(page, 'folder-memory-1440.png');
+  await dialog.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  expect(api.folders.find(row => row.id === 'research')?.memory_enabled).toBe(true);
+  const write = api.calls.filter(row => row.method === 'PATCH' && row.path.endsWith('/chat/folders/research'));
+  expect(write).toHaveLength(1);
+  expect(write[0].body).toMatchObject({ expected_revision: 1, memory_enabled: true });
+  expect(api.calls.filter(row => row.method === 'POST' && row.path.endsWith('/runs'))).toHaveLength(0);
+});
+
+test('conversation deletion is confirmed, revision checked, and clears the active view', async ({ page }) => {
+  const api = await groupedFixture(page);
+  const sidebar = await openSidebar(page);
+  const selected = sidebar.locator('.thread-name').first();
+  const title = await selected.getAttribute('title');
+  const thread = api.threads.find(row => row.title === title)!;
+  await selected.click();
+  await expect(page.locator('.conversation-title')).toHaveText(title!);
+  const open = async () => {
+    await sidebar.getByRole('button', { name: 'Conversation actions, ' + title, exact: true }).click();
+    await sidebar.getByRole('menuitem', { name: 'Delete conversation', exact: true }).click();
+    return sidebar.getByRole('dialog');
+  };
+  let dialog = await open();
+  expect(api.calls.filter(row => row.method === 'DELETE' && row.path.endsWith('/chat/threads/' + thread.id))).toHaveLength(0);
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  expect(api.threads.some(row => row.id === thread.id)).toBe(true);
+  dialog = await open();
+  await capture(page, 'conversation-delete-1440.png');
+  await dialog.getByRole('button', { name: 'Delete conversation', exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(sidebar.getByRole('button', { name: title!, exact: true })).toHaveCount(0);
+  await expect(page.locator('.conversation-title')).not.toHaveText(title!);
+  const writes = api.calls.filter(row => row.method === 'DELETE' && row.path.endsWith('/chat/threads/' + thread.id));
+  expect(writes).toHaveLength(1);
+  expect(writes[0].query.get('expected_revision')).toBe('1');
+  expect(writes[0].csrf).toBe('synthetic-csrf+token');
+});
+
+for (const width of [1440, 390]) for (const theme of ['light', 'dark'])
+  test(`personal memory settings fit ${width} ${theme}`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.addInitScript(theme => localStorage.setItem('koinon-theme', theme), theme);
+    await groupedFixture(page);
+    const sidebar = await openSidebar(page, width < 600);
+    await sidebar.getByRole('button', { name: 'Folder actions, Research', exact: true }).click();
+    await sidebar.getByRole('menuitem', { name: 'Folder settings', exact: true }).click();
+    const dialog = sidebar.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    expect(await dialog.evaluate(node => getComputedStyle(node).opacity)).toBe('1');
+    await expect(dialog.getByRole('checkbox', { name: /Use memory from my chats/ })).not.toBeChecked();
+    await page.evaluate(() => document.fonts.ready);
+    await capture(page, `memory-settings-${width}-${theme}.png`);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    const bounds = await dialog.boundingBox();
+    expect(bounds!.width).toBeLessThanOrEqual(Math.min(480, width));
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+  });
+
+test('folder memory explains an organization restriction without changing the saved preference', async ({ page }) => {
+  await groupedFixture(page);
+  const sidebar = await openSidebar(page, false);
+  await page.route('**/bff/api/v1/tenants/*/chat/settings**', route => route.fulfill({ json: {
+    tenant_id: 'tenant-one', default_agent_id: 'agent-one', revision: 2, configured: true, can_run: true, status: 'ready',
+    memory: { allow_project_memory: false, max_history_messages: 40, max_history_tokens: 8192, max_project_memory_messages: 20 },
+  } }));
+  await sidebar.getByRole('button', { name: 'Folder actions, Research', exact: true }).click();
+  await sidebar.getByRole('menuitem', { name: 'Folder settings', exact: true }).click();
+  const dialog = sidebar.getByRole('dialog');
+  await expect(dialog.getByText('Your organization has disabled project memory. This preference applies only while organization policy allows it.', { exact: true })).toBeVisible();
+  await expect(dialog.getByRole('checkbox', { name: /Use memory from my chats/ })).not.toBeChecked();
+});
+
+test('a failed memory policy check remains explicit and does not imply memory is enabled', async ({ page }) => {
+  await groupedFixture(page);
+  const sidebar = await openSidebar(page, false);
+  await page.route('**/bff/api/v1/tenants/*/chat/settings**', route => route.fulfill({ status: 503, json: { detail: 'Unavailable' } }));
+  await sidebar.getByRole('button', { name: 'Folder actions, Research', exact: true }).click();
+  await sidebar.getByRole('menuitem', { name: 'Folder settings', exact: true }).click();
+  const dialog = sidebar.getByRole('dialog');
+  await expect(dialog.getByText('The organization memory policy could not be checked. Current server limits still apply.', { exact: true })).toBeVisible();
+  await expect(dialog.getByRole('checkbox', { name: /Use memory from my chats/ })).not.toBeChecked();
 });

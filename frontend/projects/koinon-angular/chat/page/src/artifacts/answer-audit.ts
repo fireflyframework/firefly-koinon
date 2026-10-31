@@ -41,6 +41,7 @@ import { KoinonAnswerAuditState } from './answer-audit-state';
 import { KoinonRecordedOrigin } from './recorded-origin';
 import { KoinonRecordedDocumentSource } from './recorded-document-source';
 import { hasRecordedDocumentIdentity } from './recorded-document-source-state';
+import { KoinonRecordedMemory } from './recorded-memory';
 @Component({
   selector: 'ffk-answer-audit',
   imports: [
@@ -55,6 +56,7 @@ import { hasRecordedDocumentIdentity } from './recorded-document-source-state';
     KoinonOpenUiArtifact,
     KoinonRecordedOrigin,
     KoinonRecordedDocumentSource,
+    KoinonRecordedMemory,
   ],
   providers: [KoinonAnswerAuditState],
   templateUrl: './answer-audit.html',
@@ -68,6 +70,7 @@ export class KoinonAnswerAudit implements OnChanges, OnDestroy {
   @Output() closed = new EventEmitter<void>();
   @Output() resourceRequested = new EventEmitter<string>();
   @Output() citationSelected = new EventEmitter<Citation>();
+  @Output() conversationRequested = new EventEmitter<string>();
   readonly state = inject(KoinonAnswerAuditState);
   private readonly tasks = inject(PendingTasks);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);

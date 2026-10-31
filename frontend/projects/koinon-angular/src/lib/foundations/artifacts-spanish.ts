@@ -1,6 +1,10 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 export const ARTIFACTS_SPANISH: Readonly<Record<string, string>> = {
+  'Answers derived from private attachments and incomplete source records cannot be shared.': 'No se pueden compartir respuestas derivadas de adjuntos privados ni con registros de fuentes incompletos.',
+  'I reviewed this answer and agree to share its remembered context.': 'He revisado esta respuesta y acepto compartir el contexto recordado que contiene.',
+  'Only the selected messages will be shared. The original conversations stay private, and recipients must retain access to the supporting knowledge.': 'Solo se compartirán los mensajes seleccionados. Las conversaciones originales seguirán siendo privadas y los destinatarios deberán conservar acceso al conocimiento que los respalda.',
+  'Review the remembered context before sharing this answer.': 'Revisa el contexto recordado antes de compartir esta respuesta.',
   'Answer sources': 'Fuentes de la respuesta',
   'Loading sources': 'Cargando fuentes',
   'Source has changed': 'La fuente ha cambiado',

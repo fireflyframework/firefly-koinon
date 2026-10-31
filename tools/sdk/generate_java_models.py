@@ -69,7 +69,7 @@ names = {
         "ReasoningEffort": ["none", "minimal", "low", "medium", "high", "xhigh"],
         "OutputVerbosity": ["low", "medium", "high"],
         "ModelOutputMode": ["default", "native"],
-        "BrandingValuesFontFamily": ["Manrope"],
+        "BrandingValuesFontFamily": ["Manrope", "Inter"],
         "ExecutionStatus": ["OK", "REFINED_OK", "FAILED", "REJECTED_BY_FIREWALL"],
         "ChartHint": ["line", "bar", "table", "pie", "none"],
         "EvidenceKind": ["search", "query", "schema", "lineage", "attachment", "proposal"],
@@ -253,6 +253,21 @@ for name, definition in defs.items():
     )
     copies = []
     accessors = []
+    added_memory_fields = {
+        "FolderCreate": "memory_enabled", "FolderPatch": "memory_enabled", "ChatFolder": "memory_enabled",
+        "OrganizationChatSettings": "memory", "OrganizationChatSettingsInput": "memory", "AnswerAudit": "memory",
+        "ShareCreate": "include_remembered_context", "ShareReview": "remembered_context_present",
+        "KnowledgeIntentInput": "include_remembered_context", "KnowledgeIntent": "remembered_context_present",
+        "KnowledgeConfirmation": "include_remembered_context", "DocumentEvidence": "basis", "StructuredEvidence": "basis",
+    }
+    if name in added_memory_fields:
+        added = added_memory_fields[name]
+        previous = [field for field in fields if field[0] != added]
+        body += (
+            "    public " + name + "("
+            + ", ".join(kind + " " + key for _, key, kind, _, _ in previous)
+            + "){this(" + ",".join("null" if wire == added else key for wire, key, _, _, _ in fields) + ");}\n"
+        )
     if name == "SearchHit":
         previous = [field for field in fields if field[0] != "source_reference"]
         body += (

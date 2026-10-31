@@ -22,6 +22,8 @@ def oauth(tmp_path, monkeypatch, request):
     original = koinon.app.create_application
 
     def configured(config):
+        if "installation_brand" in request.fixturenames:
+            config["koinon"]["branding"] = request.getfixturevalue("installation_brand")
         config["koinon"]["mcp"] = {
             "enabled": True,
             "public_url": "http://127.0.0.1:18781/mcp",
@@ -470,6 +472,30 @@ def test_consent_assets_load_with_a_restrictive_same_origin_policy(oauth):
         assert response.headers["content-type"].startswith(media_type)
 
 
+@pytest.mark.parametrize(
+    "installation_brand", [{"product_name": "North <Knowledge>", "font_family": "Inter"}]
+)
+def test_headless_consent_uses_installation_identity_and_bundled_inter_without_relaxing_csp(
+    oauth, installation_brand
+):
+    from importlib.resources import files
+
+    page = authorize(oauth)
+    assert page.status_code == 200
+    assert "Connect to North &lt;Knowledge&gt;" in page.text
+    assert "<Knowledge>" not in page.text
+    assert 'alt="firefly koinon"' not in page.text
+    assert "unsafe-inline" not in page.headers["content-security-policy"]
+    assert "img-src 'self'" in page.headers["content-security-policy"]
+    stylesheet = oauth.get("/oauth2/mcp/style")
+    assert "Inter" in stylesheet.text
+    font = oauth.get("/oauth2/mcp/font")
+    assert font.content == files("koinon.organization_branding").joinpath("assets/inter.woff2").read_bytes()
+    assert (
+        oauth.get("/.well-known/oauth-protected-resource/mcp").json()["resource_name"] == "North <Knowledge>"
+    )
+
+
 def test_consent_keeps_client_and_space_text_inert():
     from koinon.mcp_auth.http import consent_page
 
@@ -733,3 +759,43 @@ def test_concurrent_exchange_issues_one_grant(oauth):
         assert len(rows) == 1
 
     oauth.portal.call(compete)
+
+
+@pytest.fixture
+def installation_brand():
+    from io import BytesIO
+
+    from PIL import Image
+
+    image = BytesIO()
+    Image.new("RGB", (4, 4), "navy").save(image, format="PNG")
+    raster = "data:image/png;base64," + base64.b64encode(image.getvalue()).decode("ascii")
+    return {
+        "product_name": "North knowledge",
+        "font_family": "Inter",
+        "logo_light": raster,
+        "logo_dark": raster,
+        "symbol": raster,
+        "favicon": raster,
+    }
+
+
+def test_headless_installation_images_are_same_origin_sanitized_assets_not_organization_reads(
+    oauth, installation_brand
+):
+    from unittest.mock import AsyncMock
+
+    from koinon.organization_branding.service import OrganizationBrandingService
+
+    branding = oauth.native_app.state.context.get_bean(OrganizationBrandingService)
+    branding.get = AsyncMock(side_effect=AssertionError("Public presentation cannot fetch tenant overrides"))
+    page = authorize(oauth)
+    assert '<img src="/oauth2/mcp/logo" alt="North knowledge"' in page.text
+    assert '<link rel="icon" href="/oauth2/mcp/icon">' in page.text
+    for path, field in (("logo", "logo_light"), ("logo-dark", "logo_dark"), ("icon", "favicon")):
+        response = oauth.get("/oauth2/mcp/" + path)
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "image/png"
+        assert response.headers["cache-control"] == "no-store"
+        assert response.content == base64.b64decode(getattr(branding.defaults, field).split(",", 1)[1])
+    branding.get.assert_not_called()

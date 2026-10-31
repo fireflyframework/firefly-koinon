@@ -14,6 +14,7 @@ from koinon.authorized_applications.entities import AuthorizedApplication
 from koinon.authorized_applications.repositories import AuthorizedApplicationRepository
 from koinon.catalog.service import CatalogService
 from koinon.profiles.service import ProfileService
+from koinon.security.authority import primary_authority
 from koinon.tokens.entities import PersonalToken
 from koinon.tokens.service import PersonalTokenService
 from koinon.tokens.settings import TokenSettings
@@ -33,7 +34,7 @@ class AuthorizedApplicationService:
         self.repository, self.tokens, self.profiles = repository, tokens, profiles
         self.catalog, self.settings = catalog, settings
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def page(
         self, subject: str, *, q="", status="all", page=1, page_size=25, sort="connected_at", order="desc"
     ) -> dict:
@@ -71,7 +72,7 @@ class AuthorizedApplicationService:
             )
         return row
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def detail(self, subject: str, identifier: str) -> dict:
         return application_dto(await self._owned(subject, identifier))
 

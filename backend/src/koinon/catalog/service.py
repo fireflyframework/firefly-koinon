@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pyfly.container import Provider, service
 from pyfly.data.relational.sqlalchemy import LockMode, transactional
+from pyfly.data.transaction import current_unit_of_work
 from pyfly.kernel import ConflictException, InvalidRequestException
 
 from koinon.catalog.entities import INTERNAL_METADATA_KEYS, AuditEvent, CatalogEntry, Membership
@@ -23,6 +24,7 @@ from koinon.catalog.repositories import (
     MembershipRepository,
     TenantRepository,
 )
+from koinon.security.authority import primary_authority
 from koinon.tokens.authorization import TokenRestriction
 from koinon.tokens.entities import PersonalToken
 
@@ -114,7 +116,17 @@ class CatalogService:
 
         return select(Membership).where(Membership.active.is_(True)).subquery("effective_memberships")
 
+    async def _refresh_managed_memberships(self, subject: str) -> None:
+        # Directory observations must finish before a policy snapshot or tenant write unit begins.
+        if current_unit_of_work("primary") is None and self.managed_memberships is not None:
+            await self.managed_memberships.load_managed_memberships(subject)
+
     async def memberships(self, subject: str) -> list[MembershipRecord]:
+        await self._refresh_managed_memberships(subject)
+        return await self._memberships(subject)
+
+    @primary_authority()
+    async def _memberships(self, subject: str) -> list[MembershipRecord]:
         rows = await self.membership_repository.find_all(subject=subject, active=True)
         records: list[MembershipRecord] = list(rows)
         if self.managed_memberships is not None:
@@ -123,6 +135,13 @@ class CatalogService:
         return [row for row in records if grant is None or row.tenant_id == grant.tenant_id]
 
     async def permissions(
+        self, subject: str, tenant_id: str, workspace_id: str | None = None
+    ) -> frozenset[str]:
+        await self._refresh_managed_memberships(subject)
+        return await self._permissions(subject, tenant_id, workspace_id)
+
+    @primary_authority()
+    async def _permissions(
         self, subject: str, tenant_id: str, workspace_id: str | None = None
     ) -> frozenset[str]:
         memberships = await self.memberships(subject)
@@ -155,6 +174,13 @@ class CatalogService:
         return frozenset(granted)
 
     async def authorize(
+        self, subject: str, tenant_id: str, permission: str, workspace_id: str | None = None
+    ) -> None:
+        await self._refresh_managed_memberships(subject)
+        await self._authorize(subject, tenant_id, permission, workspace_id)
+
+    @primary_authority()
+    async def _authorize(
         self, subject: str, tenant_id: str, permission: str, workspace_id: str | None = None
     ) -> None:
         await self._validate_workspace(tenant_id, workspace_id)
@@ -329,6 +355,11 @@ class CatalogService:
         return saved
 
     async def context(self, subject: str) -> dict:
+        await self._refresh_managed_memberships(subject)
+        return await self._context(subject)
+
+    @primary_authority()
+    async def _context(self, subject: str) -> dict:
         memberships = await self.memberships(subject)
         grant = await self.restriction.grant(subject) if self.restriction else None
         tenants, workspaces = [], []
@@ -444,7 +475,7 @@ class CatalogService:
             filters["workspace_id"] = workspace_id
         return await self.membership_repository.find_all(**filters)
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def member_page(
         self,
         subject: str,
@@ -572,7 +603,7 @@ class CatalogService:
             raise RuntimeError("Audit repository is unavailable")
         return await self.audit_repository.find_all(tenant_id=tenant_id)
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def audit_page(
         self,
         actor: str,

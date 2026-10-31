@@ -66,7 +66,10 @@ for (const width of [1440, 390])
       });
       await page.goto('/');
       const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
-      if (await menu.isVisible()) await menu.click();
+      if (width < 700) {
+        await expect(menu).toBeVisible();
+        await menu.click();
+      }
       await page.getByRole('button', { name: 'Settings', exact: true }).click();
       await started;
       await expect(page.locator('ffk-settings-page')).toBeVisible();
@@ -121,7 +124,10 @@ for (const width of [1440, 390])
     );
     await page.goto('/');
     const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
-    if (await menu.isVisible()) await menu.click();
+    if (width < 700) {
+        await expect(menu).toBeVisible();
+        await menu.click();
+      }
     await page.getByRole('button', { name: 'Chat', exact: true }).click();
     await expect(
       page.getByRole('heading', { name: 'koinon is unavailable right now.', exact: true }),

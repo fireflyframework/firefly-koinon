@@ -10,6 +10,7 @@ from pyfly.security.context_holder import SecurityContextHolder
 
 from koinon.assistants.audit_dtos import AnswerAudit, GenerationReceipt, PrivateFileReceipt
 from koinon.assistants.lifecycle import timestamp
+from koinon.assistants.memory.projections import MemoryOutputCapture
 from koinon.assistants.service import AssistantService
 from koinon.catalog.errors import AccessDenied
 from koinon.evidence.dtos import SourceReference
@@ -58,7 +59,7 @@ class AnswerAudits:
             await self.assistants.validate_scope(subject, tenant_id, run.scope)
             await self.assistants.authorize_results(subject, tenant_id, run.id)
 
-    @transactional(read_only=True)
+    @transactional(read_only=True, read_from_primary=True)
     async def get(self, subject, tenant_id, run_id):
         run = await self.assistants.owned_run(subject, tenant_id, run_id, require_attachment_use=False)
         rows = sorted(
@@ -153,8 +154,17 @@ class AnswerAudits:
             *(row.payload.get("origin_token_id") for row in rows),
         }:
             await self.origin(subject, tenant_id, run, token_id)
+        memory_access = self.assistants.memory.get() if self.assistants.memory is not None else None
+        memory = (
+            await memory_access.authorize(
+                subject, tenant_id, run.id, captures=(MemoryOutputCapture(run.id, "sequence", run.sequence),)
+            )
+            if memory_access is not None
+            else None
+        )
         return AnswerAudit(
             run_id=run.id,
+            memory=memory,
             knowledge_settings_snapshot=snapshot_for_run(run),
             provenance_status="recorded"
             if generations or references or private or native_reads or attempts

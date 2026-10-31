@@ -167,7 +167,7 @@ class QueriesController:
         url: str | None = None
         ttl_expires_at = result_row.get("ttl_expires_at")
         object_key = result_row.get("result_object_key")
-        if object_key and _is_url_still_valid(ttl_expires_at):
+        if object_key and query_row.get("consumer_context") is None and _is_url_still_valid(ttl_expires_at):
             try:
                 url = await self._object_store.presign_get(
                     object_key,
@@ -179,7 +179,7 @@ class QueriesController:
                 # still get the inline preview and can rerun the
                 # query to materialise a fresh URL.
                 url = None
-
+        await self._repo.authorize_consumers((query_row,), ctx.tenant_id, ws)
         return QueryResultRead(
             query_id=query_id,
             preview_json=result_row.get("result_preview_json") or [],

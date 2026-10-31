@@ -38,7 +38,7 @@ class ChatHistoryService:
         for thread in await self.assistants.threads.find_all(
             subject=subject, tenant_id=tenant_id, folder_id=row.id
         ):
-            if thread.archived_at is not None:
+            if thread.archived_at is not None or thread.deleted_at is not None:
                 continue
             try:
                 await self.assistants.validate_scope(subject, tenant_id, thread.scope)
@@ -129,7 +129,11 @@ class ChatHistoryService:
         )
         counts = {}
         for thread in await self.assistants.threads.find_all(subject=subject, tenant_id=tenant_id):
-            if thread.folder_id not in visible or thread.archived_at is not None:
+            if (
+                thread.folder_id not in visible
+                or thread.archived_at is not None
+                or thread.deleted_at is not None
+            ):
                 continue
             try:
                 await self.assistants.validate_scope(subject, tenant_id, thread.scope)
@@ -163,6 +167,7 @@ class ChatHistoryService:
             name=one_line(values["name"]),
             parent_id=parent.id if parent else None,
             scope=scope,
+            memory_enabled=values.get("memory_enabled", False),
         )
         self.validate_tree([*rows, row])
         return folder_dto(await self.folders.save(row))
@@ -182,6 +187,8 @@ class ChatHistoryService:
             self.validate_tree(await self.folders.find_all(subject=subject, tenant_id=tenant_id))
         if "name" in values:
             row.name = one_line(values["name"])
+        if "memory_enabled" in values:
+            row.memory_enabled = values["memory_enabled"]
         row.revision += 1
         row.updated_at = timestamp()
         return await self._describe_folder(subject, tenant_id, await self.folders.save(row))
@@ -197,6 +204,8 @@ class ChatHistoryService:
             child.revision += 1
             await self.folders.save(child)
         for thread in await self.assistants.threads.find_all(folder_id=row.id):
+            if thread.deleted_at is not None:
+                continue
             await self.assistants.thread(subject, tenant_id, thread.id)
             thread.folder_id, thread.updated_at = None, timestamp()
             thread.revision += 1
@@ -277,6 +286,22 @@ class ChatHistoryService:
     @transactional(read_only=True)
     async def get_thread(self, subject, tenant_id, thread_id):
         return thread_dto(await self.assistants.thread(subject, tenant_id, thread_id))
+
+    @transactional
+    async def delete_thread(self, subject, tenant_id, thread_id, *, expected_revision):
+        await self.assistants.catalog._lock_tenant(tenant_id)
+        row = await self.assistants.thread(subject, tenant_id, thread_id, lock=True)
+        self.check_revision(row, expected_revision)
+        if any(
+            run.status in {"queued", "running"}
+            for run in await self.assistants.runs.find_all(thread_id=row.id)
+        ):
+            raise ConflictException(
+                "Wait for or cancel the current answer before deleting", code="THREAD_BUSY"
+            )
+        row.deleted_at = row.updated_at = timestamp()
+        row.revision += 1
+        await self.assistants.threads.save(row)
 
     @transactional
     async def patch_thread(self, subject, tenant_id, thread_id, values):

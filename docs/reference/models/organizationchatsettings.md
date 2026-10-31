@@ -19,6 +19,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 | `default_agent_id` | `string` or `null` | Yes | Not specified |
 | `revision` | `integer` | Yes | Not specified |
 | `configured` | `boolean` | Yes | Not specified |
+| `memory` | [`OrganizationMemoryPolicy`](organizationmemorypolicy.md) | No | Not specified |
 | `can_run` | `boolean` | Yes | Not specified |
 | `status` | `string` | Yes | Not specified |
 
@@ -72,6 +73,9 @@ This is a schema definition, not an example request. It preserves all declared k
         "configured": {
           "title": "Configured",
           "type": "boolean"
+        },
+        "memory": {
+          "$ref": "#/$defs/OrganizationMemoryPolicy"
         },
         "can_run": {
           "title": "Can Run",

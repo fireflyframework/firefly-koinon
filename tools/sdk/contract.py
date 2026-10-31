@@ -22,7 +22,7 @@ from koinon_sdk import coordinates, curated, dataset_files, authorized_applicati
 from koinon_sdk import organization_knowledge
 from koinon_sdk import organization_branding, mcp, external_reviews, external_file_reviews
 from koinon_sdk import mcp_applications, document_history
-from koinon_sdk import organization_people, corporate_profiles
+from koinon_sdk import organization_people, corporate_profiles, memory
 
 rows = """
 CorporateProfilesController.presentation|organization_presentation|corporateProfiles.presentation|-|OrganizationPresentation
@@ -137,6 +137,7 @@ ChatHistoryController.patch_folder|update_folder|chat.folders.update|FolderPatch
 ChatHistoryController.delete_folder|delete_folder|chat.folders.delete|-|void
 ChatHistoryController.thread|thread|chat.get|-|ChatThread
 ChatHistoryController.patch_thread|update_thread|chat.update|ThreadPatch|ChatThread
+ChatHistoryController.delete_thread|delete_thread|chat.delete|-|void
 ChatHistoryController.title_suggestion|suggest_title|chat.suggestTitle|TitleRequest|TitleSuggestion
 KnowledgeIndexesController.list_indexes|knowledge_indexes|knowledgeIndexes.list|-|IndexPage
 KnowledgeIndexesController.choices|native_index_choices|knowledgeIndexes.choices|-|NativeIndexPage
@@ -417,7 +418,7 @@ assert not mapping, mapping
 assert not unmapped, "Canonical API operations awaiting typed SDK mapping: " + ", ".join(unmapped)
 
 classes = {}
-for module in (models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files, authorized_applications, organization_chat, organization_knowledge, organization_branding, mcp, external_reviews, external_file_reviews, mcp_applications, document_history, organization_people, corporate_profiles):
+for module in (models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files, authorized_applications, organization_chat, organization_knowledge, organization_branding, mcp, external_reviews, external_file_reviews, mcp_applications, document_history, organization_people, corporate_profiles, memory):
     classes.update(
         {
             name: value

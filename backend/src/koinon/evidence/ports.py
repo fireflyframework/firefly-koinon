@@ -34,3 +34,10 @@ class WriteSourceResolverPort(Protocol):
     async def resolve_for_write(
         self, subject: str, tenant_id: str, sources: tuple[SourceReference, ...]
     ) -> tuple[SourceReference, ...]: ...
+
+
+@runtime_checkable
+class TransitiveSourceResolverPort(Protocol):
+    async def resolve_bounds(
+        self, subject: str, tenant_id: str, sources: tuple[SourceReference, ...]
+    ) -> tuple[SourceReference, ...]: ...

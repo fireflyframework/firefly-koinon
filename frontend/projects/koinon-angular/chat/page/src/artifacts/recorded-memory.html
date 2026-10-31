@@ -1,0 +1,66 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<section [attr.aria-label]="'Conversation memory' | ffkText">
+  <h4>{{ 'Conversation memory' | ffkText }}</h4>
+  <p>
+    {{
+      (receipt.mode === 'personal_project'
+        ? 'Context from your chats in this project'
+        : 'Context from this conversation'
+      ) | ffkText
+    }}
+  </p>
+  <p class="help">
+    {{ 'Conversation context is separate from the sources used to verify this answer.' | ffkText }}
+  </p>
+  @if (receipt.context_available === false) {
+    <p class="help" role="status">
+      {{ 'Some recorded context is no longer available for reuse.' | ffkText }}
+    </p>
+  }
+  <ol>
+    @for (turn of receipt.turns ?? []; track turn.user_message_id) {
+      <li>
+        <strong>{{ turn.conversation_title }}</strong>
+        <time [attr.datetime]="turn.user_created_at">{{
+          turn.user_created_at | ffkDate: undefined : 'datetime'
+        }}</time>
+        <span>{{
+          (turn.answer_included
+            ? 'Question and answer were included'
+            : 'Only the question was included'
+          ) | ffkText
+        }}</span>
+        <span class="help">{{ availability(turn.availability) | ffkText }}</span>
+        @if (turn.availability === 'available') {
+          <ffk-button
+            variant="quiet"
+            icon="chat"
+            (click)="conversationRequested.emit(turn.thread_id)"
+            >{{ 'Open conversation' | ffkText }}</ffk-button
+          >
+        }
+      </li>
+    } @empty {
+      <li class="help">{{ 'No earlier turns were included.' | ffkText }}</li>
+    }
+  </ol>
+  <details>
+    <summary>{{ 'Memory record and limits' | ffkText }}</summary>
+    <dl>
+      <dt>{{ 'Policy revision' | ffkText }}</dt>
+      <dd>{{ receipt.organization_policy_revision | ffkValue: 'integer' }}</dd>
+      <dt>{{ 'Total history messages' | ffkText }}</dt>
+      <dd>{{ receipt.effective_policy.max_history_messages | ffkValue: 'integer' }}</dd>
+      <dt>{{ 'Messages from other project chats' | ffkText }}</dt>
+      <dd>{{ receipt.effective_policy.max_project_memory_messages | ffkValue: 'integer' }}</dd>
+      <dt>{{ 'History token budget' | ffkText }}</dt>
+      <dd>{{ receipt.effective_policy.max_history_tokens | ffkValue: 'integer' }}</dd>
+      <dt>{{ 'Recorded dependencies' | ffkText }}</dt>
+      <dd>{{ receipt.dependency_count | ffkValue: 'integer' }}</dd>
+      <dt>{{ 'Memory record SHA-256' | ffkText }}</dt>
+      <dd>
+        <code>{{ receipt.manifest_sha256 }}</code>
+      </dd>
+    </dl>
+  </details>
+</section>

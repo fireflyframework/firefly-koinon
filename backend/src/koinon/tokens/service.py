@@ -19,6 +19,7 @@ from koinon.catalog.errors import AccessDenied
 from koinon.catalog.service import CatalogService
 from koinon.mcp_applications.authority import McpOAuthClientAuthority
 from koinon.profiles.service import ProfileService
+from koinon.security.authority import primary_authority
 from koinon.tokens.entities import PersonalToken
 from koinon.tokens.mappers import token_dto
 from koinon.tokens.repositories import PersonalTokenRepository
@@ -72,7 +73,7 @@ class PersonalTokenService:
     async def list(self, subject: str) -> list[dict]:
         return [token_dto(row) for row in await self.repository.find_all(subject=subject, purpose="personal")]
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def page(
         self,
         subject: str,
@@ -218,7 +219,7 @@ class PersonalTokenService:
         )
         return {**token_dto(row), "token": raw}
 
-    @transactional
+    @primary_authority(read_only=False)
     async def authenticate(self, token: str, *, purpose="personal", application_id=None) -> SecurityContext:
         try:
             token_id, secret = token.removeprefix(PREFIX).split(".", 1)

@@ -5,7 +5,6 @@
 from typing import Any, NoReturn
 
 from pyfly.container import service
-from pyfly.data.relational.sqlalchemy import Propagation, transactional
 from pyfly.security.context_holder import SecurityContextHolder
 
 from koinon.catalog.errors import AccessDenied
@@ -13,6 +12,7 @@ from koinon.catalog.service import ROLE_PERMISSIONS, CatalogService
 from koinon.corporate_profiles.mappers import effective
 from koinon.corporate_profiles.projection_repository import CorporatePresentationRepository
 from koinon.corporate_profiles.read_models import PresentationRead, RevisionFact
+from koinon.security.authority import primary_authority
 from koinon.tokens.entities import PersonalToken
 
 
@@ -25,7 +25,7 @@ class CorporateProfileProjector:
     def __init__(self, catalog: CatalogService, repository: CorporatePresentationRepository):
         self.catalog, self.repository = catalog, repository
 
-    @transactional(read_only=True, propagation=Propagation.REQUIRES_NEW)
+    @primary_authority(fresh=True)
     async def batch(
         self,
         actor,

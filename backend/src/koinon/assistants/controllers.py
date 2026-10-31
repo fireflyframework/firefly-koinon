@@ -20,6 +20,7 @@ from starlette.responses import JSONResponse, StreamingResponse
 from koinon.assistants.audit import AnswerAudits
 from koinon.assistants.dtos import RunInput, ThreadInput
 from koinon.assistants.history.service import ChatHistoryService
+from koinon.assistants.memory.projections import MemoryOutputCapture
 from koinon.assistants.service import AssistantService
 from koinon.catalog.errors import AccessDenied
 from koinon.security.identity import identity_from_request
@@ -127,6 +128,15 @@ class AssistantController:
                             reset = await self.assistants.events.latest_reset(run_id)
                             if reset is not None and int(after) < reset:
                                 continue
+                            if self.assistants.memory is not None:
+                                memory = self.assistants.memory.get()
+                                if memory is not None:
+                                    await memory.authorize(
+                                        subject,
+                                        tenant_id,
+                                        run_id,
+                                        captures=(MemoryOutputCapture(run_id, "reset", reset or 0),),
+                                    )
                             yield SseEvent(data=event["data"], id=after, event=event["type"])
                         run = await self.assistants.owned_run(subject, tenant_id, run_id)
                         if run.status in {"completed", "failed", "cancelled"} and int(after) >= run.sequence:

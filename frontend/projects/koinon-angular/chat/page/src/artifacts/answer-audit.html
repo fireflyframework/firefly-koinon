@@ -106,6 +106,15 @@
           </p>
         }
       }
+      @if (state.audit()?.memory; as memory) {
+        <ffk-recorded-memory
+          [receipt]="memory"
+          (conversationRequested)="conversationRequested.emit($event)"
+        />
+      } @else if (!state.auditPending() && !state.auditError()) {
+        <h4 class="overview-heading">{{ 'Conversation memory' | ffkText }}</h4>
+        <p class="help">{{ 'Memory details were not recorded for this answer.' | ffkText }}</p>
+      }
       <h4 class="overview-heading">{{ 'Source coverage' | ffkText }}</h4>
       @if (state.audit() || state.manifest()) {
         <p>

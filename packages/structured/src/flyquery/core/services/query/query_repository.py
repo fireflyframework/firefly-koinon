@@ -30,9 +30,11 @@ from datetime import UTC, datetime
 from typing import Any
 
 import sqlalchemy as sa
-from pyfly.container import repository
+from pyfly.container import Provider, repository
 from pyfly.data.transaction import infrastructure_unit
+from pyfly.kernel import ServiceUnavailableException
 
+from flyquery.core.services.query.consumer_context import ConsumerQueryAccess, consumer_context
 from flyquery.data import StructuredSessions, unwrap_sessions
 
 
@@ -43,8 +45,22 @@ class QueryRepository:
     :param session: ``async_sessionmaker`` injected by pyfly's DI container.
     """
 
-    def __init__(self, session: StructuredSessions) -> None:
+    def __init__(
+        self, session: StructuredSessions, consumer_access: Provider[ConsumerQueryAccess | None] = None
+    ) -> None:
         self._factory = unwrap_sessions(session)
+        self.consumer_access = consumer_access
+
+    async def authorize_consumers(self, rows, tenant_id, workspace_id):
+        contexts = tuple(row["consumer_context"] for row in rows if row.get("consumer_context") is not None)
+        if contexts:
+            access = self.consumer_access.get() if self.consumer_access else None
+            if access is None:
+                raise ServiceUnavailableException(
+                    "Stored query consumer authority is unavailable",
+                    code="QUERY_CONSUMER_AUTHORITY_UNAVAILABLE",
+                )
+            await access.authorize(contexts, tenant_id, str(workspace_id))
 
     async def create_query(
         self,
@@ -86,7 +102,7 @@ class QueryRepository:
                         clarification_emitted, clarification_json,
                         pii_findings_json, error_json,
                         model_grounding, model_generation, model_critic, model_explainer,
-                        finalised_at
+                        finalised_at, consumer_context
                     ) VALUES (
                         :tenant_id, :workspace_id, :dataset_id, :question,
                         :semantic_path_taken,
@@ -99,7 +115,7 @@ class QueryRepository:
                         CAST(:pii_findings_json AS jsonb),
                         CAST(:error_json AS jsonb),
                         :model_grounding, :model_generation, :model_critic, :model_explainer,
-                        now()
+                        now(), CAST(:consumer_context AS jsonb)
                     )
                     RETURNING id
                 """),
@@ -125,6 +141,7 @@ class QueryRepository:
                     "model_generation": model_generation,
                     "model_critic": model_critic,
                     "model_explainer": model_explainer,
+                    "consumer_context": json.dumps(consumer_context()),
                 },
             )
             row = result.mappings().one()
@@ -153,7 +170,10 @@ class QueryRepository:
                 {"id": query_id, "tenant": tenant_id, "ws": workspace_id},
             )
             row = result.mappings().one_or_none()
-            return dict(row) if row else None
+            value = dict(row) if row else None
+        if value is not None:
+            await self.authorize_consumers((value,), tenant_id, workspace_id)
+        return value
 
     async def list_queries(
         self,
@@ -217,6 +237,7 @@ class QueryRepository:
             total = int(rows[0].pop("_total"))
             for r in rows[1:]:
                 r.pop("_total", None)
+            await self.authorize_consumers(rows, tenant_id, workspace_id)
             return rows, total
         return [], await self._count_queries(params)
 
@@ -268,7 +289,12 @@ class QueryRepository:
                 {"id": query_id, "tenant": tenant_id, "ws": workspace_id},
             )
             row = result.mappings().one_or_none()
-            return dict(row) if row else None
+            value = dict(row) if row else None
+        if value is not None:
+            query = await self.get_query(query_id, tenant_id=tenant_id, workspace_id=workspace_id)
+            if query is None:
+                return None
+        return value
 
     async def upsert_result(
         self,

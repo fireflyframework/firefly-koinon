@@ -48,6 +48,7 @@ async function open(
     privateChannel?: boolean;
     pendingApprove?: boolean;
     wrongOperation?: boolean;
+    presentation?: Record<string, unknown>;
   } = {},
 ) {
   const template = await readFile(resolve(assets, 'review.html'), 'utf8');
@@ -62,6 +63,12 @@ async function open(
     .replace(
       '__KOINON_FONT_BASE64__',
       (await readFile(resolve(assets, '../../mcp_auth/assets/manrope.woff2'))).toString('base64'),
+    )
+    .replace(
+      '__KOINON_INTER_FONT_BASE64__',
+      (await readFile(resolve(assets, '../../organization_branding/assets/inter.woff2'))).toString(
+        'base64',
+      ),
     );
   await page.route('**/controlled-mcp-review', (r) =>
     r.fulfill({ contentType: 'text/html', body: html }),
@@ -78,7 +85,7 @@ async function open(
    if(e.source!==document.querySelector('iframe').contentWindow)return;const m=e.data;
    const reply=result=>e.source.postMessage({jsonrpc:'2.0',id:m.id,result},'*');
    if(m.method==='ui/initialize' && ${options.handshake !== false}){reply({protocolVersion:'2026-01-26',hostInfo:{name:'Controlled host',version:'1'},hostCapabilities:{serverTools:{}},hostContext:{theme:'${options.theme ?? 'light'}'}});}
-   if(m.method==='ui/notifications/initialized'){e.source.postMessage({jsonrpc:'2.0',method:'ui/notifications/tool-input',params:{arguments:{tenant_id:'north'}}},'*');e.source.postMessage({jsonrpc:'2.0',method:'ui/notifications/tool-result',params:{structuredContent:{review},_meta:${options.privateChannel === false ? '{}' : "{'koinon/knowledgeReview':{review,nonce:'controlled-private-challenge'}}"}}},'*');}
+   if(m.method==='ui/notifications/initialized'){e.source.postMessage({jsonrpc:'2.0',method:'ui/notifications/tool-input',params:{arguments:{tenant_id:'north'}}},'*');e.source.postMessage({jsonrpc:'2.0',method:'ui/notifications/tool-result',params:{structuredContent:{review},_meta:${options.privateChannel === false ? '{}' : "{'koinon/knowledgeReview':{review,nonce:'controlled-private-challenge',presentation:" + JSON.stringify(options.presentation ?? {}).replaceAll('<', '\\u003c') + '}}'}}},'*');}
    if(m.method==='tools/call'){window.calls.push(m.params);if(${options.denied === true}){reply({isError:true,content:[{type:'text',text:'Canonical request denied (403, ACCESS_DENIED)'}]});return;}
     const receipt={operation_id:review.id,intent_id:review.id,intent_revision:review.review.revision,authorization_digest:review.review.authorization_digest,item_id:'knowledge-one',native_item_id:'native-one',native_version_id:'native-version-one',version:1,serving_version:null,action:review.review.action,content_sha256:'b'.repeat(64),evidence_sha256:'c'.repeat(64),committed_at:'2026-10-29T10:00:00Z',retrieval_state:'lexical_ready',reason:null};
     if(${options.wrongOperation === true})receipt.operation_id='other-operation';
@@ -280,3 +287,50 @@ for (const pendingApprove of [false, true])
       ),
     ).toHaveLength(1);
   });
+
+test('authorized review presentation loads the bundled Inter face without changing host typography', async ({
+  page,
+}) => {
+  const app = await open(page, {
+    presentation: { product_name: 'North <Knowledge>', font_family: 'Inter' },
+  });
+  await expect(app.locator('#product-name')).toHaveText('North <Knowledge>');
+  await expect(app.getByRole('heading', { name: 'Service ownership', exact: true })).toBeVisible();
+  await expect
+    .poll(() => app.locator('body').evaluate((node) => getComputedStyle(node).fontFamily))
+    .toContain('Inter');
+  await expect
+    .poll(() =>
+      app.locator('body').evaluate(async () => {
+        await document.fonts.ready;
+        return Array.from(document.fonts).some(
+          (face) => face.family === 'Inter' && face.status === 'loaded',
+        );
+      }),
+    )
+    .toBe(true);
+  const encoded = (
+    await readFile(resolve(assets, '../../organization_branding/assets/inter.woff2'))
+  ).toString('base64');
+  expect(await app.locator('style').textContent()).toContain('data:font/woff2;base64,' + encoded);
+  expect(await app.locator('script[src]').count()).toBe(0);
+  expect(await page.locator('body').evaluate((node) => getComputedStyle(node).fontFamily)).toBe(
+    'sans-serif',
+  );
+  expect(await app.locator('#product-name script').count()).toBe(0);
+  await expect(app.getByRole('button', { name: 'Approve & save', exact: true })).toBeDisabled();
+});
+
+test('review presentation rejects a CSS font payload while preserving explicit approval', async ({
+  page,
+}) => {
+  const app = await open(page, {
+    presentation: { font_family: 'Inter; background:url(https://invalid.example/font)' },
+  });
+  await expect(app.getByRole('heading', { name: 'Service ownership', exact: true })).toBeVisible();
+  expect(await app.locator('body').evaluate((node) => getComputedStyle(node).fontFamily)).toContain(
+    'Manrope',
+  );
+  expect(await app.locator('html').getAttribute('style')).not.toContain('invalid.example');
+  await expect(app.getByRole('button', { name: 'Approve & save', exact: true })).toBeDisabled();
+});

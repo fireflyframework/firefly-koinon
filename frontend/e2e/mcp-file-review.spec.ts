@@ -21,6 +21,12 @@ async function open(
     .replace(
       '__KOINON_FONT_BASE64__',
       (await readFile(resolve(assets, '../../mcp_auth/assets/manrope.woff2'))).toString('base64'),
+    )
+    .replace(
+      '__KOINON_INTER_FONT_BASE64__',
+      (await readFile(resolve(assets, '../../organization_branding/assets/inter.woff2'))).toString(
+        'base64',
+      ),
     );
   await page.route('**/controlled-file-widget', (r) =>
     r.fulfill({ contentType: 'text/html', body: html }),

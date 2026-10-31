@@ -23,5 +23,6 @@ class ChatFolder(Base):
         ForeignKey("koinon_chat_folders.id", ondelete="SET NULL"), nullable=True
     )
     revision: Mapped[int] = mapped_column(default=1, server_default="1")
+    memory_enabled: Mapped[bool] = mapped_column(default=False, server_default="false")
     created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=now)
     updated_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=now)

@@ -17,6 +17,12 @@ All three domains support local storage, S3, Azure Blob Storage and Google Cloud
 
 The local document selector is `localfs`; structured/private profiles use `local`. S3 structured storage uses a native `s3://bucket/prefix` root, while document/private profiles have separate bucket/prefix fields. See the configuration guide before copying fields across domains. A valid profile, installed SDK, live provider access, restore success and workload throughput are separate observations.
 
+## Temporary processing in containers
+
+Private attachment parsing uses a fresh owner-only temporary directory for each bounded child process. Python selects its temporary root from the process environment, including `TMPDIR`. Mount a writable, capacity-limited scratch volume there when the application filesystem is read-only. The parser removes its directory after success, failure or cancellation; an ungraceful container termination may leave scratch for the container platform to discard. Do not include scratch in backups or use it as the original-file store.
+
+Cloud-backed parsing requires no local attachment storage root and never writes parser files into the application directory. Originals, normalized content and their SQL records remain in their configured durable stores. Replacing a container may discard scratch; it must preserve those stores and their encryption material. This separation does not establish cross-replica job recovery or a distributed bulk-upload contract.
+
 ## Private attachment local and S3 storage
 
 ```yaml

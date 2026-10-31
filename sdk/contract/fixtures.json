@@ -174,6 +174,42 @@
         },
         "digest": "2d828ceecae2f7188752442624651e0e3e02c525cddf3908caf4fa10fe6b5fc5"
       },
+      "memory": {
+        "validation_mode": "generation",
+        "generation_id": "generation_id-value",
+        "policy_version": 1,
+        "mode": "current_thread",
+        "folder_id": "folder_id-value",
+        "folder_revision": 1,
+        "scope_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "organization_policy_revision": 1,
+        "effective_policy": {
+          "allow_project_memory": false,
+          "max_history_messages": 1,
+          "max_history_tokens": 1,
+          "max_project_memory_messages": 1
+        },
+        "turns": [
+          {
+            "run_id": "run_id-value",
+            "generation_id": "generation_id-value",
+            "thread_id": "thread_id-value",
+            "conversation_title": "conversation_title-value",
+            "user_created_at": "2026-10-27T12:34:56Z",
+            "user_message_id": "user_message_id-value",
+            "user_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "answer_message_id": "answer_message_id-value",
+            "answer_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "answer_included": false,
+            "availability": "available"
+          }
+        ],
+        "dependency_count": 1,
+        "context_available": false,
+        "unavailable_dependency_count": 1,
+        "created_at": "2026-10-27T12:34:56Z"
+      },
       "generations": [
         {
           "id": "id-value",
@@ -1037,6 +1073,7 @@
         ]
       },
       "revision": 1,
+      "memory_enabled": false,
       "conversation_count": 1,
       "created_at": "2026-10-27T12:34:56Z",
       "updated_at": "2026-10-27T12:34:56Z"
@@ -2079,7 +2116,8 @@
         "quote": "quote-value",
         "current_revision": "current_revision-value",
         "availability": "available"
-      }
+      },
+      "basis": "direct"
     },
     "DocumentExtraction": {
       "document_id": "document_id-value",
@@ -2897,6 +2935,7 @@
           }
         ],
         "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "remembered_context_present": false,
         "status": "preview",
         "created_at": "2026-10-27T12:34:56Z",
         "expires_at": "2026-10-27T12:34:56Z",
@@ -2955,12 +2994,14 @@
         "asset_ids": [
           "asset_ids-value"
         ]
-      }
+      },
+      "memory_enabled": false
     },
     "FolderPatch": {
       "expected_revision": 1,
       "name": "name-value",
-      "parent_id": "parent_id-value"
+      "parent_id": "parent_id-value",
+      "memory_enabled": false
     },
     "Frozen": {},
     "GenerationReceipt": {
@@ -3517,7 +3558,8 @@
     "KnowledgeConfirmation": {
       "confirm": true,
       "expected_revision": 1,
-      "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "include_remembered_context": false
     },
     "KnowledgeConnection": {
       "id": "id-value",
@@ -3671,6 +3713,7 @@
         }
       ],
       "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "remembered_context_present": false,
       "status": "preview",
       "created_at": "2026-10-27T12:34:56Z",
       "expires_at": "2026-10-27T12:34:56Z",
@@ -3706,6 +3749,7 @@
           "tags-value"
         ]
       },
+      "include_remembered_context": false,
       "origin": {
         "kind": "user_statement"
       }
@@ -4146,6 +4190,56 @@
       "role": "viewer",
       "active": false
     },
+    "MemoryReceipt": {
+      "validation_mode": "generation",
+      "generation_id": "generation_id-value",
+      "policy_version": 1,
+      "mode": "current_thread",
+      "folder_id": "folder_id-value",
+      "folder_revision": 1,
+      "scope_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "organization_policy_revision": 1,
+      "effective_policy": {
+        "allow_project_memory": false,
+        "max_history_messages": 1,
+        "max_history_tokens": 1,
+        "max_project_memory_messages": 1
+      },
+      "turns": [
+        {
+          "run_id": "run_id-value",
+          "generation_id": "generation_id-value",
+          "thread_id": "thread_id-value",
+          "conversation_title": "conversation_title-value",
+          "user_created_at": "2026-10-27T12:34:56Z",
+          "user_message_id": "user_message_id-value",
+          "user_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "answer_message_id": "answer_message_id-value",
+          "answer_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "answer_included": false,
+          "availability": "available"
+        }
+      ],
+      "dependency_count": 1,
+      "context_available": false,
+      "unavailable_dependency_count": 1,
+      "created_at": "2026-10-27T12:34:56Z"
+    },
+    "MemoryTurnReference": {
+      "run_id": "run_id-value",
+      "generation_id": "generation_id-value",
+      "thread_id": "thread_id-value",
+      "conversation_title": "conversation_title-value",
+      "user_created_at": "2026-10-27T12:34:56Z",
+      "user_message_id": "user_message_id-value",
+      "user_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "answer_message_id": "answer_message_id-value",
+      "answer_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "answer_included": false,
+      "availability": "available"
+    },
+    "MemoryValue": {},
     "MessageSelection": {
       "thread_id": "thread_id-value",
       "message_ids": [
@@ -4499,12 +4593,24 @@
       "default_agent_id": "default_agent_id-value",
       "revision": 1,
       "configured": false,
+      "memory": {
+        "allow_project_memory": false,
+        "max_history_messages": 1,
+        "max_history_tokens": 1,
+        "max_project_memory_messages": 1
+      },
       "can_run": false,
       "status": "unconfigured"
     },
     "OrganizationChatSettingsInput": {
       "default_agent_id": "default_agent_id-value",
-      "expected_revision": 1
+      "expected_revision": 1,
+      "memory": {
+        "allow_project_memory": false,
+        "max_history_messages": 1,
+        "max_history_tokens": 1,
+        "max_project_memory_messages": 1
+      }
     },
     "OrganizationDirectorySettings": {
       "tenant_id": "tenant_id-value",
@@ -4763,6 +4869,18 @@
         "grounding_min_confidence": 0.25
       },
       "digest": "2d828ceecae2f7188752442624651e0e3e02c525cddf3908caf4fa10fe6b5fc5"
+    },
+    "OrganizationMemoryPolicy": {
+      "allow_project_memory": false,
+      "max_history_messages": 1,
+      "max_history_tokens": 1,
+      "max_project_memory_messages": 1
+    },
+    "OrganizationMemoryPolicyInput": {
+      "allow_project_memory": false,
+      "max_history_messages": 1,
+      "max_history_tokens": 1,
+      "max_project_memory_messages": 1
     },
     "OrganizationPerson": {
       "id": "id-value",
@@ -5385,6 +5503,7 @@
             ]
           },
           "revision": 1,
+          "memory_enabled": false,
           "conversation_count": 1,
           "created_at": "2026-10-27T12:34:56Z",
           "updated_at": "2026-10-27T12:34:56Z"
@@ -6463,7 +6582,8 @@
       "review_id": "review_id-value",
       "expected_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "expires_in_hours": 1,
-      "recipient_policy": "organization_current_acl"
+      "recipient_policy": "organization_current_acl",
+      "include_remembered_context": false
     },
     "SharePage": {
       "items": [
@@ -6539,6 +6659,7 @@
         }
       ],
       "source_manifest_complete": false,
+      "remembered_context_present": false,
       "recipient_policy": "organization_current_acl",
       "omissions": [
         "omissions-value"
@@ -6787,7 +6908,8 @@
         "quote": "quote-value",
         "current_revision": "current_revision-value",
         "availability": "available"
-      }
+      },
+      "basis": "direct"
     },
     "StructuredKnowledgeBounds": {
       "top_k_schema": {

@@ -11,7 +11,7 @@ dependencies = [
     "firefly-koinon-storage==26.10.1",
   "firefly-koinon-documents==26.10.1",
   "firefly-koinon-structured[file-readers]==26.10.1",
-  "pyfly[fastapi,security,data-relational,postgresql,agentic,agentic-script-execution,templates,observability,client]>=26.10.18,<26.11",
+  "pyfly[fastapi,security,data-relational,postgresql,agentic,agentic-script-execution,templates,observability,client]>=26.10.24,<26.11",
   "asyncpg>=0.30",
   "aiosqlite>=0.22",
   "alembic>=1.14",
@@ -35,7 +35,7 @@ dev = ["pytest>=8", "pytest-asyncio>=0.24", "pytest-timeout>=2.3", "httpx>=0.28"
 firefly-koinon-storage = { path = "../packages/storage", editable = true }
 firefly-koinon-documents = { path = "../packages/canon", editable = true }
 firefly-koinon-structured = { path = "../packages/structured", editable = true }
-pyfly = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git", rev = "611d010fc50acc61ba27d736e23a0e1dd80230d3" }
+pyfly = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git", rev = "1bd6be3f1e8e123d0fa40809f6311c88256a6501" }
 
 [build-system]
 requires = ["hatchling"]

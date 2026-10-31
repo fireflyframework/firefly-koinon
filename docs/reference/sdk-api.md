@@ -2,7 +2,7 @@
 
 Python, Java and TypeScript expose the same canonical headless API. The table records concrete SDK methods; it does not count browser-only authentication or retained domain routes outside this contract.
 
-This canonical contract contains 192 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
+This canonical contract contains 193 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
 
 [Download the operation manifest](sdk-contract.json) and [complete wire schemas](sdk-schemas.json). The maintained generator checks source mappings and schemas without starting the backend.
 
@@ -53,6 +53,7 @@ Browse [API areas](api/index.md), [wire models](models/index.md) and the [SDK ru
 | [`GET /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}`](api/chat.md#chathistorycontroller-thread) | `thread` | `chat.get` | `client.chat.get` | `ChatThread` |
 | [`PATCH /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}`](api/chat.md#chathistorycontroller-patch-thread) | `update_thread` | `chat.update` | `client.chat.update` | `ChatThread` |
 | [`POST /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/title-suggestion`](api/chat.md#chathistorycontroller-title-suggestion) | `suggest_title` | `chat.suggestTitle` | `client.chat.suggestTitle` | `TitleSuggestion` |
+| [`DELETE /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}`](api/chat.md#chathistorycontroller-delete-thread) | `delete_thread` | `chat.delete` | `client.chat.delete` | `void` |
 | [`GET /api/v1/tenants/{tenant_id}/chat/runs/{run_id}/proposals/{proposal_id}`](api/catalog.md#catalogproposalcontroller-get) | `proposal` | `chat.proposals.get` | `client.chatProposals.get` | `CatalogProposal` |
 | [`POST /api/v1/tenants/{tenant_id}/chat/runs/{run_id}/proposals/{proposal_id}/confirm`](api/catalog.md#catalogproposalcontroller-confirm) | `confirm_proposal` | `chat.proposals.confirm` | `client.chatProposals.confirm` | `CatalogProposal` |
 | [`POST /api/v1/tenants/{tenant_id}/chat/runs/{run_id}/proposals/{proposal_id}/cancel`](api/catalog.md#catalogproposalcontroller-cancel) | `cancel_proposal` | `chat.proposals.cancel` | `client.chatProposals.cancel` | `CatalogProposal` |

@@ -23,6 +23,15 @@ class CuratedReleaseFence:
             subject, tenant_id, item_ids, self.catalog.effective_membership_rows(), token_id
         )
 
+    async def observe_bound(
+        self, subject: str, tenant_id: str, item_ids: tuple[str, ...]
+    ) -> CuratedReleaseStamp:
+        context = SecurityContextHolder.get_context()
+        token_id = context.attributes.get("koinon_token_id") if context else None
+        return await self.repository.observe_bound(
+            subject, tenant_id, item_ids, self.catalog.effective_membership_rows(), token_id
+        )
+
     async def require_unchanged(
         self, subject: str, tenant_id: str, item_ids: tuple[str, ...], admitted: CuratedReleaseStamp
     ) -> None:

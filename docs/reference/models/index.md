@@ -3,7 +3,7 @@
 
 # Wire models
 
-The canonical schema contains 340 definitions and 332 named model aliases. Supporting definitions are included so every schema reference can be followed. Language-specific generated names can differ from wire names; consult the SDK imports in the workflow guides.
+The canonical schema contains 345 definitions and 337 named model aliases. Supporting definitions are included so every schema reference can be followed. Language-specific generated names can differ from wire names; consult the SDK imports in the workflow guides.
 
 Each page lists field presence, nullability, defaults and validation constraints. The downloadable [complete schema](../sdk-schemas.json) remains the machine-readable contract.
 
@@ -255,6 +255,9 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`MemberInput`](memberinput.md)
 - [`MemberUpdate`](memberupdate.md)
 - [`Membership`](membership.md)
+- [`MemoryReceipt`](memoryreceipt.md)
+- [`MemoryTurnReference`](memoryturnreference.md)
+- [`MemoryValue`](memoryvalue.md)
 - [`MessageSelection`](messageselection.md)
 - [`MetricsObservation`](metricsobservation.md)
 - [`ModelCapability`](modelcapability.md)
@@ -286,6 +289,8 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`OrganizationKnowledgeSettings`](organizationknowledgesettings.md)
 - [`OrganizationKnowledgeSettingsInput`](organizationknowledgesettingsinput.md)
 - [`OrganizationKnowledgeSnapshot`](organizationknowledgesnapshot.md)
+- [`OrganizationMemoryPolicy`](organizationmemorypolicy.md)
+- [`OrganizationMemoryPolicyInput`](organizationmemorypolicyinput.md)
 - [`OrganizationPerson`](organizationperson.md)
 - [`OrganizationPersonCreate`](organizationpersoncreate.md)
 - [`OrganizationPersonPage`](organizationpersonpage.md)

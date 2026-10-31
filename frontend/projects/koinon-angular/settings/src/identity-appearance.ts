@@ -146,6 +146,11 @@ export class KoinonIdentityAppearance implements OnInit, OnDestroy {
     { key: 'favicon', label: 'Browser icon', hint: 'Used by the standalone application.' },
   ];
   readonly colors = PALETTE_FIELDS;
+  font(value: 'Manrope' | 'Inter') {
+    if (!['Manrope', 'Inter'].includes(value)) return;
+    this.draft.update((draft) => ({ ...draft, font_family: value }));
+    this.inheriting.set(false);
+  }
   readonly labels: Record<string, string> = {
     surface: 'Surface',
     canvas: 'Background',

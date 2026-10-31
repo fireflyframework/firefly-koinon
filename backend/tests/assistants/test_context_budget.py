@@ -14,55 +14,69 @@ from koinon.assistants.execution import AssistantExecutor
     "policy", [{}, {"outcome": "grounded"}, {"outcome": "refused"}, {"outcome": "review_required"}]
 )
 async def test_native_memory_preserves_whole_recent_turns_within_token_budget(policy):
+    from koinon.assistants.memory.repositories import MemoryCandidate
+    from koinon.assistants.memory.service import PersonalConversationMemory
+
     now = datetime.now(UTC)
-    old = SimpleNamespace(
-        id="old",
-        scope={},
-        created_at=now - timedelta(seconds=2),
-        user_message_id="old-user",
-        message_id="old-answer",
+    candidates = tuple(
+        MemoryCandidate(
+            run_id=key,
+            thread_id="thread",
+            folder_id=None,
+            scope={},
+            created_at=now - timedelta(seconds=seconds),
+            user_message_id=key + "-user",
+            user_text=user,
+            answer_message_id=key + "-answer",
+            answer_text="Current answer",
+            answer_policy=policy,
+            private_thread=False,
+            conversation_title="Earlier chat",
+            user_created_at=now - timedelta(seconds=seconds),
+        )
+        for key, seconds, user in [("recent", 1, "Current question"), ("old", 2, "old " * 2000)]
     )
-    recent = SimpleNamespace(
-        id="recent",
-        scope={},
-        created_at=now - timedelta(seconds=1),
-        user_message_id="recent-user",
-        message_id="recent-answer",
+    thread = SimpleNamespace(
+        id="thread",
+        subject="issuer|reader",
+        tenant_id="tenant",
+        folder_id=None,
+        deleted_at=None,
+        archived_at=None,
     )
-    messages = {
-        "old-user": "old " * 200,
-        "old-answer": "older answer",
-        "recent-user": "Current question",
-        "recent-answer": "Current answer",
-    }
-
-    async def message(identifier):
-        return SimpleNamespace(text=messages[identifier], answer_policy=policy)
-
-    executor = object.__new__(AssistantExecutor)
-    executor.assistants = SimpleNamespace(
+    service = SimpleNamespace(
         _attachment_access=lambda: None,
-        settings=SimpleNamespace(max_history_messages=40, max_history_tokens=256),
-        threads=SimpleNamespace(find_by_id=AsyncMock(return_value=SimpleNamespace(subject="issuer|reader"))),
-        runs=SimpleNamespace(find_all=AsyncMock(return_value=[old, recent])),
+        threads=SimpleNamespace(find_by_id=AsyncMock(return_value=thread)),
+        runs=SimpleNamespace(),
+        validate_scope=AsyncMock(),
         authorize_results=AsyncMock(),
-        message_repository=SimpleNamespace(find_by_id=message),
+        active_results=AsyncMock(return_value=[]),
+        scoped=AsyncMock(return_value=SimpleNamespace(id="recent", access_token_id=None)),
     )
+    memory = object.__new__(PersonalConversationMemory)
+    memory.assistants = SimpleNamespace(get=lambda: service)
+    memory.settings = SimpleNamespace(max_history_messages=40, max_history_tokens=512)
+    memory.repository = SimpleNamespace(
+        context=AsyncMock(return_value=(thread, None, None)),
+        candidates=AsyncMock(return_value=candidates),
+        generation=AsyncMock(return_value=None),
+        result_window=AsyncMock(return_value=[]),
+        pins_fit=AsyncMock(return_value=True),
+    )
+    executor = object.__new__(AssistantExecutor)
+    executor.memory = memory
     history = await executor.history(
-        SimpleNamespace(thread_id="thread", tenant_id="tenant", scope={}, created_at=now)
+        SimpleNamespace(id="current", thread_id="thread", tenant_id="tenant", scope={}, created_at=now)
     )
     assert len(history) == 2
-    assert history[0].parts[0].content == "Current question"
+    assert "Current question" in history[0].parts[0].content
+    assert "old " * 10 not in history[0].parts[0].content
     assert "Current answer" not in history[1].parts[0].content
-    if policy.get("outcome") in {"refused", "review_required"}:
-        from koinon.assistants.grounding import refusal_message
-
-        code = "REVIEW_REQUIRED" if policy["outcome"] == "review_required" else "KNOWLEDGE_ONLY"
-        assert history[1].parts[0].content == refusal_message("en-US", code)
-    else:
-        assert "Retrieve the selected sources again" in history[1].parts[0].content
-    assert messages["recent-answer"] == "Current answer"
-    executor.assistants.authorize_results.assert_any_await("issuer|reader", "tenant", "recent")
+    assert "Retrieve the selected sources again" in history[1].parts[0].content
+    assert "recent-answer" in history[1].parts[0].content
+    service.authorize_results.assert_any_await(
+        "issuer|reader", "tenant", "recent", require_memory=False, result_rows=[]
+    )
 
 
 def test_current_prompt_and_tool_budget_overflow_is_explicit_and_never_truncates():

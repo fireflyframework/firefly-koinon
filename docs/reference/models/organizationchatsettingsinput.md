@@ -17,6 +17,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 | --- | --- | --- | --- |
 | `default_agent_id` | `string` or `null` | Yes | Not specified |
 | `expected_revision` | `integer` | Yes | Not specified |
+| `memory` | [`OrganizationMemoryPolicyInput`](organizationmemorypolicyinput.md) | No | `null` |
 
 ## Model constraints
 
@@ -61,6 +62,11 @@ This is a schema definition, not an example request. It preserves all declared k
           "minimum": 0,
           "title": "Expected Revision",
           "type": "integer"
+        },
+        "memory": {
+          "$ref": "#/$defs/OrganizationMemoryPolicyInput",
+          "default": null,
+          "title": "Memory"
         }
       },
       "required": [

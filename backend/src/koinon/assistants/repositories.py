@@ -72,7 +72,9 @@ class ChatMessageRepository(Repository[ChatMessage, str]):
             )
         return (
             await self._require_session().execute(
-                statement.order_by(ChatMessage.created_at.desc(), ChatMessage.id.desc()).limit(limit)
+                statement.order_by(ChatMessage.created_at.desc(), ChatMessage.id.desc())
+                .limit(limit)
+                .execution_options(populate_existing=True)
             )
         ).all()
 

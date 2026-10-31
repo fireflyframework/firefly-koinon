@@ -27,6 +27,7 @@ Use the linked wire models for field constraints. Operation metadata does not en
 - [Thread](#chathistorycontroller-thread) (GET)
 - [Patch thread](#chathistorycontroller-patch-thread) (PATCH)
 - [Title suggestion](#chathistorycontroller-title-suggestion) (POST)
+- [Delete thread](#chathistorycontroller-delete-thread) (DELETE)
 - [Capabilities](#chatattachmentscontroller-capabilities) (GET)
 - [Upload](#chatattachmentscontroller-upload) (POST)
 - [List files](#chatattachmentscontroller-list-files) (GET)
@@ -812,6 +813,49 @@ These are the declared path, query and body arguments. Multipart and binary inpu
 | Request schema | [`TitleRequest`](../models/titlerequest.md) |
 | Response schema | [`TitleSuggestion`](../models/titlesuggestion.md) |
 | Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: ChatHistoryController.delete_thread -->
+<a id="chathistorycontroller-delete-thread"></a>
+## Delete thread
+
+```http
+DELETE /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}
+```
+
+Contract operation: `ChatHistoryController.delete_thread`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `delete_thread` |
+| TypeScript | `chat.delete` |
+| Java | `client.chat.delete` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `thread_id` | path | `PathVar[str]` | Yes | Not specified |
+| `expected_revision` | query | `QueryParam[int]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | No request schema declared |
+| Response schema | No response body |
+| Success status | `204` |
 | Declared encoding | `application/json` |
 
 Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.

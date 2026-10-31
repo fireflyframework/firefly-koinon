@@ -58,7 +58,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 
 ### font_family
 
-- Exact value: `"Manrope"`
+- Allowed values: `"Manrope"`, `"Inter"`
 
 
 ## Exact JSON Schema
@@ -141,8 +141,11 @@ This is a schema definition, not an example request. It preserves all declared k
           "$ref": "#/$defs/BrandingPalettes"
         },
         "font_family": {
-          "const": "Manrope",
           "default": "Manrope",
+          "enum": [
+            "Manrope",
+            "Inter"
+          ],
           "title": "Font Family",
           "type": "string"
         }

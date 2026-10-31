@@ -31,6 +31,7 @@ class Statements:
         "canon_source_parts",
         "canon_source_transform_steps",
         "canon_source_lineage_events",
+        "koinon_chat_memory_manifests",
     ],
 )
 def test_source_receipts_cannot_gain_mutation_privileges_during_reprovisioning(table):
@@ -48,6 +49,16 @@ def test_source_head_allows_pointer_updates_but_cannot_be_deleted():
     assert connection.items == [
         'REVOKE ALL ON TABLE public."canon_source_heads" FROM "example_runtime"',
         'GRANT SELECT,INSERT,UPDATE ON TABLE public."canon_source_heads" TO "example_runtime"',
+    ]
+
+
+@pytest.mark.parametrize("table", ["koinon_bulk_batches", "koinon_bulk_items", "koinon_bulk_uploads", "koinon_bulk_quotas"])
+def test_bulk_prerequisite_tables_cannot_gain_delete_on_reprovisioning(table):
+    connection = Statements()
+    module.grant_table(connection, table, "example_runtime")
+    assert connection.items == [
+        f'REVOKE ALL ON TABLE public."{table}" FROM "example_runtime"',
+        f'GRANT SELECT,INSERT,UPDATE ON TABLE public."{table}" TO "example_runtime"',
     ]
 
 

@@ -233,9 +233,13 @@ export class KoinonKnowledgeArtifacts implements OnDestroy {
       },
     );
   }
-  createShare(hours: number) {
+  createShare(hours: number, includeRememberedContext = false) {
     const review = this.shareReview();
     if (!review) return Promise.resolve(null);
+    if (review.remembered_context_present && !includeRememberedContext) {
+      this.error.set('Review the remembered context before sharing this answer.');
+      return Promise.resolve(null);
+    }
     return this.perform(
       (tenant, signal) =>
         this.clients.get().shares.create(
@@ -245,6 +249,7 @@ export class KoinonKnowledgeArtifacts implements OnDestroy {
             expected_revision: review.revision,
             expires_in_hours: hours,
             recipient_policy: 'organization_current_acl',
+            ...(review.remembered_context_present ? { include_remembered_context: true } : {}),
           },
           { signal },
         ),

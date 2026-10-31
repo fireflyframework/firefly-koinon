@@ -7,7 +7,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 
 public enum BrandingValuesFontFamily {
-    MANROPE("Manrope");
+    MANROPE("Manrope"),
+    INTER("Inter");
     private final String value;
     BrandingValuesFontFamily(String value){this.value=value;}
     @JsonValue public String value(){return value;}

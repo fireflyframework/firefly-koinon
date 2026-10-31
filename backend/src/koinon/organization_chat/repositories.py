@@ -18,9 +18,11 @@ class OrganizationChatRepository(Repository[OrganizationChatSetting, str]):
             .execution_options(populate_existing=True)
         )
 
-    async def compare_and_swap(self, tenant_id, agent_id, revision, actor, at):
+    async def compare_and_swap(self, tenant_id, agent_id, revision, actor, at, *, memory=None):
         session = self._require_session()
         values = dict(default_agent_id=agent_id, revision=revision + 1, updated_by=actor, updated_at=at)
+        if memory is not None:
+            values["memory_policy_json"] = memory
         if revision == 0:
             # Atomic insert covers the absent-row race on PostgreSQL and SQLite.
             insert = sqlite_insert if session.get_bind().dialect.name == "sqlite" else postgres_insert

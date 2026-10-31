@@ -13,9 +13,11 @@ public record ChatFolder(
     @JsonProperty("parent_id") String parentId,
     @JsonProperty("scope") KnowledgeScope scope,
     @JsonProperty("revision") Long revision,
+    @JsonProperty("memory_enabled") Boolean memoryEnabled,
     @JsonProperty("conversation_count") Long conversationCount,
     @JsonProperty("created_at") Instant createdAt,
     @JsonProperty("updated_at") Instant updatedAt
 ) {
+    public ChatFolder(String id, String name, String parentId, KnowledgeScope scope, Long revision, Long conversationCount, Instant createdAt, Instant updatedAt){this(id,name,parentId,scope,revision,null,conversationCount,createdAt,updatedAt);}
 
 }

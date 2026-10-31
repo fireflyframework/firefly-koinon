@@ -44,9 +44,103 @@
           }
         </select>
       </label>
-      <ffk-button type="submit" variant="primary" [disabled]="!canSave()" [loading]="saving()">{{
-        'Save organization chat' | ffkText
-      }}</ffk-button>
+      @if (settings()?.memory) {
+        <fieldset class="memory-policy" [disabled]="pending() || saving() || stale()">
+          <legend>{{ 'Conversation memory' | ffkText }}</legend>
+          <p>
+            {{
+              'Set the maximum context available to chat. People still choose whether to enable memory in each folder.'
+                | ffkText
+            }}
+          </p>
+          <label class="memory-toggle" for="organization-project-memory">
+            <input
+              id="organization-project-memory"
+              name="project-memory"
+              type="checkbox"
+              [ngModel]="memory().allow_project_memory"
+              (ngModelChange)="updateMemory('allow_project_memory', $event)"
+            />
+            <span
+              >{{ 'Allow personal project memory' | ffkText }}
+              <small>{{
+                'Only the owner’s chats with the same knowledge scope can contribute. Private files stay in their original chat.'
+                  | ffkText
+              }}</small>
+            </span>
+          </label>
+          <div class="memory-limits">
+            <label for="organization-history-messages"
+              >{{ 'Total history messages' | ffkText }}
+              <input
+                id="organization-history-messages"
+                name="history-messages"
+                type="number"
+                min="0"
+                max="40"
+                step="1"
+                [ngModel]="memory().max_history_messages"
+                (ngModelChange)="updateMemory('max_history_messages', $event)"
+                [attr.aria-invalid]="!!memoryError()"
+                aria-describedby="organization-memory-help organization-memory-error"
+              />
+            </label>
+            <label for="organization-project-messages"
+              >{{ 'Messages from other project chats' | ffkText }}
+              <input
+                id="organization-project-messages"
+                name="project-messages"
+                type="number"
+                min="0"
+                [max]="memory().max_history_messages"
+                step="1"
+                [ngModel]="memory().max_project_memory_messages"
+                (ngModelChange)="updateMemory('max_project_memory_messages', $event)"
+                [attr.aria-invalid]="!!memoryError()"
+                aria-describedby="organization-memory-help organization-memory-error"
+              />
+            </label>
+            <label for="organization-history-tokens"
+              >{{ 'History token budget' | ffkText }}
+              <input
+                id="organization-history-tokens"
+                name="history-tokens"
+                type="number"
+                min="0"
+                max="65536"
+                step="1"
+                [ngModel]="memory().max_history_tokens"
+                (ngModelChange)="updateMemory('max_history_tokens', $event)"
+                [attr.aria-invalid]="!!memoryError()"
+                aria-describedby="organization-memory-help organization-memory-error"
+              />
+            </label>
+          </div>
+          <p id="organization-memory-help">
+            {{
+              'Project messages count toward the total. Zero disables that part of the context. Deployment limits also apply.'
+                | ffkText
+            }}
+          </p>
+          <p>
+            {{
+              'Memory provides conversation context. Answers about organizational knowledge still require current, authorized sources.'
+                | ffkText
+            }}
+          </p>
+          @if (memoryError()) {
+            <p id="organization-memory-error" role="status">{{ memoryError() | ffkText }}</p>
+          }
+        </fieldset>
+      }
+      <ffk-button
+        type="submit"
+        variant="primary"
+        icon="check"
+        [disabled]="!canSave()"
+        [loading]="saving()"
+        >{{ 'Save organization chat' | ffkText }}</ffk-button
+      >
     </form>
     @if (settings() && !settings()?.can_run) {
       <p class="availability">

@@ -22,13 +22,8 @@ class PrivateAttachmentParser:
 
     async def parse(self, row, content):
         self.settings.validate()
-        root = Path(self.settings.storage_root or "")
         self.storage.configured()
-        temporary_root = root / ".parsers"
-        temporary_root.mkdir(mode=0o700, exist_ok=True)
-        if temporary_root.is_symlink() or temporary_root.stat().st_mode & 0o077:
-            raise ExtractionFailure("Private parser directory is not private", "ATTACHMENT_STORAGE_REQUIRED")
-        with tempfile.TemporaryDirectory(dir=temporary_root) as directory:
+        with tempfile.TemporaryDirectory(prefix="koinon-attachment-") as directory:
             env = {
                 "PATH": os.defpath,
                 "LANG": "C.UTF-8",

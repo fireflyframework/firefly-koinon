@@ -18,6 +18,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 | `confirm` | `boolean` | Yes | Not specified |
 | `expected_revision` | `integer` | Yes | Not specified |
 | `authorization_digest` | `string` | Yes | Not specified |
+| `include_remembered_context` | `boolean` | No | `false` |
 
 ## Model constraints
 
@@ -62,6 +63,11 @@ This is a schema definition, not an example request. It preserves all declared k
           "pattern": "^[a-f0-9]{64}$",
           "title": "Authorization Digest",
           "type": "string"
+        },
+        "include_remembered_context": {
+          "default": false,
+          "title": "Include Remembered Context",
+          "type": "boolean"
         }
       },
       "required": [

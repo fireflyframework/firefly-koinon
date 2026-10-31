@@ -44,7 +44,12 @@ async def assistants(tmp_path: Path):
     )
     context.container.register_instance(CanonSettings, CanonSettings(answer_mode="rag"))
     context.container.register_instance(FlyquerySettings, FlyquerySettings())
-    for package in ("koinon.catalog", "koinon.organization_knowledge", "koinon.assistants"):
+    for package in (
+        "koinon.catalog",
+        "koinon.organization_knowledge",
+        "koinon.organization_branding",
+        "koinon.assistants",
+    ):
         scan_package(package, context.container)
     await context.start()
     for tenant in ("north", "south"):

@@ -66,6 +66,7 @@
       (threadSelected)="selectThread($event)"
       (newConversationRequested)="startConversation($event)"
       (threadChanged)="a.applyThread($event)"
+      (threadDeleted)="deletedConversation($event)"
       (closeRequested)="closeHistory()"
     />
   </aside>
@@ -170,7 +171,11 @@
                     <span>{{ userInitials() }}</span>
                   }
                 } @else {
-                  @if(brandSymbol()){<img [src]="brandSymbol()" alt="" />}@else{<span>{{assistantName().slice(0,1).toUpperCase()}}</span>}
+                  @if (brandSymbol()) {
+                    <img [src]="brandSymbol()" alt="" />
+                  } @else {
+                    <span>{{ assistantName().slice(0, 1).toUpperCase() }}</span>
+                  }
                 }</span
               ><strong>{{ message.role === 'user' ? ('You' | ffkText) : assistantName() }}</strong
               ><time [attr.datetime]="message.created_at">{{
@@ -270,6 +275,9 @@
                     (click)="openArtifact('share', message.id)"
                   />
                 }
+                @if (message.status === 'completed' && canArtifact('knowledge')) {
+                  <ffk-button compact variant="quiet" icon="file" [disabled]="a.running() || a.pending()" (click)="openArtifact('knowledge', message.id)">{{ 'Save as knowledge' | ffkText }}</ffk-button>
+                }
               </div>
             }
             @if (
@@ -343,6 +351,7 @@
   (closed)="closeArtifact()"
   (resourceRequested)="auditResource($event)"
   (citationSelected)="auditCitation($event)"
+  (conversationRequested)="auditConversation($event)"
 />
 <ffk-export-dialog
   [open]="artifactAction() === 'export'"
@@ -355,3 +364,9 @@
   [managementBaseUrl]="actions?.managementBaseUrl?.() || ''"
   (closed)="closeArtifact()"
 />
+
+@defer (when artifactAction() === 'knowledge') {
+  <ffk-knowledge-review [workspaceId]="a.scope().workspace_id || f.workspaceId()" [open]="artifactAction() === 'knowledge'" [selection]="artifactSelection()" [message]="artifactMessage()" (closed)="closeArtifact()" (resourceRequested)="auditResource($event)" />
+} @error {
+  @if (artifactAction() === 'knowledge') { <p role="alert">{{ 'This panel could not be opened. Refresh this page and try again.' | ffkText }}</p> }
+}

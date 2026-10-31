@@ -66,10 +66,10 @@ export interface DeploymentConfiguration {ownership:'deployment';read_only:true;
 export interface Configuration {model_options_schema?:Record<string,Json>;framework_providers?:ProviderSupport[];deployment?:DeploymentConfiguration;providers:ModelProvider[];provider_types:{id:string;name:string;fields:FieldSchema[]}[];connections:ModelConnection[];checks:SetupCheck[]}
 export interface ValidationResult {connected?:boolean;discovered?:boolean;provider_id:string;revision:number;status:'ready'|'needs_setup'|'unverified';checks:SetupCheck[]}
 export interface ChatThread {id:string;title:string;title_source:'default'|'manual'|'ai';revision:number;folder_id:string|null;archived_at:string|null;scope:KnowledgeScope;created_at:string;updated_at:string}
-export interface ChatFolder {id:string;name:string;parent_id:string|null;scope:KnowledgeScope;revision:number;conversation_count:number;created_at:string;updated_at:string}
+export interface ChatFolder {id:string;name:string;parent_id:string|null;scope:KnowledgeScope;revision:number;memory_enabled?:boolean;conversation_count:number;created_at:string;updated_at:string}
 export interface ThreadCreate {title?:string;folder_id?:string|null;scope?:KnowledgeScope}
-export interface FolderCreate {name:string;parent_id?:string|null;scope?:KnowledgeScope}
-export interface FolderPatch {expected_revision:number;name?:string;parent_id?:string|null}
+export interface FolderCreate {name:string;parent_id?:string|null;scope?:KnowledgeScope;memory_enabled?:boolean}
+export interface FolderPatch {expected_revision:number;name?:string;parent_id?:string|null;memory_enabled?:boolean}
 export interface ThreadPatch {expected_revision:number;title?:string;folder_id?:string|null;archived?:boolean}
 export interface TitleRequest {agent_id:string;expected_revision:number}
 export interface TitleSuggestion {title:string;based_on_revision:number}

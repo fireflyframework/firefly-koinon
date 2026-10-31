@@ -8,6 +8,7 @@ from starlette.routing import Route
 from test_mcp_server import protocol, settings
 
 from koinon.mcp.server import create_mcp_server
+from koinon.organization_branding.dtos import BrandingValues
 
 NONCE = "x" * 43
 REVIEW = {
@@ -197,3 +198,29 @@ async def test_private_review_callback_has_the_configured_timeout():
         )
     assert result.is_error and "timed out" in str(result.content).lower()
     assert NONCE not in str(result.content)
+
+
+async def test_headless_protocol_resource_uses_installation_brand_without_canonical_api_access():
+    async def forbidden(request):
+        raise AssertionError("A public presentation resource must not fetch organization data")
+
+    app = Starlette(routes=[Route("/{path:path}", forbidden)])
+    server = create_mcp_server(
+        app,
+        settings(),
+        installation_branding=BrandingValues(product_name="North knowledge", font_family="Inter"),
+    )
+    mcp_app = server.streamable_http_app(
+        stateless_http=True, json_response=True, transport_security=settings().transport_security()
+    )
+    async with server.session_manager.run(), protocol(mcp_app, apps=True, modern=True) as session:
+        resources = await session.list_resources()
+        resource = next(
+            value for value in resources.resources if str(value.uri) == "ui://koinon/knowledge-review"
+        )
+        assert resource.name == "North knowledge review"
+        result = await session.read_resource(resource.uri)
+        html = result.contents[0].text
+        assert '<span id="product-name">North knowledge</span>' in html
+        assert "--interface-font:Inter" in html
+        assert "__KOINON_INTER_FONT_BASE64__" not in html

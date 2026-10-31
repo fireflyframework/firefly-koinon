@@ -1,0 +1,69 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<ffk-side-panel [open]="open" [heading]="'Save as knowledge' | ffkText" [description]="'Review one selected answer before saving it to your Library.' | ffkText" (closed)="close()">
+  @if (s.stage() === 'edit') {
+    <p class="help">{{ 'Your selected answer is copied below. Edit it and choose a destination. Nothing is saved until you review and confirm.' | ffkText }}</p>
+    <form (submit)="$event.preventDefault(); preview()" [attr.aria-busy]="s.pending()">
+      <label class="field"><span>{{ 'Knowledge title' | ffkText }}</span>
+        <input #titleField name="knowledgeTitle" maxlength="255" required [ngModel]="s.title()" (ngModelChange)="s.title.set($event)" [disabled]="s.pending()" />
+      </label>
+      <label class="field"><span>{{ 'Knowledge text' | ffkText }}</span>
+        <textarea name="knowledgeBody" rows="8" maxlength="262144" required [ngModel]="s.body()" (ngModelChange)="s.body.set($event)" [disabled]="s.pending()"></textarea>
+      </label>
+      <fieldset [disabled]="s.pending()" [attr.inert]="s.pending() ? '' : null"><legend>{{ 'Destination folder' | ffkText }}</legend>
+        @if (destinationName()) { <p class="chosen">{{ destinationName() }}</p> }
+        <p class="help">{{ 'Choose a collection or corpus inside a project.' | ffkText }}</p>
+        <ffk-folder-tree [entries]="entries()" [currentId]="s.destination()" [contextKey]="f.tenantId()" [loadChildren]="loadChildren" [selectableKinds]="folderKinds" (selected)="choose($event)" />
+      </fieldset>
+      <label class="field"><span>{{ 'Save this as' | ffkText }}</span>
+        <select name="knowledgePublication" [ngModel]="s.publication()" (ngModelChange)="s.publication.set($event)" [disabled]="s.pending()">
+          <option value="draft">{{ 'Draft' | ffkText }}</option>
+          <option value="published">{{ 'Published knowledge' | ffkText }}</option>
+        </select>
+      </label>
+      <p class="help">{{ (s.publication() === 'draft' ? 'Drafts stay out of retrieval. Publishing requires your separate confirmation after review.' : 'Published knowledge can be used in answers by people who retain access to its supporting sources.') | ffkText }}</p>
+      <div class="actions"><ffk-button type="submit" variant="primary" [disabled]="!s.canPreview()" [loading]="s.pending()">{{ 'Review proposal' | ffkText }}</ffk-button></div>
+    </form>
+  } @else if (s.intent(); as review) {
+    @if (s.stage() === 'review' || s.stage() === 'pending') {
+      <p class="location">{{ review.destination.name }} <span>{{ (review.action === 'create_draft' ? 'Draft' : 'Published knowledge') | ffkText }}</span></p>
+      <section #reviewRegion tabindex="-1" [attr.aria-label]="'Review knowledge changes' | ffkText">
+        <h3>{{ 'Before' | ffkText }}</h3>
+        @if (review.before; as before) { <h4>{{ before.title }}</h4><p class="body-text" tabindex="0" role="region" [attr.aria-label]="'Existing knowledge text' | ffkText">{{ before.body }}</p> }
+        @else { <p class="help">{{ 'No existing knowledge item. This proposal creates a new item.' | ffkText }}</p> }
+        <h3>{{ 'After confirmation' | ffkText }}</h3><h4>{{ review.after.title }}</h4><p class="body-text" tabindex="0" role="region" [attr.aria-label]="'Proposed knowledge text' | ffkText">{{ review.after.body }}</p>
+      </section>
+      <section [attr.aria-label]="'Supporting evidence' | ffkText"><h3>{{ 'Supporting evidence' | ffkText }}</h3>
+        <ul class="evidence-list">@for (item of review.evidence; track $index) {
+          <li><strong>{{ evidenceTitle(item) | ffkText }}</strong>
+            @if (remembered(item)) { <p class="help">{{ 'Remembered supporting context' | ffkText }}</p> }
+            @if (evidenceQuote(item)) { <blockquote>{{ evidenceQuote(item) }}</blockquote> }
+          </li>
+        }</ul>
+      </section>
+      @if (s.stage() === 'review') {
+        <p class="help">{{ 'Review expires' | ffkText }} {{ review.expires_at | ffkDate: undefined : 'datetime' }}</p>
+        @if (review.remembered_context_present) {
+          <label class="checkbox"><input type="checkbox" name="knowledgeRememberedConsent" [ngModel]="s.consent()" (ngModelChange)="s.consent.set($event === true)" [disabled]="s.pending()" />
+            <span>{{ 'I reviewed this answer and agree to include its remembered context in this knowledge item.' | ffkText }}</span>
+          </label>
+          <p class="help">{{ 'The original chats stay private. People must retain access to the supporting knowledge.' | ffkText }}</p>
+        }
+        <div class="actions">
+          <ffk-button variant="primary" [disabled]="!s.canConfirm()" [loading]="s.pending()" (click)="confirm()">{{ (review.action === 'create_draft' ? 'Confirm and save draft' : 'Confirm and publish') | ffkText }}</ffk-button>
+          <ffk-button variant="quiet" [disabled]="s.pending()" (click)="edit()">{{ 'Edit proposal' | ffkText }}</ffk-button>
+          <ffk-button variant="quiet" [disabled]="s.pending()" (click)="cancel()">{{ 'Cancel proposal' | ffkText }}</ffk-button>
+        </div>
+      } @else {
+        <p #outcome tabindex="-1" class="notice" role="status">{{ 'Your confirmed decision is still being verified. Check its status before starting another proposal.' | ffkText }}</p>
+        <ffk-button [loading]="s.pending()" (click)="refresh()">{{ 'Check save status' | ffkText }}</ffk-button>
+      }
+    }
+  }
+  @if (s.stage() === 'saved') {
+    <p #outcome tabindex="-1" class="notice" role="status">{{ (s.receipt()?.action === 'create_draft' ? 'Your draft was saved. It is not used in retrieval.' : 'Your reviewed knowledge was published.') | ffkText }}</p>
+    <div class="actions"><ffk-button variant="primary" (click)="resource()">{{ 'Open knowledge item' | ffkText }}</ffk-button><ffk-button variant="quiet" (click)="close()">{{ 'Done' | ffkText }}</ffk-button></div>
+  }
+  @if (s.stage() === 'cancelled') { <p #outcome tabindex="-1" class="notice" role="status">{{ 'The proposal was cancelled. No knowledge was saved.' | ffkText }}</p><ffk-button (click)="close()">{{ 'Done' | ffkText }}</ffk-button> }
+  @if (s.pending()) { <ffk-skeleton height="3px" [label]="'Working' | ffkText" /> }
+  @if (s.error()) { <p class="notice error" role="alert">{{ s.error() | ffkText }}</p> }
+</ffk-side-panel>

@@ -30,7 +30,9 @@ from koinon.knowledge.curated.repositories import KnowledgeIntentRepository
 
 
 def view(row):
-    request = KnowledgeIntentInput.model_validate(row.request_json)
+    request = KnowledgeIntentInput.model_validate(
+        {key: value for key, value in row.request_json.items() if key != "_memory_context"}
+    )
     return KnowledgeIntent(
         id=row.id,
         revision=row.revision,
@@ -44,6 +46,7 @@ def view(row):
         after=request.content,
         evidence=row.evidence_json,
         authorization_digest=row.authorization_digest,
+        remembered_context_present=row.request_json.get("_memory_context", {}).get("present", False),
         status=row.status,
         created_at=row.created_at,
         expires_at=row.expires_at,
@@ -90,7 +93,10 @@ class KnowledgeIntents:
         request = KnowledgeIntentInput.model_validate(values)
         destination = await self.authority.destination(subject, tenant_id, request.destination_id)
         recorded_at = datetime.now(UTC)
-        evidence, origins = await self.authority.observe(subject, tenant_id, request, recorded_at)
+        memory_context = {}
+        evidence, origins = await self.authority.observe(
+            subject, tenant_id, request, recorded_at, memory_capture=memory_context
+        )
         preview_token = current_token_id()
         expires_at = recorded_at + timedelta(hours=24)
         if isinstance(request.origin, ExternalProposalOrigin):
@@ -142,7 +148,14 @@ class KnowledgeIntents:
                 "expires_at": row.expires_at.isoformat(),
             }
         )
-        return view(await self.intents.save(row))
+        if memory_context.get("bindings"):
+            row.request_json = {**row.request_json, "_memory_context": memory_context}
+            row.authorization_digest = digest(
+                {"authorization": row.authorization_digest, "memory": memory_context}
+            )
+        saved = await self.intents.save(row)
+        await self.authority.memory_check(subject, tenant_id, memory_context)
+        return view(saved)
 
     async def authorized(self, subject, tenant_id, row, *, committed=None):
         committed = row.status == "committed" if committed is None else committed
@@ -171,6 +184,7 @@ class KnowledgeIntents:
                     value for value in (row.preview_token_id, row.confirming_token_id) if value
                 ),
             )
+        await self.authority.memory_check(subject, tenant_id, row.request_json.get("_memory_context", {}))
         return preview
 
     async def get(self, subject, tenant_id, identifier):
@@ -209,6 +223,16 @@ class KnowledgeIntents:
                 "Confirm the exact reviewed knowledge change", code="KNOWLEDGE_INTENT_CONFLICT"
             )
         preview = await self.authorized(subject, tenant_id, row, committed=row.status != "preview")
+        await self.authority.memory_check(
+            subject,
+            tenant_id,
+            row.request_json.get("_memory_context", {}),
+            transfer=True,
+            consent=confirmation.include_remembered_context
+            or row.request_json.get("include_remembered_context", False)
+            or row.status != "preview"
+            and row.request_json.get("_memory_context", {}).get("consented", False),
+        )
         if row.status == "committed":
             if row.confirmation_key != request_key:
                 raise ConflictException(
@@ -225,6 +249,11 @@ class KnowledgeIntents:
             )
         native = self.committer()
         if row.status == "preview":
+            if preview.remembered_context_present:
+                row.request_json = {
+                    **row.request_json,
+                    "_memory_context": {**row.request_json.get("_memory_context", {}), "consented": True},
+                }
             row.confirming_token_id = current_token_id()
             if row.confirming_token_id:
                 row.originating_token_ids = sorted(set(row.originating_token_ids) | {row.confirming_token_id})

@@ -36,7 +36,19 @@ async function mount(conflict = false) {
           branding: body.branding ?? DEFAULT_BRANDING,
         } as T;
       }
-      return {...original,branding:{product_name:original.branding.product_name,assistant_name:'koinon',logo_light:null,logo_dark:null,symbol:null,favicon:null,palette:DEFAULT_BRANDING.palette,font_family:'Manrope'}} as T;
+      return {
+        ...original,
+        branding: {
+          product_name: original.branding.product_name,
+          assistant_name: 'koinon',
+          logo_light: null,
+          logo_dark: null,
+          symbol: null,
+          favicon: null,
+          palette: DEFAULT_BRANDING.palette,
+          font_family: 'Manrope',
+        },
+      } as T;
     },
     stream: () => {
       throw new Error('Unexpected stream');
@@ -81,6 +93,24 @@ it('previews locally and saves exact revision before applying the organization i
     branding: { product_name: 'Acme Library' },
   });
   expect(brand.value().product_name).toBe('Acme Library');
+});
+it('offers a bundled Inter typeface and saves it only after explicit confirmation', async () => {
+  const { component, fixture, writes, brand } = await mount();
+  const select = fixture.nativeElement.querySelector(
+    'select[name="font-family"]',
+  ) as HTMLSelectElement;
+  expect(select).not.toBeNull();
+  select.value = 'Inter';
+  select.dispatchEvent(new Event('change'));
+  fixture.detectChanges();
+  expect(component.draft().font_family).toBe('Inter');
+  expect(brand.value().font_family).toBe('Manrope');
+  await component.save();
+  expect(writes[0].body).toMatchObject({
+    expected_revision: 4,
+    branding: { font_family: 'Inter' },
+  });
+  expect(brand.value().font_family).toBe('Inter');
 });
 it('requires a save to restore deployment inheritance and keeps CAS conflicts visible', async () => {
   const { component, writes } = await mount(true);
@@ -163,9 +193,17 @@ it('unlocks the editor after changing organization while a save is pending', asy
   expect(component.draft().product_name).not.toBe('Old tenant save');
 });
 
-it('treats the saved identity as unchanged regardless of response property order',async()=>{
- const {component}=await mount();expect(component.changed()).toBe(false);expect(component.canSave()).toBe(false);
+it('treats the saved identity as unchanged regardless of response property order', async () => {
+  const { component } = await mount();
+  expect(component.changed()).toBe(false);
+  expect(component.canSave()).toBe(false);
 });
-it('applies an accessible brand color to both themes without saving implicitly',async()=>{
- const {component,writes}=await mount();component.brandColor.set('#2563eb');component.applyColor();expect(writes).toHaveLength(0);expect(component.draft().palette.dark.action).toBe('#2563eb');expect(component.problems()).toEqual([]);expect(component.canSave()).toBe(true);
+it('applies an accessible brand color to both themes without saving implicitly', async () => {
+  const { component, writes } = await mount();
+  component.brandColor.set('#2563eb');
+  component.applyColor();
+  expect(writes).toHaveLength(0);
+  expect(component.draft().palette.dark.action).toBe('#2563eb');
+  expect(component.problems()).toEqual([]);
+  expect(component.canSave()).toBe(true);
 });

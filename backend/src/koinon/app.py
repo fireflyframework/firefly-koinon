@@ -30,6 +30,7 @@ from koinon.mcp.private_reviews import file_upload_preparer, private_review_read
 from koinon.mcp.read_capture import native_read_capture
 from koinon.mcp.server import create_mcp_server
 from koinon.mcp.settings import McpSettings
+from koinon.organization_branding.dtos import BrandingValues
 from koinon.security.configuration import SecurityConfiguration, native_security_defaults
 from koinon.security.controllers import AuthController
 from koinon.security.settings import OidcSettings
@@ -201,6 +202,7 @@ def create_application(config: dict):
             app,
             mcp_settings,
             canonical_bearer,
+            installation_branding=BrandingValues.model_validate(Config(values).get("koinon.branding", {})),
             oauth_enabled=Config(values).get("koinon.mcp.oauth.enabled", False),
             can_request_scopes=can_request_scopes,
             private_review=private_review_reader(context)

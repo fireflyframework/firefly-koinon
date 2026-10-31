@@ -23,6 +23,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 | `messages` | Array of [`ConversationMessage`](conversationmessage.md) | Yes | Not specified |
 | `sources` | Array of [`SourceReference`](sourcereference.md) | Yes | Not specified |
 | `source_manifest_complete` | `boolean` | Yes | Not specified |
+| `remembered_context_present` | `boolean` | No | `false` |
 | `recipient_policy` | `string` | No | `"organization_current_acl"` |
 | `omissions` | Array of `string` | No | `[]` |
 | `expires_at` | `string` | Yes | Not specified |
@@ -101,6 +102,11 @@ This is a schema definition, not an example request. It preserves all declared k
         },
         "source_manifest_complete": {
           "title": "Source Manifest Complete",
+          "type": "boolean"
+        },
+        "remembered_context_present": {
+          "default": false,
+          "title": "Remembered Context Present",
           "type": "boolean"
         },
         "recipient_policy": {

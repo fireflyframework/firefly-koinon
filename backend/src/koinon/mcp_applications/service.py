@@ -28,6 +28,7 @@ from koinon.mcp_applications.dtos import (
 from koinon.mcp_applications.entities import McpOAuthClientRegistration
 from koinon.mcp_applications.repositories import McpOAuthClientRepository
 from koinon.mcp_auth.settings import McpOAuthSettings
+from koinon.security.authority import primary_authority
 from koinon.tokens.entities import PersonalToken
 from koinon.web.pagination import sql_page
 
@@ -64,7 +65,7 @@ class McpOAuthClientRegistry:
             raise AccessDenied("OAuth application is unavailable in this organization.", code="ACCESS_DENIED")
         return row
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def readiness(self, actor, tenant_id) -> McpOAuthClientReadiness:
         await self._authorize(actor, tenant_id)
         missing = []
@@ -87,7 +88,7 @@ class McpOAuthClientRegistry:
             missing_configuration=missing,
         )
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def page(
         self, actor, tenant_id, *, q="", status="all", page=1, page_size=25, sort="name", order="asc"
     ):
@@ -110,7 +111,7 @@ class McpOAuthClientRegistry:
         )
         return {**result, "items": [client_dto(row).model_dump(mode="json") for row in result["items"]]}
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def get(self, actor, tenant_id, identifier) -> McpOAuthClient:
         await self._authorize(actor, tenant_id)
         return client_dto(await self._row(tenant_id, identifier))

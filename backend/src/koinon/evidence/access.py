@@ -2,11 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 from datetime import UTC, datetime
 
-from pyfly.container import service
+from pyfly.container import Provider, service
+from pyfly.security.context import SecurityContext
+from pyfly.security.context_holder import SecurityContextHolder
 
 from koinon.catalog.errors import AccessDenied
 from koinon.catalog.service import ROLE_PERMISSIONS, CatalogService
 from koinon.evidence.dtos import SourceReference
+from koinon.evidence.ports import SourceResolverPort, TransitiveSourceResolverPort
 from koinon.tokens.repositories import PersonalTokenRepository
 
 
@@ -16,8 +19,14 @@ def unavailable():
 
 @service(name="evidence.access")
 class EvidenceAccess:
-    def __init__(self, catalog: CatalogService, tokens: PersonalTokenRepository):
+    def __init__(
+        self,
+        catalog: CatalogService,
+        tokens: PersonalTokenRepository,
+        sources: Provider[SourceResolverPort | None] | None = None,
+    ):
         self.catalog, self.tokens = catalog, tokens
+        self.sources = sources
 
     async def _owner_memberships(self, subject):
         rows = list(await self.catalog.membership_repository.find_all(subject=subject, active=True))
@@ -49,6 +58,19 @@ class EvidenceAccess:
             or row.expires_at <= datetime.now(UTC)
         ):
             raise unavailable()
+        restriction = getattr(self.catalog, "restriction", None)
+        if restriction is not None:
+            issuer, _, sub = owner.partition("|")
+            with SecurityContextHolder.using(
+                SecurityContext(
+                    user_id=sub, attributes={"iss": issuer, "sub": sub, "koinon_token_id": identifier}
+                )
+            ):
+                verified = await restriction.grant(owner)
+                if verified is None or verified.id != identifier:
+                    raise unavailable()
+        elif getattr(row, "purpose", None) == "application":
+            raise unavailable()
         return row
 
     async def check(
@@ -66,18 +88,23 @@ class EvidenceAccess:
         if permission in {"shares:read", "shares:write", "exports:read", "exports:write"} and any(
             source.kind == "knowledge_version" for source in sources
         ):
-            # The item reference alone cannot prove owner and token access to its source roots.
-            raise AccessDenied(
-                "Sharing and exporting this knowledge version are unavailable until its source "
-                "permissions can be verified",
-                code="CURATED_TRANSITIVE_AUTHORITY_UNQUALIFIED",
-            )
+            resolver = self.sources.get() if self.sources else None
+            if not isinstance(resolver, TransitiveSourceResolverPort):
+                raise AccessDenied(
+                    "Knowledge source permissions cannot be verified",
+                    code="CURATED_TRANSITIVE_AUTHORITY_UNQUALIFIED",
+                )
+            roots = await resolver.resolve_bounds(subject, tenant_id, sources)
+            sources = tuple({source.id: source for source in (*sources, *roots)}.values())
         owner = owner_subject or subject
         memberships = [row for row in await self._owner_memberships(owner) if row.tenant_id == tenant_id]
         if not memberships:
             raise unavailable()
-        for identifier in set(originating_token_ids):
-            await self._token(identifier, owner, tenant_id)
+        origins = [
+            await self._token(identifier, owner, tenant_id) for identifier in set(originating_token_ids)
+        ]
+        if any("catalog:read" not in token.scopes for token in origins):
+            raise unavailable()
         creator = await self._token(creator_token_id, owner, tenant_id) if creator_token_id else None
         if creator is not None and (
             creator_permission not in creator.scopes or "catalog:read" not in creator.scopes

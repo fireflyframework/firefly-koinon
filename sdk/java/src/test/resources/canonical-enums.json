@@ -89,7 +89,8 @@
     "expired"
   ],
   "BrandingValuesFontFamily": [
-    "Manrope"
+    "Manrope",
+    "Inter"
   ],
   "CatalogProposalKind": [
     "catalog"
@@ -202,6 +203,10 @@
   ],
   "DocumentEvidenceKind": [
     "document_passage"
+  ],
+  "DocumentEvidenceBasis": [
+    "direct",
+    "remembered_context"
   ],
   "KnowledgeAnswerMode": [
     "rag",
@@ -471,6 +476,23 @@
   "MembershipOrigin": [
     "manual",
     "corporate"
+  ],
+  "MemoryReceiptValidationMode": [
+    "generation",
+    "historical_replay"
+  ],
+  "MemoryReceiptMode": [
+    "current_thread",
+    "personal_project"
+  ],
+  "MemoryTurnReferenceAvailability": [
+    "available",
+    "archived",
+    "deleted",
+    "moved",
+    "memory_disabled",
+    "changed",
+    "unverified"
   ],
   "CheckStatus": [
     "passed",

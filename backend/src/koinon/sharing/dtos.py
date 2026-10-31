@@ -24,6 +24,7 @@ class ShareCreate(Input):
     expected_revision: Revision
     expires_in_hours: int = Field(default=24, ge=1, le=168)
     recipient_policy: Literal["organization_current_acl"] = "organization_current_acl"
+    include_remembered_context: bool = Field(default=False, strict=True)
 
 
 class ShareReview(Frozen):
@@ -35,6 +36,7 @@ class ShareReview(Frozen):
     messages: tuple[ConversationMessage, ...]
     sources: tuple[SourceReference, ...]
     source_manifest_complete: bool
+    remembered_context_present: bool = False
     recipient_policy: Literal["organization_current_acl"] = "organization_current_acl"
     omissions: tuple[str, ...] = ()
     expires_at: AwareDatetime

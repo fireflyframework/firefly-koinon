@@ -14,6 +14,8 @@ from pyfly.kernel import (
     ServiceUnavailableException,
 )
 
+from koinon.assistants.memory.egress import MemoryEgress
+from koinon.assistants.memory.egress_dtos import stored_snapshot
 from koinon.catalog.errors import AccessDenied
 from koinon.catalog.service import CatalogService
 from koinon.evidence.access import EvidenceAccess
@@ -45,10 +47,71 @@ class EvidenceReviews:
         sources: Provider[SourceResolverPort | None],
         results: Provider[StoredResultPort | None],
         branding: Provider[OrganizationBrandingService | None],
+        memory: Provider[MemoryEgress | None] | None = None,
     ):
         self.reviews, self.access, self.catalog, self.settings = reviews, access, catalog, settings
         self.snapshots, self.sources, self.results = snapshots, sources, results
         self.branding = branding
+        self.memory = memory
+
+    async def memory_check(
+        self,
+        subject,
+        tenant_id,
+        snapshot,
+        *,
+        transfer=False,
+        consent=False,
+        reader_subject=None,
+        permission=None,
+        creator_token_id=None,
+        creator_permission=None,
+        release=None,
+    ):
+        bindings = getattr(snapshot, "memory_bindings", ())
+        port = self.memory.get() if self.memory else None
+        if bindings and port is None:
+            raise ServiceUnavailableException(
+                "Conversation authority is unavailable", code="MEMORY_UNAVAILABLE"
+            )
+        if port and not bindings:
+            messages = tuple(message.id for message in snapshot.messages if message.role == "assistant")
+            if messages and await port.repository.unbound_memory(
+                subject, tenant_id, snapshot.thread_id, messages
+            ):
+                raise ConflictException(
+                    "Review this answer again to bind its remembered context",
+                    code="MEMORY_TRANSFER_REVIEW_REQUIRED",
+                )
+
+        async def release_check():
+            if permission:
+                await self.access.check(
+                    reader_subject or subject,
+                    tenant_id,
+                    snapshot.sources,
+                    permission=permission,
+                    owner_subject=subject,
+                    originating_token_ids=snapshot.originating_token_ids,
+                    creator_token_id=creator_token_id,
+                    creator_permission=creator_permission,
+                )
+
+        return (
+            await port.authorize(
+                subject,
+                tenant_id,
+                bindings,
+                transfer=transfer,
+                consent=consent,
+                reader_subject=reader_subject,
+                release_check=release_check,
+                token_ids=(creator_token_id,) if creator_token_id else (),
+                release=release,
+            )
+            if port
+            else False
+        )
 
     async def _identity(self, subject, tenant_id):
         service = self.branding.get()
@@ -101,6 +164,9 @@ class EvidenceReviews:
             snapshot = snapshot.model_copy(
                 update={"sources": await resolver.resolve(subject, tenant_id, snapshot.sources)}
             )
+        await self.memory_check(
+            subject, tenant_id, snapshot, permission="shares:write" if purpose == "share" else "exports:write"
+        )
         payload = snapshot.model_dump(mode="json")
         if len(json.dumps(payload, ensure_ascii=False).encode()) > self.settings.max_snapshot_bytes:
             raise PayloadTooLargeException(
@@ -202,6 +268,14 @@ class EvidenceReviews:
             consumed_at=None,
         )
         await self.reviews.save(review)
+        await self.memory_check(
+            subject,
+            tenant_id,
+            snapshot,
+            permission="shares:write" if purpose == "share" else "exports:write",
+            creator_token_id=review.creator_token_id,
+            creator_permission="shares:write" if purpose == "share" else "exports:write",
+        )
         return review
 
     @transactional
@@ -231,7 +305,7 @@ class EvidenceReviews:
         if isinstance(snapshot, ConversationSnapshot):
             # The reviewed identity is immutable; older hashes predate this field entirely.
             if "identity" in row.snapshot_json:
-                recorded = ConversationSnapshot.model_validate(row.snapshot_json).identity
+                recorded = stored_snapshot(row.snapshot_json).identity
                 payload["identity"] = recorded.model_dump(mode="json") if recorded else None
             else:
                 payload.pop("identity", None)

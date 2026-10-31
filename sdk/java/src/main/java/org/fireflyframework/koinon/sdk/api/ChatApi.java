@@ -66,4 +66,8 @@ public TitleSuggestion suggestTitle(String threadId,TitleRequest input,RequestOp
 public TitleSuggestion suggestTitle(String threadId,TitleRequest input){return suggestTitle(threadId,input,RequestOptions.defaults());}
 public CompletableFuture<TitleSuggestion> suggestTitleAsync(String threadId,TitleRequest input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.jsonAsync("POST",prefix+"/chat/threads/"+Transport.id(threadId)+"/title-suggestion",input,options,transport.type(TitleSuggestion.class));}
 public CompletableFuture<TitleSuggestion> suggestTitleAsync(String threadId,TitleRequest input){return suggestTitleAsync(threadId,input,RequestOptions.defaults());}
+public Void delete(String threadId,ThreadDeleteFilter filter,RequestOptions options){Objects.requireNonNull(options);options=Objects.requireNonNull(filter).applyTo(options);return transport.json("DELETE",prefix+"/chat/threads/"+Transport.id(threadId),null,options,transport.type(Void.class));}
+public Void delete(String threadId,ThreadDeleteFilter filter){return delete(threadId,filter,RequestOptions.defaults());}
+public CompletableFuture<Void> deleteAsync(String threadId,ThreadDeleteFilter filter,RequestOptions options){Objects.requireNonNull(options);options=Objects.requireNonNull(filter).applyTo(options);return transport.jsonAsync("DELETE",prefix+"/chat/threads/"+Transport.id(threadId),null,options,transport.type(Void.class));}
+public CompletableFuture<Void> deleteAsync(String threadId,ThreadDeleteFilter filter){return deleteAsync(threadId,filter,RequestOptions.defaults());}
 }

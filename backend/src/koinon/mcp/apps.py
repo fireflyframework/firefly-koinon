@@ -38,7 +38,7 @@ class KnowledgeReviewExtension(Extension):
                             text=(
                                 "This operation requires negotiated MCP Apps support. "
                                 "Reconnect from a compatible "
-                                "client that can show the private koinon review. "
+                                "client that can show the private knowledge review. "
                                 "Retrieval remains available; "
                                 "repository knowledge was not changed."
                             ),

@@ -9,7 +9,7 @@ from typing import Any
 
 from pyfly.container import repository
 from pyfly.data.relational.sqlalchemy import Repository, transactional
-from pyfly.data.transaction import Propagation
+from pyfly.data.transaction import Isolation, Propagation
 from sqlalchemy import Text, cast, func, literal, or_, select, union_all
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql.selectable import FromClause
@@ -21,6 +21,7 @@ from koinon.knowledge.curated.release_dtos import CuratedReleaseStamp
 from koinon.knowledge.curated.release_mappers import MAX_ROWS, release_stamp
 from koinon.knowledge.entities import DomainBinding
 from koinon.mcp_applications.entities import McpOAuthClientRegistration
+from koinon.security.authority import PRIMARY_POLICY_UNIT
 from koinon.tokens.entities import PersonalToken
 
 _WIDTH = 20
@@ -38,8 +39,32 @@ def _row(tag: str, columns: Sequence[Any]):
 
 @repository(name="knowledge.curated.release_material")
 class CuratedReleaseRepository(Repository[CuratedCatalogState, str]):
-    @transactional(datasource="primary", propagation=Propagation.REQUIRES_NEW, read_only=True)
+    @transactional(
+        datasource="primary",
+        name=PRIMARY_POLICY_UNIT,
+        propagation=Propagation.REQUIRES_NEW,
+        isolation=Isolation.SERIALIZABLE,
+        read_only=True,
+        read_from_primary=True,
+    )
     async def observe(
+        self,
+        subject: str,
+        tenant_id: str,
+        item_ids: tuple[str, ...],
+        members: FromClause,
+        token_id: str | None,
+    ) -> CuratedReleaseStamp:
+        return await self.observe_bound(subject, tenant_id, item_ids, members, token_id)
+
+    @transactional(
+        datasource="primary",
+        name=PRIMARY_POLICY_UNIT,
+        isolation=Isolation.SERIALIZABLE,
+        read_only=True,
+        read_from_primary=True,
+    )
+    async def observe_bound(
         self,
         subject: str,
         tenant_id: str,

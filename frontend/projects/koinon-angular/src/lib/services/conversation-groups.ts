@@ -162,6 +162,19 @@ export class KoinonConversationGroups implements OnDestroy {
     if (!this.context()) return;
     await Promise.all([this.loadRoots(), this.loadRecent()]);
   }
+  async projectMemoryStatus(): Promise<'allowed' | 'disabled' | 'unavailable'> {
+    const context = this.context();
+    if (!context) return 'unavailable';
+    try {
+      const settings = await this.clients.get().organizationChat.get(context.tenant, context.scope);
+      if (context.key !== this.scopeKey() || context.epoch !== this.epoch || !settings.memory) return 'unavailable';
+      const policy = settings.memory;
+      return policy.allow_project_memory === false || policy.max_history_messages === 0 || policy.max_history_tokens === 0 || policy.max_project_memory_messages === 0 ? 'disabled' : 'allowed';
+    } catch (error) {
+      if (context.key === this.scopeKey() && context.epoch === this.epoch) this.failure(error);
+      return 'unavailable';
+    }
+  }
   async loadRoots(page = 1, append = false) {
     await this.readPage<ChatFolder>(
       'roots',
@@ -410,7 +423,13 @@ export class KoinonConversationGroups implements OnDestroy {
         .chat.update(tenant, thread.id, { archived, expected_revision: thread.revision }),
     );
   }
-  async createFolder(name: string, parent: ChatFolder | null) {
+  async deleteThread(thread: ChatThread, expectedRevision = thread.revision) {
+    return (await this.mutate(async (tenant) => {
+      await this.clients.get().chat.delete(tenant, thread.id, expectedRevision);
+      return true;
+    })) === true;
+  }
+  async createFolder(name: string, parent: ChatFolder | null, memoryEnabled = false) {
     const context = this.context();
     if (!context) return null;
     const created = await this.mutate((tenant) =>
@@ -420,6 +439,7 @@ export class KoinonConversationGroups implements OnDestroy {
           name: this.validName(name),
           parent_id: parent?.id ?? null,
           scope: parent?.scope ?? context.scope,
+          memory_enabled: memoryEnabled,
         }),
     );
     if (created) {
@@ -428,13 +448,14 @@ export class KoinonConversationGroups implements OnDestroy {
     }
     return created;
   }
-  async renameFolder(folder: ChatFolder, name: string) {
+  async renameFolder(folder: ChatFolder, name: string, memoryEnabled = folder.memory_enabled ?? false) {
     const updated = await this.mutate((tenant) =>
       this.clients
         .get()
         .chat.folders.update(tenant, folder.id, {
           name: this.validName(name),
           expected_revision: folder.revision,
+          memory_enabled: memoryEnabled,
         }),
     );
     if (updated) {

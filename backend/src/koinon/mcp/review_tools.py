@@ -12,6 +12,7 @@ from mcp.types import CallToolResult, TextContent, ToolAnnotations
 from pydantic import Field
 
 from koinon.knowledge.external_reviews.dtos import ExternalReviewInput
+from koinon.organization_branding.dtos import BrandingValues
 
 if TYPE_CHECKING:
     from koinon.mcp.server import CanonicalDispatcher
@@ -40,6 +41,7 @@ def register_review_tools(
     *,
     oauth_enabled: bool,
     private_review: PrivateReview | None,
+    installation_branding: BrandingValues | None = None,
 ):
     def metadata(*, app_only=False):
         result: dict[str, Any] = {
@@ -175,11 +177,13 @@ def register_review_tools(
 
     @server.resource(
         RESOURCE_URI,
-        name="koinon knowledge review",
+        name=installation_branding.product_name + " review"
+        if installation_branding and installation_branding.product_name != "koinon"
+        else "koinon knowledge review",
         mime_type=RESOURCE_MIME,
         meta={"ui": {"prefersBorder": True, "csp": {"connectDomains": [], "resourceDomains": []}}},
     )
     def review_resource() -> str:
         from koinon.mcp.review_resource import render_review_resource
 
-        return render_review_resource()
+        return render_review_resource(installation_branding)

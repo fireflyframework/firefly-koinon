@@ -5,7 +5,7 @@ from typing import NoReturn
 from uuid import uuid4
 
 from pyfly.container import service
-from pyfly.data.relational.sqlalchemy import Propagation, transactional
+from pyfly.data.relational.sqlalchemy import transactional
 from pyfly.data.transaction import current_unit_of_work
 from pyfly.kernel import ConflictException, InvalidRequestException
 
@@ -45,6 +45,7 @@ from koinon.organization_people.repositories import (
     OrganizationUnitRepository,
 )
 from koinon.profiles.service import ProfileService, profile_id
+from koinon.security.authority import primary_authority
 
 
 def denied() -> NoReturn:
@@ -154,7 +155,7 @@ class OrganizationPeopleService:
             if not wanted <= current:
                 denied()
 
-    @transactional(propagation=Propagation.REQUIRES_NEW, read_only=True)
+    @primary_authority(fresh=True)
     async def _fresh_output(self, actor, tenant_id, workspace_id, rows, managers, total, filters):
         # Re-enter native Data so an earlier read snapshot cannot retain revoked visibility.
         await self._verify_output(actor, tenant_id, workspace_id, rows, managers)
@@ -168,7 +169,7 @@ class OrganizationPeopleService:
         if current_total != total or keys(current) != keys(rows):
             denied()
 
-    @transactional(propagation=Propagation.REQUIRES_NEW, read_only=True)
+    @primary_authority(fresh=True)
     async def _fresh_self_output(self, actor, tenant_id, workspace_id, managers):
         await self._membership(actor, tenant_id, workspace_id)
         if managers:
@@ -176,12 +177,12 @@ class OrganizationPeopleService:
             for manager, _ in managers.values():
                 await self._member(tenant_id, manager.subject, workspace_id)
 
-    @transactional(propagation=Propagation.REQUIRES_NEW, read_only=True)
+    @primary_authority(fresh=True)
     async def _fresh_avatar_scope(self, actor, tenant_id, workspace_id, subject):
         await self._scope(actor, tenant_id, workspace_id)
         await self._member(tenant_id, subject, workspace_id)
 
-    @transactional(propagation=Propagation.REQUIRES_NEW, read_only=True)
+    @primary_authority(fresh=True)
     async def _fresh_units(self, actor, tenant_id, workspace_id, rows, total, filters):
         scope = await self._scope(actor, tenant_id, workspace_id)
         latest, latest_total = await self.unit_repository.page(
@@ -192,7 +193,7 @@ class OrganizationPeopleService:
         ]:
             denied()
 
-    @transactional(propagation=Propagation.REQUIRES_NEW, read_only=True)
+    @primary_authority(fresh=True)
     async def _fresh_mapping_scope(self, actor, tenant_id, provider_id):
         await self.catalog.authorize(actor, tenant_id, "identity:manage")
         if await self.mappings.provider(tenant_id, provider_id) is None:
@@ -252,7 +253,7 @@ class OrganizationPeopleService:
             pages=(total + size - 1) // size,
         )
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def page(
         self,
         actor,
@@ -308,11 +309,11 @@ class OrganizationPeopleService:
             denied()
         return result.items[0]
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def get(self, actor, tenant_id, identifier, *, workspace_id=None):
         return await self._view(actor, tenant_id, identifier, workspace_id)
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def self(self, actor, tenant_id, *, workspace_id=None):
         grant = await self._membership(actor, tenant_id, workspace_id)
         if grant is not None and not {"profile:read", "profile:write"}.intersection(grant.scopes):
@@ -356,7 +357,7 @@ class OrganizationPeopleService:
             )
         return value
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def avatar(self, actor, tenant_id, identifier, *, workspace_id=None):
         await self._membership(actor, tenant_id, workspace_id)
         row = await self.people.scoped(tenant_id, identifier)
@@ -381,7 +382,7 @@ class OrganizationPeopleService:
         await self._fresh_avatar_scope(actor, tenant_id, workspace_id, subject)
         return content
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def reports(self, actor, tenant_id, identifier, *, workspace_id=None, page=1, page_size=25):
         bounds(page, page_size)
         await self._view(actor, tenant_id, identifier, workspace_id)
@@ -511,7 +512,7 @@ class OrganizationPeopleService:
             current = (await self._unit(tenant_id, current)).parent_id
         conflict("Organization units exceed the supported depth")
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def units(self, actor, tenant_id, *, workspace_id=None, parent_id=None, q="", page=1, page_size=25):
         bounds(page, page_size, q=q, parent_id=parent_id)
         scope = await self._scope(actor, tenant_id, workspace_id)
@@ -599,7 +600,7 @@ class OrganizationPeopleService:
         await self.catalog.authorize(actor, tenant_id, "members:write")
         await self.catalog._audit(actor, tenant_id, "organization.unit.deleted", identifier)
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def settings(self, actor, tenant_id):
         await self._membership(actor, tenant_id)
         row = await self.setting_repository.find_by_id(tenant_id)
@@ -628,7 +629,7 @@ class OrganizationPeopleService:
             tenant_id=tenant_id, visibility=row.visibility, revision=row.revision
         )
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def mapping(self, actor, tenant_id, provider_id):
         await self.catalog.authorize(actor, tenant_id, "identity:manage")
         provider = await self.mappings.provider(tenant_id, provider_id)

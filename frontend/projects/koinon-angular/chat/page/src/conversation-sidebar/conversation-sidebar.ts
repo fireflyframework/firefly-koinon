@@ -43,7 +43,8 @@ type EditAction =
   | 'delete-folder'
   | 'rename-thread'
   | 'move-thread'
-  | 'archive-thread';
+  | 'archive-thread'
+  | 'delete-thread';
 interface SidebarEdit {
   kind: EditAction;
   folder: ChatFolder | null;
@@ -81,6 +82,7 @@ export class KoinonConversationSidebar implements OnInit, OnChanges, OnDestroy {
   @Output() threadSelected = new EventEmitter<ChatThread>();
   @Output() newConversationRequested = new EventEmitter<NewConversationContext>();
   @Output() threadChanged = new EventEmitter<ChatThread>();
+  @Output() threadDeleted = new EventEmitter<string>();
   @Output() closeRequested = new EventEmitter<void>();
   readonly s = inject(KoinonConversationGroups);
   readonly i18n = inject(KoinonI18n);
@@ -91,12 +93,14 @@ export class KoinonConversationSidebar implements OnInit, OnChanges, OnDestroy {
   readonly menu = signal<SidebarMenu | null>(null);
   readonly edit = signal<SidebarEdit | null>(null);
   readonly suggestion = signal<TitleSuggestion | null>(null);
+  readonly memoryStatus = signal<'loading' | 'allowed' | 'disabled' | 'unavailable'>('loading');
   readonly formError = signal('');
   readonly treeFocus = signal('');
   readonly destination = signal<ChatFolder | null | undefined>(undefined);
   query = '';
   folderQuery = '';
   formName = '';
+  formMemoryEnabled = false;
   private started = false;
   private key = this.s.scopeKey();
   private searchTimer?: ReturnType<typeof setTimeout>;
@@ -125,6 +129,7 @@ export class KoinonConversationSidebar implements OnInit, OnChanges, OnDestroy {
   ngOnDestroy() {
     if (this.searchTimer) clearTimeout(this.searchTimer);
     this.s.cancelSuggestion();
+    this.closeEdit();
   }
   refresh() {
     this.tasks.run(() => this.s.refresh());
@@ -257,8 +262,17 @@ export class KoinonConversationSidebar implements OnInit, OnChanges, OnDestroy {
           ? (thread?.title ?? '')
           : '';
     this.destination.set(undefined);
+    this.formMemoryEnabled = kind === 'rename-folder' && folder?.memory_enabled === true;
     this.folderQuery = '';
     this.edit.set({ kind, folder, thread, revision: thread?.revision ?? folder?.revision ?? 0 });
+    if (kind === 'create-folder' || kind === 'rename-folder') {
+      const form = this.edit(), scope = this.s.scopeKey();
+      this.memoryStatus.set('loading');
+      this.tasks.run(async () => {
+        const status = await this.s.projectMemoryStatus();
+        if (form === this.edit() && scope === this.s.scopeKey()) this.memoryStatus.set(status);
+      });
+    }
     if (kind === 'move-thread') this.tasks.run(() => this.s.loadPicker());
   }
   closeEdit() {
@@ -272,20 +286,24 @@ export class KoinonConversationSidebar implements OnInit, OnChanges, OnDestroy {
     return kind === 'create-folder'
       ? 'New folder'
       : kind === 'rename-folder'
-        ? 'Rename folder'
+        ? 'Folder settings'
         : kind === 'delete-folder'
           ? 'Remove folder'
           : kind === 'rename-thread'
             ? 'Rename conversation'
             : kind === 'move-thread'
               ? 'Move conversation'
-              : 'Archive conversation';
+              : kind === 'delete-thread'
+                ? 'Delete conversation'
+                : 'Archive conversation';
   }
   saveLabel() {
     const kind = this.edit()?.kind;
     return kind === 'delete-folder'
       ? 'Remove folder'
-      : kind === 'archive-thread'
+      : kind === 'delete-thread'
+        ? 'Delete conversation'
+        : kind === 'archive-thread'
         ? 'Archive conversation'
         : kind === 'move-thread'
           ? 'Move conversation'
@@ -298,6 +316,7 @@ export class KoinonConversationSidebar implements OnInit, OnChanges, OnDestroy {
       !this.s.mutating() &&
       !this.s.suggesting() &&
       (edit.kind === 'delete-folder' ||
+      edit.kind === 'delete-thread' ||
       edit.kind === 'archive-thread' ||
       edit.kind === 'move-thread'
         ? edit.kind !== 'move-thread' || this.destination() !== undefined
@@ -311,9 +330,9 @@ export class KoinonConversationSidebar implements OnInit, OnChanges, OnDestroy {
     let thread: ChatThread | null = null;
     this.tasks.run(async () => {
       if (edit.kind === 'create-folder')
-        done = !!(await this.s.createFolder(this.formName, edit.folder));
+        done = !!(await this.s.createFolder(this.formName, edit.folder, this.formMemoryEnabled));
       if (edit.kind === 'rename-folder' && edit.folder)
-        done = !!(await this.s.renameFolder(edit.folder, this.formName));
+        done = !!(await this.s.renameFolder(edit.folder, this.formName, this.formMemoryEnabled));
       if (edit.kind === 'delete-folder' && edit.folder)
         done = await this.s.deleteFolder(edit.folder);
       if (edit.thread) {
@@ -322,7 +341,10 @@ export class KoinonConversationSidebar implements OnInit, OnChanges, OnDestroy {
         if (edit.kind === 'move-thread')
           thread = await this.s.moveThread(edit.thread, this.destination() ?? null);
         if (edit.kind === 'archive-thread') thread = await this.s.archiveThread(edit.thread, true);
-        done = !!thread;
+        if (edit.kind === 'delete-thread') {
+          done = await this.s.deleteThread(edit.thread, edit.revision);
+          if (done) this.threadDeleted.emit(edit.thread.id);
+        } else done = !!thread;
       }
       if (thread) this.threadChanged.emit(thread);
       if (done) this.panel?.dismiss();
@@ -383,6 +405,7 @@ export class KoinonConversationSidebar implements OnInit, OnChanges, OnDestroy {
         if (row) {
           this.edit.set({ ...edit, folder: row, revision: row.revision });
           this.formName = row.name;
+          this.formMemoryEnabled = row.memory_enabled === true;
         }
       }
     });

@@ -10,6 +10,7 @@ from pyfly.container import service
 from pyfly.data.relational.sqlalchemy import LockMode, transactional
 from pyfly.kernel import ConflictException, InvalidRequestException, PayloadTooLargeException
 
+from koinon.assistants.memory.egress_dtos import stored_snapshot
 from koinon.catalog.errors import AccessDenied
 from koinon.evidence.dtos import ConversationSnapshot, SourceReference, StoredResult
 from koinon.evidence.reviews import EvidenceReviews
@@ -64,7 +65,7 @@ class KnowledgeExports:
         if isinstance(body, QueryResultExportInput):
             return await self._result_preview(subject, tenant_id, body)
         row = await self.reviews.conversation(subject, tenant_id, body, purpose="export")
-        snapshot = ConversationSnapshot.model_validate(row.snapshot_json)
+        snapshot = stored_snapshot(row.snapshot_json)
         omissions = []
         if not body.include_evidence:
             omissions.append("Source evidence was excluded from this export.")
@@ -143,7 +144,7 @@ class KnowledgeExports:
             expires = min(expires, StoredResult.model_validate(review.snapshot_json).expires_at)
         tokens = set()
         if review.request_json["kind"] == "conversation":
-            tokens.update(ConversationSnapshot.model_validate(review.snapshot_json).originating_token_ids)
+            tokens.update(stored_snapshot(review.snapshot_json).originating_token_ids)
         if review.creator_token_id:
             tokens.add(review.creator_token_id)
         for token_id in tokens:
@@ -170,7 +171,7 @@ class KnowledgeExports:
         snapshot = (
             StoredResult.model_validate(review.snapshot_json)
             if result
-            else ConversationSnapshot.model_validate(review.snapshot_json)
+            else stored_snapshot(review.snapshot_json)
         )
         sources = tuple(SourceReference.model_validate(item) for item in review.manifest_json)
         await self.reviews.access.check(
@@ -184,6 +185,16 @@ class KnowledgeExports:
             creator_token_id=review.creator_token_id,
             creator_permission="exports:write",
         )
+        if isinstance(snapshot, ConversationSnapshot):
+            await self.reviews.memory_check(
+                subject,
+                tenant_id,
+                snapshot,
+                permission="exports:read",
+                creator_token_id=review.creator_token_id,
+                creator_permission="exports:write",
+                release=("export", row.id),
+            )
         return review, snapshot
 
     async def _metadata(self, subject, tenant_id, row):
@@ -200,13 +211,13 @@ class KnowledgeExports:
             raise AccessDenied("This export is unavailable", code="EXPORT_UNAVAILABLE")
         return rows[0]
 
-    @transactional(read_only=True)
+    @transactional(read_only=True, read_from_primary=True)
     async def get(self, subject, tenant_id, identifier) -> Export:
         row = await self._row(subject, tenant_id, identifier)
         review = await self._metadata(subject, tenant_id, row)
         return self._dto(row, review)
 
-    @transactional(read_only=True)
+    @transactional(read_only=True, read_from_primary=True)
     async def download(self, subject, tenant_id, identifier):
         self.reviews.settings.validate()
         row = await self._row(subject, tenant_id, identifier)
@@ -231,6 +242,7 @@ class KnowledgeExports:
                 raise PayloadTooLargeException(
                     "This export exceeds the download limit", code="EXPORT_TOO_LARGE"
                 )
+            await self._saved(subject, tenant_id, row)
             return rendered
         finally:
             self._downloads -= 1
@@ -247,7 +259,7 @@ class KnowledgeExports:
             await self.exports.save(row)
             await self.reviews.catalog._audit(subject, tenant_id, "export.cancelled", row.id)
 
-    @transactional(read_only=True)
+    @transactional(read_only=True, read_from_primary=True)
     async def page(self, subject, tenant_id, **filters) -> ExportPage:
         result = await self.exports.page(subject, tenant_id, **filters)
         items = []

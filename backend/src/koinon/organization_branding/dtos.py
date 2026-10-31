@@ -92,7 +92,7 @@ class BrandingInputValues(BaseModel):
     symbol: str | None = Field(default=None, max_length=MAX_DATA_URL_LENGTH, strict=True)
     favicon: str | None = Field(default=None, max_length=MAX_DATA_URL_LENGTH, strict=True)
     palette: BrandingPalettes = Field(default_factory=BrandingPalettes)
-    font_family: Literal["Manrope"] = "Manrope"
+    font_family: Literal["Manrope", "Inter"] = "Manrope"
 
     @field_validator("product_name", "assistant_name")
     @classmethod

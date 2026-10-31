@@ -1405,6 +1405,13 @@ class KoinonClient:
             )
         )
 
+    async def delete_thread(self, tenant_id: str, thread_id: str, *, expected_revision: int) -> None:
+        await self._request(
+            "DELETE",
+            self._tenant(tenant_id) + "/chat/threads/" + quote(thread_id, safe=""),
+            params={"expected_revision": expected_revision},
+        )
+
     async def folders(self, tenant_id: str, **filters: Unpack[FolderFilter]) -> Page[ChatFolder]:
         return Page[ChatFolder].model_validate(
             await self._request("GET", self._tenant(tenant_id) + "/chat/folders", params=filters)

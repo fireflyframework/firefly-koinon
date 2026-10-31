@@ -7,8 +7,9 @@ from pyfly.container import service
 from pyfly.data.relational.sqlalchemy import LockMode, transactional
 from pyfly.kernel import ConflictException, GoneException
 
+from koinon.assistants.memory.egress_dtos import stored_snapshot
 from koinon.catalog.errors import AccessDenied
-from koinon.evidence.dtos import ConversationSnapshot, SourceReference
+from koinon.evidence.dtos import SourceReference
 from koinon.evidence.reviews import EvidenceReviews
 from koinon.sharing.dtos import (
     Share,
@@ -45,7 +46,7 @@ class ConversationShares:
         review = await self.reviews.reviews.find_by_id(row.review_id)
         if review is None or review.tenant_id != tenant_id or review.owner_subject != row.owner_subject:
             raise AccessDenied("This share is unavailable", code="SHARE_UNAVAILABLE")
-        snapshot = ConversationSnapshot.model_validate(review.snapshot_json)
+        snapshot = stored_snapshot(review.snapshot_json)
         await self.reviews.access.check(
             subject,
             tenant_id,
@@ -56,12 +57,25 @@ class ConversationShares:
             creator_token_id=review.creator_token_id,
             creator_permission="shares:write",
         )
+        await self.reviews.memory_check(
+            row.owner_subject,
+            tenant_id,
+            snapshot,
+            transfer=True,
+            consent=snapshot.memory_transfer_consented,
+            reader_subject=subject,
+            permission="shares:read",
+            creator_token_id=review.creator_token_id,
+            creator_permission="shares:write",
+            release=("share", row.id),
+        )
         return review, snapshot
 
     @transactional
     async def preview(self, subject, tenant_id, body: ShareReviewInput) -> ShareReview:
         row = await self.reviews.conversation(subject, tenant_id, body, purpose="share")
-        snapshot = ConversationSnapshot.model_validate(row.snapshot_json)
+        snapshot = stored_snapshot(row.snapshot_json)
+        remembered = await self.reviews.memory_check(subject, tenant_id, snapshot)
         return ShareReview(
             id=row.id,
             revision=row.revision,
@@ -71,6 +85,7 @@ class ConversationShares:
             messages=snapshot.messages,
             sources=snapshot.sources,
             source_manifest_complete=snapshot.source_manifest_complete,
+            remembered_context_present=remembered,
             identity=snapshot.identity,
             expires_at=row.expires_at,
         )
@@ -88,7 +103,20 @@ class ConversationShares:
         )
         now = datetime.now(UTC)
         expires = now + timedelta(hours=body.expires_in_hours)
-        snapshot = ConversationSnapshot.model_validate(review.snapshot_json)
+        snapshot = stored_snapshot(review.snapshot_json)
+        await self.reviews.memory_check(
+            subject,
+            tenant_id,
+            snapshot,
+            transfer=True,
+            consent=body.include_remembered_context,
+            permission="shares:write",
+            creator_token_id=review.creator_token_id,
+            creator_permission="shares:write",
+        )
+        snapshot = snapshot.model_copy(update={"memory_transfer_consented": body.include_remembered_context})
+        review.snapshot_json = snapshot.model_dump(mode="json")
+        await self.reviews.reviews.save(review)
         token_ids = set(snapshot.originating_token_ids)
         if review.creator_token_id:
             token_ids.add(review.creator_token_id)
@@ -106,9 +134,19 @@ class ConversationShares:
         )
         await self.shares.save(row)
         await self.reviews.catalog._audit(subject, tenant_id, "share.created", row.id)
+        await self.reviews.memory_check(
+            subject,
+            tenant_id,
+            snapshot,
+            transfer=True,
+            consent=body.include_remembered_context,
+            permission="shares:write",
+            creator_token_id=review.creator_token_id,
+            creator_permission="shares:write",
+        )
         return self._dto(row, review)
 
-    @transactional(read_only=True)
+    @transactional(read_only=True, read_from_primary=True)
     async def read(self, subject, tenant_id, identifier) -> SharedConversation:
         rows = await self.shares.find_all(id=identifier, tenant_id=tenant_id)
         if not rows:
@@ -124,6 +162,18 @@ class ConversationShares:
             snapshot = snapshot.model_copy(
                 update={"sources": await resolver.resolve(subject, tenant_id, snapshot.sources)}
             )
+        await self.reviews.memory_check(
+            row.owner_subject,
+            tenant_id,
+            snapshot,
+            transfer=True,
+            consent=snapshot.memory_transfer_consented,
+            reader_subject=subject,
+            permission="shares:read",
+            creator_token_id=review.creator_token_id,
+            creator_permission="shares:write",
+            release=("share", row.id),
+        )
         return SharedConversation(
             share=self._dto(row, review),
             messages=snapshot.messages,
@@ -142,7 +192,7 @@ class ConversationShares:
         await self.reviews.access.management(
             subject,
             tenant_id,
-            ConversationSnapshot.model_validate(review.snapshot_json).sources,
+            stored_snapshot(review.snapshot_json).sources,
             permission="shares:write",
         )
         if row.revoked_at is None:
@@ -150,7 +200,7 @@ class ConversationShares:
             await self.shares.save(row)
             await self.reviews.catalog._audit(subject, tenant_id, "share.revoked", row.id)
 
-    @transactional(read_only=True)
+    @transactional(read_only=True, read_from_primary=True)
     async def page(self, subject, tenant_id, **filters) -> SharePage:
         result = await self.shares.page(subject, tenant_id, **filters)
         items = []

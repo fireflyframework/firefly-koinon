@@ -117,6 +117,19 @@
               /><small>{{ 'Shown beside replies and in the message box.' | ffkText }}</small></label
             >
           </div>
+          <label class="typeface"
+            >{{ 'Interface font' | ffkText }}
+            <select
+              name="font-family"
+              [attr.aria-label]="'Interface font' | ffkText"
+              [ngModel]="draft().font_family"
+              (ngModelChange)="font($event)"
+            >
+              <option value="Manrope">Manrope</option>
+              <option value="Inter">Inter</option>
+            </select>
+            <small>{{ 'Bundled fonts load privately with the application.' | ffkText }}</small>
+          </label>
         </fieldset>
         <fieldset [disabled]="saving() || pending() || !allowed()">
           <legend>{{ 'Logos & icons' | ffkText }}</legend>

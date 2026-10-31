@@ -55,9 +55,9 @@ The management application accepts `#share=<reference>&tenant=<organization>`, r
 
 ## Brand assets and fonts
 
-Serve the supplied brand assets at a trusted HTTP(S) base and pass that location through the component's `brandBase` input. The default is `/assets/brand`. Include the canonical logos and `fonts/manrope-latin-wght-normal.woff2`; copying only the SVGs leaves the embedded text without Manrope.
+Serve the supplied brand assets at a trusted HTTP(S) base and pass that location through the component's `brandBase` input. The default is `/assets/brand`. Include the canonical logos and both `fonts/manrope-latin-wght-normal.woff2` and `fonts/inter-latin-wght-normal.woff2` when users can choose the interface font. Copying only the SVGs leaves the selected typeface unavailable.
 
-The component loads the variable font at weights 200–800 with a private family name and applies it inside its own boundary. Instances share a per-document asset cache and release their font reference on teardown. The host does not need a global font stylesheet, and its body typography stays unchanged. Cross-origin assets need the appropriate font CORS response and deployment CSP permission. Verify the font response and loaded font face in a clean host; a computed font-family declaration alone does not establish that the bytes loaded.
+The component loads Manrope at weights 200–800 or Inter at weights 100–900 with a private family name and applies it inside its own boundary. Instances share a per-document asset cache and release their font reference on teardown. The host does not need a global font stylesheet, and its body typography stays unchanged. Cross-origin assets need the appropriate font CORS response and deployment CSP permission. Verify the font response and loaded font face in a clean host; a computed font-family declaration alone does not establish that the bytes loaded.
 
 The SDK accepts a `KoinonTransport`. The default fetch transport supports API-relative paths, typed JSON, FormData, cancellation and problem details. Hosts can inject their own transport to reuse existing request tracing, authentication and renewal logic. A component never receives a client secret.
 

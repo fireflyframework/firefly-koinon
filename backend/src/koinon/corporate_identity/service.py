@@ -29,6 +29,7 @@ from koinon.corporate_identity.repositories import (
     CorporateValidationRepository,
 )
 from koinon.corporate_identity.settings import IdentityCredentialStore
+from koinon.security.authority import primary_authority
 from koinon.security.settings import OidcSettings
 
 
@@ -125,12 +126,12 @@ class CorporateIdentityService:
         )
         return provider_dto(row)
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def get(self, actor: str, tenant_id: str, identifier: str) -> IdentityProvider:
         await self.catalog.authorize(actor, tenant_id, "identity:manage")
         return provider_dto(await self._row(tenant_id, identifier))
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def page(
         self, actor: str, tenant_id: str, *, q="", kind=None, status=None, page=1, page_size=25
     ) -> dict:
@@ -307,7 +308,7 @@ class CorporateIdentityService:
         )
         return settings, await self.directory.acquire(settings, credential)
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def groups(self, actor, tenant_id, identifier, *, q="", limit=25, after=""):
         if len(q) > 80 or not 1 <= limit <= 50 or len(after) > 16384:
             raise InvalidRequestException(
@@ -319,7 +320,7 @@ class CorporateIdentityService:
         page = await self.directory.groups(settings, token, q=q, limit=limit, after=after)
         return {**page, "items": [{**group, "provider_id": row.id} for group in page["items"]]}
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def list_mappings(
         self, actor, tenant_id, identifier, *, q="", status="all", workspace_id=None, page=1, page_size=25
     ):

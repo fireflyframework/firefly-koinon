@@ -9,11 +9,11 @@ On a phone, open navigation, choose **Settings**, then use **Settings section** 
 
 Configure the public/base URL, trusted proxy behavior, identity provider, PostgreSQL datasources, object storage, encryption material and worker resources through the protected deployment configuration. Apply the three migration histories with separate migration authority before starting the updated application. Runtime credentials must not have migration authority.
 
-Use the [local deployment](../operations/local-deployment.md) or [production guide](../operations/production.md), then rehearse [backup and restore](../operations/backup-restore.md). Decide where original documents, dataset artifacts and private chat files persist; configuring only a knowledge index is insufficient. [File persistence and storage](../operations/storage.md) covers local, S3, Azure Blob Storage and Google Cloud Storage profiles and the current bulk-operation boundaries.
+For a new production installation, use [First start in production](../operations/first-start.md) for the migration, sign-in and verified-subject bootstrap order. For loopback development, use [local deployment](../operations/local-deployment.md), then rehearse [backup and restore](../operations/backup-restore.md). Decide where original documents, dataset artifacts and private chat files persist; configuring only a knowledge index is insufficient. [File persistence and storage](../operations/storage.md) covers local, S3, Azure Blob Storage and Google Cloud Storage profiles and the current bulk-operation boundaries.
 
 ## 2. Establish people and access
 
-Create the canonical organization administrator through the audited bootstrap procedure. An identity-provider login alone does not grant product membership. Open **Access** to invite people or assign the smallest useful organization/workspace role. Configure supported corporate group mappings separately from manual grants.
+After signing in to the running installation, obtain the verified canonical subject from `GET /auth/me` and create the first organization administrator through the [audited bootstrap procedure](../operations/first-start.md#4-sign-in-verify-the-subject-then-bootstrap). An identity-provider login alone does not grant product membership. Open **Access** to invite people or assign the smallest useful organization/workspace role. Configure supported corporate group mappings separately from manual grants.
 
 Use **People** and **Organization structure** for positions, departments, teams and managers. These values do not grant permissions. Choose directory visibility explicitly, and let each person manage their own avatar and preferences. The [people guide](people-and-organization.md) covers the complete flow and SDK operations.
 

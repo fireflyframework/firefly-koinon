@@ -20,6 +20,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 | `parent_id` | `string` or `null` | Yes | Not specified |
 | `scope` | [`KnowledgeScope`](knowledgescope.md) | Yes | Not specified |
 | `revision` | `integer` | Yes | Not specified |
+| `memory_enabled` | `boolean` | No | `false` |
 | `conversation_count` | `integer` | Yes | Not specified |
 | `created_at` | `string` | Yes | Not specified |
 | `updated_at` | `string` | Yes | Not specified |
@@ -63,6 +64,11 @@ This is a schema definition, not an example request. It preserves all declared k
         "revision": {
           "title": "Revision",
           "type": "integer"
+        },
+        "memory_enabled": {
+          "default": false,
+          "title": "Memory Enabled",
+          "type": "boolean"
         },
         "conversation_count": {
           "title": "Conversation Count",

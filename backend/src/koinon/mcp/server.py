@@ -19,6 +19,7 @@ from pyfly.kernel import UnauthorizedException
 
 from koinon.mcp.apps import KnowledgeReviewExtension
 from koinon.mcp.settings import McpSettings
+from koinon.organization_branding.dtos import BrandingValues
 
 Identifier = Annotated[str, Field(min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")]
 Question = Annotated[str, Field(min_length=1, max_length=8000)]
@@ -257,9 +258,12 @@ def create_mcp_server(
     private_file_review=None,
     prepare_file=None,
     read_capture=None,
+    installation_branding: BrandingValues | None = None,
 ) -> MCPServer:
     server = MCPServer(
-        name="firefly koinon",
+        name=installation_branding.product_name
+        if installation_branding and installation_branding.product_name != "koinon"
+        else "firefly koinon",
         extensions=[KnowledgeReviewExtension(frozenset(REVIEW_TOOLS))],
         instructions=(
             "Use koinon_context to discover authorized scope before searching. "
@@ -470,7 +474,13 @@ def create_mcp_server(
 
     from koinon.mcp.review_tools import register_review_tools
 
-    register_review_tools(server, api, oauth_enabled=oauth_enabled, private_review=private_review)
+    register_review_tools(
+        server,
+        api,
+        oauth_enabled=oauth_enabled,
+        private_review=private_review,
+        installation_branding=installation_branding,
+    )
     from koinon.mcp.file_tools import register_file_tools
 
     register_file_tools(
