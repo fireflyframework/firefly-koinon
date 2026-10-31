@@ -4,7 +4,30 @@
 
 Use the [Java quickstart](headless-java.md) to create a client. These helpers do not run on import or client construction. Call a write helper only after your application has selected and authorized the destination.
 
+## Follow one asset through its lifecycle
+
+This chapter starts with an existing workspace, creates a destination, uploads one source, and then reads its processing and historical identities. Use a small authorized document first. Repeat the intake decision for a real XLSX or another supported structured file only after you understand the returned receipt. The SDK does not turn arbitrary spreadsheet bytes into an admitted dataset by changing a filename.
+
+You need `catalog:read` for browsing, `ingest:write` and its required catalog scopes for intake, `knowledge:search` for retrieval, and `query:execute` for SQL. Those scopes still intersect with current resource permissions. Use a workspace-bound integration for creating new assets. A token bounded to an existing asset is suitable for that asset's admitted operations, not for creating arbitrary siblings.
+
+[The complete knowledge source](../examples/java/README.md) includes this chapter's helpers, reviewed replacement and append functions, and a read-only history entry point. Set `KOINON_DOCUMENT_ID` to a document selected from the authorized catalog before running that entry point. It prints source-version IDs and SHA256 values; it does not upload or replace anything automatically.
+
+## Run the read-only chapter
+
+Compile the complete classes using the Java source instructions before running this read-only command. `KOINON_SDK_CLASSPATH` contains the verified SDK and its declared Jackson dependencies. [Complete source and build instructions](../examples/java/README.md) include [the entry-point file](../examples/java/TutorialMain.java). This history command additionally needs an authorized `KOINON_DOCUMENT_ID` selected from the catalog. Keep credentials in the approved environment rather than adding them to these commands.
+
+```sh
+java -cp "classes:$KOINON_SDK_CLASSPATH" TutorialMain history
+```
+
+The result prints source-version IDs and SHA256 values from the first bounded page. No rows can mean no recorded versions in the authorized scope; preserve missing history instead of inventing a revision. If authorization fails, return to the setup chapter and inspect current context/scopes instead of broadening the request. The remaining helpers define the intended mutations, but this command does not invoke them.
+
 ## Catalog and source intake
+
+First choose whether the caller is creating a new destination or reusing an existing one. The example creates a project and collection so the returned parent IDs are concrete. Record both IDs immediately; a later upload failure does not roll those writes back. In a repeatable integration, create the destination once, persist it, and reuse it rather than creating a new project for every file.
+
+The upload's workspace, project, and parent identify the admitted destination. The filename is display metadata; the bytes are the source. Inspect the returned `source.id`, each `assets` entry, and optional `job_id`. Save that receipt before starting another file. If processing is asynchronous, inspect the identified job and resulting asset status before searching or querying the new content. An accepted request is not a completed extraction.
+
 
 Catalog entries describe workspaces, projects, collections and knowledge assets. `catalog(tenant).list/get` reads them; `create/update/archive/restore/delete` manages supported catalog resources. An `ingest:write` token needs an admitted upload destination and the user's current write permission; `catalog:write` alone does not authorize ingestion. Asset-bound tokens cannot create arbitrary sibling assets. Use an authorized workspace-bound integration for new intake.
 
@@ -51,6 +74,88 @@ Choose `UploadMode.DOCUMENT` or `UploadMode.DATASET` and a media type supported 
 Project creation, collection creation, rename and upload are separate writes. An upload failure does not undo an already created destination. For multiple files, use a bounded sequential loop or your own durable queue, record each accepted receipt immediately, and reconcile partial results. There is no atomic bulk import or automatic retry after an unknown outcome.
 
 Archive, restore and deletion are separate explicit user choices. The server checks dependencies and retention rules: deletion can reject nonempty resources and immutable intake receipts. Curated knowledge changes require a reviewed intent rather than direct catalog mutation. Do not turn a permission or retention error into a recursive delete loop.
+
+## Import an XLSX as a dataset
+
+Select `dataset` intake for a supported workbook. Keep the original filename and bytes, and choose the same authorized destination deliberately. Call `JavaIntake.upload` with `UploadMode.DATASET` and the supported workbook media type. The destination IDs have the same meaning as the document example.
+
+After processing, call `datasets(tenant).schema` with the **returned dataset asset ID**. Inspect the returned tables and columns before writing SQL. A workbook can produce multiple tables; the source catalog ID, dataset asset ID, table ID, catalog file-version ID, and immutable table snapshot ID serve different purposes. Do not assume the upload source is itself the SQL dataset or manufacture table IDs from sheet labels.
+
+Append another supported file with `datasets(tenant).appendFile` only after the person has selected the existing dataset and the exact file. Generate and durably retain one idempotency key for that intended append before sending it. Keep that key bound to the same bytes and destination. Save the returned file-version and table IDs. A pending or unknown result needs reconciliation; changing the key does not turn it into a new safe attempt.
+
+Replacing a table requires its current snapshot precondition, while appending adds a file. Replacing a document requires its original digest and, when supplied, its matching source-version/extraction pair. These are different user decisions. Use the complete source's append and replacement helpers rather than using catalog metadata updates as a content upload.
+
+## Search and query within the admitted scope
+
+```java
+import java.util.List;
+import org.fireflyframework.koinon.sdk.KoinonClient;
+import org.fireflyframework.koinon.sdk.model.*;
+
+public final class JavaKnowledgeReads {
+    public static SearchResponse passages(KoinonClient client, String tenant,
+            String workspace, List<String> selectedAssets, String question) {
+        return client.knowledge(tenant).search(SearchRequest.empty()
+            .withWorkspaceId(workspace).withAssetIds(selectedAssets)
+            .withQuestion(question).withLimit(10L).withAnswer(false));
+    }
+
+    public static QueryResponse query(KoinonClient client, String tenant,
+            String datasetId, String question, String reviewedReadOnlySql) {
+        return client.knowledge(tenant).query(QueryRequest.empty()
+            .withDatasetId(datasetId).withQuestion(question).withSql(reviewedReadOnlySql));
+    }
+}
+```
+
+Search requires `knowledge:search`; SQL requires `query:execute`, the current authorized dataset and the server's read-only query policy. Select a workspace and supported asset IDs deliberately; an empty selection must not be interpreted by your application as a new permission grant. `answer=false` requests retrieval without a generated answer, but retrieval can still use the deployment's configured embedding/search providers. Direct SQL remains subject to server admission and validation; a client-supplied SQL string cannot override them. Preserve typed exact values and returned truncation/metadata rather than assuming every result is complete.
+
+Generation can invoke configured models. Read [Knowledge runtime](../concepts/knowledge-runtime.md) before choosing RAG/RLM or embedding behavior, and [Conversations and reviewed actions](java-conversations.md) for durable answers and their audit.
+
+## Read immutable history and provenance
+
+| Resource | Typed Java methods | Keep these identifiers |
+| --- | --- | --- |
+| Document originals | `documents(tenant).versions/version/versionOriginal/downloadVersionOriginal` | Document ID and source-version ID; original SHA256 |
+| Document extractions | `documents(tenant).extractions/parts/part` | Source-version, extraction and part IDs; recorded part hashes |
+| Current table schema | `datasets(tenant).schema` | Dataset, table and current snapshot IDs |
+| Table history | `datasets(tenant).tableSnapshots` | Selected immutable snapshot ID and predecessor ID |
+| Table provenance | `datasets(tenant).tableProvenance` | Exact snapshot ID, source artifact, parser/reader identity and transform steps when recorded |
+| Coordinates | `tableCoordinates/tableCoordinateCells/tableCoordinateRows/tableCoordinateColumns` | The same selected snapshot ID; bounded row/cell/column selection |
+| Asset relationships | `knowledge(tenant).lineage` | Catalog asset IDs and returned authorized edges |
+
+```java
+import org.fireflyframework.koinon.sdk.KoinonClient;
+import org.fireflyframework.koinon.sdk.model.*;
+
+public final class JavaHistory {
+    public static DocumentVersionPage documentVersions(KoinonClient client,
+            String tenant, String documentId, int page) {
+        return client.documents(tenant).versions(documentId,
+            DocumentHistoryFilter.empty().withPage(page).withPageSize(25));
+    }
+
+    public static TableProvenance tableProvenance(KoinonClient client, String tenant,
+            String datasetId, String tableId, String selectedSnapshotId) {
+        return client.datasets(tenant).tableProvenance(datasetId, tableId,
+            TableProvenanceFilter.empty().withSnapshotId(selectedSnapshotId));
+    }
+
+    public static Lineage lineage(KoinonClient client, String tenant, String assetId) {
+        return client.knowledge(tenant).lineage(LineageFilter.empty().withAssetId(assetId));
+    }
+}
+```
+
+Pass the selected snapshot explicitly instead of substituting the current head when opening historical coordinates. A missing historical source, original connection, coordinate or reader hash is not reconstructed from today's configuration. Preserve null and `not_recorded` states. Provenance can describe an imported immutable snapshot; it does not establish a live read from the original database. History pages retain their own totals and page metadata; follow those fields rather than assuming all history fits in one response.
+
+## Connect retrieval, SQL and lineage
+
+Start retrieval with a question and the chosen workspace; keep `answer=false` when you want matching passages without a generated answer. Check hit references and scores before asking for generation. Retrieval can still use a configured embedding service, so an error here may be a configuration/provider failure rather than an empty result. Do not remove scope filters to hide that failure.
+
+For structured data, inspect the schema, choose one actual dataset, and submit bounded read-only SQL using its real table and column names. Use a small row limit appropriate to your task. Inspect `execution_status`, truncation and immutable snapshot pins before displaying the result as complete. An authorization or SQL-firewall rejection must be corrected explicitly; the SDK does not run arbitrary SQL against the original upstream database.
+
+Call `knowledge(tenant).lineage` for the selected catalog asset to read its currently authorized relationships. For document evidence, follow source version, extraction and part IDs. For table evidence, select a recorded snapshot before reading provenance or coordinates. A relationship edge explains a recorded connection; it is not proof that every cell has a known origin. Leave unavailable or unrecorded identities unknown.
 
 ## Replace content with current revisions
 
@@ -116,42 +221,11 @@ Retain `ContentUpdate.version()` when the response supplies a catalog version en
 
 `appendFile` adds one file and its parsed tables to an existing dataset. Persist its caller-supplied stable request key and `DatasetFileAppendResult` before proceeding. The receipt includes canonical `fileVersionId()` and `tableIds()`. The same key and identical payload can return the retained receipt after current authorization; a changed payload conflicts. Pending or failed intake can block query/schema until reconciliation while previous files and snapshots remain retained. Native sections commit independently. This is neither atomic bulk intake nor a client recovery command; never invent a new key to bypass an unresolved outcome.
 
-## Read immutable history and provenance
+## Decide what to do after a content change
 
-| Resource | Typed Java methods | Keep these identifiers |
-| --- | --- | --- |
-| Document originals | `documents(tenant).versions/version/versionOriginal/downloadVersionOriginal` | Document ID and source-version ID; original SHA256 |
-| Document extractions | `documents(tenant).extractions/parts/part` | Source-version, extraction and part IDs; recorded part hashes |
-| Current table schema | `datasets(tenant).schema` | Dataset, table and current snapshot IDs |
-| Table history | `datasets(tenant).tableSnapshots` | Selected immutable snapshot ID and predecessor ID |
-| Table provenance | `datasets(tenant).tableProvenance` | Exact snapshot ID, source artifact, parser/reader identity and transform steps when recorded |
-| Coordinates | `tableCoordinates/tableCoordinateCells/tableCoordinateRows/tableCoordinateColumns` | The same selected snapshot ID; bounded row/cell/column selection |
-| Asset relationships | `knowledge(tenant).lineage` | Catalog asset IDs and returned authorized edges |
+Present the current digest/snapshot and the effects of replacement before asking for confirmation. The reviewed replacement helper takes the already reviewed identities; it does not silently read a newer revision and overwrite it. A conflict means the user must inspect the new head and make another decision. Keep invalidation acknowledgment false until the user understands the affected chunks or dependencies.
 
-```java
-import org.fireflyframework.koinon.sdk.KoinonClient;
-import org.fireflyframework.koinon.sdk.model.*;
-
-public final class JavaHistory {
-    public static DocumentVersionPage documentVersions(KoinonClient client,
-            String tenant, String documentId, int page) {
-        return client.documents(tenant).versions(documentId,
-            DocumentHistoryFilter.empty().withPage(page).withPageSize(25));
-    }
-
-    public static TableProvenance tableProvenance(KoinonClient client, String tenant,
-            String datasetId, String tableId, String selectedSnapshotId) {
-        return client.datasets(tenant).tableProvenance(datasetId, tableId,
-            TableProvenanceFilter.empty().withSnapshotId(selectedSnapshotId));
-    }
-
-    public static Lineage lineage(KoinonClient client, String tenant, String assetId) {
-        return client.knowledge(tenant).lineage(LineageFilter.empty().withAssetId(assetId));
-    }
-}
-```
-
-Pass the selected snapshot explicitly instead of substituting the current head when opening historical coordinates. A missing historical source, original connection, coordinate or reader hash is not reconstructed from today's configuration. Preserve null and `not_recorded` states. Provenance can describe an imported immutable snapshot; it does not establish a live read from the original database. History pages retain their own totals and page metadata; follow those fields rather than assuming all history fits in one response.
+After success, retain `ContentUpdate.asset`, `version`, and `effects`. Reload the current catalog and inspect its new native history before using old chunk or snapshot IDs as current. Historical IDs remain historical even when the asset name is unchanged. If a write times out, reconcile the saved operation and current state first; a missing HTTP response does not prove that no change occurred.
 
 ## Curated knowledge and reviewed commits
 
@@ -184,30 +258,3 @@ public final class JavaCuratedKnowledge {
 Display the server's `before`, `after`, destination, evidence, expiry and current revision before asking a person to confirm. Pass the exact reviewed revision and authorization digest to the separate helper. To update, preview with `UPDATE_DRAFT` or `UPDATE_PUBLISHED` and the existing `targetItemId` and `expectedVersion`; use `PUBLISH_DRAFT` to explicitly publish the selected draft. Keep committed and pending outcomes distinct and reconcile with the saved intent/receipt. Never report pending as committed or have a stream handler confirm an intent automatically.
 
 A user-statement origin means exactly that; it is not an external-source citation. Server-issued MCP read receipts and external files use [external knowledge reviews](mcp-knowledge-management.md), with their own component-bound nonce and exact revision/digest rules. The Java methods do not manufacture receipt IDs, a human confirmation, provider access or provenance that the server did not observe.
-
-## Search and query within the admitted scope
-
-```java
-import java.util.List;
-import org.fireflyframework.koinon.sdk.KoinonClient;
-import org.fireflyframework.koinon.sdk.model.*;
-
-public final class JavaKnowledgeReads {
-    public static SearchResponse passages(KoinonClient client, String tenant,
-            String workspace, List<String> selectedAssets, String question) {
-        return client.knowledge(tenant).search(SearchRequest.empty()
-            .withWorkspaceId(workspace).withAssetIds(selectedAssets)
-            .withQuestion(question).withLimit(10L).withAnswer(false));
-    }
-
-    public static QueryResponse query(KoinonClient client, String tenant,
-            String datasetId, String question, String reviewedReadOnlySql) {
-        return client.knowledge(tenant).query(QueryRequest.empty()
-            .withDatasetId(datasetId).withQuestion(question).withSql(reviewedReadOnlySql));
-    }
-}
-```
-
-Search requires `knowledge:search`; SQL requires `query:execute`, the current authorized dataset and the server's read-only query policy. Select a workspace and supported asset IDs deliberately; an empty selection must not be interpreted by your application as a new permission grant. `answer=false` requests retrieval without a generated answer, but retrieval can still use the deployment's configured embedding/search providers. Direct SQL remains subject to server admission and validation; a client-supplied SQL string cannot override them. Preserve typed exact values and returned truncation/metadata rather than assuming every result is complete.
-
-Generation can invoke configured models. Read [Knowledge runtime](../concepts/knowledge-runtime.md) before choosing RAG/RLM or embedding behavior, and [Conversations and reviewed actions](java-conversations.md) for durable answers and their audit.

@@ -4,6 +4,25 @@
 
 Start with the [standalone client](headless-typescript.md). Organization management requires organization-scoped authority. Token scopes intersect with the owner's current roles and resource bounds; a workspace administrator cannot turn a scoped token into an organization grant. The [permission guide](api-permissions.md) lists role and scope dependencies.
 
+## Work from observations to deliberate changes
+
+Start by reading current context and selecting the organization you administer. Distinguish organization authority from workspace administration: a workspace role cannot be widened by requesting an organization-management scope. For each task, use the [permission matrix](api-permissions.md) to choose an ordinary identity or a permitted bounded API credential before constructing an input.
+
+[Download the complete administration source](../examples/typescript/README.md). Its default entry point reads only the current account's position in the selected organization, using the self/profile boundary. Provider, member, agent, knowledge-settings and index helpers are separate operations; importing the file or constructing a client does not execute them.
+
+For a production host, build an administrative screen or command in two stages: load and display the current state, then submit the reviewed typed change after a person chooses it. Retain the reviewed revision, operation identity and safe response metadata. Do not turn a permission failure into a request for every available scope or retry an unknown write automatically.
+
+## Run the read-only chapter
+
+Download `support.mts`, the selected chapter module and `tsconfig.json` together, then use the Node package from setup. [Complete source and build instructions](../examples/typescript/README.md) include [the entry-point file](../examples/typescript/administration.mts). Use the organization already selected in `KOINON_TENANT_ID`. Keep credentials in the approved environment rather than adding them to these commands.
+
+```sh
+npx tsc -p tsconfig.json
+node dist/administration.mjs
+```
+
+The result prints the current tenant position ID, job title and available revision. A missing assignment can have null ID and revision zero; the GET does not create it. If authorization fails, return to the setup chapter and inspect current context/scopes instead of broadening the request. The remaining helpers define the intended mutations, but this command does not invoke them.
+
 ## Choose the management group
 
 | Task | TypeScript group | Boundary |
@@ -19,6 +38,68 @@ Start with the [standalone client](headless-typescript.md). Organization managem
 The client does not provision deployment adapters, configure model credentials, install embeddings or start workers. Provider/connection availability is a server observation. Read the [knowledge runtime guide](../concepts/knowledge-runtime.md) before selecting retrieval/agent/index workflows. Keep credentials in the server's supported configuration and out of chat input and logs.
 
 Corporate identity provider administration, directory group discovery, group-to-role mappings, corporate profile mappings and OAuth client registration require an ordinary verified identity. PAT/application credentials cannot bypass these gates by requesting `identity:manage`. MCP resource credentials are separate from API bearer credentials; see [application registration](register-applications.md).
+
+## Configure a provider and an agent in order
+
+Read the current provider observations through configuration before creating another provider. Select a supported provider kind and API variant, the deployment-approved endpoint, and actual model IDs. Supply real credentials through your approved secret source only when the provider requires them. The typed `ProviderInput` in the complete source accepts the reviewed configuration; it does not contain a sample provider key, discover secret values, or prove connectivity. Never print the input or a one-time secret return.
+
+Call `providers.create` only after that configuration is reviewed. Save the returned provider ID and inspect its observed availability. A separate validate operation can contact the configured external system and must be run intentionally. Successful configuration serialization is different from a successful provider test, and both are different from a completed answer.
+
+Next build a typed agent input using that actual provider ID, a model ID available there, a chosen knowledge scope and only the tools needed for the task. The complete source's agent helper keeps these inputs explicit. Call `agents.create` with `agents:write`, retain its ID, and inspect its validation/availability. Selecting tools or an agent does not grant the agent more knowledge access than the current caller.
+
+Finally read the organization's chat settings, display the selected default agent and revision, and update that default only after a person confirms it. Omitting a patch field preserves it; explicit null clears a field only where the endpoint permits it. Preserve unrelated settings. Re-read after a revision conflict instead of taking a new revision and silently replaying the old decision.
+
+These complete functions keep the actual provider/model, tool scope and reviewed settings revision explicit. Your host supplies a real decision separately for each change. The returned agent or settings object records saved configuration; it does not establish that a model run succeeded.
+
+```typescript
+import {
+  KoinonClient, type KnowledgeScope, type OrganizationKnowledgeSettings,
+} from '@fireflyframework/koinon-sdk';
+
+export async function createReviewedAgent(
+  client: KoinonClient,
+  tenant: string,
+  providerId: string,
+  modelId: string,
+  scope: KnowledgeScope,
+  personConfirmed: boolean,
+) {
+  if (!personConfirmed) throw new Error("Review the model, tools and scope");
+  return client.agents.create(tenant, {
+    name: "Knowledge reader",
+    provider_id: providerId,
+    model_id: modelId,
+    scope,
+    tools: ["search_knowledge", "inspect_schema", "query_dataset"],
+    enabled: true,
+  });
+}
+
+export async function setReviewedDocumentMode(
+  client: KoinonClient,
+  tenant: string,
+  reviewed: OrganizationKnowledgeSettings,
+  mode: "rag" | "rlm",
+  personConfirmed: boolean,
+) {
+  if (!personConfirmed) throw new Error("Review the mode and retained settings");
+  return client.organizationKnowledge.update(tenant, {
+    expected_revision: reviewed.revision,
+    documents: { ...reviewed.documents, answer_mode: mode },
+    structured: reviewed.structured,
+  });
+}
+```
+
+## Choose RAG or RLM and plan index work
+
+Read `organizationKnowledge.get` before changing document behavior. Copy its document and structured sections into the typed settings input, change only the chosen supported value, and send the reviewed revision. The complete source demonstrates changing document `answer_mode` while preserving all other document parameters and the structured settings. Use `settings:write` and current organization authority.
+
+RAG retrieves an admitted evidence subset for an answer. RLM uses the configured bounded native exploration policy. Neither setting provisions a provider, changes a source connection, imports an embedding model, or proves a successful run. Inspect the [knowledge runtime prerequisites](../concepts/knowledge-runtime.md) before enabling either mode, and use the answer audit to distinguish recorded retrieval and RLM actions from missing historical metadata.
+
+For an embedding rebuild, read available choices and call `knowledgeIndexes.plan` with the intended workspace/domain and actual provider/model IDs. Display the plan's scope and effects first. Creating with `knowledgeIndexes.create` is a separate action requiring `indexes:manage` and a stable caller-owned idempotency key. Retain the returned index/job identity and inspect `jobs.get` or the index state before assuming processing finished.
+
+Activation is another explicit transition. Use the current revision and expected active index/connection preconditions from the reviewed state. Canceling HTTP does not cancel a server rebuild. Use its explicit cancellation operation when requested; resume requires its own current preconditions and stable request identity. A failed or pending state is not permission to discard history or invent a recovery action.
 
 ## Plan embedding work explicitly
 
@@ -101,3 +182,19 @@ export async function readEntry(client: KoinonClient, tenant: string, entryId: s
 On `401`, renew through the host identity flow or require sign-in. On `403`, discard the denied scoped data and recheck current roles/token bounds. A revision/content conflict requires reloading and a new reviewed decision. Validation failures require corrected input. A timeout, disconnected write or typed `pending` outcome requires reconciliation with the original request/idempotency identity, not an automatic new write. Redirects are rejected, and the SDK does not automatically retry writes.
 
 `documents.download`, `documents.versionOriginal` and avatar helpers return `BinaryDownload` with a Blob and nullable metadata. Do not use a server filename as an unchecked local path. Treat `not_modified` separately from new bytes, do not share cache entries between users, and revoke any object URL when its authorized view ends. The [generated API reference](../reference/sdk-api.md) supplies every request, response and method signature.
+
+## Manage access separately from presentation
+
+List members in the authorized organization/workspace and select the exact membership to change. A typed member update changes `role` or `active`; it is an access decision requiring `members:write` and current membership-management authority. Review the affected person, scope and change before sending it. A title, department, unit, reporting line or avatar is presentation data and never grants a role.
+
+Use `organizationPeople.me` for the current tenant position and `profile.get` for the personal account. The directory has its own visibility setting and current membership guard; a shared-workspace projection does not expose the entire organization. A self GET can return no assignment and revision zero without creating a row. An administrator creates an assignment explicitly using the authorized opaque profile picker, then uses revisions for later position/unit changes. Keep personal preferences and tenant directory data separate.
+
+Corporate identity providers, group discovery/mappings, personal-token administration and MCP OAuth client registration require the appropriate ordinary verified identity. A PAT with a management-looking scope cannot bypass an identity-only gate. Read capability/readiness responses before selecting provider operations; do not assume every IdP exposes the same directory or photo data. Keep credentials server-side and handle returned one-time client/token secrets privately and once.
+
+For application registrations, distinguish registering a client from the current user's consent and from an application successfully connecting. Authorized-application revocation affects the current user's grant; rotating an OAuth client secret is a separate administrator action. See [application registration](register-applications.md), [API permissions](api-permissions.md) and [people and organization](people-and-organization.md) for their exact boundaries.
+
+## Finish with a response and recovery decision
+
+Inspect the typed response for the new canonical identity, current revision and observed state. Keep safe request-reference metadata for support. On `401`, repair the host's identity flow; on `403`, discard denied private data and recheck current authority. On a revision conflict, display the newer state before asking again. On a timeout or disconnected write, reconcile the original operation and saved state before any further mutation.
+
+Audit reads require `audit:read`; they are a view of authorized recorded activity, not a source of new authority. Keep private payloads, provider credentials and one-time secrets out of logs. Bound downloads to a caller-controlled new path or storage object, treat returned filenames as metadata, and clear cached binaries when the authorized context ends. Async cancellation controls the owned HTTP operation; durable jobs, runs and exports retain their own lifetimes.
