@@ -13,10 +13,17 @@ import { KoinonTextPipe, KoinonDatePipe, registerKoinonSpanish } from '../founda
 import { KoinonButton } from '../atoms/button';
 import { ORGANIZATION_PROFILE_SPANISH } from './organization-spanish';
 registerKoinonSpanish(ORGANIZATION_PROFILE_SPANISH);
+import { KoinonCorporatePresentationPanel } from './corporate-presentation';
 import { KoinonOrganizationColleagues } from './organization-colleagues';
 @Component({
   selector: 'ffk-organization-information',
-  imports: [KoinonTextPipe, KoinonDatePipe, KoinonButton, KoinonOrganizationColleagues],
+  imports: [
+    KoinonTextPipe,
+    KoinonDatePipe,
+    KoinonButton,
+    KoinonOrganizationColleagues,
+    KoinonCorporatePresentationPanel,
+  ],
   providers: [KoinonOrganizationDirectory],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<section aria-labelledby="your-organization-heading">
@@ -45,7 +52,13 @@ import { KoinonOrganizationColleagues } from './organization-colleagues';
         </div>
         <div>
           <dt>{{ 'Department' | ffkText }}</dt>
-          <dd>{{ person.department?.name || ('Not provided' | ffkText) }}</dd>
+          <dd>
+            {{
+              person.department?.name ||
+                person.presentation?.corporate_department ||
+                ('Not provided' | ffkText)
+            }}
+          </dd>
         </div>
         <div>
           <dt>{{ 'Team or unit' | ffkText }}</dt>
@@ -97,6 +110,7 @@ import { KoinonOrganizationColleagues } from './organization-colleagues';
         }
       </dl>
     }
+    <ffk-corporate-presentation />
     @if (canBrowse()) {
       <ffk-button variant="quiet" (click)="browsing.set(!browsing())">{{
         (browsing() ? 'Close directory' : 'View people and teams') | ffkText

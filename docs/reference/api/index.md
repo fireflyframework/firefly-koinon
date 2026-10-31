@@ -16,11 +16,11 @@ Choose an area, then an operation. Each operation records its exact SDK mappings
 | [Knowledge connections and indexes](knowledge-services.md) | 17 |
 | [Models and agents](models-agents.md) | 8 |
 | [People and access](people-access.md) | 24 |
-| [Corporate identity](corporate-identity.md) | 13 |
+| [Corporate identity](corporate-identity.md) | 17 |
 | [Personal profiles and tokens](account.md) | 11 |
 | [Applications and MCP](applications-mcp.md) | 22 |
 | [Platform configuration and operations](platform.md) | 11 |
 
-These 188 canonical operations are separate from the [qualified retained glossary API](../sdk-api.md#qualified-retained-glossary-api).
+These 192 canonical operations are separate from the [qualified retained glossary API](../sdk-api.md#qualified-retained-glossary-api).
 
 [Browse retained glossary operation details](retained-glossary.md).

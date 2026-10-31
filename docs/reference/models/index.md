@@ -3,7 +3,7 @@
 
 # Wire models
 
-The canonical schema contains 331 definitions and 323 named model aliases. Supporting definitions are included so every schema reference can be followed. Language-specific generated names can differ from wire names; consult the SDK imports in the workflow guides.
+The canonical schema contains 340 definitions and 332 named model aliases. Supporting definitions are included so every schema reference can be followed. Language-specific generated names can differ from wire names; consult the SDK imports in the workflow guides.
 
 Each page lists field presence, nullability, defaults and validation constraints. The downloadable [complete schema](../sdk-schemas.json) remains the machine-readable contract.
 
@@ -88,6 +88,12 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`CoordinateParserDecision`](coordinateparserdecision.md)
 - [`CoordinateRowRange`](coordinaterowrange.md)
 - [`CoordinateSourceCell`](coordinatesourcecell.md)
+- [`CorporatePresentationSummary`](corporatepresentationsummary.md)
+- [`CorporateProfileFieldCapability`](corporateprofilefieldcapability.md)
+- [`CorporateProfileFieldObservation`](corporateprofilefieldobservation.md)
+- [`CorporateProfileRefresh`](corporateprofilerefresh.md)
+- [`CorporateProfileRefreshInput`](corporateprofilerefreshinput.md)
+- [`CorporateProfileSyncPolicy`](corporateprofilesyncpolicy.md)
 
 ## D
 
@@ -200,6 +206,7 @@ Each page lists field presence, nullability, defaults and validation constraints
 ## K
 
 - [`KeycloakCredential`](keycloakcredential.md)
+- [`KeycloakProfileAttributes`](keycloakprofileattributes.md)
 - [`KeycloakSettings`](keycloaksettings.md)
 - [`KnowledgeCancellation`](knowledgecancellation.md)
 - [`KnowledgeCommitOutcome`](knowledgecommitoutcome.md)
@@ -284,6 +291,8 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`OrganizationPersonPage`](organizationpersonpage.md)
 - [`OrganizationPersonPatch`](organizationpersonpatch.md)
 - [`OrganizationPersonReference`](organizationpersonreference.md)
+- [`OrganizationPresentation`](organizationpresentation.md)
+- [`OrganizationPresentationInput`](organizationpresentationinput.md)
 - [`OrganizationProfileFields`](organizationprofilefields.md)
 - [`OrganizationProfileMapping`](organizationprofilemapping.md)
 - [`OrganizationProfileMappingInput`](organizationprofilemappinginput.md)

@@ -21,6 +21,8 @@ Required means the key must be present. Nullable means its value may be `null`; 
 | `enabled` | `boolean` | No | `false` |
 | `fields` | [`OrganizationProfileFields`](organizationprofilefields.md) | No | Not specified |
 | `source` | `string` | No | `"verified_claims"` |
+| `profile_sync` | [`CorporateProfileSyncPolicy`](corporateprofilesyncpolicy.md) or `null` | No | `null` |
+| `profile_capabilities` | Array of [`CorporateProfileFieldCapability`](corporateprofilefieldcapability.md) | No | Not specified |
 
 ## Model constraints
 
@@ -36,6 +38,10 @@ Required means the key must be present. Nullable means its value may be `null`; 
 ### source
 
 - Exact value: `"verified_claims"`
+
+### profile_capabilities
+
+- Maximum items: `5`
 
 
 ## Exact JSON Schema
@@ -76,6 +82,25 @@ This is a schema definition, not an example request. It preserves all declared k
           "default": "verified_claims",
           "title": "Source",
           "type": "string"
+        },
+        "profile_sync": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CorporateProfileSyncPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "profile_capabilities": {
+          "items": {
+            "$ref": "#/$defs/CorporateProfileFieldCapability"
+          },
+          "maxItems": 5,
+          "title": "Profile Capabilities",
+          "type": "array"
         }
       },
       "required": [

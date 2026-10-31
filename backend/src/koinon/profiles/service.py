@@ -15,12 +15,13 @@ from pyfly.data.relational.sqlalchemy import LockMode, transactional
 from pyfly.data.transaction import current_unit_of_work
 from pyfly.kernel import InvalidRequestException, ResourceNotFoundException
 from pyfly.security.context_holder import SecurityContextHolder
-from sqlalchemy import or_, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from koinon.catalog.errors import AccessDenied
 from koinon.catalog.service import CatalogService
+from koinon.corporate_profiles.mappers import author_view
+from koinon.corporate_profiles.projector import CorporateProfileProjector
 from koinon.profiles.dtos import PersonOutput
 from koinon.profiles.entities import Profile
 from koinon.profiles.images import sanitize_avatar
@@ -95,7 +96,13 @@ def preferences(values: dict) -> dict:
 
 @service(name="profiles.service")
 class ProfileService:
-    def __init__(self, profiles: ProfileRepository, catalog: CatalogService):
+    def __init__(
+        self,
+        profiles: ProfileRepository,
+        catalog: CatalogService,
+        presentation: CorporateProfileProjector | None = None,
+    ):
+        self.presentation = presentation
         self.profiles, self.catalog = profiles, catalog
         self._image_slots = asyncio.Semaphore(2)
 
@@ -188,14 +195,26 @@ class ProfileService:
         row = await self.profiles.find_by_id(profile_id(subject)) if "|" in subject else None
         return self._author_summary(subject, row)
 
-    async def author_summaries(self, subjects: set[str]) -> dict[str, dict]:
+    async def author_summaries(
+        self, subjects: set[str], *, actor=None, tenant_id=None, workspace_id=None, permission="catalog:read"
+    ) -> dict[str, dict]:
         if not subjects:
             return {}
         rows = await self.profiles.author_rows(subjects)
         by_subject = {row.subject: row for row in rows}
-        return {
+        result = {
             subject: self._author_summary(subject, by_subject.get(subject)) for subject in sorted(subjects)
         }
+        if self.presentation is not None and actor is not None and tenant_id is not None:
+            # At most two authors per entry on a bounded 100-entry catalog page.
+            wanted = set(subjects)
+            result = {subject: self._author_summary(subject, None) for subject in subjects}
+            projected = await self.presentation.batch(
+                actor, tenant_id, wanted, workspace_id, authors=True, author_permission=permission
+            )
+            for subject, value in projected.items():
+                result[subject] = author_view(value)
+        return result
 
     @staticmethod
     def _author_summary(subject: str, row: Profile | None) -> dict:
@@ -224,36 +243,31 @@ class ProfileService:
             raise InvalidRequestException(
                 "Directory filters exceed the supported bounds", code="INVALID_DIRECTORY"
             )
-        unit = current_unit_of_work("primary")
-        if unit is None:
-            raise RuntimeError("Directory reads require the native primary transaction")
-        members = self.catalog.effective_membership_rows().c
-        statement = (
-            select(members.subject, Profile)
-            .outerjoin(Profile, Profile.subject == members.subject)
-            .where(members.tenant_id == tenant_id, members.active.is_(True))
-            .distinct()
+        rows = await self.profiles.people_rows(
+            self.catalog.effective_membership_rows(), tenant_id, workspace_id, q, after, limit
         )
-        if workspace_id:
-            statement = statement.where(
-                or_(members.workspace_id.is_(None), members.workspace_id == workspace_id)
+        projected = None
+        if self.presentation is not None:
+            projected = await self.presentation.batch(
+                actor,
+                tenant_id,
+                {subject for subject, _ in rows[:limit]},
+                workspace_id,
+                authors=True,
+                author_permission="members:write",
             )
-        if q:
-            pattern = "%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
-            statement = statement.where(
-                or_(
-                    Profile.display_name.ilike(pattern, escape="\\"),
-                    members.subject.ilike(pattern, escape="\\"),
-                )
-            )
-        if after:
-            statement = statement.where(members.subject > after)
-        rows = (await unit.resource.execute(statement.order_by(members.subject).limit(limit + 1))).all()
+            if any(
+                subject not in projected or not projected[subject].current_member
+                for subject, _ in rows[:limit]
+            ):
+                raise AccessDenied("Person is unavailable in this directory", code="ACCESS_DENIED")
         items = []
         for subject, row in rows[:limit]:
+            item = projected[subject] if projected is not None else None
+            version = item.avatar_version if item else row.avatar_version if row else None
             url = (
-                f"/api/v1/tenants/{quote(tenant_id, safe='')}/people/{row.id}/avatar?v={row.avatar_version}"
-                if row and row.avatar_version
+                f"/api/v1/tenants/{quote(tenant_id, safe='')}/people/{row.id}/avatar?v={version}"
+                if row and version
                 else None
             )
             if url and workspace_id:
@@ -262,9 +276,9 @@ class ProfileService:
                 PersonOutput(
                     profile_id=row.id if row else None,
                     subject=subject,
-                    display_name=row.display_name if row else "",
+                    display_name=item.name if item else row.display_name if row else "",
                     avatar_url=url,
-                    avatar_version=row.avatar_version if row else None,
+                    avatar_version=version,
                 ).model_dump()
             )
         return {"items": items, "next_cursor": rows[limit - 1][0] if len(rows) > limit else None}
@@ -281,4 +295,12 @@ class ProfileService:
         ]
         if not any(workspace_id is None or member.workspace_id in (None, workspace_id) for member in members):
             raise AccessDenied("Person is unavailable in this directory", code="ACCESS_DENIED")
+        if self.presentation is not None:
+            projected = await self.presentation.batch(
+                actor, tenant_id, {row.subject}, workspace_id, authors=True, author_permission="members:write"
+            )
+            content = projected[row.subject].avatar if row.subject in projected else None
+            if not content:
+                raise ResourceNotFoundException("Avatar is unavailable", code="AVATAR_NOT_FOUND")
+            return content
         return await self.avatar(row.subject)

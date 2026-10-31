@@ -97,24 +97,35 @@ class MembershipRepository(Repository[Membership, str]):
             predicates.append(Membership.workspace_id.is_(None))
         if role:
             predicates.append(Membership.role == role)
+        from koinon.corporate_profiles.expressions import presentation_joins
+        from koinon.organization_people.entities import OrganizationPersonRecord
+
+        statement = (
+            select(Membership)
+            .outerjoin(Profile, Profile.subject == Membership.subject)
+            .outerjoin(
+                OrganizationPersonRecord,
+                and_(
+                    OrganizationPersonRecord.tenant_id == tenant_id,
+                    OrganizationPersonRecord.subject == Membership.subject,
+                ),
+            )
+        )
+        statement, display_name = presentation_joins(statement, Membership.subject, tenant_id, Profile)
         if q:
             escaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
             predicates.append(
                 or_(
-                    Profile.display_name.ilike(f"%{escaped}%", escape="\\"),
+                    display_name.ilike(f"%{escaped}%", escape="\\"),
                     Membership.subject.ilike(f"%{escaped}%", escape="\\"),
                 )
             )
-        statement = (
-            select(Membership).outerjoin(Profile, Profile.subject == Membership.subject).where(*predicates)
-        )
+        statement = statement.where(*predicates)
         session = self._require_session()
         total = int((await session.scalar(select(func.count()).select_from(statement.subquery()))) or 0)
         rows = (
             await session.scalars(
-                statement.order_by(
-                    func.lower(func.coalesce(Profile.display_name, "")), Membership.subject, Membership.id
-                )
+                statement.order_by(func.lower(display_name), Membership.subject, Membership.id)
                 .offset((page - 1) * page_size)
                 .limit(page_size)
             )
@@ -433,6 +444,7 @@ class AuditRepository(Repository[AuditEvent, str]):
         page_size=25,
         sort="created_at",
         order="desc",
+        members=None,
     ):
         from koinon.profiles.entities import Profile
 
@@ -455,6 +467,31 @@ class AuditRepository(Repository[AuditEvent, str]):
                 ),
             )
         )
+        from koinon.corporate_profiles.expressions import presentation_joins
+        from koinon.organization_people.entities import OrganizationPersonRecord
+
+        statement = statement.outerjoin(
+            OrganizationPersonRecord,
+            and_(
+                OrganizationPersonRecord.tenant_id == tenant_id,
+                OrganizationPersonRecord.subject == AuditEvent.subject,
+            ),
+        )
+        statement, display_name = presentation_joins(statement, AuditEvent.subject, tenant_id, Profile)
+        if members is not None:
+            display_name = case(
+                (
+                    exists(
+                        select(members.c.subject).where(
+                            members.c.tenant_id == tenant_id,
+                            members.c.subject == AuditEvent.subject,
+                            members.c.active.is_(True),
+                        )
+                    ),
+                    display_name,
+                ),
+                else_="",
+            )
         if q:
             escaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
             predicates.append(
@@ -462,7 +499,7 @@ class AuditRepository(Repository[AuditEvent, str]):
                     *(
                         column.ilike(f"%{escaped}%", escape="\\")
                         for column in (
-                            Profile.display_name,
+                            display_name,
                             AuditEvent.action,
                             CatalogEntry.name,
                             AuditEvent.resource_id,

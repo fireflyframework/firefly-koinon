@@ -1,6 +1,8 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 import {createLazyOrganizationPeopleApi} from './organization-loader.js';
+import {createLazyCorporateProfilesApi} from './corporate-profile-loader.js';
+export type {CorporateProfilesApi} from './corporate-profiles.js';
 export type {OrganizationPeopleApi} from './organization-people.js';
 import type {ExternalFileCleanupInput,ExternalFileCleanupResult,ExternalFileReviewInput,ExternalFileChunkInput,ExternalFileReviewView,McpConnectionDescriptor,ExternalReviewInput,ExternalReviewDecision,ExternalReviewView} from './generated.js';
 import type {McpOAuthClient,McpOAuthClientCredential,McpOAuthClientInput,McpOAuthClientPage,McpOAuthClientPatch,McpOAuthClientReadiness,McpOAuthClientRevision} from './generated.js';
@@ -82,6 +84,7 @@ export class KoinonClient {
  readonly authorizedApplications;
  readonly organizationChat;
  readonly organizationPeople;
+ readonly corporateProfiles;
  readonly people;
  readonly knowledgeConnections;
  readonly knowledgeIndexes;
@@ -180,6 +183,7 @@ export class KoinonClient {
    disable:(tenantId:string,providerId:string,input:IdentityRevision,options:RequestOptions={})=>transport.request<IdentityProvider>('POST',`${tenant(tenantId)}/identity/providers/${id(providerId)}/disable`,{...options,body:input}),
   };
   this.organizationPeople=createLazyOrganizationPeopleApi(transport);
+  this.corporateProfiles=createLazyCorporateProfilesApi(transport);
   this.people={
    list:(tenantId:string,filter:{workspace_id?:string;q?:string;limit?:number;after?:string|undefined}={},options:RequestOptions={})=>transport.request<Page<Person>>('GET',`${tenant(tenantId)}/people`,{...options,query:{...filter}}),
    avatar:(tenantId:string,profileId:string,workspaceId?:string,options:RequestOptions={})=>transport.request<BinaryDownload>('GET',`${tenant(tenantId)}/people/${id(profileId)}/avatar`,{...options,query:{workspace_id:workspaceId},responseType:'download'}),

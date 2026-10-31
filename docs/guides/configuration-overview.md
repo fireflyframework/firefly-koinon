@@ -14,6 +14,8 @@ Follow [guided configuration](knowledge-setup.md) for the setup sequence, or use
 
 A personal API token and an authorized application have different lifecycles. The [profile and API token guide](../operations/profiles-and-tokens.md) describes personal credentials and their permission bounds.
 
+[Corporate profile synchronization](corporate-profile-sync.md) explains organization names, photos and positions, verified identity bindings, provider requirements and refresh status. Personal preferences and access roles retain their separate ownership.
+
 ## Choose knowledge behavior
 
 Use [organization knowledge behavior](../operations/organization-knowledge.md) for RAG, RLM and retrieval settings. [Agents, embeddings and knowledge engines](../concepts/knowledge-runtime.md) explains how these choices fit together.

@@ -83,6 +83,7 @@ nav:
           - Identity and appearance: operations/identity-appearance.md
       - People and applications:
           - People and organization: guides/people-and-organization.md
+          - Corporate profile synchronization: guides/corporate-profile-sync.md
           - Authorized applications: guides/authorized-applications.md
           - Register applications: guides/register-applications.md
       - Knowledge behavior:

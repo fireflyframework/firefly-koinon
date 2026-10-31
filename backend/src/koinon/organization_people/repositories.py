@@ -6,6 +6,7 @@ from sqlalchemy import and_, exists, func, literal, or_, select
 from sqlalchemy.orm import aliased
 
 from koinon.corporate_identity.entities import CorporateProvider
+from koinon.corporate_profiles.expressions import presentation_joins
 from koinon.organization_people.entities import (
     OrganizationDirectorySettingRecord as Setting,
 )
@@ -44,6 +45,42 @@ def unit_paths(tenant_id, seeds):
 
 @repository(name="organization_people.people_repository")
 class OrganizationPersonRepository(Repository[Person, str]):
+    async def visible_subjects(self, members, tenant_id, wanted, workspace_id=None):
+        return set(
+            (
+                await self._require_session().scalars(
+                    subjects(members, tenant_id, workspace_id).where(members.c.subject.in_(wanted))
+                )
+            ).all()
+        )
+
+    async def external_unit(self, tenant_id, provider_id, external_key):
+        return await self._require_session().scalar(
+            select(Unit).where(
+                Unit.tenant_id == tenant_id,
+                Unit.provider_id == provider_id,
+                Unit.external_key == external_key,
+            )
+        )
+
+    async def external_people(self, tenant_id, provider_id, external_subject):
+        return list(
+            (
+                await self._require_session().scalars(
+                    select(Person)
+                    .where(
+                        Person.tenant_id == tenant_id,
+                        Person.provider_id == provider_id,
+                        Person.external_subject == external_subject,
+                    )
+                    .limit(2)
+                )
+            ).all()
+        )
+
+    async def subtree_depth(self, tenant_id, identifier):
+        return await subtree_depth(self._require_session(), Person, tenant_id, identifier, "manager_id")
+
     async def scoped(self, tenant_id, identifier):
         return await self._require_session().scalar(
             select(Person)
@@ -63,7 +100,7 @@ class OrganizationPersonRepository(Repository[Person, str]):
             )
         )
 
-    async def page(
+    def page_query(
         self,
         members,
         tenant_id,
@@ -87,11 +124,12 @@ class OrganizationPersonRepository(Repository[Person, str]):
             .outerjoin(Person, and_(Person.subject == visible.c.subject, Person.tenant_id == tenant_id))
             .outerjoin(Profile, Profile.subject == visible.c.subject)
         )
+        query, display_name = presentation_joins(query, visible.c.subject, tenant_id, Profile)
         if q:
             pattern = "%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
             query = query.where(
                 or_(
-                    Profile.display_name.ilike(pattern, escape="\\"),
+                    display_name.ilike(pattern, escape="\\"),
                     Person.job_title.ilike(pattern, escape="\\"),
                 )
             )
@@ -120,13 +158,24 @@ class OrganizationPersonRepository(Repository[Person, str]):
             query = query.where(Person.id == identifier)
         if subject is not None:
             query = query.where(visible.c.subject == subject)
+        return query, visible, display_name
+
+    def presentation_queries(self, members, tenant_id, workspace_id=None, **filters):
+        query, visible, name = self.page_query(members, tenant_id, workspace_id, **filters)
+        size = filters.get("page_size", 25)
+        return query, query.order_by(func.lower(name), visible.c.subject).offset(
+            (filters.get("page", 1) - 1) * size
+        ).limit(size)
+
+    async def page(self, members, tenant_id, workspace_id=None, **filters):
+        query, visible, display_name = self.page_query(members, tenant_id, workspace_id, **filters)
         session = self._require_session()
         total = int(await session.scalar(select(func.count()).select_from(query.subquery())) or 0)
         rows = (
             await session.execute(
-                query.order_by(func.lower(func.coalesce(Profile.display_name, "")), visible.c.subject)
-                .offset((page - 1) * page_size)
-                .limit(page_size)
+                query.order_by(func.lower(display_name), visible.c.subject)
+                .offset((filters.get("page", 1) - 1) * filters.get("page_size", 25))
+                .limit(filters.get("page_size", 25))
             )
         ).all()
         return rows, total
@@ -181,6 +230,9 @@ class OrganizationPersonRepository(Repository[Person, str]):
 
 @repository(name="organization_people.units_repository")
 class OrganizationUnitRepository(Repository[Unit, str]):
+    async def subtree_depth(self, tenant_id, identifier):
+        return await subtree_depth(self._require_session(), Unit, tenant_id, identifier, "parent_id")
+
     async def scoped(self, tenant_id, identifier):
         return await self._require_session().scalar(
             select(Unit)

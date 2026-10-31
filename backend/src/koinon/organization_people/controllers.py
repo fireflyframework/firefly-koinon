@@ -107,6 +107,7 @@ class OrganizationPeopleController:
         request: Request,
         workspace_id: QueryParam[str | None] = None,
     ) -> OrganizationPerson:
+        # Native discovery can mount this dynamic path before the reserved self path.
         if person_id == "me":
             return await self.self(tenant_id, request, workspace_id=workspace_id)
         return browser(
@@ -143,7 +144,7 @@ class OrganizationPeopleController:
         workspace_id: QueryParam[str | None] = None,
     ) -> Response:
         content = await self.people.avatar(
-            organization_identity(request, tenant_id, workspace_id).subject,
+            organization_identity(request, tenant_id, workspace_id, avatar=True).subject,
             tenant_id,
             person_id,
             workspace_id=workspace_id,

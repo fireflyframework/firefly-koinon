@@ -100,6 +100,22 @@ from koinon_sdk.coordinates import (
     TableCoordinateSelection,
     TableRowRangePage,
 )
+from koinon_sdk.corporate_profiles import (
+    CorporatePresentationSummary,
+    CorporateProfileFieldCapability,
+    CorporateProfileFieldObservation,
+    CorporateProfileRefresh,
+    CorporateProfileRefreshInput,
+    CorporateProfileSyncPolicy,
+    KeycloakProfileAttributes,
+    OrganizationPresentation,
+    OrganizationPresentationInput,
+    ProfileFieldName,
+    ProfileFieldSource,
+    ProfileFieldStatus,
+    ProfilePresentationMode,
+    ProfileSyncStatus,
+)
 from koinon_sdk.curated import (
     CommittedKnowledge,
     ConversationOrigin,
@@ -383,6 +399,20 @@ from koinon_sdk.streaming import (
 )
 
 __all__ = [
+    "CorporatePresentationSummary",
+    "CorporateProfileFieldCapability",
+    "CorporateProfileFieldObservation",
+    "CorporateProfileRefresh",
+    "CorporateProfileRefreshInput",
+    "CorporateProfileSyncPolicy",
+    "KeycloakProfileAttributes",
+    "OrganizationPresentation",
+    "OrganizationPresentationInput",
+    "ProfileFieldName",
+    "ProfileFieldSource",
+    "ProfileFieldStatus",
+    "ProfilePresentationMode",
+    "ProfileSyncStatus",
     "BrandingInputValues",
     "RlmToolReceipt",
     "BrandingPalette",

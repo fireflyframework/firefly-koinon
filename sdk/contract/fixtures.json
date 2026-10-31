@@ -1797,6 +1797,57 @@
       ],
       "source_type": "source_type-value"
     },
+    "CorporatePresentationSummary": {
+      "name_source": "organization",
+      "avatar_source": "organization",
+      "provider_id": "provider_id-value",
+      "provider_name": "provider_name-value",
+      "status": "not_configured",
+      "last_synced_at": "2026-10-27T12:34:56Z",
+      "corporate_department": "corporate_department-value"
+    },
+    "CorporateProfileFieldCapability": {
+      "field": "display_name",
+      "source": "directory",
+      "supported": false,
+      "required_permissions": [
+        "required_permissions-value"
+      ],
+      "code": "code-value"
+    },
+    "CorporateProfileFieldObservation": {
+      "field": "display_name",
+      "source": "directory",
+      "status": "not_observed",
+      "observed_at": "2026-10-27T12:34:56Z",
+      "code": "code-value"
+    },
+    "CorporateProfileRefresh": {
+      "tenant_id": "tenant_id-value",
+      "profile_id": "profile_id-value",
+      "status": "not_configured",
+      "snapshot_revision": 1,
+      "last_synced_at": "2026-10-27T12:34:56Z",
+      "last_attempt_at": "2026-10-27T12:34:56Z"
+    },
+    "CorporateProfileRefreshInput": {},
+    "CorporateProfileSyncPolicy": {
+      "interval_seconds": 300,
+      "allow_personal_overrides": false,
+      "name_source": "directory",
+      "avatar_source": "directory",
+      "job_title_source": "directory",
+      "unit_source": "directory",
+      "manager_source": "directory",
+      "google_department": "department",
+      "keycloak_attributes": {
+        "display_name": "display_name-value",
+        "job_title": "job_title-value",
+        "department": "department-value",
+        "manager": "manager-value",
+        "picture": "picture-value"
+      }
+    },
     "DatasetFileAppendResult": {
       "dataset_id": "dataset_id-value",
       "file_version_id": "file_version_id-value",
@@ -3429,6 +3480,13 @@
       "secret": "secret-value",
       "directory_secret": "directory_secret-value"
     },
+    "KeycloakProfileAttributes": {
+      "display_name": "display_name-value",
+      "job_title": "job_title-value",
+      "department": "department-value",
+      "manager": "manager-value",
+      "picture": "picture-value"
+    },
     "KeycloakSettings": {
       "kind": "keycloak",
       "issuer": "issuer-value",
@@ -4737,7 +4795,16 @@
       ],
       "observed_at": "2026-10-27T12:34:56Z",
       "updated_at": "2026-10-27T12:34:56Z",
-      "observation_status": "not_observed"
+      "observation_status": "not_observed",
+      "presentation": {
+        "name_source": "organization",
+        "avatar_source": "organization",
+        "provider_id": "provider_id-value",
+        "provider_name": "provider_name-value",
+        "status": "not_configured",
+        "last_synced_at": "2026-10-27T12:34:56Z",
+        "corporate_department": "corporate_department-value"
+      }
     },
     "OrganizationPersonCreate": {
       "profile_id": "profile_id-value",
@@ -4779,7 +4846,16 @@
           ],
           "observed_at": "2026-10-27T12:34:56Z",
           "updated_at": "2026-10-27T12:34:56Z",
-          "observation_status": "not_observed"
+          "observation_status": "not_observed",
+          "presentation": {
+            "name_source": "organization",
+            "avatar_source": "organization",
+            "provider_id": "provider_id-value",
+            "provider_name": "provider_name-value",
+            "status": "not_configured",
+            "last_synced_at": "2026-10-27T12:34:56Z",
+            "corporate_department": "corporate_department-value"
+          }
         }
       ],
       "total": 1,
@@ -4799,6 +4875,39 @@
       "id": "id-value",
       "display_name": "display_name-value"
     },
+    "OrganizationPresentation": {
+      "name_source": "organization",
+      "avatar_source": "organization",
+      "provider_id": "provider_id-value",
+      "provider_name": "provider_name-value",
+      "status": "not_configured",
+      "last_synced_at": "2026-10-27T12:34:56Z",
+      "corporate_department": "corporate_department-value",
+      "tenant_id": "tenant_id-value",
+      "profile_id": "profile_id-value",
+      "revision": 1,
+      "name_mode": "organization",
+      "avatar_mode": "organization",
+      "allow_personal_overrides": false,
+      "display_name": "display_name-value",
+      "avatar_url": "avatar_url-value",
+      "avatar_version": "avatar_version-value",
+      "last_attempt_at": "2026-10-27T12:34:56Z",
+      "fields": [
+        {
+          "field": "display_name",
+          "source": "directory",
+          "status": "not_observed",
+          "observed_at": "2026-10-27T12:34:56Z",
+          "code": "code-value"
+        }
+      ]
+    },
+    "OrganizationPresentationInput": {
+      "expected_revision": 1,
+      "name_mode": "organization",
+      "avatar_mode": "organization"
+    },
     "OrganizationProfileFields": {
       "job_title": "job_title-value",
       "unit_external_key": "unit_external_key-value",
@@ -4814,7 +4923,35 @@
         "unit_external_key": "unit_external_key-value",
         "manager_external_subject": "manager_external_subject-value"
       },
-      "source": "verified_claims"
+      "source": "verified_claims",
+      "profile_sync": {
+        "interval_seconds": 300,
+        "allow_personal_overrides": false,
+        "name_source": "directory",
+        "avatar_source": "directory",
+        "job_title_source": "directory",
+        "unit_source": "directory",
+        "manager_source": "directory",
+        "google_department": "department",
+        "keycloak_attributes": {
+          "display_name": "display_name-value",
+          "job_title": "job_title-value",
+          "department": "department-value",
+          "manager": "manager-value",
+          "picture": "picture-value"
+        }
+      },
+      "profile_capabilities": [
+        {
+          "field": "display_name",
+          "source": "directory",
+          "supported": false,
+          "required_permissions": [
+            "required_permissions-value"
+          ],
+          "code": "code-value"
+        }
+      ]
     },
     "OrganizationProfileMappingInput": {
       "expected_revision": 1,
@@ -4823,6 +4960,23 @@
         "job_title": "job_title-value",
         "unit_external_key": "unit_external_key-value",
         "manager_external_subject": "manager_external_subject-value"
+      },
+      "profile_sync": {
+        "interval_seconds": 300,
+        "allow_personal_overrides": false,
+        "name_source": "directory",
+        "avatar_source": "directory",
+        "job_title_source": "directory",
+        "unit_source": "directory",
+        "manager_source": "directory",
+        "google_department": "department",
+        "keycloak_attributes": {
+          "display_name": "display_name-value",
+          "job_title": "job_title-value",
+          "department": "department-value",
+          "manager": "manager-value",
+          "picture": "picture-value"
+        }
       }
     },
     "OrganizationUnit": {

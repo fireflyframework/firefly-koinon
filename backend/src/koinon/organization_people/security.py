@@ -5,13 +5,15 @@ from koinon.profiles.security import require_personal_permission
 from koinon.security.identity import identity_from_request
 
 
-def organization_identity(request, tenant_id, workspace_id=None, *, write=False):
+def organization_identity(request, tenant_id, workspace_id=None, *, write=False, avatar=False):
     identity = identity_from_request(request)
     attributes = getattr(request.state.security_context, "attributes", {})
     if "koinon_token" not in attributes:
         return identity
     token = attributes["koinon_token"]
     permissions = {"members:write"} if write else {"members:write", "catalog:read"}
+    if avatar:
+        permissions |= {"profile:read", "profile:write"}
     if not isinstance(token, dict):
         raise AccessDenied("Directory is outside the token scope", code="ACCESS_DENIED")
     scopes = token.get("scopes")

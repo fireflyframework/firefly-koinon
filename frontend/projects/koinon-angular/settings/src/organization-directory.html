@@ -1,192 +1,223 @@
 <!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
-<header class="directory-heading">
-  <div>
-    <h2>{{ 'People' | ffkText }}</h2>
-    <p>{{ 'Find colleagues and manage their organization information.' | ffkText }}</p>
-  </div>
-  <div class="directory-toolbar">
-    <ffk-button variant="quiet" compact icon="settings" (click)="governance.set(!governance())">{{
-      'Directory settings' | ffkText
-    }}</ffk-button>
+@if (governance()) {
+  <div class="directory-settings-view">
     <ffk-button
-      class="people-filter-toggle"
       variant="quiet"
       compact
-      icon="filter"
-      [label]="'Filters' | ffkText"
-      [expanded]="filtersOpen()"
-      controls="organization-people-filters"
-      [describedBy]="activeFilterCount() ? 'organization-people-filter-status' : null"
-      (click)="toggleFilters()"
-      >{{ 'Filters' | ffkText }}
-      @if (activeFilterCount()) {
-        <span class="filter-count" aria-hidden="true">{{ activeFilterCount() }}</span>
-      }
-    </ffk-button>
+      icon="chevron-left"
+      [disabled]="s.pending()"
+      (click)="closeGovernance()"
+      >{{ 'Back to people' | ffkText }}</ffk-button
+    >
+    <header class="directory-heading">
+      <div>
+        <h2 id="directory-settings-heading" tabindex="-1">{{ 'Directory settings' | ffkText }}</h2>
+        <p>
+          {{ 'Control directory visibility and how corporate profiles stay up to date.' | ffkText }}
+        </p>
+      </div>
+    </header>
+    <ffk-organization-governance />
   </div>
-</header>
-<span class="visually-hidden" id="organization-people-filter-status">
-  @if (activeFilterCount() === 1) {
-    {{ '1 filter applied' | ffkText }}
-  } @else if (activeFilterCount()) {
-    {{ activeFilterCount() }} {{ 'filters applied' | ffkText }}
-  }
-</span>
-@if (governance()) {
-  <ffk-organization-governance />
-}
-<form
-  id="organization-people-filters"
-  class="directory-search people-filters"
-  [class.is-open]="filtersOpen()"
-  (keydown.escape)="closeFilters($event)"
-  (ngSubmit)="apply()"
->
-  <label
-    >{{ 'Name' | ffkText
-    }}<input
-      name="person-search"
-      [ngModel]="filters().q"
-      (ngModelChange)="changeFilter('q', $event)"
-      maxlength="160" /></label
-  ><label
-    >{{ 'Job title' | ffkText
-    }}<input
-      name="title-search"
-      [ngModel]="filters().job_title"
-      (ngModelChange)="changeFilter('job_title', $event)"
-      maxlength="160" /></label
-  ><label class="check"
-    ><input
-      name="unassigned"
-      type="checkbox"
-      [ngModel]="filters().unassigned"
-      (ngModelChange)="
-        filters.set({ q: filters().q, job_title: filters().job_title, unassigned: $event })
-      "
-    />{{ 'Without organization information' | ffkText }}</label
+} @else {
+  <header class="directory-heading">
+    <div>
+      <h2>{{ 'People' | ffkText }}</h2>
+      <p>{{ 'Find colleagues and manage their organization information.' | ffkText }}</p>
+    </div>
+    <div class="directory-toolbar">
+      <ffk-button
+        variant="quiet"
+        compact
+        icon="settings"
+        class="directory-settings-trigger"
+        (click)="openGovernance()"
+        >{{ 'Directory settings' | ffkText }}</ffk-button
+      >
+      <ffk-button
+        class="people-filter-toggle"
+        variant="quiet"
+        compact
+        icon="filter"
+        [label]="'Filters' | ffkText"
+        [expanded]="filtersOpen()"
+        controls="organization-people-filters"
+        [describedBy]="activeFilterCount() ? 'organization-people-filter-status' : null"
+        (click)="toggleFilters()"
+        >{{ 'Filters' | ffkText }}
+        @if (activeFilterCount()) {
+          <span class="filter-count" aria-hidden="true">{{ activeFilterCount() }}</span>
+        }
+      </ffk-button>
+    </div>
+  </header>
+  <span class="visually-hidden" id="organization-people-filter-status">
+    @if (activeFilterCount() === 1) {
+      {{ '1 filter applied' | ffkText }}
+    } @else if (activeFilterCount()) {
+      {{ activeFilterCount() }} {{ 'filters applied' | ffkText }}
+    }
+  </span>
+  <form
+    id="organization-people-filters"
+    class="directory-search people-filters"
+    [class.is-open]="filtersOpen()"
+    (keydown.escape)="closeFilters($event)"
+    (ngSubmit)="apply()"
   >
-  <div class="row-actions">
-    <ffk-button type="submit" icon="search">{{ 'Apply filters' | ffkText }}</ffk-button
-    ><ffk-button variant="quiet" (click)="clear()">{{ 'Clear filters' | ffkText }}</ffk-button>
-  </div>
-</form>
-@if (s.error()) {
-  <p class="error" role="alert">{{ s.error() | ffkText }}</p>
-  <ffk-button (click)="load()">{{ 'Refresh' | ffkText }}</ffk-button>
-}
-@if (s.notice()) {
-  <p role="status">{{ s.notice() | ffkText }}</p>
-}
-@if (s.busy().has('people')) {
-  <p role="status">{{ 'Loading people…' | ffkText }}</p>
-}
-<div class="directory-table">
-  <table class="people-table" [attr.aria-label]="'People' | ffkText">
-    <colgroup>
-      <col class="person-column" />
-      <col class="organization-column" />
-      <col />
-      <col class="action-column" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>{{ 'Person' | ffkText }}</th>
-        <th>{{ 'Organization' | ffkText }}</th>
-        <th>{{ 'Manager' | ffkText }}</th>
-        <th>
-          <span class="visually-hidden">{{ 'Actions' | ffkText }}</span>
-        </th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (
-        person of s.people()?.items ?? [];
-        track person.id || person.profile_id || $index;
-        let index = $index
-      ) {
+    <label
+      >{{ 'Name' | ffkText
+      }}<input
+        name="person-search"
+        [ngModel]="filters().q"
+        (ngModelChange)="changeFilter('q', $event)"
+        maxlength="160" /></label
+    ><label
+      >{{ 'Job title' | ffkText
+      }}<input
+        name="title-search"
+        [ngModel]="filters().job_title"
+        (ngModelChange)="changeFilter('job_title', $event)"
+        maxlength="160" /></label
+    ><label class="check"
+      ><input
+        name="unassigned"
+        type="checkbox"
+        [ngModel]="filters().unassigned"
+        (ngModelChange)="
+          filters.set({ q: filters().q, job_title: filters().job_title, unassigned: $event })
+        "
+      />{{ 'Without organization information' | ffkText }}</label
+    >
+    <div class="row-actions">
+      <ffk-button type="submit" icon="search">{{ 'Apply filters' | ffkText }}</ffk-button
+      ><ffk-button variant="quiet" (click)="clear()">{{ 'Clear filters' | ffkText }}</ffk-button>
+    </div>
+  </form>
+  @if (s.error()) {
+    <p class="error" role="alert">{{ s.error() | ffkText }}</p>
+    <ffk-button (click)="load()">{{ 'Refresh' | ffkText }}</ffk-button>
+  }
+  @if (s.notice()) {
+    <p role="status">{{ s.notice() | ffkText }}</p>
+  }
+  @if (s.busy().has('people')) {
+    <p role="status">{{ 'Loading people…' | ffkText }}</p>
+  }
+  <div class="directory-table">
+    <table class="people-table" [attr.aria-label]="'People' | ffkText">
+      <colgroup>
+        <col class="person-column" />
+        <col class="organization-column" />
+        <col />
+        <col class="action-column" />
+      </colgroup>
+      <thead>
         <tr>
-          <td class="person-cell">
-            <div class="person-name">
-              <span class="person-avatar">
-                @if (s.avatars()[person.id || person.profile_id || '']) {
-                  <img [src]="s.avatars()[person.id || person.profile_id || '']" alt="" />
-                } @else if (person.display_name) {
-                  {{ initials(person.display_name) }}
+          <th>{{ 'Person' | ffkText }}</th>
+          <th>{{ 'Organization' | ffkText }}</th>
+          <th>{{ 'Manager' | ffkText }}</th>
+          <th>
+            <span class="visually-hidden">{{ 'Actions' | ffkText }}</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (
+          person of s.people()?.items ?? [];
+          track person.id || person.profile_id || $index;
+          let index = $index
+        ) {
+          <tr>
+            <td class="person-cell">
+              <div class="person-name">
+                <span class="person-avatar">
+                  @if (s.avatars()[person.id || person.profile_id || '']) {
+                    <img [src]="s.avatars()[person.id || person.profile_id || '']" alt="" />
+                  } @else if (person.display_name) {
+                    {{ initials(person.display_name) }}
+                  } @else {
+                    <ffk-icon name="user" />
+                  }
+                </span>
+                <div class="person-summary">
+                  <strong>{{ person.display_name || ('Name unavailable' | ffkText) }}</strong>
+                  @if (person.job_title) {
+                    <span class="person-subtitle">{{ person.job_title }}</span>
+                  }
+                  @if (!person.id && !person.profile_id) {
+                    <span
+                      class="profile-status"
+                      [title]="'Ask this person to complete their profile.' | ffkText"
+                      >{{ 'Profile incomplete' | ffkText }}</span
+                    ><span class="visually-hidden" [id]="'position-guidance-' + index">{{
+                      'Ask this person to complete their profile.' | ffkText
+                    }}</span>
+                  }
+                </div>
+              </div>
+            </td>
+            <td class="organization-cell" [attr.data-label]="'Organization' | ffkText">
+              <div class="organization-values">
+                @if (person.department; as department) {
+                  <span>{{ department.name }}</span>
+                  @if (distinctUnit(person)) {
+                    <small>{{ person.unit?.name }}</small>
+                  }
+                } @else if (person.presentation?.corporate_department; as departmentLabel) {
+                  <span>{{ departmentLabel }}</span>
+                  @if (person.unit?.name && person.unit.name !== departmentLabel) {
+                    <small>{{ person.unit.name }}</small>
+                  }
+                } @else if (person.unit; as unit) {
+                  <span>{{ unit.name }}</span>
                 } @else {
-                  <ffk-icon name="user" />
-                }
-              </span>
-              <div class="person-summary">
-                <strong>{{ person.display_name || ('Name unavailable' | ffkText) }}</strong>
-                @if (person.job_title) {
-                  <span class="person-subtitle">{{ person.job_title }}</span>
-                }
-                @if (!person.id && !person.profile_id) {
-                  <span
-                    class="profile-status"
-                    [title]="'Ask this person to complete their profile.' | ffkText"
-                    >{{ 'Profile incomplete' | ffkText }}</span
-                  ><span class="visually-hidden" [id]="'position-guidance-' + index">{{
-                    'Ask this person to complete their profile.' | ffkText
-                  }}</span>
+                  <span class="empty-value">{{ 'Not assigned' | ffkText }}</span>
                 }
               </div>
-            </div>
-          </td>
-          <td class="organization-cell" [attr.data-label]="'Organization' | ffkText">
-            <div class="organization-values">
-              @if (person.department; as department) {
-                <span>{{ department.name }}</span>
-                @if (distinctUnit(person)) {
-                  <small>{{ person.unit?.name }}</small>
-                }
-              } @else if (person.unit; as unit) {
-                <span>{{ unit.name }}</span>
+            </td>
+            <td class="manager-cell" [attr.data-label]="'Manager' | ffkText">
+              @if (person.manager; as manager) {
+                <span>{{ manager.display_name || ('Name unavailable' | ffkText) }}</span>
               } @else {
-                <span class="empty-value">{{ 'Not assigned' | ffkText }}</span>
+                <span class="empty-value">{{
+                  (person.manager_unavailable ? 'Not available' : 'Not set') | ffkText
+                }}</span>
               }
-            </div>
-          </td>
-          <td class="manager-cell" [attr.data-label]="'Manager' | ffkText">
-            @if (person.manager; as manager) {
-              <span>{{ manager.display_name || ('Name unavailable' | ffkText) }}</span>
-            } @else {
-              <span class="empty-value">{{
-                (person.manager_unavailable ? 'Not available' : 'Not set') | ffkText
-              }}</span>
-            }
-          </td>
-          <td class="action-cell">
-            <ffk-button
-              variant="quiet"
-              icon="edit"
-              compact
-              [disabled]="!person.id && !person.profile_id"
-              [label]="'Edit position' | ffkText"
-              [describedBy]="!person.id && !person.profile_id ? 'position-guidance-' + index : null"
-              (click)="begin(person, $event)"
-              >{{ 'Edit position' | ffkText }}</ffk-button
-            >
-          </td>
-        </tr>
-      } @empty {
-        @if (!s.busy().has('people') && !s.error()) {
-          <tr class="empty-directory">
-            <td colspan="4">{{ 'No people match these filters.' | ffkText }}</td>
+            </td>
+            <td class="action-cell">
+              <ffk-button
+                variant="quiet"
+                icon="edit"
+                compact
+                [disabled]="!person.id && !person.profile_id"
+                [label]="'Edit position' | ffkText"
+                [describedBy]="
+                  !person.id && !person.profile_id ? 'position-guidance-' + index : null
+                "
+                (click)="begin(person, $event)"
+                >{{ 'Edit position' | ffkText }}</ffk-button
+              >
+            </td>
           </tr>
+        } @empty {
+          @if (!s.busy().has('people') && !s.error()) {
+            <tr class="empty-directory">
+              <td colspan="4">{{ 'No people match these filters.' | ffkText }}</td>
+            </tr>
+          }
         }
-      }
-    </tbody>
-  </table>
-</div>
-<ffk-pagination
-  [page]="s.people()"
-  [showPageSize]="false"
-  [loading]="s.busy().has('people')"
-  [label]="'People' | ffkText"
-  (pageChanged)="load($event)"
-/>
-@if (editing() && s.selected(); as person) {
-  <ffk-organization-position [person]="person" (closed)="close()" />
+      </tbody>
+    </table>
+  </div>
+  <ffk-pagination
+    [page]="s.people()"
+    [showPageSize]="false"
+    [loading]="s.busy().has('people')"
+    [label]="'People' | ffkText"
+    (pageChanged)="load($event)"
+  />
+  @if (editing() && s.selected(); as person) {
+    <ffk-organization-position [person]="person" (closed)="close()" />
+  }
 }

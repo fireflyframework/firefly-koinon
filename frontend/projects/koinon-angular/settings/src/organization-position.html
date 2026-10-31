@@ -79,6 +79,27 @@
       }
     </div>
   }
+  @if (person.presentation; as presentation) {
+    <div class="source-notice">
+      <strong>{{ 'Corporate profile' | ffkText }}</strong>
+      <p>{{ presentation.provider_name || ('Identity provider' | ffkText) }}</p>
+      <p>{{ profileStatus(presentation.status) | ffkText }}</p>
+      @if (presentation.last_synced_at) {
+        <p>{{ 'Last synced' | ffkText }}: {{ presentation.last_synced_at | ffkDate }}</p>
+      }
+      @if (canRefresh()) {
+        <ffk-button variant="quiet" [loading]="s.pending()" (click)="s.refreshPerson(person)">{{
+          'Sync now' | ffkText
+        }}</ffk-button>
+      }
+      <p>
+        {{
+          'A refresh updates supported profile fields only. It does not change access permissions.'
+            | ffkText
+        }}
+      </p>
+    </div>
+  }
   <form (ngSubmit)="save()">
     <label
       >{{ 'Job title' | ffkText

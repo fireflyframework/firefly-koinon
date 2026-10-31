@@ -22,6 +22,10 @@ Use the linked wire models for field constraints. Operation metadata does not en
 - [Mapping remove](#corporateidentitycontroller-mapping-remove) (DELETE)
 - [Activate](#corporateidentitycontroller-activate) (POST)
 - [Disable](#corporateidentitycontroller-disable) (POST)
+- [Presentation](#corporateprofilescontroller-presentation) (GET)
+- [Update presentation](#corporateprofilescontroller-update-presentation) (PATCH)
+- [Refresh self](#corporateprofilescontroller-refresh-self) (POST)
+- [Refresh person](#corporateprofilescontroller-refresh-person) (POST)
 
 <!-- operation: CorporateIdentityController.list -->
 <a id="corporateidentitycontroller-list"></a>
@@ -581,6 +585,178 @@ These are the declared path, query and body arguments. Multipart and binary inpu
 | Request schema | [`IdentityRevision`](../models/identityrevision.md) |
 | Response schema | [`IdentityProvider`](../models/identityprovider.md) |
 | Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: CorporateProfilesController.presentation -->
+<a id="corporateprofilescontroller-presentation"></a>
+## Presentation
+
+```http
+GET /api/v1/tenants/{tenant_id}/organization/people/me/presentation
+```
+
+Contract operation: `CorporateProfilesController.presentation`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `organization_presentation` |
+| TypeScript | `corporateProfiles.presentation` |
+| Java | `client.corporateProfiles.presentation` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `workspace_id` | query | <code>QueryParam&#91;str &#124; None&#93;</code> | No | `null` |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | No request schema declared |
+| Response schema | [`OrganizationPresentation`](../models/organizationpresentation.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: CorporateProfilesController.update_presentation -->
+<a id="corporateprofilescontroller-update-presentation"></a>
+## Update presentation
+
+```http
+PATCH /api/v1/tenants/{tenant_id}/organization/people/me/presentation
+```
+
+Contract operation: `CorporateProfilesController.update_presentation`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `update_organization_presentation` |
+| TypeScript | `corporateProfiles.updatePresentation` |
+| Java | `client.corporateProfiles.updatePresentation` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[OrganizationPresentationInput]]` | Yes | Not specified |
+| `workspace_id` | query | <code>QueryParam&#91;str &#124; None&#93;</code> | No | `null` |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`OrganizationPresentationInput`](../models/organizationpresentationinput.md) |
+| Response schema | [`OrganizationPresentation`](../models/organizationpresentation.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: CorporateProfilesController.refresh_self -->
+<a id="corporateprofilescontroller-refresh-self"></a>
+## Refresh self
+
+```http
+POST /api/v1/tenants/{tenant_id}/organization/people/me/profile-refresh
+```
+
+Contract operation: `CorporateProfilesController.refresh_self`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `refresh_organization_profile` |
+| TypeScript | `corporateProfiles.refreshSelf` |
+| Java | `client.corporateProfiles.refreshSelf` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[CorporateProfileRefreshInput]]` | Yes | Not specified |
+| `workspace_id` | query | <code>QueryParam&#91;str &#124; None&#93;</code> | No | `null` |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`CorporateProfileRefreshInput`](../models/corporateprofilerefreshinput.md) |
+| Response schema | [`CorporateProfileRefresh`](../models/corporateprofilerefresh.md) |
+| Success status | `202` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: CorporateProfilesController.refresh_person -->
+<a id="corporateprofilescontroller-refresh-person"></a>
+## Refresh person
+
+```http
+POST /api/v1/tenants/{tenant_id}/organization/people/{person_id}/profile-refresh
+```
+
+Contract operation: `CorporateProfilesController.refresh_person`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `refresh_organization_person_profile` |
+| TypeScript | `corporateProfiles.refreshPerson` |
+| Java | `client.corporateProfiles.refreshPerson` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `person_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[CorporateProfileRefreshInput]]` | Yes | Not specified |
+| `workspace_id` | query | <code>QueryParam&#91;str &#124; None&#93;</code> | No | `null` |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`CorporateProfileRefreshInput`](../models/corporateprofilerefreshinput.md) |
+| Response schema | [`CorporateProfileRefresh`](../models/corporateprofilerefresh.md) |
+| Success status | `202` |
 | Declared encoding | `application/json` |
 
 Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.

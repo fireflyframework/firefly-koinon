@@ -643,6 +643,7 @@ class CatalogService:
             page_size=page_size,
             sort=sort,
             order=order,
+            members=self.effective_membership_rows(),
         )
 
     @transactional

@@ -3999,6 +3999,384 @@
       "title": "CoordinateSourceCell",
       "type": "object"
     },
+    "CorporatePresentationSummary": {
+      "additionalProperties": true,
+      "properties": {
+        "name_source": {
+          "default": "personal",
+          "enum": [
+            "organization",
+            "personal"
+          ],
+          "title": "Name Source",
+          "type": "string"
+        },
+        "avatar_source": {
+          "default": "personal",
+          "enum": [
+            "organization",
+            "personal"
+          ],
+          "title": "Avatar Source",
+          "type": "string"
+        },
+        "provider_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provider Id"
+        },
+        "provider_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provider Name"
+        },
+        "status": {
+          "default": "not_configured",
+          "enum": [
+            "not_configured",
+            "not_bound",
+            "queued",
+            "running",
+            "current",
+            "stale",
+            "unavailable",
+            "conflict"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "last_synced_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Synced At"
+        },
+        "corporate_department": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Corporate Department"
+        }
+      },
+      "title": "CorporatePresentationSummary",
+      "type": "object"
+    },
+    "CorporateProfileFieldCapability": {
+      "additionalProperties": true,
+      "properties": {
+        "field": {
+          "enum": [
+            "display_name",
+            "avatar",
+            "job_title",
+            "department",
+            "manager"
+          ],
+          "title": "Field",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "directory",
+            "verified_claims",
+            "local",
+            "personal"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "supported": {
+          "title": "Supported",
+          "type": "boolean"
+        },
+        "required_permissions": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 4,
+          "title": "Required Permissions",
+          "type": "array"
+        },
+        "code": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Code"
+        }
+      },
+      "required": [
+        "field",
+        "source",
+        "supported"
+      ],
+      "title": "CorporateProfileFieldCapability",
+      "type": "object"
+    },
+    "CorporateProfileFieldObservation": {
+      "additionalProperties": true,
+      "properties": {
+        "field": {
+          "enum": [
+            "display_name",
+            "avatar",
+            "job_title",
+            "department",
+            "manager"
+          ],
+          "title": "Field",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "directory",
+            "verified_claims",
+            "local",
+            "personal"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "not_observed",
+            "current",
+            "empty",
+            "unavailable",
+            "unsupported",
+            "stale"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "observed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observed At"
+        },
+        "code": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Code"
+        }
+      },
+      "required": [
+        "field",
+        "source",
+        "status"
+      ],
+      "title": "CorporateProfileFieldObservation",
+      "type": "object"
+    },
+    "CorporateProfileRefresh": {
+      "additionalProperties": true,
+      "properties": {
+        "tenant_id": {
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "profile_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Profile Id"
+        },
+        "status": {
+          "enum": [
+            "not_configured",
+            "not_bound",
+            "queued",
+            "running",
+            "current",
+            "stale",
+            "unavailable",
+            "conflict"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "snapshot_revision": {
+          "default": 0,
+          "maximum": 2147483647,
+          "minimum": 0,
+          "title": "Snapshot Revision",
+          "type": "integer"
+        },
+        "last_synced_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Synced At"
+        },
+        "last_attempt_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Attempt At"
+        }
+      },
+      "required": [
+        "tenant_id",
+        "status"
+      ],
+      "title": "CorporateProfileRefresh",
+      "type": "object"
+    },
+    "CorporateProfileRefreshInput": {
+      "additionalProperties": false,
+      "properties": {},
+      "title": "CorporateProfileRefreshInput",
+      "type": "object"
+    },
+    "CorporateProfileSyncPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "interval_seconds": {
+          "default": 900,
+          "maximum": 86400,
+          "minimum": 300,
+          "title": "Interval Seconds",
+          "type": "integer"
+        },
+        "allow_personal_overrides": {
+          "default": true,
+          "title": "Allow Personal Overrides",
+          "type": "boolean"
+        },
+        "name_source": {
+          "default": "directory",
+          "enum": [
+            "directory",
+            "personal"
+          ],
+          "title": "Name Source",
+          "type": "string"
+        },
+        "avatar_source": {
+          "default": "directory",
+          "enum": [
+            "directory",
+            "personal"
+          ],
+          "title": "Avatar Source",
+          "type": "string"
+        },
+        "job_title_source": {
+          "default": "directory",
+          "enum": [
+            "directory",
+            "verified_claims",
+            "local"
+          ],
+          "title": "Job Title Source",
+          "type": "string"
+        },
+        "unit_source": {
+          "default": "directory",
+          "enum": [
+            "directory",
+            "verified_claims",
+            "local"
+          ],
+          "title": "Unit Source",
+          "type": "string"
+        },
+        "manager_source": {
+          "default": "verified_claims",
+          "enum": [
+            "directory",
+            "verified_claims",
+            "local"
+          ],
+          "title": "Manager Source",
+          "type": "string"
+        },
+        "google_department": {
+          "default": "department",
+          "enum": [
+            "department",
+            "org_unit_path"
+          ],
+          "title": "Google Department",
+          "type": "string"
+        },
+        "keycloak_attributes": {
+          "$ref": "#/$defs/KeycloakProfileAttributes"
+        }
+      },
+      "title": "CorporateProfileSyncPolicy",
+      "type": "object"
+    },
     "DatasetFileAppendResult": {
       "additionalProperties": true,
       "properties": {
@@ -9193,6 +9571,78 @@
       "title": "KeycloakCredential",
       "type": "object"
     },
+    "KeycloakProfileAttributes": {
+      "additionalProperties": false,
+      "properties": {
+        "display_name": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z][A-Za-z0-9_]{0,79}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Display Name"
+        },
+        "job_title": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z][A-Za-z0-9_]{0,79}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Job Title"
+        },
+        "department": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z][A-Za-z0-9_]{0,79}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Department"
+        },
+        "manager": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z][A-Za-z0-9_]{0,79}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Manager"
+        },
+        "picture": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z][A-Za-z0-9_]{0,79}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Picture"
+        }
+      },
+      "title": "KeycloakProfileAttributes",
+      "type": "object"
+    },
     "KeycloakSettings": {
       "additionalProperties": false,
       "properties": {
@@ -13725,6 +14175,17 @@
           ],
           "title": "Observation Status",
           "type": "string"
+        },
+        "presentation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CorporatePresentationSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -13947,6 +14408,230 @@
       "title": "OrganizationPersonReference",
       "type": "object"
     },
+    "OrganizationPresentation": {
+      "additionalProperties": true,
+      "properties": {
+        "name_source": {
+          "default": "personal",
+          "enum": [
+            "organization",
+            "personal"
+          ],
+          "title": "Name Source",
+          "type": "string"
+        },
+        "avatar_source": {
+          "default": "personal",
+          "enum": [
+            "organization",
+            "personal"
+          ],
+          "title": "Avatar Source",
+          "type": "string"
+        },
+        "provider_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provider Id"
+        },
+        "provider_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provider Name"
+        },
+        "status": {
+          "default": "not_configured",
+          "enum": [
+            "not_configured",
+            "not_bound",
+            "queued",
+            "running",
+            "current",
+            "stale",
+            "unavailable",
+            "conflict"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "last_synced_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Synced At"
+        },
+        "corporate_department": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Corporate Department"
+        },
+        "tenant_id": {
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "profile_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Profile Id"
+        },
+        "revision": {
+          "default": 0,
+          "maximum": 2147483647,
+          "minimum": 0,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "name_mode": {
+          "default": "organization",
+          "enum": [
+            "organization",
+            "personal"
+          ],
+          "title": "Name Mode",
+          "type": "string"
+        },
+        "avatar_mode": {
+          "default": "organization",
+          "enum": [
+            "organization",
+            "personal"
+          ],
+          "title": "Avatar Mode",
+          "type": "string"
+        },
+        "allow_personal_overrides": {
+          "default": true,
+          "title": "Allow Personal Overrides",
+          "type": "boolean"
+        },
+        "display_name": {
+          "default": "",
+          "maxLength": 256,
+          "title": "Display Name",
+          "type": "string"
+        },
+        "avatar_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Avatar Url"
+        },
+        "avatar_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Avatar Version"
+        },
+        "last_attempt_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Attempt At"
+        },
+        "fields": {
+          "items": {
+            "$ref": "#/$defs/CorporateProfileFieldObservation"
+          },
+          "maxItems": 5,
+          "title": "Fields",
+          "type": "array"
+        }
+      },
+      "required": [
+        "tenant_id"
+      ],
+      "title": "OrganizationPresentation",
+      "type": "object"
+    },
+    "OrganizationPresentationInput": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "maximum": 2147483646,
+          "minimum": 0,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "name_mode": {
+          "default": null,
+          "enum": [
+            "organization",
+            "personal"
+          ],
+          "title": "Name Mode",
+          "type": "string"
+        },
+        "avatar_mode": {
+          "default": null,
+          "enum": [
+            "organization",
+            "personal"
+          ],
+          "title": "Avatar Mode",
+          "type": "string"
+        }
+      },
+      "required": [
+        "expected_revision"
+      ],
+      "title": "OrganizationPresentationInput",
+      "type": "object"
+    },
     "OrganizationProfileFields": {
       "additionalProperties": false,
       "properties": {
@@ -14024,6 +14709,25 @@
           "default": "verified_claims",
           "title": "Source",
           "type": "string"
+        },
+        "profile_sync": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CorporateProfileSyncPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "profile_capabilities": {
+          "items": {
+            "$ref": "#/$defs/CorporateProfileFieldCapability"
+          },
+          "maxItems": 5,
+          "title": "Profile Capabilities",
+          "type": "array"
         }
       },
       "required": [
@@ -14048,6 +14752,17 @@
         },
         "fields": {
           "$ref": "#/$defs/OrganizationProfileFields"
+        },
+        "profile_sync": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CorporateProfileSyncPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -21782,6 +22497,33 @@
     },
     "OrganizationProfileMapping": {
       "$ref": "#/$defs/OrganizationProfileMapping"
+    },
+    "KeycloakProfileAttributes": {
+      "$ref": "#/$defs/KeycloakProfileAttributes"
+    },
+    "CorporateProfileSyncPolicy": {
+      "$ref": "#/$defs/CorporateProfileSyncPolicy"
+    },
+    "CorporateProfileFieldCapability": {
+      "$ref": "#/$defs/CorporateProfileFieldCapability"
+    },
+    "CorporateProfileFieldObservation": {
+      "$ref": "#/$defs/CorporateProfileFieldObservation"
+    },
+    "CorporatePresentationSummary": {
+      "$ref": "#/$defs/CorporatePresentationSummary"
+    },
+    "OrganizationPresentation": {
+      "$ref": "#/$defs/OrganizationPresentation"
+    },
+    "OrganizationPresentationInput": {
+      "$ref": "#/$defs/OrganizationPresentationInput"
+    },
+    "CorporateProfileRefreshInput": {
+      "$ref": "#/$defs/CorporateProfileRefreshInput"
+    },
+    "CorporateProfileRefresh": {
+      "$ref": "#/$defs/CorporateProfileRefresh"
     },
     "Page[AuditEvent]": {
       "$ref": "#/$defs/Page_AuditEvent_"

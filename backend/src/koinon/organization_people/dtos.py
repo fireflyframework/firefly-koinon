@@ -6,6 +6,12 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from koinon.corporate_profiles.dtos import (
+    CorporatePresentationSummary,
+    CorporateProfileFieldCapability,
+    CorporateProfileSyncPolicy,
+)
+
 UnitKind = Literal["division", "department", "team"]
 Visibility = Literal["administrators", "shared_workspaces"]
 ManagedField = Literal["job_title", "unit_id", "manager_id"]
@@ -59,6 +65,7 @@ class OrganizationPerson(Output):
     observed_at: datetime | None = None
     updated_at: datetime | None = None
     observation_status: Literal["not_observed", "current", "unavailable"] = "not_observed"
+    presentation: CorporatePresentationSummary | None = None
 
 
 class OrganizationPersonCreate(Input):
@@ -217,6 +224,7 @@ class OrganizationProfileMappingInput(Input):
     expected_revision: int = Field(ge=0, le=2147483646)
     enabled: bool
     fields: OrganizationProfileFields
+    profile_sync: CorporateProfileSyncPolicy | None = None
 
 
 class OrganizationProfileMapping(Output):
@@ -226,3 +234,5 @@ class OrganizationProfileMapping(Output):
     enabled: bool = False
     fields: OrganizationProfileFields = Field(default_factory=OrganizationProfileFields)
     source: Literal["verified_claims"] = "verified_claims"
+    profile_sync: CorporateProfileSyncPolicy | None = None
+    profile_capabilities: list[CorporateProfileFieldCapability] = Field(default_factory=list, max_length=5)

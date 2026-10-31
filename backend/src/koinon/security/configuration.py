@@ -16,9 +16,11 @@ from pyfly.security.oauth2.login import OAuth2LoginHandler
 from pyfly.security.oauth2.resource_server import JWKSTokenValidator
 from pyfly.session.concurrency import SessionConcurrencyController
 
+from koinon.corporate_profiles.service import CorporateProfileService
 from koinon.mcp_auth.service import McpOAuthService
 from koinon.security.identity import MembershipAuthorizer, RequestAuthorization
 from koinon.security.oidc import ApiBearerFilter, IdentityTokenValidator, VerifiedOidcLoginHandler
+from koinon.security.presentation_claims import PresentationClaimSettings
 from koinon.security.settings import OidcSettings
 from koinon.tokens.authorization import TokenRestriction
 from koinon.tokens.service import PersonalTokenService
@@ -73,9 +75,18 @@ class SecurityConfiguration:
         return config.bind(OidcSettings)
 
     @bean
-    def identity_token_validator(self, settings: OidcSettings) -> JWKSTokenValidator:
+    def presentation_claim_settings(self, config: Config) -> PresentationClaimSettings:
+        return config.bind(PresentationClaimSettings)
+
+    @bean
+    def identity_token_validator(
+        self, settings: OidcSettings, presentation: PresentationClaimSettings | None = None
+    ) -> JWKSTokenValidator:
         return IdentityTokenValidator(
-            settings.jwks_uri, issuer=settings.issuer, audiences=[settings.api_audience]
+            settings.jwks_uri,
+            issuer=settings.issuer,
+            audiences=[settings.api_audience],
+            presentation_claims=presentation,
         )
 
     @bean
@@ -85,12 +96,17 @@ class SecurityConfiguration:
         tokens: PersonalTokenService | None = None,
         mcp_oauth: McpOAuthService | None = None,
         restriction: TokenRestriction | None = None,
+        corporate_profiles: CorporateProfileService | None = None,
     ) -> ApiBearerFilter:
-        return ApiBearerFilter(validator, tokens, mcp_oauth, restriction)
+        return ApiBearerFilter(validator, tokens, mcp_oauth, restriction, corporate_profiles)
 
     @bean
     def verified_login_handler(
-        self, repository: InMemoryClientRegistrationRepository, container: Container, settings: OidcSettings
+        self,
+        repository: InMemoryClientRegistrationRepository,
+        container: Container,
+        settings: OidcSettings,
+        presentation: PresentationClaimSettings | None = None,
     ) -> OAuth2LoginHandler:
         try:
             concurrency = container.resolve(SessionConcurrencyController)
@@ -110,6 +126,7 @@ class SecurityConfiguration:
             authorization_request_customizer=optional(OAuth2AuthorizationRequestCustomizer),
             authentication_success_handler=optional(OAuth2AuthenticationSuccessHandler),
             id_token_validator_factory=optional(OidcTokenValidatorFactory),
+            presentation_claims=presentation,
         )
 
     @bean

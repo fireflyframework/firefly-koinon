@@ -494,7 +494,7 @@
     "ui/initialize",
     {
       protocolVersion: "2026-01-26",
-      appInfo: { name: "koinon knowledge review", version: "26.10.0-alpha.1" },
+      appInfo: { name: "koinon knowledge review", version: "26.10.0-alpha.2" },
       appCapabilities: {},
     },
     4500,

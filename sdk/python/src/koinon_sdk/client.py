@@ -65,6 +65,12 @@ from koinon_sdk.coordinates import (
     TableCoordinateSelection,
     TableRowRangePage,
 )
+from koinon_sdk.corporate_profiles import (
+    CorporateProfileRefresh,
+    CorporateProfileRefreshInput,
+    OrganizationPresentation,
+    OrganizationPresentationInput,
+)
 from koinon_sdk.curated import (
     KnowledgeCommitOutcome,
     KnowledgeConfirmation,
@@ -1535,6 +1541,56 @@ class KoinonClient:
         }
         return Page[Person].model_validate(
             await self._request("GET", self._tenant(tenant_id) + "/people", params=filters)
+        )
+
+    async def organization_presentation(
+        self, tenant_id: str, *, workspace_id: str | None = None
+    ) -> OrganizationPresentation:
+        return OrganizationPresentation.model_validate(
+            await self._request(
+                "GET",
+                self._tenant(tenant_id) + "/organization/people/me/presentation",
+                params={"workspace_id": workspace_id} if workspace_id is not None else {},
+            )
+        )
+
+    async def update_organization_presentation(
+        self, tenant_id: str, value: OrganizationPresentationInput, *, workspace_id: str | None = None
+    ) -> OrganizationPresentation:
+        return OrganizationPresentation.model_validate(
+            await self._request(
+                "PATCH",
+                self._tenant(tenant_id) + "/organization/people/me/presentation",
+                json=value.model_dump(mode="json", exclude_unset=True),
+                params={"workspace_id": workspace_id} if workspace_id is not None else {},
+            )
+        )
+
+    async def refresh_organization_profile(
+        self, tenant_id: str, value: CorporateProfileRefreshInput | None = None,
+        *, workspace_id: str | None = None
+    ) -> CorporateProfileRefresh:
+        return CorporateProfileRefresh.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/organization/people/me/profile-refresh",
+                json=(value or CorporateProfileRefreshInput()).model_dump(mode="json", exclude_unset=True),
+                params={"workspace_id": workspace_id} if workspace_id is not None else {},
+            )
+        )
+
+    async def refresh_organization_person_profile(
+        self, tenant_id: str, person_id: str, value: CorporateProfileRefreshInput | None = None,
+        *, workspace_id: str | None = None
+    ) -> CorporateProfileRefresh:
+        return CorporateProfileRefresh.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/organization/people/" + quote(person_id, safe="")
+                + "/profile-refresh",
+                json=(value or CorporateProfileRefreshInput()).model_dump(mode="json", exclude_unset=True),
+                params={"workspace_id": workspace_id} if workspace_id is not None else {},
+            )
         )
 
     async def organization_person_self(

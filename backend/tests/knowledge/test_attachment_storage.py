@@ -41,6 +41,7 @@ def test_unconfigured_or_public_directory_never_becomes_an_implicit_private_stor
         AttachmentStorage(AttachmentSettings()).configured()
     directory = tmp_path / "public"
     directory.mkdir(mode=0o755)
+    directory.chmod(0o755)
     with pytest.raises(ServiceUnavailableException):
         AttachmentStorage(AttachmentSettings(storage_root=str(directory))).configured()
     assert directory.stat().st_mode & 0o777 == 0o755

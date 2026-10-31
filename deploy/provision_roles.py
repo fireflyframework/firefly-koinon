@@ -42,6 +42,8 @@ def grant_table(connection, table, role, *, document_control=False):
         "koinon_organization_chat_settings",
         "koinon_organization_branding",
         "koinon_organization_people",
+        "koinon_corporate_profile_snapshots",
+        "koinon_organization_presentation_preferences",
         "koinon_organization_directory_settings",
         "koinon_organization_profile_mappings",
         "koinon_external_knowledge_reviews",

@@ -295,6 +295,49 @@ export interface CoordinateSourceCell {
  "header_cells": Array<CoordinateHeaderCell>;
  "source_type": string | null;
 }
+export interface CorporatePresentationSummary {
+ "name_source"?: "organization" | "personal";
+ "avatar_source"?: "organization" | "personal";
+ "provider_id"?: string | null;
+ "provider_name"?: string | null;
+ "status"?: "not_configured" | "not_bound" | "queued" | "running" | "current" | "stale" | "unavailable" | "conflict";
+ "last_synced_at"?: string | null;
+ "corporate_department"?: string | null;
+}
+export interface CorporateProfileFieldCapability {
+ "field": "display_name" | "avatar" | "job_title" | "department" | "manager";
+ "source": "directory" | "verified_claims" | "local" | "personal";
+ "supported": boolean;
+ "required_permissions"?: Array<string>;
+ "code"?: string | null;
+}
+export interface CorporateProfileFieldObservation {
+ "field": "display_name" | "avatar" | "job_title" | "department" | "manager";
+ "source": "directory" | "verified_claims" | "local" | "personal";
+ "status": "not_observed" | "current" | "empty" | "unavailable" | "unsupported" | "stale";
+ "observed_at"?: string | null;
+ "code"?: string | null;
+}
+export interface CorporateProfileRefresh {
+ "tenant_id": string;
+ "profile_id"?: string | null;
+ "status": "not_configured" | "not_bound" | "queued" | "running" | "current" | "stale" | "unavailable" | "conflict";
+ "snapshot_revision"?: number;
+ "last_synced_at"?: string | null;
+ "last_attempt_at"?: string | null;
+}
+export type CorporateProfileRefreshInput = Record<string,never>;
+export interface CorporateProfileSyncPolicy {
+ "interval_seconds"?: number;
+ "allow_personal_overrides"?: boolean;
+ "name_source"?: "directory" | "personal";
+ "avatar_source"?: "directory" | "personal";
+ "job_title_source"?: "directory" | "verified_claims" | "local";
+ "unit_source"?: "directory" | "verified_claims" | "local";
+ "manager_source"?: "directory" | "verified_claims" | "local";
+ "google_department"?: "department" | "org_unit_path";
+ "keycloak_attributes"?: KeycloakProfileAttributes;
+}
 export interface DatasetFileAppendResult {
  "dataset_id": string;
  "file_version_id": string;
@@ -841,13 +884,19 @@ export interface IndexPlanView {
 export interface IndexRevisionInput {
  "expected_revision": number;
 }
-export interface Input {
-}
+export type Input = Record<string,never>;
 export type JsonValue = Json;
 export interface KeycloakCredential {
  "kind": "keycloak";
  "secret": string;
  "directory_secret"?: string | null;
+}
+export interface KeycloakProfileAttributes {
+ "display_name"?: string | null;
+ "job_title"?: string | null;
+ "department"?: string | null;
+ "manager"?: string | null;
+ "picture"?: string | null;
 }
 export interface KeycloakSettings {
  "kind": "keycloak";
@@ -991,8 +1040,7 @@ export interface KnowledgeNumberBounds {
  "minimum": number;
  "maximum": number;
 }
-export interface KnowledgePolicyValue {
-}
+export type KnowledgePolicyValue = Record<string,never>;
 export interface KnowledgeVersionView {
  "item_id": string;
  "version": number;
@@ -1252,6 +1300,7 @@ export interface OrganizationPerson {
  "observed_at"?: string | null;
  "updated_at"?: string | null;
  "observation_status"?: "not_observed" | "current" | "unavailable";
+ "presentation"?: CorporatePresentationSummary | null;
 }
 export interface OrganizationPersonCreate {
  "profile_id"?: string | null;
@@ -1279,6 +1328,31 @@ export interface OrganizationPersonReference {
  "id": string;
  "display_name": string;
 }
+export interface OrganizationPresentation {
+ "name_source"?: "organization" | "personal";
+ "avatar_source"?: "organization" | "personal";
+ "provider_id"?: string | null;
+ "provider_name"?: string | null;
+ "status"?: "not_configured" | "not_bound" | "queued" | "running" | "current" | "stale" | "unavailable" | "conflict";
+ "last_synced_at"?: string | null;
+ "corporate_department"?: string | null;
+ "tenant_id": string;
+ "profile_id"?: string | null;
+ "revision"?: number;
+ "name_mode"?: "organization" | "personal";
+ "avatar_mode"?: "organization" | "personal";
+ "allow_personal_overrides"?: boolean;
+ "display_name"?: string;
+ "avatar_url"?: string | null;
+ "avatar_version"?: string | null;
+ "last_attempt_at"?: string | null;
+ "fields"?: Array<CorporateProfileFieldObservation>;
+}
+export interface OrganizationPresentationInput {
+ "expected_revision": number;
+ "name_mode"?: "organization" | "personal";
+ "avatar_mode"?: "organization" | "personal";
+}
 export interface OrganizationProfileFields {
  "job_title"?: string | null;
  "unit_external_key"?: string | null;
@@ -1291,11 +1365,14 @@ export interface OrganizationProfileMapping {
  "enabled"?: boolean;
  "fields"?: OrganizationProfileFields;
  "source"?: "verified_claims";
+ "profile_sync"?: CorporateProfileSyncPolicy | null;
+ "profile_capabilities"?: Array<CorporateProfileFieldCapability>;
 }
 export interface OrganizationProfileMappingInput {
  "expected_revision": number;
  "enabled": boolean;
  "fields": OrganizationProfileFields;
+ "profile_sync"?: CorporateProfileSyncPolicy | null;
 }
 export interface OrganizationUnit {
  "id": string;

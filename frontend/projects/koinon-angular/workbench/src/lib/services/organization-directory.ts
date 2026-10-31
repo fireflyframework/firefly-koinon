@@ -15,13 +15,14 @@ import type {
   OrganizationProfileMappingInput,
   IdentityProviderPage,
 } from '@fireflyframework/koinon-sdk';
+import { organizationContextKey } from './organization-directory-context';
 import { KoinonClientContext } from './client-context';
 import { KoinonFacade } from '../koinon-facade';
 @Injectable()
 export class KoinonOrganizationDirectory implements OnDestroy {
   readonly clients = inject(KoinonClientContext);
   readonly f = inject(KoinonFacade);
-  key = this.contextKey();
+  key = organizationContextKey(this.f, this.clients);
   private readonly requests = new Map<string, AbortController>();
   readonly busy = signal<ReadonlySet<string>>(new Set());
   readonly workspaceOnly = signal(false);
@@ -45,25 +46,15 @@ export class KoinonOrganizationDirectory implements OnDestroy {
   constructor() {
     effect(() => this.sync());
   }
-  private contextKey() {
-    return JSON.stringify([
-      this.f.context()?.subject,
-      this.f.tenantId(),
-      this.f.workspaceId(),
-      this.clients.revision(),
-      [...this.f.tenantPermissions()].sort(),
-      [...this.f.permissions()].sort(),
-    ]);
-  }
   contextIdentity() {
-    return this.contextKey() + ':' + this.accessRevision();
+    return organizationContextKey(this.f, this.clients) + ':' + this.accessRevision();
   }
   clearAvatars() {
     for (const url of Object.values(this.avatars())) URL.revokeObjectURL(url);
     this.avatars.set({});
   }
   private sync() {
-    const key = this.contextKey();
+    const key = organizationContextKey(this.f, this.clients);
     if (key === this.key) return;
     this.key = key;
     this.clearData();
@@ -198,6 +189,9 @@ export class KoinonOrganizationDirectory implements OnDestroy {
     return this.delegate((runtime) =>
       runtime.savePerson(person, fields, manageLocally, managedProviderId),
     );
+  }
+  refreshPerson(person: OrganizationPerson) {
+    return this.delegate((runtime) => runtime.refreshPerson(person));
   }
   saveUnit(unit: OrganizationUnit | null, input: OrganizationUnitInput | OrganizationUnitPatch) {
     return this.delegate((runtime) => runtime.saveUnit(unit, input));

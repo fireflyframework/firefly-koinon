@@ -7,7 +7,7 @@ from json import dumps
 
 from pydantic import ValidationError
 from pyfly.container import service
-from pyfly.data.relational.sqlalchemy import LockMode, transactional
+from pyfly.data.relational.sqlalchemy import LockMode, Propagation, transactional
 from pyfly.kernel import ConflictException, DuplicateKeyException, InvalidRequestException
 
 from koinon.assistants.connections import ConnectionResolver, ModelParameters, api_for, normalized_options
@@ -16,7 +16,7 @@ from koinon.catalog.errors import AccessDenied
 from koinon.catalog.service import CatalogService
 from koinon.knowledge.connections.dtos import ConnectionInput
 from koinon.knowledge.connections.entities import KnowledgeConnection, timestamp
-from koinon.knowledge.connections.mappers import connection_dto
+from koinon.knowledge.connections.mappers import connection_dto, dependency_configuration
 from koinon.knowledge.connections.repositories import KnowledgeConnectionRepository
 from koinon.knowledge.connections.roles import ROLES
 
@@ -86,6 +86,29 @@ class KnowledgeConnectionService:
             connection_dto(row)
             for row in await self.connections.find_all(tenant_id=tenant_id, workspace_id=workspace_id)
         ]
+
+    @transactional(read_only=True, propagation=Propagation.REQUIRES_NEW)
+    async def _dependency_authority(self, subject, tenant_id, workspace_id):
+        await self.authority(subject, tenant_id, workspace_id)
+
+    async def dependency_configurations(self, subject, tenant_id, workspace_id, roles):
+        if workspace_id is None:
+            return {}
+        if len(roles) > 8 or any(role not in ROLES for role in roles):
+            raise InvalidRequestException("Choose declared knowledge roles", code="INVALID_KNOWLEDGE_ROLE")
+        await self.authority(subject, tenant_id, workspace_id)
+        result = {}
+        for role in dict.fromkeys(roles):
+            row = await self.selected(tenant_id, workspace_id, ROLES[role].domain, role)
+            providers = (
+                await self.providers.find_all(tenant_id=tenant_id, id=row.provider_id)
+                if row is not None and row.mode == "provider"
+                else []
+            )
+            result[role] = dependency_configuration(row, providers[0] if providers else None)
+        # A fresh read unit avoids an outer listing transaction's identity-map cache.
+        await self._dependency_authority(subject, tenant_id, workspace_id)
+        return result
 
     async def descriptors(self, subject, tenant_id, workspace_id=None):
         await self.authority(subject, tenant_id, workspace_id, permission="catalog:read")
@@ -165,9 +188,11 @@ class KnowledgeConnectionService:
                 "This scoped role is already assigned", code="KNOWLEDGE_CONNECTION_EXISTS"
             )
         provider = None
-        options = data.model_options.model_dump(
-            mode="json", exclude_unset=True, exclude_none=True
-        ) if data.model_options else {}
+        options = (
+            data.model_options.model_dump(mode="json", exclude_unset=True, exclude_none=True)
+            if data.model_options
+            else {}
+        )
         if data.mode == "current_agent":
             if (
                 role.embedding

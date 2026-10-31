@@ -33,6 +33,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 | `observed_at` | `string` or `null` | No | `null` |
 | `updated_at` | `string` or `null` | No | `null` |
 | `observation_status` | `string` | No | `"not_observed"` |
+| `presentation` | [`CorporatePresentationSummary`](corporatepresentationsummary.md) or `null` | No | `null` |
 
 ## Model constraints
 
@@ -266,6 +267,17 @@ This is a schema definition, not an example request. It preserves all declared k
           ],
           "title": "Observation Status",
           "type": "string"
+        },
+        "presentation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CorporatePresentationSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [

@@ -18,6 +18,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 | `expected_revision` | `integer` | Yes | Not specified |
 | `enabled` | `boolean` | Yes | Not specified |
 | `fields` | [`OrganizationProfileFields`](organizationprofilefields.md) | Yes | Not specified |
+| `profile_sync` | [`CorporateProfileSyncPolicy`](corporateprofilesyncpolicy.md) or `null` | No | `null` |
 
 ## Model constraints
 
@@ -53,6 +54,17 @@ This is a schema definition, not an example request. It preserves all declared k
         },
         "fields": {
           "$ref": "#/$defs/OrganizationProfileFields"
+        },
+        "profile_sync": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CorporateProfileSyncPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [

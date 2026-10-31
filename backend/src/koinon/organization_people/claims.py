@@ -8,16 +8,14 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 from pyfly.security.context import SecurityContext
-from sqlalchemy import select
 
 from koinon.corporate_identity.challenges import policy
 from koinon.corporate_identity.policy import verified_identity
 from koinon.organization_people.dtos import OrganizationPersonPatch, OrganizationProfileFields
 from koinon.organization_people.entities import OrganizationPersonRecord as Person
-from koinon.organization_people.entities import OrganizationUnitRecord as Unit
 
 
-async def observe_login(service, context):
+async def observe_login(service, context, *, observed_at=None):
     if (
         not isinstance(context, SecurityContext)
         or not context.is_authenticated
@@ -68,6 +66,45 @@ async def observe_login(service, context):
             continue
         fields = OrganizationProfileFields.model_validate(current.fields_json)
         selected = {key: value for key, value in fields.model_dump().items() if value is not None}
+        from koinon.corporate_profiles.policy import active_policy
+
+        sync = active_policy(current)
+        targets = {
+            "job_title": "job_title_source",
+            "unit_external_key": "unit_source",
+            "manager_external_subject": "manager_source",
+        }
+        snapshot = None
+        if sync is not None:
+            if service.corporate_profiles is None:
+                continue
+            snapshot = await service.corporate_profiles.owner(tenant_id, identity.subject)
+            if (
+                snapshot is None
+                or snapshot.status == "conflict"
+                or snapshot.provider_id != provider.id
+                or snapshot.external_subject != identity.external_subject
+            ):
+                continue
+            selected = {
+                key: value
+                for key, value in selected.items()
+                if getattr(sync, targets[key]) == "verified_claims"
+            }
+        if observed_at is not None:
+            if snapshot is not None and (
+                snapshot.verified_at != observed_at
+                or snapshot.claims_observed_at is not None
+                and snapshot.claims_observed_at >= observed_at
+            ):
+                continue
+            if (
+                sync is None
+                and row is not None
+                and row.observed_at is not None
+                and row.observed_at >= observed_at
+            ):
+                continue
         if not selected:
             continue
         row = row or Person(
@@ -107,13 +144,7 @@ async def observe_login(service, context):
                 if not value:
                     changes["unit_id"] = None
                 else:
-                    unit = await service.people._require_session().scalar(
-                        select(Unit).where(
-                            Unit.tenant_id == tenant_id,
-                            Unit.provider_id == provider.id,
-                            Unit.external_key == value,
-                        )
-                    )
+                    unit = await service.people.external_unit(tenant_id, provider.id, value)
                     if unit is None:
                         available = False
                     else:
@@ -122,13 +153,8 @@ async def observe_login(service, context):
                 if not value:
                     changes["manager_id"] = None
                 else:
-                    manager = await service.people._require_session().scalar(
-                        select(Person).where(
-                            Person.tenant_id == tenant_id,
-                            Person.provider_id == provider.id,
-                            Person.external_subject == value,
-                        )
-                    )
+                    manager_rows = await service.people.external_people(tenant_id, provider.id, value)
+                    manager = manager_rows[0] if len(manager_rows) == 1 else None
                     if manager is None or not await service.people.member(
                         service.catalog.effective_membership_rows(), tenant_id, manager.subject
                     ):
@@ -156,11 +182,49 @@ async def observe_login(service, context):
             }[target]
             for target in selected
         ]
+        if sync is not None:
+            row.managed_fields = sorted(
+                set(row.managed_fields)
+                | {
+                    target
+                    for target, source in (
+                        ("job_title", sync.job_title_source),
+                        ("unit_id", sync.unit_source),
+                        ("manager_id", sync.manager_source),
+                    )
+                    if source == "directory"
+                }
+            )
         row.revision += 1
-        row.observed_at, row.updated_at = datetime.now(UTC), datetime.now(UTC)
+        row.observed_at, row.updated_at = observed_at or datetime.now(UTC), datetime.now(UTC)
         row.observation_status = "current" if available else "unavailable"
         row.updated_by = identity.subject
         await service.people.save(row)
+        if snapshot is not None:
+            assert service.corporate_profiles is not None
+            from koinon.corporate_profiles.service import bump
+
+            previous = {item["field"]: item for item in snapshot.fields_json}
+            now = (observed_at or datetime.now(UTC)).isoformat()
+            for target, claim in selected.items():
+                field, column = {
+                    "job_title": ("job_title", "job_title"),
+                    "unit_external_key": ("department", "unit_id"),
+                    "manager_external_subject": ("manager", "manager_id"),
+                }[target]
+                applied = column in changes and not (target == "manager_external_subject" and pending)
+                previous[field] = {
+                    "field": field,
+                    "source": "verified_claims",
+                    "status": ("empty" if not claims[claim] else "current") if applied else "unavailable",
+                    "observed_at": now if applied else previous.get(field, {}).get("observed_at"),
+                    "code": None if applied else "PROFILE_CLAIM_UNAVAILABLE",
+                }
+            snapshot.fields_json = list(previous.values())
+            snapshot.revision = bump(snapshot.revision)
+            snapshot.updated_at = datetime.now(UTC)
+            snapshot.claims_observed_at = observed_at or datetime.now(UTC)
+            await service.corporate_profiles.save(snapshot)
         if not await service.people.member(
             service.catalog.effective_membership_rows(), tenant_id, identity.subject
         ):

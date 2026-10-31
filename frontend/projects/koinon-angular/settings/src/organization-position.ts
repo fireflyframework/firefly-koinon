@@ -13,7 +13,12 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { KoinonButton, KoinonPagination, KoinonTextPipe } from '@fireflyframework/koinon-angular';
+import {
+  KoinonButton,
+  KoinonPagination,
+  KoinonTextPipe,
+  KoinonDatePipe,
+} from '@fireflyframework/koinon-angular';
 import { KoinonOrganizationDirectory } from '@fireflyframework/koinon-angular/workbench';
 import type {
   OrganizationPerson,
@@ -28,6 +33,7 @@ import { positionPatch } from './organization-position-fields';
     FormsModule,
     KoinonButton,
     KoinonTextPipe,
+    KoinonDatePipe,
     KoinonPagination,
     KoinonOrganizationUnitBrowser,
   ],
@@ -73,6 +79,32 @@ export class KoinonOrganizationPosition implements OnChanges {
   }
   canChooseSource() {
     return !!this.person.id && this.s.f.tenantPermissions().has('identity:manage');
+  }
+  profileStatus(status: string | undefined) {
+    return (
+      (
+        {
+          current: 'Up to date',
+          stale: 'Last synced profile retained',
+          queued: 'Refresh queued',
+          running: 'Refreshing profile',
+          not_bound: 'Waiting for verified sign-in',
+          not_configured: 'Corporate profile sync is not configured.',
+          conflict: 'Review the profile source, then ask this person to sign in again.',
+          unavailable: 'Corporate profile is temporarily unavailable.',
+        } as Record<string, string>
+      )[status ?? 'not_configured'] ?? 'Corporate profile is temporarily unavailable.'
+    );
+  }
+  canRefresh() {
+    return (
+      this.canChooseSource() &&
+      this.s.f.tenantPermissions().has('members:write') &&
+      !!this.person.presentation &&
+      !['not_configured', 'not_bound', 'queued', 'running', 'conflict'].includes(
+        this.person.presentation.status ?? 'not_configured',
+      )
+    );
   }
   chooseUnit(unit: OrganizationUnitSummary) {
     this.unit = unit;

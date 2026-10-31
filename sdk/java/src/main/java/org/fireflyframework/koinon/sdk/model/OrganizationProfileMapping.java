@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package org.fireflyframework.koinon.sdk.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 
 
 
@@ -12,7 +13,12 @@ public record OrganizationProfileMapping(
     @JsonProperty("revision") Integer revision,
     @JsonProperty("enabled") Boolean enabled,
     @JsonProperty("fields") OrganizationProfileFields fields,
-    @JsonProperty("source") OrganizationMappingSource source
+    @JsonProperty("source") OrganizationMappingSource source,
+    @JsonProperty("profile_sync") CorporateProfileSyncPolicy profileSync,
+    @JsonProperty("profile_capabilities") List<CorporateProfileFieldCapability> profileCapabilities
 ) {
+    public OrganizationProfileMapping {
+        profileCapabilities=profileCapabilities==null?null:List.copyOf(profileCapabilities);
+    }
 
 }

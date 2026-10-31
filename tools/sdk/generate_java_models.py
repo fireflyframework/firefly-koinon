@@ -20,6 +20,12 @@ enums = {
 names = {
     tuple(sorted(v)): k
     for k, v in {
+        "ProfilePresentationMode": ["organization", "personal"],
+        "ProfileFieldSource": ["directory", "verified_claims", "local"],
+        "ProfileObservationSource": ["directory", "verified_claims", "local", "personal"],
+        "ProfileSyncStatus": ["not_configured", "not_bound", "queued", "running", "current", "stale", "unavailable", "conflict"],
+        "ProfileFieldName": ["display_name", "avatar", "job_title", "department", "manager"],
+        "ProfileFieldStatus": ["not_observed", "current", "empty", "unavailable", "unsupported", "stale"],
         "OrganizationUnitKind": ["division", "department", "team"],
         "OrganizationDirectoryVisibility": ["administrators", "shared_workspaces"],
         "OrganizationManagedField": ["job_title", "unit_id", "manager_id"],

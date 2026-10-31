@@ -96,5 +96,6 @@ class OrganizationProfileMappingRecord(Base):
     revision: Mapped[int] = mapped_column(default=1)
     enabled: Mapped[bool] = mapped_column(default=False)
     fields_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    profile_sync_json: Mapped[dict | None] = mapped_column(JSON(none_as_null=True), nullable=True)
     updated_by: Mapped[str] = mapped_column(String(512))
     updated_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=now)

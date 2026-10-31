@@ -11,14 +11,15 @@ from pyfly.kernel import ConflictException, InvalidRequestException
 
 from koinon.catalog.errors import AccessDenied
 from koinon.catalog.service import CatalogService
+from koinon.corporate_profiles.mappers import decorate_person
+from koinon.corporate_profiles.projector import CorporateProfileProjector
+from koinon.corporate_profiles.repositories import CorporateProfileRepository
 from koinon.organization_people.dtos import (
     OrganizationDirectorySettings,
     OrganizationDirectorySettingsInput,
     OrganizationPersonCreate,
     OrganizationPersonPage,
     OrganizationPersonPatch,
-    OrganizationProfileFields,
-    OrganizationProfileMapping,
     OrganizationProfileMappingInput,
     OrganizationUnitInput,
     OrganizationUnitPage,
@@ -42,8 +43,6 @@ from koinon.organization_people.repositories import (
     OrganizationPersonRepository,
     OrganizationProfileMappingRepository,
     OrganizationUnitRepository,
-    subjects,
-    subtree_depth,
 )
 from koinon.profiles.service import ProfileService, profile_id
 
@@ -83,7 +82,11 @@ class OrganizationPeopleService:
         units: OrganizationUnitRepository,
         settings: OrganizationDirectorySettingRepository,
         mappings: OrganizationProfileMappingRepository,
+        presentation: CorporateProfileProjector | None = None,
+        corporate_profiles: CorporateProfileRepository | None = None,
     ):
+        self.presentation = presentation
+        self.corporate_profiles = corporate_profiles
         (
             self.catalog,
             self.profiles,
@@ -147,13 +150,7 @@ class OrganizationPeopleService:
         wanted = {subject for subject, _, _ in rows} | {row.subject for row, _ in manager_rows.values()}
         if wanted:
             members = self.catalog.effective_membership_rows()
-            current = set(
-                (
-                    await self.people._require_session().scalars(
-                        subjects(members, tenant_id, workspace_id).where(members.c.subject.in_(wanted))
-                    )
-                ).all()
-            )
+            current = await self.people.visible_subjects(members, tenant_id, wanted, workspace_id)
             if not wanted <= current:
                 denied()
 
@@ -211,12 +208,44 @@ class OrganizationPeopleService:
             await self._fresh_output(actor, tenant_id, workspace_id, rows, managers, total, filters)
         else:
             await self._verify_output(actor, tenant_id, workspace_id, rows, managers)
+        items = [
+            person_view(subject, row, profile, tenant_id, workspace_id, units, managers, providers)
+            for subject, row, profile in rows
+        ]
+        if self.presentation is not None:
+            query, page_query = self.people.presentation_queries(members, tenant_id, workspace_id, **filters)
+            wanted = {subject for subject, _, _ in rows} | {row.subject for row, _ in managers.values()}
+            projected = await self.presentation.batch(
+                actor,
+                tenant_id,
+                wanted,
+                workspace_id,
+                count_query=query if unit is not None and unit.read_only else None,
+                expected_total=total,
+                people=([row for _, row, _ in rows if row] + [row for row, _ in managers.values()])
+                if unit is not None and unit.read_only
+                else (),
+                units=list(units.values()) if unit is not None and unit.read_only else (),
+                unassigned=[subject for subject, row, _ in rows if row is None]
+                if unit is not None and unit.read_only
+                else (),
+                page_query=page_query if unit is not None and unit.read_only else None,
+                page_subjects=[subject for subject, _, _ in rows],
+            )
+            items = [
+                decorate_person(
+                    value,
+                    subject,
+                    projected,
+                    tenant_id,
+                    workspace_id,
+                    managers[row.manager_id][0].subject if row and row.manager_id in managers else None,
+                )
+                for value, (subject, row, _) in zip(items, rows, strict=True)
+            ]
         size = filters.get("page_size", 25)
         return OrganizationPersonPage(
-            items=[
-                person_view(subject, row, profile, tenant_id, workspace_id, units, managers, providers)
-                for subject, row, profile in rows
-            ],
+            items=items,
             total=total,
             page=filters.get("page", 1),
             page_size=size,
@@ -304,16 +333,49 @@ class OrganizationPeopleService:
             await self._member(tenant_id, manager.subject, workspace_id)
         await self._fresh_self_output(actor, tenant_id, workspace_id, managers)
         subject, row, profile = rows[0]
-        return person_view(subject, row, profile, tenant_id, workspace_id, units, managers, providers)
+        value = person_view(subject, row, profile, tenant_id, workspace_id, units, managers, providers)
+        if self.presentation is not None:
+            wanted = {actor} | {item.subject for item, _ in managers.values()}
+            projected = await self.presentation.batch(
+                actor,
+                tenant_id,
+                wanted,
+                workspace_id,
+                own=True,
+                people=[row] if row else (),
+                units=list(units.values()),
+                unassigned=[actor] if row is None else (),
+            )
+            return decorate_person(
+                value,
+                actor,
+                projected,
+                tenant_id,
+                workspace_id,
+                managers[row.manager_id][0].subject if row and row.manager_id in managers else None,
+            )
+        return value
 
     @transactional(read_only=True)
     async def avatar(self, actor, tenant_id, identifier, *, workspace_id=None):
-        await self._scope(actor, tenant_id, workspace_id)
+        await self._membership(actor, tenant_id, workspace_id)
         row = await self.people.scoped(tenant_id, identifier)
         profile = await self.profiles.profiles.find_by_id(identifier) if row is None else None
         subject = row.subject if row else profile.subject if profile else None
         if subject is None:
             denied()
+        if subject != actor:
+            await self._scope(actor, tenant_id, workspace_id)
+        if self.presentation is not None:
+            projected = await self.presentation.batch(
+                actor, tenant_id, {subject}, workspace_id, own=subject == actor
+            )
+            content = projected[subject].avatar
+            if not content:
+                from pyfly.kernel import ResourceNotFoundException
+
+                raise ResourceNotFoundException("Avatar is unavailable", code="AVATAR_NOT_FOUND")
+            return content
         await self._member(tenant_id, subject, workspace_id)
         content = await self.profiles.avatar(subject)
         await self._fresh_avatar_scope(actor, tenant_id, workspace_id, subject)
@@ -334,9 +396,7 @@ class OrganizationPeopleService:
         seen = {row.id}
         for _ in range(32):
             if current is None:
-                depth = await subtree_depth(
-                    self.people._require_session(), Person, tenant_id, row.id, "manager_id"
-                )
+                depth = await self.people.subtree_depth(tenant_id, row.id)
                 if len(seen) - 1 + depth > 32:
                     conflict("Reporting lines exceed the supported depth")
                 return
@@ -399,6 +459,12 @@ class OrganizationPeopleService:
         changes = body.model_dump(
             exclude_unset=True, exclude={"expected_revision", "manage_locally", "managed_provider_id"}
         )
+        if row.provider_id:
+            from koinon.corporate_profiles.policy import position_fields
+
+            current_mapping = await self.mappings.scoped(tenant_id, row.provider_id)
+            if current_mapping and current_mapping.profile_sync_json is not None:
+                row.managed_fields = position_fields(current_mapping)
         if set(changes).intersection(row.managed_fields) and not body.manage_locally:
             conflict("This information is managed by the identity provider")
         if body.manage_locally:
@@ -410,17 +476,11 @@ class OrganizationPeopleService:
             mapping = await self.mappings.scoped(tenant_id, body.managed_provider_id)
             if provider is None or provider.status != "active" or mapping is None or not mapping.enabled:
                 denied()
-            fields = {key: value for key, value in mapping.fields_json.items() if value is not None}
-            if not fields:
+            from koinon.corporate_profiles.policy import position_fields
+
+            managed = position_fields(mapping)
+            if not managed and mapping.profile_sync_json is None:
                 conflict("Configure organizational profile fields before choosing this provider")
-            managed = [
-                {
-                    "job_title": "job_title",
-                    "unit_external_key": "unit_id",
-                    "manager_external_subject": "manager_id",
-                }[key]
-                for key in fields
-            ]
             if set(changes).intersection(managed):
                 conflict("Save source ownership separately from managed values")
             row.provider_id, row.external_subject, row.managed_fields = provider.id, None, managed
@@ -441,9 +501,7 @@ class OrganizationPeopleService:
         seen = {identifier}
         for _ in range(32):
             if current is None:
-                depth = await subtree_depth(
-                    self.unit_repository._require_session(), Unit, tenant_id, identifier, "parent_id"
-                )
+                depth = await self.unit_repository.subtree_depth(tenant_id, identifier)
                 if len(seen) - 1 + depth > 32:
                     conflict("Organization units exceed the supported depth")
                 return
@@ -573,24 +631,22 @@ class OrganizationPeopleService:
     @transactional(read_only=True)
     async def mapping(self, actor, tenant_id, provider_id):
         await self.catalog.authorize(actor, tenant_id, "identity:manage")
-        if await self.mappings.provider(tenant_id, provider_id) is None:
+        provider = await self.mappings.provider(tenant_id, provider_id)
+        if provider is None:
             denied()
         row = await self.mappings.scoped(tenant_id, provider_id)
         await self._fresh_mapping_scope(actor, tenant_id, provider_id)
-        return OrganizationProfileMapping(
-            tenant_id=tenant_id,
-            provider_id=provider_id,
-            revision=row.revision if row else 0,
-            enabled=row.enabled if row else False,
-            fields=OrganizationProfileFields.model_validate(row.fields_json if row else {}),
-        )
+        from koinon.corporate_profiles.policy import mapping_view
+
+        return mapping_view(tenant_id, provider_id, row, provider)
 
     @transactional
     async def update_mapping(self, actor, tenant_id, provider_id, body: OrganizationProfileMappingInput):
         await self.catalog.authorize(actor, tenant_id, "identity:manage")
         await self.catalog._lock_tenant(tenant_id)
         await self.catalog.authorize(actor, tenant_id, "identity:manage")
-        if await self.mappings.provider(tenant_id, provider_id) is None:
+        provider = await self.mappings.provider(tenant_id, provider_id)
+        if provider is None:
             denied()
         row = await self.mappings.scoped(tenant_id, provider_id)
         if (row.revision if row else 0) != body.expected_revision:
@@ -602,21 +658,26 @@ class OrganizationPeopleService:
             body.fields.model_dump(),
         )
         row.updated_at, row.updated_by = datetime.now(UTC), actor
+        if "profile_sync" in body.model_fields_set:
+            row.profile_sync_json = (
+                body.profile_sync.model_dump(mode="json") if body.profile_sync is not None else None
+            )
         await self.mappings.save(row)
+
+        if self.corporate_profiles is not None:
+            await self.corporate_profiles.queue_provider(tenant_id, provider_id)
+
         await self.catalog.authorize(actor, tenant_id, "identity:manage")
         await self.catalog._audit(
             actor, tenant_id, "organization.profile_mapping.updated", provider_id, {"revision": row.revision}
         )
-        return OrganizationProfileMapping(
-            tenant_id=tenant_id,
-            provider_id=provider_id,
-            revision=row.revision,
-            enabled=row.enabled,
-            fields=OrganizationProfileFields.model_validate(row.fields_json),
-        )
+        await self.catalog.authorize(actor, tenant_id, "identity:manage")
+        from koinon.corporate_profiles.policy import mapping_view
+
+        return mapping_view(tenant_id, provider_id, row, provider)
 
     @transactional
-    async def observe_login(self, context):
+    async def observe_login(self, context, *, observed_at=None):
         from koinon.organization_people.claims import observe_login
 
-        await observe_login(self, context)
+        await observe_login(self, context, observed_at=observed_at)

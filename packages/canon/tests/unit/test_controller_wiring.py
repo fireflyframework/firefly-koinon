@@ -1,4 +1,5 @@
 # Copyright 2024-2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,6 +37,7 @@ import importlib
 import inspect
 import os
 import pkgutil
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -65,7 +67,7 @@ def _controller_classes() -> list[type]:
 
 
 @pytest.mark.asyncio
-async def test_every_controller_resolves_from_the_booted_container() -> None:
+async def test_every_controller_resolves_from_the_booted_container(monkeypatch) -> None:
     # A fresh application, not ``flycanon.main._pyfly``: that module-level
     # singleton is booted by the OpenAPI snapshot test in the same
     # process, and pyfly's context does not survive a second startup.
@@ -73,12 +75,17 @@ async def test_every_controller_resolves_from_the_booted_container() -> None:
 
     from flycanon.app import CanonApplication
 
+    dense = AsyncMock()
+    monkeypatch.setattr(
+        "flycanon.core.services.retrieval.corpus_factory._build_dense_store", lambda *_args: dense
+    )
     controllers = _controller_classes()
     assert len(controllers) >= 10, [c.__name__ for c in controllers]
 
     pyfly_app = PyFlyApplication(CanonApplication)
     await pyfly_app.startup()
     try:
+        dense.initialise.assert_awaited_once()
         container = pyfly_app.context.container
         unresolved: dict[str, str] = {}
         for cls in controllers:
@@ -89,6 +96,7 @@ async def test_every_controller_resolves_from_the_booted_container() -> None:
         assert not unresolved, unresolved
     finally:
         await pyfly_app.shutdown()
+    dense.close.assert_awaited_once()
 
 
 def test_intake_service_is_the_registered_bean_of_its_module() -> None:
