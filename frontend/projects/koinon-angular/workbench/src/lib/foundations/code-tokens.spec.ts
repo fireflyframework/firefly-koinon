@@ -7,10 +7,13 @@ it('highlights explicit common languages without changing whitespace or untruste
     ['json', '{"name": "你好", "enabled": true}\n'],
     ['javascript', '// comment\nconst answer = 42;\n'],
     ['php', '<?php\nfunction greet($name) { return "Hello"; }\n'],
+    ['html', '<div class="example">Hello</div>\n'],
   ]) {
     const tokens = await codeTokens(code, language);
     expect(tokens.map((token) => token.text).join('')).toBe(code);
     expect(tokens.some((token) => token.kind.startsWith('hljs-'))).toBe(true);
+    if (language === 'html')
+      expect(tokens.some((token) => token.kind.split(' ').includes('keyword'))).toBe(true);
   }
 });
 it('keeps unknown, plain and oversized code exact without guessing a language', async () => {

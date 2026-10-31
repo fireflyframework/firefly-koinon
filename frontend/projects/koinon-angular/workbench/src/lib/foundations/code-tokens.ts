@@ -12,6 +12,7 @@ interface HighlightNode {
 let highlighter: Promise<ReturnType<typeof import('lowlight').createLowlight>> | undefined;
 const tokenStyles: Readonly<Record<string, string>> = {
   'hljs-keyword': 'keyword',
+  'hljs-name': 'keyword',
   'hljs-literal': 'keyword',
   'hljs-selector-tag': 'keyword',
   'hljs-string': 'string',
