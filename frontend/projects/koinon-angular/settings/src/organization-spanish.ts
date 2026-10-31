@@ -94,7 +94,7 @@ export const ORGANIZATION_SPANISH: Readonly<Record<string, string>> = {
   'Corporate profile mapping': 'Asignación de datos corporativos',
   'Use selected claims from verified sign-in to maintain organization information. Photos, personal preferences and access roles stay separate.':
     'Usa atributos seleccionados de un inicio de sesión verificado para mantener los datos de la organización. Las fotos, las preferencias personales y los roles de acceso se gestionan por separado.',
-  'Choose a provider': 'Elegir proveedor',
+  'Choose a provider': 'Elige un proveedor',
   'Source: verified sign-in claims': 'Origen: atributos de inicio de sesión verificados',
   'Only claims supplied by this installation can be used. Missing claims leave existing values unchanged. No external directory is queried.':
     'Solo se pueden usar atributos proporcionados por esta instalación. Los atributos ausentes no cambian los valores existentes. No se consulta ningún directorio externo.',
