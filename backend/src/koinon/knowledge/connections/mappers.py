@@ -27,3 +27,22 @@ def connection_dto(row: KnowledgeConnection) -> dict:
         )
     }
     return {**result, "created_at": row.created_at.isoformat(), "updated_at": row.updated_at.isoformat()}
+
+
+def dependency_configuration(row, provider):
+    if row is None:
+        return None
+    admitted = provider if provider is not None and row.model_id in provider.model_ids else None
+    return {
+        "scope": "tenant" if row.workspace_id is None else "workspace",
+        "mode": row.mode,
+        "enabled": row.enabled,
+        "provider": admitted.kind if admitted is not None else None,
+        "model_id": row.model_id if admitted is not None else None,
+        "configured": bool(
+            row.enabled
+            and admitted is not None
+            and admitted.enabled
+            and (admitted.kind == "ollama" or admitted.secret_ciphertext)
+        ),
+    }

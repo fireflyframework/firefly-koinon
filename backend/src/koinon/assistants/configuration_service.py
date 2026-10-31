@@ -174,7 +174,7 @@ class AssistantConfigurationService:
             ],
         }
 
-    async def agent_dto(self, row: AgentConfiguration) -> dict:
+    async def agent_dto(self, row: AgentConfiguration, *, subject=None, scope: dict | None = None) -> dict:
         provider = await self.scoped(self.providers, row.tenant_id, row.provider_id)
         state = provider_state(provider)
         option_error = None
@@ -199,7 +199,17 @@ class AssistantConfigurationService:
             capability["chat"]["supported"] is False
             or (bool(row.tools) and capability["tools"]["supported"] is False)
         )
-        dependencies = self.dependencies.for_tools(row.tools)
+        dependencies = await self.dependencies.for_scope(
+            subject,
+            row.tenant_id,
+            row.tools,
+            scope or {},
+            current_agent={
+                "provider": provider.kind,
+                "model_id": row.model_id,
+                "configured": bool(configured),
+            },
+        )
         checks = [
             {
                 "id": "configuration",
@@ -339,7 +349,7 @@ class AssistantConfigurationService:
         row.updated_at = timestamp()
         row = await self.agents.save(row)
         await self.catalog._audit(subject, tenant_id, "agent.saved", row.id, {"revision": row.revision})
-        return await self.agent_dto(row)
+        return await self.agent_dto(row, subject=subject, scope=row.scope)
 
     async def list_agents(self, subject: str, tenant_id: str, *, scope: dict | None = None) -> list[dict]:
         if scope is not None:
@@ -347,10 +357,10 @@ class AssistantConfigurationService:
         visible = []
         for row in await self.agents.find_all(tenant_id=tenant_id):
             try:
-                await self.validate_scope(subject, tenant_id, scope or {}, row.scope)
+                admitted = await self.validate_scope(subject, tenant_id, scope or {}, row.scope)
             except AccessDenied:
                 continue
-            visible.append(await self.agent_dto(row))
+            visible.append(await self.agent_dto(row, subject=subject, scope=admitted))
         if not visible and scope is None:
             await self.catalog.authorize(subject, tenant_id, "chat:use")
         return visible
@@ -416,7 +426,7 @@ class AssistantConfigurationService:
         row = await self.scoped(self.agents, tenant_id, agent_id)
         await self.validate_scope(subject, tenant_id, row.scope)
         await self.validate_provider(subject, tenant_id, row.provider_id)
-        return await self.agent_dto(row)
+        return await self.agent_dto(row, subject=subject, scope=row.scope)
 
     @transactional(read_only=True)
     async def agent_page(
