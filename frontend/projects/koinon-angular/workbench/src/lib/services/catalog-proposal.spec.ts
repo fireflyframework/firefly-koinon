@@ -95,6 +95,7 @@ it('sends only explicit confirmation and the reviewed revision, with duplicate c
   );
   await state.load('run', 'result');
   const applying = state.apply();
+  await vi.waitFor(()=>expect(calls.filter(call=>call.method==='POST')).toHaveLength(1));
   await state.apply();
   expect(calls.filter((call) => call.method === 'POST')).toHaveLength(1);
   expect(calls.at(-1)?.options?.body).toEqual({ confirm: true, expected_revision: 1 });
@@ -148,6 +149,7 @@ it('discards a late ignored-abort response and refuses operations after permissi
     },
   );
   const loading = state.load('run', 'result');
+  await vi.waitFor(()=>expect(pendingSignal).toBeInstanceOf(AbortSignal));
   facade.tenantId.set('south');
   TestBed.tick();
   expect(pendingSignal.aborted).toBe(true);

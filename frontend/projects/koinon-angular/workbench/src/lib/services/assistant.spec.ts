@@ -616,6 +616,7 @@ it('projects tool lifecycle once per invocation and ignores older replayed trans
 });
 
 it('discards a delayed thread creation when a new folder draft replaces it', async () => {
+  let registered=false;
   let release: () => void = () => {
     throw Error('Deferred response has not been registered');
   };
@@ -623,6 +624,7 @@ it('discards a delayed thread creation when a new folder draft replaces it', asy
     request: async <T>(method: HttpMethod, path: string) => {
       if (path.endsWith('/chat/threads') && method === 'POST')
         return await new Promise<T>((resolve) => {
+          registered=true;
           release = () => resolve({ id: 'old-thread', scope: {}, revision: 1 } as T);
         });
       return (
@@ -648,6 +650,7 @@ it('discards a delayed thread creation when a new folder draft replaces it', asy
   const assistant = TestBed.inject(KoinonAssistant);
   await assistant.initialize();
   const pending = assistant.ensureThread();
+  await vi.waitFor(()=>expect(registered).toBe(true));
   expect(assistant.pending()).toBe(true);
   assistant.newConversation({
     id: 'new-folder',
