@@ -1,21 +1,53 @@
-# koinon
+<!-- Copyright 2026 Firefly Software Foundation -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+# Start with koinon
 
-![firefly koinon, your corporate brain](assets/repository-banner.svg)
+<p class="doc-home-lead">Find what your organization knows, ask questions and inspect the evidence. koinon brings documents, datasets and reviewed knowledge together, with access controlled by your organization.</p>
 
-koinon brings your organization’s documents, datasets and reviewed knowledge together. Find the source you need, ask a question and inspect the evidence behind the answer. Review proposed updates before they change what the organization knows.
+## Choose your starting point
 
-Library keeps sources organized. Chat helps you explore them. Settings gives administrators control over access and configuration. The same knowledge capabilities are available through the headless API, typed SDKs and embedded components.
+<div class="doc-entry-list" markdown="0">
+  <section class="doc-entry">
+    <h3>Use shared knowledge</h3>
+    <div><p>Find a source, explore an answer and check its recorded evidence.</p><p><a href="guides/library/">Browse the Library</a> <a href="guides/agents/">Use agents and chat</a></p></div>
+  </section>
+  <section class="doc-entry">
+    <h3>Administer an organization</h3>
+    <div><p>Set up access, people, model connections and knowledge behavior.</p><p><a href="guides/configuration-overview/">Administration overview</a> <a href="guides/knowledge-setup/">Guided setup</a></p></div>
+  </section>
+  <section class="doc-entry">
+    <h3>Build an integration</h3>
+    <div><p>Use the headless API, typed SDKs or embedded components in your product.</p><p><a href="guides/integrations/">Integration overview</a> <a href="guides/embedding/">Embed the interface</a></p></div>
+  </section>
+  <section class="doc-entry">
+    <h3>Operate a deployment</h3>
+    <div><p>Configure infrastructure, preserve data and plan backup and recovery.</p><p><a href="operations/">Operations guide</a> <a href="operations/backup-restore/">Backup and restore</a></p></div>
+  </section>
+</div>
 
-Take the [visual walkthrough](guides/interface-tour.md) for guided screenshots of configuration and everyday use. Start with the [library guide](guides/library.md) if you use knowledge. Read the [setup guide](guides/administration.md) if you configure the product. Integrators can use the [headless API and SDK](guides/headless.md) or [embed components](guides/embedding.md) inside another product.
+## Connect your tools
+
+<div class="doc-connection-paths" markdown="0">
+  <section>
+    <h3>Develop with a typed SDK</h3>
+    <p>Keep authentication, scope and explicit review in your application's workflow.</p>
+    <ul><li><a href="guides/headless-python/">Python</a></li><li><a href="guides/headless-typescript/">TypeScript</a></li><li><a href="guides/headless-java/">Java 21 and later</a></li></ul>
+  </section>
+  <section>
+    <h3>Use an AI client</h3>
+    <p>Connect your authorized repository and review changes inside a compatible host.</p>
+    <ul><li><a href="guides/connect-claude/">Connect Claude</a></li><li><a href="guides/connect-chatgpt/">Connect ChatGPT</a></li><li><a href="guides/mcp-knowledge-management/">Understand in-chat review</a></li></ul>
+  </section>
+</div>
+
+## See the workflow
+
+<figure class="doc-product-preview">
+  <a href="guides/interface-tour/"><img src="assets/screenshots/chat-answer.png" alt="koinon Chat with a source-based answer, a query-results table and an Audit control" width="1440" height="1000" loading="lazy"></a>
+  <figcaption>Controlled API fixture showing Chat and query results for layout review. The example data is illustrative. <a href="guides/interface-tour/">Follow the visual walkthrough</a> for Library, configuration and source inspection.</figcaption>
+</figure>
+
+Library keeps sources organized. Chat helps you explore them. Settings gives administrators control over access and configuration. Proposed knowledge updates require review before they change the repository. Read the [architecture guide](concepts/architecture.md) for identities and persistence boundaries.
 
 !!! warning "Evaluation release"
     Version 26.10.0-alpha.1 is intended for evaluation. Production acceptance and migration parity remain incomplete. Read the [published release and verified journeys](releases/26.10.0-alpha.1.md), including the remaining provider, deployment and migration acceptance.
-
-| Your task | Start here |
-| --- | --- |
-| Find or update knowledge | [Library](guides/library.md) |
-| Ask a question and inspect evidence | [Agents and chat](guides/agents.md) |
-| Configure providers and access | [Administration](guides/administration.md) |
-| Add knowledge to another product | [Headless integration](guides/headless.md) |
-| Deploy, back up and operate | [Operations](operations/README.md) |
-| Understand identities and persistence | [Architecture](concepts/architecture.md) |
