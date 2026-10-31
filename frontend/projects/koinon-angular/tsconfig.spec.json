@@ -10,6 +10,7 @@
     "src/**/*.d.ts",
     "src/**/*.spec.ts",
     "workbench/**/*.spec.ts",
+    "chat/**/*.spec.ts",
     "settings/**/*.spec.ts"
   ]
 }

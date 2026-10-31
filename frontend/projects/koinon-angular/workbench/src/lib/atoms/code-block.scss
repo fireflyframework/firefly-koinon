@@ -4,6 +4,8 @@
   min-width: 0;
 }
 figure {
+  min-width: 0;
+  max-width: 100%;
   margin: 0;
   border: 1px solid var(--ui-line, #d8d4ca);
   border-radius: 8px;
@@ -19,6 +21,11 @@ figcaption {
   font: 500 10px/1.5 var(--ffk-font, 'Manrope Variable', sans-serif);
   color: var(--ui-muted, #62645b);
   border-bottom: 1px solid var(--ui-line, #d8d4ca);
+}
+.language {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 button {
   display: inline-flex;
@@ -47,8 +54,8 @@ pre {
   max-height: 320px;
   overflow: auto;
   overscroll-behavior: contain;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+  white-space: pre;
+  overflow-wrap: normal;
   tab-size: 2;
   direction: ltr;
   text-align: left;
