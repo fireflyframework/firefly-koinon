@@ -1,3 +1,5 @@
+# Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Firefly Software Foundation
 # Modifications Copyright 2026 Firefly Software Foundation
 #
@@ -25,6 +27,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
+from pathlib import Path
 from typing import Any
 
 from pyfly.container import rest_controller
@@ -348,6 +351,8 @@ class FilesController:
             settings=self._settings,
             workspace_storage_used_bytes=storage_used,
         )
+        # The worker reads the durable object rather than this request copy.
+        Path(recv.local_temp_path).unlink(missing_ok=True)
         # Track storage now (mirrors the sync path); the
         # ``already_received`` branch in the worker will NOT track again.
         await self._workspaces.track_storage(workspace_id, recv.size_bytes)

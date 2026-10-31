@@ -6,7 +6,7 @@ koinon brings documents, datasets and reviewed knowledge into one place so peopl
 
 Use Library to organize and update sources, Chat to explore knowledge, and Settings to manage access and configuration. Proposed knowledge changes require human approval before they are applied.
 
-Development and integrated qualification are in progress. There is no qualified product release yet. Existing installations continue to operate. Migration notices and repository archiving follow verified capability coverage, a tested migration path and a qualified release.
+Version 26.10.0-alpha.1 is an evaluation build. Download packaged artifacts from [GitHub Releases](https://github.com/fireflyframework/firefly-koinon/releases) and follow the [guided setup](docs/guides/knowledge-setup.md). Production acceptance and migration parity remain incomplete; existing installations and retained data must be preserved. See the [qualification record](docs/operations/qualification.md) before planning a rollout.
 
 The backend uses pyfly for application services, security, data access and agents. The API and durable workers run independently of the frontend. Typed Python, TypeScript and Java SDKs let Forge and other products add knowledge capabilities without installing Angular. Hosts that need an interface can use the Angular library or encapsulated custom elements.
 

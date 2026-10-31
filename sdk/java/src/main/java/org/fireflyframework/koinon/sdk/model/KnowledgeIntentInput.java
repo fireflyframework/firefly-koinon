@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /** Typed canonical KnowledgeIntentInput contract. */
 public record KnowledgeIntentInput(
-    @JsonProperty("action") KnowledgeCommitReceiptAction action,
+    @JsonProperty("action") ExternalReviewInputAction action,
     @JsonProperty("destination_id") String destinationId,
     @JsonProperty("target_item_id") JsonField<String> targetItemId,
     @JsonProperty("expected_version") JsonField<Long> expectedVersion,
@@ -16,7 +16,7 @@ public record KnowledgeIntentInput(
 ) {
 
     public static KnowledgeIntentInput empty(){return new KnowledgeIntentInput(null,null,null,null,null,null);}
-    public KnowledgeIntentInput withAction(KnowledgeCommitReceiptAction value){return new KnowledgeIntentInput(value,destinationId,targetItemId,expectedVersion,content,origin);}
+    public KnowledgeIntentInput withAction(ExternalReviewInputAction value){return new KnowledgeIntentInput(value,destinationId,targetItemId,expectedVersion,content,origin);}
     public KnowledgeIntentInput withDestinationId(String value){return new KnowledgeIntentInput(action,value,targetItemId,expectedVersion,content,origin);}
     public KnowledgeIntentInput withTargetItemId(String value){return new KnowledgeIntentInput(action,destinationId,JsonField.of(value),expectedVersion,content,origin);}
     public KnowledgeIntentInput clearTargetItemId(){return new KnowledgeIntentInput(action,destinationId,JsonField.clear(),expectedVersion,content,origin);}

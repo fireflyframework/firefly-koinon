@@ -30,9 +30,9 @@ Faithful to alexzhang13/rlm's mechanism (adapted to flycanon):
   ``final(answer, filings=..., pages=..., found=...)``; ``found=False`` flags a
   structured no-answer that flows out of the loop as the third return value.
 
-``exec`` runs model-written code, so the namespace exposes only a safe builtins
-subset (text processing, no open/import/eval) plus ``re``, ``llm``, ``rlm``,
-``final``, ``print``.
+Required provenance uses the public persistent Monty VM and explicit data-only
+host callbacks. Standalone callers may select the legacy CPython runners, whose
+restricted namespace/resource controls are not an execution-isolation boundary.
 
 The engine is **corpus-agnostic**: ``docs`` is duck-typed via the
 :class:`DocCorpus` protocol, so no concrete document store is imported here.
@@ -49,16 +49,35 @@ direction was chosen.
 from __future__ import annotations
 
 import io
+import json
 import logging
 import re
 import traceback
 from collections.abc import Callable
 from contextlib import redirect_stdout, suppress
-from typing import Any, Protocol, runtime_checkable
+from dataclasses import asdict
+from hashlib import sha256
+from typing import Any, Protocol, cast, runtime_checkable
 
+from pydantic import TypeAdapter
+from pydantic_ai.messages import ToolReturnPart
+
+from flycanon.core.agents.model_bindings import current_scope
+from flycanon.core.services.query.rlm.actions import (
+    FinalAnswerAction,
+    FinalAnswerRequiredFeedback,
+    ReadRequiredFeedback,
+    RlmToolReceipt,
+)
 from flycanon.core.services.query.rlm.chat import RlmChatClient
+from flycanon.core.services.query.rlm.native_client import NativeRlmChatClient, RlmToolProtocolError
 from flycanon.core.services.query.rlm.safe_builtins import _SAFE_BUILTINS
 from flycanon.core.services.query.rlm.sandbox.executor import BlockResult, SandboxExecutor
+from flycanon.core.services.query.rlm.sandbox.monty_executor import (
+    ExecutionTreeBudget,
+    MontyExecutor,
+    unavailable,
+)
 
 
 @runtime_checkable
@@ -80,6 +99,67 @@ class DocCorpus(Protocol):
     def npages(self, key: str) -> int: ...
 
 
+class _ContentReads:
+    """Per-run successful content releases, separate from shared corpus/citation state."""
+
+    def __init__(self, docs: DocCorpus, *, enforce: bool):
+        self._docs = docs
+        self._enforce = enforce
+        self._released: set[str] = set()
+
+    @property
+    def read(self):
+        return bool(self._released)
+
+    def admits(self, filings):
+        if not self._enforce:
+            return True
+        if not self._released:
+            return False
+        if filings is None:
+            return True
+        if isinstance(filings, str):
+            filings = [filings]
+        return isinstance(filings, (list, tuple)) and all(
+            isinstance(key, str) and key in self._released for key in filings
+        )
+
+    @property
+    def accessed(self):
+        return getattr(self._docs, "accessed", [])
+
+    def keys(self):
+        return list(self._docs.keys())
+
+    def __iter__(self):
+        return iter(self.keys())
+
+    def __len__(self):
+        return len(self.keys())
+
+    def __contains__(self, key):
+        return key in self._docs
+
+    def __getitem__(self, key):
+        release = getattr(self._docs, "_execution_read", None)
+        content = release(key, as_pages=False) if callable(release) else self._docs[key]
+        self._released.add(key)
+        return content
+
+    def pages(self, key):
+        release = getattr(self._docs, "_execution_read", None)
+        pages = release(key, as_pages=True) if callable(release) else self._docs.pages(key)
+        self._released.add(key)
+        return pages
+
+    def npages(self, key):
+        return self._docs.npages(key)
+
+
+class _ContentReadRequired(ValueError):
+    pass
+
+
 # The single tool the orchestrator drives: a persistent Python REPL. Claude emits
 # native tool-use blocks for this rather than markdown code fences, so execution
 # is reliable.
@@ -87,7 +167,8 @@ _PY_TOOL = [
     {
         "name": "python",
         "description": "Execute Python in the persistent REPL and return its stdout. The "
-        "namespace has `docs`, `re`, `llm`, `rlm`, `final`. Call "
+        "namespace has `docs`, `re`, `llm`, `rlm`, `final`. "
+        "Use the existing helpers directly; imports, files, and network access are unavailable. Call "
         "`final(answer, filings=[...], pages=[...], found=True)` from code to finish; "
         "pass `found=False` when the documents do not contain the answer.",
         "input_schema": {
@@ -97,6 +178,25 @@ _PY_TOOL = [
         },
     }
 ]
+
+_MONTY_TOOL = [{
+    **_PY_TOOL[0],
+    "description": (
+        "Execute the Monty Python subset with native re and the supplied docs, llm, rlm, and final helpers. "
+        "Use docs.get(fid), docs.pages(fid), and docs.keys(); "
+        "host files, environment, and network are unavailable. "
+        "Finish with final(answer, filings=[...], pages=[...], found=True)."
+    ),
+}]
+
+_TERMINAL_TOOL = {
+    "name": "final_answer",
+    "description": (
+        "Finish with answer text and citations as data after reading the original sources. "
+        "Use this tool for final text, including multiline answers, rather than embedding text in code."
+    ),
+    "input_schema": FinalAnswerAction.model_json_schema(),
+}
 
 # ---------------------------------------------------------------------------
 # restricted exec sandbox
@@ -152,12 +252,17 @@ Environment (persists across turns):
   finish, citing the document id(s) and page number(s) you used.
 
 Rules:
+- Imports are disabled. `re` and the helpers above are already available; do not
+  run `import re` or try to load modules, files, or network clients.
 - Use the `python` tool to run code; its stdout is returned to you. Call it
   repeatedly, building on the persistent namespace.
 - Strategy: find the right document from `docs.keys()` (match the entity in the
   question), read the relevant pages (search the text for the figure), extract the
   answer, then call `final(...)`. Print intermediate findings so you can see them.
   Keep printed output small (slice/grep; don't print whole documents).
+- Treat sub-model output as secondary assistance, not source data. Check its
+  claims against `docs` before using them. Calculate from figures read directly
+  from the original text; list numbers and explanatory examples are not data.
 - `print()` output shown back to you is truncated to ~4000 characters for DISPLAY
   ONLY -- a long string in a variable is kept in full even when its printout looks
   cut off. So if your answer is already complete in a variable, do NOT decide it was
@@ -176,9 +281,101 @@ Rules:
 _NESTED_SYSTEM = """\
 You are a recursive sub-model answering a question over a text passage held in the
 variable `text` (a string). Inspect it with the `python` tool. Helpers: `llm(prompt)`,
-`re`, `print`, and `final(answer)` to finish. Its stdout returns to you. Search `text`
-for the figure, extract it, then call `final(...)`. If the evidence is not present, call
+`re`, `print`, and `final(answer)` to finish. Its stdout returns to you. Imports are
+disabled; use the supplied `re` and helpers without importing modules. Read figures
+directly from `text` and verify sub-model summaries against it. Extract the answer,
+then call `final(...)`. If the evidence is not present, call
 `final('the documents do not contain this', found=False)`."""
+
+_NATIVE_SYSTEM = SYSTEM.replace("Use the `python` tool", "Use the configured action protocol").replace(
+    "- Always finish by calling `final(...)`. If the evidence is not present, call\n"
+    "  `final('the documents do not contain this', filings=[...], found=False)`.",
+    "- Finish with final only after examining the original evidence. Use found=False only\n"
+    "  when that examination genuinely did not locate an answer; an unexecuted read is not absence.",
+) + """
+
+Completion contract:
+- `final(answer, filings=None, pages=None, found=True)` requires answer text as its
+  first argument. `filings` is a list of actual document ids from `docs.keys()`,
+  not extracted facts. `pages` is a corresponding list of zero-based integer page
+  indexes, not page text. `found=False` reports that evidence was not found.
+- Read original document contents before any positive or negative corpus conclusion.
+  Listing ids, checking metadata, or encountering an execution error does not show
+  that the documents lack the answer. Verify source facts before finalizing.
+"""
+
+_NATIVE_NESTED_SYSTEM = _NESTED_SYSTEM.replace(
+    "with the `python` tool", "using the configured action protocol"
+).replace(
+    "then call `final(...)`. If the evidence is not present, call\n"
+    "`final('the documents do not contain this', found=False)`.",
+    "then finish with final. Choose found=False only after examining the supplied text\n"
+    "and genuinely failing to find the answer.",
+)
+
+_MONTY_DOCS = """- `docs` is a guest helper. `docs.keys()` returns actual document ids.
+  `docs.get(fid)` returns full document text; `docs.pages(fid)` returns page strings.
+  `docs.npages(fid)` returns the page count; `docs.contains(fid)` checks an id.
+  Iterate `docs.keys()` and use `len(docs.keys())` for the document count."""
+
+
+def _monty_system(system, *, documents):
+    system = system.replace(
+        "- Imports are disabled. `re` and the helpers above are already available; do not\n"
+        "  run `import re` or try to load modules, files, or network clients.",
+        "- Native `re` and the supplied helpers are already available. Host module\n"
+        "  objects, files, environment, and network access are unavailable.",
+    ).replace(
+        "Its stdout returns to you. Imports are\ndisabled; "
+        "use the supplied `re` and helpers without importing modules.",
+        "Its stdout returns to you. Native `re` and the supplied helpers are already available.",
+    ).replace(
+        "- Always finish by calling `final(...)`. If the evidence is not present, call\n"
+        "  `final('the documents do not contain this', filings=[...], found=False)`.",
+        "- Finish with final after examining the source. Choose found=False only when\n"
+        "  the inspected evidence genuinely does not answer the question.",
+    )
+    if documents:
+        system = system.replace(
+            "- `docs`: dict-like over the corpus. `docs.keys()` -> document ids. `docs[fid]` ->\n"
+            "  full document text. `docs.pages(fid)` -> list of page strings.\n"
+            "  `docs.npages(fid)` -> page count.", _MONTY_DOCS,
+        )
+    return (
+        system + "\nExecution uses Monty's Python subset. Native `re` and the supplied helpers are ready."
+        "\n\nWhen extraction depends on wording or layout you have not observed, first print a bounded "
+        "representative excerpt and inspect the result before choosing a pattern. Validate matches and "
+        "extracted value types before calculating. A pattern miss or parsing failure is not evidence of "
+        "absence: inspect relevant context and revise within the remaining iteration budget. Direct literal "
+        "searches and checked read/compute/final in one action remain valid; do not add verification turns "
+        "for already validated values."
+    )
+
+
+def _typed_tool_system(system):
+    return system.replace(
+        "- `re` is available. `final(answer, filings=[...], pages=[...])`: call this to\n"
+        "  finish, citing the document id(s) and page number(s) you used.",
+        "- `re` is available. Submit the completed answer with `final_answer`, citing\n"
+        "  the actual document id(s) and zero-based page number(s) you used.",
+    ).replace(
+        "`re`, `print`, and `final(answer)` to finish.",
+        "`re` and `print`. Submit the completed answer with `final_answer`.",
+    ).replace(
+        "then call `final(...)`. If the evidence is not present, call\n"
+        "`final('the documents do not contain this', found=False)`.",
+        "then submit it with `final_answer`. Choose found=False only after examining\n"
+        "the supplied text and genuinely failing to find the answer.",
+    ).replace(
+        "`final(...)`", "`final_answer`",
+    ).replace(
+        "Finish with final after", "Finish with final_answer after",
+    ) + (
+        "\nUse python for source inspection and computation. Use final_answer to submit completed "
+        "answer text and citations as data; do not embed final text in Python quotes. "
+        "Its read, scope, and citation checks are the same as the guest final helper. "
+        "A final_answer call must be the only function call in its response."
+    )
 
 
 class RLMSession:
@@ -192,19 +389,23 @@ class RLMSession:
         max_iters: int = 8,
         sub_budget: int = 12,
         on_turn: Callable[[int, list[str]], None] | None = None,
-        sandbox_mode: str = "inprocess",
+        sandbox_mode: str = "monty",
         sandbox_timeout_s: int = 30,
+        corpus_context: str | None = None,
+        _execution_tree: ExecutionTreeBudget | None = None,
     ):
         self.client = client
         self.depth, self.max_depth = depth, max_depth
         self.max_iters, self.sub_budget = max_iters, sub_budget
         self.sub_calls = 0
         self.turns = 0
-        # REPL execution mode. ``inprocess`` (default) runs each turn's code
-        # in the restricted ``exec`` namespace below; ``subprocess`` runs it
-        # in the scrubbed-env sandbox child, servicing docs/llm/rlm from here.
+        # Required scopes use the persistent VM. Explicit legacy modes are
+        # standalone compatibility only and provide no isolation guarantee.
         self.sandbox_mode = sandbox_mode
         self.sandbox_timeout_s = sandbox_timeout_s
+        self.corpus_context = corpus_context
+        self._execution_tree = _execution_tree
+        self._execution_scope = None
         # Optional per-turn progress hook. Fired from the (synchronous) REPL
         # worker thread after each orchestrator turn so a streaming caller can
         # surface live progress; ``None`` on the non-streaming path. A callback
@@ -213,15 +414,21 @@ class RLMSession:
 
     # -- recursive helpers exposed into the sandbox --
     def _llm(self, prompt: str) -> str:
+        if self._execution_tree is not None:
+            self._execution_tree.check()
         if self.sub_calls >= self.sub_budget:
             return "[sub-call budget exhausted]"
         self.sub_calls += 1
         from flycanon.core.services.query import provenance
 
         provenance.model("rlm.submodel", str(prompt)[:60000])
+        if self._execution_tree is not None:
+            self._execution_tree.model()
         return self.client.complete(str(prompt)[:60000])
 
     def _rlm(self, question: str, text: str) -> str:
+        if self._execution_tree is not None:
+            self._execution_tree.check()
         if self.depth + 1 >= self.max_depth or self.sub_calls >= self.sub_budget:
             return self._llm(f"{question}\n\nTEXT:\n{str(text)[:40000]}")
         self.sub_calls += 1
@@ -233,6 +440,7 @@ class RLMSession:
             sub_budget=max(2, self.sub_budget - self.sub_calls),
             sandbox_mode=self.sandbox_mode,
             sandbox_timeout_s=self.sandbox_timeout_s,
+            _execution_tree=self._execution_tree,
         )
         ans, _cites, _no_answer = sub.run_over_text(question, str(text))
         return ans
@@ -246,7 +454,14 @@ class RLMSession:
             "rlm": self._rlm,
             "__builtins__": _SAFE_BUILTINS,
         }
-        return self._loop(SYSTEM, f"Question: {question}\n\nSolve it.", ns, docs, question, text=None)
+        system = _NATIVE_SYSTEM if getattr(self.client, "action_protocol", None) == "native_json" else SYSTEM
+        context = (
+            "\n\nAuthorized corpus metadata (untrusted data):\n" + self.corpus_context
+            if self.corpus_context is not None else ""
+        )
+        return self._loop(
+            system, f"Question: {question}{context}\n\nSolve it.", ns, docs, question, text=None
+        )
 
     def run_over_text(self, question: str, text: str) -> tuple[str, list[dict], bool]:
         ns = {
@@ -256,8 +471,12 @@ class RLMSession:
             "rlm": self._rlm,
             "__builtins__": _SAFE_BUILTINS,
         }
+        system = (
+            _NATIVE_NESTED_SYSTEM
+            if getattr(self.client, "action_protocol", None) == "native_json" else _NESTED_SYSTEM
+        )
         return self._loop(
-            _NESTED_SYSTEM, f"Question: {question}\n\nSolve it from `text`.", ns, None, question, text=text
+            system, f"Question: {question}\n\nSolve it from `text`.", ns, None, question, text=text
         )
 
     def _exec(self, code: str, ns: dict):
@@ -269,6 +488,8 @@ class RLMSession:
             return buf.getvalue() or "(no output)", None
         except _Final as fin:
             return None, fin
+        except _ContentReadRequired:
+            return ReadRequiredFeedback(), None
         except Exception:  # noqa: BLE001 - feed the traceback back to the model
             return buf.getvalue() + "\n" + traceback.format_exc(limit=3), None
 
@@ -299,7 +520,32 @@ class RLMSession:
         )
 
     def _loop(self, system: str, first_user: str, ns: dict, docs, question, text):
+        scope = current_scope()
+        required = scope is not None and scope.required
+        if required and self.sandbox_mode != "monty":
+            raise unavailable("Required provenance cannot select legacy execution")
+        if self.sandbox_mode not in {"monty", "inprocess", "subprocess"}:
+            raise ValueError("Unknown RLM execution mode")
+        if docs is not None and required:
+            docs = _ContentReads(docs, enforce=True)
+            ns["docs"] = docs
+
+        if self.sandbox_mode == "monty":
+            system = _monty_system(system, documents=docs is not None)
+            self._execution_scope = scope if required else None
+            if self._execution_tree is None:
+                self._execution_tree = ExecutionTreeBudget(self.max_iters, self.sub_budget)
+            self._authorize_execution()
+            executor = self._build_monty(docs, text, question)
+            try:
+                executor.start()
+                return self._run_loop(system, first_user, docs, question, executor)
+            finally:
+                executor.close()
+
         def final(answer, filings=None, pages=None, found=True):
+            if isinstance(docs, _ContentReads) and not docs.admits(filings):
+                raise _ContentReadRequired
             raise _Final(
                 str(answer),
                 self._citations(filings, pages, docs, question),
@@ -319,6 +565,66 @@ class RLMSession:
                 executor.close()
         return self._run_loop(system, first_user, docs, question, ns)
 
+    def _authorize_execution(self):
+        from flycanon.core.services.query import provenance
+
+        if self._execution_tree is not None:
+            self._execution_tree.check()
+        if self._execution_scope is not None and current_scope() is not self._execution_scope:
+            raise unavailable("The admitted execution connection lifetime has ended")
+        observation = provenance.current()
+        if self._execution_scope is not None and observation is None:
+            raise unavailable("Required execution provenance is unavailable")
+        if observation is not None:
+            with observation.lock:
+                provenance.authority(observation)
+
+    def _build_monty(self, docs, text, question):
+        def document(key, operation):
+            if docs is None:
+                raise ValueError("docs are unavailable in text mode")
+            if type(key) is not str:
+                raise TypeError("A document identifier must be a string")
+            return operation(key)
+
+        def final(answer, filings=None, pages=None, found=True):
+            if type(answer) is not str or type(found) is not bool:
+                raise TypeError("final requires answer text and a boolean found value")
+            if not answer.strip():
+                return executor.reject_final_answer(FinalAnswerRequiredFeedback().content())
+            if filings is not None and not (
+                type(filings) is str or type(filings) in (list, tuple)
+                and all(type(value) is str for value in filings)
+            ):
+                raise TypeError("filings must contain document identifiers")
+            if pages is not None and not (
+                type(pages) is int or type(pages) in (list, tuple)
+                and all(value is None or type(value) is int for value in pages)
+            ):
+                raise TypeError("pages must contain integer indexes")
+            if isinstance(docs, _ContentReads) and not docs.admits(filings):
+                return executor.reject_read(ReadRequiredFeedback().content())
+            if isinstance(docs, _ContentReads) and found and not filings:
+                return executor.reject_final_answer(FinalAnswerRequiredFeedback().content())
+            citations = self._citations(filings, pages, docs, question)
+            self._authorize_execution()
+            return executor.halt({"answer": answer, "citations": citations, "no_answer": not found})
+
+        functions = {
+            "docs_keys": lambda: list(docs.keys()) if docs is not None else [],
+            "docs_getitem": lambda key: document(key, lambda value: docs[value]),
+            "docs_pages": lambda key: document(key, lambda value: docs.pages(value)),
+            "docs_npages": lambda key: document(key, lambda value: docs.npages(value)),
+            "docs_contains": lambda key: document(key, lambda value: value in docs),
+            "llm": self._llm, "rlm": self._rlm, "final": final,
+        }
+        assert self._execution_tree is not None
+        executor = MontyExecutor(
+            functions=functions, authorize=self._authorize_execution, tree=self._execution_tree,
+            max_iters=self.max_iters, timeout=self.sandbox_timeout_s, text=text,
+        )
+        return executor
+
     def _run_loop(self, system, first_user, docs, question, runner):
         """The shared CodeAct orchestration loop.
 
@@ -327,7 +633,19 @@ class RLMSession:
         """
         messages: list[dict[str, Any]] = [{"role": "user", "content": first_user}]
         dead_sandbox = False
+        protocol_error = None
+        native_json = getattr(self.client, "action_protocol", None) == "native_json"
+        native_client = cast(NativeRlmChatClient, self.client) if native_json else None
+        tools = _MONTY_TOOL if isinstance(runner, MontyExecutor) else _PY_TOOL
+        typed_tools = isinstance(runner, MontyExecutor) and not native_json
+        tools_client = self.client if typed_tools and isinstance(self.client, NativeRlmChatClient) else None
+        used_ids: set[str] = set()
+        if typed_tools:
+            tools = [*_MONTY_TOOL, _TERMINAL_TOOL]
+            system = _typed_tool_system(system)
         for _ in range(self.max_iters):
+            if self._execution_tree is not None:
+                self._execution_tree.check()
             self.turns += 1
             logger.debug("rlm turn %d/%d starting", self.turns, self.max_iters)
             if self.on_turn is not None:
@@ -338,16 +656,65 @@ class RLMSession:
                     self.on_turn(self.turns, list(docs.accessed) if docs is not None else [])
             from flycanon.core.services.query import provenance
 
-            provenance.model("rlm.root", repr((system, messages, _PY_TOOL)))
-            resp = self.client.chat_raw(messages, system, _PY_TOOL)
+            request = (
+                native_client.prepare_action(messages, system) if native_client
+                else tools_client.prepare_tools(messages, system, tools) if tools_client else None
+            )
+            provenance.model("rlm.root", request.manifest if request else repr((system, messages, tools)))
+            if self._execution_tree is not None:
+                self._execution_tree.model()
+            try:
+                resp = (
+                    native_client.request_action(request) if native_client and request
+                    else tools_client.request_tools(request) if tools_client and request
+                    else self.client.chat_raw(messages, system, tools)
+                )
+            except RlmToolProtocolError as error:
+                protocol_error = error
+                messages.append({
+                    "role": "user",
+                    "content": (
+                        "Return only a JSON object with exactly one nonblank string field named code. "
+                        "Do not return function calls, Markdown, or plain text."
+                        if native_json else
+                        "Call python with a nonblank string code argument for source inspection "
+                        "or computation, "
+                        "or call final_answer with completed answer text and citations as data. "
+                        "A final_answer call must be the only function call in its response. "
+                        "Do not use Markdown, code fences, or plain text."
+                        if typed_tools else
+                        "Call the actual python function tool with a nonblank string code argument. "
+                        "Do not use Markdown, code fences, or plain text."
+                    ),
+                })
+                continue
             content = resp.get("content", [])
             messages.append({"role": "assistant", "content": content})
             if logger.isEnabledFor(logging.DEBUG):
                 reasoning = "".join(b.get("text", "") for b in content if b.get("type") == "text").strip()
                 if reasoning:
                     logger.debug("rlm turn %d reasoning: %s", self.turns, reasoning[:_TRACE_CHARS])
-            tool_uses = [b for b in content if b.get("type") == "tool_use"]
+            tool_uses = [
+                b for b in content if b.get("type") == ("python_action" if native_json else "tool_use")
+            ]
+            if typed_tools:
+                identifiers = [call.get("id") for call in tool_uses]
+                if (any(type(value) is not str or not value.strip() or len(value) > 256
+                        or value in used_ids for value in identifiers)
+                        or len(set(identifiers)) != len(identifiers)
+                        or any(call.get("name") == "final_answer" for call in tool_uses)
+                        and len(tool_uses) != 1
+                        or any(call.get("name") not in {"python", "final_answer"} for call in tool_uses)):
+                    raise RlmToolProtocolError(
+                        "Invalid terminal action turn", code="RLM_TOOL_PROTOCOL_REQUIRED",
+                    )
+                used_ids.update(identifiers)
             if not tool_uses:  # model answered in text without running code
+                if isinstance(runner, MontyExecutor):
+                    raise RlmToolProtocolError(
+                        "Secure execution requires an actual code action and accepted final callback",
+                        code="RLM_TOOL_PROTOCOL_REQUIRED",
+                    )
                 text = "".join(b.get("text", "") for b in content if b.get("type") == "text")
                 logger.debug(
                     "rlm turn %d answered in plain text without running code (len=%d)",
@@ -358,9 +725,17 @@ class RLMSession:
                 return text.strip(), self._citations(None, None, docs, question), False
             results = []
             for idx, tu in enumerate(tool_uses):
-                code = str(tu.get("input", {}).get("code", ""))
+                code = tu["code"] if native_json else str(tu.get("input", {}).get("code", ""))
                 logger.debug("rlm turn %d code[%d]: %s", self.turns, idx, code[:_TRACE_CHARS])
-                stdout, fin = self._run_block(code, runner, docs, question)
+                if typed_tools:
+                    receipt_tools = [
+                        {"name": tool.name, "input_schema": tool.parameters_json_schema}
+                        for tool in request.parameters.function_tools
+                    ] if request else tools
+                    stdout, fin = self._run_tool(tu, runner, docs, question,
+                        request.manifest if request else repr((system, messages[:-1], tools)), receipt_tools)
+                else:
+                    stdout, fin = self._run_block(code, runner, docs, question)
                 if fin is not None:
                     logger.debug(
                         "rlm turn %d called final() (found=%s, answer_len=%d)",
@@ -385,19 +760,37 @@ class RLMSession:
                     for dangling in tool_uses[idx:]:
                         results.append(
                             {
-                                "type": "tool_result",
-                                "tool_use_id": dangling["id"],
+                                "type": "action_result" if native_json else "tool_result",
+                                "action_id" if native_json else "tool_use_id":
+                                    dangling["action_id"] if native_json else dangling["id"],
                                 "content": "sandbox terminated: the REPL child exited.",
                                 "is_error": True,
                             }
                         )
                     break
+                if isinstance(stdout, (ReadRequiredFeedback, FinalAnswerRequiredFeedback)):
+                    if type(stdout) not in (ReadRequiredFeedback, FinalAnswerRequiredFeedback):
+                        raise unavailable("Unrecognized secure execution control feedback")
+                    if native_json:
+                        results.append({
+                            "type": "control_feedback", "action_id": tu["action_id"], "feedback": stdout,
+                        })
+                    else:
+                        results.append({
+                            "type": "tool_result", "tool_use_id": tu["id"],
+                            "content": stdout.content(), "is_error": True,
+                            **({"sdk_result": self._last_tool_result} if typed_tools else {}),
+                        })
+                    continue
                 logger.debug("rlm turn %d stdout: %s", self.turns, stdout[:_TRACE_CHARS])
                 results.append(
                     {
-                        "type": "tool_result",
-                        "tool_use_id": tu["id"],
+                        "type": "action_result" if native_json else "tool_result",
+                        "action_id" if native_json else "tool_use_id":
+                            tu["action_id"] if native_json else tu["id"],
                         "content": stdout[:_MAX_STDOUT],
+                        **({"sdk_result": self._last_tool_result,
+                            "is_error": self._last_tool_result.outcome == "failed"} if typed_tools else {}),
                     }
                 )
             # Append the tool_result turn even when the sandbox died -- with the
@@ -406,6 +799,13 @@ class RLMSession:
             messages.append({"role": "user", "content": results})
             if dead_sandbox:
                 break
+        if protocol_error is not None:
+            raise protocol_error
+        if native_json or isinstance(runner, MontyExecutor):
+            raise RlmToolProtocolError(
+                "The selected model did not finish its actions within the configured turn limit.",
+                code="RLM_TOOL_PROTOCOL_REQUIRED",
+            )
         # ran out of turns -> ask for a direct answer from the transcript. This
         # is the divergence path behind the empty-answer failure mode: the
         # orchestrator never committed to ``final()`` within the budget. Surface
@@ -441,6 +841,96 @@ class RLMSession:
         # ran out of iterations: forced best-effort answer, not a structured no-answer.
         return text.strip(), self._citations(None, None, docs, question), False
 
+    def _run_tool(self, call, runner, docs, question, manifest, tools):
+        from flycanon.core.services.query import provenance
+
+        def digest(value):
+            return sha256(json.dumps(value, sort_keys=True, separators=(",", ":"),
+                                     ensure_ascii=False, allow_nan=False).encode()).hexdigest()
+
+        arguments = call.get("input", {})
+        schema = next(tool["input_schema"] for tool in tools if tool["name"] == call["name"])
+        before = runner.last_feed
+        provenance.before_tool()
+        decoded = None
+        try:
+            if call["name"] == "final_answer":
+                action = FinalAnswerAction.model_validate(arguments)
+                feed = runner.run_terminal(action.model_dump(mode="json"))
+                decoded = self._monty_result(feed, runner)
+            else:
+                decoded = self._run_block(arguments["code"], runner, docs, question)
+            return decoded
+        finally:
+            feed = runner.last_feed
+            if feed is not None and feed is not before:
+                try:
+                    stdout = decoded[0] if decoded is not None else None
+                    rejected = type(stdout) in (ReadRequiredFeedback, FinalAnswerRequiredFeedback)
+                    if feed.status == "halted":
+                        result_kind = "accepted_final"
+                        result_value = feed.result.output
+                    elif decoded is None:
+                        result_kind = "execution_failure"
+                        result_value = asdict(feed.result)
+                    else:
+                        result_kind = "tool_return"
+                        result_value = (
+                            stdout.content() if isinstance(stdout, (ReadRequiredFeedback,
+                                                                    FinalAnswerRequiredFeedback))
+                            else str(stdout)[:_MAX_STDOUT]
+                        )
+                    self._last_tool_result = ToolReturnPart(
+                        call["name"], result_value, call["id"],
+                        outcome="failed" if rejected or not feed.result.success
+                        or decoded is None and feed.status != "halted"
+                        else "success",
+                    )
+                    provenance.tool(RlmToolReceipt(
+                        tool_call_id=call["id"], tool_name=call["name"],
+                        request_sha256=sha256(manifest.encode()).hexdigest(), schema_sha256=digest(schema),
+                        arguments_sha256=digest(arguments), result_sha256=digest(
+                            TypeAdapter(ToolReturnPart).dump_python(self._last_tool_result, mode="json"),
+                        ),
+                        result_kind=result_kind, execution_sha256=digest(asdict(feed)),
+                        outcome=("halted" if feed.status == "halted" else
+                                 "rejected" if feed.status == "rejected" else
+                                 "completed" if feed.result.success else "failed"),
+                        execution_status=str(feed.status), execution_state=str(feed.state),
+                    ))
+                except Exception as error:
+                    error.__dict__["tool_trace_incomplete"] = True
+                    if feed.status == "halted":
+                        error.__dict__["accepted_final"] = feed.result.output
+                    raise
+
+    def _monty_result(self, feed, runner):
+        if feed.status == "halted":
+            if not feed.result.success or feed.state != "halted" or runner.tree.expired():
+                error = unavailable(
+                    "Final was accepted but execution cleanup or deadline admission failed; "
+                    "it cannot be replayed"
+                )
+                error.__dict__["accepted_final"] = feed.result.output
+                raise error
+            payload = feed.result.output
+            if type(payload) is not dict or set(payload) != {"answer", "citations", "no_answer"}:
+                raise unavailable("The accepted execution result is invalid")
+            return None, _Final(payload["answer"], payload["citations"], payload["no_answer"])
+        if feed.state != "ready":
+            error = unavailable("The secure execution session ended and cannot be resumed")
+            error.__dict__["execution_feedback"] = feed.feedback
+            raise error
+        if feed.status == "rejected":
+            if runner.read_required(feed, ReadRequiredFeedback().content()):
+                return ReadRequiredFeedback(), None
+            if runner.final_answer_required(feed, FinalAnswerRequiredFeedback().content()):
+                return FinalAnswerRequiredFeedback(), None
+            raise unavailable("Unrecognized secure execution control feedback")
+        if not feed.result.success:
+            return str(feed.result.error_type) + ": " + str(feed.result.error), None
+        return feed.result.stdout or "(no output)", None
+
     def _run_block(self, code: str, runner, docs, question):
         """Run one code block via ``runner``; return ``(stdout, final_or_None)``.
 
@@ -455,10 +945,15 @@ class RLMSession:
         parent-side answer instead of running another block on a dead executor.
         ``(None, fin)`` signals a ``final``; ``(stdout, None)`` a live result.
         """
+        if isinstance(runner, MontyExecutor):
+            feed = runner.run_block(code)
+            return self._monty_result(feed, runner)
         if not isinstance(runner, SandboxExecutor):
             return self._exec(code, runner)
         result: BlockResult = runner.run_block(code)
         if result.kind == "final":
+            if isinstance(docs, _ContentReads) and not docs.admits((result.final or {}).get("filings")):
+                return ReadRequiredFeedback(), None
             payload = result.final or {}
             fin = _Final(
                 str(payload.get("answer", "")),
@@ -476,6 +971,8 @@ class RLMSession:
         return (result.stdout or "(no output)"), None
 
     def _citations(self, filings, pages, docs, question) -> list[dict]:
+        if isinstance(docs, _ContentReads):
+            docs = docs._docs
         if not filings:
             return []
         if isinstance(filings, str):

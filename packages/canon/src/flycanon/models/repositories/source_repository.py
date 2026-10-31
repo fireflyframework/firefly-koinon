@@ -22,6 +22,7 @@ from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from typing import Any
 
+from pyfly.data.relational.datasource_registry import DataSourceRegistry
 from pyfly.data.transaction import infrastructure_unit
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
@@ -53,8 +54,17 @@ class SourceRepository:
         return self._engine
 
     @classmethod
-    def from_url(cls, database_url: str, *, echo: bool = False) -> SourceRepository:
-        factory, engine = build_session_factory(database_url, echo=echo)
+    def from_url(
+        cls,
+        database_url: str,
+        *,
+        echo: bool = False,
+        registry: DataSourceRegistry | None = None,
+        datasource_name: str = "canon",
+    ) -> SourceRepository:
+        factory, engine = build_session_factory(
+            database_url, echo=echo, registry=registry, datasource_name=datasource_name
+        )
         return cls(factory, engine=engine)
 
     @asynccontextmanager

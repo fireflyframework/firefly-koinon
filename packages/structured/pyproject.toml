@@ -1,13 +1,16 @@
+# Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 [project]
 name = "firefly-koinon-structured"
-# CalVer YY.MM.PP per memory `firefly_uses_calver`.
+# CalVer YY.MM.PP.
 version = "26.10.0a1"
 description = "Structured knowledge services for firefly koinon: file readers, immutable table snapshots, SQL execution and provenance on native pyfly."
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
 # Released under the Apache License 2.0 -- see the LICENSE file. The SDKs
 # under ``sdks/python`` and ``sdks/java`` carry their own LICENSE files.
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 authors = [
     { name = "Firefly Software Foundation" },
 ]
@@ -16,7 +19,7 @@ dependencies = [
     "firefly-koinon-storage==26.10.0a1",
     # Firefly Framework runtime -- same extras canon uses so a fresh
     # `uv sync` boots the full stack.
-    "pyfly[fastapi,observability,security,data-relational,postgresql,eda,redis,client,scheduling,cli,agentic]>=26.10.13,<26.11",
+    "pyfly[fastapi,observability,security,data-relational,postgresql,eda,redis,client,scheduling,cli,agentic]>=26.10.18,<26.11",
     # GenAI metaframework -- FireflyAgent over pydantic-ai + the OpenAI
     # embeddings provider. flyquery builds its own pgvector hybrid retriever
     # and declares sqlglot directly below for its Text-to-SQL pipeline.
@@ -69,6 +72,8 @@ flyquery = "flyquery.cli:main"
 storage-azure = ["firefly-koinon-storage[azure]==26.10.0a1"]
 storage-gcs = ["firefly-koinon-storage[gcs]==26.10.0a1"]
 dev = [
+    # DuckDB's Python UDF fixtures require NumPy.
+    "numpy>=2.0",
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
     "pytest-cov>=5.0",
@@ -116,9 +121,8 @@ build-backend = "hatchling.build"
 
 [tool.uv.sources]
 firefly-koinon-storage = { path = "../storage", editable = true }
-# pyfly and agentic are consumed from their published git tags so fresh
-# clones / CI resolve them without any sibling path.
-pyfly = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git", rev = "d44d5915d76207266c7a2789987b1d613fe36d55" }
+# Pin the immutable commit associated with the official framework release tag.
+pyfly = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git", rev = "611d010fc50acc61ba27d736e23a0e1dd80230d3" }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/flyquery"]

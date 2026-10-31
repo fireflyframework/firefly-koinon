@@ -223,10 +223,10 @@ import { friendlyStatus } from '../services/library-tree';
 export class KoinonLibraryTemplate {
   readonly statusLabel = friendlyStatus;
   readonly sortOptions = [
-    { value: 'name.asc', label: 'Name · A to Z' },
-    { value: 'name.desc', label: 'Name · Z to A' },
+    { value: 'name.asc', label: 'Name (A to Z)' },
+    { value: 'name.desc', label: 'Name (Z to A)' },
     { value: 'kind.asc', label: 'Type' },
-    { value: 'kind.desc', label: 'Type · descending' },
+    { value: 'kind.desc', label: 'Type (descending)' },
     { value: 'updated_at.desc', label: 'Recently updated' },
     { value: 'updated_at.asc', label: 'Oldest update' },
     { value: 'created_at.desc', label: 'Recently added' },

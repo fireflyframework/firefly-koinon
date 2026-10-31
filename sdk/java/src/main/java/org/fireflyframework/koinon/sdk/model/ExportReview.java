@@ -25,8 +25,10 @@ public record ExportReview(
     @JsonProperty("source_manifest_complete") Boolean sourceManifestComplete,
     @JsonProperty("result") StoredResult result,
     @JsonProperty("omissions") List<String> omissions,
-    @JsonProperty("expires_at") Instant expiresAt
+    @JsonProperty("expires_at") Instant expiresAt,
+    @JsonProperty("identity") ConversationIdentity identity
 ) {
+    public ExportReview(String id, String revision, ExportKind kind, ExportFormat format, String title, Integer messageCount, Integer sourceCount, Long rowCount, Long rowCap, Boolean truncated, ExportCompleteness completeness, List<ConversationMessage> messages, List<SourceReference> sources, Boolean sourceManifestComplete, StoredResult result, List<String> omissions, Instant expiresAt){this(id,revision,kind,format,title,messageCount,sourceCount,rowCount,rowCap,truncated,completeness,messages,sources,sourceManifestComplete,result,omissions,expiresAt,null);}
     public ExportReview {
         messages=messages==null?null:List.copyOf(messages);
         sources=sources==null?null:List.copyOf(sources);

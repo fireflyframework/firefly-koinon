@@ -270,7 +270,7 @@ async function capture(page: Page, name: string) {
     if (document.querySelector('[data-group-proof]')) return;
     const strip = document.createElement('div');
     strip.dataset['groupProof'] = 'true';
-    strip.textContent = 'Controlled API fixtures · Grouped sidebar review';
+    strip.textContent = 'Controlled API fixtures, Grouped sidebar review';
     strip.style.cssText =
       'position:fixed;bottom:0;left:0;right:0;height:22px;background:#10110f;color:#f3f1eb;text-align:center;font:10px/22px sans-serif;z-index:99999';
     document.body.append(strip);
@@ -342,7 +342,7 @@ test('folder create rename and removal preserve conversations with revision bodi
   );
   expect(write?.csrf).toBe('synthetic-csrf+token');
   await sidebar
-    .getByRole('button', { name: 'Folder actions · Acceptance folder', exact: true })
+    .getByRole('button', { name: 'Folder actions, Acceptance folder', exact: true })
     .click();
   await sidebar.getByRole('menuitem', { name: 'Rename', exact: true }).click();
   dialog = sidebar.getByRole('dialog');
@@ -356,7 +356,7 @@ test('folder create rename and removal preserve conversations with revision bodi
       'expected_revision'
     ],
   ).toBe(1);
-  await sidebar.getByRole('button', { name: 'Folder actions · Research', exact: true }).click();
+  await sidebar.getByRole('button', { name: 'Folder actions, Research', exact: true }).click();
   await sidebar.getByRole('menuitem', { name: 'Remove folder', exact: true }).click();
   await sidebar
     .getByRole('dialog')

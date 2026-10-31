@@ -7,6 +7,7 @@ from koinon_sdk.answer_audit import (
     NativeReadReceipt,
     NativeTableSnapshot,
     PrivateFileReceipt,
+    RlmToolReceipt,
     SqlAttemptReceipt,
 )
 from koinon_sdk.attachments import (
@@ -103,6 +104,8 @@ from koinon_sdk.curated import (
     CommittedKnowledge,
     ConversationOrigin,
     DocumentEvidence,
+    ExternalProposalEvidence,
+    ExternalProposalOrigin,
     KnowledgeCancellation,
     KnowledgeCommitOutcome,
     KnowledgeCommitReceipt,
@@ -121,7 +124,17 @@ from koinon_sdk.curated import (
     UserStatementOrigin,
 )
 from koinon_sdk.dataset_files import DatasetFileAppendResult
+from koinon_sdk.document_history import (
+    DocumentExtraction,
+    DocumentExtractionPage,
+    DocumentPartContent,
+    DocumentPartPage,
+    DocumentPartSummary,
+    DocumentVersion,
+    DocumentVersionPage,
+)
 from koinon_sdk.evidence import (
+    ConversationIdentity,
     ConversationMessage,
     EvidenceManifest,
     EvidencePresentation,
@@ -144,6 +157,17 @@ from koinon_sdk.exports import (
     MessageSelection,
     QueryResultExportInput,
 )
+from koinon_sdk.external_file_reviews import (
+    ExternalFileCatalogEntry,
+    ExternalFileChunkInput,
+    ExternalFileCleanupInput,
+    ExternalFileCleanupResult,
+    ExternalFileCleanupReview,
+    ExternalFileReceipt,
+    ExternalFileReviewInput,
+    ExternalFileReviewView,
+)
+from koinon_sdk.external_reviews import ExternalReviewDecision, ExternalReviewInput, ExternalReviewView
 from koinon_sdk.glossary import GlossaryPage, GlossaryTermCreate, GlossaryTermRead, GlossaryTermUpdate
 from koinon_sdk.identity import (
     EntraCredential,
@@ -182,6 +206,24 @@ from koinon_sdk.indexes import (
     KnowledgeIndexView,
     NativeIndexChoice,
     NativeIndexPage,
+)
+from koinon_sdk.mcp import (
+    McpConnectionDescriptor,
+    McpReadReceipt,
+    McpRegisteredClient,
+    McpReviewSupport,
+    McpToolCapability,
+)
+from koinon_sdk.mcp_applications import (
+    McpOAuthClient,
+    McpOAuthClientCredential,
+    McpOAuthClientInput,
+    McpOAuthClientPage,
+    McpOAuthClientPatch,
+    McpOAuthClientReadiness,
+    McpOAuthClientRevision,
+    McpOAuthClientValues,
+    McpOAuthScope,
 )
 from koinon_sdk.models import (
     AgentConfiguration,
@@ -263,7 +305,21 @@ from koinon_sdk.models import (
     UserProfile,
     ValidationResult,
 )
+from koinon_sdk.organization_branding import (
+    BrandingInputValues,
+    BrandingPalette,
+    BrandingPalettes,
+    BrandingResetInput,
+    BrandingValues,
+    OrganizationBranding,
+    OrganizationBrandingInput,
+)
 from koinon_sdk.organization_chat import OrganizationChatSettings, OrganizationChatSettingsInput
+from koinon_sdk.organization_filters import (
+    OrganizationPeopleFilter,
+    OrganizationReportsFilter,
+    OrganizationUnitFilter,
+)
 from koinon_sdk.organization_knowledge import (
     DocumentKnowledgeBounds,
     DocumentKnowledgeCapabilities,
@@ -277,6 +333,23 @@ from koinon_sdk.organization_knowledge import (
     StructuredKnowledgeBounds,
     StructuredKnowledgeCapabilities,
     StructuredKnowledgeSettings,
+)
+from koinon_sdk.organization_people import (
+    OrganizationDirectorySettings,
+    OrganizationDirectorySettingsInput,
+    OrganizationPerson,
+    OrganizationPersonCreate,
+    OrganizationPersonPage,
+    OrganizationPersonPatch,
+    OrganizationPersonReference,
+    OrganizationProfileFields,
+    OrganizationProfileMapping,
+    OrganizationProfileMappingInput,
+    OrganizationUnit,
+    OrganizationUnitInput,
+    OrganizationUnitPage,
+    OrganizationUnitPatch,
+    OrganizationUnitSummary,
 )
 from koinon_sdk.pagination import (
     cursor_pages,
@@ -310,6 +383,14 @@ from koinon_sdk.streaming import (
 )
 
 __all__ = [
+    "BrandingInputValues",
+    "RlmToolReceipt",
+    "BrandingPalette",
+    "BrandingPalettes",
+    "BrandingResetInput",
+    "BrandingValues",
+    "OrganizationBranding",
+    "OrganizationBrandingInput",
     "DocumentKnowledgeBounds",
     "DocumentKnowledgeCapabilities",
     "DocumentKnowledgeSettings",
@@ -370,6 +451,7 @@ __all__ = [
     "ResultColumn",
     "StoredResult",
     "ConversationMessage",
+    "ConversationIdentity",
     "SourceReference",
     "EvidencePresentation",
     "EvidenceManifest",
@@ -584,4 +666,70 @@ __all__ = [
     "KnowledgeItemSummary",
     "KnowledgeItemPage",
     "KnowledgeCommitOutcome",
+]
+
+__all__ += [
+    "McpConnectionDescriptor",
+    "McpRegisteredClient",
+    "McpReviewSupport",
+    "McpToolCapability",
+    "ExternalReviewInput",
+    "ExternalReviewDecision",
+    "ExternalReviewView",
+    "ExternalFileReviewInput",
+    "ExternalFileChunkInput",
+    "ExternalFileReviewView",
+    "ExternalFileReceipt",
+    "ExternalFileCatalogEntry",
+    "ExternalProposalOrigin",
+    "ExternalProposalEvidence",
+]
+__all__ += [
+    "McpReadReceipt",
+    "ExternalFileCleanupInput",
+    "ExternalFileCleanupReview",
+    "ExternalFileCleanupResult",
+]
+__all__ += [
+    "McpOAuthClient",
+    "McpOAuthClientCredential",
+    "McpOAuthClientInput",
+    "McpOAuthClientPage",
+    "McpOAuthClientPatch",
+    "McpOAuthClientReadiness",
+    "McpOAuthClientRevision",
+    "McpOAuthClientValues",
+    "McpOAuthScope",
+]
+
+
+__all__ += [
+    "DocumentVersion",
+    "DocumentVersionPage",
+    "DocumentExtraction",
+    "DocumentExtractionPage",
+    "DocumentPartSummary",
+    "DocumentPartPage",
+    "DocumentPartContent",
+]
+
+__all__ += [
+    "OrganizationDirectorySettings",
+    "OrganizationDirectorySettingsInput",
+    "OrganizationPeopleFilter",
+    "OrganizationPerson",
+    "OrganizationPersonCreate",
+    "OrganizationPersonPage",
+    "OrganizationPersonPatch",
+    "OrganizationPersonReference",
+    "OrganizationProfileFields",
+    "OrganizationProfileMapping",
+    "OrganizationProfileMappingInput",
+    "OrganizationReportsFilter",
+    "OrganizationUnit",
+    "OrganizationUnitFilter",
+    "OrganizationUnitInput",
+    "OrganizationUnitPage",
+    "OrganizationUnitPatch",
+    "OrganizationUnitSummary",
 ]

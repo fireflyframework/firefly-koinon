@@ -89,11 +89,10 @@ class NativeSourceResolver(SourceResolverPort):
             authorize=authorize_parts,
         )
         result = []
-        for reference, chain, binding in admitted:
+        for reference, _chain, binding in admitted:
             if binding is None:
                 result.append(await self.knowledge_version(subject, tenant_id, reference))
                 continue
-            common = {"title": chain[0].name, "source_id": chain[1].id}
             if reference.source_part_id is not None:
                 result.append(parts[reference.id])
                 continue
@@ -101,7 +100,9 @@ class NativeSourceResolver(SourceResolverPort):
                 resolved = await self.document(subject, tenant_id, reference, binding)
             else:
                 resolved = await self.dataset(subject, tenant_id, reference, binding)
-            result.append(type(reference).model_validate({**reference.model_dump(), **common, **resolved}))
+            result.append(reference.model_copy(update={
+                "availability": resolved["availability"], "current_revision": resolved["current_revision"],
+            }))
         for reference in sources:
             await self.knowledge._chain(subject, tenant_id, reference.asset_id)
         return tuple(result)
@@ -141,9 +142,9 @@ class NativeSourceResolver(SourceResolverPort):
         result = {
             "availability": "unverified",
             "current_revision": None,
-            "quote": None,
-            "page": None,
-            "section": None,
+            "quote": reference.quote,
+            "page": reference.page,
+            "section": reference.section,
         }
         with native_scope("canon", tenant_id, binding.native_workspace_id, subject):
             source = await self.domains._resolve(SourceRepository).get(
@@ -180,9 +181,9 @@ class NativeSourceResolver(SourceResolverPort):
                     **result,
                     "current_revision": current,
                     "availability": "changed" if changed else "available",
-                    "quote": reference.quote if changed else reference.quote or chunk.content[:8000],
-                    "page": reference.page if changed else chunk.page,
-                    "section": reference.section if changed else str(chunk.section_path or "")[:512] or None,
+                    "quote": reference.quote,
+                    "page": reference.page,
+                    "section": reference.section,
                 }
             current = ((source.metadata_json or {}).get("_persisted_original") or {}).get(
                 "sha256"
@@ -208,9 +209,6 @@ class NativeSourceResolver(SourceResolverPort):
                 if reference.quote is not None and reference.quote not in chunk.content:
                     return result
                 result.update(
-                    quote=reference.quote or chunk.content[:8000],
-                    page=chunk.page,
-                    section=str(chunk.section_path or "")[:512] or None,
                     availability="changed" if changed else "available",
                 )
             elif reference.quote is None and current is not None:

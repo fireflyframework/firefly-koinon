@@ -145,7 +145,7 @@ def install_oauth(app, context):
                 if request.method != "GET":
                     raise OAuthError("access_denied", 403) from None
                 params = unique_values(request.query_params)
-                oauth.validate_request(params)
+                await oauth.validate_request(params)
                 # Native login consumes this saved local return URI after session rotation.
                 request.state.session.set_attribute(
                     "oauth2_redirect_uri", request.url.path + "?" + str(request.url.query)

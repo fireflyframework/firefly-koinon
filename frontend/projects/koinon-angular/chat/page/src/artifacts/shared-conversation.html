@@ -36,6 +36,9 @@
     </div>
   }
   @if (state.sharedConversation(); as snapshot) {
+    @if (snapshot.identity; as identity) {
+      <p class="help">{{ 'Shared from' | ffkText }} {{ identity.product_name }}</p>
+    }
     <p class="snapshot-policy">
       {{
         'This reviewed snapshot grants no additional access and excludes private attachment files.'
@@ -54,7 +57,11 @@
           <article class="snapshot-message">
             <header>
               <h2>
-                {{ (message.role === 'assistant' ? 'koinon' : 'Conversation author') | ffkText }}
+                {{
+                  message.role === 'assistant'
+                    ? snapshot.identity?.assistant_name || 'koinon'
+                    : ('Conversation author' | ffkText)
+                }}
               </h2>
               @if (message.created_at) {
                 <time [attr.datetime]="message.created_at" [title]="message.created_at">{{

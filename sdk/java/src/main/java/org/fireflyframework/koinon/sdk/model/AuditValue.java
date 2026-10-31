@@ -6,7 +6,7 @@ package org.fireflyframework.koinon.sdk.model;
 
 /** Typed canonical AuditValue contract. */
 public record AuditValue(
-    
+
 ) {
 
 }

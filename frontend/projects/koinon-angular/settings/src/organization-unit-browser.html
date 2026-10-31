@@ -1,0 +1,149 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<div class="unit-browser">
+  <nav class="branch-path" [attr.aria-label]="'Unit location' | ffkText">
+    <button (click)="back(0)">{{ 'All units' | ffkText }}</button>
+    @for (unit of path(); track unit.id; let index = $index) {
+      <button
+        (click)="back(index + 1)"
+        [attr.aria-current]="index === path().length - 1 ? 'location' : null"
+      >
+        {{ unit.name }}
+      </button>
+    }
+  </nav>
+  <form class="directory-search" (ngSubmit)="apply()">
+    <label
+      >{{ 'Find units in this branch' | ffkText
+      }}<input name="unit-search" [(ngModel)]="query" maxlength="160" /></label
+    ><ffk-button type="submit" icon="search">{{ 'Search' | ffkText }}</ffk-button>
+    @if (!picking) {
+      <ffk-button icon="plus" (click)="begin(null)">{{ 'Add unit' | ffkText }}</ffk-button>
+    }
+  </form>
+  @if (s.error()) {
+    <p class="error" role="alert">{{ s.error() | ffkText }}</p>
+    <ffk-button (click)="load()">{{ 'Refresh' | ffkText }}</ffk-button>
+  }
+  @if (s.notice()) {
+    <p role="status">{{ s.notice() | ffkText }}</p>
+  }
+  @if (s.busy().has('units')) {
+    <p role="status">{{ 'Loading units…' | ffkText }}</p>
+  }
+  <ul class="branch-list" [attr.aria-label]="'Departments and teams' | ffkText">
+    @for (unit of s.units()?.items ?? []; track unit.id) {
+      <li>
+        <div>
+          <strong>{{ unit.name }}</strong
+          ><small>{{ label(unit.kind) | ffkText }}</small>
+        </div>
+        <div class="row-actions">
+          <ffk-button
+            variant="quiet"
+            icon="chevron"
+            [label]="('Open child units of' | ffkText) + ' ' + unit.name"
+            (click)="enter(unit)"
+            >{{ 'Open' | ffkText }}</ffk-button
+          >
+          @if (picking) {
+            <ffk-button variant="quiet" (click)="unitSelected.emit(unit)">{{
+              'Choose' | ffkText
+            }}</ffk-button>
+          } @else {
+            <ffk-button variant="quiet" icon="edit" (click)="begin(unit)">{{
+              'Edit' | ffkText
+            }}</ffk-button
+            ><ffk-button variant="quiet" icon="trash" (click)="removing.set(unit)">{{
+              'Remove' | ffkText
+            }}</ffk-button>
+          }
+        </div>
+      </li>
+    } @empty {
+      @if (!s.busy().has('units') && !s.error()) {
+        <li>{{ 'No units in this branch.' | ffkText }}</li>
+      }
+    }
+  </ul>
+  <ffk-pagination
+    [page]="s.units()"
+    [showPageSize]="false"
+    [label]="'Organization units' | ffkText"
+    [loading]="s.busy().has('units')"
+    (pageChanged)="load($event)"
+  />
+  @if (editing() !== undefined) {
+    <section class="detail-editor" [attr.aria-label]="'Unit details' | ffkText">
+      <h3>{{ (editing() ? 'Edit unit' : 'Add unit') | ffkText }}</h3>
+      <form (ngSubmit)="save()">
+        <label
+          >{{ 'Name' | ffkText
+          }}<input name="unit-name" [(ngModel)]="name" required maxlength="160" /></label
+        ><label
+          >{{ 'Unit type' | ffkText
+          }}<select name="unit-kind" [(ngModel)]="kind">
+            <option value="division">{{ 'Division' | ffkText }}</option>
+            <option value="department">{{ 'Department' | ffkText }}</option>
+            <option value="team">{{ 'Team' | ffkText }}</option>
+          </select></label
+        >
+        <div>
+          <span>{{ 'Parent unit' | ffkText }}</span>
+          <p>
+            {{
+              parentChoice()?.name ||
+                ((parentChoice() === null ? 'All units' : 'Keep current parent') | ffkText)
+            }}
+          </p>
+          <ffk-button variant="quiet" (click)="choosingParent.set(!choosingParent())">{{
+            'Choose parent' | ffkText
+          }}</ffk-button>
+        </div>
+        @if (choosingParent()) {
+          <div>
+            <ffk-button variant="quiet" (click)="chooseParent(null)">{{
+              'Use organization root' | ffkText
+            }}</ffk-button
+            ><ffk-organization-unit-browser
+              [picking]="true"
+              (unitSelected)="chooseParent($event)"
+            />
+          </div>
+        }
+        <p class="help">
+          {{
+            'Changing the parent moves this unit and its children. Existing people keep their unit.'
+              | ffkText
+          }}
+        </p>
+        <div class="row-actions">
+          <ffk-button variant="quiet" [disabled]="s.pending()" (click)="editing.set(undefined)">{{
+            'Cancel' | ffkText
+          }}</ffk-button
+          ><ffk-button variant="primary" type="submit" [loading]="s.pending()">{{
+            'Save unit' | ffkText
+          }}</ffk-button>
+        </div>
+      </form>
+    </section>
+  }
+  @if (removing(); as unit) {
+    <section class="detail-editor" role="alert">
+      <h3>{{ 'Remove unit' | ffkText }} {{ unit.name }}</h3>
+      <p>
+        {{
+          'Only an empty unit can be removed. People and child units are never deleted or moved automatically.'
+            | ffkText
+        }}
+      </p>
+      <div class="row-actions">
+        <ffk-button variant="quiet" [disabled]="s.pending()" (click)="removing.set(null)">{{
+          'Cancel' | ffkText
+        }}</ffk-button
+        ><ffk-button [loading]="s.pending()" (click)="remove()">{{
+          'Remove unit' | ffkText
+        }}</ffk-button>
+      </div>
+    </section>
+  }
+</div>

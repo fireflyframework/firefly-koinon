@@ -33,6 +33,7 @@ let composerId = 0;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KoinonChatComposer implements AfterViewInit, OnChanges, OnDestroy {
+  @Input() assistantName = 'koinon';
   @Input() value = '';
   @Input() canSend = false;
   @Input() disabled = false;

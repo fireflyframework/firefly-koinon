@@ -5,16 +5,46 @@ import { KNOWLEDGE_SPANISH } from './knowledge-spanish';
 import { LINEAGE_SPANISH } from './lineage-spanish';
 import { AUDIT_LINEAGE_SPANISH } from './audit-lineage-spanish';
 import { APPLICATIONS_SPANISH } from './applications-spanish';
+import { MCP_SPANISH } from './mcp-spanish';
 export const SPANISH: Readonly<Record<string, string>> = {
+ 'Loading details…':'Cargando detalles…','Details could not be opened. Close and try again.':'No se pudieron abrir los detalles. Cierra y vuelve a intentarlo.',
+  'Your access context changed. Cancel and start a new token to review its access.':
+    'Tu contexto de acceso ha cambiado. Cancela y empieza un nuevo token para revisar su acceso.',
+  'The selected workspace changed. Cancel and start a new token to review its limits.':
+    'El workspace seleccionado ha cambiado. Cancela y empieza un nuevo token para revisar sus límites.',
+  'The selected file changed. Cancel and start a new token to review its limits.':
+    'El archivo seleccionado ha cambiado. Cancela y empieza un nuevo token para revisar sus límites.',
+  'Your available permissions changed. Review the remaining permissions before creating this token.':
+    'Tus permisos disponibles han cambiado. Revisa los permisos restantes antes de crear este token.',
+  'Read & ask': 'Leer y preguntar',
+  'Create & maintain knowledge': 'Crear y mantener conocimiento',
+  'Manage organization': 'Gestionar la organización',
+  'Your profile': 'Tu perfil',
+  Administration: 'Administración',
+  'Resource limits': 'Límites de recursos',
+  'This token acts as you. Your current role and resource access are checked on every request.':
+    'Este token actúa en tu nombre. Tu rol actual y tu acceso a los recursos se verifican en cada solicitud.',
+  'Organization management requires organization scope. Resource limits apply to knowledge operations.':
+    'La administración requiere alcance de organización. Los límites de recursos se aplican a las operaciones de conocimiento.',
+  'Remove resource limits to select organization permissions.':
+    'Elimina los límites de recursos para seleccionar permisos de organización.',
+  'Organization permissions were removed because this token is limited to knowledge resources.':
+    'Se han eliminado los permisos de organización porque este token está limitado a recursos de conocimiento.',
+  'All available knowledge and organization permissions are selected. This token has organization scope.':
+    'Se han seleccionado todos los permisos disponibles de conocimiento y organización. Este token tiene alcance de organización.',
+  'Review the selected permissions before creating this token.':
+    'Revisa los permisos seleccionados antes de crear este token.',
+  'Organization permissions require organization scope. Remove the workspace and file limits.':
+    'Los permisos de organización requieren alcance de organización. Elimina los límites de workspace y archivo.',
   'Panel unavailable': 'Panel no disponible',
   'Type & contents': 'Tipo y contenido',
-  'Contents': 'Contenido',
-  'Tags': 'Etiquetas',
+  Contents: 'Contenido',
+  Tags: 'Etiquetas',
   'More filters': 'Más filtros',
   'Apply filters': 'Aplicar filtros',
   'All statuses': 'Todos los estados',
-  'Format': 'Formato',
-  'Tag': 'Etiqueta',
+  Format: 'Formato',
+  Tag: 'Etiqueta',
   'Exact tag': 'Etiqueta exacta',
   'e.g. pdf': 'p. ej. pdf',
   'Active filters': 'Filtros activos',
@@ -27,24 +57,29 @@ export const SPANISH: Readonly<Record<string, string>> = {
   'Details not recorded': 'Detalles no registrados',
   'No recorded tags': 'Sin etiquetas registradas',
   'Details for': 'Detalles de',
-  'Type · descending': 'Tipo · descendente',
+  'Type (descending)': 'Tipo (descendente)',
   'Oldest update': 'Actualización más antigua',
-  'row': 'fila',
-  'column': 'columna',
-  'table': 'tabla',
-  'tables': 'tablas',
-  'page': 'página',
-  'pages': 'páginas',
+  row: 'fila',
+  column: 'columna',
+  table: 'tabla',
+  tables: 'tablas',
+  page: 'página',
+  pages: 'páginas',
   'Opening panel': 'Abriendo panel',
   'Opening source coordinates': 'Abriendo coordenadas de origen',
   'Opening answer details': 'Abriendo detalles de la respuesta',
   'Opening answer evidence': 'Abriendo evidencia de la respuesta',
   'Opening settings section': 'Abriendo sección de configuración',
-  'This panel could not be opened. Refresh this page and try again.': 'No se pudo abrir este panel. Actualiza la página e inténtalo de nuevo.',
-  'Source coordinates could not be opened. Refresh this page and try again.': 'No se pudieron abrir las coordenadas de origen. Actualiza la página e inténtalo de nuevo.',
-  'Answer details could not be opened. Refresh this page and try again.': 'No se pudieron abrir los detalles de la respuesta. Actualiza la página e inténtalo de nuevo.',
-  'Answer evidence could not be opened. Refresh this page and try again.': 'No se pudo abrir la evidencia de la respuesta. Actualiza la página e inténtalo de nuevo.',
-  'This section could not be opened. Refresh this page and try again.': 'No se pudo abrir esta sección. Actualiza la página e inténtalo de nuevo.',
+  'This panel could not be opened. Refresh this page and try again.':
+    'No se pudo abrir este panel. Actualiza la página e inténtalo de nuevo.',
+  'Source coordinates could not be opened. Refresh this page and try again.':
+    'No se pudieron abrir las coordenadas de origen. Actualiza la página e inténtalo de nuevo.',
+  'Answer details could not be opened. Refresh this page and try again.':
+    'No se pudieron abrir los detalles de la respuesta. Actualiza la página e inténtalo de nuevo.',
+  'Answer evidence could not be opened. Refresh this page and try again.':
+    'No se pudo abrir la evidencia de la respuesta. Actualiza la página e inténtalo de nuevo.',
+  'This section could not be opened. Refresh this page and try again.':
+    'No se pudo abrir esta sección. Actualiza la página e inténtalo de nuevo.',
   'Account menu': 'Menú de cuenta',
   'Main navigation': 'Navegación principal',
   Navigation: 'Navegación',
@@ -174,6 +209,9 @@ export const SPANISH: Readonly<Record<string, string>> = {
   'A shared home for your team’s documents and data.':
     'Un lugar compartido para los documentos y datos de tu equipo.',
   'Keep the knowledge your team needs together.': 'Reúne el conocimiento que necesita tu equipo.',
+  'Your corporate brain': 'Tu cerebro corporativo',
+  'Find what your organization knows. Ask questions, check the sources and keep knowledge up to date.':
+    'Encuentra lo que sabe tu organización. Haz preguntas, consulta las fuentes y mantén el conocimiento al día.',
   'A shared home for knowledge': 'Un lugar compartido para el conocimiento',
   'Your team’s knowledge': 'El conocimiento de tu equipo',
   'Open the documents and data shared with you.':
@@ -271,6 +309,12 @@ export const SPANISH: Readonly<Record<string, string>> = {
     'El conocimiento archivado se conserva en el almacenamiento. Restaura un elemento para devolverlo a su ubicación original.',
   'Ask your knowledge': 'Pregunta a tu conocimiento',
   'Ask your knowledge…': 'Pregunta a tu conocimiento…',
+  Ask: 'Pregunta a',
+  Message: 'Escribe a',
+  'Welcome to {product}': 'Bienvenido a {product}',
+  'Loading search…': 'Cargando búsqueda…',
+  'Search could not be opened. Close and try again.':
+    'No se pudo abrir la búsqueda. Ciérrala e inténtalo de nuevo.',
   'Ask koinon…': 'Pregunta a koinon…',
   'Message koinon': 'Escribe a koinon',
   'Canonical lineage relationships': 'Relaciones de procedencia verificadas',
@@ -338,8 +382,8 @@ export const SPANISH: Readonly<Record<string, string>> = {
   'Make this agent available after its checks pass':
     'Habilitar este agente cuando supere las comprobaciones',
   Messages: 'Mensajes',
-  'Name · A to Z': 'Nombre · A a Z',
-  'Name · Z to A': 'Nombre · Z a A',
+  'Name (A to Z)': 'Nombre (A a Z)',
+  'Name (Z to A)': 'Nombre (Z a A)',
   'New API token': 'Nuevo token de API',
   'New conversation': 'Nueva conversación',
   'No citations were returned with this evidence.': 'Esta evidencia no incluye citas.',
@@ -377,6 +421,8 @@ export const SPANISH: Readonly<Record<string, string>> = {
   'Settings sections': 'Secciones de configuración',
   'Show resource': 'Mostrar recurso',
   'Showing the first 500 returned rows.': 'Se muestran las primeras 500 filas devueltas.',
+  'Sign in with your organization account.':
+    'Inicia sesión con tu cuenta de la organización.',
   'Sign in with your organization to open your library.':
     'Inicia sesión con tu organización para abrir tu biblioteca.',
   Sort: 'Ordenar',
@@ -614,8 +660,8 @@ export const SPANISH: Readonly<Record<string, string>> = {
   'Model connection': 'Conexión de modelo',
   'The current key will be removed.': 'Se eliminará la clave actual.',
   'Choose a provider': 'Elige un proveedor',
-  ' · Trial': ' · Prueba',
-  ' · Setup required': ' · Requiere configuración',
+  ', Trial': ', Prueba',
+  ', Setup required': ', Requiere configuración',
   'Send trial': 'Enviar prueba',
   'This agent is available for a trial. Some model capabilities have not been verified. Review the answer and sources.':
     'Este agente está disponible para una prueba. Algunas capacidades del modelo aún no se han verificado. Revisa la respuesta y sus fuentes.',
@@ -631,4 +677,5 @@ export const SPANISH: Readonly<Record<string, string>> = {
   ...LINEAGE_SPANISH,
   ...AUDIT_LINEAGE_SPANISH,
   ...APPLICATIONS_SPANISH,
+  ...MCP_SPANISH,
 };

@@ -22,7 +22,12 @@ from koinon.api.controllers.context import ContextController
 from koinon.api.controllers.jobs import JobController
 from koinon.api.controllers.memberships import MembershipController
 from koinon.configuration import ApplicationConfiguration
+from koinon.mcp.connection import McpConnectionService
+from koinon.mcp.controllers import McpConnectionController
+from koinon.mcp.endpoints import resolve_mcp_configuration
 from koinon.mcp.http import McpHttpBoundary
+from koinon.mcp.private_reviews import file_upload_preparer, private_review_reader
+from koinon.mcp.read_capture import native_read_capture
 from koinon.mcp.server import create_mcp_server
 from koinon.mcp.settings import McpSettings
 from koinon.security.configuration import SecurityConfiguration, native_security_defaults
@@ -69,6 +74,7 @@ def create_application(config: dict):
     mandatory["pyfly"]["session"].pop("postgres")
     mandatory["pyfly"]["session"].pop("concurrency")
     values = merge_configuration(values, mandatory)
+    values = resolve_mcp_configuration(values)
     context = ApplicationContext(Config(values))
     mcp_settings = Config(values).bind(McpSettings)
     context.container.register_instance(McpSettings, mcp_settings)
@@ -81,10 +87,13 @@ def create_application(config: dict):
         "koinon.assistants",
         "koinon.organization_chat",
         "koinon.organization_knowledge",
+        "koinon.organization_branding",
+        "koinon.organization_people",
         "koinon.profiles",
         "koinon.tokens",
         "koinon.authorized_applications",
         "koinon.mcp_auth",
+        "koinon.mcp_applications",
         "koinon.operations",
         "koinon.corporate_identity",
         "koinon.evidence",
@@ -96,6 +105,7 @@ def create_application(config: dict):
     for cls in (
         ApplicationConfiguration,
         SecurityConfiguration,
+        McpConnectionService,
         AuthController,
         HealthController,
         LegacyMembershipFilter,
@@ -103,6 +113,7 @@ def create_application(config: dict):
         context.register_bean(cls)
     for cls in (
         ContextController,
+        McpConnectionController,
         CatalogController,
         MembershipController,
         AuditController,
@@ -127,9 +138,12 @@ def create_application(config: dict):
                 "koinon.assistants",
                 "koinon.organization_chat",
                 "koinon.organization_knowledge",
+                "koinon.organization_branding",
+                "koinon.organization_people",
                 "koinon.profiles",
                 "koinon.tokens",
                 "koinon.authorized_applications",
+                "koinon.mcp_applications",
                 "koinon.corporate_identity",
                 "koinon.evidence",
                 "koinon.exports",
@@ -187,10 +201,24 @@ def create_application(config: dict):
             canonical_bearer,
             oauth_enabled=Config(values).get("koinon.mcp.oauth.enabled", False),
             can_request_scopes=can_request_scopes,
+            private_review=private_review_reader(context)
+            if Config(values).get("koinon.knowledge.enabled", True)
+            else None,
+            private_file_review=private_review_reader(context, file=True)
+            if Config(values).get("koinon.knowledge.enabled", True)
+            else None,
+            read_capture=native_read_capture(context)
+            if Config(values).get("koinon.knowledge.enabled", True)
+            else None,
+            prepare_file=file_upload_preparer(context)
+            if Config(values).get("koinon.knowledge.enabled", True)
+            else None,
         )
         mcp_app = server.streamable_http_app(
-            stateless_http=True,
+            stateless_http=False,
             json_response=True,
+            max_sessions=mcp_settings.max_sessions,
+            session_idle_timeout=mcp_settings.session_idle_timeout_seconds,
             max_request_body_size=mcp_settings.max_request_bytes,
             transport_security=mcp_settings.transport_security(),
         )

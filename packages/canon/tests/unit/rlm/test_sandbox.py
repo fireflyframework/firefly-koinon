@@ -1,4 +1,5 @@
 # Copyright 2024-2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,6 +33,7 @@ import socket
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 import pytest
 
@@ -88,6 +90,26 @@ def test_exec_print_returns_stdout(make_executor):
     result = ex.run_block("print('hello from child')")
     assert result.kind == "stdout"
     assert "hello from child" in result.stdout
+
+
+def test_child_does_not_write_bytecode_to_its_module_directory(tmp_path, monkeypatch, make_executor):
+    sandbox = tmp_path / "flycanon/core/services/query/rlm/sandbox"
+    sandbox.mkdir(parents=True)
+    directory = sandbox
+    while directory != tmp_path:
+        (directory / "__init__.py").write_text("")
+        directory = directory.parent
+    original = Path(runner.__file__).parent
+    for name in ("runner.py", "_proto.py"):
+        (sandbox / name).write_bytes((original / name).read_bytes())
+    (sandbox.parent / "safe_builtins.py").write_bytes((original.parent / "safe_builtins.py").read_bytes())
+    monkeypatch.setenv("PYTHONPATH", str(tmp_path))
+
+    result = make_executor().run_block("print('A document excerpt')")
+
+    assert result.kind == "stdout"
+    assert result.stdout.strip() == "A document excerpt"
+    assert list(tmp_path.rglob("*.pyc")) == []
 
 
 def test_persistent_namespace_across_blocks(make_executor):

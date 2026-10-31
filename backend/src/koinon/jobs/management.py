@@ -41,7 +41,9 @@ class JobManagementService:
         if not rows:
             raise AccessDenied("Job is not accessible in this context", code="ACCESS_DENIED")
         resource = await self.catalog.get(subject, tenant_id, rows[0].resource_id)
-        await self.catalog.authorize(subject, tenant_id, "ingest:write", resource.workspace_id)
+        permissions = await self.catalog.permissions(subject, tenant_id, resource.workspace_id)
+        permission = "jobs:manage" if "jobs:manage" in permissions else "ingest:write"
+        await self.catalog.authorize(subject, tenant_id, permission, resource.workspace_id)
         job = await self.jobs.cancel(tenant_id, job_id)
         await self.catalog._audit(subject, tenant_id, "job.cancelled", job_id)
         return job_dto(job)

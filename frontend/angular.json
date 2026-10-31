@@ -34,9 +34,7 @@
                 "output": "assets/brand"
               }
             ],
-            "styles": [
-              "projects/management/src/styles.scss"
-            ]
+            "styles": ["projects/management/src/styles.scss"]
           },
           "configurations": {
             "production": {
@@ -85,10 +83,7 @@
         "lint": {
           "builder": "@angular-eslint/builder:lint",
           "options": {
-            "lintFilePatterns": [
-              "projects/management/**/*.ts",
-              "projects/management/**/*.html"
-            ],
+            "lintFilePatterns": ["projects/management/**/*.ts", "projects/management/**/*.html"],
             "eslintConfig": "projects/management/eslint.config.js"
           }
         }
@@ -116,10 +111,7 @@
           "builder": "@angular/build:unit-test",
           "options": {
             "tsConfig": "projects/koinon-angular/tsconfig.spec.json",
-            "include": [
-              "**/*.spec.ts",
-              "../workbench/**/*.spec.ts"
-            ]
+            "include": ["**/*.spec.ts", "../workbench/**/*.spec.ts", "../settings/**/*.spec.ts"]
           }
         },
         "lint": {
@@ -184,9 +176,7 @@
                 "output": "assets/brand"
               }
             ],
-            "styles": [
-              "projects/elements/src/styles.scss"
-            ]
+            "styles": ["projects/elements/src/styles.scss"]
           },
           "configurations": {
             "production": {
@@ -232,10 +222,7 @@
         "lint": {
           "builder": "@angular-eslint/builder:lint",
           "options": {
-            "lintFilePatterns": [
-              "projects/elements/**/*.ts",
-              "projects/elements/**/*.html"
-            ],
+            "lintFilePatterns": ["projects/elements/**/*.ts", "projects/elements/**/*.html"],
             "eslintConfig": "projects/elements/eslint.config.js"
           }
         }
@@ -265,9 +252,7 @@
                 "output": "assets/brand"
               }
             ],
-            "styles": [
-              "projects/catalog/src/styles.scss"
-            ],
+            "styles": ["projects/catalog/src/styles.scss"],
             "index": "projects/catalog/src/index.html"
           },
           "configurations": {

@@ -16,8 +16,10 @@ public record ConversationSnapshot(
     @JsonProperty("messages") List<ConversationMessage> messages,
     @JsonProperty("sources") List<SourceReference> sources,
     @JsonProperty("source_manifest_complete") Boolean sourceManifestComplete,
-    @JsonProperty("originating_token_ids") List<String> originatingTokenIds
+    @JsonProperty("originating_token_ids") List<String> originatingTokenIds,
+    @JsonProperty("identity") ConversationIdentity identity
 ) {
+    public ConversationSnapshot(String threadId, String tenantId, String ownerSubject, String title, String revision, List<ConversationMessage> messages, List<SourceReference> sources, Boolean sourceManifestComplete, List<String> originatingTokenIds){this(threadId,tenantId,ownerSubject,title,revision,messages,sources,sourceManifestComplete,originatingTokenIds,null);}
     public ConversationSnapshot {
         messages=messages==null?null:List.copyOf(messages);
         sources=sources==null?null:List.copyOf(sources);

@@ -481,3 +481,8 @@ select:focus-visible {
     order: 5;
   }
 }
+
+.brand .custom-brand-name{font-size:21px;line-height:1.25;max-width:220px;overflow-wrap:anywhere}.brand img{object-fit:contain;max-height:44px}
+
+.shell,.shell.dark{--ui-accent:var(--koinon-brand-accent,var(--ffk-gold));--ui-focus:var(--ui-accent)}
+.brand{text-decoration:none}

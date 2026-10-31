@@ -119,6 +119,33 @@ export async function mockService(
         avatar_url: null,
         avatar_version: null,
       });
+    if (path.endsWith('/organization/people/me'))
+      return respond({
+        id: null,
+        profile_id: 'synthetic-profile',
+        display_name: 'Alex Rivera',
+        avatar_url: null,
+        avatar_version: null,
+        job_title: null,
+        unit: null,
+        department: null,
+        manager: null,
+        manager_unavailable: false,
+        revision: 0,
+        source: 'unassigned',
+        provider_id: null,
+        provider_name: null,
+        managed_fields: [],
+        observed_at: null,
+        updated_at: null,
+        observation_status: 'not_observed',
+      });
+    if (path.endsWith('/organization/directory-settings'))
+      return respond({
+        tenant_id: path.split('/')[2],
+        visibility: 'administrators',
+        revision: 0,
+      });
     if (path === '/context') return respond(context);
     if (path.endsWith('/chat/settings')) {
       const id = options.organizationAgent ?? null;

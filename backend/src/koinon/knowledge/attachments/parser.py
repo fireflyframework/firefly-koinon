@@ -37,6 +37,7 @@ class PrivateAttachmentParser:
             }
             process = await asyncio.create_subprocess_exec(
                 sys.executable,
+                "-B",
                 "-m",
                 "koinon.knowledge.attachments.extraction",
                 stdin=asyncio.subprocess.PIPE,

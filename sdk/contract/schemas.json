@@ -503,6 +503,23 @@
           "maxItems": 1000,
           "title": "Sql Attempts",
           "type": "array"
+        },
+        "rlm_tools": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/RlmToolReceipt"
+              },
+              "maxItems": 1000,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Actual recorded RLM function actions. Null means unrecorded; historical traces are never backfilled. A list does not assert that an interrupted generation has a complete trace.",
+          "title": "Rlm Tools"
         }
       },
       "required": [
@@ -1435,6 +1452,256 @@
         "revoked_at"
       ],
       "title": "AuthorizedApplication",
+      "type": "object"
+    },
+    "BrandingInputValues": {
+      "additionalProperties": true,
+      "properties": {
+        "product_name": {
+          "default": "koinon",
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Product Name",
+          "type": "string"
+        },
+        "assistant_name": {
+          "default": "koinon",
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Assistant Name",
+          "type": "string"
+        },
+        "logo_light": {
+          "anyOf": [
+            {
+              "maxLength": 349550,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Logo Light"
+        },
+        "logo_dark": {
+          "anyOf": [
+            {
+              "maxLength": 349550,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Logo Dark"
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "maxLength": 349550,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Symbol"
+        },
+        "favicon": {
+          "anyOf": [
+            {
+              "maxLength": 349550,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Favicon"
+        },
+        "palette": {
+          "$ref": "#/$defs/BrandingPalettes"
+        },
+        "font_family": {
+          "const": "Manrope",
+          "default": "Manrope",
+          "title": "Font Family",
+          "type": "string"
+        }
+      },
+      "title": "BrandingInputValues",
+      "type": "object"
+    },
+    "BrandingPalette": {
+      "additionalProperties": true,
+      "properties": {
+        "surface": {
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "title": "Surface",
+          "type": "string"
+        },
+        "canvas": {
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "title": "Canvas",
+          "type": "string"
+        },
+        "text": {
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "title": "Text",
+          "type": "string"
+        },
+        "muted": {
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "title": "Muted",
+          "type": "string"
+        },
+        "line": {
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "title": "Line",
+          "type": "string"
+        },
+        "action": {
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "title": "Action",
+          "type": "string"
+        },
+        "action_text": {
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "title": "Action Text",
+          "type": "string"
+        },
+        "accent": {
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "title": "Accent",
+          "type": "string"
+        }
+      },
+      "required": [
+        "surface",
+        "canvas",
+        "text",
+        "muted",
+        "line",
+        "action",
+        "action_text",
+        "accent"
+      ],
+      "title": "BrandingPalette",
+      "type": "object"
+    },
+    "BrandingPalettes": {
+      "additionalProperties": true,
+      "properties": {
+        "light": {
+          "$ref": "#/$defs/BrandingPalette"
+        },
+        "dark": {
+          "$ref": "#/$defs/BrandingPalette"
+        }
+      },
+      "title": "BrandingPalettes",
+      "type": "object"
+    },
+    "BrandingResetInput": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "maximum": 2147483646,
+          "minimum": 0,
+          "title": "Expected Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "expected_revision"
+      ],
+      "title": "BrandingResetInput",
+      "type": "object"
+    },
+    "BrandingValues": {
+      "additionalProperties": true,
+      "properties": {
+        "product_name": {
+          "default": "koinon",
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Product Name",
+          "type": "string"
+        },
+        "assistant_name": {
+          "default": "koinon",
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Assistant Name",
+          "type": "string"
+        },
+        "logo_light": {
+          "anyOf": [
+            {
+              "maxLength": 349550,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Logo Light"
+        },
+        "logo_dark": {
+          "anyOf": [
+            {
+              "maxLength": 349550,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Logo Dark"
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "maxLength": 349550,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Symbol"
+        },
+        "favicon": {
+          "anyOf": [
+            {
+              "maxLength": 349550,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Favicon"
+        },
+        "palette": {
+          "$ref": "#/$defs/BrandingPalettes"
+        },
+        "font_family": {
+          "const": "Manrope",
+          "default": "Manrope",
+          "title": "Font Family",
+          "type": "string"
+        }
+      },
+      "title": "BrandingValues",
       "type": "object"
     },
     "Capabilities": {
@@ -3074,6 +3341,51 @@
       "title": "ConversationExportInput",
       "type": "object"
     },
+    "ConversationIdentity": {
+      "additionalProperties": true,
+      "properties": {
+        "product_name": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Product Name",
+          "type": "string"
+        },
+        "assistant_name": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Assistant Name",
+          "type": "string"
+        },
+        "branding_revision": {
+          "maximum": 2147483647,
+          "minimum": 0,
+          "title": "Branding Revision",
+          "type": "integer"
+        },
+        "branding_origin": {
+          "enum": [
+            "deployment",
+            "organization"
+          ],
+          "title": "Branding Origin",
+          "type": "string"
+        },
+        "branding_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Branding Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "product_name",
+        "assistant_name",
+        "branding_revision",
+        "branding_origin",
+        "branding_sha256"
+      ],
+      "title": "ConversationIdentity",
+      "type": "object"
+    },
     "ConversationMessage": {
       "additionalProperties": true,
       "properties": {
@@ -3271,6 +3583,18 @@
           "maxItems": 200,
           "title": "Originating Token Ids",
           "type": "array"
+        },
+        "identity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ConversationIdentity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Presentation identity recorded when the export or share review was created. Null means historical identity was not recorded; it never uses today's branding."
         }
       },
       "required": [
@@ -4263,6 +4587,217 @@
       "title": "DocumentEvidence",
       "type": "object"
     },
+    "DocumentExtraction": {
+      "additionalProperties": true,
+      "properties": {
+        "document_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Document Id",
+          "type": "string"
+        },
+        "catalog_source_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Catalog Source Id",
+          "type": "string"
+        },
+        "native_source_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Native Source Id",
+          "type": "string"
+        },
+        "source_version_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Source Version Id",
+          "type": "string"
+        },
+        "extraction_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Extraction Id",
+          "type": "string"
+        },
+        "purpose": {
+          "maxLength": 32,
+          "minLength": 1,
+          "title": "Purpose",
+          "type": "string"
+        },
+        "coverage": {
+          "maxLength": 32,
+          "minLength": 1,
+          "title": "Coverage",
+          "type": "string"
+        },
+        "normalized_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Normalized Sha256",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "predecessor_extraction_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Predecessor Extraction Id"
+        }
+      },
+      "required": [
+        "document_id",
+        "catalog_source_id",
+        "native_source_id",
+        "source_version_id",
+        "extraction_id",
+        "purpose",
+        "coverage",
+        "normalized_sha256",
+        "created_at"
+      ],
+      "title": "DocumentExtraction",
+      "type": "object"
+    },
+    "DocumentExtractionPage": {
+      "additionalProperties": true,
+      "properties": {
+        "total": {
+          "minimum": 0,
+          "title": "Total",
+          "type": "integer"
+        },
+        "page": {
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "pages": {
+          "minimum": 0,
+          "title": "Pages",
+          "type": "integer"
+        },
+        "has_next": {
+          "title": "Has Next",
+          "type": "boolean"
+        },
+        "has_previous": {
+          "title": "Has Previous",
+          "type": "boolean"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/DocumentExtraction"
+          },
+          "maxItems": 100,
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "total",
+        "page",
+        "page_size",
+        "pages",
+        "has_next",
+        "has_previous",
+        "items"
+      ],
+      "title": "DocumentExtractionPage",
+      "type": "object"
+    },
+    "DocumentHistoryIdentity": {
+      "additionalProperties": true,
+      "properties": {
+        "document_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Document Id",
+          "type": "string"
+        },
+        "catalog_source_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Catalog Source Id",
+          "type": "string"
+        },
+        "native_source_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Native Source Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "document_id",
+        "catalog_source_id",
+        "native_source_id"
+      ],
+      "title": "DocumentHistoryIdentity",
+      "type": "object"
+    },
+    "DocumentHistoryPagination": {
+      "additionalProperties": true,
+      "properties": {
+        "total": {
+          "minimum": 0,
+          "title": "Total",
+          "type": "integer"
+        },
+        "page": {
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "pages": {
+          "minimum": 0,
+          "title": "Pages",
+          "type": "integer"
+        },
+        "has_next": {
+          "title": "Has Next",
+          "type": "boolean"
+        },
+        "has_previous": {
+          "title": "Has Previous",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "total",
+        "page",
+        "page_size",
+        "pages",
+        "has_next",
+        "has_previous"
+      ],
+      "title": "DocumentHistoryPagination",
+      "type": "object"
+    },
     "DocumentKnowledgeBounds": {
       "additionalProperties": false,
       "properties": {
@@ -4453,6 +4988,313 @@
       "title": "DocumentKnowledgeSettings",
       "type": "object"
     },
+    "DocumentPartContent": {
+      "additionalProperties": true,
+      "properties": {
+        "document_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Document Id",
+          "type": "string"
+        },
+        "catalog_source_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Catalog Source Id",
+          "type": "string"
+        },
+        "native_source_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Native Source Id",
+          "type": "string"
+        },
+        "source_version_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Source Version Id",
+          "type": "string"
+        },
+        "extraction_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Extraction Id",
+          "type": "string"
+        },
+        "source_part_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Source Part Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "chunk",
+            "page"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 1000000,
+          "title": "Text",
+          "type": "string"
+        },
+        "recorded_page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recorded Page"
+        },
+        "page_basis": {
+          "const": "recorded_loader",
+          "title": "Page Basis",
+          "type": "string"
+        },
+        "raw_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Raw Sha256",
+          "type": "string"
+        },
+        "normalized_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Normalized Sha256",
+          "type": "string"
+        },
+        "input_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Input Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "document_id",
+        "catalog_source_id",
+        "native_source_id",
+        "source_version_id",
+        "extraction_id",
+        "source_part_id",
+        "kind",
+        "sha256",
+        "text",
+        "page_basis",
+        "raw_sha256",
+        "normalized_sha256",
+        "input_sha256"
+      ],
+      "title": "DocumentPartContent",
+      "type": "object"
+    },
+    "DocumentPartPage": {
+      "additionalProperties": true,
+      "properties": {
+        "total": {
+          "minimum": 0,
+          "title": "Total",
+          "type": "integer"
+        },
+        "page": {
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "pages": {
+          "minimum": 0,
+          "title": "Pages",
+          "type": "integer"
+        },
+        "has_next": {
+          "title": "Has Next",
+          "type": "boolean"
+        },
+        "has_previous": {
+          "title": "Has Previous",
+          "type": "boolean"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/DocumentPartSummary"
+          },
+          "maxItems": 100,
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "total",
+        "page",
+        "page_size",
+        "pages",
+        "has_next",
+        "has_previous",
+        "items"
+      ],
+      "title": "DocumentPartPage",
+      "type": "object"
+    },
+    "DocumentPartSummary": {
+      "additionalProperties": true,
+      "properties": {
+        "document_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Document Id",
+          "type": "string"
+        },
+        "catalog_source_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Catalog Source Id",
+          "type": "string"
+        },
+        "native_source_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Native Source Id",
+          "type": "string"
+        },
+        "source_version_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Source Version Id",
+          "type": "string"
+        },
+        "extraction_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Extraction Id",
+          "type": "string"
+        },
+        "source_part_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Source Part Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "artifact",
+            "section",
+            "chunk",
+            "page"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "ordinal": {
+          "minimum": 0,
+          "title": "Ordinal",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "recorded_page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recorded Page"
+        },
+        "page_basis": {
+          "anyOf": [
+            {
+              "const": "recorded_loader",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page Basis"
+        },
+        "char_start": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Char Start"
+        },
+        "char_end": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Char End"
+        },
+        "offset_basis": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Offset Basis"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "document_id",
+        "catalog_source_id",
+        "native_source_id",
+        "source_version_id",
+        "extraction_id",
+        "source_part_id",
+        "kind",
+        "ordinal",
+        "sha256",
+        "created_at"
+      ],
+      "title": "DocumentPartSummary",
+      "type": "object"
+    },
     "DocumentReingestInput": {
       "additionalProperties": false,
       "properties": {
@@ -4463,6 +5305,167 @@
         }
       },
       "title": "DocumentReingestInput",
+      "type": "object"
+    },
+    "DocumentVersion": {
+      "additionalProperties": true,
+      "properties": {
+        "document_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Document Id",
+          "type": "string"
+        },
+        "catalog_source_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Catalog Source Id",
+          "type": "string"
+        },
+        "native_source_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Native Source Id",
+          "type": "string"
+        },
+        "source_version_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Source Version Id",
+          "type": "string"
+        },
+        "filename": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Filename"
+        },
+        "media_type": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Media Type"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "byte_size": {
+          "minimum": 0,
+          "title": "Byte Size",
+          "type": "integer"
+        },
+        "actor": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Actor"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "predecessor_source_version_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Predecessor Source Version Id"
+        }
+      },
+      "required": [
+        "document_id",
+        "catalog_source_id",
+        "native_source_id",
+        "source_version_id",
+        "sha256",
+        "byte_size",
+        "created_at"
+      ],
+      "title": "DocumentVersion",
+      "type": "object"
+    },
+    "DocumentVersionPage": {
+      "additionalProperties": true,
+      "properties": {
+        "total": {
+          "minimum": 0,
+          "title": "Total",
+          "type": "integer"
+        },
+        "page": {
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "pages": {
+          "minimum": 0,
+          "title": "Pages",
+          "type": "integer"
+        },
+        "has_next": {
+          "title": "Has Next",
+          "type": "boolean"
+        },
+        "has_previous": {
+          "title": "Has Previous",
+          "type": "boolean"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/DocumentVersion"
+          },
+          "maxItems": 100,
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "total",
+        "page",
+        "page_size",
+        "pages",
+        "has_next",
+        "has_previous",
+        "items"
+      ],
+      "title": "DocumentVersionPage",
       "type": "object"
     },
     "DomainCapability": {
@@ -5036,6 +6039,17 @@
           "format": "date-time",
           "title": "Expires At",
           "type": "string"
+        },
+        "identity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ConversationIdentity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -5069,6 +6083,751 @@
         }
       ],
       "title": "ExportReviewRequest"
+    },
+    "ExternalFileCatalogEntry": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "tenant_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Parent Id"
+        },
+        "workspace_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Workspace Id",
+          "type": "string"
+        },
+        "project_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Project Id"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        },
+        "created_by": {
+          "title": "Created By",
+          "type": "string"
+        },
+        "updated_by": {
+          "title": "Updated By",
+          "type": "string"
+        },
+        "metadata": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Metadata",
+          "type": "object"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "kind",
+        "name",
+        "parent_id",
+        "workspace_id",
+        "project_id",
+        "description",
+        "status",
+        "created_by",
+        "updated_by",
+        "metadata",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "ExternalFileCatalogEntry",
+      "type": "object"
+    },
+    "ExternalFileChunkInput": {
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "maximum": 511,
+          "minimum": 0,
+          "title": "Index",
+          "type": "integer"
+        },
+        "data_base64": {
+          "maxLength": 87384,
+          "minLength": 4,
+          "title": "Data Base64",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "index",
+        "data_base64",
+        "sha256"
+      ],
+      "title": "ExternalFileChunkInput",
+      "type": "object"
+    },
+    "ExternalFileCleanupInput": {
+      "additionalProperties": false,
+      "properties": {
+        "review_ids": {
+          "items": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 25,
+          "minItems": 1,
+          "title": "Review Ids",
+          "type": "array"
+        },
+        "max_objects": {
+          "default": 32,
+          "maximum": 64,
+          "minimum": 1,
+          "title": "Max Objects",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "review_ids"
+      ],
+      "title": "ExternalFileCleanupInput",
+      "type": "object"
+    },
+    "ExternalFileCleanupResult": {
+      "additionalProperties": true,
+      "properties": {
+        "reviews": {
+          "items": {
+            "$ref": "#/$defs/ExternalFileCleanupReview"
+          },
+          "maxItems": 25,
+          "title": "Reviews",
+          "type": "array"
+        }
+      },
+      "required": [
+        "reviews"
+      ],
+      "title": "ExternalFileCleanupResult",
+      "type": "object"
+    },
+    "ExternalFileCleanupReview": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "purging",
+            "purged"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "processed_objects": {
+          "maximum": 513,
+          "minimum": 0,
+          "title": "Processed Objects",
+          "type": "integer"
+        },
+        "total_objects": {
+          "maximum": 513,
+          "minimum": 1,
+          "title": "Total Objects",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "status",
+        "processed_objects",
+        "total_objects"
+      ],
+      "title": "ExternalFileCleanupReview",
+      "type": "object"
+    },
+    "ExternalFileReceipt": {
+      "additionalProperties": true,
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/ExternalFileCatalogEntry"
+        },
+        "assets": {
+          "items": {
+            "$ref": "#/$defs/ExternalFileCatalogEntry"
+          },
+          "maxItems": 128,
+          "minItems": 1,
+          "title": "Assets",
+          "type": "array"
+        }
+      },
+      "required": [
+        "source",
+        "assets"
+      ],
+      "title": "ExternalFileReceipt",
+      "type": "object"
+    },
+    "ExternalFileReviewInput": {
+      "additionalProperties": false,
+      "properties": {
+        "filename": {
+          "maxLength": 255,
+          "minLength": 1,
+          "title": "Filename",
+          "type": "string"
+        },
+        "content_type": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Content Type"
+        },
+        "mode": {
+          "enum": [
+            "document",
+            "dataset"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "destination_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Destination Id",
+          "type": "string"
+        },
+        "size_bytes": {
+          "maximum": 33554432,
+          "minimum": 1,
+          "title": "Size Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "filename",
+        "mode",
+        "destination_id",
+        "size_bytes",
+        "sha256"
+      ],
+      "title": "ExternalFileReviewInput",
+      "type": "object"
+    },
+    "ExternalFileReviewView": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "tenant_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "authorization_digest": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Authorization Digest",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "uploading",
+            "preview",
+            "ingesting",
+            "committed",
+            "cancelled",
+            "unresolved"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "filename": {
+          "title": "Filename",
+          "type": "string"
+        },
+        "content_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Content Type"
+        },
+        "mode": {
+          "enum": [
+            "document",
+            "dataset"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "size_bytes": {
+          "title": "Size Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "destination": {
+          "$ref": "#/$defs/KnowledgeDestination"
+        },
+        "received_chunks": {
+          "title": "Received Chunks",
+          "type": "integer"
+        },
+        "total_chunks": {
+          "title": "Total Chunks",
+          "type": "integer"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        },
+        "submitted_by": {
+          "title": "Submitted By",
+          "type": "string"
+        },
+        "credential_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Credential Id",
+          "type": "string"
+        },
+        "application_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Application Id"
+        },
+        "origin": {
+          "const": "external_proposal",
+          "default": "external_proposal",
+          "title": "Origin",
+          "type": "string"
+        },
+        "authority": {
+          "const": "unverified",
+          "default": "unverified",
+          "title": "Authority",
+          "type": "string"
+        },
+        "provider": {
+          "default": null,
+          "title": "Provider",
+          "type": "null"
+        },
+        "model": {
+          "default": null,
+          "title": "Model",
+          "type": "null"
+        },
+        "source_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Id"
+        },
+        "intake_status": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Intake Status"
+        },
+        "receipt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ExternalFileReceipt"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "revision",
+        "authorization_digest",
+        "status",
+        "filename",
+        "content_type",
+        "mode",
+        "size_bytes",
+        "sha256",
+        "destination",
+        "received_chunks",
+        "total_chunks",
+        "expires_at",
+        "submitted_by",
+        "credential_id",
+        "application_id"
+      ],
+      "title": "ExternalFileReviewView",
+      "type": "object"
+    },
+    "ExternalProposalEvidence": {
+      "additionalProperties": true,
+      "properties": {
+        "kind": {
+          "const": "external_proposal",
+          "default": "external_proposal",
+          "title": "Kind",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 262144,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "submitted_by": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Submitted By",
+          "type": "string"
+        },
+        "credential_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Credential Id",
+          "type": "string"
+        },
+        "application_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Application Id"
+        },
+        "source_receipt_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 32,
+          "title": "Source Receipt Ids",
+          "type": "array"
+        },
+        "recorded_at": {
+          "format": "date-time",
+          "title": "Recorded At",
+          "type": "string"
+        },
+        "authority": {
+          "const": "unverified",
+          "default": "unverified",
+          "title": "Authority",
+          "type": "string"
+        },
+        "provider": {
+          "default": null,
+          "title": "Provider",
+          "type": "null"
+        },
+        "model": {
+          "default": null,
+          "title": "Model",
+          "type": "null"
+        }
+      },
+      "required": [
+        "text",
+        "sha256",
+        "submitted_by",
+        "credential_id",
+        "recorded_at"
+      ],
+      "title": "ExternalProposalEvidence",
+      "type": "object"
+    },
+    "ExternalProposalOrigin": {
+      "additionalProperties": true,
+      "properties": {
+        "kind": {
+          "const": "external_proposal",
+          "title": "Kind",
+          "type": "string"
+        },
+        "source_receipt_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 32,
+          "title": "Source Receipt Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "ExternalProposalOrigin",
+      "type": "object"
+    },
+    "ExternalReviewDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "authorization_digest": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Authorization Digest",
+          "type": "string"
+        },
+        "nonce": {
+          "maxLength": 43,
+          "minLength": 43,
+          "title": "Nonce",
+          "type": "string"
+        }
+      },
+      "required": [
+        "expected_revision",
+        "authorization_digest",
+        "nonce"
+      ],
+      "title": "ExternalReviewDecision",
+      "type": "object"
+    },
+    "ExternalReviewInput": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "enum": [
+            "create_draft",
+            "create_published",
+            "update_draft",
+            "update_published",
+            "publish_draft"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "destination_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Destination Id",
+          "type": "string"
+        },
+        "target_item_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Item Id"
+        },
+        "expected_version": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Version"
+        },
+        "content": {
+          "$ref": "#/$defs/KnowledgeContent"
+        },
+        "source_receipt_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 32,
+          "title": "Source Receipt Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "action",
+        "destination_id",
+        "content"
+      ],
+      "title": "ExternalReviewInput",
+      "type": "object"
+    },
+    "ExternalReviewView": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "review": {
+          "$ref": "#/$defs/KnowledgeIntent"
+        },
+        "status": {
+          "enum": [
+            "preview",
+            "committing",
+            "committed",
+            "cancelled",
+            "stale",
+            "unresolved"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "review",
+        "status",
+        "expires_at"
+      ],
+      "title": "ExternalReviewView",
+      "type": "object"
     },
     "FeatureCapability": {
       "additionalProperties": true,
@@ -5341,6 +7100,35 @@
           ],
           "title": "Api",
           "type": "string"
+        },
+        "binding_output_mode": {
+          "anyOf": [
+            {
+              "enum": [
+                "default",
+                "native"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Binding Output Mode"
+        },
+        "model_options_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Options Sha256"
         },
         "started_at": {
           "format": "date-time",
@@ -7853,7 +9641,15 @@
           "title": "Model Id"
         },
         "model_options": {
-          "$ref": "#/$defs/ModelParameters"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelParameters"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "dimensions": {
           "anyOf": [
@@ -8368,6 +10164,7 @@
             "discriminator": {
               "mapping": {
                 "document_passage": "#/$defs/DocumentEvidence",
+                "external_proposal": "#/$defs/ExternalProposalEvidence",
                 "structured_snapshot": "#/$defs/StructuredEvidence",
                 "user_statement": "#/$defs/UserStatementEvidence"
               },
@@ -8382,6 +10179,9 @@
               },
               {
                 "$ref": "#/$defs/StructuredEvidence"
+              },
+              {
+                "$ref": "#/$defs/ExternalProposalEvidence"
               }
             ]
           },
@@ -8501,6 +10301,7 @@
           "discriminator": {
             "mapping": {
               "conversation": "#/$defs/ConversationOrigin",
+              "external_proposal": "#/$defs/ExternalProposalOrigin",
               "user_statement": "#/$defs/UserStatementOrigin"
             },
             "propertyName": "kind"
@@ -8511,6 +10312,9 @@
             },
             {
               "$ref": "#/$defs/ConversationOrigin"
+            },
+            {
+              "$ref": "#/$defs/ExternalProposalOrigin"
             }
           ],
           "title": "Origin"
@@ -9029,6 +10833,7 @@
             "discriminator": {
               "mapping": {
                 "document_passage": "#/$defs/DocumentEvidence",
+                "external_proposal": "#/$defs/ExternalProposalEvidence",
                 "structured_snapshot": "#/$defs/StructuredEvidence",
                 "user_statement": "#/$defs/UserStatementEvidence"
               },
@@ -9043,6 +10848,9 @@
               },
               {
                 "$ref": "#/$defs/StructuredEvidence"
+              },
+              {
+                "$ref": "#/$defs/ExternalProposalEvidence"
               }
             ]
           },
@@ -9174,6 +10982,721 @@
         "kind"
       ],
       "title": "LineageNode",
+      "type": "object"
+    },
+    "McpConnectionDescriptor": {
+      "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "local_only": {
+          "default": false,
+          "title": "Local Only",
+          "type": "boolean"
+        },
+        "endpoint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Endpoint"
+        },
+        "transport": {
+          "const": "streamable-http",
+          "default": "streamable-http",
+          "title": "Transport",
+          "type": "string"
+        },
+        "authentication": {
+          "items": {
+            "enum": [
+              "personal_token",
+              "oauth"
+            ],
+            "type": "string"
+          },
+          "title": "Authentication",
+          "type": "array"
+        },
+        "clients": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/McpRegisteredClient"
+          },
+          "title": "Clients",
+          "type": "array"
+        },
+        "oauth_enabled": {
+          "title": "Oauth Enabled",
+          "type": "boolean"
+        },
+        "oauth_registration": {
+          "anyOf": [
+            {
+              "const": "pre_registered",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Oauth Registration"
+        },
+        "supported_scopes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Supported Scopes",
+          "type": "array"
+        },
+        "tools": {
+          "items": {
+            "$ref": "#/$defs/McpToolCapability"
+          },
+          "title": "Tools",
+          "type": "array"
+        },
+        "review": {
+          "$ref": "#/$defs/McpReviewSupport"
+        },
+        "client_acceptance": {
+          "const": "not_verified",
+          "default": "not_verified",
+          "title": "Client Acceptance",
+          "type": "string"
+        }
+      },
+      "required": [
+        "enabled",
+        "endpoint",
+        "authentication",
+        "oauth_enabled",
+        "oauth_registration",
+        "supported_scopes",
+        "tools",
+        "review"
+      ],
+      "title": "McpConnectionDescriptor",
+      "type": "object"
+    },
+    "McpOAuthClient": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "redirect_uris": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8,
+          "minItems": 1,
+          "title": "Redirect Uris",
+          "type": "array"
+        },
+        "scopes": {
+          "items": {
+            "enum": [
+              "catalog:read",
+              "catalog:write",
+              "ingest:write",
+              "knowledge:search",
+              "query:execute",
+              "chat:use",
+              "evidence:read"
+            ],
+            "type": "string"
+          },
+          "maxItems": 7,
+          "minItems": 1,
+          "title": "Scopes",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "tenant_id": {
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "client_id": {
+          "title": "Client Id",
+          "type": "string"
+        },
+        "client_type": {
+          "enum": [
+            "public",
+            "confidential"
+          ],
+          "title": "Client Type",
+          "type": "string"
+        },
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "revision": {
+          "title": "Revision",
+          "type": "integer"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        },
+        "created_by": {
+          "title": "Created By",
+          "type": "string"
+        },
+        "updated_by": {
+          "title": "Updated By",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "redirect_uris",
+        "scopes",
+        "id",
+        "tenant_id",
+        "client_id",
+        "client_type",
+        "enabled",
+        "revision",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by"
+      ],
+      "title": "McpOAuthClient",
+      "type": "object"
+    },
+    "McpOAuthClientCredential": {
+      "additionalProperties": false,
+      "properties": {
+        "client": {
+          "$ref": "#/$defs/McpOAuthClient"
+        },
+        "client_secret": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Client Secret"
+        }
+      },
+      "required": [
+        "client"
+      ],
+      "title": "McpOAuthClientCredential",
+      "type": "object"
+    },
+    "McpOAuthClientInput": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "redirect_uris": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8,
+          "minItems": 1,
+          "title": "Redirect Uris",
+          "type": "array"
+        },
+        "scopes": {
+          "items": {
+            "enum": [
+              "catalog:read",
+              "catalog:write",
+              "ingest:write",
+              "knowledge:search",
+              "query:execute",
+              "chat:use",
+              "evidence:read"
+            ],
+            "type": "string"
+          },
+          "maxItems": 7,
+          "minItems": 1,
+          "title": "Scopes",
+          "type": "array"
+        },
+        "client_type": {
+          "enum": [
+            "public",
+            "confidential"
+          ],
+          "title": "Client Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "redirect_uris",
+        "scopes",
+        "client_type"
+      ],
+      "title": "McpOAuthClientInput",
+      "type": "object"
+    },
+    "McpOAuthClientPage": {
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/McpOAuthClient"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "total": {
+          "title": "Total",
+          "type": "integer"
+        },
+        "page": {
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "pages": {
+          "title": "Pages",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size",
+        "pages"
+      ],
+      "title": "McpOAuthClientPage",
+      "type": "object"
+    },
+    "McpOAuthClientPatch": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "maximum": 2147483646,
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 120,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "redirect_uris": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 8,
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Redirect Uris"
+        },
+        "scopes": {
+          "anyOf": [
+            {
+              "items": {
+                "enum": [
+                  "catalog:read",
+                  "catalog:write",
+                  "ingest:write",
+                  "knowledge:search",
+                  "query:execute",
+                  "chat:use",
+                  "evidence:read"
+                ],
+                "type": "string"
+              },
+              "maxItems": 7,
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scopes"
+        },
+        "enabled": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enabled"
+        }
+      },
+      "required": [
+        "expected_revision"
+      ],
+      "title": "McpOAuthClientPatch",
+      "type": "object"
+    },
+    "McpOAuthClientReadiness": {
+      "additionalProperties": false,
+      "properties": {
+        "ready": {
+          "title": "Ready",
+          "type": "boolean"
+        },
+        "endpoint_enabled": {
+          "title": "Endpoint Enabled",
+          "type": "boolean"
+        },
+        "oauth_enabled": {
+          "title": "Oauth Enabled",
+          "type": "boolean"
+        },
+        "encryption_configured": {
+          "title": "Encryption Configured",
+          "type": "boolean"
+        },
+        "missing_configuration": {
+          "items": {
+            "enum": [
+              "mcp_endpoint",
+              "oauth_enabled",
+              "oauth_encryption_key"
+            ],
+            "type": "string"
+          },
+          "title": "Missing Configuration",
+          "type": "array"
+        },
+        "static_clients_read_only": {
+          "default": true,
+          "title": "Static Clients Read Only",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "ready",
+        "endpoint_enabled",
+        "oauth_enabled",
+        "encryption_configured",
+        "missing_configuration"
+      ],
+      "title": "McpOAuthClientReadiness",
+      "type": "object"
+    },
+    "McpOAuthClientRevision": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "maximum": 2147483646,
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "expected_revision"
+      ],
+      "title": "McpOAuthClientRevision",
+      "type": "object"
+    },
+    "McpOAuthClientValues": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "redirect_uris": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8,
+          "minItems": 1,
+          "title": "Redirect Uris",
+          "type": "array"
+        },
+        "scopes": {
+          "items": {
+            "enum": [
+              "catalog:read",
+              "catalog:write",
+              "ingest:write",
+              "knowledge:search",
+              "query:execute",
+              "chat:use",
+              "evidence:read"
+            ],
+            "type": "string"
+          },
+          "maxItems": 7,
+          "minItems": 1,
+          "title": "Scopes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "redirect_uris",
+        "scopes"
+      ],
+      "title": "McpOAuthClientValues",
+      "type": "object"
+    },
+    "McpReadReceipt": {
+      "additionalProperties": true,
+      "properties": {
+        "status": {
+          "enum": [
+            "recorded",
+            "not_recorded"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Id"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sha256"
+        },
+        "expires_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expires At"
+        },
+        "sources": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SourceReference"
+          },
+          "maxItems": 64,
+          "title": "Sources",
+          "type": "array"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "enum": [
+                "incomplete_or_unsupported_source_manifest",
+                "source_manifest_limit_or_missing_revision",
+                "receipt_byte_limit",
+                "active_receipt_limit",
+                "source_reuse_scope_required",
+                "capture_unavailable",
+                "transitive_lineage_unqualified",
+                "catalog_is_not_source_evidence"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "McpReadReceipt",
+      "type": "object"
+    },
+    "McpRegisteredClient": {
+      "additionalProperties": true,
+      "properties": {
+        "client_id": {
+          "title": "Client Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "scopes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Scopes",
+          "type": "array"
+        },
+        "client_auth": {
+          "enum": [
+            "public",
+            "confidential"
+          ],
+          "title": "Client Auth",
+          "type": "string"
+        }
+      },
+      "required": [
+        "client_id",
+        "name",
+        "scopes",
+        "client_auth"
+      ],
+      "title": "McpRegisteredClient",
+      "type": "object"
+    },
+    "McpReviewSupport": {
+      "additionalProperties": true,
+      "properties": {
+        "supported": {
+          "title": "Supported",
+          "type": "boolean"
+        },
+        "mechanism": {
+          "const": "mcp_apps",
+          "default": "mcp_apps",
+          "title": "Mechanism",
+          "type": "string"
+        },
+        "resource_uri": {
+          "const": "ui://koinon/knowledge-review",
+          "default": "ui://koinon/knowledge-review",
+          "title": "Resource Uri",
+          "type": "string"
+        },
+        "mime_type": {
+          "const": "text/html;profile=mcp-app",
+          "default": "text/html;profile=mcp-app",
+          "title": "Mime Type",
+          "type": "string"
+        },
+        "external_redirect": {
+          "const": false,
+          "default": false,
+          "title": "External Redirect",
+          "type": "boolean"
+        },
+        "client_support": {
+          "const": "not_observed",
+          "default": "not_observed",
+          "title": "Client Support",
+          "type": "string"
+        }
+      },
+      "required": [
+        "supported"
+      ],
+      "title": "McpReviewSupport",
+      "type": "object"
+    },
+    "McpToolCapability": {
+      "additionalProperties": true,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "required_scopes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Required Scopes",
+          "type": "array"
+        },
+        "access": {
+          "enum": [
+            "read",
+            "query",
+            "proposal",
+            "app_only"
+          ],
+          "title": "Access",
+          "type": "string"
+        },
+        "requires_app": {
+          "default": false,
+          "title": "Requires App",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "required_scopes",
+        "access"
+      ],
+      "title": "McpToolCapability",
       "type": "object"
     },
     "MemberInput": {
@@ -9580,6 +12103,22 @@
     "ModelParameters": {
       "additionalProperties": false,
       "properties": {
+        "output_mode": {
+          "anyOf": [
+            {
+              "enum": [
+                "default",
+                "native"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Mode"
+        },
         "max_tokens": {
           "default": 4096,
           "maximum": 16384,
@@ -10650,6 +13189,66 @@
       "title": "OperationalObservation",
       "type": "object"
     },
+    "OrganizationBranding": {
+      "additionalProperties": true,
+      "properties": {
+        "tenant_id": {
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "revision": {
+          "maximum": 2147483647,
+          "minimum": 0,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "origin": {
+          "enum": [
+            "deployment",
+            "organization"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "branding": {
+          "$ref": "#/$defs/BrandingValues"
+        }
+      },
+      "required": [
+        "tenant_id",
+        "revision",
+        "origin",
+        "branding"
+      ],
+      "title": "OrganizationBranding",
+      "type": "object"
+    },
+    "OrganizationBrandingInput": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "maximum": 2147483646,
+          "minimum": 0,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "branding": {
+          "$ref": "#/$defs/BrandingInputValues"
+        }
+      },
+      "required": [
+        "expected_revision",
+        "branding"
+      ],
+      "title": "OrganizationBrandingInput",
+      "type": "object"
+    },
     "OrganizationChatSettings": {
       "additionalProperties": true,
       "properties": {
@@ -10733,6 +13332,61 @@
         "expected_revision"
       ],
       "title": "OrganizationChatSettingsInput",
+      "type": "object"
+    },
+    "OrganizationDirectorySettings": {
+      "additionalProperties": true,
+      "properties": {
+        "tenant_id": {
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "visibility": {
+          "default": "administrators",
+          "enum": [
+            "administrators",
+            "shared_workspaces"
+          ],
+          "title": "Visibility",
+          "type": "string"
+        },
+        "revision": {
+          "default": 0,
+          "maximum": 2147483647,
+          "minimum": 0,
+          "title": "Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "tenant_id"
+      ],
+      "title": "OrganizationDirectorySettings",
+      "type": "object"
+    },
+    "OrganizationDirectorySettingsInput": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "maximum": 2147483646,
+          "minimum": 0,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "visibility": {
+          "enum": [
+            "administrators",
+            "shared_workspaces"
+          ],
+          "title": "Visibility",
+          "type": "string"
+        }
+      },
+      "required": [
+        "expected_revision",
+        "visibility"
+      ],
+      "title": "OrganizationDirectorySettingsInput",
       "type": "object"
     },
     "OrganizationKnowledgeCapabilities": {
@@ -10876,6 +13530,822 @@
         "digest"
       ],
       "title": "OrganizationKnowledgeSnapshot",
+      "type": "object"
+    },
+    "OrganizationPerson": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Id"
+        },
+        "profile_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Profile Id"
+        },
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        },
+        "avatar_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Avatar Url"
+        },
+        "avatar_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Avatar Version"
+        },
+        "job_title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Job Title"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OrganizationUnitSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "department": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OrganizationUnitSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "manager": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OrganizationPersonReference"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "manager_unavailable": {
+          "default": false,
+          "title": "Manager Unavailable",
+          "type": "boolean"
+        },
+        "revision": {
+          "default": 0,
+          "maximum": 2147483647,
+          "minimum": 0,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "source": {
+          "default": "unassigned",
+          "enum": [
+            "unassigned",
+            "manual",
+            "provider"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "provider_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provider Id"
+        },
+        "provider_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provider Name"
+        },
+        "managed_fields": {
+          "items": {
+            "enum": [
+              "job_title",
+              "unit_id",
+              "manager_id"
+            ],
+            "type": "string"
+          },
+          "title": "Managed Fields",
+          "type": "array"
+        },
+        "observed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observed At"
+        },
+        "updated_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Updated At"
+        },
+        "observation_status": {
+          "default": "not_observed",
+          "enum": [
+            "not_observed",
+            "current",
+            "unavailable"
+          ],
+          "title": "Observation Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "display_name"
+      ],
+      "title": "OrganizationPerson",
+      "type": "object"
+    },
+    "OrganizationPersonCreate": {
+      "additionalProperties": false,
+      "properties": {
+        "profile_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Profile Id"
+        },
+        "subject": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 3,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Subject"
+        },
+        "job_title": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Job Title"
+        },
+        "unit_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit Id"
+        },
+        "manager_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Manager Id"
+        }
+      },
+      "title": "OrganizationPersonCreate",
+      "type": "object"
+    },
+    "OrganizationPersonPage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/OrganizationPerson"
+          },
+          "maxItems": 50,
+          "title": "Items",
+          "type": "array"
+        },
+        "total": {
+          "minimum": 0,
+          "title": "Total",
+          "type": "integer"
+        },
+        "page": {
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "maximum": 50,
+          "minimum": 1,
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "pages": {
+          "minimum": 0,
+          "title": "Pages",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size",
+        "pages"
+      ],
+      "title": "OrganizationPersonPage",
+      "type": "object"
+    },
+    "OrganizationPersonPatch": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "maximum": 2147483646,
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "job_title": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Job Title"
+        },
+        "unit_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit Id"
+        },
+        "manager_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Manager Id"
+        },
+        "manage_locally": {
+          "default": false,
+          "title": "Manage Locally",
+          "type": "boolean"
+        },
+        "managed_provider_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Managed Provider Id"
+        }
+      },
+      "required": [
+        "expected_revision"
+      ],
+      "title": "OrganizationPersonPatch",
+      "type": "object"
+    },
+    "OrganizationPersonReference": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "display_name"
+      ],
+      "title": "OrganizationPersonReference",
+      "type": "object"
+    },
+    "OrganizationProfileFields": {
+      "additionalProperties": false,
+      "properties": {
+        "job_title": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z][A-Za-z0-9_]{0,79}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Job Title"
+        },
+        "unit_external_key": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z][A-Za-z0-9_]{0,79}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit External Key"
+        },
+        "manager_external_subject": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z][A-Za-z0-9_]{0,79}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Manager External Subject"
+        }
+      },
+      "title": "OrganizationProfileFields",
+      "type": "object"
+    },
+    "OrganizationProfileMapping": {
+      "additionalProperties": true,
+      "properties": {
+        "tenant_id": {
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "provider_id": {
+          "title": "Provider Id",
+          "type": "string"
+        },
+        "revision": {
+          "default": 0,
+          "maximum": 2147483647,
+          "minimum": 0,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "fields": {
+          "$ref": "#/$defs/OrganizationProfileFields"
+        },
+        "source": {
+          "const": "verified_claims",
+          "default": "verified_claims",
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tenant_id",
+        "provider_id"
+      ],
+      "title": "OrganizationProfileMapping",
+      "type": "object"
+    },
+    "OrganizationProfileMappingInput": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "maximum": 2147483646,
+          "minimum": 0,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "fields": {
+          "$ref": "#/$defs/OrganizationProfileFields"
+        }
+      },
+      "required": [
+        "expected_revision",
+        "enabled",
+        "fields"
+      ],
+      "title": "OrganizationProfileMappingInput",
+      "type": "object"
+    },
+    "OrganizationUnit": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "division",
+            "department",
+            "team"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "updated_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Updated At"
+        },
+        "tenant_id": {
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Id"
+        },
+        "revision": {
+          "maximum": 2147483647,
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "provider_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provider Id"
+        },
+        "has_children": {
+          "default": false,
+          "title": "Has Children",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "kind",
+        "tenant_id",
+        "revision"
+      ],
+      "title": "OrganizationUnit",
+      "type": "object"
+    },
+    "OrganizationUnitInput": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "kind": {
+          "default": "department",
+          "enum": [
+            "division",
+            "department",
+            "team"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Id"
+        },
+        "provider_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provider Id"
+        },
+        "external_key": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "External Key"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "OrganizationUnitInput",
+      "type": "object"
+    },
+    "OrganizationUnitPage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/OrganizationUnit"
+          },
+          "maxItems": 50,
+          "title": "Items",
+          "type": "array"
+        },
+        "total": {
+          "minimum": 0,
+          "title": "Total",
+          "type": "integer"
+        },
+        "page": {
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "maximum": 50,
+          "minimum": 1,
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "pages": {
+          "minimum": 0,
+          "title": "Pages",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size",
+        "pages"
+      ],
+      "title": "OrganizationUnitPage",
+      "type": "object"
+    },
+    "OrganizationUnitPatch": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "maximum": 2147483646,
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "kind": {
+          "anyOf": [
+            {
+              "enum": [
+                "division",
+                "department",
+                "team"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Kind"
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Id"
+        }
+      },
+      "required": [
+        "expected_revision"
+      ],
+      "title": "OrganizationUnitPatch",
+      "type": "object"
+    },
+    "OrganizationUnitSummary": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "division",
+            "department",
+            "team"
+          ],
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "kind"
+      ],
+      "title": "OrganizationUnitSummary",
+      "type": "object"
+    },
+    "Output": {
+      "additionalProperties": true,
+      "properties": {},
+      "title": "Output",
       "type": "object"
     },
     "Page": {
@@ -13891,6 +17361,144 @@
       "title": "ResultColumn",
       "type": "object"
     },
+    "RlmToolReceipt": {
+      "additionalProperties": true,
+      "properties": {
+        "result_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Result Id",
+          "type": "string"
+        },
+        "generation_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Generation Id"
+        },
+        "tenant_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "workspace_id": {
+          "description": "Admitted native execution workspace.",
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Workspace Id",
+          "type": "string"
+        },
+        "source_ids": {
+          "description": "Admitted native source scope; actual content use requires separate execution-read evidence.",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 500,
+          "minItems": 1,
+          "title": "Source Ids",
+          "type": "array"
+        },
+        "tool_call_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Tool Call Id",
+          "type": "string"
+        },
+        "tool_name": {
+          "enum": [
+            "python",
+            "final_answer"
+          ],
+          "title": "Tool Name",
+          "type": "string"
+        },
+        "request_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Request Sha256",
+          "type": "string"
+        },
+        "schema_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Schema Sha256",
+          "type": "string"
+        },
+        "arguments_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Arguments Sha256",
+          "type": "string"
+        },
+        "result_sha256": {
+          "description": "SHA-256 of the actual ToolReturnPart JSON serialization, sorted keys, compact UTF-8.",
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Result Sha256",
+          "type": "string"
+        },
+        "result_kind": {
+          "description": "tool_return is preserved into subsequent SDK history. accepted_final and execution_failure seal the actual host result locally without asserting a subsequent provider delivery.",
+          "enum": [
+            "tool_return",
+            "accepted_final",
+            "execution_failure"
+          ],
+          "title": "Result Kind",
+          "type": "string"
+        },
+        "execution_sha256": {
+          "description": "SHA-256 of the exact public VM feed dataclass, sorted keys, compact UTF-8.",
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Execution Sha256",
+          "type": "string"
+        },
+        "outcome": {
+          "enum": [
+            "completed",
+            "rejected",
+            "failed",
+            "halted"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "execution_status": {
+          "maxLength": 32,
+          "minLength": 1,
+          "title": "Execution Status",
+          "type": "string"
+        },
+        "execution_state": {
+          "maxLength": 32,
+          "minLength": 1,
+          "title": "Execution State",
+          "type": "string"
+        }
+      },
+      "required": [
+        "result_id",
+        "tenant_id",
+        "workspace_id",
+        "source_ids",
+        "tool_call_id",
+        "tool_name",
+        "request_sha256",
+        "schema_sha256",
+        "arguments_sha256",
+        "result_sha256",
+        "result_kind",
+        "execution_sha256",
+        "outcome",
+        "execution_status",
+        "execution_state"
+      ],
+      "title": "RlmToolReceipt",
+      "type": "object"
+    },
     "RoleObservation": {
       "additionalProperties": true,
       "properties": {
@@ -14097,6 +17705,17 @@
           ],
           "default": null,
           "title": "Score"
+        },
+        "source_reference": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceReference"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "citations": {
           "items": {
@@ -14548,6 +18167,17 @@
           "format": "date-time",
           "title": "Expires At",
           "type": "string"
+        },
+        "identity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ConversationIdentity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -14615,6 +18245,17 @@
         "source_manifest_complete": {
           "title": "Source Manifest Complete",
           "type": "boolean"
+        },
+        "identity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ConversationIdentity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -17695,6 +21336,9 @@
     "ConversationMessage": {
       "$ref": "#/$defs/ConversationMessage"
     },
+    "ConversationIdentity": {
+      "$ref": "#/$defs/ConversationIdentity"
+    },
     "ConversationSnapshot": {
       "$ref": "#/$defs/ConversationSnapshot"
     },
@@ -17800,6 +21444,9 @@
     "PrivateFileReceipt": {
       "$ref": "#/$defs/PrivateFileReceipt"
     },
+    "RlmToolReceipt": {
+      "$ref": "#/$defs/RlmToolReceipt"
+    },
     "AnswerAudit": {
       "$ref": "#/$defs/AnswerAudit"
     },
@@ -17863,6 +21510,9 @@
     "UserStatementOrigin": {
       "$ref": "#/$defs/UserStatementOrigin"
     },
+    "ExternalProposalOrigin": {
+      "$ref": "#/$defs/ExternalProposalOrigin"
+    },
     "ConversationOrigin": {
       "$ref": "#/$defs/ConversationOrigin"
     },
@@ -17871,6 +21521,9 @@
     },
     "UserStatementEvidence": {
       "$ref": "#/$defs/UserStatementEvidence"
+    },
+    "ExternalProposalEvidence": {
+      "$ref": "#/$defs/ExternalProposalEvidence"
     },
     "DocumentEvidence": {
       "$ref": "#/$defs/DocumentEvidence"
@@ -17961,6 +21614,174 @@
     },
     "OrganizationKnowledgeSnapshot": {
       "$ref": "#/$defs/OrganizationKnowledgeSnapshot"
+    },
+    "BrandingPalette": {
+      "$ref": "#/$defs/BrandingPalette"
+    },
+    "BrandingPalettes": {
+      "$ref": "#/$defs/BrandingPalettes"
+    },
+    "BrandingInputValues": {
+      "$ref": "#/$defs/BrandingInputValues"
+    },
+    "BrandingValues": {
+      "$ref": "#/$defs/BrandingValues"
+    },
+    "OrganizationBranding": {
+      "$ref": "#/$defs/OrganizationBranding"
+    },
+    "OrganizationBrandingInput": {
+      "$ref": "#/$defs/OrganizationBrandingInput"
+    },
+    "BrandingResetInput": {
+      "$ref": "#/$defs/BrandingResetInput"
+    },
+    "McpToolCapability": {
+      "$ref": "#/$defs/McpToolCapability"
+    },
+    "McpReviewSupport": {
+      "$ref": "#/$defs/McpReviewSupport"
+    },
+    "McpRegisteredClient": {
+      "$ref": "#/$defs/McpRegisteredClient"
+    },
+    "McpConnectionDescriptor": {
+      "$ref": "#/$defs/McpConnectionDescriptor"
+    },
+    "McpReadReceipt": {
+      "$ref": "#/$defs/McpReadReceipt"
+    },
+    "ExternalReviewInput": {
+      "$ref": "#/$defs/ExternalReviewInput"
+    },
+    "ExternalReviewView": {
+      "$ref": "#/$defs/ExternalReviewView"
+    },
+    "ExternalReviewDecision": {
+      "$ref": "#/$defs/ExternalReviewDecision"
+    },
+    "ExternalFileReviewInput": {
+      "$ref": "#/$defs/ExternalFileReviewInput"
+    },
+    "ExternalFileChunkInput": {
+      "$ref": "#/$defs/ExternalFileChunkInput"
+    },
+    "ExternalFileCatalogEntry": {
+      "$ref": "#/$defs/ExternalFileCatalogEntry"
+    },
+    "ExternalFileReceipt": {
+      "$ref": "#/$defs/ExternalFileReceipt"
+    },
+    "ExternalFileReviewView": {
+      "$ref": "#/$defs/ExternalFileReviewView"
+    },
+    "ExternalFileCleanupInput": {
+      "$ref": "#/$defs/ExternalFileCleanupInput"
+    },
+    "ExternalFileCleanupReview": {
+      "$ref": "#/$defs/ExternalFileCleanupReview"
+    },
+    "ExternalFileCleanupResult": {
+      "$ref": "#/$defs/ExternalFileCleanupResult"
+    },
+    "McpOAuthClientValues": {
+      "$ref": "#/$defs/McpOAuthClientValues"
+    },
+    "McpOAuthClientInput": {
+      "$ref": "#/$defs/McpOAuthClientInput"
+    },
+    "McpOAuthClientRevision": {
+      "$ref": "#/$defs/McpOAuthClientRevision"
+    },
+    "McpOAuthClientPatch": {
+      "$ref": "#/$defs/McpOAuthClientPatch"
+    },
+    "McpOAuthClient": {
+      "$ref": "#/$defs/McpOAuthClient"
+    },
+    "McpOAuthClientCredential": {
+      "$ref": "#/$defs/McpOAuthClientCredential"
+    },
+    "McpOAuthClientReadiness": {
+      "$ref": "#/$defs/McpOAuthClientReadiness"
+    },
+    "McpOAuthClientPage": {
+      "$ref": "#/$defs/McpOAuthClientPage"
+    },
+    "DocumentHistoryIdentity": {
+      "$ref": "#/$defs/DocumentHistoryIdentity"
+    },
+    "DocumentVersion": {
+      "$ref": "#/$defs/DocumentVersion"
+    },
+    "DocumentExtraction": {
+      "$ref": "#/$defs/DocumentExtraction"
+    },
+    "DocumentPartSummary": {
+      "$ref": "#/$defs/DocumentPartSummary"
+    },
+    "DocumentPartContent": {
+      "$ref": "#/$defs/DocumentPartContent"
+    },
+    "DocumentHistoryPagination": {
+      "$ref": "#/$defs/DocumentHistoryPagination"
+    },
+    "DocumentVersionPage": {
+      "$ref": "#/$defs/DocumentVersionPage"
+    },
+    "DocumentExtractionPage": {
+      "$ref": "#/$defs/DocumentExtractionPage"
+    },
+    "DocumentPartPage": {
+      "$ref": "#/$defs/DocumentPartPage"
+    },
+    "Output": {
+      "$ref": "#/$defs/Output"
+    },
+    "OrganizationUnitSummary": {
+      "$ref": "#/$defs/OrganizationUnitSummary"
+    },
+    "OrganizationPersonReference": {
+      "$ref": "#/$defs/OrganizationPersonReference"
+    },
+    "OrganizationPerson": {
+      "$ref": "#/$defs/OrganizationPerson"
+    },
+    "OrganizationPersonCreate": {
+      "$ref": "#/$defs/OrganizationPersonCreate"
+    },
+    "OrganizationPersonPatch": {
+      "$ref": "#/$defs/OrganizationPersonPatch"
+    },
+    "OrganizationUnitInput": {
+      "$ref": "#/$defs/OrganizationUnitInput"
+    },
+    "OrganizationUnitPatch": {
+      "$ref": "#/$defs/OrganizationUnitPatch"
+    },
+    "OrganizationUnit": {
+      "$ref": "#/$defs/OrganizationUnit"
+    },
+    "OrganizationPersonPage": {
+      "$ref": "#/$defs/OrganizationPersonPage"
+    },
+    "OrganizationUnitPage": {
+      "$ref": "#/$defs/OrganizationUnitPage"
+    },
+    "OrganizationDirectorySettings": {
+      "$ref": "#/$defs/OrganizationDirectorySettings"
+    },
+    "OrganizationDirectorySettingsInput": {
+      "$ref": "#/$defs/OrganizationDirectorySettingsInput"
+    },
+    "OrganizationProfileFields": {
+      "$ref": "#/$defs/OrganizationProfileFields"
+    },
+    "OrganizationProfileMappingInput": {
+      "$ref": "#/$defs/OrganizationProfileMappingInput"
+    },
+    "OrganizationProfileMapping": {
+      "$ref": "#/$defs/OrganizationProfileMapping"
     },
     "Page[AuditEvent]": {
       "$ref": "#/$defs/Page_AuditEvent_"

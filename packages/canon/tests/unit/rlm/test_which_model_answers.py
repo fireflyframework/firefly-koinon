@@ -137,7 +137,9 @@ def test_the_forced_final_turn_is_answered_by_the_root_model(monkeypatch):
             _text("The allowance is 70 euros a day."),
         ],
     )
-    answer, _cites, no_answer = RLMSession(client, max_iters=2).run("meal allowance?", _Docs("70"))
+    answer, _cites, no_answer = RLMSession(
+        client, max_iters=2, sandbox_mode="inprocess",
+    ).run("meal allowance?", _Docs("70"))
     assert answer == "The allowance is 70 euros a day."
     assert no_answer is False
     assert [b["model"] for b in http.bodies] == ["claude-opus-5"] * 3
@@ -193,6 +195,6 @@ def test_the_cost_row_names_the_model_that_answered(monkeypatch, ending: str):
         else [_tool_use("print(1)", "t1"), _text("x")]
     )
     client, _http = _client(monkeypatch, responses)
-    RLMSession(client, max_iters=1).run("q", _Docs("x"))
+    RLMSession(client, max_iters=1, sandbox_mode="inprocess").run("q", _Docs("x"))
     per_model = client.token_totals()["by_model"]
     assert set(per_model) == {"claude-opus-5"}

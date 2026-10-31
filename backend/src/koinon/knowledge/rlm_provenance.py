@@ -12,6 +12,7 @@ from pyfly.kernel import ServiceUnavailableException
 from koinon.knowledge.capture_dtos import DocumentRead, NativeDatabaseContext, NativeReadFingerprint
 
 _MODELS = frozenset({"rlm.root", "rlm.submodel", "rlm.forced_final", "rlm.selector"})
+EXECUTION_READ = "rlm.execution_read.v1"
 
 
 def unavailable():
@@ -36,6 +37,18 @@ def _page(value):
     if type(value) is not int or not 1 <= value <= 2147483647:
         raise unavailable()
     return value
+
+
+def tool_scope(receipt, scope):
+    if (scope is None or provenance.current() is not scope or not scope.active or receipt.closed
+            or scope.observer is not receipt or scope.task is not receipt.owner
+            or scope.task.done() or scope.task.cancelling() or scope.loop.is_closed()
+            or get_ident() not in scope.threads or scope.tenant_id != receipt.tenant_id
+            or scope.actor != receipt.subject or not scope.source_ids
+            or any((scope.workspace_id, source) not in receipt.canonical_documents
+                   or scope.allowed_sources is not None and source not in scope.allowed_sources
+                   for source in scope.source_ids)):
+        raise unavailable()
 
 
 def document_view_parts(receipt, meta, read, scope):
@@ -146,6 +159,63 @@ def document_view_parts(receipt, meta, read, scope):
     receipt._rlm_document_views = {**views, key: read}
 
 
+def document_execution_read(receipt, meta, read, scope):
+    """Record invocation-scoped code input, never inferred from hydration or model metadata."""
+    key = (scope.workspace_id, meta.source_id) if scope is not None else None
+    if (
+        provenance.current() is not scope
+        or scope is None
+        or not scope.active
+        or receipt.closed
+        or scope.observer is not receipt
+        or scope.task is not receipt.owner
+        or scope.task.done()
+        or scope.task.cancelling()
+        or get_ident() not in scope.threads
+        or scope.loop.is_closed()
+        or scope.tenant_id != receipt.tenant_id
+        or scope.actor != receipt.subject
+        or (meta.tenant_id, meta.workspace_id) != (scope.tenant_id, scope.workspace_id)
+        or not isinstance(read, WholeDocumentRead)
+        or getattr(receipt, "_rlm_document_views", {}).get(key) != read
+        or (read.source_id, read.source_version_id, read.ingestion_extraction_id)
+        != (meta.source_id, meta.source_version_id, meta.ingestion_extraction_id)
+        or scope.allowed_sources is not None and meta.source_id not in scope.allowed_sources
+        or key not in receipt.canonical_documents
+    ):
+        raise unavailable()
+    provenance.authority(scope)
+    database = receipt.source_contexts.get(read.source_id, NativeDatabaseContext())
+    following = NativeReadFingerprint(
+        EXECUTION_READ, "canon", scope.tenant_id, scope.workspace_id, read.source_id,
+        read.input_sha256, (read.source_id,), (), engine=database.engine, database=database.database,
+        catalog=database.catalog, schema=database.schema, read_kind="document_extraction",
+        origin=receipt.source_origins.get(read.source_id), source_version_id=read.source_version_id,
+        extraction_id=read.extraction_id,
+    )
+    receipt.budget.check(receipt, reads=[following])
+    receipt.native_reads.append(following)
+    receipt._rlm_execution_views = {**getattr(receipt, "_rlm_execution_views", {}), key: read}
+
+
+def execution_views(receipt):
+    registered = getattr(receipt, "_rlm_execution_views", {})
+    observed = set()
+    for row in receipt.native_reads:
+        key = (row.workspace_id, row.entity_id)
+        view = registered.get(key)
+        if (
+            row.stage == EXECUTION_READ and view is not None
+            and getattr(receipt, "_rlm_document_views", {}).get(key) == view
+            and row.domain == "canon" and row.tenant_id == receipt.tenant_id
+            and row.source_ids == (view.source_id,)
+            and (row.read_kind, row.source_version_id, row.extraction_id, row.content_sha256)
+            == ("document_extraction", view.source_version_id, view.extraction_id, view.input_sha256)
+        ):
+            observed.add(key)
+    return frozenset(observed)
+
+
 def _citation_field(citation, name):
     metadata = citation.get("metadata") or {}
     nested, direct = metadata.get(name), citation.get(name)
@@ -161,7 +231,7 @@ def verified_rlm_answer(receipt, data, admitted):
     parts = {page.part_id: (key, view, page) for key, view in views.items() for page in view.pages}
     if set(parts) != set(receipt.documents):
         return False
-    reads, models = set(), set()
+    reads, models, released = set(), set(), set()
     for row in receipt.native_reads:
         if not row.stage.startswith("rlm.") or row.tenant_id != receipt.tenant_id or row.domain != "canon":
             return False
@@ -169,7 +239,7 @@ def verified_rlm_answer(receipt, data, admitted):
             key = (row.workspace_id, source)
             if key not in admitted or row.entity_id != source:
                 raise unavailable()
-            if row.stage == "rlm.read":
+            if row.stage in {"rlm.read", EXECUTION_READ}:
                 view = views.get(key)
                 if view is None or (
                     row.read_kind,
@@ -178,7 +248,7 @@ def verified_rlm_answer(receipt, data, admitted):
                     row.content_sha256,
                 ) != ("document_extraction", view.source_version_id, view.extraction_id, view.input_sha256):
                     raise unavailable()
-                reads.add(key)
+                (released if row.stage == EXECUTION_READ else reads).add(key)
             elif row.stage in _MODELS:
                 if row.extraction_id is not None or row.source_version_id is not None:
                     view = views.get(key)
@@ -189,14 +259,16 @@ def verified_rlm_answer(receipt, data, admitted):
                     ):
                         raise unavailable()
                 if row.stage in {"rlm.root", "rlm.forced_final"}:
+                    # Corpus admission to a request is separate from successful execution input below.
                     models.add(key)
             elif row.stage != "rlm.corpus" or row.read_kind != "metadata":
                 return False
-    if set(views) - reads or set(views) - models:
+    if set(views) - reads or set(views) - models or released != execution_views(receipt):
         return False
     citations = data.get("citations")
     if not isinstance(citations, list) or not citations:
         return False
+    used_citations = True
     for citation in citations:
         if not isinstance(citation, dict):
             raise unavailable()
@@ -205,6 +277,7 @@ def verified_rlm_answer(receipt, data, admitted):
         if found is None:
             raise unavailable()
         key, view, page = found
+        used_citations = used_citations and key in released
         chain, binding = admitted[key]
         if (
             (binding.native_workspace_id, binding.native_id) != key
@@ -223,4 +296,4 @@ def verified_rlm_answer(receipt, data, admitted):
             or citation["content"] not in page.text
         ):
             raise unavailable()
-    return True
+    return used_citations

@@ -22,11 +22,14 @@ class AzureBlobObjectStore(CloudObjectStore):
         request_timeout_seconds=10,
         max_object_bytes=64 * 1024 * 1024,
         client=None,
+        owns_client=True,
     ):
         parsed = urlsplit(base)
         if parsed.scheme != "azure" or parsed.query or parsed.fragment or parsed.username or parsed.password:
             raise ValueError("Azure base must identify an existing container and relative prefix")
-        connection_string = connection_string or (os.environ.get("AZURE_STORAGE_CONNECTION_STRING", "") if not account_url else "")
+        connection_string = connection_string or (
+            os.environ.get("AZURE_STORAGE_CONNECTION_STRING", "") if not account_url else ""
+        )
         if not account_url:
             account_url = os.environ.get("AZURE_STORAGE_ACCOUNT_URL", "")
         if connection_string and not account_url:
@@ -46,6 +49,6 @@ class AzureBlobObjectStore(CloudObjectStore):
             request_timeout_seconds=request_timeout_seconds,
             max_object_bytes=max_object_bytes,
         )
-        super().__init__(profile, presign_ttl_s=presign_ttl_s, client=client)
+        super().__init__(profile, presign_ttl_s=presign_ttl_s, client=client, owns_client=owns_client)
         self.native.connection_string = connection_string
         self.native.encryption_scope = encryption_scope

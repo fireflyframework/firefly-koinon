@@ -7,15 +7,48 @@ import {
   type KoinonTransport,
   type HttpMethod,
   type SourceReference,
+  type OrganizationKnowledgeSnapshot,
 } from '@fireflyframework/koinon-sdk';
 import { KoinonClientContext, KoinonFacade, KoinonI18n } from '@fireflyframework/koinon-angular';
 import { KoinonAnswerAudit } from '../../../../chat/page/src/artifacts/answer-audit';
 
-async function setup() {
+const recordedPolicy: OrganizationKnowledgeSnapshot = {
+  tenant_id: 'north',
+  schema_version: 1,
+  revision: 7,
+  origin: 'organization',
+  documents: {
+    answer_mode: 'rlm',
+    retrieval_top_k: 17,
+    retrieval_per_query_k: 35,
+    retrieval_rrf_k: 61,
+    query_expansion_enabled: false,
+    query_expansion_n: 3,
+    answer_top_k: 10,
+    rlm_max_iters: 8,
+    rlm_sub_budget: 12,
+    rlm_max_depth: 1,
+    rlm_self_consistency: 1,
+    rlm_extended_reasoning: false,
+  },
+  structured: {
+    top_k_schema: 12,
+    top_k_examples: 4,
+    top_k_metrics: 3,
+    rrf_k: 60,
+    generation_candidates: 1,
+    max_refine_retries: 2,
+    grounding_min_confidence: 0.6,
+  },
+  digest: 'd'.repeat(64),
+};
+
+async function setup(policy?: OrganizationKnowledgeSnapshot | null) {
   const paths: string[] = [];
   const receipt = {
     run_id: 'run',
     provenance_status: 'recorded',
+    knowledge_settings_snapshot: policy,
     source_manifest_complete: true,
     sources: [
       {
@@ -143,9 +176,15 @@ async function setup() {
     request: async <T>(_method: HttpMethod, path: string) => {
       paths.push(path);
       return (
-        path.endsWith('/audit')
-          ? receipt
-          : { items: [], total: 0, page: 1, page_size: 25, pages: 0 }
+        path.endsWith('/knowledge/settings')
+          ? {
+              ...recordedPolicy,
+              revision: 99,
+              documents: { ...recordedPolicy.documents, answer_mode: 'rag' },
+            }
+          : path.endsWith('/audit')
+            ? receipt
+            : { items: [], total: 0, page: 1, page_size: 25, pages: 0 }
       ) as T;
     },
     stream: () => {
@@ -189,6 +228,89 @@ async function setup() {
   await fixture.whenStable();
   return { fixture, paths };
 }
+
+it.each(['rlm', 'rag'] as const)(
+  'shows the recorded %s policy independently from current organization settings',
+  async (mode) => {
+    const { fixture, paths } = await setup({
+      ...recordedPolicy,
+      documents: { ...recordedPolicy.documents, answer_mode: mode },
+    });
+    fixture.detectChanges();
+    const policy = fixture.nativeElement.querySelector('.recorded-policy') as HTMLElement;
+    expect(policy).not.toBeNull();
+    expect(policy.textContent).toContain('Policy revision');
+    expect(policy.querySelectorAll('dd')[0].textContent?.trim()).toBe('7');
+    expect(policy.querySelectorAll('dd')[1].textContent?.trim()).toBe('Organization');
+    expect(policy.querySelectorAll('dd')[2].textContent?.trim()).toBe(mode.toUpperCase());
+    expect(paths).toEqual([
+      '/tenants/north/chat/runs/run/audit',
+      '/tenants/north/chat/runs/run/activity',
+    ]);
+    fixture.destroy();
+  },
+);
+
+it.each([undefined, null])('keeps an absent historical policy unrecorded (%s)', async (value) => {
+  const { fixture, paths } = await setup(value);
+  fixture.detectChanges();
+  const overview = fixture.nativeElement.querySelector('[role=tabpanel]:not([hidden])');
+  const heading = [...overview.querySelectorAll('h4')].find(
+    (row) => (row as HTMLElement).textContent?.trim() === 'Recorded knowledge policy',
+  ) as HTMLElement;
+  expect(heading).toBeDefined();
+  expect(heading.nextElementSibling?.textContent?.trim()).toBe('Not recorded');
+  expect(overview.querySelector('.recorded-policy')).toBeNull();
+  expect(paths.some((path) => path.includes('/knowledge/settings'))).toBe(false);
+  fixture.destroy();
+});
+
+it('localizes the recorded deployment policy while preserving revision zero and the exact part hash', async () => {
+  const { fixture } = await setup({ ...recordedPolicy, revision: 0, origin: 'deployment' });
+  TestBed.inject(KoinonI18n).apply({
+    locale: 'es-ES',
+    time_zone: 'Europe/Madrid',
+    response_language: 'es',
+  });
+  fixture.detectChanges();
+  const policy = fixture.nativeElement.querySelector('.recorded-policy') as HTMLElement;
+  expect(policy).not.toBeNull();
+  expect(policy.textContent).toContain('Revisión de la política');
+  expect(policy.textContent).toContain('Origen de la política');
+  expect(policy.textContent).toContain('Método de respuesta documental');
+  expect(policy.querySelectorAll('dd')[0].textContent?.trim()).toBe('0');
+  expect(policy.querySelectorAll('dd')[1].textContent?.trim()).toBe('Valores de la instalación');
+  expect(policy.querySelectorAll('dd')[2].textContent?.trim()).toBe('RLM');
+  fixture.componentInstance.tab.set('sources');
+  fixture.componentInstance.selectSource('document-evidence');
+  fixture.detectChanges();
+  const technical = fixture.nativeElement.querySelector('.source-detail .technical-references');
+  const label = [...technical.querySelectorAll('dt')].find(
+    (row) => (row as HTMLElement).textContent?.trim() === 'SHA-256 del fragmento',
+  ) as HTMLElement;
+  expect(label).toBeDefined();
+  expect(label.nextElementSibling?.querySelector('code')?.textContent?.trim()).toBe('a'.repeat(64));
+  expect(technical.open).toBe(false);
+  fixture.destroy();
+});
+
+it('keeps the exact recorded part hash beside version, extraction and passage references', async () => {
+  const { fixture } = await setup();
+  fixture.componentInstance.tab.set('sources');
+  fixture.componentInstance.selectSource('document-evidence');
+  fixture.detectChanges();
+  const technical = fixture.nativeElement.querySelector('.source-detail .technical-references');
+  const label = [...technical.querySelectorAll('dt')].find(
+    (row) => (row as HTMLElement).textContent?.trim() === 'Passage SHA-256',
+  ) as HTMLElement;
+  expect(label).toBeDefined();
+  expect(label.nextElementSibling?.querySelector('code')?.textContent?.trim()).toBe('a'.repeat(64));
+  expect(technical.textContent).toContain('original-version');
+  expect(technical.textContent).toContain('recorded-view');
+  expect(technical.textContent).toContain('persisted-passage');
+  expect(technical.open).toBe(false);
+  fixture.destroy();
+});
 
 it('distinguishes exact document extractions from published knowledge without inventing SQL location', async () => {
   const { fixture, paths } = await setup();

@@ -78,18 +78,44 @@ def mcp_call(client, opaque, tenant="north"):
 
     cookies = [copy(cookie) for cookie in client.cookies.jar]
     client.cookies.clear()
+    headers = {"Authorization": "Bearer " + opaque, "Accept": "application/json, text/event-stream"}
+    session = None
     try:
-        return client.post(
+        opened = client.post(
             "/mcp",
-            headers={"Authorization": "Bearer " + opaque, "Accept": "application/json, text/event-stream"},
+            headers=headers,
             json={
                 "jsonrpc": "2.0",
                 "id": 1,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": "2025-11-25",
+                    "capabilities": {},
+                    "clientInfo": {"name": "owned-application-test", "version": "1"},
+                },
+            },
+        )
+        if opened.status_code != 200:
+            return opened
+        session = opened.headers["mcp-session-id"]
+        headers.update({"MCP-Session-Id": session, "MCP-Protocol-Version": "2025-11-25"})
+        initialized = client.post(
+            "/mcp", headers=headers, json={"jsonrpc": "2.0", "method": "notifications/initialized"}
+        )
+        assert initialized.status_code == 202
+        return client.post(
+            "/mcp",
+            headers=headers,
+            json={
+                "jsonrpc": "2.0",
+                "id": 2,
                 "method": "tools/call",
                 "params": {"name": "koinon_list", "arguments": {"tenant_id": tenant}},
             },
         )
     finally:
+        if session is not None:
+            client.delete("/mcp", headers=headers)
         for cookie in cookies:
             client.cookies.jar.set_cookie(cookie)
 

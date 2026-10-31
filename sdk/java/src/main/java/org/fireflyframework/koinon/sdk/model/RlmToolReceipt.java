@@ -1,0 +1,32 @@
+// Copyright 2026 Firefly Software Foundation
+// SPDX-License-Identifier: Apache-2.0
+package org.fireflyframework.koinon.sdk.model;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
+
+
+
+/** Typed canonical RlmToolReceipt contract. */
+public record RlmToolReceipt(
+    @JsonProperty("result_id") String resultId,
+    @JsonProperty("generation_id") String generationId,
+    @JsonProperty("tenant_id") String tenantId,
+    @JsonProperty("workspace_id") String workspaceId,
+    @JsonProperty("source_ids") List<String> sourceIds,
+    @JsonProperty("tool_call_id") String toolCallId,
+    @JsonProperty("tool_name") RlmToolReceiptToolName toolName,
+    @JsonProperty("request_sha256") String requestSha256,
+    @JsonProperty("schema_sha256") String schemaSha256,
+    @JsonProperty("arguments_sha256") String argumentsSha256,
+    @JsonProperty("result_sha256") String resultSha256,
+    @JsonProperty("result_kind") RlmToolReceiptResultKind resultKind,
+    @JsonProperty("execution_sha256") String executionSha256,
+    @JsonProperty("outcome") RlmToolReceiptOutcome outcome,
+    @JsonProperty("execution_status") String executionStatus,
+    @JsonProperty("execution_state") String executionState
+) {
+    public RlmToolReceipt {
+        sourceIds=sourceIds==null?null:List.copyOf(sourceIds);
+    }
+
+}

@@ -58,3 +58,15 @@ def test_headless_model_options_reject_unbounded_or_arbitrary_native_overrides()
     ):
         with pytest.raises(ValueError):
             ModelParameters.model_validate(options)
+
+
+@pytest.mark.parametrize("mode", ["default", "native", None])
+def test_output_mode_is_typed_and_preserves_explicit_null_separately_from_omission(mode):
+    from koinon_sdk import ModelParameters
+
+    value = AgentInput(model_options=ModelParameters(output_mode=mode))
+    assert value.model_dump(exclude_unset=True)["model_options"] == {"output_mode": mode}
+    assert "output_mode" not in ModelParameters().model_dump(exclude_unset=True)
+    for invalid in ("auto", "tool", True):
+        with pytest.raises(ValueError):
+            ModelParameters.model_validate({"output_mode": invalid})

@@ -20,6 +20,7 @@ from koinon.mcp_auth.service import McpOAuthService
 from koinon.security.identity import MembershipAuthorizer, RequestAuthorization
 from koinon.security.oidc import ApiBearerFilter, IdentityTokenValidator, VerifiedOidcLoginHandler
 from koinon.security.settings import OidcSettings
+from koinon.tokens.authorization import TokenRestriction
 from koinon.tokens.service import PersonalTokenService
 
 
@@ -79,10 +80,13 @@ class SecurityConfiguration:
 
     @bean
     def api_bearer_filter(
-        self, validator: JWKSTokenValidator, tokens: PersonalTokenService | None = None,
+        self,
+        validator: JWKSTokenValidator,
+        tokens: PersonalTokenService | None = None,
         mcp_oauth: McpOAuthService | None = None,
+        restriction: TokenRestriction | None = None,
     ) -> ApiBearerFilter:
-        return ApiBearerFilter(validator, tokens, mcp_oauth)
+        return ApiBearerFilter(validator, tokens, mcp_oauth, restriction)
 
     @bean
     def verified_login_handler(
@@ -112,9 +116,15 @@ class SecurityConfiguration:
     def http_security(self) -> HttpSecurity:
         security = HttpSecurity()
         security.authorize_requests().request_matchers(
-            "/health", "/ready", "/oauth2/**", "/login/oauth2/**", "/logout",
+            "/health",
+            "/ready",
+            "/oauth2/**",
+            "/login/oauth2/**",
+            "/logout",
             "/.well-known/oauth-protected-resource/mcp",
             "/.well-known/oauth-authorization-server/oauth2/mcp",
+        ).permit_all().request_matchers(
+            "/api/v1/branding/defaults", "/bff/api/v1/branding/defaults", methods=["GET"]
         ).permit_all().request_matchers(
             "/api/**", "/bff/**", "/auth/me", "/mcp", "/mcp/**"
         ).authenticated().any_request().deny_all()

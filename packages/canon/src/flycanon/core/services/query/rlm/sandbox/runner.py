@@ -19,15 +19,18 @@ IPC socket's file-descriptor number in ``$FLYCANON_SANDBOX_FD`` (or as argv[1]).
 The child reads length-prefixed JSON command frames from the parent and replies
 on the same fd. It reproduces the in-process engine's ``_exec`` behaviour --
 persistent namespace, captured stdout, ``final`` sentinel, traceback on error --
-but with **no secrets, no network, and no infrastructure objects**:
+with reduced inherited configuration and resource limits. This is explicit
+standalone legacy compatibility, not filesystem/network/CPython isolation;
+required provenance must use the public Monty VM. The normal process privileges
+and Python runtime can expose host resources despite the restricted namespace:
 
 * The exec namespace exposes only the safe-builtins whitelist, ``re``, and
   capability *stubs*. Every stub (``docs``/``llm``/``rlm``/``final``) marshals
   its call to the parent as an RPC frame and blocks for the parent's result;
   the actual document store and model client live in the parent.
 * At startup the child clamps itself with ``resource.setrlimit``: a CPU-time
-  cap, an address-space cap, and ``RLIMIT_FSIZE = 0`` so it cannot create or
-  grow any file (a defence-in-depth complement to the absent ``open`` builtin).
+  cap, a platform-dependent address-space cap, and ``RLIMIT_FSIZE = 0``.
+  These resource controls are defense in depth, not an I/O capability boundary.
 
 Commands (parent -> child): ``{op:'exec','code':str}`` and ``{op:'shutdown'}``.
 Replies (child -> parent): ``{op:'stdout','text':str}`` after a normal exec,

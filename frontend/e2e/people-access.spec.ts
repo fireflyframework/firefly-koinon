@@ -169,7 +169,7 @@ async function fixture(page: Page, spanish = false) {
 async function open(page: Page) {
   await page.goto('/');
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await page.getByRole('button', { name: 'People & access', exact: true }).click();
+  await page.getByRole('button', { name: 'Access', exact: true }).click();
   await expect(page.locator('ffk-people-access h2')).toHaveText('People & access');
 }
 
@@ -221,14 +221,14 @@ test('existing person selection grants a scoped role, edits it, and confirms rem
   const row = panel
     .getByRole('row')
     .filter({ has: page.getByText('Research operations', { exact: true }) });
-  await row.getByRole('button', { name: 'Change access · Researcher 02' }).click();
+  await row.getByRole('button', { name: 'Change access, Researcher 02' }).click();
   await expect(panel.getByRole('heading', { name: 'Change access', exact: true })).toBeVisible();
   await panel.getByRole('combobox', { name: 'Role', exact: true }).selectOption('editor');
   await panel.getByRole('button', { name: 'Save access' }).click();
   await expect(
     panel.getByRole('heading', { name: 'Change access', exact: true }),
   ).not.toBeVisible();
-  await row.getByRole('button', { name: 'Remove role · Researcher 02' }).click();
+  await row.getByRole('button', { name: 'Remove role, Researcher 02' }).click();
   await panel.getByRole('button', { name: 'Remove role', exact: true }).click();
   await expect(panel.getByText('Access removed.')).toBeVisible();
 });
@@ -237,7 +237,7 @@ test('last administrator removal returns useful conflict and preserves row', asy
   await fixture(page);
   await open(page);
   const panel = page.locator('ffk-people-access');
-  await panel.getByRole('button', { name: 'Remove role · Alex Rivera' }).click();
+  await panel.getByRole('button', { name: 'Remove role, Alex Rivera' }).click();
   await panel.getByRole('button', { name: 'Remove role', exact: true }).click();
   await expect(
     panel.getByRole('alert').filter({ hasText: 'Keep at least one administrator' }),
@@ -290,8 +290,8 @@ for (const variant of [
     if (variant.width < 700)
       await page
         .getByLabel(variant.spanish ? 'Sección de configuración' : 'Settings section')
-        .selectOption('people');
-    else await page.getByRole('button', { name: 'People & access', exact: true }).click();
+        .selectOption('access');
+    else await page.getByRole('button', { name: 'Access', exact: true }).click();
     const panel = page.locator('ffk-people-access');
     await expect(panel.locator('tbody tr').first()).toBeVisible();
     const overflow = await page.evaluate(() => {
@@ -329,7 +329,7 @@ for (const variant of [
         'calc(100dvh - 22px)',
       );
       const strip = document.createElement('div');
-      strip.textContent = 'Controlled service fixtures · Frontend review only';
+      strip.textContent = 'Interface preview using controlled service data.';
       strip.style.cssText =
         'position:fixed;bottom:0;left:0;right:0;height:22px;background:#10110f;color:#f3f1eb;text-align:center;font:10px/22px sans-serif;z-index:99999';
       document.body.append(strip);
@@ -399,7 +399,7 @@ test('keyboard entry and return restore focus and keep the narrow table inside i
     .toBe(true);
   await table.focus();
   await page.keyboard.press('Tab');
-  await expect(panel.getByRole('button', { name: 'Change access · Alex Rivera' })).toBeFocused();
+  await expect(panel.getByRole('button', { name: 'Change access, Alex Rivera' })).toBeFocused();
   await expect.poll(() => table.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(780);
 });
@@ -417,8 +417,8 @@ test('mobile role rows show the person, scope and actions together without horiz
   await row.scrollIntoViewIfNeeded();
   await expect(row.getByText('Alex Rivera', { exact: true })).toBeInViewport();
   await expect(row.getByText('Entire organization', { exact: true })).toBeInViewport();
-  await expect(row.getByRole('button', { name: 'Change access · Alex Rivera' })).toBeInViewport();
-  await expect(row.getByRole('button', { name: 'Remove role · Alex Rivera' })).toBeInViewport();
+  await expect(row.getByRole('button', { name: 'Change access, Alex Rivera' })).toBeInViewport();
+  await expect(row.getByRole('button', { name: 'Remove role, Alex Rivera' })).toBeInViewport();
   expect(
     await panel
       .getByRole('region', { name: 'Role assignments', exact: true })

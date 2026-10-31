@@ -1,9 +1,5 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
-import {
-  KoinonTextPipe,
-  KoinonI18n,
-  KoinonValuePipe,
-} from '@fireflyframework/koinon-angular';
+import { KoinonTextPipe, KoinonI18n, KoinonValuePipe } from '@fireflyframework/koinon-angular';
 import {
   Component,
   ChangeDetectionStrategy,
@@ -30,6 +26,8 @@ import {
 } from '@fireflyframework/koinon-angular';
 import { KoinonModelOptionsForm } from './model-options-form';
 import { describeModelOptions, parseModelOptions, type ModelOptionValues } from './model-options';
+import { KoinonOrganizationPeople } from './organization-directory';
+import { KoinonOrganizationStructure } from './organization-structure';
 import { KoinonPeopleAccess } from './people-access';
 import { KoinonAuditPanel } from './audit-panel';
 import { KoinonKnowledgeModels } from './knowledge-models';
@@ -50,12 +48,19 @@ import type {
   Page,
 } from '@fireflyframework/koinon-sdk';
 import { KoinonOrganizationChatSettings } from './organization-chat-settings';
+import { KoinonIdentityAppearance } from './identity-appearance';
+import { KoinonMcpApplications } from './mcp-applications';
 import { KoinonConfiguration } from './configuration';
+import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
+import { ORGANIZATION_SPANISH } from './organization-spanish';
+registerKoinonSpanish({ ...ORGANIZATION_SPANISH, Applications: 'Aplicaciones' });
 @Component({
   selector: 'ffk-settings-page',
   imports: [
+    KoinonIdentityAppearance,
+    KoinonMcpApplications,
     KoinonTextPipe,
-      KoinonValuePipe,
+    KoinonValuePipe,
     FormsModule,
     KoinonButton,
     KoinonBadge,
@@ -69,6 +74,8 @@ import { KoinonConfiguration } from './configuration';
     KoinonKnowledgeModels,
     KoinonKnowledgeBehavior,
     KoinonPeopleAccess,
+    KoinonOrganizationPeople,
+    KoinonOrganizationStructure,
     KoinonAuditPanel,
     KoinonModelOptionsForm,
     KoinonOrganizationChatSettings,
@@ -135,7 +142,11 @@ export class KoinonSettingsPage implements OnInit {
         ) ?? [],
   );
   readonly groups = [
-    { id: 'organization', label: 'Organization', sections: ['people'] },
+    {
+      id: 'organization',
+      label: 'Organization',
+      sections: ['people', 'structure', 'access', 'identity', 'applications'],
+    },
     {
       id: 'knowledge',
       label: 'Knowledge & AI',
@@ -144,7 +155,21 @@ export class KoinonSettingsPage implements OnInit {
     { id: 'operations', label: 'Operations', sections: ['audit', 'operations'] },
   ];
   readonly tabs = [
-    { id: 'people', label: 'People & access', permission: 'members:write', icon: 'users' },
+    {
+      id: 'identity',
+      label: 'Identity & appearance',
+      permission: 'settings:write',
+      icon: 'palette',
+    },
+    { id: 'people', label: 'People', permission: 'members:write', icon: 'users' },
+    {
+      id: 'structure',
+      label: 'Organization structure',
+      permission: 'members:write',
+      icon: 'lineage',
+    },
+    { id: 'access', label: 'Access', permission: 'members:write', icon: 'shield' },
+    { id: 'applications', label: 'Applications', permission: 'identity:manage', icon: 'grid' },
     {
       id: 'sources',
       label: 'Sources & connections',
@@ -175,12 +200,12 @@ export class KoinonSettingsPage implements OnInit {
     );
   }
   tabAllowed(tab: { id: string; permission: string }) {
+    if (['people', 'structure'].includes(tab.id))
+      return this.f.tenantPermissions().has('members:write');
     return this.allowed(tab.permission) || (tab.id === 'models' && this.allowed('settings:write'));
   }
   tabsFor(group: { sections: string[] }) {
-    return this.tabs.filter(
-      (tab) => group.sections.includes(tab.id) && this.tabAllowed(tab),
-    );
+    return this.tabs.filter((tab) => group.sections.includes(tab.id) && this.tabAllowed(tab));
   }
   async openSection(section: string) {
     if (!this.tabs.some((tab) => tab.id === section && this.tabAllowed(tab))) return;
@@ -189,7 +214,7 @@ export class KoinonSettingsPage implements OnInit {
     this.editor.set(null);
     this.formError.set('');
     if (section === 'agents') await this.c.loadAgents();
-    if (section === 'people') await this.f.loadMembers();
+    if (section === 'access') await this.f.loadMembers();
     if (section === 'operations') await this.f.loadJobs();
     if (section === 'storage') await this.c.load();
     if (section === 'sources') await this.loadSources();

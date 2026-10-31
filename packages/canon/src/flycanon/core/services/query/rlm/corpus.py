@@ -55,6 +55,7 @@ from flycanon.core.services.ingestion.loaders import LoaderRegistry, default_reg
 from flycanon.core.services.query import provenance
 from flycanon.core.services.query.rlm.page_cache import CorpusPageCache
 from flycanon.core.services.sources.lineage.dtos import DocumentCitationRef, DocumentScope, WholeDocumentRead
+from flycanon.core.services.sources.lineage.service import DocumentLineage
 from flycanon.core.services.sources.lineage.whole_read import WholeDocumentReader
 from flycanon.core.services.storage.object_store import ObjectStore
 from flycanon.interfaces.enums import SourceKind
@@ -153,6 +154,16 @@ class CanonDocStore:
 
     def npages(self, key: str) -> int:
         return len(self._load(key))
+
+    def _execution_read(self, key: str, *, as_pages: bool):
+        """Release content to code only after the receiver admits its explicit usage evidence."""
+        pages = self._load(key)
+        content = list(pages) if as_pages else "\n".join(pages)
+        self._record(key)
+        meta = self._sources[key]
+        if meta.source_version_id is not None:
+            provenance.execution_read(meta, self._read_receipts[key])
+        return content
 
     # -- citation mapping --
     def resolve(self, key: str) -> SourceMeta | None:
@@ -324,7 +335,9 @@ class CanonCorpusBuilder:
         object_store: ObjectStore,
         registry: LoaderRegistry | None = None,
         cache: CorpusPageCache | None = None,
+        lineage: DocumentLineage | None = None,
     ) -> None:
+        self._lineage = lineage
         self._sources = source_repository
         self._knowledge = knowledge_repository
         self._object_store = object_store
@@ -366,7 +379,11 @@ class CanonCorpusBuilder:
                     )
                 if whole_reader is None:
                     await observation.observer.authorize()
-                    whole_reader = WholeDocumentReader(DocumentLineage(self._sources, self._object_store))
+                    whole_reader = WholeDocumentReader(
+                        self._lineage
+                        if self._lineage is not None
+                        else DocumentLineage(self._sources, self._object_store)
+                    )
                 try:
                     pin = await whole_reader.pin(
                         DocumentScope(tenant_id, str(workspace_id), observation.actor), str(row.id)

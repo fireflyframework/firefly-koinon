@@ -17,9 +17,13 @@ flowchart LR
 
 Pass a scoped personal API token or an OIDC access token issued for the configured API audience. Personal tokens are created by a user with an expiry and explicit organization, permission and resource bounds. An OIDC integration registers its own identity client and supplies token renewal through a callback. Both use the same authorized API; current membership and resource ancestry are checked on every request.
 
+For scope selection, role boundaries and creation/upload examples in all three languages, see [API permissions and knowledge writes](api-permissions.md).
+
 Never copy browser cookies to a server or send a model credential to the SDK. A personal token cannot create or manage other tokens; those operations require an interactive verified identity.
 
 ## TypeScript
+
+The [complete TypeScript example](headless-typescript.md) includes environment configuration, paging, bounded file uploads, organization-default chat, streaming and audit access.
 
 Install the built `@fireflyframework/koinon-sdk` package. A release must qualify the packed package before publication; the development monorepo also builds it from `sdk/typescript`.
 
@@ -42,6 +46,8 @@ Identifiers come from authorized responses and host configuration. A workspace s
 
 ## Python
 
+The [complete Python example](headless-python.md) includes client cleanup and lazy, scoped operations without starting a backend application context.
+
 Install the built `firefly-koinon-sdk` wheel. The package has only HTTPX and Pydantic runtime dependencies.
 
 ```python
@@ -58,6 +64,8 @@ async with KoinonClient(
 The caller owns the event loop, client lifecycle and token renewal. Register the client through your application's dependency injection if useful; the SDK does not start another application context.
 
 ## Java
+
+The [complete Java example](headless-java.md) includes Java 21 records, lazy paging and a demand-aware SSE subscriber with explicit connection ownership.
 
 The Java 21 SDK uses the JDK HTTP client and Jackson. Its Maven coordinates are `org.fireflyframework:koinon-sdk:26.10.0-alpha.1`. This development artifact is built from `sdk/java`; a local package qualification does not publish it to Maven Central.
 
@@ -78,7 +86,15 @@ Resource groups provide concrete typed methods and asynchronous `CompletableFutu
 
 ## Contract and helpers
 
-The [API and SDK reference](../reference/sdk-api.md) maps the same 142 canonical operations to all three clients. The shared schema contains 258 definitions, including requests, responses, pages and binary descriptors. Retained routes outside that contract require separate migration qualification.
+The generated [API and SDK reference](../reference/sdk-api.md) maps every canonical operation to all three clients. Use its checked operation manifest and shared schemas for the current counts and signatures, including requests, responses, pages and binary descriptors. Retained routes outside that contract require separate migration qualification.
+
+SDK source, local packages, registry publication and configured-service acceptance are separate. Use a trusted built artifact or build the SDK from the repository; these examples do not establish that its development version is available on PyPI, npm or Maven Central. Never install a similarly named package by guessing its publisher.
+
+## Import several files
+
+Canonical Library upload currently admits one bounded file per request. The language examples expose a sequential client batch of at most 16 files, each at most 32 MiB. They retain each successful receipt and stop on a failure. They do not supply an atomic transaction, durable batch queue, per-item recovery or automatic write retries. An ambiguous timeout requires checking the existing ingestion state before deciding whether to submit again. This is distinct from the separately idempotent dataset file-append operation.
+
+Select `document` for unstructured intake or `dataset` for structured intake. Actual supported formats, extractors, object storage and model prerequisites depend on the configured deployment. XLSX does not require pretending that a workbook is CSV. See [Library intake](library.md) and [storage and bulk boundaries](../operations/storage.md#bulk-work-remains-separate).
 
 Each SDK includes server-page iteration and exact-number helpers. Page iteration is lazy, preserves opaque cursors and does not slice local arrays. Decimals and integers outside JavaScript's safe range travel as exact strings. Convert a value only when its column or field is known to be numeric; preserve identifiers, date-only values and unknown text.
 
@@ -94,7 +110,7 @@ OpenUI artifacts contain only registered component names and evidence references
 
 ## Deploy only what you need
 
-Run the API with `koinon.main:app` and the independent worker with `python -m koinon.assistants.worker`, using runtime credentials and the same protected configuration. Run migrations separately with deployment authority. The worker needs configured knowledge and model providers; it has no dependency on the management application. See [production deployment](../operations/production.md) for identity, storage, sessions and secret management.
+Start the API with `python -m koinon.serve` through the native framework launcher and the independent worker with `python -m koinon.assistants.worker`, using runtime credentials and the same protected configuration. The ASGI entry point remains `koinon.main:app` for embedding. Run migrations separately with deployment authority. The worker needs configured knowledge and model providers; it has no dependency on the management application. See [production deployment](../operations/production.md) for identity, storage, sessions and secret management.
 
 Qualification is recorded separately for SDK packaging, native API authorization, local provider generation, embedded UI and production deployment. Passing a mock HTTP test does not establish provider readiness.
 

@@ -26,6 +26,7 @@ import asyncio
 import logging
 import uuid
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from pyfly.container import service as service_bean
@@ -135,55 +136,79 @@ class IngestService:
             workspace_storage_used_bytes=storage_used,
         )
 
-        # Track storage usage
-        await self._workspace_service.track_storage(workspace_id, recv.size_bytes)
+        parsed_tables: list[Any] = []
+        section_tasks: list[asyncio.Task[IngestedTable | None]] = []
+        try:
+            primary_error: BaseException | None = None
+            try:
+                # Track storage usage
+                await self._workspace_service.track_storage(workspace_id, recv.size_bytes)
 
-        # --- Stage 2: parse ---
-        parsed_tables = await run_parse(
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            dataset_id=dataset_id,
-            file_id=recv.file_id,
-            local_temp_path=recv.local_temp_path,
-            file_format=recv.file_format,
-            compression=recv.compression,
-            object_store=self._object_store,
-            session_factory=self._session_factory,
-            settings=self._settings,
-            existing_table_id=None,
-            dataset_name=dataset_name,
-            workspace_locale=locale,
-            original_filename=filename,
-            append_only=append_only,
-            max_tables=max_tables,
-        )
-        if max_tables is not None and len(parsed_tables) > max_tables:
-            raise PayloadTooLargeException(
-                "File contains more tables than this intake permits", code="DATASET_FILE_TABLE_LIMIT"
-            )
-
-        # --- Stages 3, 4, 5, 7, 9, 10 per table ---
-        # Stages 6 (relations), 8 (pii_tag) intentionally deferred to
-        # the async worker; they're not on the critical path for the
-        # first NL query against the table.
-        #
-        # Sections are processed in parallel via asyncio.gather, capped
-        # by ``self._stage_semaphore``. The cap exists to keep concurrent
-        # LLM calls under the provider's rate limit -- describe + column
-        # naming both hit the LLM provider, and a 60-section XLSX can
-        # otherwise spam 120 concurrent requests against Anthropic.
-        ingested = await asyncio.gather(
-            *[
-                self._process_section(
+                # --- Stage 2: parse ---
+                parsed_tables = await run_parse(
                     tenant_id=tenant_id,
                     workspace_id=workspace_id,
                     dataset_id=dataset_id,
-                    actor=actor,
-                    parsed=pt,
+                    file_id=recv.file_id,
+                    local_temp_path=recv.local_temp_path,
+                    file_format=recv.file_format,
+                    compression=recv.compression,
+                    object_store=self._object_store,
+                    session_factory=self._session_factory,
+                    settings=self._settings,
+                    existing_table_id=None,
+                    dataset_name=dataset_name,
+                    workspace_locale=locale,
+                    original_filename=filename,
+                    append_only=append_only,
+                    max_tables=max_tables,
                 )
-                for pt in parsed_tables
-            ]
-        )
+            except BaseException as error:
+                primary_error = error
+                raise
+            finally:
+                try:
+                    Path(recv.local_temp_path).unlink(missing_ok=True)
+                except OSError:
+                    if primary_error is None:
+                        raise
+                    logger.warning("stage=ingest local_raw_cleanup_failed")
+
+            if max_tables is not None and len(parsed_tables) > max_tables:
+                raise PayloadTooLargeException(
+                    "File contains more tables than this intake permits", code="DATASET_FILE_TABLE_LIMIT"
+                )
+
+            # --- Stages 3, 4, 5, 7, 9, 10 per table ---
+            # Stages 6 (relations), 8 (pii_tag) intentionally deferred to
+            # the async worker; they're not on the critical path for the
+            # first NL query against the table.
+            #
+            # Sections are processed in parallel via asyncio.gather, capped
+            # by ``self._stage_semaphore``. The cap exists to keep concurrent
+            # LLM calls under the provider's rate limit -- describe + column
+            # naming both hit the LLM provider, and a 60-section XLSX can
+            # otherwise spam 120 concurrent requests against Anthropic.
+            for pt in parsed_tables:
+                section_tasks.append(
+                    self._start_section(
+                        tenant_id=tenant_id,
+                        workspace_id=workspace_id,
+                        dataset_id=dataset_id,
+                        actor=actor,
+                        parsed=pt,
+                    )
+                )
+        finally:
+            for parsed in parsed_tables[len(section_tasks):]:
+                local_parquet_path = getattr(parsed, "local_parquet_path", None)
+                if local_parquet_path:
+                    try:
+                        Path(local_parquet_path).unlink(missing_ok=True)
+                    except OSError:
+                        logger.warning("stage=ingest local_parquet_cleanup_failed")
+
+        ingested = await asyncio.gather(*section_tasks)
         ingested = [t for t in ingested if t is not None]
 
         logger.info(
@@ -192,6 +217,39 @@ class IngestService:
             len(ingested),
         )
         return IngestResult(file_id=str(recv.file_id), tables=ingested)
+
+    def _start_section(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: uuid.UUID,
+        dataset_id: uuid.UUID,
+        actor: str,
+        parsed: Any,
+    ) -> asyncio.Task[IngestedTable | None]:
+        section = self._process_section(
+            tenant_id=tenant_id, workspace_id=workspace_id, dataset_id=dataset_id, actor=actor, parsed=parsed
+        )
+        try:
+            task = asyncio.create_task(section)
+        except BaseException:
+            section.close()
+            raise
+        local_parquet_path = getattr(parsed, "local_parquet_path", None)
+
+        def cleanup(_completed: asyncio.Task[IngestedTable | None]) -> None:
+            # Setup failure can leave earlier tasks running outside gather.
+            if not _completed.cancelled():
+                _completed.exception()
+            # A task cancelled before it starts never enters the section finally.
+            if local_parquet_path:
+                try:
+                    Path(local_parquet_path).unlink(missing_ok=True)
+                except OSError:
+                    logger.warning("stage=ingest local_parquet_cleanup_failed")
+
+        task.add_done_callback(cleanup)
+        return task
 
     async def _process_section(
         self,
@@ -210,118 +268,115 @@ class IngestService:
         its own Parquet local path, so DuckDB / sample / profile don't
         contend).
         """
-        async with self._stage_semaphore:
-            rec = await run_reconcile(
-                tenant_id=tenant_id,
-                workspace_id=workspace_id,
-                dataset_id=dataset_id,
-                parsed=parsed,
-                actor=actor,
-                triggered_by="USER",
-                session_factory=self._session_factory,
-                settings=self._settings,
-            )
-
-            run_id = (getattr(parsed, "lineage_receipt", None) or {}).get("run_id")
-            local_parquet = parsed.local_parquet_path or parsed.parquet_key
-
-            # --- Stage 4: sample ---
-            # Reads the local Parquet directly so DuckDB resolves the
-            # path natively. Failures are logged and skipped -- the
-            # describe stage still works without samples (column name
-            # + data type alone).
-            try:
-                async with lineage.stage(run_id, "sample"):
-                    await run_sample(
-                        tenant_id=tenant_id,
-                        snapshot_id=rec.snapshot_id,
-                        parquet_key=local_parquet,
-                        session_factory=self._session_factory,
-                        settings=self._settings,
-                    )
-            except lineage.LineageError:
-                raise
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("stage=sample snapshot=%s skipped err=%s", rec.snapshot_id, exc)
-
-            # --- Stage 5: profile (small-table stats) ---
-            try:
-                async with lineage.stage(run_id, "profile"):
-                    await run_profile(
-                        tenant_id=tenant_id,
-                        snapshot_id=rec.snapshot_id,
-                        parquet_key=local_parquet,
-                        n_rows_actual=rec.n_rows_actual,
-                        session_factory=self._session_factory,
-                        settings=self._settings,
-                    )
-            except lineage.LineageError:
-                raise
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("stage=profile snapshot=%s skipped err=%s", rec.snapshot_id, exc)
-
-            # --- Stage 7: describe (AI column descriptions + synonyms) ---
-            # CRITICAL for grounding: without descriptions the Grounding
-            # agent can't match user questions to actual tables/columns
-            # and falls back to hallucinated names. Skipped silently
-            # if no LLM key is configured -- ingestion still succeeds.
-            try:
-                async with lineage.stage(run_id, "describe"):
-                    await run_describe(
-                        tenant_id=tenant_id,
-                        snapshot_id=rec.snapshot_id,
-                        session_factory=self._session_factory,
-                        settings=self._settings,
-                    )
-            except lineage.LineageError:
-                raise
-            except Exception as exc:  # noqa: BLE001
-                if not self._settings.allow_provider_fallback:
-                    raise
-                logger.warning("stage=describe snapshot=%s skipped err=%s", rec.snapshot_id, exc)
-
-            # --- Stage 9: embed ---
-            # Runs AFTER describe so embeddings include the AI-generated
-            # description + synonyms in the corpus, not just the bare
-            # column name.
-            async with lineage.stage(run_id, "embed"):
-                await run_embed(
+        local_parquet_path = getattr(parsed, "local_parquet_path", None)
+        try:
+            async with self._stage_semaphore:
+                rec = await run_reconcile(
                     tenant_id=tenant_id,
-                    snapshot_id=rec.snapshot_id,
+                    workspace_id=workspace_id,
+                    dataset_id=dataset_id,
+                    parsed=parsed,
+                    actor=actor,
+                    triggered_by="USER",
                     session_factory=self._session_factory,
                     settings=self._settings,
                 )
 
-            async with lineage.stage(run_id, "publish", completion=False):
-                await run_publish(
-                    tenant_id=tenant_id,
-                    workspace_id=workspace_id,
-                    dataset_id=dataset_id,
-                    table_id=parsed.table_id,
-                    snapshot_id=rec.snapshot_id,
-                    n_columns=rec.n_columns,
-                    n_rows_actual=rec.n_rows_actual,
-                    publisher=self._publisher,
-                    session_factory=self._session_factory,
-                )
-            # Clean up the local Parquet now that every downstream stage
-            # is finished with it. Keeping these around for a 60-section
-            # XLSX wastes ~50MB of /tmp.
-            if parsed.local_parquet_path:
+                run_id = (getattr(parsed, "lineage_receipt", None) or {}).get("run_id")
+                local_parquet = parsed.local_parquet_path or parsed.parquet_key
+
+                # --- Stage 4: sample ---
+                # Reads the local Parquet directly so DuckDB resolves the
+                # path natively. Failures are logged and skipped -- the
+                # describe stage still works without samples (column name
+                # + data type alone).
                 try:
-                    from pathlib import Path
+                    async with lineage.stage(run_id, "sample"):
+                        await run_sample(
+                            tenant_id=tenant_id,
+                            snapshot_id=rec.snapshot_id,
+                            parquet_key=local_parquet,
+                            session_factory=self._session_factory,
+                            settings=self._settings,
+                        )
+                except lineage.LineageError:
+                    raise
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("stage=sample snapshot=%s skipped err=%s", rec.snapshot_id, exc)
 
-                    Path(parsed.local_parquet_path).unlink(missing_ok=True)
-                except OSError:  # noqa: BLE001
-                    pass
+                # --- Stage 5: profile (small-table stats) ---
+                try:
+                    async with lineage.stage(run_id, "profile"):
+                        await run_profile(
+                            tenant_id=tenant_id,
+                            snapshot_id=rec.snapshot_id,
+                            parquet_key=local_parquet,
+                            n_rows_actual=rec.n_rows_actual,
+                            session_factory=self._session_factory,
+                            settings=self._settings,
+                        )
+                except lineage.LineageError:
+                    raise
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("stage=profile snapshot=%s skipped err=%s", rec.snapshot_id, exc)
 
-            return IngestedTable(
-                table_id=str(parsed.table_id),
-                name=parsed.name,
-                n_columns=rec.n_columns,
-                n_rows_estimate=rec.n_rows_actual,
-                snapshot_id=str(rec.snapshot_id),
-            )
+                # --- Stage 7: describe (AI column descriptions + synonyms) ---
+                # CRITICAL for grounding: without descriptions the Grounding
+                # agent can't match user questions to actual tables/columns
+                # and falls back to hallucinated names. Skipped silently
+                # if no LLM key is configured -- ingestion still succeeds.
+                try:
+                    async with lineage.stage(run_id, "describe"):
+                        await run_describe(
+                            tenant_id=tenant_id,
+                            snapshot_id=rec.snapshot_id,
+                            session_factory=self._session_factory,
+                            settings=self._settings,
+                        )
+                except lineage.LineageError:
+                    raise
+                except Exception as exc:  # noqa: BLE001
+                    if not self._settings.allow_provider_fallback:
+                        raise
+                    logger.warning("stage=describe snapshot=%s skipped err=%s", rec.snapshot_id, exc)
+
+                # --- Stage 9: embed ---
+                # Runs AFTER describe so embeddings include the AI-generated
+                # description + synonyms in the corpus, not just the bare
+                # column name.
+                async with lineage.stage(run_id, "embed"):
+                    await run_embed(
+                        tenant_id=tenant_id,
+                        snapshot_id=rec.snapshot_id,
+                        session_factory=self._session_factory,
+                        settings=self._settings,
+                    )
+
+                async with lineage.stage(run_id, "publish", completion=False):
+                    await run_publish(
+                        tenant_id=tenant_id,
+                        workspace_id=workspace_id,
+                        dataset_id=dataset_id,
+                        table_id=parsed.table_id,
+                        snapshot_id=rec.snapshot_id,
+                        n_columns=rec.n_columns,
+                        n_rows_actual=rec.n_rows_actual,
+                        publisher=self._publisher,
+                        session_factory=self._session_factory,
+                    )
+                return IngestedTable(
+                    table_id=str(parsed.table_id),
+                    name=parsed.name,
+                    n_columns=rec.n_columns,
+                    n_rows_estimate=rec.n_rows_actual,
+                    snapshot_id=str(rec.snapshot_id),
+                )
+        finally:
+            if local_parquet_path:
+                try:
+                    Path(local_parquet_path).unlink(missing_ok=True)
+                except OSError:
+                    logger.warning("stage=ingest local_parquet_cleanup_failed")
 
     async def ingest_reupload(
         self,
@@ -368,41 +423,64 @@ class IngestService:
             workspace_storage_used_bytes=storage_used,
         )
 
-        await self._workspace_service.track_storage(workspace_id, recv.size_bytes)
+        parsed_tables: list[Any] = []
+        section_tasks: list[asyncio.Task[IngestedTable | None]] = []
+        try:
+            primary_error: BaseException | None = None
+            try:
+                await self._workspace_service.track_storage(workspace_id, recv.size_bytes)
 
-        # Stage 2 (re-upload into existing slot)
-        parsed_tables = await run_parse(
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            dataset_id=dataset_id,
-            file_id=recv.file_id,
-            local_temp_path=recv.local_temp_path,
-            file_format=recv.file_format,
-            compression=recv.compression,
-            object_store=self._object_store,
-            session_factory=self._session_factory,
-            settings=self._settings,
-            existing_table_id=table_id,
-            target_sheet_or_json_path=target_sheet_or_json_path,
-            target_name=target_name,
-            dataset_name=dataset_name,
-            workspace_locale=locale,
-            original_filename=filename,
-        )
-
-        # Same parallel fan-out as the fresh-upload path.
-        ingested_raw = await asyncio.gather(
-            *[
-                self._process_section(
+                # Stage 2 (re-upload into existing slot)
+                parsed_tables = await run_parse(
                     tenant_id=tenant_id,
                     workspace_id=workspace_id,
                     dataset_id=dataset_id,
-                    actor=actor,
-                    parsed=pt,
+                    file_id=recv.file_id,
+                    local_temp_path=recv.local_temp_path,
+                    file_format=recv.file_format,
+                    compression=recv.compression,
+                    object_store=self._object_store,
+                    session_factory=self._session_factory,
+                    settings=self._settings,
+                    existing_table_id=table_id,
+                    target_sheet_or_json_path=target_sheet_or_json_path,
+                    target_name=target_name,
+                    dataset_name=dataset_name,
+                    workspace_locale=locale,
+                    original_filename=filename,
                 )
-                for pt in parsed_tables
-            ]
-        )
+            except BaseException as error:
+                primary_error = error
+                raise
+            finally:
+                try:
+                    Path(recv.local_temp_path).unlink(missing_ok=True)
+                except OSError:
+                    if primary_error is None:
+                        raise
+                    logger.warning("stage=ingest local_raw_cleanup_failed")
+
+            # Same parallel fan-out as the fresh-upload path.
+            for pt in parsed_tables:
+                section_tasks.append(
+                    self._start_section(
+                        tenant_id=tenant_id,
+                        workspace_id=workspace_id,
+                        dataset_id=dataset_id,
+                        actor=actor,
+                        parsed=pt,
+                    )
+                )
+        finally:
+            for parsed in parsed_tables[len(section_tasks):]:
+                local_parquet_path = getattr(parsed, "local_parquet_path", None)
+                if local_parquet_path:
+                    try:
+                        Path(local_parquet_path).unlink(missing_ok=True)
+                    except OSError:
+                        logger.warning("stage=ingest local_parquet_cleanup_failed")
+
+        ingested_raw = await asyncio.gather(*section_tasks)
         ingested = [t for t in ingested_raw if t is not None]
 
         return IngestResult(file_id=str(recv.file_id), tables=ingested)

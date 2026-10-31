@@ -18,6 +18,11 @@ export class KoinonModelOptionsForm {
     const value = this.values[name];
     return typeof value === 'string' ? value : '';
   }
+  optionLabel(field: ModelOptionField, value: string) {
+    return field.name === 'output_mode'
+      ? value === 'native' ? 'Native JSON' : 'Default structured output'
+      : value;
+  }
   list(name: string) {
     const value = this.values[name];
     return Array.isArray(value) ? value : [];

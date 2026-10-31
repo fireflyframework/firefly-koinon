@@ -133,7 +133,7 @@ export class KoinonPagination {
   private readonly i18n = inject(KoinonI18n);
   pageLabel(direction: 'Next' | 'Previous') {
     return this.i18n.preferences().locale.startsWith('es')
-      ? this.i18n.text(direction + ' page') + ' · ' + this.i18n.text(this.label)
+      ? this.i18n.text(direction + ' page') + ', ' + this.i18n.text(this.label)
       : direction + ' ' + this.label.toLowerCase() + ' page';
   }
   @Input() page: Page<unknown> | null = null;

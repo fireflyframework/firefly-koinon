@@ -125,7 +125,7 @@ async def test_original_schema_source_crud_has_no_unconditional_sidecar_dependen
     assert await repositories["source"].get(row.id, tenant_id="t", workspace_id="w") is None
 
 
-def intake_fixture(lineage, repositories, normalized=b"normalized text"):
+def intake_fixture(lineage, repositories, normalized=b"normalized text", *, normalizer=None, settings=None):
     from types import SimpleNamespace
     from unittest.mock import AsyncMock, Mock
 
@@ -135,31 +135,34 @@ def intake_fixture(lineage, repositories, normalized=b"normalized text"):
     from flycanon.core.services.ingestion.chunker import ParagraphChunker
     from flycanon.core.services.ingestion.ingestion_service import IngestionService
     from flycanon.core.services.ingestion.loaders import default_registry
-    from flycanon.core.services.sources.intake_service import IntakeService
 
     registry = default_registry()
-    normalizer = SimpleNamespace(
+    normalizer = normalizer or SimpleNamespace(
         normalise=AsyncMock(
             return_value=[
                 BinaryArtifact(bytes=normalized, media_type="text/plain", kind="text", filename="one.txt")
             ]
         )
     )
-    service = IntakeService(
-        binary_normalizer=normalizer,
-        ingestion=IngestionService(loaders=registry, chunker=ParagraphChunker()),
-        loaders=registry,
-        embeddings=SimpleNamespace(
-            model="controlled", embed=AsyncMock(side_effect=lambda texts: [[1.0] for _ in texts])
-        ),
-        indexer=SimpleNamespace(replace_for_source=AsyncMock(return_value=1)),
-        metadata_extractor=SimpleNamespace(extract=Mock(return_value=SimpleNamespace(to_dict=lambda: {}))),
-        source_repository=repositories["source"],
-        chunk_repository=repositories["chunk"],
-        audit=SimpleNamespace(record=AsyncMock()),
-        event_publisher=None,
-        object_store=lineage.store,
-        settings=CanonSettings(store_originals=True, pii_policy="disabled"),
+    service = _versioned_intake(
+        dict(
+            binary_normalizer=normalizer,
+            ingestion=IngestionService(loaders=registry, chunker=ParagraphChunker()),
+            loaders=registry,
+            embeddings=SimpleNamespace(
+                model="controlled", embed=AsyncMock(side_effect=lambda texts: [[1.0] for _ in texts])
+            ),
+            indexer=SimpleNamespace(replace_for_source=AsyncMock(return_value=1)),
+            metadata_extractor=SimpleNamespace(
+                extract=Mock(return_value=SimpleNamespace(to_dict=lambda: {}))
+            ),
+            source_repository=repositories["source"],
+            chunk_repository=repositories["chunk"],
+            audit=SimpleNamespace(record=AsyncMock()),
+            event_publisher=None,
+            object_store=lineage.store,
+            settings=settings or CanonSettings(store_originals=True, pii_policy="disabled"),
+        )
     )
     return service
 
@@ -415,3 +418,16 @@ async def test_missing_recorded_pair_fails_before_admission_and_normalizer(linea
         )
     assert intake._binary_normalizer.normalise.await_count == count
     assert (await lineage.history(scope, first.id)).total == 1
+
+
+def _versioned_intake(dependencies):
+    from flycanon.core.services.sources.intake_runtime import build_intake_components
+    from flycanon.core.services.sources.intake_service import IntakeService
+    from flycanon.core.services.sources.lineage.pipeline import DocumentLineagePipeline
+    from flycanon.core.services.sources.lineage.service import DocumentLineage
+
+    pipeline = DocumentLineagePipeline(
+        build_intake_components(**dependencies),
+        DocumentLineage(dependencies["source_repository"], dependencies["object_store"]),
+    )
+    return IntakeService(**dependencies, lineage_pipeline=pipeline, intake_policy=pipeline.components.policy)

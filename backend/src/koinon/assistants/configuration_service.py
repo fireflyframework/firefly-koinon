@@ -15,6 +15,7 @@ from koinon.assistants.connections import (
     api_for,
     capability_state,
     input_modalities,
+    normalized_options,
     options_fingerprint,
     provider_state,
 )
@@ -182,7 +183,9 @@ class AssistantConfigurationService:
         try:
             spec = self.connections.spec(provider, row.model_id, row.model_options)
             assert spec.options is not None
-            options = spec.options.model_dump(mode="json", exclude_none=True)
+            options = normalized_options(state["api"], row.model_options).model_dump(
+                mode="json", exclude_none=True
+            )
             model_settings = self.connections.settings_for(spec)
             option_key = options_fingerprint(state["api"], row.model_options)
         except ValueError as exc:
@@ -320,7 +323,9 @@ class AssistantConfigurationService:
         try:
             spec = self.connections.spec(provider, model, value("model_options", {}))
             assert spec.options is not None
-            row.model_options = spec.options.model_dump(mode="json", exclude_none=True)
+            row.model_options = normalized_options(
+                api_for(provider.kind, provider.api), value("model_options", {})
+            ).model_dump(mode="json", exclude_none=True)
         except ValueError as exc:
             raise InvalidRequestException(str(exc), code="INVALID_MODEL_OPTIONS") from exc
         row.name, row.description, row.provider_id, row.model_id = name, description, provider.id, model

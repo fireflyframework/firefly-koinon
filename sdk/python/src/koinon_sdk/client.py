@@ -74,6 +74,13 @@ from koinon_sdk.curated import (
     KnowledgeItemView,
 )
 from koinon_sdk.dataset_files import DatasetFileAppendResult
+from koinon_sdk.document_history import (
+    DocumentExtractionPage,
+    DocumentPartContent,
+    DocumentPartPage,
+    DocumentVersion,
+    DocumentVersionPage,
+)
 from koinon_sdk.evidence import EvidenceManifest
 from koinon_sdk.exports import (
     Export,
@@ -83,6 +90,14 @@ from koinon_sdk.exports import (
     ExportReviewInput,
     MessageSelection,
 )
+from koinon_sdk.external_file_reviews import (
+    ExternalFileChunkInput,
+    ExternalFileCleanupInput,
+    ExternalFileCleanupResult,
+    ExternalFileReviewInput,
+    ExternalFileReviewView,
+)
+from koinon_sdk.external_reviews import ExternalReviewDecision, ExternalReviewInput, ExternalReviewView
 from koinon_sdk.glossary import GlossaryPage, GlossaryTermCreate, GlossaryTermRead, GlossaryTermUpdate
 from koinon_sdk.identity import (
     IdentityActivation,
@@ -108,6 +123,16 @@ from koinon_sdk.indexes import (
     KnowledgeIndexView,
     NativeIndexChoice,
     NativeIndexPage,
+)
+from koinon_sdk.mcp import McpConnectionDescriptor
+from koinon_sdk.mcp_applications import (
+    McpOAuthClient,
+    McpOAuthClientCredential,
+    McpOAuthClientInput,
+    McpOAuthClientPage,
+    McpOAuthClientPatch,
+    McpOAuthClientReadiness,
+    McpOAuthClientRevision,
 )
 from koinon_sdk.models import (
     AgentConfiguration,
@@ -149,10 +174,35 @@ from koinon_sdk.models import (
     UserProfile,
     ValidationResult,
 )
+from koinon_sdk.organization_branding import (
+    BrandingResetInput,
+    BrandingValues,
+    OrganizationBranding,
+    OrganizationBrandingInput,
+)
 from koinon_sdk.organization_chat import OrganizationChatSettings, OrganizationChatSettingsInput
+from koinon_sdk.organization_filters import (
+    OrganizationPeopleFilter,
+    OrganizationReportsFilter,
+    OrganizationUnitFilter,
+)
 from koinon_sdk.organization_knowledge import (
     OrganizationKnowledgeSettings,
     OrganizationKnowledgeSettingsInput,
+)
+from koinon_sdk.organization_people import (
+    OrganizationDirectorySettings,
+    OrganizationDirectorySettingsInput,
+    OrganizationPerson,
+    OrganizationPersonCreate,
+    OrganizationPersonPage,
+    OrganizationPersonPatch,
+    OrganizationProfileMapping,
+    OrganizationProfileMappingInput,
+    OrganizationUnit,
+    OrganizationUnitInput,
+    OrganizationUnitPage,
+    OrganizationUnitPatch,
 )
 from koinon_sdk.proposals import CatalogProposal, ProposalConfirmation, ProposalRevision
 from koinon_sdk.provenance import TableProvenance, TableSnapshotPage
@@ -626,6 +676,216 @@ class KoinonClient:
             )
         )
 
+    async def cleanup_external_file_reviews(
+        self, tenant_id: str, value: ExternalFileCleanupInput
+    ) -> ExternalFileCleanupResult:
+        return ExternalFileCleanupResult.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/external-file-reviews/cleanup",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def stage_external_file_review(
+        self, tenant_id: str, value: ExternalFileReviewInput, *, idempotency_key: str
+    ) -> ExternalFileReviewView:
+        return ExternalFileReviewView.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/external-file-reviews",
+                json=value.model_dump(mode="json", exclude_unset=True),
+                headers={"Idempotency-Key": idempotency_key},
+            )
+        )
+
+    async def external_file_review(self, tenant_id: str, review_id: str) -> ExternalFileReviewView:
+        return ExternalFileReviewView.model_validate(
+            await self._request(
+                "GET", self._tenant(tenant_id) + "/external-file-reviews/" + quote(review_id, safe="")
+            )
+        )
+
+    async def upload_external_file_chunk(
+        self, tenant_id: str, review_id: str, value: ExternalFileChunkInput
+    ) -> ExternalFileReviewView:
+        return ExternalFileReviewView.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/external-file-reviews/" + quote(review_id, safe="") + "/chunks",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def seal_external_file_review(self, tenant_id: str, review_id: str) -> ExternalFileReviewView:
+        return ExternalFileReviewView.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/external-file-reviews/" + quote(review_id, safe="") + "/seal",
+            )
+        )
+
+    async def approve_external_file_review(
+        self, tenant_id: str, review_id: str, value: ExternalReviewDecision, *, idempotency_key: str
+    ) -> ExternalFileReviewView:
+        return ExternalFileReviewView.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/external-file-reviews/" + quote(review_id, safe="") + "/approve",
+                json=value.model_dump(mode="json", exclude_unset=True),
+                headers={"Idempotency-Key": idempotency_key},
+            )
+        )
+
+    async def cancel_external_file_review(
+        self, tenant_id: str, review_id: str, value: ExternalReviewDecision
+    ) -> ExternalFileReviewView:
+        return ExternalFileReviewView.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/external-file-reviews/" + quote(review_id, safe="") + "/cancel",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def mcp_connection(self) -> McpConnectionDescriptor:
+        return McpConnectionDescriptor.model_validate(await self._request("GET", "/mcp/connection"))
+
+    async def organization_mcp_connection(self, tenant_id: str) -> McpConnectionDescriptor:
+        return McpConnectionDescriptor.model_validate(
+            await self._request("GET", self._tenant(tenant_id) + "/mcp/connection")
+        )
+
+    async def mcp_oauth_clients_readiness(self, tenant_id: str) -> McpOAuthClientReadiness:
+        return McpOAuthClientReadiness.model_validate(
+            await self._request("GET", self._tenant(tenant_id) + "/mcp/oauth-clients/readiness")
+        )
+
+    async def mcp_oauth_clients(
+        self,
+        tenant_id: str,
+        *,
+        q: str = "",
+        status: Literal["all", "enabled", "disabled"] = "all",
+        page: int = 1,
+        page_size: int = 25,
+        sort: Literal["name", "updated_at"] = "name",
+        order: Literal["asc", "desc"] = "asc",
+    ) -> McpOAuthClientPage:
+        return McpOAuthClientPage.model_validate(
+            await self._request(
+                "GET",
+                self._tenant(tenant_id) + "/mcp/oauth-clients",
+                params={
+                    "q": q,
+                    "status": status,
+                    "page": page,
+                    "page_size": page_size,
+                    "sort": sort,
+                    "order": order,
+                },
+            )
+        )
+
+    async def create_mcp_oauth_client(
+        self,
+        tenant_id: str,
+        value: McpOAuthClientInput,
+    ) -> McpOAuthClientCredential:
+        return McpOAuthClientCredential.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/mcp/oauth-clients",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def mcp_oauth_client(self, tenant_id: str, client_id: str) -> McpOAuthClient:
+        return McpOAuthClient.model_validate(
+            await self._request(
+                "GET", self._tenant(tenant_id) + "/mcp/oauth-clients/" + quote(client_id, safe="")
+            )
+        )
+
+    async def update_mcp_oauth_client(
+        self,
+        tenant_id: str,
+        client_id: str,
+        value: McpOAuthClientPatch,
+    ) -> McpOAuthClient:
+        return McpOAuthClient.model_validate(
+            await self._request(
+                "PATCH",
+                self._tenant(tenant_id) + "/mcp/oauth-clients/" + quote(client_id, safe=""),
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def rotate_mcp_oauth_client_secret(
+        self,
+        tenant_id: str,
+        client_id: str,
+        value: McpOAuthClientRevision,
+    ) -> McpOAuthClientCredential:
+        return McpOAuthClientCredential.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id)
+                + "/mcp/oauth-clients/"
+                + quote(client_id, safe="")
+                + "/rotate-secret",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def stage_external_review(
+        self, tenant_id: str, value: ExternalReviewInput, *, idempotency_key: str
+    ) -> ExternalReviewView:
+        return ExternalReviewView.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/external-knowledge-reviews",
+                json=value.model_dump(mode="json", exclude_unset=True),
+                headers={"Idempotency-Key": idempotency_key},
+            )
+        )
+
+    async def external_review(self, tenant_id: str, review_id: str) -> ExternalReviewView:
+        return ExternalReviewView.model_validate(
+            await self._request(
+                "GET", self._tenant(tenant_id) + "/external-knowledge-reviews/" + quote(review_id, safe="")
+            )
+        )
+
+    async def approve_external_review(
+        self, tenant_id: str, review_id: str, value: ExternalReviewDecision, *, idempotency_key: str
+    ) -> KnowledgeCommitOutcome:
+        return TypeAdapter(KnowledgeCommitOutcome).validate_python(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id)
+                + "/external-knowledge-reviews/"
+                + quote(review_id, safe="")
+                + "/approve",
+                json=value.model_dump(mode="json", exclude_unset=True),
+                headers={"Idempotency-Key": idempotency_key},
+            )
+        )
+
+    async def cancel_external_review(
+        self, tenant_id: str, review_id: str, value: ExternalReviewDecision
+    ) -> ExternalReviewView:
+        return ExternalReviewView.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id)
+                + "/external-knowledge-reviews/"
+                + quote(review_id, safe="")
+                + "/cancel",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
     async def knowledge_intent(self, tenant_id: str, intent_id: str) -> KnowledgeIntent:
         return KnowledgeIntent.model_validate(
             await self._request(
@@ -790,6 +1050,112 @@ class KoinonClient:
                 + "/snapshots",
                 params={"page": page, "page_size": page_size},
             )
+        )
+
+    def _document_version_path(
+        self, tenant_id: str, document_id: str, source_version_id: str | None = None
+    ) -> str:
+        path = self._tenant(tenant_id) + "/documents/" + quote(document_id, safe="") + "/versions"
+        return path + "/" + quote(source_version_id, safe="") if source_version_id is not None else path
+
+    async def document_versions(
+        self,
+        tenant_id: str,
+        document_id: str,
+        *,
+        page: int = 1,
+        page_size: int = 25,
+    ) -> DocumentVersionPage:
+        return DocumentVersionPage.model_validate(
+            await self._request(
+                "GET",
+                self._document_version_path(tenant_id, document_id),
+                params={"page": page, "page_size": page_size},
+            )
+        )
+
+    async def document_version(
+        self,
+        tenant_id: str,
+        document_id: str,
+        source_version_id: str,
+    ) -> DocumentVersion:
+        return DocumentVersion.model_validate(
+            await self._request(
+                "GET",
+                self._document_version_path(tenant_id, document_id, source_version_id),
+            )
+        )
+
+    async def document_extractions(
+        self,
+        tenant_id: str,
+        document_id: str,
+        source_version_id: str,
+        *,
+        page: int = 1,
+        page_size: int = 25,
+    ) -> DocumentExtractionPage:
+        return DocumentExtractionPage.model_validate(
+            await self._request(
+                "GET",
+                self._document_version_path(tenant_id, document_id, source_version_id) + "/extractions",
+                params={"page": page, "page_size": page_size},
+            )
+        )
+
+    async def document_parts(
+        self,
+        tenant_id: str,
+        document_id: str,
+        source_version_id: str,
+        extraction_id: str,
+        *,
+        kind: Literal["artifact", "section", "chunk", "page"] | None = None,
+        page: int = 1,
+        page_size: int = 25,
+    ) -> DocumentPartPage:
+        filters: dict[str, int | str] = {"page": page, "page_size": page_size}
+        if kind is not None:
+            filters["kind"] = kind
+        return DocumentPartPage.model_validate(
+            await self._request(
+                "GET",
+                self._document_version_path(tenant_id, document_id, source_version_id)
+                + "/extractions/"
+                + quote(extraction_id, safe="")
+                + "/parts",
+                params=filters,
+            )
+        )
+
+    async def document_part(
+        self,
+        tenant_id: str,
+        document_id: str,
+        source_version_id: str,
+        extraction_id: str,
+        source_part_id: str,
+    ) -> DocumentPartContent:
+        return DocumentPartContent.model_validate(
+            await self._request(
+                "GET",
+                self._document_version_path(tenant_id, document_id, source_version_id)
+                + "/extractions/"
+                + quote(extraction_id, safe="")
+                + "/parts/"
+                + quote(source_part_id, safe=""),
+            )
+        )
+
+    async def document_version_original(
+        self,
+        tenant_id: str,
+        document_id: str,
+        source_version_id: str,
+    ) -> BinaryDownload:
+        return await self._download(
+            self._document_version_path(tenant_id, document_id, source_version_id) + "/original",
         )
 
     async def document_chunks(
@@ -1169,6 +1535,185 @@ class KoinonClient:
         }
         return Page[Person].model_validate(
             await self._request("GET", self._tenant(tenant_id) + "/people", params=filters)
+        )
+
+    async def organization_person_self(
+        self, tenant_id: str, *, workspace_id: str | None = None
+    ) -> OrganizationPerson:
+        return OrganizationPerson.model_validate(
+            await self._request(
+                "GET",
+                self._tenant(tenant_id) + "/organization/people/me",
+                params={"workspace_id": workspace_id} if workspace_id is not None else {},
+            )
+        )
+
+    async def organization_people(
+        self, tenant_id: str, **filters: Unpack[OrganizationPeopleFilter]
+    ) -> OrganizationPersonPage:
+        return OrganizationPersonPage.model_validate(
+            await self._request("GET", self._tenant(tenant_id) + "/organization/people", params=filters)
+        )
+
+    async def create_organization_person(
+        self, tenant_id: str, value: OrganizationPersonCreate
+    ) -> OrganizationPerson:
+        return OrganizationPerson.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/organization/people",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def organization_person(
+        self, tenant_id: str, person_id: str, *, workspace_id: str | None = None
+    ) -> OrganizationPerson:
+        return OrganizationPerson.model_validate(
+            await self._request(
+                "GET",
+                self._tenant(tenant_id) + "/organization/people/" + quote(person_id, safe=""),
+                params={"workspace_id": workspace_id} if workspace_id is not None else {},
+            )
+        )
+
+    async def update_organization_person(
+        self, tenant_id: str, person_id: str, value: OrganizationPersonPatch
+    ) -> OrganizationPerson:
+        return OrganizationPerson.model_validate(
+            await self._request(
+                "PATCH",
+                self._tenant(tenant_id) + "/organization/people/" + quote(person_id, safe=""),
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def organization_person_avatar(
+        self,
+        tenant_id: str,
+        person_id: str,
+        *,
+        workspace_id: str | None = None,
+        if_none_match: str | None = None,
+    ) -> BinaryDownload:
+        return await self._download(
+            self._tenant(tenant_id) + "/organization/people/" + quote(person_id, safe="") + "/avatar",
+            params={"workspace_id": workspace_id} if workspace_id is not None else None,
+            if_none_match=if_none_match,
+        )
+
+    async def organization_person_reports(
+        self, tenant_id: str, person_id: str, **filters: Unpack[OrganizationReportsFilter]
+    ) -> OrganizationPersonPage:
+        return OrganizationPersonPage.model_validate(
+            await self._request(
+                "GET",
+                self._tenant(tenant_id) + "/organization/people/" + quote(person_id, safe="") + "/reports",
+                params=filters,
+            )
+        )
+
+    async def organization_units(
+        self, tenant_id: str, **filters: Unpack[OrganizationUnitFilter]
+    ) -> OrganizationUnitPage:
+        return OrganizationUnitPage.model_validate(
+            await self._request("GET", self._tenant(tenant_id) + "/organization/units", params=filters)
+        )
+
+    async def create_organization_unit(
+        self, tenant_id: str, value: OrganizationUnitInput
+    ) -> OrganizationUnit:
+        return OrganizationUnit.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/organization/units",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def update_organization_unit(
+        self, tenant_id: str, unit_id: str, value: OrganizationUnitPatch
+    ) -> OrganizationUnit:
+        return OrganizationUnit.model_validate(
+            await self._request(
+                "PATCH",
+                self._tenant(tenant_id) + "/organization/units/" + quote(unit_id, safe=""),
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def delete_organization_unit(self, tenant_id: str, unit_id: str, *, expected_revision: int) -> None:
+        await self._request(
+            "DELETE",
+            self._tenant(tenant_id) + "/organization/units/" + quote(unit_id, safe=""),
+            params={"expected_revision": expected_revision},
+        )
+
+    async def organization_directory_settings(self, tenant_id: str) -> OrganizationDirectorySettings:
+        return OrganizationDirectorySettings.model_validate(
+            await self._request("GET", self._tenant(tenant_id) + "/organization/directory-settings")
+        )
+
+    async def update_organization_directory_settings(
+        self, tenant_id: str, value: OrganizationDirectorySettingsInput
+    ) -> OrganizationDirectorySettings:
+        return OrganizationDirectorySettings.model_validate(
+            await self._request(
+                "PATCH",
+                self._tenant(tenant_id) + "/organization/directory-settings",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def organization_profile_mapping(
+        self, tenant_id: str, provider_id: str
+    ) -> OrganizationProfileMapping:
+        return OrganizationProfileMapping.model_validate(
+            await self._request(
+                "GET",
+                self._tenant(tenant_id) + "/organization/profile-mappings/" + quote(provider_id, safe=""),
+            )
+        )
+
+    async def update_organization_profile_mapping(
+        self, tenant_id: str, provider_id: str, value: OrganizationProfileMappingInput
+    ) -> OrganizationProfileMapping:
+        return OrganizationProfileMapping.model_validate(
+            await self._request(
+                "PUT",
+                self._tenant(tenant_id) + "/organization/profile-mappings/" + quote(provider_id, safe=""),
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def branding_defaults(self) -> BrandingValues:
+        return BrandingValues.model_validate(await self._request("GET", "branding/defaults"))
+
+    async def organization_branding(self, tenant_id: str) -> OrganizationBranding:
+        return OrganizationBranding.model_validate(
+            await self._request("GET", self._tenant(tenant_id) + "/branding")
+        )
+
+    async def update_organization_branding(
+        self, tenant_id: str, value: OrganizationBrandingInput
+    ) -> OrganizationBranding:
+        return OrganizationBranding.model_validate(
+            await self._request(
+                "PUT",
+                self._tenant(tenant_id) + "/branding",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
+
+    async def reset_organization_branding(
+        self, tenant_id: str, value: BrandingResetInput
+    ) -> OrganizationBranding:
+        return OrganizationBranding.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/branding/reset",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
         )
 
     async def organization_knowledge_settings(self, tenant_id: str) -> OrganizationKnowledgeSettings:

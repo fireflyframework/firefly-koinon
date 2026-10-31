@@ -3,6 +3,7 @@ import { Component, inject, signal } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { KoinonWorkbench } from '@fireflyframework/koinon-angular/workbench';
 import { SessionService } from './session.service';
+import type { BrandingValues } from '@fireflyframework/koinon-sdk';
 import { PendingInvitation } from './pending-invitation';
 import { PendingShare } from './pending-share';
 import { AccountNavigation } from './account-navigation';
@@ -15,6 +16,7 @@ import { OrganizationSelection } from './organization-selection';
     }
     <ffk-workbench
       [managementBaseUrl]="managementBaseUrl"
+      (brandingChange)="applyIdentity($event)"
       [view]="navigation.view()"
       (viewChange)="navigation.navigate($event)"
       [accountSection]="navigation.section()"
@@ -47,6 +49,22 @@ import { OrganizationSelection } from './organization-selection';
   `,
 })
 export class App {
+  private readonly document = inject(DOCUMENT);
+  applyIdentity(value: BrandingValues) {
+    this.document.title =
+      value.product_name === 'koinon' ? 'firefly koinon' : value.product_name || 'koinon';
+    const icon = this.document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    if (icon) {
+      icon.href =
+        value.favicon ||
+        (value.product_name === 'koinon'
+          ? '/assets/brand/logos/koinon-symbol-color.svg'
+          : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Ccircle cx="16" cy="16" r="12" fill="%2362645b"/%3E%3C/svg%3E');
+      icon.type = value.favicon
+        ? value.favicon.slice(5, value.favicon.indexOf(';'))
+        : 'image/svg+xml';
+    }
+  }
   readonly managementBaseUrl = new URL('.', inject(DOCUMENT).baseURI).toString();
   readonly session = inject(SessionService);
   readonly invitation = inject(PendingInvitation);

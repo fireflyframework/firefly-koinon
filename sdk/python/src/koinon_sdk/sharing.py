@@ -3,7 +3,7 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/sharing/dtos.py
-SHA256: 86543c76b1cfb1cb8ea1a8687ddd9323cffeed23dc4f3e97cf75a1958a57e072
+SHA256: c0152ae90375a5c59848103da7792d26f2c864ac5a934cfbb1bd5e09e4957544
 
 Server authorization and semantic validation remain authoritative.
 """
@@ -12,7 +12,14 @@ from typing import Literal
 
 from pydantic import AwareDatetime, Field
 
-from koinon_sdk.evidence import ConversationMessage, Frozen, Identifier, Revision, SourceReference
+from koinon_sdk.evidence import (
+    ConversationIdentity,
+    ConversationMessage,
+    Frozen,
+    Identifier,
+    Revision,
+    SourceReference,
+)
 from koinon_sdk.exports import Input, MessageSelection
 
 
@@ -39,6 +46,7 @@ class ShareReview(Frozen):
     recipient_policy: Literal["organization_current_acl"] = "organization_current_acl"
     omissions: tuple[str, ...] = ()
     expires_at: AwareDatetime
+    identity: ConversationIdentity | None = None
 
 
 class Share(Frozen):
@@ -57,6 +65,7 @@ class SharedConversation(Frozen):
     messages: tuple[ConversationMessage, ...]
     sources: tuple[SourceReference, ...]
     source_manifest_complete: bool
+    identity: ConversationIdentity | None = None
 
 
 class SharePage(Frozen):

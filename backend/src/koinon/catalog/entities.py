@@ -8,7 +8,7 @@ from pyfly.data.relational.sqlalchemy import Base, UtcDateTime
 from sqlalchemy import JSON, ForeignKey, Index, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-INTERNAL_METADATA_KEYS = frozenset({"_koinon_lifecycle", "_koinon_intake"})
+INTERNAL_METADATA_KEYS = frozenset({"_koinon_lifecycle", "_koinon_intake", "_koinon_external_review"})
 
 
 class Tenant(Base):

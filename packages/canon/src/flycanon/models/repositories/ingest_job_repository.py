@@ -1,4 +1,6 @@
 # Copyright 2024-2026 Firefly Software Foundation
+# Modifications Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,6 +35,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from pyfly.data.relational.datasource_registry import DataSourceRegistry
 from pyfly.data.transaction import infrastructure_unit
 from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
@@ -65,8 +68,17 @@ class IngestJobRepository:
         return self._engine
 
     @classmethod
-    def from_url(cls, database_url: str, *, echo: bool = False) -> IngestJobRepository:
-        factory, engine = build_session_factory(database_url, echo=echo)
+    def from_url(
+        cls,
+        database_url: str,
+        *,
+        echo: bool = False,
+        registry: DataSourceRegistry | None = None,
+        datasource_name: str = "canon",
+    ) -> IngestJobRepository:
+        factory, engine = build_session_factory(
+            database_url, echo=echo, registry=registry, datasource_name=datasource_name
+        )
         return cls(factory, engine=engine)
 
     @asynccontextmanager

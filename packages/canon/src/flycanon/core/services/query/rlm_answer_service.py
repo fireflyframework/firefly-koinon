@@ -41,8 +41,10 @@ import re
 import time
 from collections.abc import Callable
 
+from pyfly.kernel import ServiceUnavailableException
+
 from flycanon.config import CanonSettings
-from flycanon.core.agents.model_bindings import model_reference
+from flycanon.core.agents.model_bindings import current_scope, model_reference
 from flycanon.core.services.billing.cost_service import CostService
 from flycanon.core.services.query import provenance
 from flycanon.core.services.query.rlm.chat import RlmChatClient
@@ -98,14 +100,11 @@ class RLMAnswerService:
         self._cost_service = cost_service
 
     def _request_client(self) -> RlmChatClient:
-        from flycanon.core.agents.model_bindings import current_scope
         from flycanon.core.services.query.rlm.native_client import NativeRlmChatClient
 
         if current_scope() is not None:
             factory = self._settings._agent_factory
             if factory is None:
-                from pyfly.kernel import ServiceUnavailableException
-
                 raise ServiceUnavailableException(
                     "Bind the context-owned AgentFactory for the selected RLM connection",
                     code="KNOWLEDGE_MODEL_BINDING_REQUIRED",
@@ -138,6 +137,8 @@ class RLMAnswerService:
         back onto its event loop.
         """
         start = time.perf_counter()
+        scope = current_scope()
+        required = scope is not None and scope.required
         model_id = model_reference("documents.rlm", self._settings.rlm_root_model)
 
         docs = await self._corpus_builder.build(
@@ -155,7 +156,7 @@ class RLMAnswerService:
                 no_answer=True,
             )
 
-        await provenance.corpus(docs)
+        corpus_context = await provenance.corpus(docs)
 
         # Per-request lever: a hard multi-fact question can opt into twice the
         # configured iteration budget (rlm_max_iters * 2) without a global bump.
@@ -170,14 +171,30 @@ class RLMAnswerService:
         n = max(1, self._settings.rlm_self_consistency)
         if n > 1 and on_turn is None:
             runs = await asyncio.gather(
-                *(asyncio.to_thread(self._run_once, docs, question, max_iters, None) for _ in range(n)),
+                *(asyncio.to_thread(self._run_once, docs, question, max_iters, None, corpus_context)
+                  for _ in range(n)),
                 return_exceptions=True,
             )
+            if required:
+                for run in runs:
+                    if isinstance(run, BaseException):
+                        raise run
             await provenance.authorize()
-            answer_text, cites, engine_no_answer, usage = self._select_consistent(question, runs)
+            if required:
+                answer_text, cites, engine_no_answer, usage = await asyncio.to_thread(
+                    provenance.worker(self._select_consistent), question, runs
+                )
+                await provenance.authorize()
+                if current_scope() is not scope:
+                    raise ServiceUnavailableException(
+                        "The admitted knowledge connection lifetime has ended",
+                        code="KNOWLEDGE_MODEL_SCOPE_CLOSED",
+                    )
+            else:
+                answer_text, cites, engine_no_answer, usage = self._select_consistent(question, runs)
         else:
             answer_text, cites, engine_no_answer, usage = await asyncio.to_thread(
-                self._run_once, docs, question, max_iters, on_turn
+                self._run_once, docs, question, max_iters, on_turn, corpus_context
             )
 
         citations = _map_citations(cites, docs)
@@ -224,6 +241,7 @@ class RLMAnswerService:
         question: str,
         max_iters: int,
         on_turn: Callable[[int, list[str]], None] | None,
+        corpus_context: str | None = None,
     ) -> tuple[str, list[dict], bool, dict]:
         """One RLM run on a freshly forked client; returns ``(answer, cites,
         no_answer, usage)``. Runs synchronously (the caller wraps it in a
@@ -238,6 +256,7 @@ class RLMAnswerService:
             on_turn=on_turn,
             sandbox_mode=self._settings.rlm_sandbox,
             sandbox_timeout_s=self._settings.rlm_sandbox_timeout_s,
+            corpus_context=corpus_context,
         )
         answer, cites, no_answer = session.run(question, docs)
         return answer, cites, no_answer, client.token_totals()
@@ -247,9 +266,10 @@ class RLMAnswerService:
 
         ``runs`` is the ``asyncio.gather(..., return_exceptions=True)`` result:
         a mix of ``(answer, cites, no_answer, usage)`` tuples and Exceptions.
-        Failed runs are dropped; a real (non-blank, answered) candidate is
-        preferred; ties are broken by an LLM selector. Token usage of every
-        run plus the selector call is merged so cost reflects the full spend.
+        Standalone failed runs are dropped; required callers reject failures
+        before selection. A real (non-blank, answered) candidate is preferred;
+        ties are broken by an LLM selector. Successful-run and selector usage
+        is merged here; failed-run billing is separate.
         """
         ok = [r for r in runs if isinstance(r, tuple)]
         if not ok:
@@ -273,10 +293,12 @@ class RLMAnswerService:
     def _selector_pick(self, question: str, answers: list[str]) -> tuple[int, dict]:
         """Ask the model to pick the most-grounded/consistent candidate.
 
-        Returns ``(index, usage)``; falls back to index 0 (and empty usage) if
-        the selector errors or returns an unparseable / out-of-range reply.
+        Required scopes reject selector failures. Standalone selection retains
+        its candidate-zero fallback for errors or invalid replies.
         """
         client = self._request_client()
+        scope = current_scope()
+        required = scope is not None and scope.required
         listing = "\n\n".join(f"[{i + 1}]\n{(a or '')[:6000]}" for i, a in enumerate(answers))
         prompt = (
             f"Question:\n{question}\n\n{len(answers)} independent answers were produced for this "
@@ -287,8 +309,19 @@ class RLMAnswerService:
         try:
             provenance.model("rlm.selector", prompt)
             reply = client.complete(prompt)
-        except Exception:  # noqa: BLE001 -- selection must never break the answer
+        except Exception:  # noqa: BLE001 -- standalone selection retains its fallback
+            if required:
+                raise
             return 0, client.token_totals()
+        if required:
+            value = reply.strip() if type(reply) is str else ""
+            if (len(value) > len(str(len(answers))) or not re.fullmatch(r"[1-9][0-9]*", value)
+                    or not 1 <= int(value) <= len(answers)):
+                raise ServiceUnavailableException(
+                    "The selected model did not return one valid candidate number.",
+                    code="RLM_SELECTOR_PROTOCOL_REQUIRED",
+                )
+            return int(value) - 1, client.token_totals()
         match = re.search(r"\d+", reply or "")
         idx = (int(match.group()) - 1) if match else 0
         if idx < 0 or idx >= len(answers):

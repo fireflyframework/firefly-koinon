@@ -18,15 +18,24 @@ from koinon.mcp.settings import McpSettings
 
 
 @asynccontextmanager
-async def protocol(app, headers=None):
+async def protocol(app, headers=None, *, apps=False, modern=False):
     async with (
         httpx2.AsyncClient(
             transport=httpx2.ASGITransport(app), headers=headers or {}, base_url="http://testserver"
         ) as http,
         streamable_http_client("http://testserver/mcp", http_client=http) as streams,
-        ClientSession(streams[0], streams[1]) as session,
+        ClientSession(
+            streams[0],
+            streams[1],
+            extensions={"io.modelcontextprotocol/ui": {"mimeTypes": ["text/html;profile=mcp-app"]}}
+            if apps
+            else None,
+        ) as session,
     ):
-        await session.initialize()
+        if modern:
+            await session.discover()
+        else:
+            await session.initialize()
         yield session
 
 

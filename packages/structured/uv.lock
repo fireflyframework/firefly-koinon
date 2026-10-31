@@ -1081,6 +1081,7 @@ azure = [
 ]
 dev = [
     { name = "httpx" },
+    { name = "numpy" },
     { name = "pyright" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -1134,6 +1135,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28" },
     { name = "jinja2", specifier = ">=3.1" },
+    { name = "numpy", marker = "extra == 'dev'", specifier = ">=2.0" },
     { name = "openpyxl", marker = "extra == 'file-readers'", specifier = ">=3.1" },
     { name = "pgvector", specifier = ">=0.3.6" },
     { name = "presidio-analyzer", marker = "extra == 'presidio'", specifier = ">=2.2" },
@@ -1142,7 +1144,7 @@ requires-dist = [
     { name = "pyarrow", specifier = ">=17.0" },
     { name = "pydantic", specifier = ">=2.10.0" },
     { name = "pydantic-settings", specifier = ">=2.7.0" },
-    { name = "pyfly", extras = ["fastapi", "observability", "security", "data-relational", "postgresql", "eda", "redis", "client", "scheduling", "cli", "agentic"], git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=d44d5915d76207266c7a2789987b1d613fe36d55" },
+    { name = "pyfly", extras = ["fastapi", "observability", "security", "data-relational", "postgresql", "eda", "redis", "client", "scheduling", "cli", "agentic"], git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=611d010fc50acc61ba27d736e23a0e1dd80230d3" },
     { name = "pyright", marker = "extra == 'dev'", specifier = ">=1.1" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24" },
@@ -2930,8 +2932,8 @@ wheels = [
 
 [[package]]
 name = "pyfly"
-version = "26.10.13"
-source = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=d44d5915d76207266c7a2789987b1d613fe36d55#d44d5915d76207266c7a2789987b1d613fe36d55" }
+version = "26.10.18"
+source = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=611d010fc50acc61ba27d736e23a0e1dd80230d3#611d010fc50acc61ba27d736e23a0e1dd80230d3" }
 dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },

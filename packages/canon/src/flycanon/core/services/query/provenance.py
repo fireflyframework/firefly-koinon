@@ -134,6 +134,18 @@ def read(source_id, pages):
             scope.observer.document_sync("rlm.read", "\n".join(pages), (str(source_id),), scope)
 
 
+def execution_read(meta, read):
+    """Admit an exact recorded view before an execution helper releases its content."""
+    scope = current()
+    hook = getattr(scope.observer, "document_execution_read", None) if scope is not None else None
+    if scope is None or not callable(hook):
+        raise ServiceUnavailableException(
+            "The exact document execution observer is required", code="EVIDENCE_UNAVAILABLE"
+        )
+    with scope.lock:
+        hook(meta, read, scope)
+
+
 def model(stage, content):
     scope = current()
     if scope is not None:
@@ -144,6 +156,33 @@ def model(stage, content):
                     "Native document provenance is missing", code="EVIDENCE_UNAVAILABLE"
                 )
             scope.observer.document_sync(stage, content, tuple(sorted(scope.source_ids)), scope)
+
+
+def tool(receipt):
+    """Persist an actual provider action separately from document/model reads."""
+    scope = current()
+    if scope is not None:
+        hook = getattr(scope.observer, "document_tool", None)
+        if not callable(hook):
+            raise ServiceUnavailableException(
+                "Native tool provenance observer is required", code="EVIDENCE_UNAVAILABLE",
+            )
+        with scope.lock:
+            authority(scope)
+            hook(receipt, scope)
+
+
+def before_tool():
+    scope = current()
+    if scope is not None:
+        hook = getattr(scope.observer, "document_tool_start", None)
+        if not callable(hook):
+            raise ServiceUnavailableException(
+                "Native tool admission observer is required", code="EVIDENCE_UNAVAILABLE",
+            )
+        with scope.lock:
+            authority(scope)
+            hook(scope)
 
 
 async def corpus(docs):
@@ -157,13 +196,16 @@ async def corpus(docs):
                 "Native provenance observer is required", code="EVIDENCE_UNAVAILABLE"
             )
     if scope is not None:
+        from flycanon.core.services.query.rlm.context_index import metadata_index
+
         await scope.observer.authorize()
-        # Titles/filenames supplied to the first RLM call are factual context too.
+        entries = []
         for key in docs:
             source = docs.resolve(key)
             if (
                 source is None
                 or not source.source_id
+                or (source.tenant_id, source.workspace_id) != (scope.tenant_id, scope.workspace_id)
                 or (scope.allowed_sources is not None and str(source.source_id) not in scope.allowed_sources)
             ):
                 raise ServiceUnavailableException(
@@ -171,9 +213,12 @@ async def corpus(docs):
                 )
             scope.source_ids.add(str(source.source_id))
             scope.observer.document_origin(str(source.source_id), source.filename)
+            entries.append({"filing_id": key, "filename": source.filename, "title": source.title})
+        context = metadata_index(entries)
         scope.observer.document_sync(
-            "rlm.corpus", "\n".join(docs.keys()), tuple(sorted(scope.source_ids)), scope
+            "rlm.corpus", context, tuple(sorted(scope.source_ids)), scope
         )
+        return context
 
 
 async def database(session, rows):
@@ -206,6 +251,17 @@ async def database(session, rows):
         },
         rows,
     )
+
+
+async def bind_retrieval_parts(hits):
+    scope = current()
+    if scope is not None:
+        hook = getattr(scope.observer, "document_retrieval_parts", None)
+        if callable(hook):
+            await scope.observer.authorize()
+            bound: Any = hook(hits, scope)
+            return await bound
+    return hits
 
 
 def hydrated(hits):

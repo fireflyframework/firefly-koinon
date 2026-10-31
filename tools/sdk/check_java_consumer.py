@@ -67,7 +67,20 @@ import org.fireflyframework.koinon.sdk.model.OrganizationChatSettingsInput;
 import org.fireflyframework.koinon.sdk.model.OrganizationChatFilter;
 import org.fireflyframework.koinon.sdk.model.DatasetFileAppendResult;
 import org.fireflyframework.koinon.sdk.model.DatasetFileUpload;
+import org.fireflyframework.koinon.sdk.api.OrganizationPeopleApi;
+import org.fireflyframework.koinon.sdk.model.OrganizationPeopleFilter;
+import org.fireflyframework.koinon.sdk.model.OrganizationPerson;
+import org.fireflyframework.koinon.sdk.model.OrganizationPersonPatch;
 public final class HeadlessConsumer {
+  static OrganizationPerson positionSignature(OrganizationPeopleApi directory) {
+    var page = directory.list(OrganizationPeopleFilter.empty()
+        .withQ("Alex").withPage(1).withPageSize(25));
+    var person = page.items().stream()
+        .filter(item -> item.id() != null).findFirst().orElseThrow();
+    return directory.update(person.id(), OrganizationPersonPatch.empty()
+        .withExpectedRevision(person.revision())
+        .withJobTitle("Knowledge Operations Lead").clearManagerId());
+  }
   static OrganizationKnowledgeSettings policySignature(OrganizationKnowledgeApi api) {
     var current = api.get();
     return api.update(OrganizationKnowledgeSettingsInput.empty()
@@ -89,7 +102,7 @@ public final class HeadlessConsumer {
   public static void main(String[] args) {
     try (var client = KoinonClient.builder(URI.create("http://127.0.0.1:1/api/v1"))
         .bearerToken(() -> "fictional-consumer-token").build()) {
-      if (client.organizationKnowledge("example") == null || client.organizationChat("example") == null || client.catalog("example") == null || client.profile() == null) throw new AssertionError();
+      if (client.organizationPeople("example") == null || client.organizationKnowledge("example") == null || client.organizationChat("example") == null || client.catalog("example") == null || client.profile() == null) throw new AssertionError();
       var value = ExactValues.decimal(new BigDecimal("12345678901234567890.00100"));
       if (!value.textValue().equals("12345678901234567890.00100")) throw new AssertionError();
       if (!RequestOptions.defaults().ifMatch("revision").headers().containsKey("If-Match")) throw new AssertionError();

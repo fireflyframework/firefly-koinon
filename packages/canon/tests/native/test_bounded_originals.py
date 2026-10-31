@@ -24,9 +24,9 @@ async def test_s3_original_reads_cap_and_close_the_response_stream():
     from flycanon.core.services.storage.s3 import S3ObjectStore
 
     stream = BytesIO(b"123456789")
-    store = object.__new__(S3ObjectStore)
-    store._bucket, store._prefix = "controlled", ""
-    store._client = SimpleNamespace(get_object=lambda **kwargs: {"Body": stream})
+    store = S3ObjectStore(
+        "controlled", client=SimpleNamespace(get_object=lambda **kwargs: {"Body": stream}), owns_client=False
+    )
     with pytest.raises(ObjectTooLargeError):
         await store.get_bounded("source", 4)
     assert stream.closed

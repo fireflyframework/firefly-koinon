@@ -29,7 +29,6 @@ async def replace_document(
     from flycanon.core.services.sources.intake_service import IntakeService
     from flycanon.core.services.sources.lineage.dtos import DocumentScope
     from flycanon.core.services.sources.lineage.service import DocumentLineage
-    from flycanon.core.services.storage.object_store import ObjectStore
     from flycanon.interfaces.dtos.source import SubmitSourceRequest
     from flycanon.models.entities.knowledge_chunk import KnowledgeChunkRow
     from flycanon.models.repositories import SourceRepository
@@ -43,7 +42,7 @@ async def replace_document(
             raise ResourceNotFoundException(
                 "The persisted document is unavailable", code="DOCUMENT_NOT_FOUND"
             )
-        lineage = DocumentLineage(sources, domains._resolve(ObjectStore))
+        lineage = domains._resolve(DocumentLineage)
         head = await lineage.head(DocumentScope(tenant_id, workspace_id, actor), source_id)
         if (
             head is not None

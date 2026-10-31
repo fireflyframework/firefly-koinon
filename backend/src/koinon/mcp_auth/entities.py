@@ -14,6 +14,7 @@ class McpAuthorization(Base):
     client_id: Mapped[str] = mapped_column(String(128))
     status: Mapped[str] = mapped_column(String(16))
     request_json: Mapped[dict] = mapped_column(JSON)
+    client_registration: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     grant_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     code_hash: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
     expires_at: Mapped[datetime] = mapped_column(UtcDateTime(), index=True)

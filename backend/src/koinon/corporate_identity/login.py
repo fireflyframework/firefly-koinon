@@ -8,6 +8,7 @@ from pyfly.security.oauth2 import OAuth2AuthenticationSuccessHandler, OAuth2Auth
 from koinon.corporate_identity.challenges import CorporateLoginChallenges
 from koinon.corporate_identity.presentation import CorporatePresentation
 from koinon.corporate_identity.refresh import CorporateAccessRefresh
+from koinon.organization_people.service import OrganizationPeopleService
 from koinon.profiles.service import ProfileService
 
 
@@ -50,7 +51,9 @@ class CorporateLoginSuccess(OAuth2AuthenticationSuccessHandler):
         refresh: CorporateAccessRefresh,
         profiles: ProfileService,
         presentation: CorporatePresentation | None = None,
+        organization_people: OrganizationPeopleService | None = None,
     ):
+        self.organization_people = organization_people
         self.challenges, self.refresh, self.profiles, self.presentation = (
             challenges,
             refresh,
@@ -68,6 +71,8 @@ class CorporateLoginSuccess(OAuth2AuthenticationSuccessHandler):
             await self.presentation.initialize(context)
         else:
             await self.profiles.get(f"{context.attributes['iss']}|{context.user_id}", context.attributes)
+        if self.organization_people is not None:
+            await self.organization_people.observe_login(context)
 
 
 @configuration
@@ -83,5 +88,6 @@ class CorporateLoginConfiguration:
         refresh: CorporateAccessRefresh,
         profiles: ProfileService,
         presentation: CorporatePresentation,
+        organization_people: OrganizationPeopleService | None = None,
     ) -> OAuth2AuthenticationSuccessHandler:
-        return CorporateLoginSuccess(challenges, refresh, profiles, presentation)
+        return CorporateLoginSuccess(challenges, refresh, profiles, presentation, organization_people)

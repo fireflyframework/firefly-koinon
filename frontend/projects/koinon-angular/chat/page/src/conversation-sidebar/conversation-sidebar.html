@@ -56,7 +56,7 @@
   <button
     type="button"
     class="destination"
-    [attr.aria-label]="('Clear folder selection' | ffkText) + ' · ' + destinationFolder.name"
+    [attr.aria-label]="('Clear folder selection' | ffkText) + ', ' + destinationFolder.name"
     (click)="s.selectedFolder.set(null)"
   >
     <ffk-icon name="folder" /><span>{{ destinationFolder.name }}</span
@@ -207,7 +207,7 @@
         ><button
           type="button"
           class="icon-button small item-menu"
-          [attr.aria-label]="('Conversation actions' | ffkText) + ' · ' + thread.title"
+          [attr.aria-label]="('Conversation actions' | ffkText) + ', ' + thread.title"
           [attr.aria-expanded]="menu()?.kind === 'thread' && menu()?.id === thread.id"
           (click)="openMenu($event, 'thread', thread.id)"
         >
@@ -283,7 +283,7 @@
           ><button
             type="button"
             class="icon-button small item-menu"
-            [attr.aria-label]="('Folder actions' | ffkText) + ' · ' + folder.name"
+            [attr.aria-label]="('Folder actions' | ffkText) + ', ' + folder.name"
             [attr.aria-expanded]="menu()?.kind === 'folder' && menu()?.id === folder.id"
             (click)="openMenu($event, 'folder', folder.id)"
           >

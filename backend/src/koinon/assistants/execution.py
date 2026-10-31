@@ -24,7 +24,12 @@ from pyfly.security.context import SecurityContext
 from pyfly.security.context_holder import SecurityContextHolder
 
 from koinon.assistants.attachment_input import prepare_attachment_input
-from koinon.assistants.connections import input_modalities, options_fingerprint, provider_state
+from koinon.assistants.connections import (
+    input_modalities,
+    options_fingerprint,
+    output_mode_for,
+    provider_state,
+)
 from koinon.assistants.context_budget import ConservativeTokenEstimator, history_budget
 from koinon.assistants.entities import ChatRun
 from koinon.assistants.grounding import evidence_view, has_evidence, refusal_message
@@ -501,6 +506,16 @@ class AssistantExecutor:
         observed_tools: set[str] = set()
         grounded_results: set[str] = set()
         async with self.models.build_with_secret(spec, secret or "unused") as model:
+            binding_output_mode = output_mode_for(provider.kind, agent_config.model_options)
+            if agent_config.model_options.get("output_mode") is not None:
+                try:
+                    binding_output_mode = resolver.output_mode(
+                        provider, agent_config.model_id, agent_config.model_options, model
+                    )
+                except ValueError as error:
+                    raise ServiceUnavailableException(
+                        str(error), code="AGENT_MODEL_OUTPUT_MODE_UNSUPPORTED"
+                    ) from error
             with bind_model(
                 run.tenant_id,
                 thread.subject,
@@ -509,7 +524,7 @@ class AssistantExecutor:
                     resolver.settings_for(spec),
                     provider.kind,
                     state["api"],
-                    "native" if provider.kind == "ollama" else "default",
+                    binding_output_mode,
                     agent_id=agent_config.id,
                     agent_revision=agent_config.revision,
                     provider_id=provider.id,
@@ -638,6 +653,8 @@ class AssistantExecutor:
                     model_id=agent_config.model_id,
                     model_class=spec.model_class,
                     api=state["api"],
+                    binding_output_mode=binding_output_mode,
+                    model_options_sha256=options_fingerprint(state["api"], agent_config.model_options),
                 )
                 pending = ""
                 citation_labels = PrivateCitationLabels(refs)

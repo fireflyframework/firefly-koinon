@@ -18,6 +18,7 @@ export class KoinonAccount implements OnDestroy {
   private readonly i18n = inject(KoinonI18n);
   private epoch = 0;
   private key = '';
+  private tokenKey = '';
   private avatarObjectUrl = '';
   private avatarRevision = 0;
   readonly profile = signal<UserProfile | null>(null);
@@ -31,9 +32,31 @@ export class KoinonAccount implements OnDestroy {
   constructor() {
     this.key = this.contextKey();
     effect(() => this.syncIdentity());
+    this.tokenKey = this.tokenIdentity();
+    effect(() => {
+      const key = this.tokenIdentity();
+      if (key !== this.tokenKey) {
+        this.tokenKey = key;
+        this.tokens.set({ items: [] });
+        this.tokenScopes.set(null);
+        this.error.set('');
+        this.notice.set('');
+        this.pending.set(false);
+      }
+    });
   }
   private contextKey() {
     return (this.f.context()?.subject ?? '') + ':' + this.clients.revision();
+  }
+  private tokenIdentity() {
+    return JSON.stringify([
+      this.f.context()?.subject,
+      this.clients.revision(),
+      this.f.tenantId(),
+      this.f.workspaceId(),
+      [...this.f.tenantPermissions()].sort(),
+      [...this.f.permissions()].sort(),
+    ]);
   }
   private syncIdentity() {
     const key = this.contextKey();
@@ -69,20 +92,24 @@ export class KoinonAccount implements OnDestroy {
     operation: () => Promise<T>,
     apply: ((value: T) => void) | undefined,
     notice = '',
+    tokenScope = false,
   ): Promise<T | null> {
     this.syncIdentity();
-    const epoch = this.epoch;
+    const epoch = this.epoch,
+      key = tokenScope ? this.tokenIdentity() : this.contextKey();
+    const current = () =>
+      epoch === this.epoch && key === (tokenScope ? this.tokenIdentity() : this.contextKey());
     this.pending.set(true);
     this.error.set('');
     this.notice.set('');
     try {
       const value = await operation();
-      if (epoch !== this.epoch || this.key !== this.contextKey()) return null;
+      if (!current()) return null;
       apply?.(value);
       this.notice.set(notice);
       return value;
     } catch (error) {
-      if (epoch === this.epoch) {
+      if (current()) {
         if (error instanceof Error && 'status' in error && error.status === 401)
           this.f.authRequired.set(true);
         this.error.set(
@@ -91,7 +118,7 @@ export class KoinonAccount implements OnDestroy {
       }
       return null;
     } finally {
-      if (epoch === this.epoch) this.pending.set(false);
+      if (current()) this.pending.set(false);
     }
   }
   async load() {
@@ -159,23 +186,45 @@ export class KoinonAccount implements OnDestroy {
     return this.perform(
       () => this.clients.get().tokens.list({ query: this.tokenFilter() }),
       (value) => this.tokens.set(value),
+      '',
+      true,
     );
   }
   async loadTokenScopes() {
     return this.perform(
       () => this.clients.get().tokens.scopes(this.f.tenantId(), this.f.workspaceId() || undefined),
       (value) => this.tokenScopes.set(value),
+      '',
+      true,
     );
   }
   async createToken(input: PersonalTokenInput) {
-    const token = await this.perform(() => this.clients.get().tokens.create(input), undefined);
-    if (token) await this.loadTokens({ page: 1 });
-    return token;
+    this.syncIdentity();
+    const key = this.tokenIdentity(),
+      epoch = this.epoch;
+    const token = await this.perform(
+      () => this.clients.get().tokens.create(input),
+      undefined,
+      '',
+      true,
+    );
+    if (!token || key !== this.tokenIdentity() || epoch !== this.epoch) return null;
+    await this.loadTokens({ page: 1 });
+    return key === this.tokenIdentity() && epoch === this.epoch ? token : null;
   }
   async revokeToken(id: string) {
-    const revoked = await this.perform(() => this.clients.get().tokens.revoke(id), undefined);
-    if (revoked === null) return false;
+    this.syncIdentity();
+    const key = this.tokenIdentity(),
+      epoch = this.epoch;
+    const revoked = await this.perform(
+      () => this.clients.get().tokens.revoke(id),
+      undefined,
+      '',
+      true,
+    );
+    if (revoked === null || key !== this.tokenIdentity() || epoch !== this.epoch) return false;
     await this.loadTokens();
+    if (key !== this.tokenIdentity() || epoch !== this.epoch) return false;
     this.notice.set('Token revoked.');
     return true;
   }

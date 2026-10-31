@@ -1,4 +1,6 @@
 # Copyright 2024-2026 Firefly Software Foundation
+# Modifications Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,6 +33,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
+from pyfly.data.relational.datasource_registry import DataSourceRegistry
 from pyfly.data.transaction import infrastructure_unit
 from sqlalchemy import select
 from sqlalchemy import update as sa_update
@@ -69,8 +72,17 @@ class WorkspaceRepository:
         return self._admin_session_factory is not self._session_factory
 
     @classmethod
-    def from_url(cls, database_url: str, *, echo: bool = False) -> WorkspaceRepository:
-        factory, engine = build_session_factory(database_url, echo=echo)
+    def from_url(
+        cls,
+        database_url: str,
+        *,
+        echo: bool = False,
+        registry: DataSourceRegistry | None = None,
+        datasource_name: str = "canon",
+    ) -> WorkspaceRepository:
+        factory, engine = build_session_factory(
+            database_url, echo=echo, registry=registry, datasource_name=datasource_name
+        )
         return cls(factory, engine=engine)
 
     @classmethod
@@ -80,16 +92,18 @@ class WorkspaceRepository:
         *,
         admin_database_url: str,
         echo: bool = False,
+        registry: DataSourceRegistry | None = None,
+        datasource_name: str = "canon",
+        admin_datasource_name: str = "canon_admin",
     ) -> WorkspaceRepository:
-        """Build with a distinct admin engine when the two DSNs differ.
-
-        Identical DSNs collapse to one engine (``build_engine`` caches by
-        URL anyway) so ``has_admin_engine`` stays ``False`` and the boot
-        log can say so.
-        """
-        factory, engine = build_session_factory(database_url, echo=echo)
+        """Borrow separate named resources when administration uses a different URL."""
+        factory, engine = build_session_factory(
+            database_url, echo=echo, registry=registry, datasource_name=datasource_name
+        )
         if admin_database_url and admin_database_url != database_url:
-            admin_factory, _admin_engine = build_session_factory(admin_database_url, echo=echo)
+            admin_factory, _ = build_session_factory(
+                admin_database_url, echo=echo, registry=registry, datasource_name=admin_datasource_name
+            )
             return cls(factory, engine=engine, admin_session_factory=admin_factory)
         return cls(factory, engine=engine)
 

@@ -2,9 +2,9 @@
 
 Python, Java and TypeScript expose the same canonical headless API. The table records concrete SDK methods; it does not count browser-only authentication or retained domain routes outside this contract.
 
-This development contract contains 144 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
+This development contract contains 188 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
 
-[Download the operation manifest](sdk-contract.json). The maintained generator checks source mappings and schemas without starting the backend.
+[Download the operation manifest](sdk-contract.json) and [complete wire schemas](sdk-schemas.json). The maintained generator checks source mappings and schemas without starting the backend.
 
 | API operation | Python client | TypeScript client | Java client | Response |
 | --- | --- | --- | --- | --- |
@@ -116,6 +116,23 @@ This development contract contains 144 operations. Resource operations require t
 | `GET /api/v1/tenants/{tenant_id}/knowledge-items/{item_id}` | `knowledge_item` | `knowledgeItems.get` | `client.knowledgeItems.get` | `KnowledgeItemView` |
 | `GET /api/v1/tenants/{tenant_id}/knowledge-items/{item_id}/versions/{version}` | `knowledge_version` | `knowledgeItems.version` | `client.knowledgeItems.version` | `KnowledgeItemView` |
 | `POST /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/files` | `append_dataset_file` | `dataset.appendFile` | `client.datasets.appendFile` | `DatasetFileAppendResult` |
+| `GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions` | `document_versions` | `documents.versions` | `client.documents.versions` | `DocumentVersionPage` |
+| `GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}` | `document_version` | `documents.version` | `client.documents.version` | `DocumentVersion` |
+| `GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/extractions` | `document_extractions` | `documents.extractions` | `client.documents.extractions` | `DocumentExtractionPage` |
+| `GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/extractions/{extraction_id}/parts` | `document_parts` | `documents.parts` | `client.documents.parts` | `DocumentPartPage` |
+| `GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/extractions/{extraction_id}/parts/{source_part_id}` | `document_part` | `documents.part` | `client.documents.part` | `DocumentPartContent` |
+| `GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/original` | `document_version_original` | `documents.versionOriginal` | `client.documents.versionOriginal` | `BinaryDownload` |
+| `POST /api/v1/tenants/{tenant_id}/external-knowledge-reviews` | `stage_external_review` | `externalReviews.stage` | `client.externalReviews.stage` | `ExternalReviewView` |
+| `GET /api/v1/tenants/{tenant_id}/external-knowledge-reviews/{review_id}` | `external_review` | `externalReviews.get` | `client.externalReviews.get` | `ExternalReviewView` |
+| `POST /api/v1/tenants/{tenant_id}/external-knowledge-reviews/{review_id}/approve` | `approve_external_review` | `externalReviews.approve` | `client.externalReviews.approve` | `KnowledgeCommitOutcome` |
+| `POST /api/v1/tenants/{tenant_id}/external-knowledge-reviews/{review_id}/cancel` | `cancel_external_review` | `externalReviews.cancel` | `client.externalReviews.cancel` | `ExternalReviewView` |
+| `POST /api/v1/tenants/{tenant_id}/external-file-reviews/cleanup` | `cleanup_external_file_reviews` | `externalFileReviews.cleanup` | `client.externalFileReviews.cleanup` | `ExternalFileCleanupResult` |
+| `POST /api/v1/tenants/{tenant_id}/external-file-reviews` | `stage_external_file_review` | `externalFileReviews.stage` | `client.externalFileReviews.stage` | `ExternalFileReviewView` |
+| `GET /api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}` | `external_file_review` | `externalFileReviews.get` | `client.externalFileReviews.get` | `ExternalFileReviewView` |
+| `POST /api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}/chunks` | `upload_external_file_chunk` | `externalFileReviews.chunk` | `client.externalFileReviews.chunk` | `ExternalFileReviewView` |
+| `POST /api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}/seal` | `seal_external_file_review` | `externalFileReviews.seal` | `client.externalFileReviews.seal` | `ExternalFileReviewView` |
+| `POST /api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}/approve` | `approve_external_file_review` | `externalFileReviews.approve` | `client.externalFileReviews.approve` | `ExternalFileReviewView` |
+| `POST /api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}/cancel` | `cancel_external_file_review` | `externalFileReviews.cancel` | `client.externalFileReviews.cancel` | `ExternalFileReviewView` |
 | `GET /api/v1/tenants/{tenant_id}/knowledge-indexes` | `knowledge_indexes` | `knowledgeIndexes.list` | `client.knowledgeIndexes.list` | `IndexPage` |
 | `GET /api/v1/tenants/{tenant_id}/knowledge-index-choices` | `native_index_choices` | `knowledgeIndexes.choices` | `client.knowledgeIndexes.choices` | `NativeIndexPage` |
 | `GET /api/v1/tenants/{tenant_id}/knowledge-index-choices/{choice_id}` | `native_index_choice` | `knowledgeIndexes.choice` | `client.knowledgeIndexes.choice` | `NativeIndexChoice` |
@@ -131,10 +148,37 @@ This development contract contains 144 operations. Resource operations require t
 | `POST /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates/cells` | `table_coordinate_cells` | `dataset.tableCoordinateCells` | `client.datasets.tableCoordinateCells` | `TableCoordinateSelection` |
 | `GET /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates/rows` | `table_coordinate_rows` | `dataset.tableCoordinateRows` | `client.datasets.tableCoordinateRows` | `TableRowRangePage` |
 | `GET /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates/columns` | `table_coordinate_columns` | `dataset.tableCoordinateColumns` | `client.datasets.tableCoordinateColumns` | `TableColumnBindingPage` |
+| `GET /api/v1/mcp/connection` | `mcp_connection` | `mcp.connection` | `client.mcp.connection` | `McpConnectionDescriptor` |
+| `GET /api/v1/tenants/{tenant_id}/mcp/connection` | `organization_mcp_connection` | `mcp.organizationConnection` | `client.mcp.organizationConnection` | `McpConnectionDescriptor` |
+| `GET /api/v1/tenants/{tenant_id}/mcp/oauth-clients/readiness` | `mcp_oauth_clients_readiness` | `mcpOAuthClients.readiness` | `client.mcpOAuthClients.readiness` | `McpOAuthClientReadiness` |
+| `GET /api/v1/tenants/{tenant_id}/mcp/oauth-clients` | `mcp_oauth_clients` | `mcpOAuthClients.list` | `client.mcpOAuthClients.list` | `McpOAuthClientPage` |
+| `POST /api/v1/tenants/{tenant_id}/mcp/oauth-clients` | `create_mcp_oauth_client` | `mcpOAuthClients.create` | `client.mcpOAuthClients.create` | `McpOAuthClientCredential` |
+| `GET /api/v1/tenants/{tenant_id}/mcp/oauth-clients/{client_id}` | `mcp_oauth_client` | `mcpOAuthClients.get` | `client.mcpOAuthClients.get` | `McpOAuthClient` |
+| `PATCH /api/v1/tenants/{tenant_id}/mcp/oauth-clients/{client_id}` | `update_mcp_oauth_client` | `mcpOAuthClients.update` | `client.mcpOAuthClients.update` | `McpOAuthClient` |
+| `POST /api/v1/tenants/{tenant_id}/mcp/oauth-clients/{client_id}/rotate-secret` | `rotate_mcp_oauth_client_secret` | `mcpOAuthClients.rotateSecret` | `client.mcpOAuthClients.rotateSecret` | `McpOAuthClientCredential` |
+| `GET /api/v1/branding/defaults` | `branding_defaults` | `branding.defaults` | `client.brandingDefaults.defaults` | `BrandingValues` |
+| `GET /api/v1/tenants/{tenant_id}/branding` | `organization_branding` | `branding.get` | `client.organizationBranding.get` | `OrganizationBranding` |
+| `PUT /api/v1/tenants/{tenant_id}/branding` | `update_organization_branding` | `branding.update` | `client.organizationBranding.update` | `OrganizationBranding` |
+| `POST /api/v1/tenants/{tenant_id}/branding/reset` | `reset_organization_branding` | `branding.reset` | `client.organizationBranding.reset` | `OrganizationBranding` |
 | `GET /api/v1/tenants/{tenant_id}/chat/settings` | `organization_chat_settings` | `organizationChat.get` | `client.organizationChat.get` | `OrganizationChatSettings` |
 | `PUT /api/v1/tenants/{tenant_id}/chat/settings` | `update_organization_chat_settings` | `organizationChat.update` | `client.organizationChat.update` | `OrganizationChatSettings` |
 | `GET /api/v1/tenants/{tenant_id}/knowledge/settings` | `organization_knowledge_settings` | `organizationKnowledge.get` | `client.organizationKnowledge.get` | `OrganizationKnowledgeSettings` |
 | `PUT /api/v1/tenants/{tenant_id}/knowledge/settings` | `update_organization_knowledge_settings` | `organizationKnowledge.update` | `client.organizationKnowledge.update` | `OrganizationKnowledgeSettings` |
+| `GET /api/v1/tenants/{tenant_id}/organization/people/me` | `organization_person_self` | `organizationPeople.me` | `client.organizationPeople.me` | `OrganizationPerson` |
+| `GET /api/v1/tenants/{tenant_id}/organization/people` | `organization_people` | `organizationPeople.list` | `client.organizationPeople.list` | `OrganizationPersonPage` |
+| `POST /api/v1/tenants/{tenant_id}/organization/people` | `create_organization_person` | `organizationPeople.create` | `client.organizationPeople.create` | `OrganizationPerson` |
+| `GET /api/v1/tenants/{tenant_id}/organization/people/{person_id}` | `organization_person` | `organizationPeople.get` | `client.organizationPeople.get` | `OrganizationPerson` |
+| `PATCH /api/v1/tenants/{tenant_id}/organization/people/{person_id}` | `update_organization_person` | `organizationPeople.update` | `client.organizationPeople.update` | `OrganizationPerson` |
+| `GET /api/v1/tenants/{tenant_id}/organization/people/{person_id}/avatar` | `organization_person_avatar` | `organizationPeople.avatar` | `client.organizationPeople.avatar` | `BinaryDownload` |
+| `GET /api/v1/tenants/{tenant_id}/organization/people/{person_id}/reports` | `organization_person_reports` | `organizationPeople.reports` | `client.organizationPeople.reports` | `OrganizationPersonPage` |
+| `GET /api/v1/tenants/{tenant_id}/organization/units` | `organization_units` | `organizationPeople.units` | `client.organizationPeople.units` | `OrganizationUnitPage` |
+| `POST /api/v1/tenants/{tenant_id}/organization/units` | `create_organization_unit` | `organizationPeople.createUnit` | `client.organizationPeople.createUnit` | `OrganizationUnit` |
+| `PATCH /api/v1/tenants/{tenant_id}/organization/units/{unit_id}` | `update_organization_unit` | `organizationPeople.updateUnit` | `client.organizationPeople.updateUnit` | `OrganizationUnit` |
+| `DELETE /api/v1/tenants/{tenant_id}/organization/units/{unit_id}` | `delete_organization_unit` | `organizationPeople.deleteUnit` | `client.organizationPeople.deleteUnit` | `void` |
+| `GET /api/v1/tenants/{tenant_id}/organization/directory-settings` | `organization_directory_settings` | `organizationPeople.settings` | `client.organizationPeople.settings` | `OrganizationDirectorySettings` |
+| `PATCH /api/v1/tenants/{tenant_id}/organization/directory-settings` | `update_organization_directory_settings` | `organizationPeople.updateSettings` | `client.organizationPeople.updateSettings` | `OrganizationDirectorySettings` |
+| `GET /api/v1/tenants/{tenant_id}/organization/profile-mappings/{provider_id}` | `organization_profile_mapping` | `organizationPeople.mapping` | `client.organizationPeople.mapping` | `OrganizationProfileMapping` |
+| `PUT /api/v1/tenants/{tenant_id}/organization/profile-mappings/{provider_id}` | `update_organization_profile_mapping` | `organizationPeople.updateMapping` | `client.organizationPeople.updateMapping` | `OrganizationProfileMapping` |
 | `GET /api/v1/profile` | `profile` | `profile.get` | `client.profile.get` | `UserProfile` |
 | `PATCH /api/v1/profile` | `update_profile` | `profile.update` | `client.profile.update` | `UserProfile` |
 | `GET /api/v1/profile/avatar` | `avatar_download` | `profile.avatarDownload` | `client.profile.avatar` | `BinaryDownload` |
@@ -173,6 +217,8 @@ These operations use the original structured service behind resource admission. 
 Glossary list totals can be unknown. Honor returned `limit`, `offset` and `has_more`; do not invent a total or slice another page in the client.
 
 ## Request behavior
+
+New conversation export and share reviews save a nullable typed `identity` with product/assistant names, organization branding revision/origin and configuration digest. The review revision binds that identity; later organization changes do not rewrite saved reviews, exports or shared conversations. Historical null means not recorded. JSON exports retain machine roles and separate display names. See the [three-language export and sharing workflows](../guides/exports-sharing.md) for preview, explicit confirmation, authenticated download and recipient reads.
 
 Dataset file append requires a stable Idempotency-Key, accepts one bounded multipart file and returns its canonical file-version and new table identities. Existing snapshots are retained. Native sections commit independently; pending or failed intake blocks dataset query/schema until reconciliation. Exact key/payload replays recheck permissions and return the stored completed receipt without native work. There is no automatic retry, bulk/async intake or public recovery helper. PostgreSQL concurrency and configured-provider acceptance remain separate qualification gates.
 

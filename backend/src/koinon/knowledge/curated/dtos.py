@@ -46,6 +46,18 @@ class UserStatementOrigin(Frozen):
     kind: Literal["user_statement"]
 
 
+class ExternalProposalOrigin(Frozen):
+    kind: Literal["external_proposal"]
+    source_receipt_ids: tuple[Identifier, ...] = Field(default=(), max_length=32)
+
+    @field_validator("source_receipt_ids")
+    @classmethod
+    def distinct(cls, value):
+        if len(set(value)) != len(value):
+            raise ValueError("Select distinct source read receipts")
+        return value
+
+
 class ConversationOrigin(Frozen):
     kind: Literal["conversation"]
     thread_id: Identifier
@@ -65,7 +77,9 @@ class KnowledgeIntentInput(Frozen):
     target_item_id: Identifier | None = None
     expected_version: int | None = Field(default=None, ge=1)
     content: KnowledgeContent
-    origin: Annotated[UserStatementOrigin | ConversationOrigin, Field(discriminator="kind")]
+    origin: Annotated[
+        UserStatementOrigin | ConversationOrigin | ExternalProposalOrigin, Field(discriminator="kind")
+    ]
 
     @model_validator(mode="after")
     def exact_target(self):
@@ -84,6 +98,20 @@ class UserStatementEvidence(Frozen):
     author_subject: str = Field(min_length=1, max_length=512)
     recorded_at: AwareDatetime
     authority: Literal["user_authored"] = "user_authored"
+
+
+class ExternalProposalEvidence(Frozen):
+    kind: Literal["external_proposal"] = "external_proposal"
+    text: str = Field(min_length=1, max_length=262144)
+    sha256: Sha256
+    submitted_by: str = Field(min_length=1, max_length=512)
+    credential_id: Identifier
+    application_id: Identifier | None = None
+    source_receipt_ids: tuple[Identifier, ...] = Field(default=(), max_length=32)
+    recorded_at: AwareDatetime
+    authority: Literal["unverified"] = "unverified"
+    provider: None = None
+    model: None = None
 
 
 class DocumentEvidence(Frozen):
@@ -118,7 +146,8 @@ class StructuredEvidence(Frozen):
 
 
 KnowledgeEvidence = Annotated[
-    UserStatementEvidence | DocumentEvidence | StructuredEvidence, Field(discriminator="kind")
+    UserStatementEvidence | DocumentEvidence | StructuredEvidence | ExternalProposalEvidence,
+    Field(discriminator="kind"),
 ]
 
 

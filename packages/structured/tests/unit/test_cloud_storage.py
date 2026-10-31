@@ -183,3 +183,52 @@ async def test_cloud_query_aggregate_bound_cleans_partial_materialization(monkey
     )
     assert isinstance(result, ExecutionError) and "byte bound" in result.message
     assert directories and all(not Path(path).exists() for path in directories)
+
+
+@pytest.mark.parametrize("owns_client", [True, False])
+async def test_native_context_owns_cloud_store_and_executor_borrows_it(owns_client):
+    from types import SimpleNamespace
+
+    from pyfly.container import bean, configuration
+    from pyfly.context import ApplicationContext
+    from pyfly.core import Config
+
+    from flyquery.config import FlyquerySettings
+    from flyquery.core.configuration import FlyqueryConfiguration
+    from flyquery.core.services.execution.duckdb_executor import DuckDBExecutor
+    from flyquery.core.services.storage.adapters.gcs import GcsObjectStore
+    from flyquery.core.services.storage.object_store import ObjectStore
+
+    closed = []
+
+    @configuration
+    class Storage:
+        @bean
+        def settings(self) -> FlyquerySettings:
+            return FlyquerySettings(object_store="gcs", object_store_gcs_bucket="owned-private")
+
+        @bean
+        def object_store(self) -> ObjectStore:
+            return GcsObjectStore(
+                "gs://owned-private",
+                client=SimpleNamespace(close=lambda: closed.append("client")),
+                owns_client=owns_client,
+            )
+
+        executor = FlyqueryConfiguration.executor
+
+    context = ApplicationContext(Config({}))
+    context.register_bean(Storage)
+    await context.start()
+    store = context.get_bean(ObjectStore)
+    executor = context.get_bean(DuckDBExecutor)
+    try:
+        assert executor._cloud_store is store
+        await executor.close()
+        assert closed == [] and not store.native._closed
+    finally:
+        await context.stop()
+    assert store.native._closed
+    assert closed == (["client"] if owns_client else [])
+    await store.close()
+    assert closed == (["client"] if owns_client else [])

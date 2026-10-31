@@ -13,6 +13,7 @@ from koinon.knowledge.curated.acknowledgement import CatalogAcknowledgement
 from koinon.knowledge.curated.authority import CuratedAuthority, digest
 from koinon.knowledge.curated.dtos import (
     CommittedKnowledge,
+    ExternalProposalOrigin,
     KnowledgeCommitReceipt,
     KnowledgeConfirmation,
     KnowledgeIntent,
@@ -91,6 +92,10 @@ class KnowledgeIntents:
         recorded_at = datetime.now(UTC)
         evidence, origins = await self.authority.observe(subject, tenant_id, request, recorded_at)
         preview_token = current_token_id()
+        expires_at = recorded_at + timedelta(hours=24)
+        if isinstance(request.origin, ExternalProposalOrigin):
+            grant = await self.authority.catalog.restriction.grant(subject)
+            expires_at = min(grant.expires_at, recorded_at + timedelta(minutes=15))
         await self.authority.origins(
             subject,
             tenant_id,
@@ -120,7 +125,7 @@ class KnowledgeIntents:
             originating_token_ids=list(origins),
             preview_token_id=preview_token,
             created_at=recorded_at,
-            expires_at=recorded_at + timedelta(hours=24),
+            expires_at=expires_at,
         )
         row.authorization_digest = digest(
             {
@@ -188,8 +193,14 @@ class KnowledgeIntents:
         return await self.authorized(subject, tenant_id, row, committed=False)
 
     @transactional
-    async def admit(self, subject, tenant_id, identifier, confirmation, request_key):
+    async def admit(
+        self, subject, tenant_id, identifier, confirmation, request_key, *, _external_approval=None
+    ):
         row = await self.load(subject, tenant_id, identifier, lock=True)
+        if row.request_json.get("origin", {}).get("kind") == "external_proposal":
+            from koinon.knowledge.external_reviews.approval import require_approval
+
+            require_approval(_external_approval, row, request_key, current_token_id())
         if (
             confirmation.expected_revision != row.revision
             or confirmation.authorization_digest != row.authorization_digest
@@ -284,13 +295,15 @@ class KnowledgeIntents:
             row.status = "stale"
             await self.intents.save(row)
 
-    async def confirm(self, subject, tenant_id, identifier, values, request_key):
+    async def confirm(self, subject, tenant_id, identifier, values, request_key, *, _external_approval=None):
         confirmation = KnowledgeConfirmation.model_validate(values)
         if not isinstance(request_key, str) or not 1 <= len(request_key) <= 160:
             raise InvalidRequestException(
                 "Provide a confirmation Idempotency-Key", code="KNOWLEDGE_IDEMPOTENCY_REQUIRED"
             )
-        preview, origins, native = await self.admit(subject, tenant_id, identifier, confirmation, request_key)
+        preview, origins, native = await self.admit(
+            subject, tenant_id, identifier, confirmation, request_key, _external_approval=_external_approval
+        )
         if preview.receipt is not None:
             return CommittedKnowledge(receipt=preview.receipt)
         if native is None:
@@ -322,8 +335,12 @@ class KnowledgeIntents:
             return await self.unresolved(subject, tenant_id, identifier)
 
     @transactional
-    async def cancel(self, subject, tenant_id, identifier, expected_revision):
+    async def cancel(self, subject, tenant_id, identifier, expected_revision, *, _external_approval=None):
         row = await self.load(subject, tenant_id, identifier, lock=True)
+        if row.request_json.get("origin", {}).get("kind") == "external_proposal":
+            from koinon.knowledge.external_reviews.approval import require_approval
+
+            require_approval(_external_approval, row, row.confirmation_key, current_token_id())
         preview = await self.authorized(subject, tenant_id, row)
         if row.status == "cancelled" and row.revision == expected_revision + 1:
             return preview

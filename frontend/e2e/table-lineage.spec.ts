@@ -231,7 +231,7 @@ async function open(page: Page) {
     await page.getByRole('button', { name, exact: true }).click();
   await page.getByRole('button', { name: 'Quarterly service activity', exact: true }).click();
   await page
-    .getByRole('button', { name: 'History & lineage · service_activity', exact: true })
+    .getByRole('button', { name: 'History & lineage, service_activity', exact: true })
     .click();
   return page.getByRole('dialog', { name: 'History & lineage' });
 }
@@ -243,7 +243,7 @@ async function capture(page: Page, name: string) {
     if (!dialog) return;
     dialog.querySelector('[data-qualification]')?.remove();
     const note = document.createElement('div');
-    note.textContent = 'Controlled API fixtures · Table history & lineage';
+    note.textContent = 'Controlled API fixtures, Table history & lineage';
     note.setAttribute('data-qualification', 'controlled');
     note.style.cssText =
       'font:10px/24px Manrope,sans-serif;text-align:center;background:#10110f;color:#fff;flex:0 0 24px';
@@ -275,7 +275,7 @@ for (const width of [1440, 390]) {
     await page.keyboard.press('Escape');
     await expect(panel).not.toBeVisible();
     await expect(
-      page.getByRole('button', { name: 'History & lineage · service_activity', exact: true }),
+      page.getByRole('button', { name: 'History & lineage, service_activity', exact: true }),
     ).toBeFocused();
   });
 }

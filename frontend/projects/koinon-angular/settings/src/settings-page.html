@@ -63,6 +63,20 @@
       <p class="notice" role="status">{{ c.notice() | ffkText }}</p>
     }
     @if (!editor()) {
+      @if (section() === 'identity') {
+        <ffk-identity-appearance />
+      }
+      @if (section() === 'applications') {
+        @defer (when section() === 'applications') {
+          <ffk-mcp-applications />
+        } @loading {
+          <ffk-skeleton width="60%" height="12px" [label]="'Opening settings section' | ffkText" />
+        } @error {
+          <p role="alert">
+            {{ 'This section could not be opened. Refresh this page and try again.' | ffkText }}
+          </p>
+        }
+      }
       @if (section() === 'providers') {
         <header class="section-heading">
           <div>
@@ -94,7 +108,7 @@
             <article>
               <div>
                 <h3>{{ provider.name }}</h3>
-                <p>{{ provider.kind }} · {{ provider.model_ids.join(', ') }}</p>
+                <p>{{ provider.kind }}, {{ provider.model_ids.join(', ') }}</p>
                 <details class="capability-details">
                   <summary>{{ 'Model capabilities' | ffkText }}</summary>
                   <p>
@@ -259,7 +273,7 @@
       <header class="section-heading">
         <div>
           <span class="eyebrow"
-            >{{ 'Provider setup' | ffkText }} · {{ step() }} {{ 'of' | ffkText }} 3</span
+            >{{ 'Provider setup' | ffkText }}, {{ step() }} {{ 'of' | ffkText }} 3</span
           >
           <h2>{{ providerRecord()?.name || ('Connect a model' | ffkText) }}</h2>
           @if (step() === 2) {
@@ -648,7 +662,17 @@
         </p>
       </section>
     }
-    @if (!editor() && section() === 'people') {
+    @if (!editor() && section() === 'people' && f.tenantPermissions().has('members:write')) {
+      @defer (when section() === 'people') {
+        <ffk-organization-directory />
+      }
+    }
+    @if (!editor() && section() === 'structure' && f.tenantPermissions().has('members:write')) {
+      @defer (when section() === 'structure') {
+        <ffk-organization-structure />
+      }
+    }
+    @if (!editor() && section() === 'access') {
       <ffk-people-access [invitationBaseUrl]="actions?.invitationBaseUrl?.() ?? ''" />
     }
     @if (!editor() && section() === 'storage') {
@@ -753,7 +777,7 @@
               <p>
                 {{ connection.provider }}
                 @if (connection.model_id) {
-                  · {{ connection.model_id }}
+                  , {{ connection.model_id }}
                 }
               </p>
               <p>{{ connection.reason }}</p>

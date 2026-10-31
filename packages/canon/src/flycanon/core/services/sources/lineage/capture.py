@@ -11,7 +11,7 @@ from flycanon.core.services.sources.lineage.service import identity
 
 
 def signature(component):
-    kind = type(component)
+    kind = component if inspect.isfunction(component) else type(component)
     try:
         digest = sha256(inspect.getsource(kind).encode()).hexdigest()
     except (OSError, TypeError):

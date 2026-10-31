@@ -2,7 +2,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # Canonical MCP access
 
-The adapter exposes existing koinon operations using the official Python MCP SDK (`mcp` 2.3.0 in the backend lockfile). Its `MCPServer` serves stateless Streamable HTTP with JSON responses at `/mcp`.
+The adapter exposes existing koinon operations using the official Python MCP SDK (`mcp` 2.3.0 in the backend lockfile). Its `MCPServer` serves Streamable HTTP with JSON responses at `/mcp`. Modern per-request capability envelopes remain stateless; bounded legacy sessions retain the capabilities negotiated during initialization.
 
 ```mermaid
 flowchart LR
@@ -14,7 +14,7 @@ flowchart LR
     K --> R[Original source identity, version and lineage]
 ```
 
-Each tool has an explicit schema and fixed endpoint. There is no arbitrary route, URL or HTTP method tool. An in-process ASGI request runs the canonical authentication filters, permission checks, token restrictions, services and error handling. The dispatcher uses a fixed internal authority, excludes browser cookies and client authority headers, follows no redirects and makes no network request. A fresh asynchronous task context isolates nested authentication, request and transaction state from the parent request.
+Each tool has an explicit schema and a fixed canonical operation. There is no arbitrary route, URL or HTTP method tool. Fixed API-backed tools use an in-process ASGI request with canonical authentication, authorization, services and error handling. Source-evidence reads invoke the same governed native services in a fresh authenticated task, capture the actual operation once and persist a credential-bound read receipt. No query is replayed to manufacture a receipt. The dispatcher uses a fixed internal authority, excludes browser cookies and client authority headers, follows no redirects and makes no network request. A fresh asynchronous task context isolates nested authentication, request and transaction state from the parent request.
 
 PATs are reauthenticated for every request and canonical operation. MCP OAuth credentials map on the server to an associated private application-purpose credential and durable user authorization; the dedicated MCP resource credential is never forwarded to an unrelated API. The canonical operation rechecks current membership and resource restrictions. Revocation and workspace changes take effect without restarting a session. OAuth authorizations belong to the Authorized applications domain; manually created API tokens remain a separate credential workflow.
 
@@ -28,14 +28,18 @@ PATs are reauthenticated for every request and canonical operation. MCP OAuth cr
 | `koinon_query` | Tenant query | Governed query result, audit and lineage |
 | `koinon_answer_audit` | Existing chat run audit | Owner-authorized audit with explicit unknown provenance |
 | `koinon_provenance` | Asset lineage or exact table snapshot | Canonical source relationships |
+| `koinon_stage_knowledge` | External text review staging | Exact proposal and embedded review; no commit |
+| `koinon_prepare_file_upload` | Authorized destination and bounded upload setup | Embedded local file picker; no canonical ingestion |
+| `koinon_review_status`, `koinon_approve_knowledge`, `koinon_cancel_knowledge` | Exact credential-bound text review | App-only actions; private nonce and revision/digest checks |
+| `koinon_stage_file`, `koinon_file_review_status`, `koinon_upload_file_chunk`, `koinon_seal_file`, `koinon_approve_file`, `koinon_cancel_file` | Private staged file lifecycle | App-only transfer/review/approval; no uncertain-ingestion replay |
 
-Query uses the canonical POST endpoint because execution records its audit and result. Its read-only annotation describes dataset access; execution can have audit and metering side effects. No tool mutates knowledge, confirms an intent, impersonates a human statement or bypasses the trusted UI's exact consent flow. Document reads return the current canonical extraction with its version IDs; historical reads are exposed only for curated versions supported by the API.
+Query uses the canonical POST endpoint because execution records its audit and result. Its read-only annotation describes dataset access; execution can have audit and metering side effects. Text and file changes require the embedded MCP Apps review and a private nonce excluded from model-visible content. The model can propose a change or request file selection; only the component can obtain the nonce and call its app-only decision action. External proposals retain unverified authority and the actual submitting account/credential. They are never relabeled as user-authored statements. Document reads return the current canonical extraction with its version IDs; historical reads are exposed only for curated versions supported by the API.
 
-Source text is untrusted content. Server instructions tell clients to preserve source IDs, versions and lineage and keep absent provenance unknown. The adapter returns canonical JSON without manufacturing citations or promoting model output to authoritative knowledge.
+Source text is untrusted content. Server instructions tell clients to preserve source IDs, versions and lineage and keep absent provenance unknown. The adapter returns canonical data without manufacturing citations. Supported search/query/document reads include a sealed `read_receipt`; unsupported, incomplete or oversized manifests explicitly report `not_recorded`. A proposal selects only server-issued receipt IDs; exact source references are copied into immutable intent evidence and revalidated at approval. See [in-chat knowledge management](../guides/mcp-knowledge-management.md) for version, scope, quota and retention behavior.
 
 ## Deployment
 
-MCP is disabled by default. Set its exact public URL before enabling:
+MCP is disabled by default. Configure its exact public URL for remote access. Without an override, the product derives the local endpoint from the actual native PyFly listener; wildcard listeners become matching loopback addresses and the descriptor marks them `local_only`. Incoming Host and forwarding headers never determine that URL.
 
 ```yaml
 koinon:
@@ -48,6 +52,8 @@ koinon:
     max_response_bytes: 2097152
     timeout_seconds: 30
     max_concurrency: 8
+    max_sessions: 128
+    session_idle_timeout_seconds: 900
 ```
 
 `public_url` requires HTTPS, except HTTP on loopback for development. Its path must be exactly `/mcp`, without query or fragment. Its authority and origin are trusted automatically. Additional hosts and origins must be explicit, without wildcards. Native clients may omit Origin; an untrusted supplied Origin is rejected. Public URLs and discovery documents come from configuration, never reflected request headers.
@@ -58,13 +64,33 @@ Inputs bound identifiers, questions, SQL length, counts and pagination. The disp
 
 ## Tool authorization and scope upgrades
 
-When OAuth is enabled, each tool declares its required scopes in the official Python SDK's supported `_meta.securitySchemes` field, the documented compatibility mirror for tool authentication policies. Browse, fetch, schema and provenance use `catalog:read`; search additionally uses `knowledge:search`, query uses `query:execute`, and answer audit uses `chat:use`.
+When OAuth is enabled, each tool declares its required scopes in the official Python SDK's supported `_meta.securitySchemes` field, the documented compatibility mirror for tool authentication policies. Browse, fetch, schema and provenance use `catalog:read`; search additionally uses `knowledge:search`, query uses `query:execute`, and answer audit uses `chat:use`. Text and file management additionally require `catalog:write` and `ingest:write`; supporting document and dataset evidence retains its corresponding read/query requirements.
 
 The initial connection asks for the baseline catalog permission. If an operation requires an additional token scope, the canonical permission service distinguishes that condition from a denied membership, role, workspace, asset boundary or organization-level projection. Only a verified scope-only denial can produce an error result with `_meta["mcp/www_authenticate"]`. The challenge includes the configured protected-resource metadata URL, `insufficient_scope`, a fixed description and the tool's exact required scopes.
 
-The server also checks that the authenticated OAuth client's current configured grant permits every requested scope. Unsupported client grants return an ordinary access denial. PAT-only connections receive ordinary permission errors and require the user to manage their scoped token. An OAuth relink never grants permissions or workspace access beyond the user's current authority, and knowledge mutation consent remains a separate trusted UI action.
+The server also checks that the authenticated OAuth client's current configured grant permits every requested scope. Unsupported client grants return an ordinary access denial. PAT-only connections receive ordinary permission errors and require the user to manage their scoped token. An OAuth relink never grants permissions or workspace access beyond the user's current authority, and approval of a particular knowledge change remains a separate embedded review action.
 
 Official SDK tests verify discovery metadata, scope-upgrade error results, a newly consented grant succeeding, and the absence of relink prompts for foreign workspaces, denied roles or unsupported client scopes. This follows the [official OpenAI authentication contract](https://developers.openai.com/plugins/build/auth) and its [documented metadata fields](https://developers.openai.com/plugins/reference). Hosted linking UI acceptance still requires client testing.
+
+## Embedded review boundary
+
+The static resource `ui://koinon/knowledge-review` uses `text/html;profile=mcp-app`. Model-visible stage/prepare tools link to that resource. Decision, status and transfer tools declare `ui.visibility=["app"]`. Tool results carry public proposal content in `structuredContent`; `_meta["koinon/knowledgeReview"]` carries the component-only nonce and optional authorized presentation palette. Branding changes neither tool identity nor permissions.
+
+The host must declare the `io.modelcontextprotocol/ui` extension with the exact `text/html;profile=mcp-app` MIME type and implement its private-metadata and tool-visibility boundary. The server checks this before staging, preparing uploads, issuing a private challenge or applying any app decision. Missing or incompatible capabilities return an actionable error before those operations run. There is no browser approval redirect or model-visible autonomous confirmation endpoint. Account linking may still use the normal OAuth sign-in flow; it is separate from approving repository changes. A host without the review capability can read supported knowledge but cannot complete a change. Protocol/component fixtures do not prove an actual host follows this boundary.
+
+`GET /api/v1/mcp/connection` exposes the trusted deployment URL, permitted server capabilities and configured public OAuth client ID/name/scopes/authentication type. It never returns a client secret or hash and does not grant the current user additional permissions. See the [Claude](../guides/connect-claude.md) and [ChatGPT](../guides/connect-chatgpt.md) guides.
+
+`GET /api/v1/tenants/{tenant_id}/mcp/connection` additionally projects the enabled OAuth registrations belonging to that organization after checking current membership and credential bounds. The account connection panel uses this tenant descriptor. The `mcp_applications` domain owns the organization registry, its DTOs, controllers, native repositories and current-authority service. Registration administration requires an ordinary verified identity and organization `identity:manage`; it is separate from the user's `authorized_applications` grants and from outbound corporate identity providers.
+
+Requests, authorization codes, grants and resource bearers pin the organization's registration revision and configuration digest. Current authority is rechecked before consent, code exchange, bearer authentication and governed operations. A registration change or secret rotation revokes its existing grants and credentials atomically. Static deployment clients retain their existing path and are not silently reassigned to an organization. See [Register an application](../guides/register-applications.md) for the visual and typed SDK workflows.
+
+## Legacy session compatibility and scaling
+
+Legacy clients negotiate MCP Apps through `initialize`. Their sessions retain that declaration using the official SDK's bounded session manager. Native bearer authentication projects the actual current credential fingerprint, issuer and subject into SDK session ownership; a different credential cannot reuse a session. Every request and canonical operation still rechecks authentication and current permissions. Session IDs do not replace bearer credentials.
+
+The default limit is 128 legacy sessions per process with a 900-second idle timeout. Modern protocol requests carry their capabilities independently and do not require these sessions. Legacy GET/SSE channels use session admission bounds rather than holding tool-operation permits; POST operations retain the configured concurrency limit.
+
+Legacy sessions are process-local negotiation state. MCP replicas need session affinity; a missing or expired session requires reinitialization. Losing that session does not lose canonical reviews, source receipts, staged bytes or committed knowledge, and does not authorize replaying an uncertain write. Refresh the recorded review/status under the new session. No distributed MCP session store is claimed.
 
 ## Verification boundary
 

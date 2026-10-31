@@ -61,10 +61,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
+from pyfly.context.lifecycle import pre_destroy
+
 from flyquery.core.services.execution.ast_classifier import AstClassifier
 from flyquery.core.services.query import provenance
 from flyquery.core.services.query.provenance import execution
 from flyquery.core.services.storage.adapters.cloud import CloudObjectStore
+from flyquery.core.services.storage.object_store import ObjectStore
 
 
 @dataclass(frozen=True)
@@ -208,19 +211,27 @@ class DuckDBExecutor:
         Each call has a cooperative native deadline, not an operating-system budget.
     """
 
-    def __init__(self, settings) -> None:
+    def __init__(self, settings, object_store: ObjectStore | None = None) -> None:
+        self._owns_cloud_store = object_store is None
         self._cloud_store: CloudObjectStore | None = None
         self._cloud_base = ""
         if getattr(settings, "object_store", "local") in {"azure", "gcs"}:
             from flyquery.core.services.storage.object_store_factory import build_object_store, storage_base
 
-            self._cloud_store = cast(CloudObjectStore, build_object_store(settings))
+            self._cloud_store = cast(
+                CloudObjectStore, object_store if object_store is not None else build_object_store(settings)
+            )
             self._cloud_base = storage_base(settings).rstrip("/") + "/"
         self._memory_limit = settings.duckdb_memory_limit
         self._row_cap = settings.default_row_cap
         self._timeout_ms = settings.default_statement_timeout_ms
         if self._timeout_ms <= 0:
             raise ValueError("default_statement_timeout_ms must be positive")
+
+    @pre_destroy
+    async def close(self) -> None:
+        if self._owns_cloud_store and self._cloud_store is not None:
+            await self._cloud_store.close()
 
     @execution
     async def execute(

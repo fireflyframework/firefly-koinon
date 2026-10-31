@@ -1,4 +1,5 @@
 # Copyright 2024-2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +15,9 @@
 
 """The sandbox parent: drive an untrusted child REPL and service its requests.
 
-:class:`SandboxExecutor` spawns the :mod:`runner` child with a **scrubbed**
+:class:`SandboxExecutor` is explicit standalone legacy compatibility, not a
+filesystem, network, or CPython-object isolation boundary. Required provenance
+must use the public Monty VM instead. It spawns the :mod:`runner` child with a reduced
 environment (a minimal whitelist -- no API keys, cloud creds, DB/Redis URLs, or
 ``FLYCANON_*`` secrets) over a private socketpair, with ``close_fds`` so the
 child inherits no other parent descriptors. ``run_block(code)`` runs one block
@@ -62,7 +65,8 @@ _RPC_ARITY = {
 
 # Only these environment variables are passed to the child. Everything else --
 # ANTHROPIC_API_KEY, AWS_*/AZURE_*, DATABASE_URL, REDIS*, FLYCANON_* secrets --
-# is withheld so prompt-injected code can never read a credential.
+# are omitted from the inherited environment. This does not prevent access
+# through the child process's ordinary filesystem, network, or Python runtime.
 _ENV_WHITELIST = ("PATH", "LANG", "LC_ALL", "PYTHONPATH", "PYTHONHASHSEED")
 
 _GRACE_SECONDS = 2.0  # how long to wait for a child to exit before SIGKILL.
@@ -111,9 +115,8 @@ def _terminated(reason: str) -> BlockResult:
 class SandboxExecutor:
     """Spawns and drives a sandboxed child REPL, servicing its capability RPCs.
 
-    The capability handlers are injected by the caller (they close over the real
-    document store / model client). The executor itself owns no secrets -- it
-    only relays validated calls between the untrusted child and the handlers.
+    The capability handlers are injected by the caller. JSON RPC validation and
+    resource/environment controls do not isolate untrusted CPython from host I/O.
     """
 
     def __init__(
@@ -154,7 +157,7 @@ class SandboxExecutor:
         # ``pass_fds`` keeps the child socket fd open across the fork/exec; every
         # other parent fd is closed by ``close_fds`` (subprocess default True).
         self._proc = subprocess.Popen(
-            [sys.executable, "-m", "flycanon.core.services.query.rlm.sandbox.runner"],
+            [sys.executable, "-B", "-m", "flycanon.core.services.query.rlm.sandbox.runner"],
             env=env,
             pass_fds=(child_fd,),
             close_fds=True,
@@ -163,7 +166,7 @@ class SandboxExecutor:
         self._parent_sock = parent_sock
 
     def _child_env(self, child_fd: int) -> dict:
-        """A minimal, secret-free environment for the child."""
+        """A reduced inherited environment, without an isolation guarantee."""
         env = {name: os.environ[name] for name in _ENV_WHITELIST if name in os.environ}
         # The child must import the flycanon package; if the parent runs from a
         # source tree without an installed dist, propagate sys.path explicitly.

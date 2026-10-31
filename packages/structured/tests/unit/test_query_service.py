@@ -139,6 +139,16 @@ class _TableAwareResolver:
         return {}
 
 
+class _FakeTableKinds:
+    def __init__(self, resolver):
+        self._table_name = getattr(getattr(resolver, "_session", None), "_table_name", None)
+
+    async def list_kinds_for_dataset_by_names(self, dataset_id, names):
+        if self._table_name is not None and self._table_name in names:
+            return [{"name": self._table_name, "kind": "UPLOADED"}]
+        return []
+
+
 class _FakeQueryRepo:
     """In-memory query repo stub."""
 
@@ -299,6 +309,7 @@ def _make_service(
         result_uploader=result_uploader,
         auto_learner=auto_learner,
         semantic_repo=semantic_repo,
+        table_repository=_FakeTableKinds(table_resolver),
     )
 
 

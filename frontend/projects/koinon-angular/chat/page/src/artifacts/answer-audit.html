@@ -1,5 +1,9 @@
 <!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
-<ffk-side-panel [open]="open" [heading]="'Answer audit' | ffkText" (closed)="close()">
+<ffk-side-panel
+  [open]="open && !recordedSource()"
+  [heading]="'Answer audit' | ffkText"
+  (closed)="close()"
+>
   @if (message; as answer) {
     <div class="audit-tabs" role="tablist" [attr.aria-label]="'Audit sections' | ffkText">
       @for (item of tabs; track item) {
@@ -56,7 +60,7 @@
           <summary>
             <strong>{{ generation.model_id }}</strong
             ><span
-              >{{ provider(generation.provider_kind) }} ·
+              >{{ provider(generation.provider_kind) }},
               {{ generationStatus(generation.status) | ffkText }}</span
             >
           </summary>
@@ -122,9 +126,26 @@
       @if (fallbackCitations().length) {
         <p class="help">
           {{ 'Recorded citations' | ffkText }}:
-          {{ fallbackCitations().length | ffkValue: 'integer' }} ·
+          {{ fallbackCitations().length | ffkValue: 'integer' }},
           {{ 'Revisions unverified' | ffkText }}
         </p>
+      }
+      <h4 class="overview-heading">{{ 'Recorded knowledge policy' | ffkText }}</h4>
+      @if (state.audit()?.knowledge_settings_snapshot; as policy) {
+        <dl class="references recorded-policy">
+          <dt>{{ 'Policy revision' | ffkText }}</dt>
+          <dd>{{ policy.revision | ffkValue: 'integer' }}</dd>
+          <dt>{{ 'Policy origin' | ffkText }}</dt>
+          <dd>
+            {{
+              (policy.origin === 'organization' ? 'Organization' : 'Deployment defaults') | ffkText
+            }}
+          </dd>
+          <dt>{{ 'Document answer mode' | ffkText }}</dt>
+          <dd>{{ policy.documents.answer_mode.toUpperCase() }}</dd>
+        </dl>
+      } @else if (!state.auditPending() && !state.auditError()) {
+        <p class="help">{{ 'Not recorded' | ffkText }}</p>
       }
       <h4 class="overview-heading">{{ 'Recorded limits' | ffkText }}</h4>
       @for (omission of state.manifest()?.omissions ?? []; track $index) {
@@ -204,8 +225,10 @@
                 [attr.aria-pressed]="sourceId() === source.id"
                 (click)="selectSource(source.id)"
               >
+                <ffk-icon name="file" />
                 <span>{{ source.title }}</span
                 ><small>{{ sourceState(source) | ffkText }}</small>
+                <ffk-icon class="source-chevron" name="chevron" />
               </button>
             </li>
           }
@@ -276,6 +299,10 @@
                   <dd>
                     <code>{{ source.source_part_id }}</code>
                   </dd>
+                  <dt>{{ 'Passage SHA-256' | ffkText }}</dt>
+                  <dd>
+                    <code>{{ source.source_part_sha256 || ('Not recorded' | ffkText) }}</code>
+                  </dd>
                 }
                 @if (source.knowledge_version_id) {
                   <dt>{{ 'Knowledge version reference' | ffkText }}</dt>
@@ -293,7 +320,7 @@
                 }
               </dl>
             </details>
-            <ffk-button variant="quiet" (click)="resourceRequested.emit(source.asset_id)">{{
+            <ffk-button variant="quiet" (click)="openSource(source)">{{
               'Open source' | ffkText
             }}</ffk-button>
             @if (source.kind === 'knowledge_version') {
@@ -330,8 +357,10 @@
                 [attr.aria-pressed]="privateId() === file.id"
                 (click)="selectPrivate(file.id)"
               >
+                <ffk-icon name="file" />
                 <span>{{ file.filename }}</span
                 ><small>{{ privateAvailability(file.availability) | ffkText }}</small>
+                <ffk-icon class="source-chevron" name="chevron" />
               </button>
             </li>
           }
@@ -382,8 +411,10 @@
                 [attr.aria-pressed]="citationIndex() === $index"
                 (click)="selectCitation($index)"
               >
+                <ffk-icon name="file" />
                 <span>{{ citation.title || ('Recorded citation' | ffkText) }}</span
                 ><small>{{ 'Unverified revision' | ffkText }}</small>
+                <ffk-icon class="source-chevron" name="chevron" />
               </button>
             </li>
           }
@@ -424,7 +455,7 @@
                 (click)="selectAttempt($index)"
               >
                 <strong
-                  >{{ (attempt.executed ? 'Executed SQL' : 'Recorded SQL') | ffkText }} ·
+                  >{{ (attempt.executed ? 'Executed SQL' : 'Recorded SQL') | ffkText }},
                   {{ attempt.ordinal | ffkValue: 'integer' }}</strong
                 ><span>{{ (attempt.executed ? 'Executed' : 'Not executed') | ffkText }}</span>
               </button>
@@ -594,7 +625,7 @@
                 ><span>
                   @if (readTitle(read)) {
                     {{ readDomain(read.domain) | ffkText }}
-                    ·
+                    ,
                   }
                   {{ read.stage }}</span
                 >
@@ -762,7 +793,7 @@
                     [id]="resultId($index)"
                     role="region"
                     [attr.aria-label]="
-                      ('Recorded result' | ffkText) + ' · ' + (tool(row.tool_name) | ffkText)
+                      ('Recorded result' | ffkText) + ', ' + (tool(row.tool_name) | ffkText)
                     "
                   >
                     @defer (on immediate) {
@@ -860,3 +891,8 @@
     <p class="help">{{ 'Choose an answer to inspect its recorded activity.' | ffkText }}</p>
   }
 </ffk-side-panel>
+<ffk-recorded-document-source
+  [open]="open && !!recordedSource()"
+  [source]="recordedSource()"
+  (closed)="recordedSource.set(null)"
+/>

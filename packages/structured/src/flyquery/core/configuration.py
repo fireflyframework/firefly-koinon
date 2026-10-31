@@ -30,8 +30,11 @@ from flyquery.core.services.auth.agent_token_service import (
     _RateLimiter,
 )
 from flyquery.core.services.auth.redis_rate_limiter import RedisRateLimiter
+from flyquery.core.services.execution.ast_classifier import AstClassifier
+from flyquery.core.services.execution.duckdb_executor import DuckDBExecutor
+from flyquery.core.services.execution.scope_guard import ScopeGuard
 from flyquery.core.services.retrieval.embedder import Embedder, build_embedder
-from flyquery.core.services.retrieval.reranker import NoopReranker, build_reranker
+from flyquery.core.services.retrieval.reranker import Reranker, build_reranker
 from flyquery.core.services.storage.object_store import ObjectStore
 from flyquery.core.services.storage.object_store_factory import build_object_store
 from flyquery.core.services.workspaces.workspace_repository import (
@@ -167,9 +170,21 @@ class FlyqueryConfiguration:
         return build_embedder(settings)
 
     @bean(name="structured.reranker")
-    def reranker(self, settings: FlyquerySettings) -> NoopReranker:
+    def reranker(self, settings: FlyquerySettings) -> Reranker:
         """Cross-encoder reranker (falls back to NoopReranker when unavailable)."""
-        return build_reranker(settings)  # type: ignore[return-value]
+        return build_reranker(settings)
+
+    @bean(name="structured.ast_classifier")
+    def ast_classifier(self) -> AstClassifier:
+        return AstClassifier()
+
+    @bean(name="structured.scope_guard")
+    def scope_guard(self) -> ScopeGuard:
+        return ScopeGuard()
+
+    @bean(name="structured.executor")
+    def executor(self, settings: FlyquerySettings, object_store: ObjectStore) -> DuckDBExecutor:
+        return DuckDBExecutor(settings, object_store=object_store)
 
     # ------------------------------------------------------------------
     # Idempotency store (agent surface)

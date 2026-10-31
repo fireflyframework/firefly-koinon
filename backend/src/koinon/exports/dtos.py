@@ -5,6 +5,7 @@ from typing import Annotated, Literal
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, RootModel, field_validator
 
 from koinon.evidence.dtos import (
+    ConversationIdentity,
     ConversationMessage,
     Frozen,
     Identifier,
@@ -74,6 +75,7 @@ class ExportReview(Frozen):
     result: StoredResult | None = None
     omissions: tuple[str, ...] = ()
     expires_at: AwareDatetime
+    identity: ConversationIdentity | None = None
 
 
 class Export(Frozen):

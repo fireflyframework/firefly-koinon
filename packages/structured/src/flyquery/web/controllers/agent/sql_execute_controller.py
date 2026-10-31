@@ -34,16 +34,7 @@ from pyfly.web import Body, Valid, post_mapping, request_mapping
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
 
-from flyquery.config import FlyquerySettings
 from flyquery.core.services.auth.agent_token_service import AgentTokenService
-from flyquery.core.services.query.query_repository import QueryRepository
-from flyquery.core.services.storage.object_store import ObjectStore
-from flyquery.core.services.tables.schema_snapshot_repository import (
-    SchemaSnapshotRepository,
-)
-from flyquery.core.services.tables.table_repository import TableRepository
-from flyquery.core.services.workspaces.workspace_service import WorkspaceService
-from flyquery.data import StructuredSessions, unwrap_sessions
 from flyquery.interfaces.sql_execute import SqlExecuteRequest, SqlExecuteResponse
 from flyquery.web.controllers.sql_execute_controller import (
     SqlExecuteController as _UserSqlExecuteController,
@@ -82,44 +73,20 @@ class AgentSqlExecuteController:
     Requires ``X-Agent-Token`` with ``flyquery.sql:execute`` scope.
     Delegates to the same execution pipeline as the user-tier controller.
 
-    :param settings: application settings
-    :param session: async session factory
-    :param object_store: blob store for result Parquet
-    :param query_repository: repository for flyquery_queries
-    :param workspace_service: checks allow_direct_sql workspace flag
+    :param sql_execute_controller: managed execution adapter with shared collaborators
     :param agent_token_service: verifies the agent token + scope
+    :param idempotency_store: replay protection for authorized writes
     """
 
     def __init__(
         self,
-        settings: FlyquerySettings,
-        session: StructuredSessions,
-        object_store: ObjectStore,
-        query_repository: QueryRepository,
-        workspace_service: WorkspaceService,
-        table_repository: TableRepository,
-        schema_snapshot_repository: SchemaSnapshotRepository,
+        sql_execute_controller: _UserSqlExecuteController,
         agent_token_service: AgentTokenService,
         idempotency_store: IdempotencyStore,
     ) -> None:
-        self._settings = settings
-        self._session_factory = unwrap_sessions(session)
-        self._object_store = object_store
-        self._query_repo = query_repository
-        self._workspace_service = workspace_service
         self._token_service = agent_token_service
         self._idempotency_store = idempotency_store
-
-        # Reuse the user-tier controller's pipeline logic.
-        self._delegate = _UserSqlExecuteController(
-            settings=settings,
-            session=session,
-            object_store=object_store,
-            query_repository=query_repository,
-            workspace_service=workspace_service,
-            table_repository=table_repository,
-            schema_snapshot_repository=schema_snapshot_repository,
-        )
+        self._delegate = sql_execute_controller
 
     async def _verify(self, http_request: Request) -> None:
         """Verify X-Agent-Token with flyquery.sql:execute scope.

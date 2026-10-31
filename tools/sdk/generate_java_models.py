@@ -12,10 +12,21 @@ defs = json.loads(schema_path.read_text())["$defs"]
 out = root / "src/main/java/org/fireflyframework/koinon/sdk/model"
 out.mkdir(parents=True, exist_ok=True)
 header = "// Copyright 2026 Firefly Software Foundation\n// SPDX-License-Identifier: Apache-2.0\npackage org.fireflyframework.koinon.sdk.model;\n\n"
-enums = {}
+enums = {
+    "McpOAuthClientStatus": ["all", "enabled", "disabled"],
+    "McpOAuthClientSort": ["name", "updated_at"],
+    "McpOAuthClientOrder": ["asc", "desc"],
+}
 names = {
     tuple(sorted(v)): k
     for k, v in {
+        "OrganizationUnitKind": ["division", "department", "team"],
+        "OrganizationDirectoryVisibility": ["administrators", "shared_workspaces"],
+        "OrganizationManagedField": ["job_title", "unit_id", "manager_id"],
+        "OrganizationPersonSource": ["unassigned", "manual", "provider"],
+        "OrganizationObservationStatus": ["not_observed", "current", "unavailable"],
+        "OrganizationMappingSource": ["verified_claims"],
+        "SourceReferencePageBasis": ["recorded_loader"],
         "ResourceKind": [
             "workspace",
             "project",
@@ -44,11 +55,15 @@ names = {
         "ObservationStatus": ["passed", "failed", "unknown"],
         "KnowledgeDomain": ["documents", "structured"],
         "KnowledgeAnswerMode": ["rag", "rlm"],
+        "McpOAuthScope": ["catalog:read", "catalog:write", "ingest:write", "knowledge:search", "query:execute", "chat:use", "evidence:read"],
+        "McpRegisteredClientClientAuth": ["public", "confidential"],
         "KnowledgeSettingsOrigin": ["deployment", "organization"],
         "ConnectionMode": ["provider", "current_agent"],
         "RoleKind": ["embedding", "generative"],
         "ReasoningEffort": ["none", "minimal", "low", "medium", "high", "xhigh"],
         "OutputVerbosity": ["low", "medium", "high"],
+        "ModelOutputMode": ["default", "native"],
+        "BrandingValuesFontFamily": ["Manrope"],
         "ExecutionStatus": ["OK", "REFINED_OK", "FAILED", "REJECTED_BY_FIREWALL"],
         "ChartHint": ["line", "bar", "table", "pie", "none"],
         "EvidenceKind": ["search", "query", "schema", "lineage", "attachment", "proposal"],
@@ -111,6 +126,9 @@ def java_type(s, owner="", field=""):
         return union
     if "$ref" in s:
         name = s["$ref"].split("/")[-1]
+        if owner == "OrganizationBrandingInput" and field == "branding" and name == "BrandingInputValues":
+            # Server-only decode staging keeps the existing structurally identical client input.
+            return "BrandingValues"
         if name == "JsonValue":
             return "JsonNode"
         if name.startswith("Page_"):
@@ -196,7 +214,9 @@ for name, definition in defs.items():
     properties = definition.get("properties")
     if properties is None:
         continue
-    if definition.get("additionalProperties") is False:
+    if definition.get("additionalProperties") is False and name not in {
+        "McpOAuthClient", "McpOAuthClientCredential", "McpOAuthClientReadiness", "McpOAuthClientPage",
+    }:
         request_names.add(name)
     fields = []
     for wire, value in properties.items():
@@ -227,11 +247,28 @@ for name, definition in defs.items():
     )
     copies = []
     accessors = []
+    if name == "SearchHit":
+        previous = [field for field in fields if field[0] != "source_reference"]
+        body += (
+            "    public SearchHit("
+            + ", ".join(kind + " " + key for _, key, kind, _, _ in previous)
+            + "){this("
+            + ",".join("null" if wire == "source_reference" else key for wire, key, _, _, _ in fields)
+            + ");}\n"
+        )
     if name == "AttachmentObservation":
         body += (
             "    public AttachmentObservation { configured = Boolean.TRUE.equals(configured); }\n"
             "    public AttachmentObservation(Boolean available, String reason) {\n"
             "        this(available, reason, false);\n    }\n"
+        )
+    if name in {"ConversationSnapshot", "ExportReview", "ShareReview", "SharedConversation"}:
+        assert fields[-1][0] == "identity"
+        previous = fields[:-1]
+        body += (
+            "    public " + name + "("
+            + ", ".join(kind + " " + key for _, key, kind, _, _ in previous)
+            + "){this(" + ",".join(key for _, key, _, _, _ in previous) + ",null);}\n"
         )
     for wire, key, kind, raw, wrapped in fields:
         if wrapped:
@@ -324,7 +361,7 @@ for name, definition in defs.items():
                     + ",".join("null" if k == key else k for _, k, _, _, _ in fields)
                     + ");}\n"
                 )
-    if name not in {"TokenCreated", "InvitationCreated", "InvitationToken"} and any(value.get("format") == "password" for value in properties.values()):
+    if name not in {"TokenCreated", "InvitationCreated", "InvitationToken"} and (name == "McpOAuthClientCredential" or any(value.get("format") == "password" for value in properties.values())):
         body += '    @Override public String toString(){return "' + name + '[credentials=<redacted>]";}\n'
     if name == "TokenCreated":
         body += '    @Override public String toString(){return "TokenCreated[id="+id+", token=<redacted>]";}\n'

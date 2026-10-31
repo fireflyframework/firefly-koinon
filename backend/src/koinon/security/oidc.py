@@ -21,7 +21,9 @@ from pyfly.web.ports.filter import CallNext
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
+from koinon.mcp.transport_identity import transport_identity
 from koinon.mcp_auth.service import McpOAuthService
+from koinon.tokens.authorization import TokenRestriction
 from koinon.tokens.service import PREFIX, PersonalTokenService
 
 IDENTITY_CLAIMS = ClaimMappings(
@@ -66,10 +68,12 @@ class ApiBearerFilter(OAuth2ResourceServerFilter):
         validator: JWKSTokenValidator,
         tokens: PersonalTokenService | None = None,
         mcp_oauth: McpOAuthService | None = None,
+        restriction: TokenRestriction | None = None,
     ):
         super().__init__(validator, error_mode="401")
         self.tokens = tokens
         self.mcp_oauth = mcp_oauth
+        self.restriction = restriction
 
     async def do_filter(self, request: Request, call_next: CallNext) -> Response:
         path = request.url.path
@@ -81,6 +85,9 @@ class ApiBearerFilter(OAuth2ResourceServerFilter):
                 if not token or self.tokens is None or self.mcp_oauth is None:
                     raise UnauthorizedException("MCP bearer required", code="AUTH_REQUIRED")
                 context = await self.mcp_oauth.authenticate(token)
+                with SecurityContextHolder.using(context):
+                    credentials, user = await transport_identity(context, token, self.restriction)
+                request.scope["auth"], request.scope["user"] = credentials, user
             except UnauthorizedException:
                 challenge = 'Bearer error="invalid_token"'
                 if self.mcp_oauth is not None and self.mcp_oauth.settings.enabled:

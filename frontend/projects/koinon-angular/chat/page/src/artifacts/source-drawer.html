@@ -1,5 +1,9 @@
 <!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
-<ffk-side-panel [open]="open" [heading]="'Answer sources' | ffkText" (closed)="close()">
+<ffk-side-panel
+  [open]="open && !recordedSource()"
+  [heading]="'Answer sources' | ffkText"
+  (closed)="close()"
+>
   @if (state.pending()) {
     <ffk-skeleton height="3px" [label]="'Loading sources' | ffkText" />
   }
@@ -25,9 +29,11 @@
               availability(source) | ffkText
             }}</span>
           </div>
-          @if (source.page || source.section) {
+          @if (source.recorded_page || source.page || source.section) {
             <p class="location">
-              @if (source.page) {
+              @if (source.recorded_page) {
+                {{ 'Recorded page' | ffkText }} {{ source.recorded_page }}
+              } @else if (source.page) {
                 {{ 'Page' | ffkText }} {{ source.page }}
               }
               @if (source.section) {
@@ -64,6 +70,20 @@
                   <code>{{ source.chunk_id }}</code>
                 </dd>
               }
+              @if (source.source_part_id) {
+                <dt>{{ 'Original version' | ffkText }}</dt>
+                <dd>
+                  <code>{{ source.source_version_id }}</code>
+                </dd>
+                <dt>{{ 'Recorded extraction' | ffkText }}</dt>
+                <dd>
+                  <code>{{ source.extraction_id }}</code>
+                </dd>
+                <dt>{{ 'Immutable part' | ffkText }}</dt>
+                <dd>
+                  <code>{{ source.source_part_id }}</code>
+                </dd>
+              }
             </dl>
           </details>
         </li>
@@ -80,3 +100,8 @@
     </ol>
   }
 </ffk-side-panel>
+<ffk-recorded-document-source
+  [open]="open && !!recordedSource()"
+  [source]="recordedSource()"
+  (closed)="recordedSource.set(null)"
+/>

@@ -120,7 +120,7 @@ async function capture(page: Page, name: string) {
     if (document.getElementById('applications-fixture-caption')) return;
     const mark = document.createElement('div');
     mark.id = 'applications-fixture-caption';
-    mark.textContent = 'Controlled application API fixtures · UI review only';
+    mark.textContent = 'Controlled application API fixtures, UI review only';
     mark.style.cssText =
       'position:fixed;bottom:0;left:0;right:0;z-index:9999;padding:5px 12px;background:#855414;color:white;font:10px system-ui;text-align:center;pointer-events:none';
     document.body.append(mark);

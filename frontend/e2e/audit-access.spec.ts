@@ -116,7 +116,7 @@ test('audit sends server pages and date/action/person filters with human names',
   expect(service.reads.at(-1)?.get('page')).toBe('1');
   expect(service.reads.at(-1)?.get('time_zone')).toBe('UTC');
   await expect(panel.locator('.filter-chip')).toHaveCount(2);
-  await panel.getByRole('button', { name: /Remove filter · Date range/ }).click();
+  await panel.getByRole('button', { name: /Remove filter, Date range/ }).click();
   await expect.poll(() => service.reads.at(-1)?.get('from_date')).toBe(null);
   expect(service.reads.at(-1)?.get('action')).toBe('membership.created');
   await panel.getByRole('button', { name: 'Clear filters', exact: true }).first().click();
@@ -125,7 +125,7 @@ test('audit sends server pages and date/action/person filters with human names',
     .fill('Research colleague 02');
   await panel.getByRole('searchbox', { name: 'Search audit activity' }).press('Enter');
   await expect(panel.getByText('1–1 of 1 item')).toBeVisible();
-  await panel.getByRole('button', { name: 'Filter by person · Research colleague 02' }).click();
+  await panel.getByRole('button', { name: 'Filter by person, Research colleague 02' }).click();
   await expect
     .poll(() => service.reads.at(-1)?.get('subject'))
     .toBe('https://synthetic-issuer.test|person-2');
@@ -160,7 +160,7 @@ for (const variant of [
         'calc(100dvh - 22px)',
       );
       const strip = document.createElement('div');
-      strip.textContent = 'Controlled API fixtures · Interface review only';
+      strip.textContent = 'Controlled API fixtures, Interface review only';
       strip.style.cssText =
         'position:fixed;bottom:0;left:0;right:0;height:22px;background:#10110f;color:#f3f1eb;text-align:center;font:10px/22px sans-serif;z-index:99999';
       document.body.append(strip);
@@ -184,7 +184,7 @@ for (const variant of [
         'calc(100dvh - 22px)',
       );
       const strip = document.createElement('div');
-      strip.textContent = 'Controlled API fixtures · Interface review only';
+      strip.textContent = 'Controlled API fixtures, Interface review only';
       strip.style.cssText =
         'position:fixed;bottom:0;left:0;right:0;height:22px;background:#10110f;color:#f3f1eb;text-align:center;font:10px/22px sans-serif;z-index:99999';
       document.body.append(strip);
@@ -207,7 +207,7 @@ for (const variant of [
     expect(close!.height).toBeGreaterThanOrEqual(44);
     await dialog.evaluate((element) => {
       const note = document.createElement('div');
-      note.textContent = 'Controlled API fixtures · Interface review only';
+      note.textContent = 'Controlled API fixtures, Interface review only';
       note.style.cssText =
         'position:absolute;bottom:0;left:0;right:0;height:22px;background:#10110f;color:#f3f1eb;text-align:center;font:10px/22px sans-serif';
       element.append(note);

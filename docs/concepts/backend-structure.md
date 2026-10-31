@@ -1,6 +1,6 @@
 # Backend structure
 
-The application package is `koinon`, installed from `backend/src/koinon`. Start the API with `koinon.main:app` and the independent conversation worker with `python -m koinon.assistants.worker`.
+The application package is `koinon`, installed from `backend/src/koinon`. Start the API with `python -m koinon.serve`, which selects the native pyfly server and event loop before the application lifecycle begins. The ASGI entry point remains `koinon.main:app` for embedding. Start the independent conversation worker with `python -m koinon.assistants.worker`.
 
 ## Module responsibilities
 
@@ -12,10 +12,11 @@ The application package is `koinon`, installed from `backend/src/koinon`. Start 
 | `knowledge` | Authorized document and dataset operations and domain bindings |
 | `assistants` | Model configuration, agent scope, conversations, evidence and durable generation |
 | `organization_chat` | One organization-wide chat default, scoped reads and revision-checked operator changes |
+| `organization_people` | Tenant positions, organizational units, reporting lines, directory visibility and verified profile mappings |
 | `storage` | Private attachment ports and deployment profiles; shared cloud transport lives in the independent `koinon_storage` package |
 | `profiles` | User preferences, avatars and author summaries |
 | `tokens` | Scoped personal API credentials, expiration and revocation |
-| `jobs` | Durable ingestion jobs, leases and authorized job management |
+| `jobs` | Persisted processing-job state and authorized job management; ingestion queue parity is tracked separately in qualification |
 | `security` | OIDC settings, authentication and request identity |
 | `operations` | Deployment configuration, resource limits and redacted observations |
 | `web` | Shared route projection, error mapping, pagination and retained-domain admission |
@@ -23,6 +24,8 @@ The application package is `koinon`, installed from `backend/src/koinon`. Start 
 Request schemas live in each context's `dtos.py`. Response mappers project persisted objects into the public response fields. Controllers validate HTTP input and call application services. Services enforce access and lifecycle rules, and repositories perform persistence operations through native pyfly Data.
 
 Entities and repositories live in separate modules. The application reuses the same entity definitions for the API, workers and migrations, which keeps table metadata consistent. Migration execution remains a separate deployment operation with its own credentials.
+
+The organization directory follows this layout with separate DTOs, entities, mappers, repositories, service and controllers. Native pyfly transactions own mutations. Fresh read-only authorization checks protect asynchronous directory projections against membership changes while an operation is waiting. Corporate positions and reporting relationships remain presentation data; security continues to use the verified principal and effective memberships. See [People and organization](../guides/people-and-organization.md).
 
 ## Agent configuration and conversations
 

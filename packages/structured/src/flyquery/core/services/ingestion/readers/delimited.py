@@ -77,7 +77,8 @@ def materialize(conn, source, target, *, sample_rows, date_format=None, excel=Fa
         else set()
     )
     conn.execute(
-        "COPY mapped_input TO '" + target.replace("'", "''") + "' (FORMAT PARQUET,COMPRESSION 'snappy')"
+        "COPY mapped_input TO '" + target.replace("'", "''")
+        + "' (FORMAT PARQUET,COMPRESSION 'snappy',USE_TMP_FILE false)"
     )
     row_count = conn.execute("SELECT count(*) FROM mapped_input").fetchone()[0]
     indices, header_record, header_fields = [], None, ()

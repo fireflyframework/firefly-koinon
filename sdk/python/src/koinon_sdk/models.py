@@ -6,6 +6,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, JsonValue, Sec
 
 from koinon_sdk._base import InputModel, ResponseModel
 from koinon_sdk.attachments import AttachmentCapabilities
+from koinon_sdk.evidence import SourceReference
 from koinon_sdk.organization_knowledge import OrganizationKnowledgeSnapshot
 from koinon_sdk.proposals import CatalogProposal, ProposalUpdate
 
@@ -193,6 +194,7 @@ class SearchHit(ResponseModel):
     asset_id: str
     source_id: str | None = None
     score: float | None = None
+    source_reference: SourceReference | None = None
     citations: list[Citation] = Field(default_factory=list[Citation])
 
 
@@ -359,6 +361,7 @@ class SetupCheck(ResponseModel):
 
 class ModelParameters(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, allow_inf_nan=False)
+    output_mode: Literal["default", "native"] | None = None
     max_tokens: int = Field(default=4096, ge=64, le=16384, strict=True)
     temperature: float | None = Field(default=None, ge=0, le=2, strict=True)
     top_p: float | None = Field(default=None, ge=0, le=1, strict=True)

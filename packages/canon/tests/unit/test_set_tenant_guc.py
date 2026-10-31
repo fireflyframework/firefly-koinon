@@ -324,17 +324,17 @@ def test_listener_does_not_crash_with_an_unusual_dialect_name() -> None:
 # ----------------------------------------------------------------------
 
 
-def test_build_engine_installs_hook() -> None:
-    """``build_engine`` calls ``install_tenant_guc_hook`` exactly once."""
+def test_build_engine_installs_hook_and_borrows_registry_owner() -> None:
+    from types import SimpleNamespace
+
+    from sqlalchemy.engine import make_url
+
     from flycanon.models.repositories._engine import build_engine
 
-    # The sentinel records the first install; calling again is a
-    # silent no-op. Run build_engine twice and assert the sentinel
-    # is set after either call -- this exercises the wiring without
-    # caring about state from prior tests (any of the helper tests
-    # above will have already installed the listener).
-    eng_a: Any = build_engine("sqlite+aiosqlite:///:memory:")
-    eng_b: Any = build_engine("sqlite+aiosqlite:///:memory:")
+    url = "sqlite+aiosqlite:///:memory:"
+    owner = SimpleNamespace(engine=SimpleNamespace(url=make_url(url)))
+    registry = SimpleNamespace(get={"canon": owner}.__getitem__)
+    eng_a = build_engine(url, registry=registry)
+    eng_b = build_engine(url, registry=registry)
     assert getattr(install_tenant_guc_hook, "_installed", False) is True
-    # Same URL -> cached, so both calls return the same engine.
-    assert eng_a is eng_b
+    assert eng_a is eng_b is owner.engine

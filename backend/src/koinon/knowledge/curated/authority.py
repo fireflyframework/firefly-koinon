@@ -5,7 +5,7 @@ import json
 from datetime import UTC, datetime
 
 from pyfly.container import Provider, service
-from pyfly.kernel import ConflictException, ServiceUnavailableException
+from pyfly.kernel import ConflictException, InvalidRequestException, ServiceUnavailableException
 from pyfly.security.context import SecurityContext
 from pyfly.security.context_holder import SecurityContextHolder
 
@@ -15,10 +15,14 @@ from koinon.evidence.ports import ConversationSnapshotPort, SourceResolverPort, 
 from koinon.knowledge.curated.dtos import (
     ConversationOrigin,
     DocumentEvidence,
+    ExternalProposalEvidence,
+    ExternalProposalOrigin,
     KnowledgeDestination,
+    KnowledgeEvidence,
     StructuredEvidence,
     UserStatementEvidence,
 )
+from koinon.knowledge.external_reviews.read_receipt_ports import ExternalReadReceiptPort
 
 
 def digest(value) -> str:
@@ -34,8 +38,10 @@ class CuratedAuthority:
         catalog: CatalogService,
         snapshots: Provider[ConversationSnapshotPort | None],
         sources: Provider[SourceResolverPort | None],
+        read_receipts: Provider[ExternalReadReceiptPort | None] | None = None,
     ):
         self.catalog, self.snapshots, self.sources = catalog, snapshots, sources
+        self.read_receipts = read_receipts
 
     async def destination(self, subject, tenant_id, identifier, *, write=True):
         chain, seen, current = [], set(), identifier
@@ -85,6 +91,56 @@ class CuratedAuthority:
         context = SecurityContextHolder.get_context()
         token = context.attributes.get("koinon_token_id") if context else None
         origins = {token} if token else set()
+        if isinstance(request.origin, ExternalProposalOrigin):
+            restriction = self.catalog.restriction
+            grant = await restriction.grant(subject) if restriction else None
+            if grant is None or grant.tenant_id != tenant_id:
+                raise AccessDenied("An active external credential is required", code="TOKEN_UNAVAILABLE")
+            evidence: tuple[KnowledgeEvidence, ...] = (
+                ExternalProposalEvidence(
+                    text=request.content.body,
+                    sha256=hashlib.sha256(request.content.body.encode()).hexdigest(),
+                    submitted_by=subject,
+                    credential_id=grant.id,
+                    application_id=grant.authorized_application_id,
+                    source_receipt_ids=request.origin.source_receipt_ids,
+                    recorded_at=recorded_at,
+                ),
+            )
+            if request.origin.source_receipt_ids:
+                receipts = self.read_receipts.get() if self.read_receipts else None
+                if receipts is None:
+                    raise ServiceUnavailableException(
+                        "Source read receipts are unavailable", code="KNOWLEDGE_PROVENANCE_UNAVAILABLE"
+                    )
+                references, read_origins = await receipts.resolve(
+                    subject, tenant_id, request.origin.source_receipt_ids
+                )
+                if not references:
+                    raise ServiceUnavailableException(
+                        "The selected receipts contain no captured sources",
+                        code="KNOWLEDGE_PROVENANCE_UNAVAILABLE",
+                    )
+                if len(references) > 499:
+                    raise InvalidRequestException(
+                        "Select fewer source read receipts", code="KNOWLEDGE_PROVENANCE_LIMIT"
+                    )
+                if any(reference.kind not in {"document", "dataset"} for reference in references):
+                    raise ServiceUnavailableException(
+                        "Transitive source provenance is not qualified", code="CURATED_DERIVATION_UNQUALIFIED"
+                    )
+                evidence = (
+                    *evidence,
+                    *(
+                        DocumentEvidence(source=reference)
+                        if reference.kind == "document"
+                        else StructuredEvidence(source=reference)
+                        for reference in references
+                    ),
+                )
+                origins.update(read_origins)
+                await self.evidence(subject, tenant_id, evidence)
+            return evidence, tuple(sorted(origins | {grant.id}))
         if not isinstance(request.origin, ConversationOrigin):
             return (
                 UserStatementEvidence(

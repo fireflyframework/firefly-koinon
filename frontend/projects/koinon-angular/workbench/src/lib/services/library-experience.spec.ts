@@ -121,7 +121,7 @@ it('preserves recorded zero counts and hides missing statistics rather than inve
   });
   fixture.detectChanges();
   const text = fixture.nativeElement.textContent;
-  expect(text).toContain('1 table · 0 rows');
+  expect(text).toContain('1 table, 0 rows');
   expect(text).not.toContain('0 columns');
   expect(text).not.toContain('0 B');
 });

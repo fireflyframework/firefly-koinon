@@ -6,5 +6,5 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 
 @JsonTypeInfo(use=JsonTypeInfo.Id.NAME,include=JsonTypeInfo.As.EXISTING_PROPERTY,property="kind",visible=true)
-@JsonSubTypes({@JsonSubTypes.Type(value=UserStatementOrigin.class,name="user_statement"),@JsonSubTypes.Type(value=ConversationOrigin.class,name="conversation")})
-public sealed interface KnowledgeOrigin permits UserStatementOrigin,ConversationOrigin {}
+@JsonSubTypes({@JsonSubTypes.Type(value=UserStatementOrigin.class,name="user_statement"),@JsonSubTypes.Type(value=ConversationOrigin.class,name="conversation"),@JsonSubTypes.Type(value=ExternalProposalOrigin.class,name="external_proposal")})
+public sealed interface KnowledgeOrigin permits UserStatementOrigin,ConversationOrigin,ExternalProposalOrigin {}

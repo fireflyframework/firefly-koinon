@@ -73,6 +73,7 @@ class AnswerAudits:
             await self.origin(subject, tenant_id, run, token_id)
         generations = [GenerationReceipt.model_validate(row.payload["generation"]) for row in generation_rows]
         references, native_reads, attempts, private = {}, [], [], {}
+        tools = None
         captured = []
         access = self.assistants._attachment_access()
         summaries = (
@@ -101,6 +102,8 @@ class AnswerAudits:
                         references[source.id] = source
                 native_reads.extend(payload.get("native_reads", []))
                 attempts.extend(payload.get("sql_attempts", []))
+                if payload.get("rlm_tools") is not None:
+                    tools = [*(tools or []), *payload["rlm_tools"]]
             if row.kind == "attachment":
                 values = payload.get("data", {}).get("attachments", [])
                 captured.append(bool(values))
@@ -162,4 +165,5 @@ class AnswerAudits:
             private_files=list(private.values()),
             native_reads=native_reads,
             sql_attempts=attempts,
+            rlm_tools=tools,
         ).model_dump(mode="json", by_alias=True)

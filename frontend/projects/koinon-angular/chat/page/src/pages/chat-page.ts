@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
 import { CHAT_SPANISH } from './chat-spanish';
-import { KoinonTextPipe, KoinonDatePipe } from '@fireflyframework/koinon-angular';
+import { KoinonTextPipe, KoinonDatePipe, KoinonI18n } from '@fireflyframework/koinon-angular';
 import { A11yModule } from '@angular/cdk/a11y';
 import {
   Component,
@@ -75,6 +75,8 @@ export class KoinonChatPage implements OnInit, AfterViewInit, OnDestroy {
     avatar?: () => string;
     displayName?: () => string;
     brandBase?: () => string;
+    assistantName?: () => string;
+    brandSymbol?: () => string;
     locale?: () => string;
     managementBaseUrl?: () => string;
     newConversation?: () => boolean;
@@ -267,7 +269,15 @@ export class KoinonChatPage implements OnInit, AfterViewInit, OnDestroy {
   userAvatar() {
     return this.actions?.avatar?.() || '';
   }
+  private readonly i18n = inject(KoinonI18n);
+  assistantCopy(key: string) {
+    return this.i18n.text(key).replaceAll('koinon', this.assistantName());
+  }
+  assistantName() {
+    return this.actions?.assistantName?.() || 'koinon';
+  }
   brandSymbol() {
+    if (this.actions?.brandSymbol) return this.actions.brandSymbol();
     return (this.actions?.brandBase?.() || '/assets/brand') + '/logos/koinon-symbol-color.svg';
   }
   toggleHistory() {

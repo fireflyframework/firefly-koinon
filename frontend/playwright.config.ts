@@ -7,11 +7,11 @@ export default defineConfig({
   timeout: 30000,
   expect: { timeout: 7000 },
   use: {
-    baseURL: 'http://127.0.0.1:18782',
+    baseURL: process.env['KOINON_E2E_BASE_URL'] || 'http://127.0.0.1:18782',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
-  webServer: {
+  webServer: process.env['KOINON_E2E_BASE_URL'] ? undefined : {
     command: 'node scripts/preview.mjs',
     url: 'http://127.0.0.1:18782',
     reuseExistingServer: !process.env['CI'],

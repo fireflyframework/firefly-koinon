@@ -1,7 +1,14 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
+import {createLazyOrganizationPeopleApi} from './organization-loader.js';
+export type {OrganizationPeopleApi} from './organization-people.js';
+import type {ExternalFileCleanupInput,ExternalFileCleanupResult,ExternalFileReviewInput,ExternalFileChunkInput,ExternalFileReviewView,McpConnectionDescriptor,ExternalReviewInput,ExternalReviewDecision,ExternalReviewView} from './generated.js';
+import type {McpOAuthClient,McpOAuthClientCredential,McpOAuthClientInput,McpOAuthClientPage,McpOAuthClientPatch,McpOAuthClientReadiness,McpOAuthClientRevision} from './generated.js';
+import type {McpOAuthClientFilter} from './types.js';
+import type {BrandingValues,OrganizationBranding,OrganizationBrandingInput,BrandingResetInput} from './generated.js';
 import type {OrganizationChatSettings,OrganizationChatSettingsInput} from './generated.js';
 import type {OrganizationKnowledgeSettings,OrganizationKnowledgeSettingsInput} from './generated.js';
+import type {DocumentVersion,DocumentVersionPage,DocumentExtractionPage,DocumentPartPage,DocumentPartContent} from './generated.js';
 import type {AnswerAudit} from './generated.js';
 import type {AuthorizedApplication} from './generated.js';
 import type {AuthorizedApplicationFilter} from './types.js';
@@ -33,6 +40,15 @@ type OrganizationSettingsApi<T,I,F extends boolean>={
  update:(tenantId:string,input:I,options?:RequestOptions)=>Promise<T>;
 };
 export class KoinonClient {
+ get branding(){
+  const transport=this.options.transport;
+  return {
+   defaults:(options:RequestOptions={})=>transport.request<BrandingValues>('GET','/branding/defaults',options),
+   get:(tenantId:string,options:RequestOptions={})=>transport.request<OrganizationBranding>('GET',tenant(tenantId)+'/branding',options),
+   update:(tenantId:string,input:OrganizationBrandingInput,options:RequestOptions={})=>transport.request<OrganizationBranding>('PUT',tenant(tenantId)+'/branding',{...options,body:input}),
+   reset:(tenantId:string,input:BrandingResetInput,options:RequestOptions={})=>transport.request<OrganizationBranding>('POST',tenant(tenantId)+'/branding/reset',{...options,body:input}),
+  };
+ }
  get organizationKnowledge(){
   return this.organizationSettings<OrganizationKnowledgeSettings,OrganizationKnowledgeSettingsInput,false>('/knowledge/settings',false);
  }
@@ -43,6 +59,10 @@ export class KoinonClient {
    update:(tenantId:string,input:I,options:RequestOptions={})=>transport.request<T>('PUT',tenant(tenantId)+suffix,{...options,body:input}),
   } as OrganizationSettingsApi<T,I,F>;
  }
+ readonly mcp;
+ readonly mcpOAuthClients;
+ readonly externalReviews;
+ readonly externalFileReviews;
  readonly knowledgeIntents;
  readonly knowledgeItems;
  readonly catalog;
@@ -61,6 +81,7 @@ export class KoinonClient {
  readonly tokens;
  readonly authorizedApplications;
  readonly organizationChat;
+ readonly organizationPeople;
  readonly people;
  readonly knowledgeConnections;
  readonly knowledgeIndexes;
@@ -84,6 +105,33 @@ export class KoinonClient {
     update:(tenantId:string,workspaceId:string,termId:string,input:GlossaryTermUpdate,expectedUpdatedAt:string,options:RequestOptions={})=>transport.request<GlossaryTermRead>('PUT',path+'/'+id(termId),{...options,body:input,headers:headers(tenantId,workspaceId,options,expectedUpdatedAt)}),
     remove:(tenantId:string,workspaceId:string,termId:string,expectedUpdatedAt:string,options:RequestOptions={})=>transport.request<void>('DELETE',path+'/'+id(termId),{...options,headers:headers(tenantId,workspaceId,options,expectedUpdatedAt)}),
    };
+  };
+  this.mcp={
+   connection:(options:RequestOptions={})=>transport.request<McpConnectionDescriptor>('GET','/mcp/connection',options),
+   organizationConnection:(tenantId:string,options:RequestOptions={})=>transport.request<McpConnectionDescriptor>('GET',tenant(tenantId)+'/mcp/connection',options),
+  };
+  this.mcpOAuthClients={
+   readiness:(tenantId:string,options:RequestOptions={})=>transport.request<McpOAuthClientReadiness>('GET',tenant(tenantId)+'/mcp/oauth-clients/readiness',options),
+   list:(tenantId:string,options:RequestOptions&{query?:McpOAuthClientFilter}={})=>transport.request<McpOAuthClientPage>('GET',tenant(tenantId)+'/mcp/oauth-clients',options),
+   create:(tenantId:string,input:McpOAuthClientInput,options:RequestOptions={})=>transport.request<McpOAuthClientCredential>('POST',tenant(tenantId)+'/mcp/oauth-clients',{...options,body:input}),
+   get:(tenantId:string,clientId:string,options:RequestOptions={})=>transport.request<McpOAuthClient>('GET',tenant(tenantId)+'/mcp/oauth-clients/'+id(clientId),options),
+   update:(tenantId:string,clientId:string,input:McpOAuthClientPatch,options:RequestOptions={})=>transport.request<McpOAuthClient>('PATCH',tenant(tenantId)+'/mcp/oauth-clients/'+id(clientId),{...options,body:input}),
+   rotateSecret:(tenantId:string,clientId:string,input:McpOAuthClientRevision,options:RequestOptions={})=>transport.request<McpOAuthClientCredential>('POST',tenant(tenantId)+'/mcp/oauth-clients/'+id(clientId)+'/rotate-secret',{...options,body:input}),
+  };
+  this.externalFileReviews={
+   cleanup:(tenantId:string,input:ExternalFileCleanupInput,options:RequestOptions={})=>transport.request<ExternalFileCleanupResult>('POST',`${tenant(tenantId)}/external-file-reviews/cleanup`,{...options,body:input}),
+   stage:(tenantId:string,input:ExternalFileReviewInput,idempotencyKey:string,options:RequestOptions={})=>transport.request<ExternalFileReviewView>('POST',`${tenant(tenantId)}/external-file-reviews`,{...options,body:input,headers:{...options.headers,'Idempotency-Key':idempotencyKey}}),
+   get:(tenantId:string,reviewId:string,options:RequestOptions={})=>transport.request<ExternalFileReviewView>('GET',`${tenant(tenantId)}/external-file-reviews/${id(reviewId)}`,options),
+   chunk:(tenantId:string,reviewId:string,input:ExternalFileChunkInput,options:RequestOptions={})=>transport.request<ExternalFileReviewView>('POST',`${tenant(tenantId)}/external-file-reviews/${id(reviewId)}/chunks`,{...options,body:input}),
+   seal:(tenantId:string,reviewId:string,options:RequestOptions={})=>transport.request<ExternalFileReviewView>('POST',`${tenant(tenantId)}/external-file-reviews/${id(reviewId)}/seal`,options),
+   approve:(tenantId:string,reviewId:string,input:ExternalReviewDecision,idempotencyKey:string,options:RequestOptions={})=>transport.request<ExternalFileReviewView>('POST',`${tenant(tenantId)}/external-file-reviews/${id(reviewId)}/approve`,{...options,body:input,headers:{...options.headers,'Idempotency-Key':idempotencyKey}}),
+   cancel:(tenantId:string,reviewId:string,input:ExternalReviewDecision,options:RequestOptions={})=>transport.request<ExternalFileReviewView>('POST',`${tenant(tenantId)}/external-file-reviews/${id(reviewId)}/cancel`,{...options,body:input}),
+  };
+  this.externalReviews={
+   stage:(tenantId:string,input:ExternalReviewInput,idempotencyKey:string,options:RequestOptions={})=>transport.request<ExternalReviewView>('POST',`${tenant(tenantId)}/external-knowledge-reviews`,{...options,body:input,headers:{...options.headers,'Idempotency-Key':idempotencyKey}}),
+   get:(tenantId:string,reviewId:string,options:RequestOptions={})=>transport.request<ExternalReviewView>('GET',`${tenant(tenantId)}/external-knowledge-reviews/${id(reviewId)}`,options),
+   approve:(tenantId:string,reviewId:string,input:ExternalReviewDecision,idempotencyKey:string,options:RequestOptions={})=>transport.request<KnowledgeCommitOutcome>('POST',`${tenant(tenantId)}/external-knowledge-reviews/${id(reviewId)}/approve`,{...options,body:input,headers:{...options.headers,'Idempotency-Key':idempotencyKey}}),
+   cancel:(tenantId:string,reviewId:string,input:ExternalReviewDecision,options:RequestOptions={})=>transport.request<ExternalReviewView>('POST',`${tenant(tenantId)}/external-knowledge-reviews/${id(reviewId)}/cancel`,{...options,body:input}),
   };
   this.organizationChat=this.organizationSettings<OrganizationChatSettings,OrganizationChatSettingsInput,true>('/chat/settings',true);
   this.structured={glossary:glossary(false),agentGlossary:glossary(true)};
@@ -131,6 +179,7 @@ export class KoinonClient {
    activate:(tenantId:string,providerId:string,input:IdentityActivation,options:RequestOptions={})=>transport.request<IdentityProvider>('POST',`${tenant(tenantId)}/identity/providers/${id(providerId)}/activate`,{...options,body:input}),
    disable:(tenantId:string,providerId:string,input:IdentityRevision,options:RequestOptions={})=>transport.request<IdentityProvider>('POST',`${tenant(tenantId)}/identity/providers/${id(providerId)}/disable`,{...options,body:input}),
   };
+  this.organizationPeople=createLazyOrganizationPeopleApi(transport);
   this.people={
    list:(tenantId:string,filter:{workspace_id?:string;q?:string;limit?:number;after?:string|undefined}={},options:RequestOptions={})=>transport.request<Page<Person>>('GET',`${tenant(tenantId)}/people`,{...options,query:{...filter}}),
    avatar:(tenantId:string,profileId:string,workspaceId?:string,options:RequestOptions={})=>transport.request<BinaryDownload>('GET',`${tenant(tenantId)}/people/${id(profileId)}/avatar`,{...options,query:{workspace_id:workspaceId},responseType:'download'}),
@@ -223,7 +272,14 @@ export class KoinonClient {
    archive:(tenantId:string,entryId:string,options:RequestOptions={})=>transport.request<CatalogEntry>('POST',`${tenant(tenantId)}/catalog/${id(entryId)}/archive`,options),
   };
   this.sources={uploadFile:(tenantId:string,input:SourceUploadInput,options:RequestOptions={})=>{const body=multipart(input.file,input.filename);for(const key of ['workspace_id','project_id','parent_id','mode'] as const)body.set(key,input[key]);return transport.request<UploadResponse>('POST',`${tenant(tenantId)}/sources/upload`,{...options,body});},upload:(tenantId:string,form:FormData,options:RequestOptions={})=>transport.request<UploadResponse>('POST',`${tenant(tenantId)}/sources/upload`,{...options,body:form})};
+  const versionPath=(tenantId:string,documentId:string,versionId?:string)=>`${tenant(tenantId)}/documents/${id(documentId)}/versions${versionId===undefined?'':'/'+id(versionId)}`;
   this.documents={
+   versions:(tenantId:string,documentId:string,filter:{page?:number;page_size?:number}={},options:RequestOptions={})=>transport.request<DocumentVersionPage>('GET',versionPath(tenantId,documentId),{...options,query:{...filter}}),
+   version:(tenantId:string,documentId:string,versionId:string,options:RequestOptions={})=>transport.request<DocumentVersion>('GET',versionPath(tenantId,documentId,versionId),options),
+   extractions:(tenantId:string,documentId:string,versionId:string,filter:{page?:number;page_size?:number}={},options:RequestOptions={})=>transport.request<DocumentExtractionPage>('GET',versionPath(tenantId,documentId,versionId)+'/extractions',{...options,query:{...filter}}),
+   parts:(tenantId:string,documentId:string,versionId:string,extractionId:string,filter:{page?:number;page_size?:number;kind?:'artifact'|'section'|'chunk'|'page'}={},options:RequestOptions={})=>transport.request<DocumentPartPage>('GET',versionPath(tenantId,documentId,versionId)+'/extractions/'+id(extractionId)+'/parts',{...options,query:{...filter}}),
+   part:(tenantId:string,documentId:string,versionId:string,extractionId:string,partId:string,options:RequestOptions={})=>transport.request<DocumentPartContent>('GET',versionPath(tenantId,documentId,versionId)+'/extractions/'+id(extractionId)+'/parts/'+id(partId),options),
+   versionOriginal:(tenantId:string,documentId:string,versionId:string,options:RequestOptions={})=>transport.request<BinaryDownload>('GET',versionPath(tenantId,documentId,versionId)+'/original',{...options,responseType:'download'}),
    download:(tenantId:string,documentId:string,options:RequestOptions={})=>transport.request<BinaryDownload>('GET',`${tenant(tenantId)}/documents/${id(documentId)}/original`,{...options,responseType:'download'}),
    replace:(tenantId:string,documentId:string,file:Blob,input:ContentPrecondition,options:RequestOptions={})=>{const body=multipart(file,input.filename);body.set('acknowledge_chunk_invalidation',String(input.acknowledge_chunk_invalidation??false));return transport.request<ContentUpdate>('POST',`${tenant(tenantId)}/documents/${id(documentId)}/content`,{...options,body,headers:{...options.headers,...documentRevisionHeaders(input),'If-Match':match(input.expected_sha256)}});},
    reingest:(tenantId:string,documentId:string,input:ContentPrecondition,options:RequestOptions={})=>transport.request<ContentUpdate>('POST',`${tenant(tenantId)}/documents/${id(documentId)}/reingest`,{...options,body:{acknowledge_chunk_invalidation:input.acknowledge_chunk_invalidation??false},headers:{...options.headers,...documentRevisionHeaders(input),'If-Match':match(input.expected_sha256)}}),

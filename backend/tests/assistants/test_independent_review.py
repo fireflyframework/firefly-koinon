@@ -14,6 +14,7 @@ from starlette.requests import Request
 from test_service import assistants as assistants
 from test_service import configured
 
+from koinon.assistants.audit import AnswerAudits
 from koinon.assistants.controllers import AssistantController
 from koinon.assistants.execution import AssistantExecutor
 from koinon.assistants.lifecycle import timestamp
@@ -108,7 +109,9 @@ async def test_evidence_response_uses_public_data_shape(assistants, monkeypatch)
     )
     from koinon.assistants.history.service import ChatHistoryService
 
-    response = await AssistantController(service, context.get_bean(ChatHistoryService)).result(
+    response = await AssistantController(
+        service, context.get_bean(ChatHistoryService), context.get_bean(AnswerAudits)
+    ).result(
         "north",
         run["run_id"],
         result_id,

@@ -48,7 +48,7 @@ class KnowledgeConnectionsController:
         self, tenant_id: PathVar[str], body: Valid[Body[ConnectionInput]], request: Request
     ) -> dict:
         return await self.connections.save(
-            identity_from_request(request).subject, tenant_id, body.model_dump()
+            identity_from_request(request).subject, tenant_id, body.model_dump(exclude_unset=True)
         )
 
     @put_mapping("/knowledge-connections/{connection_id}")
@@ -60,7 +60,10 @@ class KnowledgeConnectionsController:
         request: Request,
     ) -> dict:
         return await self.connections.save(
-            identity_from_request(request).subject, tenant_id, body.model_dump(), connection_id
+            identity_from_request(request).subject,
+            tenant_id,
+            body.model_dump(exclude_unset=True),
+            connection_id,
         )
 
     @get_mapping("/knowledge-connections/{connection_id}")

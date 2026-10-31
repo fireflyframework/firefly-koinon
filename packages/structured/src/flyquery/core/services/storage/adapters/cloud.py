@@ -7,13 +7,14 @@ from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 
 from koinon_storage.cloud import CloudProfile, CloudStore, ObjectTooLargeError
+from pyfly.context.lifecycle import pre_destroy
 
 from flyquery.core.services.storage.object_store import ObjectMeta
 
 
 class CloudObjectStore:
-    def __init__(self, profile: CloudProfile, *, presign_ttl_s=86400, client=None):
-        self.native = CloudStore(profile, client=client)
+    def __init__(self, profile: CloudProfile, *, presign_ttl_s=86400, client=None, owns_client=True):
+        self.native = CloudStore(profile, client=client, owns_client=owns_client)
         self._presign_ttl_s = presign_ttl_s
 
     async def put(self, key: str, body: bytes | AsyncIterator[bytes], content_type: str, kms_key_uri=None):
@@ -96,3 +97,7 @@ class CloudObjectStore:
         self.native._full_key(dst_key)
         source = await self.head(src_key)
         await self.native.put(dst_key, await self.native.get(src_key), source.content_type)
+
+    @pre_destroy
+    async def close(self) -> None:
+        await self.native.close()

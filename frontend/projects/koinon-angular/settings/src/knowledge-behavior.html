@@ -39,7 +39,7 @@
           : 'Saved for this organization'
         ) | ffkText
       }}
-      · {{ 'Revision' | ffkText }} {{ settings.revision | ffkValue: 'INTEGER' }}
+     , {{ 'Revision' | ffkText }} {{ settings.revision | ffkValue: 'INTEGER' }}
     </p>
     @if (!c.f.tenantPermissions().has('settings:write')) {
       <p class="read-only">

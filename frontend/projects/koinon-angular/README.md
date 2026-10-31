@@ -80,7 +80,7 @@ const optionalFeatures = [
 
 The `/chat/page` loader opens conversations without downloading the OpenUI renderer. Evidence downloads from `/chat/evidence` when an answer has an artifact. The existing `/chat` entry point continues to export the same public components for hosts that import them directly. Account, version history, source coordinates, knowledge models, and deployment sections load when opened. Serve every emitted JavaScript chunk alongside the entry scripts so these views remain reachable after deployment.
 
-Operators choose the organization chat agent once in **Settings → Agents → Organization chat**. Only organization-wide agents can be selected, and clearing the setting makes standard chat unavailable. Every standard Chat initialization reads the authorized organization setting for its current workspace/project; missing, disabled, or inaccessible defaults never fall back to another agent. A host's explicit `chatActions.agentId` / Settings agent trial remains a deliberate per-session override. Stored answer audits keep the actual agent, provider, model, and source snapshots used by each run.
+Operators choose the organization chat agent once by opening **Settings**, selecting **Agents** and using **Organization chat**. Only organization-wide agents can be selected, and clearing the setting makes standard chat unavailable. Every standard Chat initialization reads the authorized organization setting for its current workspace/project; missing, disabled, or inaccessible defaults never fall back to another agent. A host's explicit `chatActions.agentId` / Settings agent trial remains a deliberate per-session override. Stored answer audits keep the actual agent, provider, model, and source snapshots used by each run.
 
 Chat needs the optional OpenUI Angular 0.4 dependency family and Zod 4. The supplied SDK transport supports authenticated JSON requests, binary files, multipart upload, and event streams. Model tools and result access remain server-authorized. Settings controls appear according to the current user’s permissions and the backend’s supported provider descriptors. Model discovery, observed generation, streaming, and tool capability are separate states. An agent the server permits to run while unverified has an explicit trial action. Advanced model options come from the server schema and the selected model API’s supported fields.
 
@@ -97,3 +97,11 @@ Profile preferences support English and Spanish interface copy, regional formatt
 From the frontend workspace, run `npm run build:library`. `npm run smoke:consumer` packs the built library and builds a separate Angular consumer using that tarball. Browser embedding tests check input/event behavior and Shadow DOM isolation against hostile host styles. These checks are separate from live-backend acceptance.
 
 Copyright 2026 Firefly Software Foundation. Licensed under Apache-2.0. Preserve all accompanying third-party notices.
+
+### Custom identity
+
+Organization administrators can manage names, logos and accessible light/dark palettes by opening **Settings**, choosing **Organization** and selecting **Identity & appearance**. The workbench loads the effective identity through the typed SDK. Installation defaults also cover the sign-in screen; organization overrides are read only after authorization.
+
+An embedding application may supply a typed `BrandingValues` object through `[branding]` on the Angular workbench or the custom element's `branding` JavaScript property. Its explicit override takes precedence in that instance. `(brandingChange)` reports the effective identity. The workbench scopes palette variables and image presentation to its own shadow root; it does not change the host document title, favicon or global styles. Continue to supply `brandBase` for shipped logo/font assets. Manrope and legal attribution remain intact.
+
+See [Identity and appearance](../../../docs/operations/identity-appearance.md) for deployment configuration, asset constraints, revision checks and Python, TypeScript and Java API operations.

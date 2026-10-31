@@ -17,7 +17,7 @@ public record KnowledgeCommitReceipt(
     @JsonProperty("native_version_id") String nativeVersionId,
     @JsonProperty("version") Long version,
     @JsonProperty("serving_version") Long servingVersion,
-    @JsonProperty("action") KnowledgeCommitReceiptAction action,
+    @JsonProperty("action") ExternalReviewInputAction action,
     @JsonProperty("content_sha256") String contentSha256,
     @JsonProperty("evidence_sha256") String evidenceSha256,
     @JsonProperty("committed_at") Instant committedAt,

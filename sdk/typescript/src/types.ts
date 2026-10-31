@@ -1,6 +1,6 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
-import type {AttachmentCapabilities,AttachmentHistorySummary,CatalogProposal,ProposalUpdate,OrganizationKnowledgeSnapshot} from './generated.js';
+import type {AttachmentCapabilities,AttachmentHistorySummary,CatalogProposal,ProposalUpdate,OrganizationKnowledgeSnapshot,McpOAuthClientInput,SourceReference} from './generated.js';
 export type Json = null | boolean | number | string | Json[] | {[key:string]:Json};
 export type ResourceKind = 'workspace'|'project'|'collection'|'corpus'|'source'|'document'|'dataset'|'chunk'|'table'|'index_version'|'query_session';
 export interface CatalogEntry {
@@ -25,7 +25,7 @@ export interface ProviderCapability {id:string;name:string;kind:string;configure
 export interface Capabilities {attachments?:AttachmentCapabilities;catalog?:{ready:boolean};agentic?:{configured:boolean;verified:boolean};domains?:Record<string,DomainCapability>;providers:ProviderCapability[];features:{id:string;name:string;available:boolean;reason?:string|null}[]}
 export interface Citation {id?:string;source_id?:string;asset_id?:string;document_id?:string;chunk_id?:string;title?:string;text?:string;page?:number|null;section?:string|null;url?:string|null}
 export interface SearchRequest {question:string;workspace_id?:string;project_id?:string;collection_id?:string;asset_ids?:string[];limit?:number;answer?:boolean}
-export interface SearchHit {id:string;title:string;text:string;score?:number|null;asset_id:string;source_id?:string;citations?:Citation[]}
+export interface SearchHit {id:string;title:string;text:string;score?:number|null;asset_id:string;source_id?:string;source_reference?:SourceReference|null;citations?:Citation[]}
 export interface SearchResponse {knowledge_settings_snapshot?:OrganizationKnowledgeSnapshot|null;hits:SearchHit[];answer?:string;citations?:Citation[]}
 export interface QueryRequest {dataset_id:string;question?:string;conversation_id?:string|null;sql?:string|null}
 export interface QueryResponse {knowledge_settings_snapshot?:OrganizationKnowledgeSnapshot|null;query_id:string;sql?:string|null;execution_status:'OK'|'REFINED_OK'|'FAILED'|'REJECTED_BY_FIREWALL'|null;preview?:Record<string,Json>[]|null;row_count?:number|null;truncated?:boolean;elapsed_ms?:number|null;chart_hint?:'line'|'bar'|'table'|'pie'|'none'|null;explanation?:string|null;clarification?:ClarificationFrame|null;grounded_summary?:Record<string,Json>|null;usage?:UsageSummary|null;snapshot_pins?:Record<string,string>;citations?:Citation[]}
@@ -45,7 +45,7 @@ export interface KnowledgeScope {workspace_id?:string;project_id?:string;collect
 export interface SetupCheck {id:string;status:'passed'|'failed'|'needs_setup'|'unverified';message:string;model_id?:string;capability?:'chat'|'streaming'|'tools'|'image_input'|'audio_input';supported?:boolean|null;verified?:boolean}
 export type ModelApi='chat'|'responses'|'messages';
 export type NativeModelClass='OpenAIChatModel'|'OpenAIResponsesModel'|'AnthropicModel';
-export interface ModelParameters {max_tokens?:number;temperature?:number;top_p?:number;top_k?:number;seed?:number;stop_sequences?:string[];request_timeout?:number;reasoning?:'none'|'minimal'|'low'|'medium'|'high'|'xhigh';reasoning_budget_tokens?:number;parallel_tool_calls?:boolean;store_responses?:boolean;output_verbosity?:'low'|'medium'|'high'}
+export interface ModelParameters {output_mode?:'default'|'native'|null;max_tokens?:number;temperature?:number;top_p?:number;top_k?:number;seed?:number;stop_sequences?:string[];request_timeout?:number;reasoning?:'none'|'minimal'|'low'|'medium'|'high'|'xhigh';reasoning_budget_tokens?:number;parallel_tool_calls?:boolean;store_responses?:boolean;output_verbosity?:'low'|'medium'|'high'}
 export interface CapabilityState {supported:boolean|null;verified:boolean}
 export interface ModelCapability {model_id:string;chat:CapabilityState;streaming:CapabilityState;tools:CapabilityState;image_input?:CapabilityState;audio_input?:CapabilityState;observed_tools:string[];option_fields?:string[]}
 export interface ModelConnection {id:string;ownership:'deployment';read_only:true;provider?:string|null;model_id?:string|null;configured:boolean;available:boolean|null;status:'passed'|'failed'|'needs_setup'|'unverified';reason:string;tool?:AgentTool}
@@ -98,12 +98,14 @@ export interface DocumentChunks {document_id:string;source_id:string;native_sour
 export interface PageFilter {q?:string;page?:number;page_size?:number;sort?:string;order?:'asc'|'desc';[key:string]:string|number|boolean|undefined}
 export interface StatusFilter extends PageFilter {status?:string}
 export interface AuthorizedApplicationFilter {q?:string;status?:'all'|'active'|'expired'|'revoked';page?:number;page_size?:number;sort?:'connected_at'|'name'|'expires_at'|'last_used_at';order?:'asc'|'desc'}
+export type McpOAuthScope=McpOAuthClientInput['scopes'][number];
+export type McpOAuthClientFilter={q?:string;status?:'all'|'enabled'|'disabled';page?:number;page_size?:number;sort?:'name'|'updated_at';order?:'asc'|'desc'};
 export interface MemberUpdate {role?:Membership['role'];active?:boolean}
 export interface Person {profile_id?:string|null;subject:string;display_name:string;avatar_url:string|null;avatar_version:string|null}
 export interface ContentPrecondition {filename?:string;expected_sha256:string;acknowledge_chunk_invalidation?:boolean;expected_source_version_id?:string|null;expected_extraction_id?:string|null}
 export interface ContentEffects {unchanged?:boolean;affected_asset_ids?:string[];snapshot_id?:string;file_id?:string;historical_snapshots_preserved?:boolean;citation_rows_preserved?:boolean;previous_chunk_ids_invalidated?:boolean;[key:string]:Json|undefined}
 export interface ContentUpdate {asset:CatalogEntry;source?:CatalogEntry;table?:CatalogEntry;version:CatalogEntry;effects:ContentEffects}
-export interface KnowledgeConnectionInput {domain:'documents'|'structured';role:string;workspace_id?:string|null;mode?:'provider'|'current_agent';provider_id?:string|null;model_id?:string|null;model_options?:ModelParameters;dimensions?:number|null;storage_dimensions?:number|null;space_id?:string|null;enabled?:boolean;expected_revision?:number}
+export interface KnowledgeConnectionInput {domain:'documents'|'structured';role:string;workspace_id?:string|null;mode?:'provider'|'current_agent';provider_id?:string|null;model_id?:string|null;model_options?:ModelParameters|null;dimensions?:number|null;storage_dimensions?:number|null;space_id?:string|null;enabled?:boolean;expected_revision?:number}
 export interface KnowledgeConnection {id:string;tenant_id:string;workspace_id:string|null;domain:'documents'|'structured';role:string;mode:'provider'|'current_agent';provider_id:string|null;model_id:string|null;model_options:Record<string,Json>;dimensions:number|null;storage_dimensions:number|null;space_id:string|null;embedding_fingerprint:string|null;enabled:boolean;revision:number;created_by:string;updated_by:string;created_at:string;updated_at:string}
 export interface KnowledgeRole {id:string;domain:'documents'|'structured';label:string;kind:'embedding'|'generative';purposes:string[];supports_current_agent:boolean;compatible_index_required:boolean;assignment:'tenant'|'workspace'|null;status:'needs_setup'|'assigned'|'disabled';runtime_qualification:'not_run'}
 export interface KnowledgeProvider {id:string;name:string;kind:ModelProvider['kind'];api:ModelApi|null;model_ids:string[];enabled:boolean}
@@ -135,3 +137,7 @@ export type ExportFilter = {q?:string;status?:'all'|'ready'|'cancelled'|'expired
 export type ShareFilter = {q?:string;status?:'all'|'active'|'revoked'|'expired';page?:number;page_size?:number};
 
 export type AgentFilter = StatusFilter & {workspace_id?:string;project_id?:string};
+
+export interface OrganizationPeopleFilter {workspace_id?:string;q?:string;job_title?:string;unit_id?:string;department_id?:string;manager_id?:string;unassigned?:boolean;page?:number;page_size?:number}
+export interface OrganizationUnitFilter {workspace_id?:string;parent_id?:string;q?:string;page?:number;page_size?:number}
+export interface OrganizationReportsFilter {workspace_id?:string;page?:number;page_size?:number}

@@ -36,38 +36,20 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 from pyfly.container import rest_controller
-from pyfly.data.transaction import infrastructure_unit
 from pyfly.web import Body, Valid, post_mapping, request_mapping
-from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
 
-from flyquery.config import FlyquerySettings
-from flyquery.core.agents.critic_agent import build_critic_agent
-from flyquery.core.agents.explainer_agent import build_explainer_agent
-from flyquery.core.agents.generation_agent import build_generation_agent
-from flyquery.core.agents.grounding_agent import build_grounding_agent
-from flyquery.core.services.examples.auto_learner import AutoLearner, autolearn_allowed
-from flyquery.core.services.examples.examples_service import ExamplesService
-from flyquery.core.services.execution.ast_classifier import AstClassifier
-from flyquery.core.services.execution.duckdb_executor import DuckDBExecutor
-from flyquery.core.services.execution.scope_guard import ScopeGuard, ScopeGuardError
+from flyquery.core.services.examples.auto_learner import autolearn_allowed
+from flyquery.core.services.execution.scope_guard import ScopeGuardError
 from flyquery.core.services.execution.table_resolver import TableResolver
-from flyquery.core.services.query.query_repository import QueryRepository
 from flyquery.core.services.query.query_service import (
-    QueryService,
     _render_critic_prompt,
     _render_generation_prompt,
     _render_grounding_prompt,
 )
-from flyquery.core.services.query.result_uploader import ResultUploader
-from flyquery.core.services.retrieval.embedder import Embedder
-from flyquery.core.services.retrieval.hybrid_retriever import HybridRetriever
-from flyquery.core.services.retrieval.reranker import build_reranker
-from flyquery.core.services.retrieval.search_index import SearchIndex
-from flyquery.core.services.semantic.semantic_repository import SemanticRepository
-from flyquery.core.services.storage.object_store import ObjectStore
-from flyquery.data import StructuredSessions, unwrap_sessions
+from flyquery.core.services.query.runtime import StructuredQueryRuntimeFactory
+from flyquery.core.services.query.runtime_context import StructuredQueryRuntime
 from flyquery.interfaces.query import (
     AnswerResponse,
     BatchQueryItem,
@@ -101,44 +83,15 @@ def _sse_frame(event: str, payload: Any) -> bytes:
 @rest_controller(name="structured.QueryController")
 @request_mapping("/api/v1/query")
 class QueryController:
-    """REST adapter for the NL → SQL query pipeline.
-
-    Per-request QueryService construction
-    ======================================
-    ``QueryService`` depends on request-scoped objects (``SearchIndex`` +
-    ``TableResolver`` both need a live ``AsyncSession``). The controller
-    therefore builds a fresh ``QueryService`` inside each handler by opening
-    a new session from the injected ``async_sessionmaker``.
-
-    The singleton dependencies (``DuckDBExecutor``, ``AstClassifier``,
-    ``ScopeGuard``, ``ObjectStore``, ``QueryRepository``) are wired by the
-    DI container at startup and held on ``self``.
-    """
+    """HTTP and SSE adapter over the managed structured query runtime."""
 
     def __init__(
         self,
-        settings: FlyquerySettings,
-        session: StructuredSessions,
-        object_store: ObjectStore,
-        query_repository: QueryRepository,
-        semantic_repository: SemanticRepository,
-        examples_service: ExamplesService,
-        embedder: Embedder,
+        runtime_factory: StructuredQueryRuntimeFactory,
         idempotency_store: IdempotencyStore,
     ) -> None:
-        self._settings = settings
-        self._session_factory = unwrap_sessions(session)
-        self._object_store = object_store
-        self._query_repo = query_repository
-        self._semantic_repo = semantic_repository
-        self._examples_service = examples_service
-        self._embedder = embedder
+        self._runtime_factory = runtime_factory
         self._idempotency_store = idempotency_store
-
-        # Singletons that don't need a session
-        self._ast_classifier = AstClassifier()
-        self._scope_guard = ScopeGuard()
-        self._executor = DuckDBExecutor(settings)
 
     async def _guarded_execute(
         self,
@@ -148,6 +101,7 @@ class QueryController:
         resolver: TableResolver,
         dataset_id: uuid.UUID,
         bundle: dict,
+        runtime: StructuredQueryRuntime,
     ) -> Any:
         """Apply ScopeGuard + bad-tables firewall, then execute.
 
@@ -159,7 +113,7 @@ class QueryController:
         from flyquery.core.services.execution.duckdb_executor import ExecutionError
 
         try:
-            self._scope_guard.check(
+            runtime.scope_guard.check(
                 classification=ast,
                 scopes=_DEFAULT_USER_SCOPES,
                 table_kinds_by_name=table_kinds,
@@ -186,52 +140,7 @@ class QueryController:
             )
 
         attached = await resolver.resolve(dataset_id, list(ast.table_refs))
-        return await self._executor.execute(sql, attached)
-
-    def _build_service(
-        self, db_session: AsyncSession, *, settings: FlyquerySettings | None = None
-    ) -> QueryService:
-        """Build a per-request QueryService around the provided session."""
-        settings = settings if settings is not None else self._settings
-        index = SearchIndex(db_session)
-        retriever = HybridRetriever(
-            index=index,
-            embedder=self._embedder,
-            rrf_k=settings.rrf_k,
-        )
-
-        # Build a NoopReranker here; the actual reranker bean is injected via
-        # configuration in production but for the controller we use the same
-        # factory pattern as the configuration.py bean.
-        reranker = build_reranker(settings)
-
-        table_resolver = TableResolver(session=db_session, settings=settings)
-        uploader = ResultUploader(
-            object_store=self._object_store,
-            query_repo=self._query_repo,
-            settings=settings,
-        )
-        auto_learner = AutoLearner(examples_service=self._examples_service)
-
-        return QueryService(
-            retriever=retriever,
-            reranker=reranker,
-            grounding_agent=build_grounding_agent(settings),
-            generation_agent=build_generation_agent(settings),
-            critic_agent=build_critic_agent(settings)
-            if settings.max_refine_retries > 0
-            else None,
-            explainer_agent=build_explainer_agent(settings),
-            ast_classifier=self._ast_classifier,
-            scope_guard=self._scope_guard,
-            table_resolver=table_resolver,
-            executor=self._executor,
-            query_repo=self._query_repo,
-            settings=settings,
-            result_uploader=uploader,
-            auto_learner=auto_learner,
-            semantic_repo=self._semantic_repo,
-        )
+        return await runtime.executor.execute(sql, attached)
 
     # ------------------------------------------------------------------
     # POST /api/v1/query (sync full pipeline)
@@ -252,8 +161,8 @@ class QueryController:
         ctx = tenant_context_from_request(http_request)
         workspace_id = _parse_workspace_id(ctx.workspace_id)
 
-        async with infrastructure_unit(self._session_factory) as db_session:
-            svc = self._build_service(db_session)
+        async with self._runtime_factory.unit() as runtime:
+            svc = runtime.pipeline
             result = await svc.answer(
                 tenant_id=ctx.tenant_id,
                 workspace_id=workspace_id,
@@ -311,8 +220,8 @@ class QueryController:
 
         async def _ask(idx: int, item: BatchQueryItem) -> BatchQueryResultItem:
             try:
-                async with infrastructure_unit(self._session_factory) as db_session:
-                    svc = self._build_service(db_session)
+                async with self._runtime_factory.unit() as runtime:
+                    svc = runtime.pipeline
                     r = await svc.answer(
                         tenant_id=ctx.tenant_id,
                         workspace_id=workspace_id,
@@ -381,28 +290,26 @@ class QueryController:
         ctx = tenant_context_from_request(http_request)
         workspace_id = _parse_workspace_id(ctx.workspace_id)
 
-        async with infrastructure_unit(self._session_factory) as db_session:
-            index = SearchIndex(db_session)
-            retriever = HybridRetriever(index=index, embedder=self._embedder, rrf_k=self._settings.rrf_k)
-            reranker = build_reranker(self._settings)
+        async with self._runtime_factory.unit(preview=True) as runtime:
+            retriever, reranker = runtime.retriever, runtime.reranker
 
             bundle = await retriever.retrieve(
                 body.question,
                 dataset_id=body.dataset_id,
                 workspace_id=workspace_id,
-                top_k_schema=self._settings.top_k_schema * 3,
+                top_k_schema=runtime.settings.top_k_schema * 3,
             )
             schema_hits = bundle.get("schema_objects", [])
-            reranked = await reranker.rerank(body.question, schema_hits, top_n=self._settings.top_k_schema)
+            reranked = await reranker.rerank(body.question, schema_hits, top_n=runtime.settings.top_k_schema)
             bundle["schema_objects"] = reranked
 
-            grounding_agent = build_grounding_agent(self._settings)
+            grounding_agent = runtime.grounding_agent
             grounded_run = await grounding_agent.run(
                 _render_grounding_prompt(question=body.question, bundle=bundle, starting_point_sql=None)
             )
             grounded = getattr(grounded_run, "output", grounded_run)
 
-            generation_agent = build_generation_agent(self._settings)
+            generation_agent = runtime.generation_agent
             gen_run = await generation_agent.run(
                 _render_generation_prompt(
                     body.question, grounded, None, schema_inventory=bundle.get("schema_inventory")
@@ -412,7 +319,7 @@ class QueryController:
             candidate = gen_out.candidates[0] if gen_out.candidates else None
 
         clarification: ClarificationFrame | None = None
-        if grounded.confidence < self._settings.grounding_min_confidence and grounded.missing_info:
+        if grounded.confidence < runtime.settings.grounding_min_confidence and grounded.missing_info:
             clarification = ClarificationFrame(questions=grounded.missing_info, reasons=[])
 
         return ExplainResponse(
@@ -448,28 +355,26 @@ class QueryController:
         ctx = tenant_context_from_request(http_request)
         workspace_id = _parse_workspace_id(ctx.workspace_id)
 
-        async with infrastructure_unit(self._session_factory) as db_session:
-            index = SearchIndex(db_session)
-            retriever = HybridRetriever(index=index, embedder=self._embedder, rrf_k=self._settings.rrf_k)
-            reranker = build_reranker(self._settings)
+        async with self._runtime_factory.unit(preview=True) as runtime:
+            retriever, reranker = runtime.retriever, runtime.reranker
 
             bundle = await retriever.retrieve(
                 body.question,
                 dataset_id=body.dataset_id,
                 workspace_id=workspace_id,
-                top_k_schema=self._settings.top_k_schema * 3,
+                top_k_schema=runtime.settings.top_k_schema * 3,
             )
             schema_hits = bundle.get("schema_objects", [])
-            reranked = await reranker.rerank(body.question, schema_hits, top_n=self._settings.top_k_schema)
+            reranked = await reranker.rerank(body.question, schema_hits, top_n=runtime.settings.top_k_schema)
             bundle["schema_objects"] = reranked
 
-            grounding_agent = build_grounding_agent(self._settings)
+            grounding_agent = runtime.grounding_agent
             grounded_run = await grounding_agent.run(
                 _render_grounding_prompt(question=body.question, bundle=bundle, starting_point_sql=None)
             )
             grounded = getattr(grounded_run, "output", grounded_run)
 
-            generation_agent = build_generation_agent(self._settings)
+            generation_agent = runtime.generation_agent
             gen_run = await generation_agent.run(
                 _render_generation_prompt(
                     body.question, grounded, None, schema_inventory=bundle.get("schema_inventory")
@@ -478,11 +383,11 @@ class QueryController:
             gen_out = getattr(gen_run, "output", gen_run)
             chosen_sql = gen_out.candidates[0].sql if gen_out.candidates else ""
 
-        ast = self._ast_classifier.classify(chosen_sql)
+        ast = runtime.ast_classifier.classify(chosen_sql)
 
         scope_error: str | None = None
         try:
-            self._scope_guard.check(
+            runtime.scope_guard.check(
                 classification=ast,
                 scopes=_DEFAULT_USER_SCOPES,
                 table_kinds_by_name={},
@@ -493,7 +398,7 @@ class QueryController:
             scope_error = str(exc)
 
         clarification: ClarificationFrame | None = None
-        if grounded.confidence < self._settings.grounding_min_confidence and grounded.missing_info:
+        if grounded.confidence < runtime.settings.grounding_min_confidence and grounded.missing_info:
             clarification = ClarificationFrame(questions=grounded.missing_info, reasons=[])
 
         return ValidateResponse(
@@ -559,10 +464,8 @@ class QueryController:
 
         start_ms = _now_ms()
 
-        async with infrastructure_unit(self._session_factory) as db_session:
-            index = SearchIndex(db_session)
-            retriever = HybridRetriever(index=index, embedder=self._embedder, rrf_k=self._settings.rrf_k)
-            reranker = build_reranker(self._settings)
+        async with self._runtime_factory.unit() as runtime:
+            retriever, reranker = runtime.retriever, runtime.reranker
 
             # Stage 1: retrieve + ground (same retrieval params + rendered
             # prompt as the sync POST /query path, so the streaming path is
@@ -571,15 +474,17 @@ class QueryController:
                 request.question,
                 dataset_id=request.dataset_id,
                 workspace_id=workspace_id,
-                top_k_schema=self._settings.top_k_schema * 3,
-                top_k_examples=self._settings.top_k_examples,
-                top_k_metrics=self._settings.top_k_metrics,
+                top_k_schema=runtime.settings.top_k_schema * 3,
+                top_k_examples=runtime.settings.top_k_examples,
+                top_k_metrics=runtime.settings.top_k_metrics,
             )
             schema_hits = bundle.get("schema_objects", [])
-            reranked = await reranker.rerank(request.question, schema_hits, top_n=self._settings.top_k_schema)
+            reranked = await reranker.rerank(
+                request.question, schema_hits, top_n=runtime.settings.top_k_schema
+            )
             bundle["schema_objects"] = reranked
 
-            grounding_agent = build_grounding_agent(self._settings)
+            grounding_agent = runtime.grounding_agent
             grounded_run = await grounding_agent.run(
                 _render_grounding_prompt(question=request.question, bundle=bundle, starting_point_sql=None)
             )
@@ -601,7 +506,7 @@ class QueryController:
             )
 
             # Stage 2 (optional): clarification
-            if grounded.confidence < self._settings.grounding_min_confidence and grounded.missing_info:
+            if grounded.confidence < runtime.settings.grounding_min_confidence and grounded.missing_info:
                 yield _sse_frame(
                     "clarification",
                     {
@@ -611,7 +516,7 @@ class QueryController:
                 )
 
             # Stage 3: generate SQL
-            generation_agent = build_generation_agent(self._settings)
+            generation_agent = runtime.generation_agent
             gen_run = await generation_agent.run(
                 _render_generation_prompt(
                     request.question, grounded, None, schema_inventory=bundle.get("schema_inventory")
@@ -636,16 +541,17 @@ class QueryController:
             # _guarded_execute applies the SAME ScopeGuard + bad-tables firewall
             # the sync path enforces, so streaming callers cannot bypass dataset
             # isolation or run SQL against a non-existent/cross-dataset table.
-            ast = self._ast_classifier.classify(chosen_sql)
-            table_resolver = TableResolver(session=db_session, settings=self._settings)
+            ast = runtime.ast_classifier.classify(chosen_sql)
+            table_resolver = runtime.table_resolver
             table_kinds = await table_resolver.table_kinds_by_name(request.dataset_id, list(ast.table_refs))
             exec_result = await self._guarded_execute(
-                chosen_sql, ast, table_kinds, table_resolver, request.dataset_id, bundle
+                chosen_sql, ast, table_kinds, table_resolver, request.dataset_id, bundle, runtime
             )
             retries = 0
 
-            while isinstance(exec_result, ExecutionError) and retries < self._settings.max_refine_retries:
-                critic_agent = build_critic_agent(self._settings)
+            while isinstance(exec_result, ExecutionError) and retries < runtime.settings.max_refine_retries:
+                critic_agent = runtime.critic_agent
+                assert critic_agent is not None
                 refined_run = await critic_agent.run(
                     _render_critic_prompt(
                         question=request.question,
@@ -657,12 +563,12 @@ class QueryController:
                 )
                 refined = getattr(refined_run, "output", refined_run)
                 chosen_sql = refined.sql
-                ast = self._ast_classifier.classify(chosen_sql)
+                ast = runtime.ast_classifier.classify(chosen_sql)
                 table_kinds = await table_resolver.table_kinds_by_name(
                     request.dataset_id, list(ast.table_refs)
                 )
                 exec_result = await self._guarded_execute(
-                    chosen_sql, ast, table_kinds, table_resolver, request.dataset_id, bundle
+                    chosen_sql, ast, table_kinds, table_resolver, request.dataset_id, bundle, runtime
                 )
                 retries += 1
 
@@ -691,7 +597,8 @@ class QueryController:
             # Stage 5: explain
             explanation_obj = None
             if isinstance(exec_result, ExecutionResult):
-                explainer_agent = build_explainer_agent(self._settings)
+                explainer_agent = runtime.explainer_agent
+                assert explainer_agent is not None
                 explanation_obj = await explainer_agent.run(
                     {
                         "question": request.question,
@@ -709,12 +616,8 @@ class QueryController:
                 )
 
             # Persist + upload
-            uploader = ResultUploader(
-                object_store=self._object_store,
-                query_repo=self._query_repo,
-                settings=self._settings,
-            )
-            auto_learner = AutoLearner(examples_service=self._examples_service)
+            uploader = runtime.result_uploader
+            auto_learner = runtime.auto_learner
             elapsed = _now_ms() - start_ms
 
             execution_status = (
@@ -725,7 +628,7 @@ class QueryController:
                 else "FAILED"
             )
 
-            query_id = await self._query_repo.create_query(
+            query_id = await runtime.query_repository.create_query(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
                 dataset_id=request.dataset_id,
@@ -739,15 +642,15 @@ class QueryController:
                 retries=retries,
                 row_count=exec_result.row_count if isinstance(exec_result, ExecutionResult) else None,
                 elapsed_ms=elapsed,
-                clarification_emitted=grounded.confidence < self._settings.grounding_min_confidence
+                clarification_emitted=grounded.confidence < runtime.settings.grounding_min_confidence
                 and bool(grounded.missing_info),
                 clarification_json=None,
                 pii_findings_json=None,
                 error_json={"message": exec_result.message}
                 if isinstance(exec_result, ExecutionError)
                 else None,
-                model_grounding=self._settings.grounding_model,
-                model_generation=self._settings.generation_model,
+                model_grounding=runtime.settings.grounding_model,
+                model_generation=runtime.settings.generation_model,
             )
 
             if isinstance(exec_result, ExecutionResult):
@@ -758,7 +661,7 @@ class QueryController:
                     workspace_id=workspace_id,
                     dataset_id=request.dataset_id,
                 )
-                if execution_status == "OK" and autolearn_allowed(self._settings, _DEFAULT_USER_SCOPES):
+                if execution_status == "OK" and autolearn_allowed(runtime.settings, _DEFAULT_USER_SCOPES):
                     await auto_learner.maybe_propose(
                         tenant_id=tenant_id,
                         workspace_id=workspace_id,
@@ -784,7 +687,7 @@ class QueryController:
                 chart_hint=explanation_obj.chart_hint if explanation_obj else None,
                 explanation=explanation_obj.summary if explanation_obj else None,
                 clarification=ClarificationFrame(questions=grounded.missing_info or [], reasons=[])
-                if grounded.confidence < self._settings.grounding_min_confidence and grounded.missing_info
+                if grounded.confidence < runtime.settings.grounding_min_confidence and grounded.missing_info
                 else None,
                 grounded_summary={
                     "path": grounded.path,

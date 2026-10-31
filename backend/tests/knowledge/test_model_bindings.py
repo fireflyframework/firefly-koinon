@@ -409,6 +409,7 @@ async def test_product_resolver_keeps_native_connections_alive_until_original_ca
 
     from flycanon.core.agents.model_bindings import ModelBinding, binding_for
     from flycanon.interfaces.dtos.query import SearchResponse
+    from pyfly.container import Container
     from pyfly.cqrs import DefaultQueryBus
 
     from koinon.knowledge.adapters import NativeDomains
@@ -442,12 +443,10 @@ async def test_product_resolver_keeps_native_connections_alive_until_original_ca
         events.append("original completed")
         return SearchResponse(hits=[], elapsed_ms=1)
 
-    beans = {Resolver: Resolver(), DefaultQueryBus: SimpleNamespace(query=search)}
-    container = SimpleNamespace(
-        contains_type=lambda kind: kind in beans,
-        registered_types=lambda: list(beans),
-        resolve=beans.__getitem__,
-    )
+    container = Container()
+    container.register_instance(Resolver, Resolver())
+    container.bind(KnowledgeConnectionResolver, Resolver)
+    container.register_instance(DefaultQueryBus, SimpleNamespace(query=search))
     result = await NativeDomains(container).search(
         tenant_id="north",
         workspace_id="workspace",

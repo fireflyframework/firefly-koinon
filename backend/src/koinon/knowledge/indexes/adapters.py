@@ -5,7 +5,7 @@
 from hashlib import sha256
 from uuid import UUID
 
-from pyfly.container import Container, component
+from pyfly.container import component
 from pyfly.data.relational.datasource_registry import DataSourceRegistry
 from pyfly.data.transaction import infrastructure_unit
 from pyfly.kernel import ServiceUnavailableException
@@ -35,8 +35,8 @@ def index_filters(alias=""):
 
 @component(name="knowledge.index_adapter")
 class NativeIndexAdapter:
-    def __init__(self, datasources: DataSourceRegistry, container: Container):
-        self.datasources, self.container = datasources, container
+    def __init__(self, datasources: DataSourceRegistry, domains: NativeDomains):
+        self.datasources, self.domains = datasources, domains
 
     def source(self, domain):
         try:
@@ -365,7 +365,7 @@ class NativeIndexAdapter:
             if record.domain == "documents":
                 from flycanon.core.services.embeddings.embedding_sets import EmbeddingSetService
 
-                service = NativeDomains(self.container)._resolve(EmbeddingSetService)
+                service = self.domains._resolve(EmbeddingSetService)
                 rows = await service.list_for(
                     tenant_id=record.tenant_id, workspace_id=record.native_workspace_id
                 )
@@ -526,14 +526,10 @@ class NativeIndexAdapter:
             if record.domain == "documents":
                 from flycanon.models.repositories import ChunkRepository
 
-                counts = (
-                    await NativeDomains(self.container)
-                    ._resolve(ChunkRepository)
-                    .coverage_counts(
-                        tenant_id=record.tenant_id,
-                        workspace_id=record.native_workspace_id,
-                        set_id=record.native_id,
-                    )
+                counts = await self.domains._resolve(ChunkRepository).coverage_counts(
+                    tenant_id=record.tenant_id,
+                    workspace_id=record.native_workspace_id,
+                    set_id=record.native_id,
                 )
             else:
                 from flyquery.models.repositories.embedding_set_repository import EmbeddingSetRepository
@@ -556,7 +552,7 @@ class NativeIndexAdapter:
             if domain == "documents":
                 from flycanon.core.services.retrieval.corpus_factory import CorpusContext
 
-                corpus = NativeDomains(self.container)._resolve(CorpusContext)
+                corpus = self.domains._resolve(CorpusContext)
                 if corpus.backend != "pgvector":
                     raise ServiceUnavailableException(
                         "Versioned document index management requires the native pgvector backend",
@@ -576,7 +572,7 @@ class NativeIndexAdapter:
                     from flycanon.core.services.retrieval.corpus_factory import CorpusContext
                     from flycanon.models.repositories import ChunkRepository, IngestJobRepository
 
-                    domains = NativeDomains(self.container)
+                    domains = self.domains
                     corpus = domains._resolve(CorpusContext)
                     chunks = domains._resolve(ChunkRepository)
                     binding = EmbeddingSetBinding(
@@ -729,7 +725,7 @@ class NativeIndexAdapter:
                             EmbeddingSetRepository,
                         )
 
-                        domains = NativeDomains(self.container)
+                        domains = self.domains
                         if previous_native_id:
                             await domains._resolve(EmbeddingSetService).activate(
                                 tenant_id=record.tenant_id,
@@ -807,14 +803,10 @@ class NativeIndexAdapter:
                 if native == "canon":
                     from flycanon.core.services.embeddings.embedding_sets import EmbeddingSetService
 
-                    await (
-                        NativeDomains(self.container)
-                        ._resolve(EmbeddingSetService)
-                        .activate(
-                            tenant_id=record.tenant_id,
-                            workspace_id=record.native_workspace_id,
-                            set_id=record.native_id,
-                        )
+                    await self.domains._resolve(EmbeddingSetService).activate(
+                        tenant_id=record.tenant_id,
+                        workspace_id=record.native_workspace_id,
+                        set_id=record.native_id,
                     )
                 else:
                     await session.execute(

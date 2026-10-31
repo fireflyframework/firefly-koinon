@@ -4,6 +4,9 @@ from datetime import UTC, datetime, timedelta
 
 from http_fixtures import bearer
 from http_fixtures import client as client
+from mcp.types import CLIENT_CAPABILITIES_META_KEY, PROTOCOL_VERSION_META_KEY
+
+from koinon.mcp.server import REVIEW_TOOLS
 
 HEADERS = {"Accept": "application/json, text/event-stream", "Content-Type": "application/json"}
 
@@ -12,12 +15,32 @@ def call(client, token, name, arguments=None, **headers):
     client.cookies.clear()
     return client.post(
         "/mcp",
-        headers={**HEADERS, "Authorization": "Bearer " + token, **headers},
+        headers={
+            **HEADERS,
+            "Authorization": "Bearer " + token,
+            "MCP-Protocol-Version": "2026-07-28",
+            "MCP-Method": "tools/call",
+            "MCP-Name": name,
+            **headers,
+        },
         json={
             "jsonrpc": "2.0",
             "id": 1,
             "method": "tools/call",
-            "params": {"name": name, "arguments": arguments or {}},
+            "params": {
+                "name": name,
+                "arguments": arguments or {},
+                "_meta": {
+                    PROTOCOL_VERSION_META_KEY: "2026-07-28",
+                    CLIENT_CAPABILITIES_META_KEY: {
+                        "extensions": {
+                            "io.modelcontextprotocol/ui": {"mimeTypes": ["text/html;profile=mcp-app"]}
+                        }
+                    }
+                    if name in REVIEW_TOOLS
+                    else {},
+                },
+            },
         },
     )
 
@@ -91,7 +114,13 @@ def test_source_fetch_preserves_canonical_identity_and_denies_other_workspace(cl
     )
     fetched = call(client, token, "koinon_fetch", {"tenant_id": "north", "source_id": client.workspace_id})
     assert fetched.status_code == 200, fetched.text
-    assert fetched.json()["result"]["structuredContent"] == canonical.json()
+    result = fetched.json()["result"]["structuredContent"]
+    assert result.pop("read_receipt") == {
+        "status": "not_recorded",
+        "reason": "catalog_is_not_source_evidence",
+        "sources": [],
+    }
+    assert result == canonical.json()
     other = client.post(
         "/api/v1/tenants/north/catalog",
         headers=bearer(),

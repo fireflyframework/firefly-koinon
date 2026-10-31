@@ -1,0 +1,143 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<section class="detail-editor">
+  <h3>{{ 'Directory settings' | ffkText }}</h3>
+  <form (ngSubmit)="s.saveVisibility(visibility)">
+    <label
+      >{{ 'Who can view the directory' | ffkText
+      }}<select
+        name="directory-visibility"
+        [(ngModel)]="visibility"
+        [disabled]="!s.settings() || s.pending()"
+      >
+        <option value="administrators">{{ 'Organization administrators' | ffkText }}</option>
+        <option value="shared_workspaces">{{ 'People in the same workspace' | ffkText }}</option>
+      </select></label
+    >
+    <p class="help">
+      {{
+        'Workspace sharing shows only colleagues with access to the selected workspace. It never changes permissions.'
+          | ffkText
+      }}
+    </p>
+    <ffk-button
+      variant="primary"
+      type="submit"
+      [disabled]="!s.settings()"
+      [loading]="s.pending()"
+      >{{ 'Save visibility' | ffkText }}</ffk-button
+    >
+  </form>
+  @if (canMap()) {
+    <section class="mapping-section">
+      <h3>{{ 'Corporate profile mapping' | ffkText }}</h3>
+      <p>
+        {{
+          'Use selected claims from verified sign-in to maintain organization information. Photos, personal preferences and access roles stay separate.'
+            | ffkText
+        }}
+      </p>
+      <label
+        >{{ 'Identity provider' | ffkText
+        }}<select
+          name="mapping-provider"
+          [(ngModel)]="providerId"
+          (ngModelChange)="chooseProvider()"
+          [disabled]="s.pending()"
+        >
+          <option value="">{{ 'Choose a provider' | ffkText }}</option>
+          @for (provider of s.providers()?.items ?? []; track provider.id) {
+            <option [value]="provider.id">{{ provider.name }}</option>
+          }
+        </select></label
+      >
+      <ffk-pagination
+        [page]="s.providers()"
+        [loading]="s.pending()"
+        [showPageSize]="false"
+        [label]="'Identity providers' | ffkText"
+        (pageChanged)="providerPage($event)"
+      />
+      @if (selectedProvider(); as provider) {
+        <dl class="source-metadata">
+          <div>
+            <dt>{{ 'Status' | ffkText }}</dt>
+            <dd>{{ status(provider.status) | ffkText }}</dd>
+          </div>
+          @if (provider.observed_at) {
+            <div>
+              <dt>{{ 'Last observed' | ffkText }}</dt>
+              <dd>{{ provider.observed_at | ffkDate }}</dd>
+            </div>
+          }
+        </dl>
+      }
+      @if (s.mapping(); as mapping) {
+        <p>{{ 'Mapping revision' | ffkText }} {{ mapping.revision ?? 0 }}</p>
+        <form (ngSubmit)="saveMapping()">
+          <p class="source-notice">{{ 'Source: verified sign-in claims' | ffkText }}</p>
+          <p class="help">
+            {{
+              'Only claims supplied by this installation can be used. Missing claims leave existing values unchanged. No external directory is queried.'
+                | ffkText
+            }}
+          </p>
+          <label
+            >{{ 'Job title claim' | ffkText
+            }}<select name="title-claim" [(ngModel)]="titleClaim" [disabled]="s.pending()">
+              <option value="">{{ 'Do not map' | ffkText }}</option>
+              <option value="job_title">{{ 'Job title' | ffkText }}</option>
+              <option value="title">{{ 'Title' | ffkText }}</option>
+              @if (titleClaim && !['job_title', 'title'].includes(titleClaim)) {
+                <option [value]="titleClaim">{{ 'Existing configured claim' | ffkText }}</option>
+              }
+            </select></label
+          >
+          <label
+            >{{ 'Unit reference claim' | ffkText
+            }}<select name="unit-claim" [(ngModel)]="unitClaim" [disabled]="s.pending()">
+              <option value="">{{ 'Do not map' | ffkText }}</option>
+              <option value="unit_external_key">
+                {{ 'Organization unit reference' | ffkText }}
+              </option>
+              <option value="department">{{ 'Department reference' | ffkText }}</option>
+              @if (unitClaim && !['unit_external_key', 'department'].includes(unitClaim)) {
+                <option [value]="unitClaim">{{ 'Existing configured claim' | ffkText }}</option>
+              }
+            </select></label
+          >
+          <label
+            >{{ 'Manager reference claim' | ffkText
+            }}<select name="manager-claim" [(ngModel)]="managerClaim" [disabled]="s.pending()">
+              <option value="">{{ 'Do not map' | ffkText }}</option>
+              <option value="manager_external_subject">
+                {{ 'Manager identity reference' | ffkText }}
+              </option>
+              @if (managerClaim && managerClaim !== 'manager_external_subject') {
+                <option [value]="managerClaim">{{ 'Existing configured claim' | ffkText }}</option>
+              }
+            </select></label
+          >
+          <div class="source-notice">
+            <h4>{{ 'Mapping review' | ffkText }}</h4>
+            <p>
+              {{
+                'Selected fields are updated only after verified sign-in. Unit and manager references must already match this provider in this organization. Unresolved references remain pending.'
+                  | ffkText
+              }}
+            </p>
+          </div>
+          <label class="check"
+            ><input
+              name="mapping-enabled"
+              type="checkbox"
+              [(ngModel)]="enabled"
+              [disabled]="s.pending()"
+            />{{ 'Enable profile mapping' | ffkText }}</label
+          ><ffk-button type="submit" variant="primary" [loading]="s.pending()">{{
+            'Save profile mapping' | ffkText
+          }}</ffk-button>
+        </form>
+      }
+    </section>
+  }
+</section>

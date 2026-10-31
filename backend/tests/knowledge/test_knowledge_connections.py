@@ -284,7 +284,10 @@ async def test_role_write_and_audit_failure_roll_back_together(configured, monke
     assert await rows.find_all(tenant_id="north") == []
 
 
-async def test_resolver_uses_exact_purpose_and_current_authority_before_any_secret(configured, monkeypatch):
+@pytest.mark.parametrize("output_mode", [None, "default", "native"])
+async def test_resolver_uses_exact_purpose_and_current_authority_before_any_secret(
+    configured, monkeypatch, output_mode
+):
     from types import SimpleNamespace
     from unittest.mock import MagicMock
 
@@ -309,8 +312,12 @@ async def test_resolver_uses_exact_purpose_and_current_authority_before_any_secr
             created_by="issuer|admin",
         )
     )
-    await service.save("issuer|admin", "north", values())
-    model = TestModel(custom_output_text="authorized native model")
+    options = {"max_tokens": 512, "output_mode": output_mode}
+    saved = await service.save("issuer|admin", "north", values(model_options=options))
+    assert saved["model_options"].get("output_mode") == output_mode
+    model = TestModel(
+        custom_output_text="authorized native model", profile={"supports_json_schema_output": True}
+    )
     build = MagicMock(return_value=model)
     monkeypatch.setattr(service.compiler.models, "build_with_secret", build)
     secrets = SimpleNamespace(
@@ -330,6 +337,8 @@ async def test_resolver_uses_exact_purpose_and_current_authority_before_any_secr
     }
     async with resolver.resolve(**arguments) as selected:
         assert selected.models["documents.answer"].model is model
+        assert selected.models["documents.answer"].output_mode == (output_mode or "native")
+        assert "output_mode" not in selected.models["documents.answer"].model_settings
     assert build.call_args.args[1] == "unused"
     assert build.call_args.args[0].model == "qwen2.5:3b"
     for changed in (
@@ -369,8 +378,9 @@ async def test_embedding_history_prevents_delete_recreate_reindex_bypass(configu
     assert restored["embedding_fingerprint"] == saved["embedding_fingerprint"]
 
 
+@pytest.mark.parametrize("output_mode", ["default", "native"])
 async def test_explicit_current_agent_role_borrows_actor_bound_model_without_building_another_client(
-    configured, monkeypatch
+    configured, monkeypatch, output_mode
 ):
     from types import SimpleNamespace
     from unittest.mock import MagicMock
@@ -421,13 +431,15 @@ async def test_explicit_current_agent_role_borrows_actor_bound_model_without_bui
         async with resolver.resolve(**arguments):
             raise AssertionError("No agent is selected")
     assert missing.value.code == "KNOWLEDGE_CURRENT_AGENT_REQUIRED"
-    model = TestModel()
+    model = TestModel(profile={"supports_json_schema_output": True})
     with bind_model(
-        "north", "issuer|reader", BorrowedModel(model, {"max_tokens": 512}, "openai", "responses")
+        "north", "issuer|reader",
+        BorrowedModel(model, {"max_tokens": 512}, "openai", "responses", output_mode)
     ):
         async with resolver.resolve(**arguments) as selected:
             binding = selected.models["documents.answer"]
             assert binding.model is model and binding.api == "responses"
+            assert binding.output_mode == output_mode
             assert dict(binding.model_settings) == {"max_tokens": 512}
     with (
         bind_model("south", "issuer|reader", BorrowedModel(model, {}, "openai", "chat")),

@@ -45,3 +45,18 @@ export { KoinonSidePanel } from './src/lib/molecules/side-panel';
 export { KoinonCommandPalette, type KoinonCommand } from './src/lib/organisms/command-palette';
 
 export { registerKoinonSpanish } from './src/lib/foundations/i18n';
+
+export { KoinonBranding } from './src/lib/services/branding';
+export {
+  contrast,
+  previewBrandStyles,
+  DEFAULT_BRANDING,
+  resolveBranding,
+  brandStyles,
+  brandImage,
+  brandSymbol,
+  validateBranding,
+  PALETTE_FIELDS,
+} from './src/lib/services/branding-values';
+
+export { KoinonOrganizationDirectory } from './src/lib/services/organization-directory';

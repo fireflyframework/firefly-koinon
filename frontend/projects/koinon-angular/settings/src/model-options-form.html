@@ -23,13 +23,13 @@
           [attr.aria-invalid]="errors[field.name] ? true : null"
           [attr.aria-describedby]="'model-option-help-' + field.name"
         >
-          <option value="">{{ 'Use default' | ffkText }}</option>
+          <option value="">{{ (field.name === 'output_mode' ? 'Auto' : 'Use default') | ffkText }}</option>
           @if (field.type === 'boolean') {
             <option value="true">{{ 'On' | ffkText }}</option>
             <option value="false">{{ 'Off' | ffkText }}</option>
           } @else {
             @for (option of field.options; track option) {
-              <option [value]="option">{{ option | ffkText }}</option>
+              <option [value]="option">{{ optionLabel(field, option) | ffkText }}</option>
             }
           }
         </select>
@@ -63,6 +63,9 @@
         @if (errors[field.name]) {
           <span class="error" role="alert">{{ errors[field.name] | ffkText }}</span>
         } @else {
+          @if (field.name === 'output_mode') {
+            <span>{{ 'Auto preserves provider behavior. Default uses the model profile; RLM actions use tool calling. Native JSON requires schema support. Unsupported choices stop before generation.' | ffkText }}</span>
+          }
           @if (field.defaultValue !== undefined) {
             <span>{{ 'Default' | ffkText }}: {{ field.defaultValue | ffkValue: 'NUMERIC' }}. </span>
           }
@@ -75,7 +78,7 @@
           }
           @if (field.type === 'list') {
             <span
-              >{{ 'Maximum sequences' | ffkText }}: {{ field.maxItems | ffkValue }} ·
+              >{{ 'Maximum sequences' | ffkText }}: {{ field.maxItems | ffkValue }},
               {{ 'Characters per sequence' | ffkText }}: {{ field.maxLength | ffkValue }}</span
             >
           }
@@ -89,5 +92,5 @@
   }
 </div>
 @for (error of hiddenErrors(); track error[0]) {
-  <p class="help error" role="alert">{{ error[0] }} · {{ error[1] | ffkText }}</p>
+  <p class="help error" role="alert">{{ error[0] }}, {{ error[1] | ffkText }}</p>
 }

@@ -3,56 +3,63 @@
 """Strict product intake: admit, transform without locks, then compare and promote."""
 
 import contextlib
+from collections.abc import Awaitable, Callable, Sequence
+from typing import Any
 from uuid import uuid4
 
+from pyfly.container import service
 from pyfly.kernel import ConflictException, ServiceUnavailableException
-from sqlalchemy import insert, select, update
 
+from flycanon.core.mappers.intake_mapper import _metadata_to_json
 from flycanon.core.services.embeddings.embedding_sets import bind_embedding_set
+from flycanon.core.services.sources.intake_events import publish_success
+from flycanon.core.services.sources.intake_runtime import SourceIntakeComponents
+from flycanon.core.services.sources.intake_transforms import (
+    apply_pii_policy,
+    embedder_for,
+    first_text,
+    merge_artifacts,
+)
 from flycanon.core.services.sources.lineage.capture import artifact, manifest, signature
-from flycanon.core.services.sources.lineage.dtos import DocumentScope
-from flycanon.core.services.sources.lineage.service import DocumentLineage, conditions, identity
+from flycanon.core.services.sources.lineage.dtos import Admission, DocumentScope
+from flycanon.core.services.sources.lineage.ports import LineageQuery, LineageRecord
+from flycanon.core.services.sources.lineage.service import DocumentLineage, identity
+from flycanon.interfaces.dtos.ingestion import IngestionResult
+from flycanon.interfaces.dtos.source import SubmitSourceRequest
 from flycanon.interfaces.enums import SourceKind
 from flycanon.models.entities.source import SourceRow
-from flycanon.models.entities.source_lineage import (
-    source_artifacts,
-    source_events,
-    source_extractions,
-    source_heads,
-    source_parts,
-    source_steps,
-)
 
 
+@service(name="canon.DocumentLineagePipeline")
 class DocumentLineagePipeline:
-    def __init__(self, intake):
-        self.intake = intake
-        self.lineage = DocumentLineage(intake._sources, intake._object_store)
+    def __init__(self, components: SourceIntakeComponents, lineage: DocumentLineage):
+        self.components = components
+        self.lineage = lineage
 
     async def run(
         self,
         *,
-        request,
-        content,
-        tenant_id,
-        workspace_id,
-        actor,
-        filename,
-        content_type,
-        logical_key,
-        operation_id,
-        source_id=None,
-        expected_source_version_id=None,
-        expected_extraction_id=None,
-        authorize_commit=None,
-        correlation_id=None,
-    ):
-        service = self.intake
-        if not service._settings.store_originals:
+        request: SubmitSourceRequest,
+        content: bytes,
+        tenant_id: str,
+        workspace_id: str,
+        actor: str | None,
+        filename: str | None,
+        content_type: str | None,
+        logical_key: str,
+        operation_id: str,
+        source_id: str | None = None,
+        expected_source_version_id: str | None = None,
+        expected_extraction_id: str | None = None,
+        authorize_commit: Callable[[], Awaitable[None]] | None = None,
+        correlation_id: str | None = None,
+    ) -> SourceRow:
+        service = self.components
+        if not service.settings.store_originals:
             raise ServiceUnavailableException(
                 "Durable originals must be enabled before processing", code="DOCUMENT_ORIGINAL_UNAVAILABLE"
             )
-        if service._settings.vector_store != "pgvector":
+        if service.settings.vector_store != "pgvector":
             raise ServiceUnavailableException(
                 "Immutable document promotion requires the native transactional index",
                 code="DOCUMENT_LINEAGE_INDEX_REQUIRED",
@@ -78,7 +85,7 @@ class DocumentLineagePipeline:
                     "This completed document operation has been superseded",
                     code="DOCUMENT_OPERATION_SUPERSEDED",
                 )
-            return await service._sources.get(
+            return await service.source_repository.get(
                 admission.source_id, tenant_id=tenant_id, workspace_id=workspace_id
             )
         try:
@@ -90,19 +97,27 @@ class DocumentLineagePipeline:
             raise
 
     async def _transform(
-        self, scope, admission, request, content, filename, content_type, authorize_commit, correlation_id
-    ):
-        from flycanon.core.services.sources.intake_service import _metadata_to_json
-
-        service = self.intake
-        outputs = await service._binary_normalizer.normalise(
+        self,
+        scope: DocumentScope,
+        admission: Admission,
+        request: SubmitSourceRequest,
+        content: bytes,
+        filename: str | None,
+        content_type: str | None,
+        authorize_commit: Callable[[], Awaitable[None]] | None,
+        correlation_id: str | None,
+    ) -> SourceRow:
+        service = self.components
+        outputs = await service.binary_normalizer.normalise(
             content, declared_media_type=content_type, filename=filename
         )
         observations = []
-        merged_kind, merged, metadata = service._merge_artifacts(
-            outputs, filename, observer=lambda *record: observations.append(record)
+        merged_kind, merged, metadata = merge_artifacts(
+            outputs, filename, loaders=service.loaders, observer=lambda *record: observations.append(record)
         )
-        processed, metadata = service._apply_pii_policy(merged, metadata)
+        processed, metadata = apply_pii_policy(
+            merged, metadata, policy=service.pii_policy, scanner=service.pii_scanner
+        )
         source = SourceRow(
             id=admission.source_id,
             tenant_id=scope.tenant_id,
@@ -116,15 +131,15 @@ class DocumentLineagePipeline:
             content_bytes=0,
             metadata_json={**_metadata_to_json(request.metadata), **metadata},
         )
-        result = service._ingestion.ingest(
+        result = service.ingestion.ingest(
             source=source, content=processed, tenant_id=scope.tenant_id, workspace_id=scope.workspace_id
         )
         first = outputs[0] if outputs else None
-        extracted = service._metadata.extract(
+        extracted = service.metadata_extractor.extract(
             first.bytes if first else processed,
             media_type=first.media_type if first else content_type or "",
             filename=filename,
-            text_sample=service._first_text(result.chunks),
+            text_sample=first_text(result.chunks),
         )
         source.metadata_json = {**source.metadata_json, "extracted": extracted.to_dict()}
         artifacts, edges = [], []
@@ -139,7 +154,7 @@ class DocumentLineagePipeline:
                     "normalize",
                     admission.artifact_id,
                     record["id"],
-                    signature(service._binary_normalizer),
+                    signature(service.binary_normalizer),
                     {
                         "filename": output.filename,
                         "kind": str(output.kind),
@@ -156,7 +171,7 @@ class DocumentLineagePipeline:
         )
         artifacts.append(merged_artifact)
         edges.extend(
-            ("merge", record["id"], merged_artifact["id"], signature(service), {})
+            ("merge", record["id"], merged_artifact["id"], signature(merge_artifacts), {})
             for index, record in enumerate(artifacts[:-1])
             if index in included
         )
@@ -169,12 +184,16 @@ class DocumentLineagePipeline:
                 "pii_policy",
                 merged_artifact["id"],
                 processed_artifact["id"],
-                {"policy": service._pii_policy.value},
+                {"policy": service.pii_policy.value},
                 {},
             )
         )
-        binding, embedder = await service._embedder_for(
-            tenant_id=scope.tenant_id, workspace_id=scope.workspace_id
+        binding, embedder = await embedder_for(
+            tenant_id=scope.tenant_id,
+            workspace_id=scope.workspace_id,
+            embeddings=service.embeddings,
+            embedding_sets=service.embedding_sets,
+            embedding_registry=service.embedding_registry,
         )
         with bind_embedding_set(binding) if binding is not None else contextlib.nullcontext():
             embeddings = await embedder.embed([chunk.content for chunk in result.chunks])
@@ -195,23 +214,23 @@ class DocumentLineagePipeline:
 
     async def _promote(
         self,
-        scope,
-        admission,
-        result,
-        artifacts,
-        edges,
-        normalized,
-        embeddings,
-        embedding_model,
-        authorize_commit,
-        correlation_id,
-    ):
-        service, source = self.intake, result.source
+        scope: DocumentScope,
+        admission: Admission,
+        result: IngestionResult,
+        artifacts: list[LineageRecord],
+        edges: list[tuple[str, str, str, dict[str, Any], dict[str, Any]]],
+        normalized: LineageRecord,
+        embeddings: Sequence[Sequence[float]],
+        embedding_model: str,
+        authorize_commit: Callable[[], Awaitable[None]] | None,
+        correlation_id: str | None,
+    ) -> SourceRow:
+        service, source = self.components, result.source
         extraction_id = str(uuid4())
         parts = manifest(scope, admission, result, extraction_id, normalized["id"])
         implementation = {
-            "loader": signature(service._loaders.get(SourceKind(source.kind))),
-            "chunker": signature(service._ingestion._chunker),
+            "loader": signature(service.loaders.get(SourceKind(source.kind))),
+            "chunker": signature(service.ingestion.chunker),
         }
         source.object_store_key = admission.object_key
         source.metadata_json = {
@@ -221,18 +240,8 @@ class DocumentLineagePipeline:
         }
         if authorize_commit is not None:
             await authorize_commit()
-        async with self.lineage.unit() as session:
-            head = (
-                (
-                    await session.execute(
-                        select(source_heads)
-                        .where(*conditions(source_heads, scope, source.id))
-                        .with_for_update()
-                    )
-                )
-                .mappings()
-                .one()
-            )
+        async with self.lineage.repository.write() as session:
+            head = await session.one(LineageQuery("head", scope, source_id=source.id, lock="update"))
             if (head["version_id"], head["extraction_id"]) != (
                 admission.expected_version_id,
                 admission.expected_extraction_id,
@@ -241,20 +250,20 @@ class DocumentLineagePipeline:
                     "Document changed during processing; review its current version",
                     code="DOCUMENT_VERSION_CONFLICT",
                 )
-            await session.execute(
-                select(SourceRow)
-                .where(
-                    SourceRow.id == source.id,
-                    SourceRow.tenant_id == scope.tenant_id,
-                    SourceRow.workspace_id == scope.workspace_id,
+            await session.perform(
+                LineageQuery(
+                    "source",
+                    scope,
+                    lock="update",
+                    equal={"id": source.id, "tenant_id": scope.tenant_id, "workspace_id": scope.workspace_id},
                 )
-                .with_for_update()
             )
             base = identity(scope, source.id)
             if artifacts:
-                await session.execute(insert(source_artifacts), artifacts)
-            await session.execute(
-                insert(source_extractions).values(
+                await session.insert("artifact", artifacts)
+            await session.insert(
+                "extraction",
+                dict(
                     id=extraction_id,
                     **base,
                     version_id=admission.version_id,
@@ -269,11 +278,12 @@ class DocumentLineagePipeline:
                         "content_sha256": source.content_sha256,
                         "n_chunks": source.n_chunks,
                     },
-                )
+                ),
             )
             for ordinal, (stage, input_id, output_id, observed, parameters) in enumerate(edges):
-                await session.execute(
-                    insert(source_steps).values(
+                await session.insert(
+                    "step",
+                    dict(
                         id=str(uuid4()),
                         **base,
                         extraction_id=extraction_id,
@@ -283,13 +293,13 @@ class DocumentLineagePipeline:
                         output_artifact_id=output_id,
                         implementation=observed,
                         parameters=parameters,
-                    )
+                    ),
                 )
             if parts:
-                await session.execute(insert(source_parts), parts)
-            updated = await service._sources.update(source)
-            await service._chunks.replace_for_source(source.id, result.chunks)
-            await service._indexer.replace_for_source(
+                await session.insert("part", parts)
+            updated = await service.source_repository.update(source)
+            await service.chunk_repository.replace_for_source(source.id, result.chunks)
+            await service.indexer.replace_for_source(
                 source=updated,
                 chunks=result.chunks,
                 embeddings=embeddings,
@@ -297,21 +307,21 @@ class DocumentLineagePipeline:
                 tenant_id=scope.tenant_id,
                 workspace_id=scope.workspace_id,
             )
-            await session.execute(
-                update(source_heads)
-                .where(*conditions(source_heads, scope, source.id))
-                .values(version_id=admission.version_id, extraction_id=extraction_id)
+            await session.update(
+                LineageQuery("head", scope, source_id=source.id),
+                dict(version_id=admission.version_id, extraction_id=extraction_id),
             )
-            await session.execute(
-                insert(source_events).values(
+            await session.insert(
+                "event",
+                dict(
                     id=str(uuid4()),
                     **base,
                     version_id=admission.version_id,
                     extraction_id=extraction_id,
                     status="committed",
-                )
+                ),
             )
-            await service._audit.record(
+            await service.audit.record(
                 event_type="source.version_committed",
                 subject_kind="source",
                 subject_id=source.id,
@@ -326,5 +336,7 @@ class DocumentLineagePipeline:
                     "n_chunks": source.n_chunks,
                 },
             )
-        await service._publish_success(source=updated, correlation_id=correlation_id)
+        await publish_success(
+            service.event_publisher, service.settings, source=updated, correlation_id=correlation_id
+        )
         return updated

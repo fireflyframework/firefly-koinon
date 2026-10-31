@@ -9,6 +9,7 @@ from koinon.authorized_applications.entities import credential_matches
 from koinon.authorized_applications.repositories import AuthorizedApplicationRepository
 from koinon.catalog.errors import AccessDenied
 from koinon.catalog.repositories import CatalogRepository
+from koinon.mcp_applications.authority import McpOAuthClientAuthority
 from koinon.tokens.repositories import PersonalTokenRepository
 
 
@@ -19,9 +20,11 @@ class TokenRestriction:
         tokens: PersonalTokenRepository,
         entries: CatalogRepository,
         applications: AuthorizedApplicationRepository | None = None,
+        registrations: McpOAuthClientAuthority | None = None,
     ):
         self.tokens, self.entries = tokens, entries
         self.applications = applications
+        self.registrations = registrations
 
     async def grant(self, subject: str):
         context = SecurityContextHolder.get_context()
@@ -42,8 +45,17 @@ class TokenRestriction:
                 if self.applications
                 else None
             )
-            if not credential_matches(application, row, datetime.now(UTC)):
+            if application is None or not credential_matches(application, row, datetime.now(UTC)):
                 raise AccessDenied("This application connection is no longer valid", code="TOKEN_UNAVAILABLE")
+            if application.client_registration is not None:
+                try:
+                    if self.registrations is None:
+                        raise ValueError("OAuth registration authority is unavailable")
+                    await self.registrations.validate_application(application)
+                except ValueError:
+                    raise AccessDenied(
+                        "This OAuth application registration is no longer valid", code="TOKEN_UNAVAILABLE"
+                    ) from None
         return row
 
     async def resource(self, subject: str, entry, *, write=False):

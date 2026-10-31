@@ -109,7 +109,7 @@ def admit(receipt):
     return asset, source
 
 
-async def consume(receipt, corpus, *, record_model=True):
+async def consume(receipt, corpus, *, record_model=True, execution=True):
     with provenance.observe(
         receipt, tenant_id="tenant", workspace_id="native-space", actor="owner", source_ids={"native-source"}
     ):
@@ -119,7 +119,10 @@ async def consume(receipt, corpus, *, record_model=True):
         def read():
             if record_model:
                 provenance.model("rlm.root", "The admitted corpus metadata")
-            pages = corpus.pages("controlled")
+            pages = (
+                corpus._execution_read("controlled", as_pages=True)
+                if execution else corpus.pages("controlled")
+            )
             if record_model:
                 provenance.model("rlm.forced_final", "Actual model input: " + "\n".join(pages))
             return pages
@@ -296,7 +299,7 @@ def canonical_result(value):
     }
 
 
-def evidence(value, data, *, source=None, record_model=True):
+def evidence(value, data, *, source=None, record_model=True, execution=True):
     asset = SimpleNamespace(id="asset", workspace_id="space", name="Controlled", kind="document")
     parent = SimpleNamespace(id="source")
     binding = SimpleNamespace(native_id="native-source", native_workspace_id="native-space")
@@ -312,7 +315,7 @@ def evidence(value, data, *, source=None, record_model=True):
     async def search(subject, tenant, **kwargs):
         receipt = kwargs["_capture"]
         admit(receipt)
-        await consume(receipt, store(value, source=source), record_model=record_model)
+        await consume(receipt, store(value, source=source), record_model=record_model, execution=execution)
         return data
 
     async def parts(**kwargs):
@@ -568,3 +571,86 @@ async def test_model_read_cannot_claim_a_version_without_its_matching_extraction
     service.knowledge.search = mismatched
     with pytest.raises(NativeEvidenceFailure):
         await service.search("owner", "tenant", answer=True)
+
+
+async def test_old_ambiguous_read_without_execution_marker_stays_unknown_and_not_used_evidence():
+    value = whole_read()
+    result = await evidence(value, canonical_result(value), execution=False).search(
+        "owner", "tenant", answer=True
+    )
+    assert not result.complete and result.sources == () and result.data["hits"] == []
+    assert any(row.stage == "rlm.read" for row in result.native_reads)
+    assert not any(row.stage == "rlm.execution_read.v1" for row in result.native_reads)
+
+
+async def test_generic_document_sync_cannot_forge_reserved_execution_usage():
+    receipt = NativeEvidenceReceipt("owner", "tenant")
+    admit(receipt)
+    with provenance.observe(receipt, tenant_id="tenant", workspace_id="native-space", actor="owner"):
+        await provenance.corpus(store(whole_read()))
+
+        @provenance.worker
+        def forge():
+            provenance.model("rlm.execution_read.v1", "untrusted usage claim")
+
+        with pytest.raises(ServiceUnavailableException):
+            await asyncio.to_thread(forge)
+    assert not any(row.stage == "rlm.execution_read.v1" for row in receipt.native_reads)
+
+
+async def test_execution_usage_budget_is_checked_before_content_can_return_to_code():
+    receipt = NativeEvidenceReceipt("owner", "tenant", limits=NativeCaptureLimits(reads=2))
+    admit(receipt)
+    with pytest.raises(ServiceUnavailableException) as raised:
+        await consume(receipt, store(whole_read()), record_model=False)
+    assert raised.value.code == "EVIDENCE_BUDGET_EXCEEDED"
+    assert any(row.stage == "rlm.read" for row in receipt.native_reads)
+    assert not any(row.stage == "rlm.execution_read.v1" for row in receipt.native_reads)
+    assert getattr(receipt, "_rlm_execution_views", {}) == {}
+
+
+async def test_execution_usage_reauthorizes_after_view_load_before_code_release():
+    receipt = NativeEvidenceReceipt("owner", "tenant")
+    admit(receipt)
+
+    async def revoke_after_load():
+        if any(row.stage == "rlm.read" for row in receipt.native_reads):
+            raise AccessDenied("Revoked before code input")
+
+    receipt.authorize_model = revoke_after_load
+    with pytest.raises(AccessDenied):
+        await consume(receipt, store(whole_read()), record_model=False)
+    assert any(row.stage == "rlm.read" for row in receipt.native_reads)
+    assert not any(row.stage == "rlm.execution_read.v1" for row in receipt.native_reads)
+    assert getattr(receipt, "_rlm_execution_views", {}) == {}
+
+
+@pytest.mark.parametrize("change", ["missing", "hash", "version", "extraction", "source"])
+async def test_execution_marker_tampering_never_credits_a_cited_view(change):
+    value = whole_read()
+    service = evidence(value, canonical_result(value))
+    original = service.knowledge.search
+
+    async def tamper(subject, tenant, **arguments):
+        data = await original(subject, tenant, **arguments)
+        receipt = arguments["_capture"]
+        for row in list(receipt.native_reads):
+            if row.stage != "rlm.execution_read.v1":
+                continue
+            index = receipt.native_reads.index(row)
+            if change == "missing":
+                receipt.native_reads.pop(index)
+            else:
+                field = {"hash": "content_sha256", "version": "source_version_id",
+                         "extraction": "extraction_id", "source": "entity_id"}[change]
+                receipt.native_reads[index] = replace(
+                    row, **{field: "f" * 64 if change == "hash" else "foreign"}
+                )
+        return data
+
+    service.knowledge.search = tamper
+    try:
+        result = await service.search("owner", "tenant", answer=True)
+    except NativeEvidenceFailure as error:
+        result = error.capture
+    assert not result.complete and result.sources == ()

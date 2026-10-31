@@ -23,7 +23,7 @@ import { KoinonIcon, KoinonTextPipe } from '@fireflyframework/koinon-angular';
               ><span class="state"
                 >{{ state(activity.status) | ffkText }}
                 @if (activity.duration_ms !== undefined) {
-                  · {{ duration(activity.duration_ms) }}
+                 , {{ duration(activity.duration_ms) }}
                 }
               </span>
               @if (activity.summary) {

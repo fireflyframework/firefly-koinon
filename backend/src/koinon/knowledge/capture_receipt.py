@@ -58,7 +58,13 @@ class NativeEvidenceReceipt:
         self.document_origins: dict[tuple[str, str], tuple[str, str, str, str]] = {}
         self.snapshots: list[SnapshotRead] = []
         self.native_reads: list[NativeReadFingerprint] = []
+        self.rlm_tools = None
+        self._pending_rlm_tools = 0
         self.document_contexts: dict[str, NativeDatabaseContext] = {}
+        self.resolve_document_retrieval_parts: Callable[..., Awaitable[Any]] | None = None
+        self._retrieval_parts: dict[tuple[str, str], tuple] = {}
+        self._answer_documents: dict[str, DocumentRead] = {}
+        self._answer_knowledge: dict[str, SourceReference] = {}
         self.source_contexts: dict[str, NativeDatabaseContext] = {}
         self.source_origins: dict[str, NativeReadOrigin] = {}
         self.model_snapshots: list[SnapshotRead] = []
@@ -213,7 +219,10 @@ class NativeEvidenceReceipt:
                     isinstance(metadata.get(key), str) and 0 < len(metadata[key]) <= 64
                     for key in ("source_version_id", "extraction_id", "source_part_id")
                 )
-                or metadata.get("source_part_id") != str(identifier)
+                or (
+                    metadata.get("source_part_id") != str(identifier)
+                    and metadata.get("source_part_kind") != "chunk"
+                )
                 or metadata.get("page_basis") != "recorded_loader"
                 or not isinstance(metadata.get("source_part_sha256"), str)
                 or len(metadata["source_part_sha256"]) != 64
@@ -221,6 +230,15 @@ class NativeEvidenceReceipt:
             ):
                 raise ServiceUnavailableException(
                     "Exact recorded document part provenance is required", code="EVIDENCE_UNAVAILABLE"
+                )
+            if metadata.get("source_part_kind") == "chunk" and (
+                metadata.get("projection_chunk_id") != str(identifier)
+                or metadata.get("source_part_sha256") != sha256(content.encode()).hexdigest()
+                or self._retrieval_parts.get((str(workspace_id), str(identifier)))
+                != self._retrieval_proof(str(source), content, metadata)
+            ):
+                raise ServiceUnavailableException(
+                    "Exact admitted retrieval part provenance is required", code="EVIDENCE_UNAVAILABLE"
                 )
             value = DocumentRead(
                 workspace_id=str(workspace_id),
@@ -489,11 +507,109 @@ class NativeEvidenceReceipt:
         for hit in hits:
             self.document_model("retrieval", hit.content, [hit], scope)
 
+    @staticmethod
+    def _retrieval_proof(source, content, metadata):
+        return (
+            source,
+            sha256(content.encode()).hexdigest(),
+            *(metadata.get(key) for key in (
+                "source_version_id", "extraction_id", "source_part_id", "source_part_sha256",
+                "source_part_kind", "projection_chunk_id", "page_basis", "recorded_page",
+            )),
+        )
+
+    async def document_retrieval_parts(self, hits, scope):
+        from flycanon.core.services.query.provenance import current
+
+        def require_scope():
+            if (
+                current() is not scope or scope is None or not scope.active
+                or scope.observer is not self or scope.task is not self.owner
+                or current_task() is not self.owner
+            ):
+                raise ServiceUnavailableException(
+                    "Native retrieval provenance scope has expired", code="EVIDENCE_UNAVAILABLE"
+                )
+            self.scope(scope.tenant_id, scope.workspace_id, scope.actor)
+            for hit in hits:
+                if hit.metadata.get("source_kind") == "knowledge_version":
+                    continue
+                if (
+                    (scope.workspace_id, str(hit.source_id)) not in self.canonical_documents
+                    or scope.allowed_sources is not None and str(hit.source_id) not in scope.allowed_sources
+                ):
+                    raise ServiceUnavailableException(
+                        "Native retrieval source is not admitted", code="EVIDENCE_UNAVAILABLE"
+                    )
+
+        require_scope()
+        if not hits:
+            return []
+        if self.resolve_document_retrieval_parts is None:
+            raise ServiceUnavailableException(
+                "Immutable retrieval authority is unavailable", code="EVIDENCE_UNAVAILABLE"
+            )
+        await self.authorize()
+        identities = [(hit.chunk_id, hit.source_id, hit.content) for hit in hits]
+        resolved = await self.resolve_document_retrieval_parts(hits, scope)
+        require_scope()
+        await self.authorize()
+        if identities != [(hit.chunk_id, hit.source_id, hit.content) for hit in resolved]:
+            raise ServiceUnavailableException(
+                "Immutable retrieval differs from its hydrated input", code="EVIDENCE_UNAVAILABLE"
+            )
+        pending = {}
+        for hit in resolved:
+            metadata = hit.metadata
+            if metadata.get("source_kind") == "knowledge_version" or not metadata.get("source_part_id"):
+                continue
+            if (
+                metadata.get("source_part_kind") != "chunk"
+                or metadata.get("projection_chunk_id") != hit.chunk_id
+                or metadata.get("source_part_sha256") != sha256(hit.content.encode()).hexdigest()
+            ):
+                raise ServiceUnavailableException(
+                    "Exact immutable retrieval part is required", code="EVIDENCE_UNAVAILABLE"
+                )
+            key = (scope.workspace_id, str(hit.chunk_id))
+            proof = self._retrieval_proof(str(hit.source_id), hit.content, metadata)
+            if key in self._retrieval_parts and self._retrieval_parts[key] != proof:
+                raise ServiceUnavailableException(
+                    "The immutable retrieval part changed within this run", code="EVIDENCE_UNAVAILABLE"
+                )
+            pending[key] = proof
+        if len(self._retrieval_parts.keys() | pending.keys()) > self.limits.sources:
+            raise NativeCaptureBudgetExceeded()
+        self._retrieval_parts.update(pending)
+        for hit in resolved:
+            if hit.metadata.get("source_part_kind") == "chunk":
+                self.source_origins.pop(str(hit.source_id), None)
+                self.document_origin(str(hit.source_id), hit.metadata.get("_observed_source_filename"))
+        return resolved
+
+    def verified_document_answer(self, data):
+        if (
+            not isinstance(data.get("answer"), str) or not data["answer"].strip()
+            or not (self._answer_documents or self._answer_knowledge)
+        ):
+            return False
+        return all(
+            value.source_part_id is not None and self.documents.get(identifier) == value
+            for identifier, value in self._answer_documents.items()
+        ) and all(
+            self.knowledge_sources.get(identifier) == value
+            for identifier, value in self._answer_knowledge.items()
+        )
+
     def document_model(self, stage, prompt, hits, scope):
         self.scope(scope.tenant_id, scope.workspace_id, scope.actor)
         knowledge = [hit for hit in hits if hit.metadata.get("source_kind") == "knowledge_version"]
         if knowledge:
             self.knowledge_model(stage, prompt, knowledge, scope)
+            if stage in {"answer", "answer.fallback"}:
+                self._answer_knowledge.update({
+                    hit.chunk_id: self.knowledge_sources[hit.chunk_id] for hit in knowledge
+                })
             hits = [hit for hit in hits if hit not in knowledge]
             if not hits:
                 return
@@ -511,7 +627,8 @@ class NativeEvidenceReceipt:
             database = self.document_contexts.get(str(hit.chunk_id))
             if database is not None:
                 self.source_contexts[str(hit.source_id)] = database
-            self.document_origin(str(hit.source_id), hit.metadata.get("_observed_source_filename"))
+            if hit.metadata.get("source_part_kind") != "chunk":
+                self.document_origin(str(hit.source_id), hit.metadata.get("_observed_source_filename"))
             rows.append(
                 {
                     "chunk_id": hit.chunk_id,
@@ -527,12 +644,49 @@ class NativeEvidenceReceipt:
                 "Native document provenance is missing", code="EVIDENCE_UNAVAILABLE"
             )
         self.search(scope.tenant_id, scope.workspace_id, scope.actor, rows)
+        for row in rows:
+            observed = self.documents[str(row["chunk_id"])]
+            if observed.source_part_id is not None:
+                self.document_extraction(
+                    observed.source_id, observed.source_version_id, observed.extraction_id, scope
+                )
+            if stage in {"answer", "answer.fallback"}:
+                self._answer_documents[str(row["chunk_id"])] = observed
         self.document_sync(stage, prompt, tuple(sorted({str(row["source_id"]) for row in rows})), scope)
 
     def document_view_parts(self, meta, read, scope):
         from koinon.knowledge.rlm_provenance import document_view_parts
 
         document_view_parts(self, meta, read, scope)
+
+    def document_execution_read(self, meta, read, scope):
+        from koinon.knowledge.rlm_provenance import document_execution_read
+
+        document_execution_read(self, meta, read, scope)
+
+    def document_tool_start(self, scope):
+        from koinon.knowledge.rlm_provenance import tool_scope
+
+        tool_scope(self, scope)
+        self.budget.check(self, minimum_tools=1)
+        self._pending_rlm_tools += 1
+
+    def document_tool(self, receipt, scope):
+        from flycanon.core.services.query.rlm.actions import RlmToolReceipt
+
+        from koinon.knowledge.capture_dtos import NativeRlmTool
+        from koinon.knowledge.rlm_provenance import tool_scope
+
+        tool_scope(self, scope)
+        if self._pending_rlm_tools < 1 or type(receipt) is not RlmToolReceipt:
+            raise ServiceUnavailableException(
+                "Tool receipt has no admitted action", code="EVIDENCE_UNAVAILABLE",
+            )
+        row = NativeRlmTool(**receipt.model_dump(), tenant_id=scope.tenant_id,
+                            workspace_id=scope.workspace_id, source_ids=tuple(sorted(scope.source_ids)))
+        self._pending_rlm_tools -= 1
+        self.budget.check(self, tools=[row])
+        self.rlm_tools = [*(self.rlm_tools or []), row]
 
     def document_extraction(self, source_id, source_version_id, extraction_id, scope):
         from flycanon.core.services.query.provenance import current
@@ -568,6 +722,10 @@ class NativeEvidenceReceipt:
         self.document_extractions[key] = value
 
     def document_sync(self, stage, content, sources, scope):
+        from koinon.knowledge.rlm_provenance import EXECUTION_READ, unavailable
+
+        if stage == EXECUTION_READ:
+            raise unavailable()
         # Only the trusted domain observer can grant a live RLM worker-thread lease.
         if (
             self.closed
@@ -586,7 +744,7 @@ class NativeEvidenceReceipt:
             database = self.source_contexts.get(source, NativeDatabaseContext())
             extraction = (
                 self.document_extractions.get((scope.workspace_id, source))
-                if stage.startswith("rlm.") and stage != "rlm.corpus"
+                if stage != "rlm.corpus"
                 else None
             )
             pending_reads.append(

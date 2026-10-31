@@ -1,0 +1,111 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+@let entry = view.entry;
+@let schema = view.schema;
+@let parentName = view.parentName;
+@let canEdit = view.canEdit;
+@if (view.drawer()) {
+  <button
+    class="drawer-shade"
+    aria-hidden="true"
+    tabindex="-1"
+    (click)="view.closed.emit()"
+  ></button>
+}
+<aside
+  [attr.role]="view.drawer() ? 'dialog' : 'complementary'"
+  [attr.aria-modal]="view.drawer() ? true : null"
+  [cdkTrapFocus]="view.drawer()"
+  [cdkTrapFocusAutoCapture]="view.drawer()"
+  [attr.aria-label]="'Resource details' | ffkText"
+>
+  <header>
+    <span>{{ 'Details' | ffkText }}</span
+    ><ffk-button
+      variant="quiet"
+      icon="close"
+      [label]="'Close details' | ffkText"
+      (click)="view.closed.emit()"
+    />
+  </header>
+  <div class="resource-mark"><ffk-icon [name]="view.icon(entry.kind)" /></div>
+  <span class="eyebrow">{{ view.kind(entry.kind) | ffkText }}</span>
+  <h2>{{ entry.name }}</h2>
+  <p class="description">{{ entry.description || 'No description yet.' }}</p>
+  <ffk-badge [tone]="entry.status === 'failed' ? 'attention' : 'neutral'">{{
+    view.status(entry.status) | ffkText
+  }}</ffk-badge>
+  <dl>
+    <dt>{{ 'Location' | ffkText }}</dt>
+    <dd>{{ parentName || 'Library' }}</dd>
+    <dt>{{ 'Added' | ffkText }}</dt>
+    <dd [title]="entry.created_at">{{ entry.created_at | ffkDate }}</dd>
+    @if (entry.created_by) {
+      <dt>{{ 'Added by' | ffkText }}</dt>
+      <dd>{{ view.actorName(entry.created_by) }}</dd>
+    }
+    @if (entry.updated_at) {
+      <dt>{{ 'Modified' | ffkText }}</dt>
+      <dd [title]="entry.updated_at">{{ entry.updated_at | ffkDate }}</dd>
+    }
+    @if (entry.updated_by) {
+      <dt>{{ 'Updated by' | ffkText }}</dt>
+      <dd>{{ view.actorName(entry.updated_by) }}</dd>
+    }
+  </dl>
+  @if (entry.kind === 'dataset') {
+    <ffk-button icon="table" (click)="view.explored.emit()">{{
+      'Explore dataset' | ffkText
+    }}</ffk-button>
+    @if (schema) {
+      <section>
+        <h3>{{ 'Tables' | ffkText }}</h3>
+        @for (table of schema.tables; track table.id) {
+          <div class="table-row">
+            <ffk-icon name="table" /><span>{{ table.name }}</span
+            ><small>{{ table.columns.length }} columns</small>
+            <ffk-button
+              variant="quiet"
+              icon="history"
+              [label]="('History & lineage' | ffkText) + ', ' + table.name"
+              (click)="view.tableHistoryRequested.emit({ id: table.id, name: table.name })"
+            />
+          </div>
+        }
+      </section>
+    }
+  }
+  <section class="actions">
+    @if (entry.kind === 'table' && entry.parent_id) {
+      <ffk-button
+        variant="quiet"
+        icon="history"
+        (click)="view.tableHistoryRequested.emit({ id: entry.id, name: entry.name })"
+        >{{ 'History & lineage' | ffkText }}</ffk-button
+      >
+    }
+    <ffk-button variant="quiet" icon="lineage" (click)="view.lineageRequested.emit()">{{
+      'Where this came from' | ffkText
+    }}</ffk-button>
+    @if (canEdit) {
+      <ffk-button variant="quiet" (click)="view.editRequested.emit()">{{
+        'Edit details' | ffkText
+      }}</ffk-button
+      ><ffk-button variant="quiet" (click)="view.archiveRequested.emit()">{{
+        'Archive' | ffkText
+      }}</ffk-button>
+    }
+  </section>
+  <details>
+    <summary>{{ 'Technical details' | ffkText }}</summary>
+    <dl>
+      <dt>{{ 'Resource identifier' | ffkText }}</dt>
+      <dd class="identifier">{{ entry.id }}</dd>
+    </dl>
+    @for (item of view.metadataEntries(); track item[0]) {
+      <p class="metadata">
+        <strong>{{ item[0] }}</strong
+        ><span>{{ item[1] }}</span>
+      </p>
+    }
+  </details>
+</aside>

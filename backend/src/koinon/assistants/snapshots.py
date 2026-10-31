@@ -112,7 +112,7 @@ class ConversationSnapshots(ConversationSnapshotPort):
                     values = {
                         "asset_id": asset_id,
                         "source_id": hit.get("source_id"),
-                        "title": str(hit.get("title") or entry.name)[:255],
+                        "title": str(hit.get("title") or "Not recorded")[:255],
                         "kind": entry.kind,
                         "query_id": data.get("query_id") if result.kind == "query" else None,
                         "chunk_id": hit.get("id") if result.kind == "search" else None,

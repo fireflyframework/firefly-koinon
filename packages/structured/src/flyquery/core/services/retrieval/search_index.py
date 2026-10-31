@@ -171,7 +171,8 @@ class SearchIndex:
                        ts_rank(o.content_tsv, plainto_tsquery('english', :q)) AS score
                 FROM flyquery_schema_objects o
                 JOIN flyquery_tables t ON t.id = o.table_id
-                WHERE t.dataset_id = :ds AND o.is_active = true
+                WHERE t.dataset_id = :ds AND t.is_active = true AND o.is_active = true
+                  AND o.snapshot_id = t.current_snapshot_id
                   AND o.content_tsv @@ plainto_tsquery('english', :q)
                 ORDER BY score DESC
                 LIMIT :lim
@@ -210,7 +211,8 @@ class SearchIndex:
                        1 - (o.embedding <=> CAST(:emb AS vector)) AS score
                 FROM flyquery_schema_objects o
                 JOIN flyquery_tables t ON t.id = o.table_id
-                WHERE t.dataset_id = :ds AND o.is_active = true AND o.embedding IS NOT NULL
+                WHERE t.dataset_id = :ds AND t.is_active = true AND o.is_active = true
+                  AND o.snapshot_id = t.current_snapshot_id AND o.embedding IS NOT NULL
                 ORDER BY o.embedding <=> CAST(:emb AS vector)
                 LIMIT :lim
                 """
@@ -225,7 +227,7 @@ class SearchIndex:
         *,
         limit: int = 500,
     ) -> list[Hit]:
-        """Return every active schema_object in the dataset, unranked.
+        """Return current active schema objects of active dataset tables, unranked.
 
         Used as a fallback when BM25 + vector retrieval both return zero
         hits -- without this the grounding prompt carries no table
@@ -258,7 +260,8 @@ class SearchIndex:
                    AND c.kind = 'COLUMN'
                    AND c.snapshot_id = o.snapshot_id
                    AND c.is_active = true
-                WHERE t.dataset_id = :ds AND o.is_active = true AND o.kind = 'TABLE'
+                WHERE t.dataset_id = :ds AND t.is_active = true AND o.is_active = true AND o.kind = 'TABLE'
+                  AND o.snapshot_id = t.current_snapshot_id
                 GROUP BY o.id, o.qualified_name, o.description, o.table_id, o.kind, o.snapshot_id
                 ORDER BY o.qualified_name
                 """
@@ -279,7 +282,8 @@ class SearchIndex:
                        o.profile_json, o.sample_values_json, o.governance_json
                 FROM flyquery_schema_objects o
                 JOIN flyquery_tables t ON t.id = o.table_id
-                WHERE t.dataset_id = :ds AND o.is_active = true AND o.kind = 'COLUMN'
+                WHERE t.dataset_id = :ds AND t.is_active = true AND o.is_active = true AND o.kind = 'COLUMN'
+                  AND o.snapshot_id = t.current_snapshot_id
                 ORDER BY o.qualified_name
                 LIMIT :lim
                 """
@@ -329,7 +333,7 @@ class SearchIndex:
         return hits
 
     async def column_value_catalog(self, dataset_id: uuid.UUID, *, limit: int = 2000) -> list[dict]:
-        """Return every column's value catalogue for the dataset.
+        """Return current active columns' value catalogue for active dataset tables.
 
         Used (a) to resolve question literals to the columns that store them
         and (b) to render a complete, value-anchored column list per in-scope
@@ -347,7 +351,8 @@ class SearchIndex:
                                o.profile_json, o.sample_values_json, o.governance_json
                         FROM flyquery_schema_objects o
                         JOIN flyquery_tables t ON t.id = o.table_id
-                        WHERE t.dataset_id = :ds AND o.is_active = true AND o.kind = 'COLUMN'
+                        WHERE t.dataset_id = :ds AND t.is_active = true AND o.is_active = true AND o.kind = 'COLUMN'
+                          AND o.snapshot_id = t.current_snapshot_id
                         ORDER BY o.qualified_name
                         LIMIT :lim
                         """

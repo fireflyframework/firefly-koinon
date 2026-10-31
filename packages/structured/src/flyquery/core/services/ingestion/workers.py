@@ -1,3 +1,5 @@
+# Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Firefly Software Foundation
 # Modifications Copyright 2026 Firefly Software Foundation
 #
@@ -37,9 +39,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import time
 import uuid
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import sqlalchemy as sa
@@ -188,16 +192,16 @@ class IngestWorker:
             logger.warning("IngestWorker drain timed out; cancelling %d task(s)", len(self._inflight))
             for task in list(self._inflight):
                 task.cancel()
-            # asyncio.timeout is an ASYNC context manager -- `with`
-            # raises TypeError. Use a wait_for fallback so the
-            # post-cancel cleanup gets at most 5s before we give up.
+            # These are soft deadlines: wait_for waits for cancellation
+            # cleanup, including native reader calls that cannot be interrupted.
+            # A process supervisor must enforce any hard shutdown deadline.
             try:
                 await asyncio.wait_for(
                     asyncio.gather(*list(self._inflight), return_exceptions=True),
                     timeout=5,
                 )
             except TimeoutError:
-                logger.error("IngestWorker drain hard-timeout; leaking %d task(s)", len(self._inflight))
+                logger.error("IngestWorker drain cleanup timeout; pending=%d task(s)", len(self._inflight))
 
     # ------------------------------------------------------------------
     # Handler
@@ -414,173 +418,198 @@ class IngestWorker:
         # PARSE_AND_INGEST re-queue path still get a fresh receive (which
         # is what they want -- new file_id + new snapshot version).
         already_received = bool(request_json.get("already_received"))
-        if already_received:
-            # Synthesise a ReceiveResult-ish shim so the rest of the
-            # function keeps using the same field names. We need a local
-            # temp file for the parse stage; persist the bytes once here.
-            import tempfile as _tempfile
-
-            ext = _suffix_from_key(str(file_info["object_store_key"]))
-            fd, local_temp_path = _tempfile.mkstemp(suffix=ext)
+        owned_temp_path: str | None = None
+        parsed_tables: list[Any] = []
+        try:
+            primary_error: BaseException | None = None
             try:
-                with open(fd, "wb") as fh:
-                    fh.write(file_bytes)
-            except Exception:
-                import os as _os
+                if already_received:
+                    # Synthesise a ReceiveResult-ish shim so the rest of the
+                    # function keeps using the same field names. We need a local
+                    # temp file for the parse stage; persist the bytes once here.
+                    import tempfile as _tempfile
 
-                _os.close(fd)
+                    ext = _suffix_from_key(str(file_info["object_store_key"]))
+                    fd, local_temp_path = _tempfile.mkstemp(suffix=ext)
+                    owned_temp_path = local_temp_path
+                    try:
+                        stream = os.fdopen(fd, "wb")
+                    except BaseException:
+                        os.close(fd)
+                        raise
+                    with stream:
+                        stream.write(file_bytes)
+                    from flyquery.core.services.ingestion.format_detect import detect_format
+
+                    file_format, compression = detect_format(file_info["original_filename"], file_bytes[:512])
+                    recv = _AlreadyReceived(
+                        file_id=uuid.UUID(str(file_info["id"])),
+                        file_format=file_format,
+                        compression=compression,
+                        size_bytes=len(file_bytes),
+                        object_store_key=str(file_info["object_store_key"]),
+                        local_temp_path=local_temp_path,
+                    )
+                    await emit_stage(
+                        ingest_job_id=job_id,
+                        tenant_id=tenant_id,
+                        workspace_id=workspace_id,
+                        stage="received",
+                        message="stage 1 skipped (already received via async upload)",
+                        payload={"file_id": str(recv.file_id), "skipped": True},
+                        session_factory=self._session_factory,
+                    )
+                    # Storage already tracked by the endpoint -- do NOT track again.
+                else:
+                    recv = await run_receive(
+                        tenant_id=tenant_id,
+                        workspace_id=workspace_id,
+                        dataset_id=dataset_id,
+                        filename=file_info["original_filename"],
+                        file_bytes=file_bytes,
+                        actor="system:structured-worker",
+                        object_store=object_store,
+                        session_factory=self._session_factory,
+                        settings=self._settings,
+                        workspace_storage_used_bytes=storage_used,
+                    )
+                    owned_temp_path = recv.local_temp_path
+                    await emit_stage(
+                        ingest_job_id=job_id,
+                        tenant_id=tenant_id,
+                        workspace_id=workspace_id,
+                        stage="received",
+                        message="stage 1 complete",
+                        payload={"file_id": str(recv.file_id)},
+                        session_factory=self._session_factory,
+                    )
+                    await ws_service.track_storage(workspace_id, recv.size_bytes)
+
+                # Stage 2: parse
+                await self._check_cancelled(job_id)
+                existing_table_id = uuid.UUID(str(table_id_raw)) if table_id_raw else None
+                dataset_name = request_json.get("dataset_name", "dataset")
+                locale = request_json.get("locale", self._settings.default_locale)
+
+                parsed_tables = await run_parse(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    dataset_id=dataset_id,
+                    file_id=recv.file_id,
+                    local_temp_path=recv.local_temp_path,
+                    file_format=recv.file_format,
+                    compression=recv.compression,
+                    object_store=object_store,
+                    session_factory=self._session_factory,
+                    settings=self._settings,
+                    existing_table_id=existing_table_id,
+                    dataset_name=dataset_name,
+                    workspace_locale=locale,
+                    original_filename=file_info["original_filename"],
+                )
+            except BaseException as error:
+                primary_error = error
                 raise
-            from flyquery.core.services.ingestion.format_detect import detect_format
-
-            file_format, compression = detect_format(file_info["original_filename"], file_bytes[:512])
-            recv = _AlreadyReceived(
-                file_id=uuid.UUID(str(file_info["id"])),
-                file_format=file_format,
-                compression=compression,
-                size_bytes=len(file_bytes),
-                object_store_key=str(file_info["object_store_key"]),
-                local_temp_path=local_temp_path,
-            )
+            finally:
+                if owned_temp_path is not None:
+                    try:
+                        Path(owned_temp_path).unlink(missing_ok=True)
+                    except OSError:
+                        if primary_error is None:
+                            raise
+                        logger.warning("stage=worker local_raw_cleanup_failed")
             await emit_stage(
                 ingest_job_id=job_id,
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
-                stage="received",
-                message="stage 1 skipped (already received via async upload)",
-                payload={"file_id": str(recv.file_id), "skipped": True},
-                session_factory=self._session_factory,
-            )
-            # Storage already tracked by the endpoint -- do NOT track again.
-        else:
-            recv = await run_receive(
-                tenant_id=tenant_id,
-                workspace_id=workspace_id,
-                dataset_id=dataset_id,
-                filename=file_info["original_filename"],
-                file_bytes=file_bytes,
-                actor="system:structured-worker",
-                object_store=object_store,
-                session_factory=self._session_factory,
-                settings=self._settings,
-                workspace_storage_used_bytes=storage_used,
-            )
-            await emit_stage(
-                ingest_job_id=job_id,
-                tenant_id=tenant_id,
-                workspace_id=workspace_id,
-                stage="received",
-                message="stage 1 complete",
-                payload={"file_id": str(recv.file_id)},
-                session_factory=self._session_factory,
-            )
-            await ws_service.track_storage(workspace_id, recv.size_bytes)
-
-        # Stage 2: parse
-        await self._check_cancelled(job_id)
-        existing_table_id = uuid.UUID(str(table_id_raw)) if table_id_raw else None
-        dataset_name = request_json.get("dataset_name", "dataset")
-        locale = request_json.get("locale", self._settings.default_locale)
-
-        parsed_tables = await run_parse(
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            dataset_id=dataset_id,
-            file_id=recv.file_id,
-            local_temp_path=recv.local_temp_path,
-            file_format=recv.file_format,
-            compression=recv.compression,
-            object_store=object_store,
-            session_factory=self._session_factory,
-            settings=self._settings,
-            existing_table_id=existing_table_id,
-            dataset_name=dataset_name,
-            workspace_locale=locale,
-            original_filename=file_info["original_filename"],
-        )
-        await emit_stage(
-            ingest_job_id=job_id,
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            stage="parsed",
-            message=f"stage 2 complete: {len(parsed_tables)} table(s)",
-            payload={"n_tables": len(parsed_tables)},
-            session_factory=self._session_factory,
-        )
-
-        # Stages 3, 9, 10 per table -- use the DI-injected publisher
-        # so SchemaUpdated reaches other consumers (flycanon's KB,
-        # flyradar's relation harvester) instead of dying in-memory.
-        publisher = self._ingest_publisher
-
-        for pt in parsed_tables:
-            await self._check_cancelled(job_id)
-
-            # Stage 3: reconcile
-            rec = await run_reconcile(
-                tenant_id=tenant_id,
-                workspace_id=workspace_id,
-                dataset_id=dataset_id,
-                parsed=pt,
-                actor="system:structured-worker",
-                # ``ck_snapshots_trigger`` only allows
-                # ('USER','AGENT','SCHEDULED','REPARSE'). A
-                # PARSE_AND_INGEST job is, by definition, the
-                # worker re-parsing an already-uploaded file -> REPARSE.
-                triggered_by="REPARSE",
-                session_factory=self._session_factory,
-                settings=self._settings,
-            )
-            await emit_stage(
-                ingest_job_id=job_id,
-                tenant_id=tenant_id,
-                workspace_id=workspace_id,
-                stage="reconciled",
-                message="stage 3 complete",
-                payload={"table_id": str(pt.table_id), "snapshot_id": str(rec.snapshot_id)},
+                stage="parsed",
+                message=f"stage 2 complete: {len(parsed_tables)} table(s)",
+                payload={"n_tables": len(parsed_tables)},
                 session_factory=self._session_factory,
             )
 
-            await self._check_cancelled(job_id)
+            # Stages 3, 9, 10 per table -- use the DI-injected publisher
+            # so SchemaUpdated reaches other consumers (flycanon's KB,
+            # flyradar's relation harvester) instead of dying in-memory.
+            publisher = self._ingest_publisher
 
-            # Stage 9: embed
-            await run_embed(
-                tenant_id=tenant_id,
-                snapshot_id=rec.snapshot_id,
-                session_factory=self._session_factory,
-            )
-            await emit_stage(
-                ingest_job_id=job_id,
-                tenant_id=tenant_id,
-                workspace_id=workspace_id,
-                stage="embedded",
-                message="stage 9 complete",
-                payload={"snapshot_id": str(rec.snapshot_id)},
-                session_factory=self._session_factory,
-            )
+            for pt in parsed_tables:
+                await self._check_cancelled(job_id)
 
-            await self._check_cancelled(job_id)
+                # Stage 3: reconcile
+                rec = await run_reconcile(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    dataset_id=dataset_id,
+                    parsed=pt,
+                    actor="system:structured-worker",
+                    # ``ck_snapshots_trigger`` only allows
+                    # ('USER','AGENT','SCHEDULED','REPARSE'). A
+                    # PARSE_AND_INGEST job is, by definition, the
+                    # worker re-parsing an already-uploaded file -> REPARSE.
+                    triggered_by="REPARSE",
+                    session_factory=self._session_factory,
+                    settings=self._settings,
+                )
+                await emit_stage(
+                    ingest_job_id=job_id,
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    stage="reconciled",
+                    message="stage 3 complete",
+                    payload={"table_id": str(pt.table_id), "snapshot_id": str(rec.snapshot_id)},
+                    session_factory=self._session_factory,
+                )
 
-            # Stage 10: publish
-            await run_publish(
-                tenant_id=tenant_id,
-                workspace_id=workspace_id,
-                dataset_id=dataset_id,
-                table_id=pt.table_id,
-                snapshot_id=rec.snapshot_id,
-                n_columns=rec.n_columns,
-                n_rows_actual=rec.n_rows_actual,
-                publisher=publisher,
-                session_factory=self._session_factory,
-            )
-            await emit_stage(
-                ingest_job_id=job_id,
-                tenant_id=tenant_id,
-                workspace_id=workspace_id,
-                stage="published",
-                message="stage 10 complete",
-                payload={"table_id": str(pt.table_id), "snapshot_id": str(rec.snapshot_id)},
-                session_factory=self._session_factory,
-            )
+                await self._check_cancelled(job_id)
+
+                # Stage 9: embed
+                await run_embed(
+                    tenant_id=tenant_id,
+                    snapshot_id=rec.snapshot_id,
+                    session_factory=self._session_factory,
+                )
+                await emit_stage(
+                    ingest_job_id=job_id,
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    stage="embedded",
+                    message="stage 9 complete",
+                    payload={"snapshot_id": str(rec.snapshot_id)},
+                    session_factory=self._session_factory,
+                )
+
+                await self._check_cancelled(job_id)
+
+                # Stage 10: publish
+                await run_publish(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    dataset_id=dataset_id,
+                    table_id=pt.table_id,
+                    snapshot_id=rec.snapshot_id,
+                    n_columns=rec.n_columns,
+                    n_rows_actual=rec.n_rows_actual,
+                    publisher=publisher,
+                    session_factory=self._session_factory,
+                )
+                await emit_stage(
+                    ingest_job_id=job_id,
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    stage="published",
+                    message="stage 10 complete",
+                    payload={"table_id": str(pt.table_id), "snapshot_id": str(rec.snapshot_id)},
+                    session_factory=self._session_factory,
+                )
+        finally:
+            for parsed in parsed_tables:
+                local_parquet_path = getattr(parsed, "local_parquet_path", None)
+                if local_parquet_path:
+                    try:
+                        Path(local_parquet_path).unlink(missing_ok=True)
+                    except OSError:
+                        logger.warning("stage=worker local_parquet_cleanup_failed")
 
     async def _run_sample_refresh(
         self,

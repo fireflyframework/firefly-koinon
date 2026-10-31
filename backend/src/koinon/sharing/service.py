@@ -71,6 +71,7 @@ class ConversationShares:
             messages=snapshot.messages,
             sources=snapshot.sources,
             source_manifest_complete=snapshot.source_manifest_complete,
+            identity=snapshot.identity,
             expires_at=row.expires_at,
         )
 
@@ -128,6 +129,7 @@ class ConversationShares:
             messages=snapshot.messages,
             sources=snapshot.sources,
             source_manifest_complete=snapshot.source_manifest_complete,
+            identity=snapshot.identity,
         )
 
     @transactional

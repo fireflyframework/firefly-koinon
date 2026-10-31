@@ -1,0 +1,143 @@
+// Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
+:host {
+  display: block;
+  min-width: 0;
+}
+.connection {
+  border: 1px solid var(--ui-line);
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 16px;
+  display: grid;
+  gap: 18px;
+}
+.connection header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+h3 {
+  font-size: 15px;
+  line-height: 1.5;
+  margin: 0 0 6px;
+  font-weight: 650;
+}
+p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--ui-muted);
+  margin: 0;
+  max-width: 75ch;
+}
+.connection-fields,
+.registration-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  min-width: 0;
+}
+.connection-fields > .copy-group,
+.field {
+  grid-column: 1/-1;
+}
+label {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+  min-width: 0;
+}
+.copy-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--ui-line);
+  border-radius: 7px;
+  min-width: 0;
+  padding-right: 4px;
+}
+input,
+select {
+  font: 400 12px/1.5 var(--ffk-font);
+  color: var(--ui-text);
+  background: var(--ui-surface);
+  min-width: 0;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--ui-line);
+  border-radius: 7px;
+  min-height: 40px;
+}
+.copy-field input {
+  border: 0;
+  flex: 1;
+}
+.copy-field:focus-within,
+select:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 3px;
+}
+.copy-field input:focus {
+  outline: 0;
+}
+.steps {
+  padding-left: 22px;
+  margin: 0;
+  display: grid;
+  gap: 16px;
+  font-size: 12px;
+}
+.steps li {
+  padding-left: 6px;
+}
+.steps strong {
+  font-size: 12px;
+  font-weight: 650;
+}
+.steps p {
+  margin-top: 4px;
+}
+.help,
+.notice,
+.unavailable {
+  font-size: 12px;
+  line-height: 1.8;
+}
+.registration-fields .help {
+  grid-column: 1/-1;
+}
+.notice,
+.unavailable {
+  padding: 12px 14px;
+  border-radius: 7px;
+  background: var(--ui-subtle);
+}
+.unavailable strong {
+  font-size: 13px;
+}
+.unavailable p {
+  margin-top: 5px;
+}
+@media (max-width: 700px) {
+  .connection {
+    padding: 16px;
+  }
+  .connection-fields,
+  .registration-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  input,
+  select {
+    min-height: 44px;
+  }
+  .steps {
+    gap: 14px;
+  }
+}
+
+.copy-group,
+.field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}

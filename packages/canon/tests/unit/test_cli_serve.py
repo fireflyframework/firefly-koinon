@@ -1,4 +1,5 @@
 # Copyright 2024-2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -80,10 +81,10 @@ def test_worker_defaults_its_own_eda_group_but_respects_an_explicit_one(
 
 
 def test_api_and_worker_groups_differ_by_default() -> None:
-    """pyfly.yaml's interpolation default for the API must not equal the worker's."""
+    """The deployment template's API group must differ from the installed worker default."""
     from pathlib import Path
 
-    yaml_text = (Path(cli.__file__).resolve().parents[2] / "pyfly.yaml").read_text()
+    yaml_text = (Path(__file__).resolve().parents[2] / "pyfly.yaml").read_text()
     assert "group: ${FLYCANON_EDA_GROUP:flycanon-api}" in yaml_text
     assert cli.WORKER_EDA_GROUP != "flycanon-api"
 

@@ -77,3 +77,25 @@ def test_markdown_escapes_source_reference_text_as_well_as_model_messages():
         value.model_copy(update={"sources": (malicious,)}), "markdown", include_evidence=True
     )
     assert b"<script>" not in rendered.content
+
+
+def test_export_labels_use_only_saved_identity_and_escape_names_in_markdown():
+    value = ConversationSnapshot.model_validate(snapshot().model_dump() | {"identity": {
+        "product_name": "North <product>", "assistant_name": "Answer [helper](https://bad.invalid)",
+        "branding_revision": 7, "branding_origin": "organization", "branding_sha256": "d" * 64,
+    }})
+    data = json.loads(render_transcript(value, "json", include_evidence=True).content)
+    assert data["identity"]["product_name"] == "North <product>"
+    assert data["messages"][0]["role"] == "assistant"
+    assert data["messages"][0]["display_name"] == value.identity.assistant_name
+    markdown = render_transcript(value, "markdown", include_evidence=True).content.decode()
+    assert "North &lt;product&gt;" in markdown
+    assert r"## Answer \[helper\]\(https://bad.invalid\)" in markdown
+    assert "## koinon" not in markdown
+
+
+def test_historical_export_keeps_koinon_label_but_never_guesses_identity():
+    data = json.loads(render_transcript(snapshot(), "json", include_evidence=True).content)
+    assert data["identity"] is None
+    assert data["messages"][0]["display_name"] == "koinon"
+    assert b"## koinon" in render_transcript(snapshot(), "markdown", include_evidence=True).content

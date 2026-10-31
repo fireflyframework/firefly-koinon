@@ -28,7 +28,7 @@ function sources(path, panels = false) {
       ? sources(resolve(path, item.name), panels)
       : !item.name.endsWith('.spec.ts') &&
           !['workbench-spanish.generated.ts', 'panel-spanish.generated.ts'].includes(item.name) &&
-          /^(account-(?:panel|page)|authorized-applications(?:-panel)?|workbench-dialogs|table-lineage-panel|table-coordinates)\./.test(
+          /^(account-(?:panel|page)|authorized-applications(?:-panel)?|mcp-connection-panel|workbench-dialogs|table-lineage-panel|table-coordinates)\./.test(
             item.name,
           ) === panels &&
           item.name !== 'assistant.ts' &&

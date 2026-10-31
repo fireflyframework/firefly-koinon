@@ -37,7 +37,10 @@ def test_exact_0011_migration_matches_owned_entity_columns_and_indexes_without_c
             assert set(columns) == set(table.columns.keys())
             assert all(columns[column.name]["nullable"] == column.nullable for column in table.columns)
             assert {index["name"] for index in view.get_indexes(table.name)} == {
-                index.name for index in table.indexes
+                index.name
+                for index in table.indexes
+                if index.name
+                != "uq_identity_provider_tenant_id"  # Added by the separately tested 0022 migration.
             }
         assert connection.exec_driver_sql("SELECT id FROM lattice_memberships").all() == [("preserved",)]
     engine.dispose()

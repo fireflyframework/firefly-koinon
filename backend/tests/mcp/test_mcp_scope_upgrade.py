@@ -90,6 +90,11 @@ def test_actual_scope_denial_triggers_official_client_challenge_and_upgrade_work
     result = response.json()["result"]["structuredContent"]
     policy = OrganizationKnowledgeSnapshot.model_validate(result.pop("knowledge_settings_snapshot"))
     assert policy.tenant_id == "north" and policy.origin == "deployment" and policy.revision == 0
+    assert result.pop("read_receipt") == {
+        "status": "not_recorded",
+        "reason": "incomplete_or_unsupported_source_manifest",
+        "sources": [],
+    }
     assert result == {"hits": []}
 
 

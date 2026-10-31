@@ -31,6 +31,91 @@ Markdown and versioned JSON transcripts contain the selected messages. They excl
 
 Exports remain private to their owner. Downloading rechecks current source access and originating token validity. Cancellation prevents later downloads. Deployment limits bound active records, concurrent downloads, bytes and execution time. An expired stored result is not rerun automatically.
 
+## Preserve the reviewed identity
+
+New conversation reviews save `identity` alongside the selected messages. It records `product_name`, `assistant_name`, `branding_revision`, `branding_origin` and `branding_sha256`, the digest of the effective organization configuration. Image bytes, model instructions and credentials are excluded. The server obtains this identity through the caller's existing organization and resource permissions; the request cannot supply a replacement name.
+
+The identity is included in the review revision. Renaming or resetting the organization afterward does not rename an existing share or export. Message and conversation revisions retain their original meaning. Creation still rejects changed content, changed source access, expired reviews and repeated confirmation.
+
+`ExportReview`, `ShareReview` and `SharedConversation` expose the saved identity. Historical snapshots return `identity: null`; this means it was not recorded. Do not replace it with today's organization branding and call it historical identity. The exported transcript uses the original **koinon** label when identity is unknown. JSON transcripts preserve the machine role (`user` or `assistant`) and provide `display_name` separately. Markdown treats configured names as escaped text.
+
+An embedded host's presentation override does not rewrite server snapshots. The server records the authorized organization identity, regardless of which host displayed the conversation. Legal attribution remains Firefly Software Foundation under Apache 2.0.
+
+## Python and Java workflows
+
+Use the authenticated clients from the [headless guide](headless.md). Pass actual organization, thread and message IDs from authorized responses. These helpers separate preview from confirmation: show the returned review and its omissions to the user before invoking the confirmation helper. They do not approve content automatically.
+
+### Python
+
+```python
+from koinon_sdk import (
+    ConversationExportInput, ExportCreate, ExportReview, KoinonClient,
+    ShareCreate, ShareReview, ShareReviewInput,
+)
+
+async def review_export(client: KoinonClient, tenant: str, thread: str, messages: list[str]):
+    return await client.review_export(tenant, ConversationExportInput(
+        kind="conversation", thread_id=thread, message_ids=messages,
+        format="markdown", include_evidence=True,
+    ))
+
+async def download_reviewed_export(client: KoinonClient, tenant: str, review: ExportReview):
+    exported = await client.create_export(tenant, ExportCreate(
+        review_id=review.id, expected_revision=review.revision,
+    ))
+    return await client.export_download(tenant, exported.id)
+
+async def review_share(client: KoinonClient, tenant: str, thread: str, messages: list[str]):
+    return await client.review_share(tenant, ShareReviewInput(thread_id=thread, message_ids=messages))
+
+async def create_reviewed_share(client: KoinonClient, tenant: str, review: ShareReview):
+    return await client.create_share(tenant, ShareCreate(
+        review_id=review.id, expected_revision=review.revision, expires_in_hours=24,
+    ))
+
+async def read_shared_answer(client: KoinonClient, tenant: str, share_id: str):
+    shared = await client.share(tenant, share_id)
+    label = shared.identity.assistant_name if shared.identity is not None else "koinon"
+    return label, shared
+```
+
+### Java
+
+```java
+import java.util.List;
+import org.fireflyframework.koinon.sdk.BinaryResponse;
+import org.fireflyframework.koinon.sdk.KoinonClient;
+import org.fireflyframework.koinon.sdk.model.*;
+
+final class ReviewedConversations {
+    static ExportReview reviewExport(KoinonClient client, String tenant, String thread, List<String> messages) {
+        return client.exports(tenant).review(new ConversationExportInput(
+            thread, messages, ConversationExportInputKind.CONVERSATION,
+            ConversationExportInputFormat.MARKDOWN, true));
+    }
+
+    static BinaryResponse downloadReviewedExport(KoinonClient client, String tenant, ExportReview review) {
+        var exported = client.exports(tenant).create(new ExportCreate(review.id(), review.revision()));
+        return client.exports(tenant).download(exported.id());
+    }
+
+    static ShareReview reviewShare(KoinonClient client, String tenant, String thread, List<String> messages) {
+        return client.shares(tenant).review(new ShareReviewInput(thread, messages));
+    }
+
+    static Share createReviewedShare(KoinonClient client, String tenant, ShareReview review) {
+        return client.shares(tenant).create(new ShareCreate(review.id(), review.revision(), 24,
+            ShareRecipientPolicy.ORGANIZATION_CURRENT_ACL));
+    }
+
+    static String savedAssistantName(SharedConversation shared) {
+        return shared.identity() == null ? "koinon" : shared.identity().assistantName();
+    }
+}
+```
+
+The Java SDK also supplies asynchronous variants such as `reviewAsync`, `createAsync` and `downloadAsync`. A successful HTTP response or typed deserialization does not establish model quality or complete historical provenance.
+
 ## Stored query data
 
 Choose `kind: 'query_result'`, its canonical dataset ID and query ID, and one of `parquet`, `csv` or `jsonl`. The export reads the existing persisted Parquet artifact. It does not export only the displayed preview or rerun the query.
@@ -53,6 +138,34 @@ Use `client.shares.review(tenantId, {thread_id, message_ids})` to review the exa
 A share grants no additional permissions. Recipients must sign in and retain current access to every source. Owner membership, source ancestry, archival state and token validity are checked again when a recipient reads the share. Revocation disables subsequent reads. Sharing sends no email and creates no anonymous public link.
 
 Private-derived answers are blocked from sharing. Incomplete historical source manifests are also blocked. These checks cannot be bypassed by deleting an attachment, choosing fewer visible citations or retrying through another token.
+
+### TypeScript sharing
+
+```typescript
+import type {KoinonClient, ShareReview, SharedConversation} from '@fireflyframework/koinon-sdk';
+
+export async function reviewShare(
+  client: KoinonClient, tenant: string, thread: string, messages: string[],
+) {
+  return client.shares.review(tenant, {thread_id: thread, message_ids: messages});
+}
+
+export async function createReviewedShare(client: KoinonClient, tenant: string, review: ShareReview) {
+  return client.shares.create(tenant, {
+    review_id: review.id, expected_revision: review.revision, expires_in_hours: 24,
+  });
+}
+
+export async function readShare(client: KoinonClient, tenant: string, shareId: string) {
+  return client.shares.get(tenant, shareId);
+}
+
+export function savedAssistantName(shared: SharedConversation): string {
+  return shared.identity?.assistant_name ?? 'koinon';
+}
+```
+
+Only call `createReviewedShare` after the user accepts the preview. Read shares through the signed-in recipient's own client. A display fallback is a label, not evidence that an old identity was recorded.
 
 ## Inspect answer sources
 

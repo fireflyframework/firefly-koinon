@@ -281,7 +281,7 @@
   @if (removing()) {
     <section class="confirmation" role="alert" aria-labelledby="remove-access-heading">
       <h3 id="remove-access-heading">{{ 'Remove this role?' | ffkText }}</h3>
-      <p>{{ name(removing()!) | ffkText }} · {{ scopeName(removing()!.workspace_id) | ffkText }}</p>
+      <p>{{ name(removing()!) | ffkText }}, {{ scopeName(removing()!.workspace_id) | ffkText }}</p>
       <p>
         {{
           'Other organization or workspace roles may still give this person access. The last organization administrator cannot be removed.'
@@ -335,12 +335,12 @@
               <div class="row-actions">
                 <ffk-button
                   variant="quiet"
-                  [label]="('Change access' | ffkText) + ' · ' + name(member)"
+                  [label]="('Change access' | ffkText) + ', ' + name(member)"
                   (click)="open('edit', member, $event)"
                   >{{ 'Change' | ffkText }}</ffk-button
                 ><ffk-button
                   variant="quiet"
-                  [label]="('Remove role' | ffkText) + ' · ' + name(member)"
+                  [label]="('Remove role' | ffkText) + ', ' + name(member)"
                   (click)="removing.set(member)"
                   >{{ 'Remove' | ffkText }}</ffk-button
                 >

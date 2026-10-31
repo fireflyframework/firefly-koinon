@@ -6,7 +6,7 @@ package org.fireflyframework.koinon.sdk.model;
 
 /** Typed canonical TableReingestInput contract. */
 public record TableReingestInput(
-    
+
 ) {
 
     public static TableReingestInput empty(){return new TableReingestInput();}

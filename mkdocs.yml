@@ -7,6 +7,8 @@ repo_url: https://github.com/fireflyframework/firefly-koinon
 repo_name: fireflyframework/firefly-koinon
 copyright: Copyright 2026 Firefly Software Foundation
 strict: true
+exclude_docs: |
+  /superpowers/
 theme:
   name: material
   custom_dir: docs_theme
@@ -40,22 +42,48 @@ markdown_extensions:
 nav:
   - Start: index.md
   - Use koinon:
+      - Visual walkthrough: guides/interface-tour.md
       - Library: guides/library.md
+      - Intake formats: guides/intake-formats.md
       - Versions and lineage: guides/lineage.md
       - Agents and chat: guides/agents.md
       - Exports, sharing and sources: guides/exports-sharing.md
   - Configure:
       - Administration: guides/administration.md
+      - Guided configuration: guides/knowledge-setup.md
+      - Identity and appearance: operations/identity-appearance.md
       - Profiles and API tokens: operations/profiles-and-tokens.md
+      - People and organization: guides/people-and-organization.md
       - Authorized applications: guides/authorized-applications.md
+      - Register applications: guides/register-applications.md
   - Integrate:
       - Headless API and SDK: guides/headless.md
+      - API permissions and writes: guides/api-permissions.md
+      - Python SDK:
+          - Start: guides/headless-python.md
+          - Knowledge: guides/python-knowledge.md
+          - Conversations: guides/python-conversations.md
+          - Administration: guides/python-administration.md
+      - TypeScript SDK:
+          - Start: guides/headless-typescript.md
+          - Knowledge: guides/typescript-knowledge.md
+          - Conversations: guides/typescript-conversations.md
+          - Administration: guides/typescript-administration.md
+      - Java SDK:
+          - Start with Java 21+: guides/headless-java.md
+          - Knowledge: guides/java-knowledge.md
+          - Conversations: guides/java-conversations.md
+          - Administration and operations: guides/java-operations.md
       - API and SDK reference: reference/sdk-api.md
       - Embedded components: guides/embedding.md
+      - Connect Claude: guides/connect-claude.md
+      - Connect ChatGPT: guides/connect-chatgpt.md
+      - In-chat knowledge management: guides/mcp-knowledge-management.md
       - Desktop MCP extension: integrations/desktop.md
       - Integration data flow and privacy: integrations/privacy.md
   - Understand:
       - Architecture: concepts/architecture.md
+      - Agents, embeddings and knowledge engines: concepts/knowledge-runtime.md
       - Backend structure: concepts/backend-structure.md
       - MCP architecture: architecture/mcp.md
       - Visual identity: concepts/visual-identity.md
@@ -65,7 +93,12 @@ nav:
       - Production: operations/production.md
       - Configuration and observations: operations/configuration.md
       - Organization knowledge behavior: operations/organization-knowledge.md
-      - File persistence and storage: operations/storage.md
+      - Storage and ECM:
+          - Overview: operations/storage.md
+          - Configure providers: operations/storage-configuration.md
+          - Durability and limits: operations/storage-behavior.md
+          - Migration and recovery: operations/storage-migration.md
+          - Connect an ECM: operations/ecm-integration.md
       - MCP authentication: operations/mcp-authentication.md
       - Migrations: operations/migrations.md
       - Backup and restore: operations/backup-restore.md

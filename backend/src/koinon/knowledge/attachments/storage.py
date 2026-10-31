@@ -6,7 +6,9 @@ import hashlib
 from pathlib import Path
 from uuid import UUID
 
+from koinon_storage.client_lifecycle import ClientLifecycle, client_operation
 from pyfly.container import component
+from pyfly.context.lifecycle import pre_destroy
 from pyfly.kernel import ConflictException, ServiceUnavailableException
 
 from koinon.knowledge.attachments.settings import AttachmentSettings
@@ -24,8 +26,14 @@ class AttachmentStorage:
         self.profile = profile or AttachmentStorageProfile()
         self.store: BlobStore | None = None
         self._binding: tuple | None = None
+        self._owned_store: BlobStore | None = None
+        self._lifecycle = ClientLifecycle()
 
     def configured(self):
+        with self._lifecycle.operation():
+            return self._configured()
+
+    def _configured(self):
         profile = self.profile
         profile.__post_init__()
         root = profile.root or self.settings.storage_root
@@ -78,6 +86,7 @@ class AttachmentStorage:
                         code="ATTACHMENT_STORAGE_REQUIRED",
                     ) from error
             self._binding = binding
+            self._owned_store = self.store
         if isinstance(self.store, LocalBlobStore):
             try:
                 self.store.validate_root()
@@ -95,6 +104,7 @@ class AttachmentStorage:
         ).hexdigest()
         return namespace + "/" + str(UUID(row.id)) + ("/normalized" if normalized else "/original")
 
+    @client_operation
     async def put(self, row, content: bytes, *, normalized=False):
         if not content or len(content) > self.profile.max_object_bytes:
             raise ValueError("Private blob exceeds a supported byte bound")
@@ -109,6 +119,7 @@ class AttachmentStorage:
             max_bytes=self.profile.max_object_bytes,
         )
 
+    @client_operation
     async def read(self, row, *, normalized=False):
         expected_size = row.normalized_size_bytes if normalized else row.size_bytes
         expected_hash = row.normalized_sha256 if normalized else row.sha256
@@ -135,8 +146,19 @@ class AttachmentStorage:
             )
         return content
 
+    @client_operation
     async def purge(self, row):
         store = self.configured()
         for normalized in (False, True):
             await store.delete(self.key(row, normalized))
         await store.purge_staging(self.key(row))
+
+    @pre_destroy
+    async def close(self) -> None:
+        async def release():
+            if self._owned_store is not None:
+                close = getattr(self._owned_store, "close", None)
+                if close is not None:
+                    await close()
+
+        await self._lifecycle.aclose(release)

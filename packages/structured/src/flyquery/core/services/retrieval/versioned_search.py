@@ -38,7 +38,8 @@ async def schema_rows(session, binding, embedding, dataset_id, limit):
         JOIN flyquery_embedding_vectors v ON v.set_id=:set_id AND v.kind='schema'
           AND v.object_id=o.id AND v.content_hash=fresh.source_hash
           AND v.tenant_id=:tenant AND v.workspace_id=:workspace
-        WHERE t.dataset_id=:ds AND o.is_active=true
+        WHERE t.dataset_id=:ds AND t.is_active=true AND o.is_active=true
+          AND o.snapshot_id=t.current_snapshot_id
         ORDER BY v.embedding <=> CAST(:emb AS vector) LIMIT :lim
     """
         ),

@@ -290,17 +290,28 @@ class TestJobStreamResume:
 
 class TestWorkspaceAdminEngine:
     def test_same_dsn_means_no_admin_engine(self) -> None:
-        repo = WorkspaceRepository.from_urls(
-            "sqlite+aiosqlite:///:memory:", admin_database_url="sqlite+aiosqlite:///:memory:"
-        )
+        from sqlalchemy.engine import make_url
+
+        url = "sqlite+aiosqlite:///:memory:"
+        source = SimpleNamespace(engine=SimpleNamespace(url=make_url(url)), sessionmaker=object())
+        registry = SimpleNamespace(get={"canon": source}.__getitem__)
+        repo = WorkspaceRepository.from_urls(url, admin_database_url=url, registry=registry)
         assert repo.has_admin_engine is False
 
-    def test_distinct_dsn_builds_an_admin_engine(self, tmp_path: Path) -> None:
+    def test_distinct_dsn_borrows_an_admin_engine(self, tmp_path: Path) -> None:
+        from sqlalchemy.engine import make_url
+
+        runtime_url = "sqlite+aiosqlite:///:memory:"
+        admin_url = f"sqlite+aiosqlite:///{tmp_path}/admin.db"
+        sources = {
+            name: SimpleNamespace(engine=SimpleNamespace(url=make_url(url)), sessionmaker=object())
+            for name, url in (("canon", runtime_url), ("canon_admin", admin_url))
+        }
         repo = WorkspaceRepository.from_urls(
-            "sqlite+aiosqlite:///:memory:",
-            admin_database_url=f"sqlite+aiosqlite:///{tmp_path}/admin.db",
+            runtime_url, admin_database_url=admin_url, registry=SimpleNamespace(get=sources.__getitem__)
         )
         assert repo.has_admin_engine is True
+        assert repo._admin_session_factory is sources["canon_admin"].sessionmaker
 
     def test_settings_fall_back_to_the_request_dsn(self) -> None:
         settings = CanonSettings(database_url="postgresql+asyncpg://app@db/x", admin_database_url="  ")

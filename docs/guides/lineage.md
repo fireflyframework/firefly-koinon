@@ -139,3 +139,60 @@ Only a committed domain receipt can confirm a repository write. A preview, pendi
 Before committing, the native write checks its persisted title, body, summary, domain and tags against the authorized content. Clearing a summary is an explicit change. A mismatch rolls back the operation, including its receipt and transactional outbox records.
 
 Replacing or reprocessing a versioned document also requires the exact source version and extraction that the user reviewed. Read the pair from the document’s chunk response, then send `X-Koinon-Source-Version` and `X-Koinon-Extraction` together. `If-Match` still carries the original-byte SHA256; it serves a different purpose. A missing or stale pair returns `409` before replacement or reprocessing. Malformed or one-sided identifiers return a validation error. Reload and review the current document before retrying a conflicting change.
+
+## Read an immutable document source
+
+A recorded document reference identifies a canonical document, native source, source version, extraction, part and part SHA256. A search result's chunk identifier belongs to the current search projection. Preserve the immutable tuple separately when saving an answer. Historical references without that tuple remain unrecorded. Authenticated search hits can return their trusted receipt as the optional typed `source_reference` field. Preserve that entire reference when saving the hit; an absent reference does not acquire an identity from the current document.
+
+The document history API reads those exact retained identities:
+
+```text
+GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions?page=1&page_size=25
+GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}
+GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/extractions?page=1&page_size=25
+GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/extractions/{extraction_id}/parts?kind=chunk&page=1&page_size=25
+GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/extractions/{extraction_id}/parts/{source_part_id}
+GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/original
+```
+
+Version metadata retains the original filename, admitted actor, creation time, original digest and byte size. Extraction summaries describe the recorded purpose, coverage and normalized digest. Part summaries contain identifiers, digests and recorded coordinates without text. Lists return `items`, `total`, `page`, `page_size`, `pages`, `has_next` and `has_previous`; `page_size` is 1–100 and the page offset is at most 100,000. The optional part filter accepts `artifact`, `section`, `chunk` or `page`.
+
+Only the exact part endpoint returns verified text. It supports retained ingestion chunks and recorded whole-document pages, verifies their immutable bindings and original/normalized bytes, and rejects content over 1 MiB of UTF-8 or 1,000,000 characters. Text is never truncated while retaining the original digest. `recorded_page` and `page_basis` describe the original loader's coordinates; an unknown page stays unknown. Storage keys and internal search projection identifiers are excluded from these responses.
+
+Every read requires current `catalog:read` access to the canonical document and its ancestors, including current token resource limits. Authorization and the canonical/native binding are checked again before returning a completed native read. A missing version, mismatched extraction or missing exact part fails without choosing the current head. The original endpoint downloads the verified historical bytes with a content digest ETag, attachment disposition, `nosniff` and private `no-store` caching.
+
+```python
+versions = await client.document_versions(tenant_id, document_id, page=1, page_size=25)
+part = await client.document_part(
+    tenant_id, document_id, source_version_id, extraction_id, source_part_id,
+)
+original = await client.document_version_original(tenant_id, document_id, source_version_id)
+```
+
+```typescript
+const versions = await client.documents.versions(tenantId, documentId, {page: 1, page_size: 25});
+const part = await client.documents.part(
+  tenantId, documentId, sourceVersionId, extractionId, sourcePartId,
+);
+const original = await client.documents.versionOriginal(tenantId, documentId, sourceVersionId);
+```
+
+```java
+var versions = client.documents(tenantId).versions(documentId);
+var part = client.documents(tenantId).part(documentId, sourceVersionId, extractionId, sourcePartId);
+var original = client.documents(tenantId).versionOriginal(documentId, sourceVersionId);
+```
+
+All three clients also provide typed exact-version, extraction-history and part-summary helpers. Java includes asynchronous variants. These reads preserve the saved source identity without rerunning retrieval, ingestion or a model.
+
+## Open the source used by an answer
+
+Open **Audit** below a saved response, select **Sources**, then choose **Open source**. A versioned document opens the exact retained fragment used by that response. **Back to sources** returns to the same audit. If the document has since changed, the panel labels that change while keeping the recorded content and page. An unknown original page stays unknown.
+
+The panel checks the returned document, source version, extraction, part and content digest against the saved reference. It verifies the text hash in the browser before displaying it. A mismatch or a permission failure shows an error without opening today's replacement. **Version details** contains the immutable identifiers and separate hashes for the original file, processed content and fragment.
+
+The following browser captures use controlled source receipts to illustrate the desktop and mobile layout. They demonstrate presentation and historical navigation, rather than an accepted live model conversation.
+
+![Historical source panel on desktop](../assets/screenshots/recorded-document-source-desktop.png)
+
+![Historical source panel in Spanish on mobile](../assets/screenshots/recorded-document-source-mobile.png)

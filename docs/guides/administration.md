@@ -25,7 +25,9 @@ Memberships can apply organization-wide or to an authorized space. The last orga
 
 ## Invite someone or change access
 
-In **People & access**, search existing people by name before assigning a role. Choose the organization or a workspace as the scope. Filters and pages come from the server; changing the scope or filters returns to the first page. A person may hold several roles, so removing one assignment may leave access through another.
+In **Settings**, open **Access** to manage **People & access**. Search existing people by name before assigning a role. Choose the organization or a workspace as the scope. Filters and pages come from the server; changing the scope or filters returns to the first page. A person may hold several roles, so removing one assignment may leave access through another.
+
+Use the separate **People** and **Organization structure** sections for photos, job titles, departments, teams and reporting lines. These fields do not grant access. [People and organization](people-and-organization.md) explains profile ownership, directory privacy, corporate mappings and all three SDKs.
 
 For someone new, create an invitation link with a role, scope and expiry. The default lifetime is 24 hours; the maximum is seven days. Copy the private link when it is created: its secret is shown once. No email is sent and no identity-provider account is provisioned. The recipient must sign in through the configured identity provider and explicitly accept. An invitation cannot replace an existing assignment in that scope. Revoking the link prevents redemption; after redemption, manage the resulting role assignment separately.
 

@@ -26,7 +26,11 @@ configured here.
 
 from __future__ import annotations
 
-import asyncio
+from functools import partial
+from typing import Any
+
+from koinon_storage.client_lifecycle import ClientLifecycle
+from pyfly.context.lifecycle import pre_destroy
 
 from flycanon.core.services.storage.object_store import ObjectStore, ObjectTooLargeError
 
@@ -58,17 +62,20 @@ class S3ObjectStore(ObjectStore):
         prefix: str = "",
         endpoint_url: str | None = None,
         region: str | None = None,
+        *,
+        client: Any = None,
+        owns_client: bool = True,
     ) -> None:
-        if not _HAS_BOTO3:
+        if client is None and not _HAS_BOTO3:
             raise RuntimeError("S3ObjectStore requires the 's3' extra; run: uv sync --extra s3")
-        assert boto3 is not None  # guaranteed by the _HAS_BOTO3 guard; narrows for the type checker
         self._bucket = bucket
         self._prefix = prefix.strip("/")
-        self._client = boto3.client(
-            "s3",
-            endpoint_url=endpoint_url,
-            region_name=region,
-        )
+        self._lifecycle = ClientLifecycle()
+        self._owns_client = owns_client if client is not None else True
+        if client is None:
+            assert boto3 is not None
+            client = boto3.client("s3", endpoint_url=endpoint_url, region_name=region)
+        self._client = client
 
     def _full_key(self, key: str) -> str:
         if ".." in key.split("/") or key.startswith("/"):
@@ -86,17 +93,10 @@ class S3ObjectStore(ObjectStore):
         }
         if content_type is not None:
             kwargs["ContentType"] = content_type
-        await asyncio.to_thread(lambda: self._client.put_object(**kwargs))
+        await self._lifecycle.run(lambda: self._client.put_object(**kwargs))
 
     async def get(self, key: str) -> bytes:
-        full = self._full_key(key)
-        try:
-            resp = await asyncio.to_thread(self._client.get_object, Bucket=self._bucket, Key=full)
-        except ClientError as exc:
-            if _is_not_found(exc):
-                raise FileNotFoundError(key) from exc
-            raise
-        return await asyncio.to_thread(resp["Body"].read)
+        return await self._lifecycle.run(lambda: self.get_sync(key))
 
     async def get_bounded(self, key: str, max_bytes: int) -> bytes:
         if max_bytes < 0:
@@ -119,33 +119,44 @@ class S3ObjectStore(ObjectStore):
             finally:
                 stream.close()
 
-        return await asyncio.to_thread(read)
+        return await self._lifecycle.run(read)
 
     def get_sync(self, key: str) -> bytes:
-        # Blocking read for callers already on a worker thread (the RLM REPL).
-        # boto3 is synchronous, so the client call is issued directly here.
-        full = self._full_key(key)
-        try:
-            resp = self._client.get_object(Bucket=self._bucket, Key=full)
-        except ClientError as exc:
-            if _is_not_found(exc):
-                raise FileNotFoundError(key) from exc
-            raise
-        return resp["Body"].read()
+        with self._lifecycle.operation():
+            full = self._full_key(key)
+            try:
+                response = self._client.get_object(Bucket=self._bucket, Key=full)
+            except ClientError as error:
+                if _is_not_found(error):
+                    raise FileNotFoundError(key) from error
+                raise
+            stream = response["Body"]
+            try:
+                return stream.read()
+            finally:
+                stream.close()
 
     async def delete(self, key: str) -> None:
         full = self._full_key(key)
-        await asyncio.to_thread(self._client.delete_object, Bucket=self._bucket, Key=full)
+        await self._lifecycle.run(partial(self._client.delete_object, Bucket=self._bucket, Key=full))
 
     async def exists(self, key: str) -> bool:
         full = self._full_key(key)
         try:
-            await asyncio.to_thread(self._client.head_object, Bucket=self._bucket, Key=full)
+            await self._lifecycle.run(partial(self._client.head_object, Bucket=self._bucket, Key=full))
         except ClientError as exc:
             if _is_not_found(exc):
                 return False
             raise
         return True
+
+    @pre_destroy
+    async def close(self) -> None:
+        def release():
+            if self._owns_client:
+                self._client.close()
+
+        await self._lifecycle.close(release)
 
 
 def _is_not_found(exc: Exception) -> bool:

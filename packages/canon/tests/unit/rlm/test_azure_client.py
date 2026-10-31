@@ -611,7 +611,7 @@ def test_a_whole_codeact_session_runs_on_azure():
     """
     http = _FakeHttp(
         [
-            _tool_reply("print(docs['POLICY'])", "call_1"),
+            _tool_reply("print(docs.get('POLICY'))", "call_1"),
             _tool_reply("final('70 euros', filings=['POLICY'], pages=[0])", "call_2"),
         ]
     )
@@ -663,7 +663,9 @@ def test_the_forced_final_turn_runs_tool_less_on_azure():
     )
     client = AzureOpenAIChatClient(_settings(), http_client=http)
 
-    answer, _citations, no_answer = RLMSession(client, max_iters=1).run("q", _Docs("70"))
+    answer, _citations, no_answer = RLMSession(
+        client, max_iters=1, sandbox_mode="inprocess",
+    ).run("q", _Docs("70"))
 
     assert answer == "The allowance is 70 euros a day."
     assert no_answer is False

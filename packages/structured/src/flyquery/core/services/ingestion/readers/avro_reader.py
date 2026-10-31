@@ -18,11 +18,11 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 from pathlib import Path
 
 from flyquery.core.services.ingestion.coordinates import record_coordinates
+from flyquery.core.services.ingestion.native_call import run_native
 from flyquery.core.services.ingestion.reader import (
     ColumnSchema,
     MaterialiseResult,
@@ -35,7 +35,7 @@ class AvroReader:
     formats = ("avro",)
 
     async def enumerate_tables(self, source_path: str, rules: TableExtractionRules) -> list[ProposedTable]:
-        return await asyncio.to_thread(self._enumerate_sync, source_path)
+        return await run_native(self._enumerate_sync, source_path)
 
     async def materialise(
         self,
@@ -47,7 +47,7 @@ class AvroReader:
         type_infer_sample_rows: int,
         max_title_rows: int = 3,
     ) -> MaterialiseResult:
-        return await asyncio.to_thread(self._materialise_sync, source_path, target_parquet_key)
+        return await run_native(self._materialise_sync, source_path, target_parquet_key)
 
     @staticmethod
     def _enumerate_sync(source_path: str) -> list[ProposedTable]:

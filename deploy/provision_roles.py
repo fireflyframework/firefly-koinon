@@ -32,6 +32,7 @@ def grant_table(connection, table, role, *, document_control=False):
             "canon_source_parts",
             "canon_source_transform_steps",
             "canon_source_lineage_events",
+            "koinon_mcp_read_receipts",
         }
     )
     receipt = table in {
@@ -39,6 +40,13 @@ def grant_table(connection, table, role, *, document_control=False):
         "canon_knowledge_commits",
         "canon_source_heads",
         "koinon_organization_chat_settings",
+        "koinon_organization_branding",
+        "koinon_organization_people",
+        "koinon_organization_directory_settings",
+        "koinon_organization_profile_mappings",
+        "koinon_external_knowledge_reviews",
+        "koinon_external_file_reviews",
+        "koinon_mcp_oauth_clients",
     }
     outbox = table.startswith("canon_knowledge_outbox_")
     if immutable or receipt or outbox:

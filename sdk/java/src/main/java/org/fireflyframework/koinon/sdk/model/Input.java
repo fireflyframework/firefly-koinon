@@ -6,7 +6,7 @@ package org.fireflyframework.koinon.sdk.model;
 
 /** Typed canonical Input contract. */
 public record Input(
-    
+
 ) {
 
     public static Input empty(){return new Input();}

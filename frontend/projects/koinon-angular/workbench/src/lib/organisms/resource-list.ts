@@ -63,7 +63,7 @@ export class KoinonResourceList {
           (unit === 1048576 ? 'MB' : unit === 1024 ? 'KB' : 'B'),
       );
     }
-    return parts.join(' · ');
+    return parts.join(', ');
   }
   tagLabel(item: CatalogEntry, tag: string) {
     const summary = this.summaries[item.id];

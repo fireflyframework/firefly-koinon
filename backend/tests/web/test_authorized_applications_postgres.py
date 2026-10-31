@@ -6,6 +6,7 @@ import asyncio
 import base64
 import hashlib
 import os
+import re
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from urllib.parse import parse_qs, urlsplit
@@ -33,6 +34,8 @@ from koinon.catalog.repositories import (
 )
 from koinon.catalog.service import CatalogService
 from koinon.mcp.settings import McpSettings
+from koinon.mcp_applications.authority import McpOAuthClientAuthority
+from koinon.mcp_applications.repositories import McpOAuthClientRepository
 from koinon.mcp_auth.entities import McpAuthorization
 from koinon.mcp_auth.repositories import McpAuthorizationRepository
 from koinon.mcp_auth.service import McpOAuthService
@@ -55,18 +58,35 @@ REDIRECT = "https://fictional-client.example.invalid/callback"
 VERIFIER = "v" * 43
 
 
+def qualification_target(url):
+    target = make_url(url)
+    if not (
+        target.drivername in {"postgresql+psycopg", "postgresql+asyncpg"}
+        and target.host == "127.0.0.1"
+        and target.port == 18783
+        and not target.query
+        and re.fullmatch(r"koinon_applications_source13_[a-f0-9]{32}", target.database or "")
+    ):
+        pytest.fail("Source13 application tests require a new dedicated native21 qualification database")
+    return target
+
+
+def require_native21(head, registry_table, columns):
+    assert head == "koinon_0021_mcp_oauth_clients"
+    assert registry_table is True
+    assert len(columns) == 2 and {(table, column) for table, column, _ in columns} == {
+        ("koinon_mcp_authorizations", "client_registration"),
+        ("koinon_authorized_applications", "client_registration"),
+    }
+    assert all(kind in {"json", "jsonb"} for _, _, kind in columns)
+
+
 @pytest.fixture
 async def pg_applications(monkeypatch):
     from pyfly.agentic.models import ModelFactory
 
     url = os.environ["KOINON_APPLICATIONS_POSTGRES_URL"]
-    target = make_url(url)
-    if not (
-        target.host == "127.0.0.1"
-        and target.port == 18783
-        and (target.database or "").startswith("koinon_applications_qualification_")
-    ):
-        pytest.fail("Application PostgreSQL tests require their dedicated fictional database")
+    target = qualification_target(url)
     context = ApplicationContext(
         Config(
             {
@@ -110,6 +130,8 @@ async def pg_applications(monkeypatch):
         AuthorizedApplicationRepository,
         AuthorizedApplicationService,
         McpAuthorizationRepository,
+        McpOAuthClientRepository,
+        McpOAuthClientAuthority,
         McpOAuthService,
     ):
         context.register_bean(bean)
@@ -122,9 +144,20 @@ async def pg_applications(monkeypatch):
             )
         ).one() == (False, False)
         assert await session.scalar(text("SELECT current_database()")) == target.database
-        assert (
-            await session.scalar(text("SELECT version_num FROM koinon_native_version"))
-            == "koinon_0016_authorized_apps"
+        require_native21(
+            await session.scalar(text("SELECT version_num FROM koinon_native_version")),
+            await session.scalar(text("SELECT to_regclass('public.koinon_mcp_oauth_clients') IS NOT NULL")),
+            set(
+                (
+                    await session.execute(
+                        text(
+                            "SELECT table_name,column_name,data_type FROM information_schema.columns "
+                            "WHERE table_schema='public' AND column_name='client_registration' "
+                            "AND table_name IN ('koinon_mcp_authorizations','koinon_authorized_applications')"
+                        )
+                    )
+                ).all()
+            ),
         )
     monkeypatch.setattr(
         ModelFactory,

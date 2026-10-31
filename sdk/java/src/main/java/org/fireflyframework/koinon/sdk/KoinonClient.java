@@ -31,12 +31,24 @@ public final class KoinonClient implements AutoCloseable {
     return new Builder(base);
   }
 
+  public McpApi mcp() { return new McpApi(transport); }
+
+  public McpOAuthClientsApi mcpOAuthClients(String tenant) { return new McpOAuthClientsApi(transport, tenant); }
+
+  public ExternalReviewsApi externalReviews(String tenant) { return new ExternalReviewsApi(transport, tenant); }
+
+  public ExternalFileReviewsApi externalFileReviews(String tenant) { return new ExternalFileReviewsApi(transport, tenant); }
+
   public PlatformApi platform() {
     return new PlatformApi(transport);
   }
 
   public ProfileApi profile() {
     return new ProfileApi(transport);
+  }
+
+  public OrganizationPeopleApi organizationPeople(String tenant) {
+    return new OrganizationPeopleApi(transport, tenant);
   }
 
   public TokensApi tokens() {
@@ -97,6 +109,22 @@ public final class KoinonClient implements AutoCloseable {
 
   public OrganizationChatApi organizationChat(String tenant) {
     return new OrganizationChatApi(transport, tenant);
+  }
+
+  public BrandingDefaultsApi brandingDefaults() {
+    return new BrandingDefaultsApi(transport);
+  }
+
+  public OrganizationBrandingApi organizationBranding(String tenant) {
+    return new OrganizationBrandingApi(transport, tenant);
+  }
+
+  public BrandingDefaultsApi branding() {
+    return brandingDefaults();
+  }
+
+  public OrganizationBrandingApi branding(String tenant) {
+    return organizationBranding(tenant);
   }
 
   public OrganizationKnowledgeApi organizationKnowledge(String tenant) {

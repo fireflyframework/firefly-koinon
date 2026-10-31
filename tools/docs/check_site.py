@@ -46,6 +46,8 @@ class Page(HTMLParser):
 def check(root: Path) -> list[str]:
     pages = {path.resolve(): Page(path.read_text()) for path in root.rglob("*.html")}
     failures = []
+    if (root / "superpowers").exists():
+        failures.append("Internal planning files must not appear in the published site")
     if not pages:
         return ["No generated HTML pages found"]
     for path, page in pages.items():

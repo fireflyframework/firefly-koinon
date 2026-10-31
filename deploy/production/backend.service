@@ -10,8 +10,11 @@ Type=simple
 User=koinon
 Group=koinon
 WorkingDirectory=/opt/koinon/backend
+Environment=PYFLY_SERVER_HOST=127.0.0.1
+Environment=PYFLY_SERVER_PORT=18781
+Environment=PYFLY_SERVER_TYPE=uvicorn
 EnvironmentFile=/etc/koinon/runtime.env
-ExecStart=/opt/koinon/backend/.venv/bin/python -m uvicorn koinon.main:app --host 127.0.0.1 --port 18781 --proxy-headers --forwarded-allow-ips=127.0.0.1
+ExecStart=/usr/bin/env FORWARDED_ALLOW_IPS=127.0.0.1 /opt/koinon/backend/.venv/bin/python -m koinon.serve
 Restart=on-failure
 RestartSec=5
 TimeoutStopSec=45

@@ -21,6 +21,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Sequence
 from contextlib import asynccontextmanager
 
+from pyfly.data.relational.datasource_registry import DataSourceRegistry
 from pyfly.data.transaction import infrastructure_unit
 from sqlalchemy import and_, column, delete, func, select, table, text
 from sqlalchemy import update as sa_update
@@ -46,8 +47,17 @@ class ChunkRepository:
         return self._engine
 
     @classmethod
-    def from_url(cls, database_url: str, *, echo: bool = False) -> ChunkRepository:
-        factory, engine = build_session_factory(database_url, echo=echo)
+    def from_url(
+        cls,
+        database_url: str,
+        *,
+        echo: bool = False,
+        registry: DataSourceRegistry | None = None,
+        datasource_name: str = "canon",
+    ) -> ChunkRepository:
+        factory, engine = build_session_factory(
+            database_url, echo=echo, registry=registry, datasource_name=datasource_name
+        )
         return cls(factory, engine=engine)
 
     @asynccontextmanager

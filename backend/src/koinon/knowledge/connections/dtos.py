@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from koinon.assistants.connections import ModelParameters
+
 
 class ConnectionInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -13,7 +15,7 @@ class ConnectionInput(BaseModel):
     mode: Literal["provider", "current_agent"] = "provider"
     provider_id: str | None = Field(default=None, min_length=1, max_length=64)
     model_id: str | None = Field(default=None, min_length=1, max_length=255)
-    model_options: dict = Field(default_factory=dict)
+    model_options: ModelParameters | None = None
     dimensions: int | None = Field(default=None, ge=1, le=4096, strict=True)
     storage_dimensions: int | None = Field(default=None, ge=1, le=4096, strict=True)
     space_id: str | None = Field(default=None, min_length=1, max_length=256)

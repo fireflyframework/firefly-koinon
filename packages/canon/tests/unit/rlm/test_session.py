@@ -21,6 +21,9 @@ network, no API key.
 
 from __future__ import annotations
 
+import pytest
+from pyfly.kernel import ServiceUnavailableException
+
 from flycanon.core.services.query.rlm.safe_builtins import _SAFE_BUILTINS
 from flycanon.core.services.query.rlm.sandbox.executor import BlockResult, SandboxExecutor
 from flycanon.core.services.query.rlm.session import (
@@ -90,7 +93,7 @@ def test_final_terminates_loop_with_citations():
     docs = FakeDocs({"ACME_2020": ["revenue was 100", "other page about costs"]})
     code = "final('100', filings=['ACME_2020'], pages=[0])"
     client = FakeClient([_tool_use(code)])
-    answer, cites, _no_answer = RLMSession(client).run("what was revenue?", docs)
+    answer, cites, _no_answer = RLMSession(client, sandbox_mode="inprocess").run("what was revenue?", docs)
     assert answer == "100"
     assert len(cites) == 1
     assert cites[0]["filing"] == "ACME_2020"
@@ -103,7 +106,7 @@ def test_final_terminates_loop_with_citations():
 def test_final_default_reports_found():
     docs = FakeDocs({"A": ["revenue was 100"]})
     client = FakeClient([_tool_use("final('100', filings=['A'], pages=[0])")])
-    answer, cites, no_answer = RLMSession(client).run("revenue?", docs)
+    answer, cites, no_answer = RLMSession(client, sandbox_mode="inprocess").run("revenue?", docs)
     assert answer == "100"
     assert len(cites) == 1
     # final() defaults to found=True -> no_answer is False
@@ -114,7 +117,7 @@ def test_final_found_false_reports_no_answer():
     docs = FakeDocs({"A": ["nothing relevant here"]})
     code = "final('the documents do not contain this', filings=['A'], found=False)"
     client = FakeClient([_tool_use(code)])
-    answer, cites, no_answer = RLMSession(client).run("revenue?", docs)
+    answer, cites, no_answer = RLMSession(client, sandbox_mode="inprocess").run("revenue?", docs)
     assert answer == "the documents do not contain this"
     # the citation is still carried, but the structured flag marks a no-answer
     assert cites[0]["filing"] == "A"
@@ -124,15 +127,32 @@ def test_final_found_false_reports_no_answer():
 def test_text_only_answer_is_not_no_answer():
     docs = FakeDocs({"A": ["p"]})
     client = FakeClient([_text("plain best-effort answer")])
-    _answer, _cites, no_answer = RLMSession(client).run("q", docs)
+    _answer, _cites, no_answer = RLMSession(client, sandbox_mode="inprocess").run("q", docs)
     assert no_answer is False
+
+
+@pytest.mark.parametrize("failure", [
+    RuntimeError("Provider failed"),
+    ServiceUnavailableException("Different client protocol failure", code="RLM_TOOL_PROTOCOL_REQUIRED"),
+])
+def test_untyped_errors_are_propagated_without_protocol_correction(failure):
+    class FailingClient(FakeClient):
+        def chat_raw(self, *args, **kwargs):
+            self.chat_calls.append({"args": args})
+            raise failure
+
+    client = FailingClient([])
+    with pytest.raises(type(failure)) as raised:
+        RLMSession(client, max_iters=3, sandbox_mode="inprocess").run_over_text("question", "source")
+    assert raised.value is failure
+    assert len(client.chat_calls) == 1
 
 
 def test_out_of_iters_is_not_no_answer():
     docs = FakeDocs({"A": ["p"]})
     loops = [_tool_use("print('working')", f"t{i}") for i in range(2)]
     client = FakeClient(loops + [_text("forced final")])
-    _answer, _cites, no_answer = RLMSession(client, max_iters=2).run("q", docs)
+    _answer, _cites, no_answer = RLMSession(client, max_iters=2, sandbox_mode="inprocess").run("q", docs)
     assert no_answer is False
 
 
@@ -145,7 +165,7 @@ def test_out_of_iters_fallback_is_tool_less():
     loops = [_tool_use("print('still working')", f"t{i}") for i in range(2)]
     client = FakeClient(loops + [_text("here is my final answer")])
 
-    answer, _cites, no_answer = RLMSession(client, max_iters=2).run("q", docs)
+    answer, _cites, no_answer = RLMSession(client, max_iters=2, sandbox_mode="inprocess").run("q", docs)
 
     assert answer == "here is my final answer"
     assert no_answer is False
@@ -166,7 +186,7 @@ def test_multi_turn_then_final():
             _tool_use("final('42', filings=['ACME_2020'], pages=[1])"),
         ]
     )
-    answer, cites, _no_answer = RLMSession(client).run("q", docs)
+    answer, cites, _no_answer = RLMSession(client, sandbox_mode="inprocess").run("q", docs)
     assert answer == "42"
     assert cites[0]["page"] == 1
     assert len(client.chat_calls) == 2
@@ -185,7 +205,7 @@ def test_sandbox_forbids_open_and_import():
             _tool_use("final('done', filings=['A'])"),
         ]
     )
-    answer, _cites, _no_answer = RLMSession(client).run("q", docs)
+    answer, _cites, _no_answer = RLMSession(client, sandbox_mode="inprocess").run("q", docs)
     assert answer == "done"
     tool_result = client.chat_calls[1]["messages"][-1]["content"][0]
     assert "NameError" in tool_result["content"]
@@ -206,7 +226,7 @@ def test_import_statement_blocked_in_exec():
             _tool_use("final('ok', filings=['A'])"),
         ]
     )
-    answer, _cites, _no_answer = RLMSession(client).run("q", docs)
+    answer, _cites, _no_answer = RLMSession(client, sandbox_mode="inprocess").run("q", docs)
     assert answer == "ok"
     tool_result = client.chat_calls[1]["messages"][-1]["content"][0]
     assert "ImportError" in tool_result["content"] or "NameError" in tool_result["content"]
@@ -228,7 +248,7 @@ def test_best_page_empty_returns_zero():
 def test_citation_fills_best_page_when_unspecified():
     docs = FakeDocs({"A": ["intro page", "net income figure is here"]})
     client = FakeClient([_tool_use("final('x', filings=['A'])")])
-    _answer, cites, _no_answer = RLMSession(client).run("net income figure", docs)
+    _answer, cites, _no_answer = RLMSession(client, sandbox_mode="inprocess").run("net income figure", docs)
     # no page given -> _best_page chosen deterministically (page 1 has the keywords)
     assert cites[0]["page"] == 1
 
@@ -236,14 +256,14 @@ def test_citation_fills_best_page_when_unspecified():
 def test_citation_clamps_out_of_range_page():
     docs = FakeDocs({"A": ["only page"]})
     client = FakeClient([_tool_use("final('x', filings=['A'], pages=[99])")])
-    _answer, cites, _no_answer = RLMSession(client).run("q", docs)
+    _answer, cites, _no_answer = RLMSession(client, sandbox_mode="inprocess").run("q", docs)
     assert cites[0]["page"] == 0
 
 
 def test_unknown_filing_has_empty_content():
     docs = FakeDocs({"A": ["p"]})
     client = FakeClient([_tool_use("final('x', filings=['MISSING'])")])
-    _answer, cites, _no_answer = RLMSession(client).run("q", docs)
+    _answer, cites, _no_answer = RLMSession(client, sandbox_mode="inprocess").run("q", docs)
     assert cites[0]["filing"] == "MISSING"
     assert cites[0]["content"] == ""
 
@@ -253,7 +273,7 @@ def test_citation_content_preserves_newlines():
     page = "Consolidated Balance Sheet\nTotal assets        1,234\nTotal liabilities     567"
     docs = FakeDocs({"A": [page]})
     client = FakeClient([_tool_use("final('x', filings=['A'], pages=[0])")])
-    _answer, cites, _no_answer = RLMSession(client).run("total assets", docs)
+    _answer, cites, _no_answer = RLMSession(client, sandbox_mode="inprocess").run("total assets", docs)
     # structure is preserved -- newlines are NOT collapsed to spaces
     assert "\n" in cites[0]["content"]
     assert cites[0]["content"] == page
@@ -265,7 +285,7 @@ def test_citation_content_capped_not_500():
     assert 500 < len(page) <= _CITATION_CONTENT_CHARS
     docs = FakeDocs({"A": [page]})
     client = FakeClient([_tool_use("final('x', filings=['A'], pages=[0])")])
-    _answer, cites, _no_answer = RLMSession(client).run("rows", docs)
+    _answer, cites, _no_answer = RLMSession(client, sandbox_mode="inprocess").run("rows", docs)
     # the full page survives -- more than the old 500-char prefix
     assert len(cites[0]["content"]) > 500
     assert cites[0]["content"] == page
@@ -276,14 +296,14 @@ def test_citation_content_truncated_at_cap():
     page = "x" * (_CITATION_CONTENT_CHARS + 1000)
     docs = FakeDocs({"A": [page]})
     client = FakeClient([_tool_use("final('x', filings=['A'], pages=[0])")])
-    _answer, cites, _no_answer = RLMSession(client).run("q", docs)
+    _answer, cites, _no_answer = RLMSession(client, sandbox_mode="inprocess").run("q", docs)
     assert len(cites[0]["content"]) == _CITATION_CONTENT_CHARS
 
 
 def test_text_only_answer_without_tool_use():
     docs = FakeDocs({"A": ["p"]})
     client = FakeClient([_text("  the answer is plain  ")])
-    answer, cites, _no_answer = RLMSession(client).run("q", docs)
+    answer, cites, _no_answer = RLMSession(client, sandbox_mode="inprocess").run("q", docs)
     assert answer == "the answer is plain"
     assert cites == []
 
@@ -293,7 +313,7 @@ def test_out_of_iters_asks_for_plain_answer():
     # every turn runs code but never calls final; loop exhausts then asks for text
     loops = [_tool_use("print('still working')", f"t{i}") for i in range(2)]
     client = FakeClient(loops + [_text("forced final")])
-    answer, _cites, _no_answer = RLMSession(client, max_iters=2).run("q", docs)
+    answer, _cites, _no_answer = RLMSession(client, max_iters=2, sandbox_mode="inprocess").run("q", docs)
     assert answer == "forced final"
     # 2 loop turns + 1 forced-answer call
     assert len(client.chat_calls) == 3
@@ -310,7 +330,7 @@ def test_llm_helper_callable_from_sandbox():
             _tool_use("final('ok', filings=['A'])"),
         ]
     )
-    answer, _cites, _no_answer = RLMSession(client).run("q", docs)
+    answer, _cites, _no_answer = RLMSession(client, sandbox_mode="inprocess").run("q", docs)
     assert answer == "ok"
     assert client.complete_calls == ["extract the number from this chunk"]
     tool_result = client.chat_calls[1]["messages"][-1]["content"][0]
@@ -325,7 +345,7 @@ def test_sub_call_budget_exhaustion():
             _tool_use("final('ok', filings=['A'])"),
         ]
     )
-    session = RLMSession(client, sub_budget=1)
+    session = RLMSession(client, sub_budget=1, sandbox_mode="inprocess")
     answer, _cites, _no_answer = session.run("q", docs)
     assert answer == "ok"
     # budget 1 -> first llm runs, second returns the exhausted sentinel
@@ -352,7 +372,7 @@ def test_on_turn_fires_once_per_turn_with_increasing_numbers():
         ]
     )
     seen: list[tuple[int, list[str]]] = []
-    RLMSession(client, on_turn=lambda turn, accessed: seen.append((turn, list(accessed)))).run("q", docs)
+    RLMSession(client, on_turn=lambda turn, accessed: seen.append((turn, list(accessed))), sandbox_mode="inprocess").run("q", docs)
     # one callback per orchestrator turn (3 turns -> 3 calls), increasing numbers
     assert [turn for turn, _ in seen] == [1, 2, 3]
     # the accessed keys snapshot is forwarded
@@ -363,7 +383,7 @@ def test_on_turn_none_is_a_no_op():
     docs = _AccessedDocs({"A": ["x"]}, accessed=["A"])
     client = FakeClient([_tool_use("final('ok', filings=['A'])")])
     # default on_turn=None must not raise and must not affect the answer
-    answer, _cites, _no_answer = RLMSession(client).run("q", docs)
+    answer, _cites, _no_answer = RLMSession(client, sandbox_mode="inprocess").run("q", docs)
     assert answer == "ok"
 
 
@@ -375,7 +395,7 @@ def test_on_turn_exception_never_breaks_the_repl():
         raise RuntimeError("callback blew up")
 
     # a raising callback is swallowed -- the REPL still produces its answer
-    answer, _cites, _no_answer = RLMSession(client, on_turn=boom).run("q", docs)
+    answer, _cites, _no_answer = RLMSession(client, on_turn=boom, sandbox_mode="inprocess").run("q", docs)
     assert answer == "done"
 
 
@@ -388,7 +408,7 @@ def test_rlm_degrades_to_llm_at_max_depth():
         ]
     )
     # max_depth=1 means a depth-0 session's rlm() degrades straight to llm()
-    session = RLMSession(client, max_depth=1)
+    session = RLMSession(client, max_depth=1, sandbox_mode="inprocess")
     answer, _cites, _no_answer = session.run("q", docs)
     assert answer == "ok"
     assert len(client.complete_calls) == 1

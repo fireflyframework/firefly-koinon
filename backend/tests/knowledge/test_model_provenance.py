@@ -122,7 +122,9 @@ async def test_resolver_captures_selected_ids_and_revisions_without_later_config
     if mode == "current_agent":
         options.update(mode=mode, provider_id=None, model_id=None, model_options={})
     saved = await service.save("issuer|admin", "north", values(**options))
-    monkeypatch.setattr(service.compiler.models, "build_with_secret", MagicMock(return_value=TestModel()))
+    monkeypatch.setattr(service.compiler.models, "build_with_secret", MagicMock(return_value=TestModel(
+        profile={"supports_json_schema_output": True}
+    )))
     resolver = PersistedKnowledgeConnectionResolver(
         service,
         bindings,

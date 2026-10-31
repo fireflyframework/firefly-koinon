@@ -1,0 +1,75 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<header class="directory-heading">
+  <div>
+    <h2>{{ 'Organization structure' | ffkText }}</h2>
+    <p>{{ 'Explore departments, teams and reporting lines one branch at a time.' | ffkText }}</p>
+  </div>
+</header>
+<nav class="section-tabs" [attr.aria-label]="'Organization structure views' | ffkText">
+  <button [attr.aria-current]="tab() === 'units' ? 'page' : null" (click)="tab.set('units')">
+    {{ 'Departments and teams' | ffkText }}</button
+  ><button
+    [attr.aria-current]="tab() === 'reports' ? 'page' : null"
+    (click)="tab.set('reports'); load()"
+  >
+    {{ 'Reporting lines' | ffkText }}
+  </button>
+</nav>
+@if (tab() === 'units') {
+  <ffk-organization-unit-browser />
+} @else {
+  <nav class="branch-path" [attr.aria-label]="'Reporting branch' | ffkText">
+    <button (click)="back(0)">{{ 'Find a person' | ffkText }}</button>
+    @for (person of path(); track person.id; let index = $index) {
+      <button
+        (click)="back(index + 1)"
+        [attr.aria-current]="index === path().length - 1 ? 'location' : null"
+      >
+        {{ person.display_name || ('Name unavailable' | ffkText) }}
+      </button>
+    }
+  </nav>
+  @if (!path().length) {
+    <form class="directory-search" (ngSubmit)="apply()">
+      <label
+        >{{ 'Name' | ffkText
+        }}<input name="report-person-search" [(ngModel)]="query" maxlength="160" /></label
+      ><ffk-button type="submit" icon="search">{{ 'Search' | ffkText }}</ffk-button>
+    </form>
+  }
+  @if (s.error()) {
+    <p role="alert" class="error">{{ s.error() | ffkText }}</p>
+    <ffk-button (click)="load()">{{ 'Retry' | ffkText }}</ffk-button>
+  }
+  @if (s.busy().has('reports') || s.busy().has('people')) {
+    <p role="status">{{ 'Loading people…' | ffkText }}</p>
+  }
+  <ul class="branch-list">
+    @for (
+      person of (path().length ? s.reports() : s.people())?.items ?? [];
+      track person.id || person.profile_id || $index
+    ) {
+      <li>
+        <div>
+          <strong>{{ person.display_name || ('Name unavailable' | ffkText) }}</strong
+          ><small>{{ person.job_title || ('Not provided' | ffkText) }}</small>
+        </div>
+        @if (person.id) {
+          <ffk-button variant="quiet" icon="chevron" (click)="open(person)">{{
+            'View direct reports' | ffkText
+          }}</ffk-button>
+        }
+      </li>
+    } @empty {
+      @if (!s.busy().has('reports') && !s.busy().has('people') && !s.error()) {
+        <li>{{ 'No people in this branch.' | ffkText }}</li>
+      }
+    }
+  </ul>
+  <ffk-pagination
+    [page]="path().length ? s.reports() : s.people()"
+    [showPageSize]="false"
+    [label]="'Reporting lines' | ffkText"
+    (pageChanged)="load($event)"
+  />
+}

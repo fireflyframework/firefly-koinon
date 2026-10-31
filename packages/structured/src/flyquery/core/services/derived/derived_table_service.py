@@ -84,13 +84,16 @@ class DerivedTableService:
         session: StructuredSessions,
         object_store: ObjectStore,
         settings: FlyquerySettings,
+        ast_classifier: AstClassifier,
+        scope_guard: ScopeGuard,
+        executor: DuckDBExecutor,
     ) -> None:
         self._factory = unwrap_sessions(session)
         self._store = object_store
         self._settings = settings
-        self._ast_classifier = AstClassifier()
-        self._scope_guard = ScopeGuard()
-        self._executor = DuckDBExecutor(settings)
+        self._ast_classifier = ast_classifier
+        self._scope_guard = scope_guard
+        self._executor = executor
 
     async def derive(
         self,
