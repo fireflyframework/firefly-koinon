@@ -120,6 +120,7 @@ nav:
       - Overview: operations/README.md
       - Deploy and configure:
           - Local environment: operations/local-deployment.md
+          - First start in production: operations/first-start.md
           - Production: operations/production.md
           - Configuration and observations: operations/configuration.md
           - MCP authentication: operations/mcp-authentication.md
