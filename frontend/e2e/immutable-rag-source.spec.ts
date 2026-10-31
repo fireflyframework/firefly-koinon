@@ -197,6 +197,18 @@ for (const width of [1440, 390])
       await panel.locator('summary').click();
       await expect(panel.getByText('version-used', { exact: true })).toBeVisible();
       await expect(panel.getByText(sha256, { exact: true })).toBeVisible();
+      const back = panel.getByRole('button', { name: spanish ? 'Volver a las fuentes' : 'Back to sources', exact: true });
+      const action = await back.evaluate((node) => {
+        const icon = node.querySelector('ffk-icon')!.getBoundingClientRect();
+        const text = [...node.querySelector('span')!.childNodes].find((child) => child.nodeType === Node.TEXT_NODE && child.textContent?.trim())!;
+        const range = document.createRange(); range.selectNodeContents(text);
+        const label = range.getBoundingClientRect();
+        return { gap: label.left - icon.right, centerDifference: Math.abs((label.top + label.bottom - icon.top - icon.bottom) / 2), height: node.getBoundingClientRect().height };
+      });
+      expect(action.gap).toBeGreaterThanOrEqual(7);
+      expect(action.gap).toBeLessThanOrEqual(9);
+      expect(action.centerDifference).toBeLessThanOrEqual(1.5);
+      expect(action.height).toBeGreaterThanOrEqual(width < 700 ? 44 : 40);
       const geometry = await panel.evaluate((node) => ({
         width: node.getBoundingClientRect().width,
         viewport: innerWidth,
@@ -212,6 +224,7 @@ for (const width of [1440, 390])
       await mkdir(output, { recursive: true });
       const name = `historical-source-${width}-${spanish ? 'es' : 'en'}`;
       await page.screenshot({ path: resolve(output, name + '.png'), animations: 'disabled' });
+      await panel.locator('.panel-footer').screenshot({ path: resolve(output, name + '-action.png'), animations: 'disabled' });
       await writeFile(
         resolve(output, name + '.json'),
         JSON.stringify({ controlled_receipts: true, ...geometry }, null, 2) + '\n',
@@ -245,5 +258,15 @@ test('does not render altered historical text or navigate to a current replaceme
   );
   await expect(panel.locator('.recorded-content')).toHaveCount(0);
   await expect(panel.getByText('Unrecorded replacement.', { exact: false })).toHaveCount(0);
+  const retryAlignment = await panel.getByRole('button', { name: 'Try again', exact: true }).evaluate((node) => {
+    const icon = node.querySelector('ffk-icon')!.getBoundingClientRect();
+    const text = [...node.querySelector('.label')!.childNodes].find((child) => child.nodeType === Node.TEXT_NODE && child.textContent?.trim())!;
+    const range = document.createRange(); range.selectNodeContents(text);
+    const label = range.getBoundingClientRect();
+    return { gap: label.left - icon.right, centerDifference: Math.abs((label.top + label.bottom - icon.top - icon.bottom) / 2) };
+  });
+  expect(retryAlignment.gap).toBeGreaterThanOrEqual(7);
+  expect(retryAlignment.gap).toBeLessThanOrEqual(9);
+  expect(retryAlignment.centerDifference).toBeLessThanOrEqual(1.5);
   expect(requests.filter((path) => path.includes('/versions/'))).toHaveLength(1);
 });
