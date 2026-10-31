@@ -6,7 +6,7 @@ Use the guides for a complete task and these references for a particular contrac
 
 ## API and SDK contracts
 
-The [API and SDK reference](sdk-api.md) lists operations and typed models. The [integration guides](../guides/integrations.md) provide installation, authentication and examples in Python, TypeScript and Java.
+The [API and SDK reference](sdk-api.md) connects the complete method index to [API areas](api/index.md), [wire models](models/index.md) and the [SDK runtime reference](sdk-runtime.md). Operation pages explain declared parameters, request and response types, success statuses and headers. Model pages describe required fields, defaults, nullability and validation constraints. The [integration guides](../guides/integrations.md) provide installation, authentication and examples in Python, TypeScript and Java.
 
 ## Architecture
 

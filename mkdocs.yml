@@ -137,6 +137,24 @@ nav:
   - Reference:
       - Overview: reference/index.md
       - API and SDK: reference/sdk-api.md
+      - API operations:
+          - Overview: reference/api/index.md
+          - Catalog and proposals: reference/api/catalog.md
+          - Sources, files and lineage: reference/api/sources.md
+          - Search and queries: reference/api/queries.md
+          - Curated knowledge: reference/api/curated-knowledge.md
+          - Chat and attachments: reference/api/chat.md
+          - Exports and sharing: reference/api/exports-sharing.md
+          - Knowledge connections and indexes: reference/api/knowledge-services.md
+          - Models and agents: reference/api/models-agents.md
+          - People and access: reference/api/people-access.md
+          - Corporate identity: reference/api/corporate-identity.md
+          - Personal profiles and tokens: reference/api/account.md
+          - Applications and MCP: reference/api/applications-mcp.md
+          - Platform configuration and operations: reference/api/platform.md
+      - Wire models: reference/models/index.md
+      - SDK runtime and helpers: reference/sdk-runtime.md
+      - Retained glossary API: reference/api/retained-glossary.md
       - Architecture:
           - System architecture: concepts/architecture.md
           - Agents, embeddings and knowledge engines: concepts/knowledge-runtime.md
