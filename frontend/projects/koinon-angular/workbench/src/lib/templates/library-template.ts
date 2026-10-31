@@ -51,7 +51,7 @@ import { friendlyStatus } from '../services/library-tree';
           class="compact-add"
           variant="primary"
           icon="plus"
-          [label]="'Add knowledge' | ffkText"
+          label="Add knowledge"
           (click)="addRequested.emit()"
         />
       }
@@ -63,9 +63,9 @@ import { friendlyStatus } from '../services/library-tree';
             <ffk-search-field
               [value]="nameFilter"
               (valueChange)="nameFilter = $event"
-              [actionLabel]="'Apply folder filter' | ffkText"
-              [label]="'Filter this folder by name' | ffkText"
-              [placeholder]="'Filter this folder by name' | ffkText"
+              actionLabel="Apply folder filter"
+              label="Filter this folder by name"
+              placeholder="Filter this folder by name"
               (searchSubmitted)="filterChanged.emit({ q: $event, page: 1 })"
             />
           </div>
@@ -209,7 +209,7 @@ import { friendlyStatus } from '../services/library-tree';
         <ffk-pagination
           class="pagination"
           [page]="pageInfo"
-          [label]="'Library' | ffkText"
+          label="Library"
           [loading]="loading"
           (pageChanged)="filterChanged.emit({ page: $event })"
           (sizeChanged)="filterChanged.emit({ page_size: $event, page: 1 })"
