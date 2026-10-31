@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from html import escape
 from urllib.parse import quote
 
+from koinon.organization_branding.dtos import BrandingValues
+
 
 @dataclass(frozen=True, slots=True)
 class ConsentViewer:
@@ -31,7 +33,18 @@ PERMISSIONS = {
 }
 
 
-def consent_page(request_id, client, scopes, choices, csrf, viewer: ConsentViewer | None = None):
+def consent_page(
+    request_id, client, scopes, choices, csrf, viewer: ConsentViewer | None = None, branding=None
+):
+    branding = branding or BrandingValues()
+    product = escape(branding.product_name)
+    logo = (
+        '<picture><source media="(prefers-color-scheme: dark)" srcset="/oauth2/mcp/logo-dark">'
+        f'<img src="/oauth2/mcp/logo" alt="{product}" width="248" height="48"></picture>'
+        if branding.logo_light or branding.logo_dark or branding.product_name == "koinon"
+        else f"<strong>{product}</strong>"
+    )
+    icon = '<link rel="icon" href="/oauth2/mcp/icon">' if branding.favicon or branding.symbol else ""
     permissions = "".join(
         f'<li><span class="permission-mark" aria-hidden="true">'
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">'
@@ -65,13 +78,12 @@ def consent_page(request_id, client, scopes, choices, csrf, viewer: ConsentViewe
     return f'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark"><title>Connect to koinon</title>
-<link rel="stylesheet" href="/oauth2/mcp/style"></head>
+<meta name="color-scheme" content="light dark"><title>Connect to {product}</title>
+<link rel="stylesheet" href="/oauth2/mcp/style">{icon}</head>
 <body><main class="connection">
-<header class="brand"><picture><source media="(prefers-color-scheme: dark)" srcset="/oauth2/mcp/logo-dark">
-<img src="/oauth2/mcp/logo" alt="firefly koinon" width="248" height="48"></picture></header>
+<header class="brand">{logo}</header>
 <section class="consent" aria-labelledby="connection-title">
-<div class="introduction"><h1 id="connection-title">Connect to koinon</h1>
+<div class="introduction"><h1 id="connection-title">Connect to {product}</h1>
 <p><strong>{escape(client["name"])}</strong> is requesting access to your organization’s knowledge.</p></div>
 {identity}
 <form method="post" action="/oauth2/mcp/authorize">

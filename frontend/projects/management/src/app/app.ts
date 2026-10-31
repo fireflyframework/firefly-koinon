@@ -1,7 +1,7 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 import { Component, inject, signal } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
-import { KoinonWorkbench } from '@fireflyframework/koinon-angular/workbench';
+import { KoinonFontLoader, KoinonWorkbench } from '@fireflyframework/koinon-angular/workbench';
 import { SessionService } from './session.service';
 import type { BrandingValues } from '@fireflyframework/koinon-sdk';
 import { PendingInvitation } from './pending-invitation';
@@ -11,6 +11,7 @@ import { OrganizationSelection } from './organization-selection';
 @Component({
   selector: 'app-root',
   imports: [KoinonWorkbench],
+  providers: [KoinonFontLoader],
   template: `@if (session.error()) {
       <div class="session-error" role="alert">{{ session.error() }}</div>
     }
@@ -43,14 +44,16 @@ import { OrganizationSelection } from './organization-selection';
       color: #272820;
       padding: 12px 24px;
       font:
-        13px 'Manrope Variable',
+        13px var(--ffk-font, system-ui),
         sans-serif;
     }
   `,
 })
 export class App {
   private readonly document = inject(DOCUMENT);
+  private readonly font = inject(KoinonFontLoader);
   applyIdentity(value: BrandingValues) {
+    this.font.load('/assets/brand', value.font_family);
     this.document.title =
       value.product_name === 'koinon' ? 'firefly koinon' : value.product_name || 'koinon';
     const icon = this.document.querySelector<HTMLLinkElement>('link[rel="icon"]');

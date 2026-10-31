@@ -53,6 +53,7 @@ async def presentation(context: ApplicationContext, principal: str, tenant_id: s
     result = {
         "product_name": values.product_name,
         "assistant_name": values.assistant_name,
+        "font_family": values.font_family,
         "palette": values.palette.model_dump(mode="json"),
     }
     if values.symbol is not None and len(values.symbol) <= 65536:

@@ -26,6 +26,7 @@ async def test_private_presentation_projects_only_small_validated_symbol_without
     branding = BrandingValues(
         product_name="Organization knowledge",
         assistant_name="Navigator",
+        font_family="Inter",
         symbol=symbol,
         logo_light=raster(4),
         logo_dark=raster(4),
@@ -35,6 +36,7 @@ async def test_private_presentation_projects_only_small_validated_symbol_without
     result = await presentation(context, "issuer|owner", "north")
     get.assert_awaited_once_with("issuer|owner", "north")
     assert result["product_name"] == "Organization knowledge" and result["assistant_name"] == "Navigator"
+    assert result["font_family"] == "Inter"
     assert "logo_light" not in result and "logo_dark" not in result and "favicon" not in result
     if size == 4:
         assert result["symbol"] == branding.symbol and len(result["symbol"]) <= 65536

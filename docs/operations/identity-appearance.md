@@ -44,6 +44,8 @@ Unspecified deployment fields use the shipped Firefly defaults. Manrope remains 
 
 The sign-in page uses the installation identity, available through the public, read-only `GET /api/v1/branding/defaults` endpoint. It does not reveal an organization's settings before authentication. After sign-in, the selected organization's saved override takes precedence. The standalone application updates its browser title and icon. When a renamed product has no custom logo, its name is displayed as text rather than retaining the original product logo.
 
+The standalone sign-in, account and logout notices use the selected bundled font within the application boundary. Native MCP consent uses the installation name, light/dark logos, icon, font and palettes through same-origin backend responses under its existing restrictive content security policy. It does not read private organization overrides before the user chooses an authorized scope. The MCP review resource includes both fonts and their licenses in the Python wheel, without an Angular build or external font service. Its initial identity uses installation defaults; authorized private review metadata can apply the organization's name, small symbol, font and palettes. Identity changes do not authorize a review or replace the required explicit approval.
+
 **Use deployment defaults** previews the installation identity. Save to restore inheritance. Resetting preserves the revision counter, so an older open editor cannot overwrite a newer change. A conflict requires reloading before another save.
 
 ## Images and colors

@@ -61,7 +61,7 @@ code { overflow-wrap: anywhere; font-size: 12px; }
 .actions { display: flex; flex: 0 0 auto; gap: 12px; }
 button { min-width: 104px; min-height: 44px; padding: 10px 20px; border: 1px solid transparent; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background-color 140ms, border-color 140ms; }
 .primary { color: var(--action-ink); background: var(--amber); }
-.primary:hover { background: #ffc16b; }
+.primary:hover { filter: brightness(1.05); }
 .secondary { border-color: var(--line); color: var(--ink); background: var(--surface); }
 .secondary:hover { background: var(--soft); }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
