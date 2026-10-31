@@ -1,4 +1,5 @@
 # Copyright 2024-2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,6 +38,7 @@ from dataclasses import dataclass
 
 from pyfly.agentic.vectorstores import TenantScopedVectorStore
 from pyfly.agentic.vectorstores.scoped import ScopedVectorStore
+from pyfly.context.lifecycle import post_construct, pre_destroy
 
 from flycanon.config import CanonSettings
 
@@ -66,6 +68,7 @@ class CorpusContext:
         """
         return getattr(self.vector_store, "_inner", self.vector_store)
 
+    @post_construct
     async def initialise(self) -> None:
         """Open the corpus + dense store and create every required schema.
 
@@ -75,6 +78,7 @@ class CorpusContext:
         await self.corpus.initialise()  # type: ignore[attr-defined]
         await self.vector_store.initialise()
 
+    @pre_destroy
     async def close(self) -> None:
         await self.corpus.close()  # type: ignore[attr-defined]
         await self.vector_store.close()

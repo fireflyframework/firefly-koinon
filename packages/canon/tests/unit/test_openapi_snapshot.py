@@ -1,4 +1,5 @@
 # Copyright 2024-2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,6 +42,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -96,8 +98,12 @@ async def _load_app_openapi() -> dict:
         await _pyfly.shutdown()
 
 
-async def test_openapi_snapshot_matches() -> None:
+async def test_openapi_snapshot_matches(monkeypatch) -> None:
     """The live spec equals the committed snapshot byte-for-byte (as JSON)."""
+    dense = AsyncMock()
+    monkeypatch.setattr(
+        "flycanon.core.services.retrieval.corpus_factory._build_dense_store", lambda *_args: dense
+    )
     snapshot_path = _repo_root() / "openapi.json"
     if not snapshot_path.exists():
         pytest.fail(
@@ -105,6 +111,8 @@ async def test_openapi_snapshot_matches() -> None:
             "Run: uv run python scripts/update_openapi_snapshot.py"
         )
     current = await _load_app_openapi()
+    dense.initialise.assert_awaited_once()
+    dense.close.assert_awaited_once()
     expected = json.loads(snapshot_path.read_text())
     assert current == expected, (
         "OpenAPI spec drifted from the committed snapshot at "
