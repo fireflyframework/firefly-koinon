@@ -41,6 +41,26 @@ def test_defaults_and_safe_assets():
         value.product_name = "changed"
 
 
+def test_inter_is_a_supported_bounded_installation_font():
+    value = BrandingValues(font_family="Inter")
+    assert value.font_family == "Inter"
+    assert (
+        OrganizationBrandingService(
+            None,
+            None,
+            Config(
+                {
+                    "koinon": {"branding": {"font_family": "Inter"}},
+                }
+            ),
+        ).defaults.font_family
+        == "Inter"
+    )
+    for name in ("Inter, serif", "Inter; background: red", "https://example.test/font.woff2"):
+        with pytest.raises(ValidationError):
+            BrandingValues(font_family=name)
+
+
 def test_accent_used_for_normal_text_links_requires_four_point_five_on_both_backgrounds():
     values = BrandingValues().model_dump(mode="json")
     values["palette"]["light"]["accent"] = "#777777"

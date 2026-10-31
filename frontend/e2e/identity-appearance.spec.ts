@@ -132,6 +132,36 @@ test('previews, saves and resets organization identity with exact revision', asy
   expect(writes[1]).toEqual({ expected_revision: 1 });
   await expect(page).toHaveTitle('firefly koinon');
 });
+test('previews bundled Inter locally and applies it after saving the organization identity', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1080 });
+  const writes = await setup(page);
+  await page.getByLabel('Interface font', { exact: true }).selectOption('Inter');
+  await expect
+    .poll(() =>
+      page
+        .locator('ffk-identity-preview')
+        .evaluate((element) => getComputedStyle(element).getPropertyValue('--ffk-font')),
+    )
+    .toContain('KoinonInter');
+  expect(
+    await page
+      .locator('ffk-workbench')
+      .evaluate((element) => getComputedStyle(element).getPropertyValue('--ffk-font')),
+  ).toContain('KoinonManrope');
+  expect(writes).toHaveLength(0);
+  await screenshot(page, 'koinon-identity-inter-preview-20261031.png');
+  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+  expect(writes[0]).toMatchObject({ expected_revision: 0, branding: { font_family: 'Inter' } });
+  await expect
+    .poll(() =>
+      page
+        .locator('ffk-workbench')
+        .evaluate((element) => getComputedStyle(element).getPropertyValue('--ffk-font')),
+    )
+    .toContain('KoinonInter');
+});
 test('keeps mobile proportions and prevents inaccessible palette changes', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await setup(page);

@@ -89,7 +89,8 @@
     "expired"
   ],
   "BrandingValuesFontFamily": [
-    "Manrope"
+    "Manrope",
+    "Inter"
   ],
   "CatalogProposalKind": [
     "catalog"

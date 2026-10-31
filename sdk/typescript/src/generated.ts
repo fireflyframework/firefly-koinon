@@ -147,7 +147,7 @@ export interface BrandingInputValues {
  "symbol"?: string | null;
  "favicon"?: string | null;
  "palette"?: BrandingPalettes;
- "font_family"?: "Manrope";
+ "font_family"?: "Manrope" | "Inter";
 }
 export interface BrandingPalette {
  "surface": string;
@@ -174,7 +174,7 @@ export interface BrandingValues {
  "symbol"?: string | null;
  "favicon"?: string | null;
  "palette"?: BrandingPalettes;
- "font_family"?: "Manrope";
+ "font_family"?: "Manrope" | "Inter";
 }
 export interface CatalogProposal {
  "id": string;

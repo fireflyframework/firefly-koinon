@@ -3,7 +3,7 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/organization_branding/dtos.py
-SHA256: 54ffd3be27cf18ba7ae452572d63242e72711ffc088e7d3cebbf0f2aae108c79
+SHA256: caeac0a83c9f5e92451cdf32f22e0c67cd7d232eacac6625b717d2c63f741b68
 
 Server authorization and semantic validation remain authoritative.
 """
@@ -64,7 +64,7 @@ class BrandingInputValues(ResponseModel):
     symbol: str | None = Field(default=None, max_length=MAX_DATA_URL_LENGTH, strict=True)
     favicon: str | None = Field(default=None, max_length=MAX_DATA_URL_LENGTH, strict=True)
     palette: BrandingPalettes = Field(default_factory=BrandingPalettes)
-    font_family: Literal["Manrope"] = "Manrope"
+    font_family: Literal["Manrope", "Inter"] = "Manrope"
 
 
 class BrandingValues(BrandingInputValues):

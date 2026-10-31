@@ -3,6 +3,76 @@ import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { mockService } from './fixtures';
+test('embedded branding loads exact bundled Inter bytes, then releases the face when changed', async ({
+  page,
+}) => {
+  const received: Promise<string>[] = [];
+  page.on('response', (response) => {
+    if (/inter-latin-wght-normal\.woff2/i.test(response.url()))
+      received.push(
+        response.body().then((body) => createHash('sha256').update(body).digest('hex')),
+      );
+  });
+  await mockService(page);
+  await page.goto('/elements/');
+  await page.waitForFunction(() => !!customElements.get('firefly-koinon'));
+  const hostFamily = await page
+    .locator('body')
+    .evaluate((element) => getComputedStyle(element).fontFamily);
+  await page.evaluate(async () => {
+    const sdk = await import('/sdk/index.js');
+    const element = document.querySelector('firefly-koinon') as HTMLElement & {
+      client: unknown;
+      tenantId: string;
+      branding: unknown;
+    };
+    element.branding = {
+      product_name: 'Northstar Knowledge',
+      assistant_name: 'Northstar',
+      font_family: 'Inter',
+    };
+    element.tenantId = 'tenant-one';
+    element.client = new sdk.KoinonClient({
+      transport: new sdk.FetchTransport({ baseUrl: '/bff/api/v1' }),
+    });
+  });
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        [...document.fonts].some(
+          (face) =>
+            /KoinonInter/.test(face.family) &&
+            face.weight === '100 900' &&
+            face.status === 'loaded',
+        ),
+      ),
+    )
+    .toBe(true);
+  const button = page.locator('ffk-library-template button').first();
+  await expect(button).toBeVisible();
+  expect(await button.evaluate((element) => getComputedStyle(element).fontFamily)).toContain(
+    'KoinonInter',
+  );
+  const canonical = createHash('sha256')
+    .update(await readFile('../brand/fonts/inter-latin-wght-normal.woff2'))
+    .digest('hex');
+  expect(await Promise.all(received)).toEqual([canonical]);
+  await expect(page.locator('body')).toHaveCSS('font-family', hostFamily);
+  await page.evaluate(() => {
+    const element = document.querySelector('firefly-koinon') as HTMLElement & { branding: unknown };
+    element.branding = { font_family: 'Manrope' };
+  });
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => [...document.fonts].filter((face) => /KoinonInter/.test(face.family)).length,
+      ),
+    )
+    .toBe(0);
+  await expect
+    .poll(() => button.evaluate((element) => getComputedStyle(element).fontFamily))
+    .toContain('KoinonManrope');
+});
 for (const host of ['consumer', 'elements'])
   test(`clean ${host} host loads and uses canonical Manrope font bytes`, async ({ page }) => {
     const received: Promise<string>[] = [];

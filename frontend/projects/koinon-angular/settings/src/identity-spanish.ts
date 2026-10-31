@@ -13,6 +13,10 @@ export const IDENTITY_SPANISH: Readonly<Record<string, string>> = {
     'Se muestra en la navegación y en la pestaña del navegador.',
   'Shown beside replies and in the message box.':
     'Se muestra junto a las respuestas y en el cuadro de mensajes.',
+  'Interface font': 'Tipografía de la interfaz',
+  'Bundled fonts load privately with the application.':
+    'Las fuentes incluidas se cargan de forma privada con la aplicación.',
+  'Choose Manrope or Inter.': 'Elige Manrope o Inter.',
   'Drop an image onto each asset, or choose a file. PNG, JPEG or WebP, up to 256 KB and 2048 pixels.':
     'Arrastra una imagen a cada elemento o elige un archivo. PNG, JPEG o WebP, hasta 256 KB y 2048 píxeles.',
   'Automatic fallback': 'Alternativa automática',

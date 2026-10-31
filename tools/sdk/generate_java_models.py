@@ -69,7 +69,7 @@ names = {
         "ReasoningEffort": ["none", "minimal", "low", "medium", "high", "xhigh"],
         "OutputVerbosity": ["low", "medium", "high"],
         "ModelOutputMode": ["default", "native"],
-        "BrandingValuesFontFamily": ["Manrope"],
+        "BrandingValuesFontFamily": ["Manrope", "Inter"],
         "ExecutionStatus": ["OK", "REFINED_OK", "FAILED", "REJECTED_BY_FIREWALL"],
         "ChartHint": ["line", "bar", "table", "pie", "none"],
         "EvidenceKind": ["search", "query", "schema", "lineage", "attachment", "proposal"],

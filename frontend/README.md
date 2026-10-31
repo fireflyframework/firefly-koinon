@@ -22,7 +22,7 @@ For the built app, run `npm run build` and `npm run preview`. The preview also s
 - `projects/elements`: `<firefly-koinon>` custom-element registration.
 - `smoke/angular-host`: separate Angular application that installs the packed library tarball, without workspace source aliases.
 
-[The library guide](projects/koinon-angular/README.md) describes context inputs, outputs, SDK injection, and optional features. Brand assets and tokens are copied from `../brand` before builds. The host serves the copied assets. Each workbench loads the official Manrope variable font from its configured brand asset base and applies it within the widget.
+[The library guide](projects/koinon-angular/README.md) describes context inputs, outputs, SDK injection, and optional features. Brand assets and tokens are copied from `../brand` before builds. The host serves the copied assets. Each workbench loads its selected bundled Manrope or Inter variable font from the configured brand asset base and applies it within the widget.
 
 ## Validation
 

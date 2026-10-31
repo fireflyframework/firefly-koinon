@@ -8,7 +8,8 @@ interface FontEntry {
   references: number;
 }
 const documents = new WeakMap<Document, Map<string, FontEntry>>();
-function acquire(document: Document, url: string) {
+type InterfaceFont = 'Manrope' | 'Inter';
+function acquire(document: Document, url: string, font: InterfaceFont) {
   let store = documents.get(document);
   if (!store) {
     store = new Map();
@@ -17,10 +18,9 @@ function acquire(document: Document, url: string) {
   const cache = store;
   let entry = cache.get(url);
   if (!entry) {
-    const identity = crypto.getRandomValues(new Uint32Array(4));
-    const family = 'KoinonManrope-' + [...identity].map((value) => value.toString(16)).join('');
+    const family = 'Koinon' + font + '-' + crypto.getRandomValues(new Uint32Array(4)).join('-');
     const face = new FontFace(family, 'url(' + JSON.stringify(url) + ') format("woff2")', {
-      weight: '200 800',
+      weight: font === 'Inter' ? '100 900' : '200 800',
       style: 'normal',
       display: 'swap',
     });
@@ -60,11 +60,9 @@ export class KoinonFontLoader implements OnDestroy {
   private revision = 0;
   private asset = '';
   readonly state = signal<'idle' | 'loading' | 'loaded' | 'unavailable'>('idle');
-  async load(brandBase: string) {
-    if (typeof FontFace === 'undefined' || !this.document.fonts) {
-      this.state.set('unavailable');
-      return;
-    }
+  async load(brandBase: string, font: InterfaceFont = 'Manrope') {
+    if (typeof FontFace === 'undefined' || !this.document.fonts)
+      return this.state.set('unavailable');
     let url: URL;
     try {
       const base = new URL(brandBase.replace(/\/$/, '') + '/', this.document.baseURI);
@@ -73,20 +71,20 @@ export class KoinonFontLoader implements OnDestroy {
         base.username ||
         base.password ||
         base.search ||
-        base.hash
+        base.hash ||
+        !['Manrope', 'Inter'].includes(font)
       )
-        throw new Error('Invalid brand asset base');
-      url = new URL('fonts/manrope-latin-wght-normal.woff2', base);
+        throw new Error();
+      url = new URL('fonts/' + font.toLowerCase() + '-latin-wght-normal.woff2', base);
     } catch {
-      this.state.set('unavailable');
-      return;
+      return this.state.set('unavailable');
     }
     if (this.asset === url.href && this.handle) return;
     this.asset = url.href;
     const revision = ++this.revision;
     this.handle?.release();
     this.restore();
-    const handle = acquire(this.document, url.href);
+    const handle = acquire(this.document, url.href, font);
     this.handle = handle;
     this.state.set('loading');
     try {

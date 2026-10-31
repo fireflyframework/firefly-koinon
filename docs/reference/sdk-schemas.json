@@ -1538,8 +1538,11 @@
           "$ref": "#/$defs/BrandingPalettes"
         },
         "font_family": {
-          "const": "Manrope",
           "default": "Manrope",
+          "enum": [
+            "Manrope",
+            "Inter"
+          ],
           "title": "Font Family",
           "type": "string"
         }
@@ -1706,8 +1709,11 @@
           "$ref": "#/$defs/BrandingPalettes"
         },
         "font_family": {
-          "const": "Manrope",
           "default": "Manrope",
+          "enum": [
+            "Manrope",
+            "Inter"
+          ],
           "title": "Font Family",
           "type": "string"
         }

@@ -7,7 +7,7 @@ Organization changes require `settings:write` for the organization. Workspace ad
 ## Configure the identity visually
 
 1. Open **Settings** and select **Identity & appearance** in the **Organization** group. Confirm the organization shown below the heading.
-2. In **Identity**, enter the product and assistant names. Upload or drop each logo/icon onto its own field. Light and dark assets have separate previews; transparent areas use a checkerboard.
+2. In **Identity**, enter the product and assistant names and choose the bundled **Manrope** or **Inter** interface font. Upload or drop each logo/icon onto its own field. Light and dark assets have separate previews; transparent areas use a checkerboard.
 3. Open **Colors**. Enter a brand color and choose **Apply to both themes** to generate readable action and link colors without saving. Then select **Light** or **Dark** to refine each token. The readability panel reports the measured ratios.
 4. Switch the live preview between **Chat**, **Navigation** and **Sign-in**. On mobile, expand **Preview your identity** when needed; it does not occupy the form by default. The sign-in preview uses the installation identity, as explained below.
 5. Choose **Save changes**. **Discard changes** returns to the saved record. If another administrator saves first, reload the settings before submitting another update.
@@ -27,6 +27,7 @@ koinon:
   branding:
     product_name: Northstar Knowledge
     assistant_name: Northstar
+    font_family: Inter
     palette:
       light:
         surface: '#ffffff'
@@ -39,7 +40,7 @@ koinon:
         accent: '#1d4ed8'
 ```
 
-Unspecified deployment fields use the shipped Firefly defaults. Manrope remains the interface typeface. Names may contain 1–64 printable characters. Identity settings are presentation metadata, not instructions sent to a model. New export/share reviews retain an immutable identity snapshot, so later renaming does not relabel an already reviewed transcript; historical reviews without an identity remain explicitly unrecorded.
+Unspecified deployment fields use the shipped Firefly defaults. Manrope remains the default interface typeface; Inter is an optional bundled choice. Names may contain 1–64 printable characters. Native assistant generation resolves the active owner's authorized organization identity and supplies only the bounded product and assistant names as escaped JSON display labels. These labels grant no permissions and are explicitly excluded from model instructions and evidence. New export/share reviews retain an immutable identity snapshot, so later renaming does not relabel an already reviewed transcript; historical reviews without an identity remain explicitly unrecorded.
 
 The sign-in page uses the installation identity, available through the public, read-only `GET /api/v1/branding/defaults` endpoint. It does not reveal an organization's settings before authentication. After sign-in, the selected organization's saved override takes precedence. The standalone application updates its browser title and icon. When a renamed product has no custom logo, its name is displayed as text rather than retaining the original product logo.
 
@@ -68,7 +69,7 @@ TypeScript exposes `client.branding.defaults()`, `.get(tenantId)`, `.update(tena
 
 ## Embedded applications
 
-The Angular workbench accepts an optional typed `branding` input and emits its effective identity through `brandingChange`. An explicit host identity takes precedence over organization settings in that embedded instance. The custom element accepts the same object as its `branding` JavaScript property. Use `brandBase` for the location of the shipped logo and Manrope assets.
+The Angular workbench accepts an optional typed `branding` input and emits its effective identity through `brandingChange`. An explicit host identity takes precedence over organization settings in that embedded instance. The custom element accepts the same object as its `branding` JavaScript property. Use `brandBase` for the location of the shipped logo and bundled font assets. Only Manrope and Inter are accepted; arbitrary CSS font expressions and remote font URLs are rejected.
 
 Each workbench owns its identity service and CSS variables inside its shadow root. Differently branded workbenches can coexist without changing the host page's styles, title or favicon. The standalone management application handles its own document metadata through the identity event. A host application can choose whether to do the same.
 

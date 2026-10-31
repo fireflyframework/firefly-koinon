@@ -87,8 +87,8 @@ export function validateBranding(value: BrandingValues): string[] {
     )
   )
     return ['Provide a branding settings object.'];
-  if (value.font_family !== undefined && value.font_family !== 'Manrope')
-    return ['The interface uses the Manrope typeface.'];
+  if (value.font_family !== undefined && !['Manrope', 'Inter'].includes(value.font_family))
+    return ['Choose Manrope or Inter.'];
   value = resolveBranding(value);
   const errors: string[] = [];
   for (const key of ['product_name', 'assistant_name'] as const)

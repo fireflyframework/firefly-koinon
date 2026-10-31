@@ -47,6 +47,7 @@ export { KoinonCommandPalette, type KoinonCommand } from './src/lib/organisms/co
 export { registerKoinonSpanish } from './src/lib/foundations/i18n';
 
 export { KoinonBranding } from './src/lib/services/branding';
+export { KoinonFontLoader } from './src/lib/services/font-loader';
 export {
   contrast,
   previewBrandStyles,

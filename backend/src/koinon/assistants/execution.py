@@ -46,6 +46,7 @@ from koinon.catalog.errors import AccessDenied
 from koinon.knowledge.attachments.ports import AttachmentRef
 from koinon.knowledge.capture_dtos import CapturedEvidence
 from koinon.knowledge.evidence_capture import NativeEvidenceFailure, NativeKnowledgeEvidence, failure_capture
+from koinon.organization_branding.service import OrganizationBrandingService
 from koinon.organization_knowledge.dtos import OrganizationKnowledgeSnapshot
 from koinon.organization_knowledge.runtime import bind_snapshot, snapshot_for_run
 
@@ -451,6 +452,25 @@ class AssistantExecutor:
     async def generate(self, run_id: str, worker_id: str):
         started = asyncio.get_running_loop().time()
         run, thread, agent_config, provider = await self.authority(run_id, worker_id)
+        if not self.container.contains_type(OrganizationBrandingService):
+            raise ServiceUnavailableException(
+                "Organization identity is unavailable", code="BRANDING_UNAVAILABLE"
+            )
+        identity = await self.container.resolve(OrganizationBrandingService).get(
+            thread.subject, run.tenant_id
+        )
+        identity_labels = (
+            json.dumps(
+                {
+                    "product_name": identity.branding.product_name,
+                    "assistant_name": identity.branding.assistant_name,
+                },
+                ensure_ascii=True,
+            )
+            .replace("<", "\\u003c")
+            .replace(">", "\\u003e")
+            .replace("&", "\\u0026")
+        )
         from koinon.profiles.service import ProfileService
 
         preferences = {"locale": "en-US", "time_zone": "UTC", "response_language": "auto"}
@@ -535,6 +555,7 @@ class AssistantExecutor:
                     )
                 )
                 prompt = self.prompt.render(
+                    identity_labels=identity_labels,
                     instructions=agent_config.instructions,
                     question=user_message.text,
                     source_context=source_context(offering),
