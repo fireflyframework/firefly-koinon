@@ -303,31 +303,34 @@
         >
       </div>
     }
-    <ffk-chat-composer
-      [assistantName]="assistantName()"
-      class="composer-slot"
-      [(value)]="draft"
-      [canSend]="!!draft.trim() && a.canUseAgent() && files.ready() && !files.selecting()"
-      [disabled]="!!a.activeThread()?.archived_at"
-      [busy]="a.pending() || files.selecting()"
-      [running]="a.running()"
-      [locale]="actions?.locale?.() || 'en-US'"
-      [attachmentsEnabled]="files.enabled() && a.canUseAgent()"
-      [attachmentsUnavailableReason]="
-        a.canUseAgent()
-          ? files.unavailableReason()
-          : assistantCopy('File attachments will be available when koinon is ready.')
-      "
-      [attachments]="files.attachments()"
-      [accept]="files.accept()"
-      [hint]="files.error() || files.modelHint() || files.storageHint()"
-      (filesSelected)="files.select($event)"
-      (attachmentRemoved)="files.remove($event)"
-      (attachmentRetried)="files.retry($event)"
-      sendLabel="Send"
-      (sendRequested)="submit()"
-      (stopRequested)="a.cancel()"
-    />
+    <!-- A new knowledge context needs a fresh NgModel control, including pending input writes. -->
+    @for (contextVersion of [a.contextVersion()]; track contextVersion) {
+      <ffk-chat-composer
+        [assistantName]="assistantName()"
+        class="composer-slot"
+        [(value)]="draft"
+        [canSend]="!!draft.trim() && a.canUseAgent() && files.ready() && !files.selecting()"
+        [disabled]="!!a.activeThread()?.archived_at"
+        [busy]="a.pending() || files.selecting()"
+        [running]="a.running()"
+        [locale]="actions?.locale?.() || 'en-US'"
+        [attachmentsEnabled]="files.enabled() && a.canUseAgent()"
+        [attachmentsUnavailableReason]="
+          a.canUseAgent()
+            ? files.unavailableReason()
+            : assistantCopy('File attachments will be available when koinon is ready.')
+        "
+        [attachments]="files.attachments()"
+        [accept]="files.accept()"
+        [hint]="files.error() || files.modelHint() || files.storageHint()"
+        (filesSelected)="files.select($event)"
+        (attachmentRemoved)="files.remove($event)"
+        (attachmentRetried)="files.retry($event)"
+        sendLabel="Send"
+        (sendRequested)="submit()"
+        (stopRequested)="a.cancel()"
+      />
+    }
     @if (a.messages().length) {
       <p class="answer-note">{{ 'Review the sources before relying on an answer.' | ffkText }}</p>
     }

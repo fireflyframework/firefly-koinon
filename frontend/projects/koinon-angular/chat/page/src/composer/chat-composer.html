@@ -80,7 +80,7 @@
       name="message"
       [ngModel]="value"
       (ngModelChange)="updateValue($event)"
-      [disabled]="disabled"
+      [disabled]="disabled || busy"
       [placeholder]="('Ask' | ffkText) + ' ' + assistantName + '…'"
       maxlength="32000"
       rows="1"

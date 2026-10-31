@@ -126,6 +126,76 @@ it('preserves an explicit host operator agent override without adding a picker',
   expect(assistant.agentId()).toBe('operator-choice');
   expect(fixture.nativeElement.querySelector('#chat-agent')).toBeNull();
 });
+it('waits for the conversation context before accepting a draft and enables Send afterward', async () => {
+  const { fixture, assistant } = await mount([agent('organization-default')]);
+  let input = fixture.nativeElement.querySelector('textarea') as HTMLTextAreaElement;
+  let send = fixture.nativeElement.querySelector('.send-button') as HTMLButtonElement;
+  assistant.pending.set(true);
+  fixture.detectChanges();
+  await fixture.whenStable();
+  fixture.detectChanges();
+  expect(input.disabled).toBe(true);
+  expect(send.disabled).toBe(true);
+  assistant.contextVersion.update((version) => version + 1);
+  fixture.detectChanges();
+  assistant.pending.set(false);
+  fixture.detectChanges();
+  await fixture.whenStable();
+  input = fixture.nativeElement.querySelector('textarea') as HTMLTextAreaElement;
+  send = fixture.nativeElement.querySelector('.send-button') as HTMLButtonElement;
+  input.value = 'Who owns the review?';
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  fixture.detectChanges();
+  await fixture.whenStable();
+  expect(input.disabled).toBe(false);
+  expect(fixture.componentInstance.draft).toBe('Who owns the review?');
+  expect(send.disabled).toBe(false);
+});
+it('clears both the visible editor and its draft when the knowledge context changes', async () => {
+  const { fixture, assistant } = await mount([agent('organization-default')]);
+  const input = fixture.nativeElement.querySelector('textarea') as HTMLTextAreaElement;
+  input.value = 'Question for the previous space';
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  fixture.detectChanges();
+  await fixture.whenStable();
+  expect(fixture.componentInstance.draft).toBe(input.value);
+  assistant.contextVersion.update((version) => version + 1);
+  fixture.detectChanges();
+  await fixture.whenStable();
+  fixture.detectChanges();
+  expect(fixture.componentInstance.draft).toBe('');
+  expect(fixture.nativeElement.querySelector('textarea').value).toBe('');
+});
+it('clears visible input when typing and a context change occur before the same render', async () => {
+  const { fixture, assistant } = await mount([agent('organization-default')]);
+  const input = fixture.nativeElement.querySelector('textarea') as HTMLTextAreaElement;
+  input.value = 'Question for the previous space';
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  assistant.contextVersion.update((version) => version + 1);
+  fixture.detectChanges();
+  await fixture.whenStable();
+  fixture.detectChanges();
+  expect(fixture.componentInstance.draft).toBe('');
+  expect(fixture.nativeElement.querySelector('textarea').value).toBe('');
+  expect(fixture.nativeElement.querySelector('.send-button').disabled).toBe(true);
+});
+it('keeps the same draft and editor while the current conversation status changes', async () => {
+  const { fixture, assistant } = await mount([agent('organization-default')]);
+  const input = fixture.nativeElement.querySelector('textarea') as HTMLTextAreaElement;
+  input.value = 'A follow-up for this space';
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  fixture.detectChanges();
+  await fixture.whenStable();
+  assistant.pending.set(true);
+  fixture.detectChanges();
+  await fixture.whenStable();
+  assistant.pending.set(false);
+  fixture.detectChanges();
+  await fixture.whenStable();
+  expect(fixture.nativeElement.querySelector('textarea')).toBe(input);
+  expect(input.value).toBe('A follow-up for this space');
+  expect(fixture.nativeElement.querySelector('.send-button').disabled).toBe(false);
+});
 it('explains unavailable chat in Spanish without exposing readiness or provider checks to readers', async () => {
   const { fixture } = await mount(
     [
