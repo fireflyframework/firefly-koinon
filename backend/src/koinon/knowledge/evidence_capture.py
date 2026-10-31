@@ -338,6 +338,8 @@ class NativeKnowledgeEvidence:
                             receipt.documents[str(hit["id"])].source_id,
                         ), (None,))[0] in used_assets
                     ]}
+            if receipt.authorize_knowledge is not None:
+                await receipt.authorize_knowledge()
             return checked_capture(
                 receipt,
                 data,

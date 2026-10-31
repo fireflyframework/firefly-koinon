@@ -61,3 +61,10 @@ class CuratedCorpusPort(ABC):
     async def search(
         self, subject, tenant_id, native_workspace_id, admitted, *, query, limit, _capture=None
     ) -> list: ...
+
+    async def authorize_release(self, subject, tenant_id, admitted) -> None:
+        from pyfly.kernel import ServiceUnavailableException
+
+        raise ServiceUnavailableException(
+            "A complete current curated authority fence is required", code="KNOWLEDGE_AUTHORITY_UNAVAILABLE"
+        )
