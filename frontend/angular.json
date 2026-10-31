@@ -111,7 +111,12 @@
           "builder": "@angular/build:unit-test",
           "options": {
             "tsConfig": "projects/koinon-angular/tsconfig.spec.json",
-            "include": ["**/*.spec.ts", "../workbench/**/*.spec.ts", "../settings/**/*.spec.ts"]
+            "include": [
+              "**/*.spec.ts",
+              "../workbench/**/*.spec.ts",
+              "../chat/**/*.spec.ts",
+              "../settings/**/*.spec.ts"
+            ]
           }
         },
         "lint": {

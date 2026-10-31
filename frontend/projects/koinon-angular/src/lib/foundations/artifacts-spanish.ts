@@ -228,6 +228,10 @@ export const ARTIFACTS_SPANISH: Readonly<Record<string, string>> = {
   'Recorded answer provenance could not be loaded.':
     'No se pudo cargar la procedencia registrada de la respuesta.',
   'Copy SQL': 'Copiar SQL',
+  'Copy code': 'Copiar código',
+  'Code snippet': 'Fragmento de código',
+  'Copy unavailable. Select the code and copy it manually.':
+    'No se puede copiar. Selecciona el código y cópialo manualmente.',
   'Copy unavailable. Select the SQL and copy it manually.':
     'No se puede copiar. Selecciona el SQL y cópialo manualmente.',
   'Recorded source origin': 'Origen registrado de la fuente',

@@ -207,13 +207,13 @@
               </ul>
             }
             @if (message.text) {
-              <p class="message-text">
+              <div class="message-text">
                 <ffk-message-text
                   [text]="message.text"
                   [references]="message.role === 'assistant' ? fileReferences() : []"
                   (sourceSelected)="files.download($event)"
                 />
-              </p>
+              </div>
             }
             @for (artifact of message.artifacts; track artifact.id) {
               @defer (on immediate) {

@@ -10,13 +10,19 @@ import {
 } from '@angular/core';
 import type { AttachmentHistorySummary } from '@fireflyframework/koinon-sdk';
 import { KoinonTextPipe } from '@fireflyframework/koinon-angular';
-interface Part { text: string; file?: AttachmentHistorySummary }
+import { KoinonCodeBlock } from '@fireflyframework/koinon-angular/workbench';
+import { fencedParts, type FencedPart } from './fenced-parts';
+type Part =
+  | (Extract<FencedPart, { kind: 'code' }> & { file?: never })
+  | { kind: 'prose'; text: string; file?: AttachmentHistorySummary };
 @Component({
   selector: 'ffk-message-text',
-  imports: [KoinonTextPipe],
+  imports: [KoinonTextPipe, KoinonCodeBlock],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `@for (part of parts; track $index) {
-    @if (part.file; as file) {
+    @if (part.kind === 'code') {
+      <ffk-code-block [code]="part.text" [language]="part.language" label="Code snippet" />
+    } @else if (part.file; as file) {
       <button
         type="button"
         [disabled]="!file.available"
@@ -31,6 +37,9 @@ interface Part { text: string; file?: AttachmentHistorySummary }
   styles: `
     :host {
       display: contents;
+    }
+    ffk-code-block {
+      margin-block: 12px;
     }
     button {
       display: inline;
@@ -66,17 +75,24 @@ export class KoinonMessageText implements OnChanges {
   ngOnChanges() {
     const files = new Map(this.references.map((file) => [file.id, file]));
     const parts: Part[] = [];
-    let cursor = 0;
-    for (const match of this.text.matchAll(/Attachment ([^\s:]{1,128}): /g)) {
-      const file = files.get(match[1]);
-      const start = match.index ?? 0,
-        end = start + match[0].length;
-      if (!file || !this.text.startsWith(file.filename, end) || start < cursor) continue;
-      if (start > cursor) parts.push({ text: this.text.slice(cursor, start) });
-      parts.push({ text: file.filename, file });
-      cursor = end + file.filename.length;
+    for (const chunk of fencedParts(this.text)) {
+      if (chunk.kind === 'code') {
+        parts.push(chunk);
+        continue;
+      }
+      let cursor = 0;
+      for (const match of chunk.text.matchAll(/Attachment ([^\s:]{1,128}): /g)) {
+        const file = files.get(match[1]);
+        const start = match.index ?? 0,
+          end = start + match[0].length;
+        if (!file || !chunk.text.startsWith(file.filename, end) || start < cursor) continue;
+        if (start > cursor) parts.push({ kind: 'prose', text: chunk.text.slice(cursor, start) });
+        parts.push({ kind: 'prose', text: file.filename, file });
+        cursor = end + file.filename.length;
+      }
+      if (cursor < chunk.text.length || !parts.length)
+        parts.push({ kind: 'prose', text: chunk.text.slice(cursor) });
     }
-    if (cursor < this.text.length || !parts.length) parts.push({ text: this.text.slice(cursor) });
     this.parts = parts;
   }
 }
