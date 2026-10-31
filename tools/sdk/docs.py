@@ -6,6 +6,11 @@ import argparse
 import json
 from pathlib import Path
 
+from reference import SchemaReference, render_api
+from reference.api import operation_link
+from reference.retained import compatibility_link
+from reference.retained_source import enrich_retained
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -20,7 +25,7 @@ def render(contract: dict) -> str:
         ),
         "",
         (
-            f"This development contract contains {contract['canonical_operation_count']} operations. "
+            f"This canonical contract contains {contract['canonical_operation_count']} operations. "
             "Resource operations require the caller's current membership, permissions and resource scope. "
             "Bearer credentials also enforce their saved expiry and bounds. "
             "Authorized-application management requires a verified interactive user session; "
@@ -33,6 +38,8 @@ def render(contract: dict) -> str:
             "[complete wire schemas](sdk-schemas.json). "
             "The maintained generator checks source mappings and schemas without starting the backend."
         ),
+        "",
+        "Browse [API areas](api/index.md), [wire models](models/index.md) and the [SDK runtime reference](sdk-runtime.md) for parameters, constraints and connection ownership.",
         "",
         "| API operation | Python client | TypeScript client | Java client | Response |",
         "| --- | --- | --- | --- | --- |",
@@ -51,17 +58,45 @@ def render(contract: dict) -> str:
             )
         rows.append(
             "| "
-            + " | ".join("`" + value.replace("|", "\\|") + "`" for value in cells)
+            + f"[`{cells[0]}`]({operation_link(operation)}) | "
+            + " | ".join("`" + value.replace("|", "\\|") + "`" for value in cells[1:])
             + " |"
         )
     qualified = contract.get("qualified_compatibility_operations", [])
     if qualified:
-        rows.extend(["", "## Qualified retained glossary API", "", "These operations use the original structured service behind resource admission. They are separate from the canonical count and require the structured module and its configured native datasource. Pass the canonical tenant and workspace. Updates and deletion require the exact returned `updated_at` string; preserve microseconds and the offset instead of parsing through a date formatter.", "", "| API operation | Python client | TypeScript client | Java client |", "| --- | --- | --- | --- |"])
+        rows.extend(
+            [
+                "",
+                "## Qualified retained glossary API",
+                "",
+                "These operations use the original structured service behind resource admission. They are separate from the canonical count and require the structured module and its configured native datasource. Pass the canonical tenant and workspace. Updates and deletion require the exact returned `updated_at` string; preserve microseconds and the offset instead of parsing through a date formatter.",
+                "",
+                "| API operation | Python client | TypeScript client | Java client |",
+                "| --- | --- | --- | --- |",
+            ]
+        )
         for operation in qualified:
-            py = operation["sdk_python"] + ("(agent=True)" if operation["sdk_python_agent"] else "")
-            cells = [operation["method"] + " " + operation["path"], py, operation["sdk_typescript"], operation["sdk_java"]]
-            rows.append("| " + " | ".join("`" + value + "`" for value in cells) + " |")
-        rows.extend(["", "Glossary list totals can be unknown. Honor returned `limit`, `offset` and `has_more`; do not invent a total or slice another page in the client."])
+            py = operation["sdk_python"] + (
+                "(agent=True)" if operation["sdk_python_agent"] else ""
+            )
+            cells = [
+                operation["method"] + " " + operation["path"],
+                py,
+                operation["sdk_typescript"],
+                operation["sdk_java"],
+            ]
+            rows.append(
+                "| "
+                + f"[`{cells[0]}`]({compatibility_link(operation)}) | "
+                + " | ".join("`" + value + "`" for value in cells[1:])
+                + " |"
+            )
+        rows.extend(
+            [
+                "",
+                "Glossary list totals can be unknown. Honor returned `limit`, `offset` and `has_more`; do not invent a total or slice another page in the client.",
+            ]
+        )
     rows.extend(
         [
             "",
@@ -112,22 +147,60 @@ def render(contract: dict) -> str:
     return "\n".join(rows)
 
 
+def build_reference(
+    contract: dict, schemas: dict, *, source_root: Path = ROOT
+) -> dict[str, str]:
+    contract = {
+        **contract,
+        "qualified_compatibility_operations": enrich_retained(
+            contract.get("qualified_compatibility_operations", []), source_root
+        ),
+    }
+    reference = SchemaReference(schemas)
+    return {
+        "sdk-api.md": render(contract),
+        **render_api(contract, reference),
+        **reference.render_all(),
+    }
+
+
+def write_reference(target: Path, outputs: dict[str, str], *, check: bool) -> None:
+    for relative, content in outputs.items():
+        path = target / relative
+        if check:
+            if not path.is_file() or path.read_text() != content:
+                raise ValueError(f"SDK reference drift: {relative}")
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=ROOT,
+        help="Repository or isolated input/output root",
+    )
     arguments = parser.parse_args()
-    source = ROOT / "sdk/contract/operations.json"
-    targets = {
-        ROOT / "docs/reference/sdk-api.md": render(json.loads(source.read_text())),
-        ROOT / "docs/reference/sdk-contract.json": source.read_text(),
-        ROOT / "docs/reference/sdk-schemas.json": (ROOT / "sdk/contract/schemas.json").read_text(),
+    root = arguments.root.resolve()
+    source = root / "sdk/contract/operations.json"
+    schemas = root / "sdk/contract/schemas.json"
+    outputs = {
+        **build_reference(
+            json.loads(source.read_text()),
+            json.loads(schemas.read_text()),
+            source_root=root,
+        ),
+        "sdk-contract.json": source.read_text(),
+        "sdk-schemas.json": schemas.read_text(),
     }
-    for path, content in targets.items():
-        if arguments.check:
-            if not path.exists() or path.read_text() != content:
-                raise SystemExit(f"SDK reference drift: {path.relative_to(ROOT)}")
-        else:
-            path.write_text(content)
+    try:
+        write_reference(root / "docs/reference", outputs, check=arguments.check)
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
     print("Verified SDK reference" if arguments.check else "Updated SDK reference")
 
 

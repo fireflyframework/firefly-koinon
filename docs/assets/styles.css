@@ -230,3 +230,68 @@ body, input, button, select, textarea {
 }
 [data-md-color-accent='custom'] { --md-accent-fg-color: #855414; }
 [data-md-color-scheme='slate'][data-md-color-accent='custom'] { --md-accent-fg-color: #ffb34a; }
+
+/* Task-based documentation entry points and explicitly illustrative setup references. */
+.doc-home-lead { max-width: 62ch; font-size: 1rem; line-height: 1.6; }
+.doc-entry-list { margin-block: 1.2rem 1.8rem; }
+.doc-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.55fr);
+  gap: .8rem 1.4rem;
+  padding-block: 1rem;
+  border-top: 1px solid var(--doc-line);
+}
+.md-typeset .doc-entry h3 { margin: .1rem 0; font-size: .9rem; }
+.md-typeset .doc-entry p { margin: 0 0 .5rem; }
+.doc-entry p:last-child { display: flex; flex-wrap: wrap; gap: .35rem 1rem; }
+.doc-connection-paths { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.4rem; }
+.md-typeset .doc-connection-paths h3 { margin-top: .4rem; font-size: .9rem; }
+.md-typeset .doc-connection-paths ul { padding-left: 1rem; }
+.md-typeset .doc-product-preview,
+.md-typeset .doc-guide-shot { width: 100%; margin: 1.2rem 0 1.8rem; }
+.doc-product-preview img,
+.doc-guide-shot img { display: block; width: 100%; height: auto; border: 1px solid var(--doc-line); }
+.md-typeset .doc-product-preview figcaption,
+.md-typeset .doc-guide-shot figcaption {
+  margin-top: .6rem;
+  color: var(--doc-muted);
+  font-size: .65rem;
+  line-height: 1.65;
+  text-align: left;
+}
+.md-typeset .connection-illustration {
+  width: 100%;
+  margin: 1.2rem 0 1.8rem;
+  padding: 1rem 1.2rem;
+  background: var(--doc-surface);
+  border: 1px solid var(--doc-line);
+  border-radius: .4rem;
+  text-align: left;
+}
+.connection-illustration figcaption { margin: 0 0 1rem; font-style: normal; text-align: left; }
+.connection-illustration figcaption strong { display: block; color: var(--md-default-fg-color); font-size: .8rem; }
+.connection-illustration figcaption span { display: block; margin-top: .3rem; color: var(--doc-muted); font-size: .65rem; line-height: 1.65; }
+.md-typeset .connection-example h3 { margin: .6rem 0 .4rem; font-size: 1rem; }
+.md-typeset .connection-example > p { font-size: .7rem; }
+.connection-fields { margin: 1rem 0; }
+.connection-fields > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.8fr);
+  gap: .4rem 1rem;
+  padding-block: .7rem;
+  border-top: 1px solid var(--doc-line);
+}
+.connection-fields dt { margin: 0; font-size: .65rem; font-weight: 650; }
+.connection-fields dd { margin: 0; font-size: .7rem; }
+.connection-fields code { white-space: normal; overflow-wrap: anywhere; }
+.connection-fields small { display: block; margin-top: .25rem; color: var(--doc-muted); font-size: .65rem; line-height: 1.6; }
+.connection-next { padding-top: .7rem; border-top: 1px solid var(--doc-line); }
+.connection-reference { margin-block: 1rem; }
+.connection-reference > summary { cursor: pointer; font-weight: 650; }
+.md-typeset .doc-guide-shot--mobile { max-width: 19.5rem; margin-inline: auto; }
+@media (max-width: 44.9375em) {
+  .doc-entry, .doc-connection-paths { grid-template-columns: minmax(0, 1fr); gap: .4rem; }
+  .doc-connection-paths > section + section { margin-top: 1rem; }
+  .md-typeset .connection-illustration { padding: .9rem; }
+  .connection-fields > div { grid-template-columns: minmax(0, 1fr); gap: .25rem; }
+}

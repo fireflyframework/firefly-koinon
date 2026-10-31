@@ -2,204 +2,206 @@
 
 Python, Java and TypeScript expose the same canonical headless API. The table records concrete SDK methods; it does not count browser-only authentication or retained domain routes outside this contract.
 
-This development contract contains 192 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
+This canonical contract contains 192 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
 
 [Download the operation manifest](sdk-contract.json) and [complete wire schemas](sdk-schemas.json). The maintained generator checks source mappings and schemas without starting the backend.
 
+Browse [API areas](api/index.md), [wire models](models/index.md) and the [SDK runtime reference](sdk-runtime.md) for parameters, constraints and connection ownership.
+
 | API operation | Python client | TypeScript client | Java client | Response |
 | --- | --- | --- | --- | --- |
-| `GET /api/v1/tenants/{tenant_id}/audit` | `audit` | `audit.list` | `client.audit.list` | `Page[AuditEvent]` |
-| `GET /api/v1/tenants/{tenant_id}/catalog` | `catalog` | `catalog.list` | `client.catalog.list` | `Page[CatalogEntry]` |
-| `POST /api/v1/tenants/{tenant_id}/catalog` | `create` | `catalog.create` | `client.catalog.create` | `CatalogEntry` |
-| `GET /api/v1/tenants/{tenant_id}/catalog/{entry_id}` | `get` | `catalog.get` | `client.catalog.get` | `CatalogEntry` |
-| `PATCH /api/v1/tenants/{tenant_id}/catalog/{entry_id}` | `update` | `catalog.update` | `client.catalog.update` | `CatalogEntry` |
-| `POST /api/v1/tenants/{tenant_id}/catalog/{entry_id}/archive` | `archive` | `catalog.archive` | `client.catalog.archive` | `CatalogEntry` |
-| `POST /api/v1/tenants/{tenant_id}/catalog/{entry_id}/restore` | `restore` | `catalog.restore` | `client.catalog.restore` | `CatalogEntry` |
-| `DELETE /api/v1/tenants/{tenant_id}/catalog/{entry_id}` | `delete` | `catalog.delete` | `client.catalog.delete` | `void` |
-| `GET /api/v1/context` | `context` | `context` | `client.platform.context` | `ContextResponse` |
-| `GET /api/v1/tenants/{tenant_id}/jobs` | `jobs` | `jobs.list` | `client.jobs.list` | `Page[Job]` |
-| `GET /api/v1/tenants/{tenant_id}/jobs/{job_id}` | `job` | `jobs.get` | `client.jobs.get` | `Job` |
-| `POST /api/v1/tenants/{tenant_id}/jobs/{job_id}/cancel` | `cancel_job` | `jobs.cancel` | `client.jobs.cancel` | `Job` |
-| `GET /api/v1/tenants/{tenant_id}/members` | `members` | `members.list` | `client.members.list` | `Page[Membership]` |
-| `POST /api/v1/tenants/{tenant_id}/members` | `add_member` | `members.add` | `client.members.add` | `Membership` |
-| `PATCH /api/v1/tenants/{tenant_id}/members/{member_id}` | `update_member` | `members.update` | `client.members.update` | `Membership` |
-| `DELETE /api/v1/tenants/{tenant_id}/members/{member_id}` | `remove_member` | `members.remove` | `client.members.remove` | `void` |
-| `GET /api/v1/tenants/{tenant_id}/invitations` | `invitations` | `invitations.list` | `client.invitations.list` | `Page[Invitation]` |
-| `POST /api/v1/tenants/{tenant_id}/invitations` | `create_invitation` | `invitations.create` | `client.invitations.create` | `InvitationCreated` |
-| `DELETE /api/v1/tenants/{tenant_id}/invitations/{invitation_id}` | `revoke_invitation` | `invitations.revoke` | `client.invitations.revoke` | `void` |
-| `POST /api/v1/invitations/inspect` | `inspect_invitation` | `invitations.inspect` | `client.invitationAccess.inspect` | `InvitationPreview` |
-| `POST /api/v1/invitations/redeem` | `redeem_invitation` | `invitations.redeem` | `client.invitationAccess.redeem` | `Membership` |
-| `GET /api/v1/tenants/{tenant_id}/agents` | `agents` | `agents.list` | `client.agents.list` | `Page[AgentConfiguration]` |
-| `POST /api/v1/tenants/{tenant_id}/agents` | `create_agent` | `agents.create` | `client.agents.create` | `AgentConfiguration` |
-| `PATCH /api/v1/tenants/{tenant_id}/agents/{agent_id}` | `update_agent` | `agents.update` | `client.agents.update` | `AgentConfiguration` |
-| `POST /api/v1/tenants/{tenant_id}/agents/{agent_id}/validate` | `validate_agent` | `agents.validate` | `client.agents.validate` | `AgentConfiguration` |
-| `GET /api/v1/tenants/{tenant_id}/chat/threads` | `threads` | `chat.threads` | `client.chat.threads` | `Page[ChatThread]` |
-| `POST /api/v1/tenants/{tenant_id}/chat/threads` | `create_thread` | `chat.create` | `client.chat.createThread` | `ChatThread` |
-| `GET /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/messages` | `messages` | `chat.messages` | `client.chat.messages` | `Page[ChatMessage]` |
-| `POST /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/runs` | `submit_run` | `chat.submit` | `client.chat.submit` | `ChatRun` |
-| `POST /api/v1/tenants/{tenant_id}/chat/runs/{run_id}/cancel` | `cancel_run` | `chat.cancel` | `client.chat.cancel` | `ChatRun` |
-| `POST /api/v1/tenants/{tenant_id}/chat/runs/{run_id}/retry` | `retry_run` | `chat.retry` | `client.chat.retry` | `ChatRun` |
-| `GET /api/v1/tenants/{tenant_id}/chat/runs/{run_id}/events` | `events` | `chat.events` | `client.chat.events` | `StreamEvent` |
-| `GET /api/v1/tenants/{tenant_id}/chat/runs/{run_id}/results/{result_id}` | `result` | `chat.result` | `client.chat.result` | `EvidenceResult` |
-| `GET /api/v1/tenants/{tenant_id}/chat/runs/{run_id}/activity` | `run_activities` | `chat.activities` | `client.chat.activities` | `Page[ToolActivity]` |
-| `GET /api/v1/tenants/{tenant_id}/chat/runs/{run_id}/audit` | `run_audit` | `chat.audit` | `client.chat.audit` | `AnswerAudit` |
-| `GET /api/v1/tenants/{tenant_id}/chat/folders` | `folders` | `chat.folders.list` | `client.chatFolders.list` | `Page[ChatFolder]` |
-| `POST /api/v1/tenants/{tenant_id}/chat/folders` | `create_folder` | `chat.folders.create` | `client.chatFolders.create` | `ChatFolder` |
-| `GET /api/v1/tenants/{tenant_id}/chat/folders/{folder_id}` | `folder` | `chat.folders.get` | `client.chatFolders.get` | `ChatFolder` |
-| `PATCH /api/v1/tenants/{tenant_id}/chat/folders/{folder_id}` | `update_folder` | `chat.folders.update` | `client.chatFolders.update` | `ChatFolder` |
-| `DELETE /api/v1/tenants/{tenant_id}/chat/folders/{folder_id}` | `delete_folder` | `chat.folders.delete` | `client.chatFolders.delete` | `void` |
-| `GET /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}` | `thread` | `chat.get` | `client.chat.get` | `ChatThread` |
-| `PATCH /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}` | `update_thread` | `chat.update` | `client.chat.update` | `ChatThread` |
-| `POST /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/title-suggestion` | `suggest_title` | `chat.suggestTitle` | `client.chat.suggestTitle` | `TitleSuggestion` |
-| `GET /api/v1/tenants/{tenant_id}/chat/runs/{run_id}/proposals/{proposal_id}` | `proposal` | `chat.proposals.get` | `client.chatProposals.get` | `CatalogProposal` |
-| `POST /api/v1/tenants/{tenant_id}/chat/runs/{run_id}/proposals/{proposal_id}/confirm` | `confirm_proposal` | `chat.proposals.confirm` | `client.chatProposals.confirm` | `CatalogProposal` |
-| `POST /api/v1/tenants/{tenant_id}/chat/runs/{run_id}/proposals/{proposal_id}/cancel` | `cancel_proposal` | `chat.proposals.cancel` | `client.chatProposals.cancel` | `CatalogProposal` |
-| `GET /api/v1/tenants/{tenant_id}/configuration` | `configuration` | `configuration.get` | `client.configuration.get` | `Configuration` |
-| `POST /api/v1/tenants/{tenant_id}/providers` | `create_provider` | `providers.create` | `client.providers.create` | `ModelProvider` |
-| `PUT /api/v1/tenants/{tenant_id}/providers/{provider_id}` | `update_provider` | `providers.update` | `client.providers.update` | `ModelProvider` |
-| `POST /api/v1/tenants/{tenant_id}/providers/{provider_id}/validate` | `validate_provider` | `providers.validate` | `client.providers.validate` | `ValidationResult` |
-| `GET /api/v1/authorized-applications` | `authorized_applications` | `authorizedApplications.list` | `client.authorizedApplications.list` | `Page[AuthorizedApplication]` |
-| `GET /api/v1/authorized-applications/{application_id}` | `authorized_application` | `authorizedApplications.get` | `client.authorizedApplications.get` | `AuthorizedApplication` |
-| `DELETE /api/v1/authorized-applications/{application_id}` | `revoke_authorized_application` | `authorizedApplications.revoke` | `client.authorizedApplications.revoke` | `void` |
-| `GET /api/v1/tenants/{tenant_id}/identity/providers` | `identity_providers` | `identity.list` | `client.identity.list` | `IdentityProviderPage` |
-| `POST /api/v1/tenants/{tenant_id}/identity/providers` | `create_identity_provider` | `identity.create` | `client.identity.create` | `IdentityProvider` |
-| `GET /api/v1/tenants/{tenant_id}/identity/providers/{provider_id}` | `identity_provider` | `identity.get` | `client.identity.get` | `IdentityProvider` |
-| `PATCH /api/v1/tenants/{tenant_id}/identity/providers/{provider_id}` | `update_identity_provider` | `identity.update` | `client.identity.update` | `IdentityProvider` |
-| `POST /api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/test` | `test_identity_provider` | `identity.test` | `client.identity.test` | `IdentityValidation` |
-| `GET /api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/tests/{validation_id}` | `identity_test_status` | `identity.testStatus` | `client.identity.testStatus` | `IdentityValidation` |
-| `GET /api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/groups` | `identity_groups` | `identity.groups` | `client.identity.groups` | `IdentityGroupPage` |
-| `GET /api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/mappings` | `identity_mappings` | `identity.mappings` | `client.identity.mappings` | `IdentityMappingPage` |
-| `POST /api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/mappings` | `create_identity_mapping` | `identity.createMapping` | `client.identity.createMapping` | `IdentityMapping` |
-| `PATCH /api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/mappings/{mapping_id}` | `update_identity_mapping` | `identity.updateMapping` | `client.identity.updateMapping` | `IdentityMapping` |
-| `DELETE /api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/mappings/{mapping_id}` | `remove_identity_mapping` | `identity.removeMapping` | `client.identity.removeMapping` | `void` |
-| `POST /api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/activate` | `activate_identity_provider` | `identity.activate` | `client.identity.activate` | `IdentityProvider` |
-| `POST /api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/disable` | `disable_identity_provider` | `identity.disable` | `client.identity.disable` | `IdentityProvider` |
-| `GET /api/v1/tenants/{tenant_id}/organization/people/me/presentation` | `organization_presentation` | `corporateProfiles.presentation` | `client.corporateProfiles.presentation` | `OrganizationPresentation` |
-| `PATCH /api/v1/tenants/{tenant_id}/organization/people/me/presentation` | `update_organization_presentation` | `corporateProfiles.updatePresentation` | `client.corporateProfiles.updatePresentation` | `OrganizationPresentation` |
-| `POST /api/v1/tenants/{tenant_id}/organization/people/me/profile-refresh` | `refresh_organization_profile` | `corporateProfiles.refreshSelf` | `client.corporateProfiles.refreshSelf` | `CorporateProfileRefresh` |
-| `POST /api/v1/tenants/{tenant_id}/organization/people/{person_id}/profile-refresh` | `refresh_organization_person_profile` | `corporateProfiles.refreshPerson` | `client.corporateProfiles.refreshPerson` | `CorporateProfileRefresh` |
-| `POST /api/v1/tenants/{tenant_id}/evidence/conversations` | `conversation_evidence` | `evidence.conversation` | `client.evidence.conversation` | `EvidenceManifest` |
-| `POST /api/v1/tenants/{tenant_id}/exports/reviews` | `review_export` | `exports.review` | `client.exports.review` | `ExportReview` |
-| `POST /api/v1/tenants/{tenant_id}/exports` | `create_export` | `exports.create` | `client.exports.create` | `Export` |
-| `GET /api/v1/tenants/{tenant_id}/exports` | `exports` | `exports.list` | `client.exports.list` | `ExportPage` |
-| `GET /api/v1/tenants/{tenant_id}/exports/{export_id}` | `export` | `exports.get` | `client.exports.get` | `Export` |
-| `GET /api/v1/tenants/{tenant_id}/exports/{export_id}/download` | `export_download` | `exports.download` | `client.exports.download` | `BinaryDownload` |
-| `DELETE /api/v1/tenants/{tenant_id}/exports/{export_id}` | `cancel_export` | `exports.cancel` | `client.exports.cancel` | `void` |
-| `GET /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/capabilities` | `attachment_capabilities` | `chat.attachments.capabilities` | `client.chatAttachments.capabilities` | `AttachmentCapabilities` |
-| `POST /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments` | `upload_attachment` | `chat.attachments.upload` | `client.chatAttachments.upload` | `AttachmentView` |
-| `GET /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments` | `attachments` | `chat.attachments.list` | `client.chatAttachments.list` | `AttachmentPage` |
-| `GET /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}` | `attachment` | `chat.attachments.get` | `client.chatAttachments.get` | `AttachmentView` |
-| `GET /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}/original` | `attachment_original` | `chat.attachments.original` | `client.chatAttachments.original` | `BinaryDownload` |
-| `GET /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}/chunks` | `attachment_chunks` | `chat.attachments.chunks` | `client.chatAttachments.chunks` | `PrivateChunkPage` |
-| `POST /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}/cancel` | `cancel_attachment` | `chat.attachments.cancel` | `client.chatAttachments.cancel` | `AttachmentView` |
-| `POST /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}/retry` | `retry_attachment` | `chat.attachments.retry` | `client.chatAttachments.retry` | `AttachmentView` |
-| `DELETE /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}` | `remove_attachment` | `chat.attachments.remove` | `client.chatAttachments.remove` | `void` |
-| `POST /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}/knowledge` | `promote_attachment` | `chat.attachments.promote` | `client.chatAttachments.promote` | `AttachmentPromotionView` |
-| `GET /api/v1/tenants/{tenant_id}/knowledge-roles` | `knowledge_roles` | `knowledgeConnections.roles` | `client.knowledgeConnections.roles` | `KnowledgeRoles` |
-| `GET /api/v1/tenants/{tenant_id}/knowledge-connections` | `knowledge_connections` | `knowledgeConnections.list` | `client.knowledgeConnections.list` | `Page[KnowledgeConnection]` |
-| `POST /api/v1/tenants/{tenant_id}/knowledge-connections` | `create_knowledge_connection` | `knowledgeConnections.create` | `client.knowledgeConnections.create` | `KnowledgeConnection` |
-| `PUT /api/v1/tenants/{tenant_id}/knowledge-connections/{connection_id}` | `update_knowledge_connection` | `knowledgeConnections.update` | `client.knowledgeConnections.update` | `KnowledgeConnection` |
-| `GET /api/v1/tenants/{tenant_id}/knowledge-connections/{connection_id}` | `knowledge_connection` | `knowledgeConnections.get` | `client.knowledgeConnections.get` | `KnowledgeConnection` |
-| `DELETE /api/v1/tenants/{tenant_id}/knowledge-connections/{connection_id}` | `delete_knowledge_connection` | `knowledgeConnections.remove` | `client.knowledgeConnections.remove` | `Deleted` |
-| `POST /api/v1/tenants/{tenant_id}/sources/upload` | `upload` | `sources.uploadFile` | `client.sources.upload` | `UploadResponse` |
-| `POST /api/v1/tenants/{tenant_id}/search` | `search` | `search` | `client.knowledge.search` | `SearchResponse` |
-| `POST /api/v1/tenants/{tenant_id}/query` | `query` | `query` | `client.knowledge.query` | `QueryResponse` |
-| `GET /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/schema` | `schema` | `dataset.schema` | `client.datasets.schema` | `DatasetSchema` |
-| `GET /api/v1/tenants/{tenant_id}/lineage` | `lineage` | `lineage` | `client.knowledge.lineage` | `Lineage` |
-| `GET /api/v1/tenants/{tenant_id}/documents/{document_id}/chunks` | `document_chunks` | `documents.chunks` | `client.documents.chunks` | `DocumentChunks` |
-| `GET /api/v1/tenants/{tenant_id}/documents/{document_id}/original` | `document_download` | `documents.download` | `client.documents.original` | `BinaryDownload` |
-| `POST /api/v1/tenants/{tenant_id}/documents/{document_id}/reingest` | `reingest_document` | `documents.reingest` | `client.documents.reingest` | `ContentUpdate` |
-| `POST /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/reingest` | `reingest_table` | `dataset.reingestTable` | `client.datasets.reingestTable` | `ContentUpdate` |
-| `POST /api/v1/tenants/{tenant_id}/documents/{document_id}/content` | `replace_document` | `documents.replace` | `client.documents.replace` | `ContentUpdate` |
-| `POST /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/content` | `replace_table` | `dataset.replaceTable` | `client.datasets.replaceTable` | `ContentUpdate` |
-| `POST /api/v1/tenants/{tenant_id}/knowledge-intents` | `preview_knowledge` | `knowledgeIntents.preview` | `client.knowledgeIntents.preview` | `KnowledgeIntent` |
-| `GET /api/v1/tenants/{tenant_id}/knowledge-intents/{intent_id}` | `knowledge_intent` | `knowledgeIntents.get` | `client.knowledgeIntents.get` | `KnowledgeIntent` |
-| `POST /api/v1/tenants/{tenant_id}/knowledge-intents/{intent_id}/confirm` | `confirm_knowledge` | `knowledgeIntents.confirm` | `client.knowledgeIntents.confirm` | `KnowledgeCommitOutcome` |
-| `POST /api/v1/tenants/{tenant_id}/knowledge-intents/{intent_id}/cancel` | `cancel_knowledge` | `knowledgeIntents.cancel` | `client.knowledgeIntents.cancel` | `KnowledgeIntent` |
-| `GET /api/v1/tenants/{tenant_id}/knowledge-items` | `knowledge_items` | `knowledgeItems.list` | `client.knowledgeItems.list` | `KnowledgeItemPage` |
-| `GET /api/v1/tenants/{tenant_id}/knowledge-items/{item_id}` | `knowledge_item` | `knowledgeItems.get` | `client.knowledgeItems.get` | `KnowledgeItemView` |
-| `GET /api/v1/tenants/{tenant_id}/knowledge-items/{item_id}/versions/{version}` | `knowledge_version` | `knowledgeItems.version` | `client.knowledgeItems.version` | `KnowledgeItemView` |
-| `POST /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/files` | `append_dataset_file` | `dataset.appendFile` | `client.datasets.appendFile` | `DatasetFileAppendResult` |
-| `GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions` | `document_versions` | `documents.versions` | `client.documents.versions` | `DocumentVersionPage` |
-| `GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}` | `document_version` | `documents.version` | `client.documents.version` | `DocumentVersion` |
-| `GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/extractions` | `document_extractions` | `documents.extractions` | `client.documents.extractions` | `DocumentExtractionPage` |
-| `GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/extractions/{extraction_id}/parts` | `document_parts` | `documents.parts` | `client.documents.parts` | `DocumentPartPage` |
-| `GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/extractions/{extraction_id}/parts/{source_part_id}` | `document_part` | `documents.part` | `client.documents.part` | `DocumentPartContent` |
-| `GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/original` | `document_version_original` | `documents.versionOriginal` | `client.documents.versionOriginal` | `BinaryDownload` |
-| `POST /api/v1/tenants/{tenant_id}/external-knowledge-reviews` | `stage_external_review` | `externalReviews.stage` | `client.externalReviews.stage` | `ExternalReviewView` |
-| `GET /api/v1/tenants/{tenant_id}/external-knowledge-reviews/{review_id}` | `external_review` | `externalReviews.get` | `client.externalReviews.get` | `ExternalReviewView` |
-| `POST /api/v1/tenants/{tenant_id}/external-knowledge-reviews/{review_id}/approve` | `approve_external_review` | `externalReviews.approve` | `client.externalReviews.approve` | `KnowledgeCommitOutcome` |
-| `POST /api/v1/tenants/{tenant_id}/external-knowledge-reviews/{review_id}/cancel` | `cancel_external_review` | `externalReviews.cancel` | `client.externalReviews.cancel` | `ExternalReviewView` |
-| `POST /api/v1/tenants/{tenant_id}/external-file-reviews/cleanup` | `cleanup_external_file_reviews` | `externalFileReviews.cleanup` | `client.externalFileReviews.cleanup` | `ExternalFileCleanupResult` |
-| `POST /api/v1/tenants/{tenant_id}/external-file-reviews` | `stage_external_file_review` | `externalFileReviews.stage` | `client.externalFileReviews.stage` | `ExternalFileReviewView` |
-| `GET /api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}` | `external_file_review` | `externalFileReviews.get` | `client.externalFileReviews.get` | `ExternalFileReviewView` |
-| `POST /api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}/chunks` | `upload_external_file_chunk` | `externalFileReviews.chunk` | `client.externalFileReviews.chunk` | `ExternalFileReviewView` |
-| `POST /api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}/seal` | `seal_external_file_review` | `externalFileReviews.seal` | `client.externalFileReviews.seal` | `ExternalFileReviewView` |
-| `POST /api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}/approve` | `approve_external_file_review` | `externalFileReviews.approve` | `client.externalFileReviews.approve` | `ExternalFileReviewView` |
-| `POST /api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}/cancel` | `cancel_external_file_review` | `externalFileReviews.cancel` | `client.externalFileReviews.cancel` | `ExternalFileReviewView` |
-| `GET /api/v1/tenants/{tenant_id}/knowledge-indexes` | `knowledge_indexes` | `knowledgeIndexes.list` | `client.knowledgeIndexes.list` | `IndexPage` |
-| `GET /api/v1/tenants/{tenant_id}/knowledge-index-choices` | `native_index_choices` | `knowledgeIndexes.choices` | `client.knowledgeIndexes.choices` | `NativeIndexPage` |
-| `GET /api/v1/tenants/{tenant_id}/knowledge-index-choices/{choice_id}` | `native_index_choice` | `knowledgeIndexes.choice` | `client.knowledgeIndexes.choice` | `NativeIndexChoice` |
-| `GET /api/v1/tenants/{tenant_id}/knowledge-indexes/{index_id}` | `knowledge_index` | `knowledgeIndexes.get` | `client.knowledgeIndexes.get` | `KnowledgeIndexView` |
-| `POST /api/v1/tenants/{tenant_id}/knowledge-indexes/plan` | `plan_knowledge_index` | `knowledgeIndexes.plan` | `client.knowledgeIndexes.plan` | `IndexPlanView` |
-| `POST /api/v1/tenants/{tenant_id}/knowledge-indexes` | `create_knowledge_index` | `knowledgeIndexes.create` | `client.knowledgeIndexes.create` | `IndexJobView` |
-| `POST /api/v1/tenants/{tenant_id}/knowledge-indexes/{index_id}/activate` | `activate_knowledge_index` | `knowledgeIndexes.activate` | `client.knowledgeIndexes.activate` | `KnowledgeIndexView` |
-| `POST /api/v1/tenants/{tenant_id}/knowledge-indexes/{index_id}/cancel` | `cancel_knowledge_index` | `knowledgeIndexes.cancel` | `client.knowledgeIndexes.cancel` | `KnowledgeIndexView` |
-| `POST /api/v1/tenants/{tenant_id}/knowledge-indexes/{index_id}/resume` | `resume_knowledge_index` | `knowledgeIndexes.resume` | `client.knowledgeIndexes.resume` | `IndexJobView` |
-| `GET /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/provenance` | `table_provenance` | `dataset.tableProvenance` | `client.datasets.tableProvenance` | `TableProvenance` |
-| `GET /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/snapshots` | `table_snapshots` | `dataset.tableSnapshots` | `client.datasets.tableSnapshots` | `TableSnapshotPage` |
-| `GET /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates` | `table_coordinates` | `dataset.tableCoordinates` | `client.datasets.tableCoordinates` | `TableCoordinateManifest` |
-| `POST /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates/cells` | `table_coordinate_cells` | `dataset.tableCoordinateCells` | `client.datasets.tableCoordinateCells` | `TableCoordinateSelection` |
-| `GET /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates/rows` | `table_coordinate_rows` | `dataset.tableCoordinateRows` | `client.datasets.tableCoordinateRows` | `TableRowRangePage` |
-| `GET /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates/columns` | `table_coordinate_columns` | `dataset.tableCoordinateColumns` | `client.datasets.tableCoordinateColumns` | `TableColumnBindingPage` |
-| `GET /api/v1/mcp/connection` | `mcp_connection` | `mcp.connection` | `client.mcp.connection` | `McpConnectionDescriptor` |
-| `GET /api/v1/tenants/{tenant_id}/mcp/connection` | `organization_mcp_connection` | `mcp.organizationConnection` | `client.mcp.organizationConnection` | `McpConnectionDescriptor` |
-| `GET /api/v1/tenants/{tenant_id}/mcp/oauth-clients/readiness` | `mcp_oauth_clients_readiness` | `mcpOAuthClients.readiness` | `client.mcpOAuthClients.readiness` | `McpOAuthClientReadiness` |
-| `GET /api/v1/tenants/{tenant_id}/mcp/oauth-clients` | `mcp_oauth_clients` | `mcpOAuthClients.list` | `client.mcpOAuthClients.list` | `McpOAuthClientPage` |
-| `POST /api/v1/tenants/{tenant_id}/mcp/oauth-clients` | `create_mcp_oauth_client` | `mcpOAuthClients.create` | `client.mcpOAuthClients.create` | `McpOAuthClientCredential` |
-| `GET /api/v1/tenants/{tenant_id}/mcp/oauth-clients/{client_id}` | `mcp_oauth_client` | `mcpOAuthClients.get` | `client.mcpOAuthClients.get` | `McpOAuthClient` |
-| `PATCH /api/v1/tenants/{tenant_id}/mcp/oauth-clients/{client_id}` | `update_mcp_oauth_client` | `mcpOAuthClients.update` | `client.mcpOAuthClients.update` | `McpOAuthClient` |
-| `POST /api/v1/tenants/{tenant_id}/mcp/oauth-clients/{client_id}/rotate-secret` | `rotate_mcp_oauth_client_secret` | `mcpOAuthClients.rotateSecret` | `client.mcpOAuthClients.rotateSecret` | `McpOAuthClientCredential` |
-| `GET /api/v1/branding/defaults` | `branding_defaults` | `branding.defaults` | `client.brandingDefaults.defaults` | `BrandingValues` |
-| `GET /api/v1/tenants/{tenant_id}/branding` | `organization_branding` | `branding.get` | `client.organizationBranding.get` | `OrganizationBranding` |
-| `PUT /api/v1/tenants/{tenant_id}/branding` | `update_organization_branding` | `branding.update` | `client.organizationBranding.update` | `OrganizationBranding` |
-| `POST /api/v1/tenants/{tenant_id}/branding/reset` | `reset_organization_branding` | `branding.reset` | `client.organizationBranding.reset` | `OrganizationBranding` |
-| `GET /api/v1/tenants/{tenant_id}/chat/settings` | `organization_chat_settings` | `organizationChat.get` | `client.organizationChat.get` | `OrganizationChatSettings` |
-| `PUT /api/v1/tenants/{tenant_id}/chat/settings` | `update_organization_chat_settings` | `organizationChat.update` | `client.organizationChat.update` | `OrganizationChatSettings` |
-| `GET /api/v1/tenants/{tenant_id}/knowledge/settings` | `organization_knowledge_settings` | `organizationKnowledge.get` | `client.organizationKnowledge.get` | `OrganizationKnowledgeSettings` |
-| `PUT /api/v1/tenants/{tenant_id}/knowledge/settings` | `update_organization_knowledge_settings` | `organizationKnowledge.update` | `client.organizationKnowledge.update` | `OrganizationKnowledgeSettings` |
-| `GET /api/v1/tenants/{tenant_id}/organization/people/me` | `organization_person_self` | `organizationPeople.me` | `client.organizationPeople.me` | `OrganizationPerson` |
-| `GET /api/v1/tenants/{tenant_id}/organization/people` | `organization_people` | `organizationPeople.list` | `client.organizationPeople.list` | `OrganizationPersonPage` |
-| `POST /api/v1/tenants/{tenant_id}/organization/people` | `create_organization_person` | `organizationPeople.create` | `client.organizationPeople.create` | `OrganizationPerson` |
-| `GET /api/v1/tenants/{tenant_id}/organization/people/{person_id}` | `organization_person` | `organizationPeople.get` | `client.organizationPeople.get` | `OrganizationPerson` |
-| `PATCH /api/v1/tenants/{tenant_id}/organization/people/{person_id}` | `update_organization_person` | `organizationPeople.update` | `client.organizationPeople.update` | `OrganizationPerson` |
-| `GET /api/v1/tenants/{tenant_id}/organization/people/{person_id}/avatar` | `organization_person_avatar` | `organizationPeople.avatar` | `client.organizationPeople.avatar` | `BinaryDownload` |
-| `GET /api/v1/tenants/{tenant_id}/organization/people/{person_id}/reports` | `organization_person_reports` | `organizationPeople.reports` | `client.organizationPeople.reports` | `OrganizationPersonPage` |
-| `GET /api/v1/tenants/{tenant_id}/organization/units` | `organization_units` | `organizationPeople.units` | `client.organizationPeople.units` | `OrganizationUnitPage` |
-| `POST /api/v1/tenants/{tenant_id}/organization/units` | `create_organization_unit` | `organizationPeople.createUnit` | `client.organizationPeople.createUnit` | `OrganizationUnit` |
-| `PATCH /api/v1/tenants/{tenant_id}/organization/units/{unit_id}` | `update_organization_unit` | `organizationPeople.updateUnit` | `client.organizationPeople.updateUnit` | `OrganizationUnit` |
-| `DELETE /api/v1/tenants/{tenant_id}/organization/units/{unit_id}` | `delete_organization_unit` | `organizationPeople.deleteUnit` | `client.organizationPeople.deleteUnit` | `void` |
-| `GET /api/v1/tenants/{tenant_id}/organization/directory-settings` | `organization_directory_settings` | `organizationPeople.settings` | `client.organizationPeople.settings` | `OrganizationDirectorySettings` |
-| `PATCH /api/v1/tenants/{tenant_id}/organization/directory-settings` | `update_organization_directory_settings` | `organizationPeople.updateSettings` | `client.organizationPeople.updateSettings` | `OrganizationDirectorySettings` |
-| `GET /api/v1/tenants/{tenant_id}/organization/profile-mappings/{provider_id}` | `organization_profile_mapping` | `organizationPeople.mapping` | `client.organizationPeople.mapping` | `OrganizationProfileMapping` |
-| `PUT /api/v1/tenants/{tenant_id}/organization/profile-mappings/{provider_id}` | `update_organization_profile_mapping` | `organizationPeople.updateMapping` | `client.organizationPeople.updateMapping` | `OrganizationProfileMapping` |
-| `GET /api/v1/profile` | `profile` | `profile.get` | `client.profile.get` | `UserProfile` |
-| `PATCH /api/v1/profile` | `update_profile` | `profile.update` | `client.profile.update` | `UserProfile` |
-| `GET /api/v1/profile/avatar` | `avatar_download` | `profile.avatarDownload` | `client.profile.avatar` | `BinaryDownload` |
-| `POST /api/v1/profile/avatar` | `set_avatar` | `profile.uploadAvatar` | `client.profile.uploadAvatar` | `UserProfile` |
-| `DELETE /api/v1/profile/avatar` | `delete_avatar` | `profile.deleteAvatar` | `client.profile.deleteAvatar` | `UserProfile` |
-| `GET /api/v1/tenants/{tenant_id}/people` | `people` | `people.list` | `client.people.list` | `Page[Person]` |
-| `GET /api/v1/tenants/{tenant_id}/people/{profile_id}/avatar` | `person_avatar` | `people.avatar` | `client.people.avatar` | `BinaryDownload` |
-| `POST /api/v1/tenants/{tenant_id}/shares/reviews` | `review_share` | `shares.review` | `client.shares.review` | `ShareReview` |
-| `POST /api/v1/tenants/{tenant_id}/shares` | `create_share` | `shares.create` | `client.shares.create` | `Share` |
-| `GET /api/v1/tenants/{tenant_id}/shares` | `shares` | `shares.list` | `client.shares.list` | `SharePage` |
-| `GET /api/v1/tenants/{tenant_id}/shares/{share_id}` | `share` | `shares.get` | `client.shares.get` | `SharedConversation` |
-| `DELETE /api/v1/tenants/{tenant_id}/shares/{share_id}` | `revoke_share` | `shares.revoke` | `client.shares.revoke` | `void` |
-| `GET /api/v1/tokens` | `tokens` | `tokens.list` | `client.tokens.list` | `Page[PersonalToken]` |
-| `GET /api/v1/tokens/scopes` | `token_scopes` | `tokens.scopes` | `client.tokens.scopes` | `TokenScopeOptions` |
-| `POST /api/v1/tokens` | `create_token` | `tokens.create` | `client.tokens.create` | `TokenCreated` |
-| `DELETE /api/v1/tokens/{token_id}` | `revoke_token` | `tokens.revoke` | `client.tokens.revoke` | `void` |
-| `GET /api/v1/capabilities` | `capabilities` | `capabilities` | `client.platform.capabilities` | `Capabilities` |
+| [`GET /api/v1/tenants/{tenant_id}/audit`](api/platform.md#auditcontroller-audit) | `audit` | `audit.list` | `client.audit.list` | `Page[AuditEvent]` |
+| [`GET /api/v1/tenants/{tenant_id}/catalog`](api/catalog.md#catalogcontroller-catalog-list) | `catalog` | `catalog.list` | `client.catalog.list` | `Page[CatalogEntry]` |
+| [`POST /api/v1/tenants/{tenant_id}/catalog`](api/catalog.md#catalogcontroller-catalog-create) | `create` | `catalog.create` | `client.catalog.create` | `CatalogEntry` |
+| [`GET /api/v1/tenants/{tenant_id}/catalog/{entry_id}`](api/catalog.md#catalogcontroller-catalog-get) | `get` | `catalog.get` | `client.catalog.get` | `CatalogEntry` |
+| [`PATCH /api/v1/tenants/{tenant_id}/catalog/{entry_id}`](api/catalog.md#catalogcontroller-catalog-patch) | `update` | `catalog.update` | `client.catalog.update` | `CatalogEntry` |
+| [`POST /api/v1/tenants/{tenant_id}/catalog/{entry_id}/archive`](api/catalog.md#catalogcontroller-catalog-archive) | `archive` | `catalog.archive` | `client.catalog.archive` | `CatalogEntry` |
+| [`POST /api/v1/tenants/{tenant_id}/catalog/{entry_id}/restore`](api/catalog.md#catalogcontroller-catalog-restore) | `restore` | `catalog.restore` | `client.catalog.restore` | `CatalogEntry` |
+| [`DELETE /api/v1/tenants/{tenant_id}/catalog/{entry_id}`](api/catalog.md#catalogcontroller-catalog-delete) | `delete` | `catalog.delete` | `client.catalog.delete` | `void` |
+| [`GET /api/v1/context`](api/platform.md#contextcontroller-context) | `context` | `context` | `client.platform.context` | `ContextResponse` |
+| [`GET /api/v1/tenants/{tenant_id}/jobs`](api/platform.md#jobcontroller-list) | `jobs` | `jobs.list` | `client.jobs.list` | `Page[Job]` |
+| [`GET /api/v1/tenants/{tenant_id}/jobs/{job_id}`](api/platform.md#jobcontroller-get) | `job` | `jobs.get` | `client.jobs.get` | `Job` |
+| [`POST /api/v1/tenants/{tenant_id}/jobs/{job_id}/cancel`](api/platform.md#jobcontroller-cancel) | `cancel_job` | `jobs.cancel` | `client.jobs.cancel` | `Job` |
+| [`GET /api/v1/tenants/{tenant_id}/members`](api/people-access.md#membershipcontroller-members) | `members` | `members.list` | `client.members.list` | `Page[Membership]` |
+| [`POST /api/v1/tenants/{tenant_id}/members`](api/people-access.md#membershipcontroller-member-create) | `add_member` | `members.add` | `client.members.add` | `Membership` |
+| [`PATCH /api/v1/tenants/{tenant_id}/members/{member_id}`](api/people-access.md#membershipcontroller-member-patch) | `update_member` | `members.update` | `client.members.update` | `Membership` |
+| [`DELETE /api/v1/tenants/{tenant_id}/members/{member_id}`](api/people-access.md#membershipcontroller-member-delete) | `remove_member` | `members.remove` | `client.members.remove` | `void` |
+| [`GET /api/v1/tenants/{tenant_id}/invitations`](api/people-access.md#membershipcontroller-invitations-list) | `invitations` | `invitations.list` | `client.invitations.list` | `Page[Invitation]` |
+| [`POST /api/v1/tenants/{tenant_id}/invitations`](api/people-access.md#membershipcontroller-invitation-create) | `create_invitation` | `invitations.create` | `client.invitations.create` | `InvitationCreated` |
+| [`DELETE /api/v1/tenants/{tenant_id}/invitations/{invitation_id}`](api/people-access.md#membershipcontroller-invitation-revoke) | `revoke_invitation` | `invitations.revoke` | `client.invitations.revoke` | `void` |
+| [`POST /api/v1/invitations/inspect`](api/people-access.md#membershipcontroller-invitation-inspect) | `inspect_invitation` | `invitations.inspect` | `client.invitationAccess.inspect` | `InvitationPreview` |
+| [`POST /api/v1/invitations/redeem`](api/people-access.md#membershipcontroller-invitation-redeem) | `redeem_invitation` | `invitations.redeem` | `client.invitationAccess.redeem` | `Membership` |
+| [`GET /api/v1/tenants/{tenant_id}/agents`](api/models-agents.md#agentcontroller-agents) | `agents` | `agents.list` | `client.agents.list` | `Page[AgentConfiguration]` |
+| [`POST /api/v1/tenants/{tenant_id}/agents`](api/models-agents.md#agentcontroller-agent-create) | `create_agent` | `agents.create` | `client.agents.create` | `AgentConfiguration` |
+| [`PATCH /api/v1/tenants/{tenant_id}/agents/{agent_id}`](api/models-agents.md#agentcontroller-agent-update) | `update_agent` | `agents.update` | `client.agents.update` | `AgentConfiguration` |
+| [`POST /api/v1/tenants/{tenant_id}/agents/{agent_id}/validate`](api/models-agents.md#agentcontroller-agent-validate) | `validate_agent` | `agents.validate` | `client.agents.validate` | `AgentConfiguration` |
+| [`GET /api/v1/tenants/{tenant_id}/chat/threads`](api/chat.md#assistantcontroller-threads) | `threads` | `chat.threads` | `client.chat.threads` | `Page[ChatThread]` |
+| [`POST /api/v1/tenants/{tenant_id}/chat/threads`](api/chat.md#assistantcontroller-thread-create) | `create_thread` | `chat.create` | `client.chat.createThread` | `ChatThread` |
+| [`GET /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/messages`](api/chat.md#assistantcontroller-messages) | `messages` | `chat.messages` | `client.chat.messages` | `Page[ChatMessage]` |
+| [`POST /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/runs`](api/chat.md#assistantcontroller-submit) | `submit_run` | `chat.submit` | `client.chat.submit` | `ChatRun` |
+| [`POST /api/v1/tenants/{tenant_id}/chat/runs/{run_id}/cancel`](api/chat.md#assistantcontroller-cancel) | `cancel_run` | `chat.cancel` | `client.chat.cancel` | `ChatRun` |
+| [`POST /api/v1/tenants/{tenant_id}/chat/runs/{run_id}/retry`](api/chat.md#assistantcontroller-retry) | `retry_run` | `chat.retry` | `client.chat.retry` | `ChatRun` |
+| [`GET /api/v1/tenants/{tenant_id}/chat/runs/{run_id}/events`](api/chat.md#assistantcontroller-events) | `events` | `chat.events` | `client.chat.events` | `StreamEvent` |
+| [`GET /api/v1/tenants/{tenant_id}/chat/runs/{run_id}/results/{result_id}`](api/chat.md#assistantcontroller-result) | `result` | `chat.result` | `client.chat.result` | `EvidenceResult` |
+| [`GET /api/v1/tenants/{tenant_id}/chat/runs/{run_id}/activity`](api/chat.md#assistantcontroller-activities) | `run_activities` | `chat.activities` | `client.chat.activities` | `Page[ToolActivity]` |
+| [`GET /api/v1/tenants/{tenant_id}/chat/runs/{run_id}/audit`](api/chat.md#assistantcontroller-audit) | `run_audit` | `chat.audit` | `client.chat.audit` | `AnswerAudit` |
+| [`GET /api/v1/tenants/{tenant_id}/chat/folders`](api/chat.md#chathistorycontroller-folders) | `folders` | `chat.folders.list` | `client.chatFolders.list` | `Page[ChatFolder]` |
+| [`POST /api/v1/tenants/{tenant_id}/chat/folders`](api/chat.md#chathistorycontroller-create-folder) | `create_folder` | `chat.folders.create` | `client.chatFolders.create` | `ChatFolder` |
+| [`GET /api/v1/tenants/{tenant_id}/chat/folders/{folder_id}`](api/chat.md#chathistorycontroller-folder) | `folder` | `chat.folders.get` | `client.chatFolders.get` | `ChatFolder` |
+| [`PATCH /api/v1/tenants/{tenant_id}/chat/folders/{folder_id}`](api/chat.md#chathistorycontroller-patch-folder) | `update_folder` | `chat.folders.update` | `client.chatFolders.update` | `ChatFolder` |
+| [`DELETE /api/v1/tenants/{tenant_id}/chat/folders/{folder_id}`](api/chat.md#chathistorycontroller-delete-folder) | `delete_folder` | `chat.folders.delete` | `client.chatFolders.delete` | `void` |
+| [`GET /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}`](api/chat.md#chathistorycontroller-thread) | `thread` | `chat.get` | `client.chat.get` | `ChatThread` |
+| [`PATCH /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}`](api/chat.md#chathistorycontroller-patch-thread) | `update_thread` | `chat.update` | `client.chat.update` | `ChatThread` |
+| [`POST /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/title-suggestion`](api/chat.md#chathistorycontroller-title-suggestion) | `suggest_title` | `chat.suggestTitle` | `client.chat.suggestTitle` | `TitleSuggestion` |
+| [`GET /api/v1/tenants/{tenant_id}/chat/runs/{run_id}/proposals/{proposal_id}`](api/catalog.md#catalogproposalcontroller-get) | `proposal` | `chat.proposals.get` | `client.chatProposals.get` | `CatalogProposal` |
+| [`POST /api/v1/tenants/{tenant_id}/chat/runs/{run_id}/proposals/{proposal_id}/confirm`](api/catalog.md#catalogproposalcontroller-confirm) | `confirm_proposal` | `chat.proposals.confirm` | `client.chatProposals.confirm` | `CatalogProposal` |
+| [`POST /api/v1/tenants/{tenant_id}/chat/runs/{run_id}/proposals/{proposal_id}/cancel`](api/catalog.md#catalogproposalcontroller-cancel) | `cancel_proposal` | `chat.proposals.cancel` | `client.chatProposals.cancel` | `CatalogProposal` |
+| [`GET /api/v1/tenants/{tenant_id}/configuration`](api/models-agents.md#providercontroller-configuration) | `configuration` | `configuration.get` | `client.configuration.get` | `Configuration` |
+| [`POST /api/v1/tenants/{tenant_id}/providers`](api/models-agents.md#providercontroller-provider-create) | `create_provider` | `providers.create` | `client.providers.create` | `ModelProvider` |
+| [`PUT /api/v1/tenants/{tenant_id}/providers/{provider_id}`](api/models-agents.md#providercontroller-provider-update) | `update_provider` | `providers.update` | `client.providers.update` | `ModelProvider` |
+| [`POST /api/v1/tenants/{tenant_id}/providers/{provider_id}/validate`](api/models-agents.md#providercontroller-provider-validate) | `validate_provider` | `providers.validate` | `client.providers.validate` | `ValidationResult` |
+| [`GET /api/v1/authorized-applications`](api/applications-mcp.md#authorizedapplicationcontroller-list) | `authorized_applications` | `authorizedApplications.list` | `client.authorizedApplications.list` | `Page[AuthorizedApplication]` |
+| [`GET /api/v1/authorized-applications/{application_id}`](api/applications-mcp.md#authorizedapplicationcontroller-detail) | `authorized_application` | `authorizedApplications.get` | `client.authorizedApplications.get` | `AuthorizedApplication` |
+| [`DELETE /api/v1/authorized-applications/{application_id}`](api/applications-mcp.md#authorizedapplicationcontroller-revoke) | `revoke_authorized_application` | `authorizedApplications.revoke` | `client.authorizedApplications.revoke` | `void` |
+| [`GET /api/v1/tenants/{tenant_id}/identity/providers`](api/corporate-identity.md#corporateidentitycontroller-list) | `identity_providers` | `identity.list` | `client.identity.list` | `IdentityProviderPage` |
+| [`POST /api/v1/tenants/{tenant_id}/identity/providers`](api/corporate-identity.md#corporateidentitycontroller-create) | `create_identity_provider` | `identity.create` | `client.identity.create` | `IdentityProvider` |
+| [`GET /api/v1/tenants/{tenant_id}/identity/providers/{provider_id}`](api/corporate-identity.md#corporateidentitycontroller-get) | `identity_provider` | `identity.get` | `client.identity.get` | `IdentityProvider` |
+| [`PATCH /api/v1/tenants/{tenant_id}/identity/providers/{provider_id}`](api/corporate-identity.md#corporateidentitycontroller-update) | `update_identity_provider` | `identity.update` | `client.identity.update` | `IdentityProvider` |
+| [`POST /api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/test`](api/corporate-identity.md#corporateidentitycontroller-test) | `test_identity_provider` | `identity.test` | `client.identity.test` | `IdentityValidation` |
+| [`GET /api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/tests/{validation_id}`](api/corporate-identity.md#corporateidentitycontroller-test-status) | `identity_test_status` | `identity.testStatus` | `client.identity.testStatus` | `IdentityValidation` |
+| [`GET /api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/groups`](api/corporate-identity.md#corporateidentitycontroller-groups) | `identity_groups` | `identity.groups` | `client.identity.groups` | `IdentityGroupPage` |
+| [`GET /api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/mappings`](api/corporate-identity.md#corporateidentitycontroller-mappings) | `identity_mappings` | `identity.mappings` | `client.identity.mappings` | `IdentityMappingPage` |
+| [`POST /api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/mappings`](api/corporate-identity.md#corporateidentitycontroller-mapping-create) | `create_identity_mapping` | `identity.createMapping` | `client.identity.createMapping` | `IdentityMapping` |
+| [`PATCH /api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/mappings/{mapping_id}`](api/corporate-identity.md#corporateidentitycontroller-mapping-update) | `update_identity_mapping` | `identity.updateMapping` | `client.identity.updateMapping` | `IdentityMapping` |
+| [`DELETE /api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/mappings/{mapping_id}`](api/corporate-identity.md#corporateidentitycontroller-mapping-remove) | `remove_identity_mapping` | `identity.removeMapping` | `client.identity.removeMapping` | `void` |
+| [`POST /api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/activate`](api/corporate-identity.md#corporateidentitycontroller-activate) | `activate_identity_provider` | `identity.activate` | `client.identity.activate` | `IdentityProvider` |
+| [`POST /api/v1/tenants/{tenant_id}/identity/providers/{provider_id}/disable`](api/corporate-identity.md#corporateidentitycontroller-disable) | `disable_identity_provider` | `identity.disable` | `client.identity.disable` | `IdentityProvider` |
+| [`GET /api/v1/tenants/{tenant_id}/organization/people/me/presentation`](api/corporate-identity.md#corporateprofilescontroller-presentation) | `organization_presentation` | `corporateProfiles.presentation` | `client.corporateProfiles.presentation` | `OrganizationPresentation` |
+| [`PATCH /api/v1/tenants/{tenant_id}/organization/people/me/presentation`](api/corporate-identity.md#corporateprofilescontroller-update-presentation) | `update_organization_presentation` | `corporateProfiles.updatePresentation` | `client.corporateProfiles.updatePresentation` | `OrganizationPresentation` |
+| [`POST /api/v1/tenants/{tenant_id}/organization/people/me/profile-refresh`](api/corporate-identity.md#corporateprofilescontroller-refresh-self) | `refresh_organization_profile` | `corporateProfiles.refreshSelf` | `client.corporateProfiles.refreshSelf` | `CorporateProfileRefresh` |
+| [`POST /api/v1/tenants/{tenant_id}/organization/people/{person_id}/profile-refresh`](api/corporate-identity.md#corporateprofilescontroller-refresh-person) | `refresh_organization_person_profile` | `corporateProfiles.refreshPerson` | `client.corporateProfiles.refreshPerson` | `CorporateProfileRefresh` |
+| [`POST /api/v1/tenants/{tenant_id}/evidence/conversations`](api/platform.md#evidencecontroller-conversation) | `conversation_evidence` | `evidence.conversation` | `client.evidence.conversation` | `EvidenceManifest` |
+| [`POST /api/v1/tenants/{tenant_id}/exports/reviews`](api/exports-sharing.md#exportcontroller-review) | `review_export` | `exports.review` | `client.exports.review` | `ExportReview` |
+| [`POST /api/v1/tenants/{tenant_id}/exports`](api/exports-sharing.md#exportcontroller-create) | `create_export` | `exports.create` | `client.exports.create` | `Export` |
+| [`GET /api/v1/tenants/{tenant_id}/exports`](api/exports-sharing.md#exportcontroller-list) | `exports` | `exports.list` | `client.exports.list` | `ExportPage` |
+| [`GET /api/v1/tenants/{tenant_id}/exports/{export_id}`](api/exports-sharing.md#exportcontroller-get) | `export` | `exports.get` | `client.exports.get` | `Export` |
+| [`GET /api/v1/tenants/{tenant_id}/exports/{export_id}/download`](api/exports-sharing.md#exportcontroller-download) | `export_download` | `exports.download` | `client.exports.download` | `BinaryDownload` |
+| [`DELETE /api/v1/tenants/{tenant_id}/exports/{export_id}`](api/exports-sharing.md#exportcontroller-cancel) | `cancel_export` | `exports.cancel` | `client.exports.cancel` | `void` |
+| [`GET /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/capabilities`](api/chat.md#chatattachmentscontroller-capabilities) | `attachment_capabilities` | `chat.attachments.capabilities` | `client.chatAttachments.capabilities` | `AttachmentCapabilities` |
+| [`POST /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments`](api/chat.md#chatattachmentscontroller-upload) | `upload_attachment` | `chat.attachments.upload` | `client.chatAttachments.upload` | `AttachmentView` |
+| [`GET /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments`](api/chat.md#chatattachmentscontroller-list-files) | `attachments` | `chat.attachments.list` | `client.chatAttachments.list` | `AttachmentPage` |
+| [`GET /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}`](api/chat.md#chatattachmentscontroller-get) | `attachment` | `chat.attachments.get` | `client.chatAttachments.get` | `AttachmentView` |
+| [`GET /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}/original`](api/chat.md#chatattachmentscontroller-original) | `attachment_original` | `chat.attachments.original` | `client.chatAttachments.original` | `BinaryDownload` |
+| [`GET /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}/chunks`](api/chat.md#chatattachmentscontroller-chunks) | `attachment_chunks` | `chat.attachments.chunks` | `client.chatAttachments.chunks` | `PrivateChunkPage` |
+| [`POST /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}/cancel`](api/chat.md#chatattachmentscontroller-cancel) | `cancel_attachment` | `chat.attachments.cancel` | `client.chatAttachments.cancel` | `AttachmentView` |
+| [`POST /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}/retry`](api/chat.md#chatattachmentscontroller-retry) | `retry_attachment` | `chat.attachments.retry` | `client.chatAttachments.retry` | `AttachmentView` |
+| [`DELETE /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}`](api/chat.md#chatattachmentscontroller-delete) | `remove_attachment` | `chat.attachments.remove` | `client.chatAttachments.remove` | `void` |
+| [`POST /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}/knowledge`](api/chat.md#chatattachmentscontroller-knowledge) | `promote_attachment` | `chat.attachments.promote` | `client.chatAttachments.promote` | `AttachmentPromotionView` |
+| [`GET /api/v1/tenants/{tenant_id}/knowledge-roles`](api/knowledge-services.md#knowledgeconnectionscontroller-roles) | `knowledge_roles` | `knowledgeConnections.roles` | `client.knowledgeConnections.roles` | `KnowledgeRoles` |
+| [`GET /api/v1/tenants/{tenant_id}/knowledge-connections`](api/knowledge-services.md#knowledgeconnectionscontroller-list-connections) | `knowledge_connections` | `knowledgeConnections.list` | `client.knowledgeConnections.list` | `Page[KnowledgeConnection]` |
+| [`POST /api/v1/tenants/{tenant_id}/knowledge-connections`](api/knowledge-services.md#knowledgeconnectionscontroller-create) | `create_knowledge_connection` | `knowledgeConnections.create` | `client.knowledgeConnections.create` | `KnowledgeConnection` |
+| [`PUT /api/v1/tenants/{tenant_id}/knowledge-connections/{connection_id}`](api/knowledge-services.md#knowledgeconnectionscontroller-update) | `update_knowledge_connection` | `knowledgeConnections.update` | `client.knowledgeConnections.update` | `KnowledgeConnection` |
+| [`GET /api/v1/tenants/{tenant_id}/knowledge-connections/{connection_id}`](api/knowledge-services.md#knowledgeconnectionscontroller-get) | `knowledge_connection` | `knowledgeConnections.get` | `client.knowledgeConnections.get` | `KnowledgeConnection` |
+| [`DELETE /api/v1/tenants/{tenant_id}/knowledge-connections/{connection_id}`](api/knowledge-services.md#knowledgeconnectionscontroller-delete) | `delete_knowledge_connection` | `knowledgeConnections.remove` | `client.knowledgeConnections.remove` | `Deleted` |
+| [`POST /api/v1/tenants/{tenant_id}/sources/upload`](api/sources.md#knowledgecontroller-upload) | `upload` | `sources.uploadFile` | `client.sources.upload` | `UploadResponse` |
+| [`POST /api/v1/tenants/{tenant_id}/search`](api/queries.md#knowledgecontroller-search) | `search` | `search` | `client.knowledge.search` | `SearchResponse` |
+| [`POST /api/v1/tenants/{tenant_id}/query`](api/queries.md#knowledgecontroller-query) | `query` | `query` | `client.knowledge.query` | `QueryResponse` |
+| [`GET /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/schema`](api/sources.md#knowledgecontroller-schema) | `schema` | `dataset.schema` | `client.datasets.schema` | `DatasetSchema` |
+| [`GET /api/v1/tenants/{tenant_id}/lineage`](api/sources.md#knowledgecontroller-lineage) | `lineage` | `lineage` | `client.knowledge.lineage` | `Lineage` |
+| [`GET /api/v1/tenants/{tenant_id}/documents/{document_id}/chunks`](api/sources.md#knowledgecontroller-document-chunks) | `document_chunks` | `documents.chunks` | `client.documents.chunks` | `DocumentChunks` |
+| [`GET /api/v1/tenants/{tenant_id}/documents/{document_id}/original`](api/sources.md#knowledgecontroller-document-original) | `document_download` | `documents.download` | `client.documents.original` | `BinaryDownload` |
+| [`POST /api/v1/tenants/{tenant_id}/documents/{document_id}/reingest`](api/sources.md#contentcontroller-reingest-document) | `reingest_document` | `documents.reingest` | `client.documents.reingest` | `ContentUpdate` |
+| [`POST /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/reingest`](api/sources.md#contentcontroller-reingest-table) | `reingest_table` | `dataset.reingestTable` | `client.datasets.reingestTable` | `ContentUpdate` |
+| [`POST /api/v1/tenants/{tenant_id}/documents/{document_id}/content`](api/sources.md#contentcontroller-document) | `replace_document` | `documents.replace` | `client.documents.replace` | `ContentUpdate` |
+| [`POST /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/content`](api/sources.md#contentcontroller-table) | `replace_table` | `dataset.replaceTable` | `client.datasets.replaceTable` | `ContentUpdate` |
+| [`POST /api/v1/tenants/{tenant_id}/knowledge-intents`](api/curated-knowledge.md#curatedknowledgecontroller-preview) | `preview_knowledge` | `knowledgeIntents.preview` | `client.knowledgeIntents.preview` | `KnowledgeIntent` |
+| [`GET /api/v1/tenants/{tenant_id}/knowledge-intents/{intent_id}`](api/curated-knowledge.md#curatedknowledgecontroller-intent) | `knowledge_intent` | `knowledgeIntents.get` | `client.knowledgeIntents.get` | `KnowledgeIntent` |
+| [`POST /api/v1/tenants/{tenant_id}/knowledge-intents/{intent_id}/confirm`](api/curated-knowledge.md#curatedknowledgecontroller-confirm) | `confirm_knowledge` | `knowledgeIntents.confirm` | `client.knowledgeIntents.confirm` | `KnowledgeCommitOutcome` |
+| [`POST /api/v1/tenants/{tenant_id}/knowledge-intents/{intent_id}/cancel`](api/curated-knowledge.md#curatedknowledgecontroller-cancel) | `cancel_knowledge` | `knowledgeIntents.cancel` | `client.knowledgeIntents.cancel` | `KnowledgeIntent` |
+| [`GET /api/v1/tenants/{tenant_id}/knowledge-items`](api/curated-knowledge.md#curatedknowledgecontroller-list) | `knowledge_items` | `knowledgeItems.list` | `client.knowledgeItems.list` | `KnowledgeItemPage` |
+| [`GET /api/v1/tenants/{tenant_id}/knowledge-items/{item_id}`](api/curated-knowledge.md#curatedknowledgecontroller-get) | `knowledge_item` | `knowledgeItems.get` | `client.knowledgeItems.get` | `KnowledgeItemView` |
+| [`GET /api/v1/tenants/{tenant_id}/knowledge-items/{item_id}/versions/{version}`](api/curated-knowledge.md#curatedknowledgecontroller-version) | `knowledge_version` | `knowledgeItems.version` | `client.knowledgeItems.version` | `KnowledgeItemView` |
+| [`POST /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/files`](api/sources.md#datasetfilescontroller-append) | `append_dataset_file` | `dataset.appendFile` | `client.datasets.appendFile` | `DatasetFileAppendResult` |
+| [`GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions`](api/sources.md#documenthistorycontroller-versions) | `document_versions` | `documents.versions` | `client.documents.versions` | `DocumentVersionPage` |
+| [`GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}`](api/sources.md#documenthistorycontroller-version) | `document_version` | `documents.version` | `client.documents.version` | `DocumentVersion` |
+| [`GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/extractions`](api/sources.md#documenthistorycontroller-extractions) | `document_extractions` | `documents.extractions` | `client.documents.extractions` | `DocumentExtractionPage` |
+| [`GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/extractions/{extraction_id}/parts`](api/sources.md#documenthistorycontroller-parts) | `document_parts` | `documents.parts` | `client.documents.parts` | `DocumentPartPage` |
+| [`GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/extractions/{extraction_id}/parts/{source_part_id}`](api/sources.md#documenthistorycontroller-part) | `document_part` | `documents.part` | `client.documents.part` | `DocumentPartContent` |
+| [`GET /api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/original`](api/sources.md#documenthistorycontroller-original) | `document_version_original` | `documents.versionOriginal` | `client.documents.versionOriginal` | `BinaryDownload` |
+| [`POST /api/v1/tenants/{tenant_id}/external-knowledge-reviews`](api/applications-mcp.md#externalknowledgereviewcontroller-stage) | `stage_external_review` | `externalReviews.stage` | `client.externalReviews.stage` | `ExternalReviewView` |
+| [`GET /api/v1/tenants/{tenant_id}/external-knowledge-reviews/{review_id}`](api/applications-mcp.md#externalknowledgereviewcontroller-get) | `external_review` | `externalReviews.get` | `client.externalReviews.get` | `ExternalReviewView` |
+| [`POST /api/v1/tenants/{tenant_id}/external-knowledge-reviews/{review_id}/approve`](api/applications-mcp.md#externalknowledgereviewcontroller-approve) | `approve_external_review` | `externalReviews.approve` | `client.externalReviews.approve` | `KnowledgeCommitOutcome` |
+| [`POST /api/v1/tenants/{tenant_id}/external-knowledge-reviews/{review_id}/cancel`](api/applications-mcp.md#externalknowledgereviewcontroller-cancel) | `cancel_external_review` | `externalReviews.cancel` | `client.externalReviews.cancel` | `ExternalReviewView` |
+| [`POST /api/v1/tenants/{tenant_id}/external-file-reviews/cleanup`](api/applications-mcp.md#externalfilereviewcontroller-cleanup) | `cleanup_external_file_reviews` | `externalFileReviews.cleanup` | `client.externalFileReviews.cleanup` | `ExternalFileCleanupResult` |
+| [`POST /api/v1/tenants/{tenant_id}/external-file-reviews`](api/applications-mcp.md#externalfilereviewcontroller-stage) | `stage_external_file_review` | `externalFileReviews.stage` | `client.externalFileReviews.stage` | `ExternalFileReviewView` |
+| [`GET /api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}`](api/applications-mcp.md#externalfilereviewcontroller-get) | `external_file_review` | `externalFileReviews.get` | `client.externalFileReviews.get` | `ExternalFileReviewView` |
+| [`POST /api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}/chunks`](api/applications-mcp.md#externalfilereviewcontroller-chunk) | `upload_external_file_chunk` | `externalFileReviews.chunk` | `client.externalFileReviews.chunk` | `ExternalFileReviewView` |
+| [`POST /api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}/seal`](api/applications-mcp.md#externalfilereviewcontroller-seal) | `seal_external_file_review` | `externalFileReviews.seal` | `client.externalFileReviews.seal` | `ExternalFileReviewView` |
+| [`POST /api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}/approve`](api/applications-mcp.md#externalfilereviewcontroller-approve) | `approve_external_file_review` | `externalFileReviews.approve` | `client.externalFileReviews.approve` | `ExternalFileReviewView` |
+| [`POST /api/v1/tenants/{tenant_id}/external-file-reviews/{review_id}/cancel`](api/applications-mcp.md#externalfilereviewcontroller-cancel) | `cancel_external_file_review` | `externalFileReviews.cancel` | `client.externalFileReviews.cancel` | `ExternalFileReviewView` |
+| [`GET /api/v1/tenants/{tenant_id}/knowledge-indexes`](api/knowledge-services.md#knowledgeindexescontroller-list-indexes) | `knowledge_indexes` | `knowledgeIndexes.list` | `client.knowledgeIndexes.list` | `IndexPage` |
+| [`GET /api/v1/tenants/{tenant_id}/knowledge-index-choices`](api/knowledge-services.md#knowledgeindexescontroller-choices) | `native_index_choices` | `knowledgeIndexes.choices` | `client.knowledgeIndexes.choices` | `NativeIndexPage` |
+| [`GET /api/v1/tenants/{tenant_id}/knowledge-index-choices/{choice_id}`](api/knowledge-services.md#knowledgeindexescontroller-choice) | `native_index_choice` | `knowledgeIndexes.choice` | `client.knowledgeIndexes.choice` | `NativeIndexChoice` |
+| [`GET /api/v1/tenants/{tenant_id}/knowledge-indexes/{index_id}`](api/knowledge-services.md#knowledgeindexescontroller-get) | `knowledge_index` | `knowledgeIndexes.get` | `client.knowledgeIndexes.get` | `KnowledgeIndexView` |
+| [`POST /api/v1/tenants/{tenant_id}/knowledge-indexes/plan`](api/knowledge-services.md#knowledgeindexescontroller-plan) | `plan_knowledge_index` | `knowledgeIndexes.plan` | `client.knowledgeIndexes.plan` | `IndexPlanView` |
+| [`POST /api/v1/tenants/{tenant_id}/knowledge-indexes`](api/knowledge-services.md#knowledgeindexescontroller-create) | `create_knowledge_index` | `knowledgeIndexes.create` | `client.knowledgeIndexes.create` | `IndexJobView` |
+| [`POST /api/v1/tenants/{tenant_id}/knowledge-indexes/{index_id}/activate`](api/knowledge-services.md#knowledgeindexescontroller-activate) | `activate_knowledge_index` | `knowledgeIndexes.activate` | `client.knowledgeIndexes.activate` | `KnowledgeIndexView` |
+| [`POST /api/v1/tenants/{tenant_id}/knowledge-indexes/{index_id}/cancel`](api/knowledge-services.md#knowledgeindexescontroller-cancel) | `cancel_knowledge_index` | `knowledgeIndexes.cancel` | `client.knowledgeIndexes.cancel` | `KnowledgeIndexView` |
+| [`POST /api/v1/tenants/{tenant_id}/knowledge-indexes/{index_id}/resume`](api/knowledge-services.md#knowledgeindexescontroller-resume) | `resume_knowledge_index` | `knowledgeIndexes.resume` | `client.knowledgeIndexes.resume` | `IndexJobView` |
+| [`GET /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/provenance`](api/sources.md#tableprovenancecontroller-snapshot) | `table_provenance` | `dataset.tableProvenance` | `client.datasets.tableProvenance` | `TableProvenance` |
+| [`GET /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/snapshots`](api/sources.md#tableprovenancecontroller-history) | `table_snapshots` | `dataset.tableSnapshots` | `client.datasets.tableSnapshots` | `TableSnapshotPage` |
+| [`GET /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates`](api/sources.md#tablecoordinatecontroller-manifest) | `table_coordinates` | `dataset.tableCoordinates` | `client.datasets.tableCoordinates` | `TableCoordinateManifest` |
+| [`POST /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates/cells`](api/sources.md#tablecoordinatecontroller-cells) | `table_coordinate_cells` | `dataset.tableCoordinateCells` | `client.datasets.tableCoordinateCells` | `TableCoordinateSelection` |
+| [`GET /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates/rows`](api/sources.md#tablecoordinatecontroller-rows) | `table_coordinate_rows` | `dataset.tableCoordinateRows` | `client.datasets.tableCoordinateRows` | `TableRowRangePage` |
+| [`GET /api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates/columns`](api/sources.md#tablecoordinatecontroller-columns) | `table_coordinate_columns` | `dataset.tableCoordinateColumns` | `client.datasets.tableCoordinateColumns` | `TableColumnBindingPage` |
+| [`GET /api/v1/mcp/connection`](api/applications-mcp.md#mcpconnectioncontroller-get) | `mcp_connection` | `mcp.connection` | `client.mcp.connection` | `McpConnectionDescriptor` |
+| [`GET /api/v1/tenants/{tenant_id}/mcp/connection`](api/applications-mcp.md#mcporganizationconnectioncontroller-get) | `organization_mcp_connection` | `mcp.organizationConnection` | `client.mcp.organizationConnection` | `McpConnectionDescriptor` |
+| [`GET /api/v1/tenants/{tenant_id}/mcp/oauth-clients/readiness`](api/applications-mcp.md#mcpoauthclientcontroller-readiness) | `mcp_oauth_clients_readiness` | `mcpOAuthClients.readiness` | `client.mcpOAuthClients.readiness` | `McpOAuthClientReadiness` |
+| [`GET /api/v1/tenants/{tenant_id}/mcp/oauth-clients`](api/applications-mcp.md#mcpoauthclientcontroller-page) | `mcp_oauth_clients` | `mcpOAuthClients.list` | `client.mcpOAuthClients.list` | `McpOAuthClientPage` |
+| [`POST /api/v1/tenants/{tenant_id}/mcp/oauth-clients`](api/applications-mcp.md#mcpoauthclientcontroller-create) | `create_mcp_oauth_client` | `mcpOAuthClients.create` | `client.mcpOAuthClients.create` | `McpOAuthClientCredential` |
+| [`GET /api/v1/tenants/{tenant_id}/mcp/oauth-clients/{client_id}`](api/applications-mcp.md#mcpoauthclientcontroller-retrieve) | `mcp_oauth_client` | `mcpOAuthClients.get` | `client.mcpOAuthClients.get` | `McpOAuthClient` |
+| [`PATCH /api/v1/tenants/{tenant_id}/mcp/oauth-clients/{client_id}`](api/applications-mcp.md#mcpoauthclientcontroller-update) | `update_mcp_oauth_client` | `mcpOAuthClients.update` | `client.mcpOAuthClients.update` | `McpOAuthClient` |
+| [`POST /api/v1/tenants/{tenant_id}/mcp/oauth-clients/{client_id}/rotate-secret`](api/applications-mcp.md#mcpoauthclientcontroller-rotate-secret) | `rotate_mcp_oauth_client_secret` | `mcpOAuthClients.rotateSecret` | `client.mcpOAuthClients.rotateSecret` | `McpOAuthClientCredential` |
+| [`GET /api/v1/branding/defaults`](api/platform.md#brandingdefaultscontroller-defaults) | `branding_defaults` | `branding.defaults` | `client.brandingDefaults.defaults` | `BrandingValues` |
+| [`GET /api/v1/tenants/{tenant_id}/branding`](api/platform.md#organizationbrandingcontroller-get) | `organization_branding` | `branding.get` | `client.organizationBranding.get` | `OrganizationBranding` |
+| [`PUT /api/v1/tenants/{tenant_id}/branding`](api/platform.md#organizationbrandingcontroller-update) | `update_organization_branding` | `branding.update` | `client.organizationBranding.update` | `OrganizationBranding` |
+| [`POST /api/v1/tenants/{tenant_id}/branding/reset`](api/platform.md#organizationbrandingcontroller-reset) | `reset_organization_branding` | `branding.reset` | `client.organizationBranding.reset` | `OrganizationBranding` |
+| [`GET /api/v1/tenants/{tenant_id}/chat/settings`](api/chat.md#organizationchatcontroller-get) | `organization_chat_settings` | `organizationChat.get` | `client.organizationChat.get` | `OrganizationChatSettings` |
+| [`PUT /api/v1/tenants/{tenant_id}/chat/settings`](api/chat.md#organizationchatcontroller-update) | `update_organization_chat_settings` | `organizationChat.update` | `client.organizationChat.update` | `OrganizationChatSettings` |
+| [`GET /api/v1/tenants/{tenant_id}/knowledge/settings`](api/knowledge-services.md#organizationknowledgecontroller-get) | `organization_knowledge_settings` | `organizationKnowledge.get` | `client.organizationKnowledge.get` | `OrganizationKnowledgeSettings` |
+| [`PUT /api/v1/tenants/{tenant_id}/knowledge/settings`](api/knowledge-services.md#organizationknowledgecontroller-update) | `update_organization_knowledge_settings` | `organizationKnowledge.update` | `client.organizationKnowledge.update` | `OrganizationKnowledgeSettings` |
+| [`GET /api/v1/tenants/{tenant_id}/organization/people/me`](api/people-access.md#organizationpeoplecontroller-self) | `organization_person_self` | `organizationPeople.me` | `client.organizationPeople.me` | `OrganizationPerson` |
+| [`GET /api/v1/tenants/{tenant_id}/organization/people`](api/people-access.md#organizationpeoplecontroller-page) | `organization_people` | `organizationPeople.list` | `client.organizationPeople.list` | `OrganizationPersonPage` |
+| [`POST /api/v1/tenants/{tenant_id}/organization/people`](api/people-access.md#organizationpeoplecontroller-create) | `create_organization_person` | `organizationPeople.create` | `client.organizationPeople.create` | `OrganizationPerson` |
+| [`GET /api/v1/tenants/{tenant_id}/organization/people/{person_id}`](api/people-access.md#organizationpeoplecontroller-get) | `organization_person` | `organizationPeople.get` | `client.organizationPeople.get` | `OrganizationPerson` |
+| [`PATCH /api/v1/tenants/{tenant_id}/organization/people/{person_id}`](api/people-access.md#organizationpeoplecontroller-update) | `update_organization_person` | `organizationPeople.update` | `client.organizationPeople.update` | `OrganizationPerson` |
+| [`GET /api/v1/tenants/{tenant_id}/organization/people/{person_id}/avatar`](api/people-access.md#organizationpeoplecontroller-avatar) | `organization_person_avatar` | `organizationPeople.avatar` | `client.organizationPeople.avatar` | `BinaryDownload` |
+| [`GET /api/v1/tenants/{tenant_id}/organization/people/{person_id}/reports`](api/people-access.md#organizationpeoplecontroller-reports) | `organization_person_reports` | `organizationPeople.reports` | `client.organizationPeople.reports` | `OrganizationPersonPage` |
+| [`GET /api/v1/tenants/{tenant_id}/organization/units`](api/people-access.md#organizationpeoplecontroller-units) | `organization_units` | `organizationPeople.units` | `client.organizationPeople.units` | `OrganizationUnitPage` |
+| [`POST /api/v1/tenants/{tenant_id}/organization/units`](api/people-access.md#organizationpeoplecontroller-create-unit) | `create_organization_unit` | `organizationPeople.createUnit` | `client.organizationPeople.createUnit` | `OrganizationUnit` |
+| [`PATCH /api/v1/tenants/{tenant_id}/organization/units/{unit_id}`](api/people-access.md#organizationpeoplecontroller-update-unit) | `update_organization_unit` | `organizationPeople.updateUnit` | `client.organizationPeople.updateUnit` | `OrganizationUnit` |
+| [`DELETE /api/v1/tenants/{tenant_id}/organization/units/{unit_id}`](api/people-access.md#organizationpeoplecontroller-delete-unit) | `delete_organization_unit` | `organizationPeople.deleteUnit` | `client.organizationPeople.deleteUnit` | `void` |
+| [`GET /api/v1/tenants/{tenant_id}/organization/directory-settings`](api/people-access.md#organizationpeoplecontroller-settings) | `organization_directory_settings` | `organizationPeople.settings` | `client.organizationPeople.settings` | `OrganizationDirectorySettings` |
+| [`PATCH /api/v1/tenants/{tenant_id}/organization/directory-settings`](api/people-access.md#organizationpeoplecontroller-update-settings) | `update_organization_directory_settings` | `organizationPeople.updateSettings` | `client.organizationPeople.updateSettings` | `OrganizationDirectorySettings` |
+| [`GET /api/v1/tenants/{tenant_id}/organization/profile-mappings/{provider_id}`](api/people-access.md#organizationpeoplecontroller-mapping) | `organization_profile_mapping` | `organizationPeople.mapping` | `client.organizationPeople.mapping` | `OrganizationProfileMapping` |
+| [`PUT /api/v1/tenants/{tenant_id}/organization/profile-mappings/{provider_id}`](api/people-access.md#organizationpeoplecontroller-update-mapping) | `update_organization_profile_mapping` | `organizationPeople.updateMapping` | `client.organizationPeople.updateMapping` | `OrganizationProfileMapping` |
+| [`GET /api/v1/profile`](api/account.md#profilecontroller-get) | `profile` | `profile.get` | `client.profile.get` | `UserProfile` |
+| [`PATCH /api/v1/profile`](api/account.md#profilecontroller-update) | `update_profile` | `profile.update` | `client.profile.update` | `UserProfile` |
+| [`GET /api/v1/profile/avatar`](api/account.md#profilecontroller-avatar) | `avatar_download` | `profile.avatarDownload` | `client.profile.avatar` | `BinaryDownload` |
+| [`POST /api/v1/profile/avatar`](api/account.md#profilecontroller-set-avatar) | `set_avatar` | `profile.uploadAvatar` | `client.profile.uploadAvatar` | `UserProfile` |
+| [`DELETE /api/v1/profile/avatar`](api/account.md#profilecontroller-delete-avatar) | `delete_avatar` | `profile.deleteAvatar` | `client.profile.deleteAvatar` | `UserProfile` |
+| [`GET /api/v1/tenants/{tenant_id}/people`](api/account.md#profilecontroller-people) | `people` | `people.list` | `client.people.list` | `Page[Person]` |
+| [`GET /api/v1/tenants/{tenant_id}/people/{profile_id}/avatar`](api/account.md#profilecontroller-person-avatar) | `person_avatar` | `people.avatar` | `client.people.avatar` | `BinaryDownload` |
+| [`POST /api/v1/tenants/{tenant_id}/shares/reviews`](api/exports-sharing.md#sharecontroller-review) | `review_share` | `shares.review` | `client.shares.review` | `ShareReview` |
+| [`POST /api/v1/tenants/{tenant_id}/shares`](api/exports-sharing.md#sharecontroller-create) | `create_share` | `shares.create` | `client.shares.create` | `Share` |
+| [`GET /api/v1/tenants/{tenant_id}/shares`](api/exports-sharing.md#sharecontroller-list) | `shares` | `shares.list` | `client.shares.list` | `SharePage` |
+| [`GET /api/v1/tenants/{tenant_id}/shares/{share_id}`](api/exports-sharing.md#sharecontroller-get) | `share` | `shares.get` | `client.shares.get` | `SharedConversation` |
+| [`DELETE /api/v1/tenants/{tenant_id}/shares/{share_id}`](api/exports-sharing.md#sharecontroller-revoke) | `revoke_share` | `shares.revoke` | `client.shares.revoke` | `void` |
+| [`GET /api/v1/tokens`](api/account.md#personaltokencontroller-list) | `tokens` | `tokens.list` | `client.tokens.list` | `Page[PersonalToken]` |
+| [`GET /api/v1/tokens/scopes`](api/account.md#personaltokencontroller-scopes) | `token_scopes` | `tokens.scopes` | `client.tokens.scopes` | `TokenScopeOptions` |
+| [`POST /api/v1/tokens`](api/account.md#personaltokencontroller-create) | `create_token` | `tokens.create` | `client.tokens.create` | `TokenCreated` |
+| [`DELETE /api/v1/tokens/{token_id}`](api/account.md#personaltokencontroller-revoke) | `revoke_token` | `tokens.revoke` | `client.tokens.revoke` | `void` |
+| [`GET /api/v1/capabilities`](api/platform.md#capabilitiescontroller-capabilities) | `capabilities` | `capabilities` | `client.platform.capabilities` | `Capabilities` |
 
 ## Qualified retained glossary API
 
@@ -207,16 +209,16 @@ These operations use the original structured service behind resource admission. 
 
 | API operation | Python client | TypeScript client | Java client |
 | --- | --- | --- | --- |
-| `GET /api/v1/structured/glossary` | `glossary_terms` | `structured.glossary.list` | `client.structuredGlossary(tenant,workspace).list` |
-| `GET /api/v1/structured/glossary/{term_id}` | `glossary_term` | `structured.glossary.get` | `client.structuredGlossary(tenant,workspace).get` |
-| `POST /api/v1/structured/glossary` | `create_glossary_term` | `structured.glossary.create` | `client.structuredGlossary(tenant,workspace).create` |
-| `PUT /api/v1/structured/glossary/{term_id}` | `update_glossary_term` | `structured.glossary.update` | `client.structuredGlossary(tenant,workspace).update` |
-| `DELETE /api/v1/structured/glossary/{term_id}` | `delete_glossary_term` | `structured.glossary.remove` | `client.structuredGlossary(tenant,workspace).remove` |
-| `GET /api/v1/structured/agent/glossary` | `glossary_terms(agent=True)` | `structured.agentGlossary.list` | `client.structuredAgentGlossary(tenant,workspace).list` |
-| `GET /api/v1/structured/agent/glossary/{term_id}` | `glossary_term(agent=True)` | `structured.agentGlossary.get` | `client.structuredAgentGlossary(tenant,workspace).get` |
-| `POST /api/v1/structured/agent/glossary` | `create_glossary_term(agent=True)` | `structured.agentGlossary.create` | `client.structuredAgentGlossary(tenant,workspace).create` |
-| `PUT /api/v1/structured/agent/glossary/{term_id}` | `update_glossary_term(agent=True)` | `structured.agentGlossary.update` | `client.structuredAgentGlossary(tenant,workspace).update` |
-| `DELETE /api/v1/structured/agent/glossary/{term_id}` | `delete_glossary_term(agent=True)` | `structured.agentGlossary.remove` | `client.structuredAgentGlossary(tenant,workspace).remove` |
+| [`GET /api/v1/structured/glossary`](api/retained-glossary.md#glossarycontroller-list-terms) | `glossary_terms` | `structured.glossary.list` | `client.structuredGlossary(tenant,workspace).list` |
+| [`GET /api/v1/structured/glossary/{term_id}`](api/retained-glossary.md#glossarycontroller-get-term) | `glossary_term` | `structured.glossary.get` | `client.structuredGlossary(tenant,workspace).get` |
+| [`POST /api/v1/structured/glossary`](api/retained-glossary.md#glossarycontroller-create) | `create_glossary_term` | `structured.glossary.create` | `client.structuredGlossary(tenant,workspace).create` |
+| [`PUT /api/v1/structured/glossary/{term_id}`](api/retained-glossary.md#glossarycontroller-update) | `update_glossary_term` | `structured.glossary.update` | `client.structuredGlossary(tenant,workspace).update` |
+| [`DELETE /api/v1/structured/glossary/{term_id}`](api/retained-glossary.md#glossarycontroller-delete) | `delete_glossary_term` | `structured.glossary.remove` | `client.structuredGlossary(tenant,workspace).remove` |
+| [`GET /api/v1/structured/agent/glossary`](api/retained-glossary.md#agentglossarycontroller-list-terms) | `glossary_terms(agent=True)` | `structured.agentGlossary.list` | `client.structuredAgentGlossary(tenant,workspace).list` |
+| [`GET /api/v1/structured/agent/glossary/{term_id}`](api/retained-glossary.md#agentglossarycontroller-get-term) | `glossary_term(agent=True)` | `structured.agentGlossary.get` | `client.structuredAgentGlossary(tenant,workspace).get` |
+| [`POST /api/v1/structured/agent/glossary`](api/retained-glossary.md#agentglossarycontroller-create) | `create_glossary_term(agent=True)` | `structured.agentGlossary.create` | `client.structuredAgentGlossary(tenant,workspace).create` |
+| [`PUT /api/v1/structured/agent/glossary/{term_id}`](api/retained-glossary.md#agentglossarycontroller-update) | `update_glossary_term(agent=True)` | `structured.agentGlossary.update` | `client.structuredAgentGlossary(tenant,workspace).update` |
+| [`DELETE /api/v1/structured/agent/glossary/{term_id}`](api/retained-glossary.md#agentglossarycontroller-delete) | `delete_glossary_term(agent=True)` | `structured.agentGlossary.remove` | `client.structuredAgentGlossary(tenant,workspace).remove` |
 
 Glossary list totals can be unknown. Honor returned `limit`, `offset` and `has_more`; do not invent a total or slice another page in the client.
 

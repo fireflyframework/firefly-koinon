@@ -15,7 +15,30 @@ The server supports retrieval, governed dataset queries and reviewed knowledge c
 
 ## Connect the remote endpoint
 
+<figure class="connection-illustration">
+  <figcaption><strong>Illustrative setup</strong><span>Field reference for Claude. This is an editable illustration, not a vendor screenshot or a completed connection.</span></figcaption>
+  <div class="connection-example">
+    <h3>Add a custom connector</h3>
+    <p>Start in <strong>Customize</strong>, then <strong>Connectors</strong>.</p>
+    <dl class="connection-fields">
+      <div><dt>Name</dt><dd>koinon</dd></div>
+      <div><dt>Remote MCP server URL</dt><dd><code>https://knowledge.example.org/mcp</code><small>Example only. Use your operator's reachable HTTPS URL.</small></dd></div>
+      <div><dt>Authentication</dt><dd>Sign in now or sign in when needed</dd></div>
+      <div><dt>OAuth client</dt><dd>Use your own OAuth client<small>Use the pre-registered client ID and protected secret supplied by your operator.</small></dd></div>
+      <div><dt>Callback</dt><dd>Register the exact callback Claude displays<small>A callback from another connector is not interchangeable.</small></dd></div>
+    </dl>
+    <p class="connection-next">Finish with <strong>Add</strong>, choose <strong>Connect</strong>, then enable koinon for the intended conversation.</p>
+  </div>
+</figure>
+
+
 In koinon, open your avatar menu, select **Authorized applications**, then **Connect an app**. Copy the deployment's full MCP URL and select the registered client for your organization. An organization administrator can [register the application](register-applications.md) under **Settings**, in **Applications**; they provide any confidential secret directly to Claude's protected configuration. A URL such as `https://knowledge.example.org/mcp` is a placeholder, not a hosted koinon service. A listener-derived endpoint marked `local_only` is usable from the local computer; it does not establish reachability from Claude cloud. The desktop bridge can use a suitable endpoint reachable from your computer.
+
+
+<figure class="doc-guide-shot">
+  <a href="../../assets/screenshots/mcp-connection.png"><img src="../../assets/screenshots/mcp-connection.png" alt="koinon Authorized applications connection panel with an MCP URL, registered application and OAuth client ID" width="1440" height="1100" loading="lazy"></a>
+  <figcaption>Controlled koinon connection panel, with ChatGPT selected as an example. Choose your intended chat application and use your own installation's values. This image does not show a completed external connection.</figcaption>
+</figure>
 
 Claude's remote connection originates from Anthropic infrastructure, including when using Claude Desktop. Your operator must provide network reachability; a URL that works only through your laptop's VPN is insufficient. See [Anthropic's remote-connector documentation](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp).
 
@@ -27,6 +50,16 @@ Claude's remote connection originates from Anthropic infrastructure, including w
 These steps follow the current [official Claude connector flow](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp). koinon currently supports pre-registration; it does not implement Claude's published-identity registration or automatic dynamic registration. If your client does not expose a compatible pre-registered-client option, stop at setup and report that limitation to your operator.
 
 The client ID is not your koinon token. The optional client secret authenticates the registered application; each user still signs in and consents separately. Do not substitute a model API key or paste a personal API token into an OAuth client-secret field.
+
+
+<details class="connection-reference">
+  <summary>Administrator reference: registration is separate from user consent</summary>
+  <figure class="doc-guide-shot doc-guide-shot--mobile">
+    <a href="../../assets/screenshots/oauth-application-review-mobile.png"><img src="../../assets/screenshots/oauth-application-review-mobile.png" alt="Controlled mobile application-registration review showing callback URLs, allowed access and an unchecked administrator confirmation" width="390" height="1100" loading="lazy"></a>
+    <figcaption>Controlled administrator registration review. This defines the application and its allowed access; it is not the user's OAuth consent screen.</figcaption>
+  </figure>
+  <p><a href="../register-applications/">Read application registration</a> for the operator workflow. Each user still signs in and reviews their own access.</p>
+</details>
 
 ## Check the consent screen
 
@@ -64,6 +97,11 @@ Ask Claude to propose a specific change, for example:
 
 The server delivers its private one-use review nonce only to the component, outside model-visible content. Account-linking consent, a request to draft a change and an assistant's own tool call cannot replace this review. The proposal remains labeled external and unverified; its recorded ancestry does not establish that Claude interpreted the evidence correctly.
 
+<figure class="doc-guide-shot">
+  <a href="../../assets/screenshots/mcp-text-review.png"><img src="../../assets/screenshots/mcp-text-review.png" alt="koinon text-change review in a controlled MCP Apps host, showing proposed content, destination, sources and an explicit approval checkbox" width="900" height="1100" loading="lazy"></a>
+  <figcaption>koinon's text review in a controlled MCP Apps host, before saving. This is a component-layout fixture, not proof of Claude rendering or an approved change.</figcaption>
+</figure>
+
 This requires a Claude host that implements [MCP Apps](https://modelcontextprotocol.io/extensions/apps/overview), including model-hidden component metadata and app-only actions. If the review is unavailable, leave knowledge unchanged and explain the limitation inside the conversation. Do not redirect to another approval page or bypass the review with a generic write action. Actual Claude rendering and account-linking remain external acceptance checks; local protocol tests do not establish them.
 
 ## Install the desktop extension instead
@@ -94,4 +132,4 @@ For the desktop PAT bridge, revoke the token under **API tokens** and remove or 
 | The response exceeds limits | Narrow the workspace, query, page or source range; the server rejects oversized output rather than silently omitting evidence |
 | Upload or knowledge-update tools are absent | Check the deployed server version, permitted write scopes and MCP Apps support; leave the repository unchanged when in-chat review is unavailable |
 
-Protocol, scope, revocation and native API tests use owned local fixtures. A completed Claude sign-in, real deployment call and accepted client screenshot are separate checks. This guide does not claim that those external steps have passed. Client navigation was checked against the linked official documentation on October 29, 2026; workspace policy and client versions may differ.
+Protocol, scope, revocation and native API tests use owned local fixtures. A completed Claude sign-in, real deployment call and accepted client screenshot are separate checks. This guide does not claim that those external steps have passed. Client navigation was checked against the linked official documentation on October 30, 2026; workspace policy and client versions may differ.
