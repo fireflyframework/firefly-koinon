@@ -10,6 +10,7 @@ from koinon.authorized_applications.repositories import AuthorizedApplicationRep
 from koinon.catalog.errors import AccessDenied
 from koinon.catalog.repositories import CatalogRepository
 from koinon.mcp_applications.authority import McpOAuthClientAuthority
+from koinon.security.authority import primary_authority
 from koinon.tokens.repositories import PersonalTokenRepository
 
 
@@ -26,6 +27,7 @@ class TokenRestriction:
         self.applications = applications
         self.registrations = registrations
 
+    @primary_authority()
     async def grant(self, subject: str):
         context = SecurityContextHolder.get_context()
         token_id = context.attributes.get("koinon_token_id") if context else None

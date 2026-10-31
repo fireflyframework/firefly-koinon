@@ -7,13 +7,13 @@ import json
 import re
 
 from pyfly.container import service
-from pyfly.data import transactional
 from pyfly.data.relational.sqlalchemy import LockMode
 from pyfly.data.transaction import current_unit_of_work
 
 from koinon.catalog.repositories import TenantRepository
 from koinon.mcp_applications.repositories import McpOAuthClientRepository
 from koinon.mcp_auth.settings import McpOAuthSettings
+from koinon.security.authority import primary_authority
 
 
 @service(name="mcp.applications.authority")
@@ -23,7 +23,7 @@ class McpOAuthClientAuthority:
     ):
         self.repository, self.settings, self.tenants = repository, settings, tenants
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def resolve(self, identifier: str) -> dict:
         static = [value for value in self.settings.clients if value["client_id"] == identifier]
         rows = await self.repository.find_all(client_id=identifier)
@@ -62,7 +62,7 @@ class McpOAuthClientAuthority:
     def snapshot(client: dict) -> dict | None:
         return dict(client["registration"]) if "registration" in client else None
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def validate(self, client_id: str, tenant_id: str, snapshot: dict | None) -> dict:
         if snapshot is not None and (
             not isinstance(snapshot, dict)

@@ -17,6 +17,7 @@ from koinon.corporate_identity.entities import CorporateValidation
 from koinon.corporate_identity.policy import IdentityPolicy, verified_identity
 from koinon.corporate_identity.repositories import CorporateValidationRepository
 from koinon.corporate_identity.service import CorporateIdentityService
+from koinon.security.authority import primary_authority
 
 
 def policy(provider):
@@ -88,7 +89,7 @@ class CorporateLoginChallenges:
         )
         return validation_dto(row, authorize=True)
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def get(self, actor, tenant_id, provider_id, identifier):
         await self.identities.catalog.authorize(actor, tenant_id, "identity:manage")
         row = await self.validations.find_by_id(identifier)

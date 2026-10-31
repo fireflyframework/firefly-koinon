@@ -27,6 +27,7 @@ from koinon.profiles.entities import Profile
 from koinon.profiles.images import sanitize_avatar
 from koinon.profiles.mappers import profile_dto
 from koinon.profiles.repositories import ProfileRepository
+from koinon.security.authority import primary_authority
 
 FIELDS = frozenset({"display_name", "locale", "time_zone", "response_language"})
 
@@ -227,7 +228,7 @@ class ProfileService:
             "avatar_version": row.avatar_version if row else None,
         }
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def people(
         self,
         actor: str,

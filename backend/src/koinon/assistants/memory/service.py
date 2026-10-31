@@ -32,6 +32,7 @@ from koinon.catalog.service import ROLE_PERMISSIONS, CatalogService
 from koinon.evidence.dtos import SourceReference
 from koinon.evidence.ports import SourceResolverPort
 from koinon.organization_chat.memory_policy import effective_memory_policy
+from koinon.security.authority import PRIMARY_POLICY_UNIT
 
 
 def unavailable():
@@ -678,6 +679,7 @@ class PersonalConversationMemory(ChatMemoryAccess):
             raise unavailable()
 
     @transactional(
+        name=PRIMARY_POLICY_UNIT,
         datasource="primary",
         propagation=Propagation.REQUIRES_NEW,
         isolation=Isolation.SERIALIZABLE,

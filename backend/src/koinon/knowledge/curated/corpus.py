@@ -7,7 +7,7 @@ from hashlib import sha256
 
 from pyfly.container import service
 from pyfly.data.relational.sqlalchemy import transactional
-from pyfly.data.transaction import Propagation, infrastructure_unit
+from pyfly.data.transaction import Isolation, Propagation, infrastructure_unit
 from pyfly.kernel import InvalidRequestException
 from sqlalchemy import func, literal_column, select, text
 
@@ -23,6 +23,7 @@ from koinon.knowledge.curated.domain_entities import (
 from koinon.knowledge.curated.ports import CuratedCorpusPort
 from koinon.knowledge.curated.reads import CuratedKnowledgeReads
 from koinon.knowledge.curated.release import CuratedReleaseFence
+from koinon.security.authority import PRIMARY_POLICY_UNIT
 
 
 @dataclass(frozen=True)
@@ -61,6 +62,7 @@ class CuratedBodyCorpus(CuratedCorpusPort):
         return tuple(admitted)
 
     async def search(self, subject, tenant_id, native_workspace_id, admitted, *, query, limit, _capture=None):
+        admitted = tuple(admitted)
         if not query.strip() or not 1 <= limit <= 300 or len(admitted) > 128:
             raise InvalidRequestException("Narrow the curated search", code="INVALID_KNOWLEDGE_SEARCH")
         item_ids = tuple(selection.item_id for selection in admitted)
@@ -104,7 +106,12 @@ class CuratedBodyCorpus(CuratedCorpusPort):
                     database = NativeDatabaseContext(
                         engine, identity.get("database"), identity.get("catalog"), identity.get("schema")
                     )
-        await self._validate_release(subject, tenant_id, native_workspace_id, admitted)
+        policy = await self._validate_release(subject, tenant_id, native_workspace_id, admitted)
+        if policy != stamp:
+            raise AccessDenied(
+                "Knowledge authority changed during this read; retry in the current scope",
+                code="KNOWLEDGE_AUTHORITY_CHANGED",
+            )
         await self.release.require_unchanged(subject, tenant_id, item_ids, stamp)
         if _capture is not None:
             for hit in hits:
@@ -120,10 +127,20 @@ class CuratedBodyCorpus(CuratedCorpusPort):
                 )
         return hits
 
-    @transactional(datasource="primary", propagation=Propagation.REQUIRES_NEW, read_only=True)
+    @transactional(
+        datasource="primary",
+        name=PRIMARY_POLICY_UNIT,
+        propagation=Propagation.REQUIRES_NEW,
+        isolation=Isolation.SERIALIZABLE,
+        read_only=True,
+        read_from_primary=True,
+    )
     async def _validate_release(self, subject, tenant_id, native_workspace_id, admitted):
         # The native query can yield while access, bindings, or the serving head change.
         for selection in admitted:
+            expected_workspace = (
+                selection.native_workspace_id if native_workspace_id is None else native_workspace_id
+            )
             current = await self.reads.version(subject, tenant_id, selection.item_id, selection.version)
             entry, state = await self.reads.scope(subject, tenant_id, selection.item_id)
             await self.reads.authority.catalog.authorize(
@@ -138,22 +155,31 @@ class CuratedBodyCorpus(CuratedCorpusPort):
             ) != (
                 selection.workspace_id,
                 selection.native_item_id,
-                native_workspace_id,
+                expected_workspace,
                 selection.version_id,
                 selection.version,
             ) or (
-                current.selected_version.version_id != selection.version_id
+                selection.native_workspace_id != expected_workspace
+                or current.selected_version.version_id != selection.version_id
                 or current.selected_version.version != selection.version
                 or not current.selected_version.serving
                 or current.selected_version.publication != "published"
             ):
                 raise AccessDenied("The admitted serving version changed", code="KNOWLEDGE_VERSION_CONFLICT")
+        return await self.release.observe_bound(
+            subject, tenant_id, tuple(selection.item_id for selection in admitted)
+        )
 
     async def authorize_release(self, subject, tenant_id, admitted) -> None:
+        admitted = tuple(admitted)
         item_ids = tuple(selection.item_id for selection in admitted)
         stamp = await self.release.observe(subject, tenant_id, item_ids)
-        for selection in admitted:
-            await self._validate_release(subject, tenant_id, selection.native_workspace_id, (selection,))
+        policy = await self._validate_release(subject, tenant_id, None, admitted)
+        if policy != stamp:
+            raise AccessDenied(
+                "Knowledge authority changed during this read; retry in the current scope",
+                code="KNOWLEDGE_AUTHORITY_CHANGED",
+            )
         await self.release.require_unchanged(subject, tenant_id, item_ids, stamp)
 
     async def ranked(self, session, tenant_id, workspace_id, selected, query, limit):

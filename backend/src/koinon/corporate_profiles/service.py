@@ -32,6 +32,7 @@ from koinon.corporate_profiles.repositories import (
 )
 from koinon.organization_people.service import OrganizationPeopleService
 from koinon.profiles.service import profile_id
+from koinon.security.authority import primary_authority
 
 
 def conflict(code="PROFILE_REVISION_CONFLICT"):
@@ -93,7 +94,7 @@ class CorporateProfileService:
             ):
                 denied()
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def presentation(self, actor, tenant_id, *, workspace_id=None):
         await self._owner(actor, tenant_id, workspace_id)
         values = await self.projector.batch(actor, tenant_id, {actor}, workspace_id, own=True)

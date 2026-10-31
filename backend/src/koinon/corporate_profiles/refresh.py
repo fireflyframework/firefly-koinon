@@ -30,6 +30,7 @@ from koinon.corporate_profiles.service import bump
 from koinon.organization_people.entities import OrganizationPersonRecord as Person
 from koinon.organization_people.service import OrganizationPeopleService
 from koinon.profiles.images import sanitize_avatar
+from koinon.security.authority import primary_authority
 
 
 @service(name="corporate_profiles.refresher")
@@ -59,7 +60,7 @@ class CorporateProfileRefresher:
         rows = await self.snapshots.claim_due(worker_id, limit=limit, lease_seconds=120)
         return [ProfileLease(row.id, row.tenant_id, worker_id, row.lease_generation) for row in rows]
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def prepare(self, lease):
         row = await self.snapshots.find_by_id(lease.id)
         if not owns(row, lease) or row.provider_id is None or row.external_subject is None:
