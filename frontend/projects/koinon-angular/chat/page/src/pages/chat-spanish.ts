@@ -1,5 +1,6 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 export const CHAT_SPANISH: Readonly<Record<string, string>> = {
+  'Save as knowledge': 'Guardar como conocimiento',
   'Your organization has disabled project memory. This preference applies only while organization policy allows it.': 'Tu organización ha desactivado la memoria por proyecto. Esta preferencia solo se aplica cuando la política de la organización lo permite.',
   'The organization memory policy could not be checked. Current server limits still apply.': 'No se pudo comprobar la política de memoria de la organización. Siguen aplicándose los límites del servidor.',
   'This conversation is no longer available in the current knowledge scope.': 'Esta conversación ya no está disponible en el ámbito de conocimiento actual.',

@@ -275,6 +275,9 @@
                     (click)="openArtifact('share', message.id)"
                   />
                 }
+                @if (message.status === 'completed' && canArtifact('knowledge')) {
+                  <ffk-button compact variant="quiet" icon="file" [disabled]="a.running() || a.pending()" (click)="openArtifact('knowledge', message.id)">{{ 'Save as knowledge' | ffkText }}</ffk-button>
+                }
               </div>
             }
             @if (
@@ -361,3 +364,9 @@
   [managementBaseUrl]="actions?.managementBaseUrl?.() || ''"
   (closed)="closeArtifact()"
 />
+
+@defer (when artifactAction() === 'knowledge') {
+  <ffk-knowledge-review [workspaceId]="a.scope().workspace_id || f.workspaceId()" [open]="artifactAction() === 'knowledge'" [selection]="artifactSelection()" [message]="artifactMessage()" (closed)="closeArtifact()" (resourceRequested)="auditResource($event)" />
+} @error {
+  @if (artifactAction() === 'knowledge') { <p role="alert">{{ 'This panel could not be opened. Refresh this page and try again.' | ffkText }}</p> }
+}

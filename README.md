@@ -4,7 +4,7 @@
 
 koinon brings documents, datasets and reviewed knowledge into one place so people can find what their organization knows, ask questions and inspect the evidence behind an answer.
 
-Use Library to organize and update sources, Chat to explore knowledge, and Settings to manage access and configuration. Proposed knowledge changes require human approval before they are applied.
+Use Library to organize and update sources, Chat to explore knowledge, and Settings to manage access and configuration. Proposed knowledge changes require human approval before they are applied. Use **Save as knowledge** below a completed Chat answer to edit one selected reply, choose a Library destination, and review a draft or publication proposal before separately confirming it. See the [reviewed knowledge flow](docs/guides/agents.md#save-a-reviewed-answer-as-knowledge).
 
 Version 26.10.1 follows CalVer `YY.MM.Patch`. Read the [release notes](docs/releases/26.10.1.md), follow the [guided setup](docs/guides/knowledge-setup.md), and obtain versioned packages from [GitHub Releases](https://github.com/fireflyframework/firefly-koinon/releases). Use the [deployment guide](docs/operations/production.md) to configure your environment and the [migration guide](docs/operations/storage-migration.md) to preserve existing installations and retained data.
 

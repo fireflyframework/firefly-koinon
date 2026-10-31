@@ -834,7 +834,8 @@ for (const width of [1440, 390])
         },
       };
     });
-    expect(bounds.targets).toHaveLength(3);
+    await expect(page.getByRole('button', { name: 'Save as knowledge', exact: true })).toBeVisible();
+    expect(bounds.targets).toHaveLength(4);
     expect(bounds.row.height).toBeLessThanOrEqual(width < 700 ? 44 : 32);
     for (const target of bounds.targets) {
       expect(target.height).toBe(width < 700 ? 44 : 32);

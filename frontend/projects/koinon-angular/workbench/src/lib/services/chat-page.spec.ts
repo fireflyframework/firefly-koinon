@@ -237,3 +237,42 @@ it('preserves the setup output for authorized embedded hosts', async () => {
   button.click();
   expect(setup).toHaveBeenCalledTimes(1);
 });
+
+it('offers a reviewed knowledge action for one completed assistant reply to an authorized author', async () => {
+  const { fixture, assistant } = await mount([agent('ready')]);
+  const facade = TestBed.inject(KoinonFacade);
+  facade.context.update((context) => context && ({
+    ...context,
+    tenants: context.tenants.map((tenant) => ({
+      ...tenant,
+      permissions: ['chat:use', 'catalog:read', 'catalog:write', 'ingest:write'],
+    })),
+  }));
+  await fixture.whenStable();
+  assistant.threadId.set('selected-thread');
+  assistant.messages.set([{
+    id: 'selected-answer', role: 'assistant', text: 'The reviewed threshold is 47.',
+    status: 'completed', citations: [], artifacts: [], created_at: '2026-10-31T00:00:00Z',
+  }]);
+  fixture.detectChanges();
+  expect([...fixture.nativeElement.querySelectorAll('button')].some((button) =>
+    (button as HTMLButtonElement).textContent?.trim() === 'Save as knowledge',
+  )).toBe(true);
+});
+
+it('offers curation to a workspace-scoped author in the active chat without tenant write permissions', async () => {
+  const { fixture, assistant } = await mount([agent('ready')]);
+  const facade = TestBed.inject(KoinonFacade);
+  facade.context.update((context) => context && ({
+    ...context,
+    tenants: context.tenants.map((tenant) => ({ ...tenant, permissions: ['chat:use', 'catalog:read'] })),
+    workspaces: [{ id: 'w', tenant_id: 'tenant', kind: 'workspace', parent_id: null, workspace_id: 'w', project_id: null, name: 'Owned space', status: 'ready', description: '', metadata: {}, created_at: '2026-10-31T00:00:00Z' }],
+    workspace_permissions: { w: ['chat:use', 'catalog:read', 'catalog:write', 'ingest:write'] },
+  }));
+  await fixture.whenStable();
+  await assistant.selectThread('thread', { id: 'thread', title: 'Owned conversation', title_source: 'manual', revision: 1, folder_id: null, archived_at: null, scope: { workspace_id: 'w' }, created_at: '2026-10-31T00:00:00Z', updated_at: '2026-10-31T00:00:00Z' });
+  assistant.messages.set([{ id: 'reply', role: 'assistant', text: 'Reviewed fact.', status: 'completed', citations: [], artifacts: [], created_at: '2026-10-31T00:00:00Z' }]);
+  fixture.detectChanges();
+  expect(facade.tenantPermissions().has('catalog:write')).toBe(false);
+  expect(fixture.componentInstance.canArtifact('knowledge')).toBe(true);
+});

@@ -42,6 +42,8 @@ import { KoinonChatComposer } from '../composer/chat-composer';
 import { KoinonExportDialog } from '../artifacts/export-dialog';
 import { KoinonShareReview } from '../artifacts/share-review';
 import { KoinonAnswerAudit } from '../artifacts/answer-audit';
+import { KoinonKnowledgeReview } from '../artifacts/knowledge-review';
+import { canCurateKnowledge } from '../services/knowledge-permissions';
 import type { ConversationSelection, ExportSelection } from '../services/artifact-selections';
 
 registerKoinonSpanish(CHAT_SPANISH);
@@ -64,6 +66,7 @@ registerKoinonSpanish(CHAT_SPANISH);
     KoinonExportDialog,
     KoinonShareReview,
     KoinonAnswerAudit,
+    KoinonKnowledgeReview,
   ],
   templateUrl: './chat-page.html',
   styleUrl: './chat-page.scss',
@@ -131,7 +134,7 @@ export class KoinonChatPage implements OnInit, AfterViewInit, OnDestroy {
       ),
   );
   readonly f = inject(KoinonFacade);
-  readonly artifactAction = signal<'audit' | 'export' | 'share' | null>(null);
+  readonly artifactAction = signal<'audit' | 'export' | 'share' | 'knowledge' | null>(null);
   readonly artifactSelection = signal<ConversationSelection | null>(null);
   readonly artifactMessage = computed(
     () =>
@@ -225,7 +228,8 @@ export class KoinonChatPage implements OnInit, AfterViewInit, OnDestroy {
     this.resourceSelected.emit(id);
     this.actions?.resource(id);
   }
-  canArtifact(action: 'audit' | 'export' | 'share') {
+  canArtifact(action: 'audit' | 'export' | 'share' | 'knowledge') {
+    if (action === 'knowledge') return canCurateKnowledge(this.f, this.a.scope().workspace_id || this.f.workspaceId());
     const permissions = this.f.permissions();
     const required =
       action === 'audit'
@@ -235,7 +239,7 @@ export class KoinonChatPage implements OnInit, AfterViewInit, OnDestroy {
           : ['shares:read', 'shares:write'];
     return !this.f.authRequired() && required.every((permission) => permissions.has(permission));
   }
-  openArtifact(action: 'audit' | 'export' | 'share', messageId: string) {
+  openArtifact(action: 'audit' | 'export' | 'share' | 'knowledge', messageId: string) {
     const message = this.a.messages().find((item) => item.id === messageId);
     if (
       !this.canArtifact(action) ||

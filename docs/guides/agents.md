@@ -34,6 +34,16 @@ Files belong to their authenticated owner and conversation. Uploading does not p
 
 Private-file runs currently expose the private-file retrieval tool. A new combined query across private files and organizational datasets requires a separate execution path; private content must not enter shared query history. Use the Library upload flow to publish knowledge intentionally, with the destination and required write permissions.
 
+## Save a reviewed answer as knowledge
+
+Authors with current chat, catalog and ingestion permissions can choose **Save as knowledge** below one completed assistant reply. The panel copies only that selected reply into an editable proposal. Add a title, edit the text and use the existing folder picker to select a collection or corpus. **Draft** is the default; drafts stay out of retrieval.
+
+Choose **Review proposal** to obtain the server's destination, before/after content and supporting evidence. This step does not save or publish knowledge. Review the returned content, then use **Confirm and save draft**. To publish instead, choose **Published knowledge** before requesting the preview and separately select **Confirm and publish** after reviewing it.
+
+When the preview includes remembered context, an additional consent checkbox starts unchecked. Review and approve that context before confirming. Editing, replacing or refreshing a review clears the checkbox. The original chats stay private, and current source permissions still apply. **Cancel proposal** cancels the exact reviewed revision without confirming it.
+
+A denied preview preserves the edited form so you can correct the destination or access. A changed or expired review requires a new preview and decision. If the saved outcome is pending or unknown, use **Check save status**; the interface does not automatically repeat confirmation. Changing organization, knowledge scope or selected reply clears the private review and consent.
+
 ## Tool activity
 
 Open **Audit** below an answer to inspect the tools invoked, their queued/running/final status and a short result summary, including after reopening the conversation. Longer histories are paged from the server. Select a recorded tool result to inspect its typed evidence; a query result includes the recorded SQL and whether execution completed or was blocked. This is a read of saved execution data. Tool credentials and internal reasoning are excluded. Retrying an answer resets its activity to the current attempt.
