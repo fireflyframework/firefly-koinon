@@ -31,6 +31,22 @@ Set `view="chat"` and `[showNavigation]="false"` on `ffk-workbench` when the hos
 
 The command palette uses the injected client and current catalog scope. Its keyboard shortcut, **Command/Ctrl+K**, operates only while focus is inside the workbench. Resource searches use bounded server pages and discard responses after the subject, client or selected context changes. The palette does not register a page-wide shortcut in the host.
 
+## Render a code block
+
+Import `KoinonCodeBlock` from `@fireflyframework/koinon-angular` into your Angular component, then pass the original code and an explicit `language`:
+
+```html
+<ffk-code-block
+  [code]="exampleCode"
+  language="python"
+  label="Python example"
+/>
+```
+
+Omitting `language` preserves the SQL default, the **Recorded SQL** region label and the **Copy SQL** button label. Set `label` for another context. The atom displays the full text immediately and loads its tokenizer on demand. Direct consumers of the existing `sqlTokens` function keep its synchronous behavior.
+
+Supported languages use syntax colors; unknown languages and highlighting failures preserve plain text. Angular text bindings render every token, so code cannot inject HTML. The copy button copies the original code, and long lines scroll within the block. See [code in chat messages](agents.md#code-in-chat-messages) for fence handling and attachment references.
+
 ## Open reviewed shared messages
 
 Enable `KOINON_SHARED_CONVERSATION_LOADER` with a lazy import of `KoinonSharedConversation` from the Chat entry point. Pass the reviewed reference through `sharedConversationId`, select its organization through `tenantId`, and clear the reference when `sharedConversationDismissed` fires. The same properties and event are available on the custom element. The host retains control of its route and login redirect.

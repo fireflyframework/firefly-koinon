@@ -39,6 +39,7 @@
     "@fontsource-variable/manrope": "^5.3.0",
     "@openuidev/angular-lang": "^0.4.2",
     "@openuidev/lang-core": "^0.4.1",
+    "lowlight": "3.3.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zod": "^4.6.7"

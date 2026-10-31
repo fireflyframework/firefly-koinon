@@ -26,6 +26,14 @@ Conversation titles can be edited. When a title suggestion is available, review 
 
 For personal context across your own chats, enable memory explicitly in the folder's settings. Organization limits, current source permissions and exact knowledge scope still apply. The [conversation memory guide](conversation-memory.md) explains configuration, context receipts, deletion and the same operations through all three SDKs.
 
+## Code in chat messages
+
+Wrap code in matching backtick or tilde fences and put its language after the opening fence, such as `python`, `php` or `sql`. Supported names and aliases receive syntax colors. An omitted or unknown language stays plain text; chat does not guess the language. While an answer streams, an open fence includes the text received so far. Inline code notation remains prose.
+
+Each block shows its language and a copy button. Copy preserves the code's indentation and line endings. Long lines scroll within the block, and colors follow the current light or dark theme. The complete text appears immediately; syntax colors load on demand. HTML in a snippet stays literal text, and attachment references inside fences stay literal too. References in prose remain interactive.
+
+Embedded Angular views can use the same [code-block component](embedding.md#render-a-code-block).
+
 ## Private files in chat
 
 Use the composer's **+** menu, drag files onto the composer, or paste an image when the selected agent supports images. Available formats and size limits come from the deployment capability response. The composer shows each file's upload and reading state, and permits sending only after the selected files are ready. Images require a model with verified image input support; text extraction does not imply OCR support.

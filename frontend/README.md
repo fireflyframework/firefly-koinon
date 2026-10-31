@@ -24,6 +24,12 @@ For the built app, run `npm run build` and `npm run preview`. The preview also s
 
 [The library guide](projects/koinon-angular/README.md) describes context inputs, outputs, SDK injection, and optional features. Brand assets and tokens are copied from `../brand` before builds. The host serves the copied assets. Each workbench loads its selected bundled Manrope or Inter variable font from the configured brand asset base and applies it within the widget.
 
+## Code in chat messages
+
+Chat renders backtick and tilde fenced blocks with the reusable `KoinonCodeBlock` atom. Explicit common language names and aliases use [lowlight](https://github.com/wooorm/lowlight) 3.3.0 (MIT), loaded on demand. Unknown or omitted languages remain plain text; no automatic language detection runs. Open fences render through the current end of a streamed message. Inline notation remains prose.
+
+`KoinonCodeBlock` accepts a `language` input and keeps SQL as its default, including the existing SQL tokenizer and **Copy SQL** labels. The tokenizer function stays synchronous for direct consumers; the atom loads it on demand, displays the complete plain text immediately and adds coloring when ready. Highlighting reads only text and token classes from the syntax tree and renders Angular text bindings, never HTML. Unsupported languages, highlighting failures and code over 128 Ki characters retain the complete original text. Copy preserves the code content exactly, including indentation and line endings. Blocks scroll horizontally within their message and inherit the host theme. Attachment references remain interactive in prose and literal inside fenced code.
+
 ## Validation
 
 ```sh

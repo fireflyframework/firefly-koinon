@@ -361,6 +361,8 @@ it('shows stored owner generation, private receipts and actual SQL attempts with
   expect(fixture.nativeElement.querySelector('ffk-code-block code')?.textContent).toBe(
     'SELECT owner FROM policy',
   );
+  await fixture.whenStable();
+  fixture.detectChanges();
   expect(fixture.nativeElement.querySelector('ffk-code-block .keyword')?.textContent).toBe(
     'SELECT',
   );
