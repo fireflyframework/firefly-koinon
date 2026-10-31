@@ -4,7 +4,7 @@
 
 from hashlib import sha256
 from json import dumps
-from typing import Literal
+from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -71,13 +71,21 @@ class StructuredKnowledgeBounds(KnowledgePolicyValue):
 
 
 class DocumentKnowledgeCapabilities(KnowledgePolicyValue):
+    """Feature availability; model/provider readiness requires separate installation qualification."""
+
     answer_modes: list[Literal["rag", "rlm"]]
     rlm_curated_knowledge_supported: bool = Field(strict=True)
-    rlm_curated_knowledge_reason: Literal["KNOWLEDGE_RLM_UNQUALIFIED"]
+    rlm_curated_knowledge_reason: Literal["KNOWLEDGE_RLM_UNQUALIFIED"] | None
     rlm_model_role: Literal["documents.rlm"]
     rlm_recorded_views_required: Literal[True]
     rlm_recorded_views_reason: Literal["RLM_DOCUMENT_VIEWS_REQUIRED"]
     bounds: DocumentKnowledgeBounds
+
+    @model_validator(mode="after")
+    def coherent_curated_support(self) -> Self:
+        if self.rlm_curated_knowledge_supported != (self.rlm_curated_knowledge_reason is None):
+            raise ValueError("Curated RLM support and its qualification reason must agree")
+        return self
 
 
 class StructuredKnowledgeCapabilities(KnowledgePolicyValue):

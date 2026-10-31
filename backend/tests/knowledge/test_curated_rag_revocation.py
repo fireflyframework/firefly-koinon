@@ -60,6 +60,9 @@ async def test_revocation_during_native_ranked_query_prevents_body_and_receipt(
     await acknowledgement.apply(preview, first, projection)
     reads = context.get_bean(CuratedKnowledgeReads)
     reads.native = SimpleNamespace(datasource=lambda: source)
+    from koinon.knowledge.curated.whole_repository import CuratedWholePartRepository
+
+    context.get_bean(CuratedWholePartRepository).datasources = source.registry
     from sqlalchemy import delete, update
 
     from koinon.catalog.entities import Membership

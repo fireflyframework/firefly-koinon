@@ -345,6 +345,9 @@
           "source_ids": [
             "source_ids-value"
           ],
+          "knowledge_item_ids": [
+            "knowledge_item_ids-value"
+          ],
           "tool_call_id": "tool_call_id-value",
           "tool_name": "python",
           "request_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -728,6 +731,90 @@
       "last_used_at": "2026-10-27T12:34:56Z",
       "revoked_at": "2026-10-27T12:34:56Z"
     },
+    "BatchQueryOutcome": {
+      "query_id": "query_id-value",
+      "execution_status": "OK",
+      "sql": "sql-value",
+      "preview": [
+        {
+          "example": {
+            "decimal": "12345678901234567890.12345678901234567890",
+            "integer": "9007199254740993"
+          }
+        }
+      ],
+      "row_count": 1,
+      "elapsed_ms": 1,
+      "truncated": false,
+      "chart_hint": "line",
+      "explanation": "explanation-value",
+      "clarification": {
+        "questions": [
+          "questions-value"
+        ],
+        "reasons": [
+          "reasons-value"
+        ]
+      },
+      "grounded_summary": {
+        "example": {
+          "decimal": "12345678901234567890.12345678901234567890",
+          "integer": "9007199254740993"
+        }
+      },
+      "usage": {
+        "total_input_tokens": 1,
+        "total_output_tokens": 1,
+        "total_tokens": 1,
+        "total_cost_usd": 0.25,
+        "total_latency_ms": 0.25,
+        "by_agent": [
+          {
+            "agent": "agent-value",
+            "model": "model-value",
+            "input_tokens": 1,
+            "output_tokens": 1,
+            "total_tokens": 1,
+            "cost_usd": 0.25,
+            "latency_ms": 0.25,
+            "calls": 1
+          }
+        ]
+      },
+      "snapshot_pins": {
+        "example": "snapshot_pins-value"
+      },
+      "knowledge_settings_snapshot": {
+        "tenant_id": "tenant_id-value",
+        "schema_version": 1,
+        "revision": 1,
+        "origin": "organization",
+        "documents": {
+          "answer_mode": "rag",
+          "retrieval_top_k": 1,
+          "retrieval_per_query_k": 1,
+          "retrieval_rrf_k": 1,
+          "query_expansion_enabled": false,
+          "query_expansion_n": 1,
+          "answer_top_k": 1,
+          "rlm_max_iters": 1,
+          "rlm_sub_budget": 1,
+          "rlm_max_depth": 1,
+          "rlm_self_consistency": 1,
+          "rlm_extended_reasoning": false
+        },
+        "structured": {
+          "top_k_schema": 1,
+          "top_k_examples": 1,
+          "top_k_metrics": 1,
+          "rrf_k": 1,
+          "generation_candidates": 1,
+          "max_refine_retries": 1,
+          "grounding_min_confidence": 0.25
+        },
+        "digest": "2d828ceecae2f7188752442624651e0e3e02c525cddf3908caf4fa10fe6b5fc5"
+      }
+    },
     "BrandingInputValues": {
       "product_name": "product_name-value",
       "assistant_name": "assistant_name-value",
@@ -824,6 +911,14 @@
         }
       },
       "font_family": "Manrope"
+    },
+    "BulkAction": {
+      "expected_revision": 1
+    },
+    "BulkDestination": {
+      "workspace_id": "workspace_id-value",
+      "project_id": "project_id-value",
+      "parent_id": "parent_id-value"
     },
     "Capabilities": {
       "attachments": {
@@ -2983,6 +3078,138 @@
       "required": false,
       "write_only": false,
       "default": "default-value"
+    },
+    "FileBatchCapabilities": {
+      "configured": false,
+      "modes": [
+        "document"
+      ],
+      "processing_policy": "extract_only_v1",
+      "staging_backend": "private_local_posix",
+      "staging_topology": "single_host_shared_durable_posix",
+      "writer_fence": "primary_database_generation_lease",
+      "worker": "external_native_worker",
+      "automatic_unknown_replay": false,
+      "max_files": 1,
+      "max_file_bytes": 1,
+      "max_batch_bytes": 1,
+      "max_active_batches_per_subject": 1
+    },
+    "FileBatchCreate": {
+      "destination": {
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "parent_id": "parent_id-value"
+      },
+      "processing_policy": "extract_only_v1",
+      "items": [
+        {
+          "client_item_id": "client_item_id-value",
+          "filename": "filename-value",
+          "mode": "document",
+          "size_bytes": 1,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ]
+    },
+    "FileBatchItemView": {
+      "id": "id-value",
+      "client_item_id": "client_item_id-value",
+      "filename": "filename-value",
+      "mode": "document",
+      "size_bytes": 1,
+      "sha256": "sha256-value",
+      "status": "awaiting_upload",
+      "source_id": "source_id-value",
+      "asset_id": "asset_id-value",
+      "job_id": "job_id-value",
+      "file_version_id": "file_version_id-value",
+      "table_ids": [
+        "table_ids-value"
+      ],
+      "source_version_id": "source_version_id-value",
+      "extraction_id": "extraction_id-value",
+      "error_code": "error_code-value"
+    },
+    "FileBatchPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "destination": {
+            "workspace_id": "workspace_id-value",
+            "project_id": "project_id-value",
+            "parent_id": "parent_id-value"
+          },
+          "status": "expired",
+          "revision": 1,
+          "total_items": 1,
+          "total_bytes": 1,
+          "counts": {
+            "example": 1
+          },
+          "cancellation_requested": false,
+          "created_at": "2026-10-27T12:34:56Z",
+          "expires_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "FileBatchView": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "destination": {
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "parent_id": "parent_id-value"
+      },
+      "status": "expired",
+      "revision": 1,
+      "total_items": 1,
+      "total_bytes": 1,
+      "counts": {
+        "example": 1
+      },
+      "cancellation_requested": false,
+      "created_at": "2026-10-27T12:34:56Z",
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "FileItemPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "client_item_id": "client_item_id-value",
+          "filename": "filename-value",
+          "mode": "document",
+          "size_bytes": 1,
+          "sha256": "sha256-value",
+          "status": "awaiting_upload",
+          "source_id": "source_id-value",
+          "asset_id": "asset_id-value",
+          "job_id": "job_id-value",
+          "file_version_id": "file_version_id-value",
+          "table_ids": [
+            "table_ids-value"
+          ],
+          "source_version_id": "source_version_id-value",
+          "extraction_id": "extraction_id-value",
+          "error_code": "error_code-value"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "FileManifestItem": {
+      "client_item_id": "client_item_id-value",
+      "filename": "filename-value",
+      "mode": "document",
+      "size_bytes": 1,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     },
     "FolderCreate": {
       "name": "name-value",
@@ -6226,6 +6453,195 @@
         }
       ]
     },
+    "QueryBatchAction": {
+      "expected_revision": 1
+    },
+    "QueryBatchCancellation": {
+      "batch_id": "batch_id-value",
+      "revision": 1,
+      "cancellation_requested": true
+    },
+    "QueryBatchCapabilities": {
+      "configured": false,
+      "processing_policy": "independent_nl_v1",
+      "automatic_unknown_replay": false,
+      "shared_conversation": false,
+      "connection_mode": "explicit_provider",
+      "max_queries": 1,
+      "max_question_characters": 1,
+      "max_question_bytes_per_batch": 1,
+      "max_result_bytes": 1
+    },
+    "QueryBatchCreate": {
+      "workspace_id": "workspace_id-value",
+      "processing_policy": "independent_nl_v1",
+      "items": [
+        {
+          "client_item_id": "client_item_id-value",
+          "dataset_id": "dataset_id-value",
+          "question": "question-value"
+        }
+      ]
+    },
+    "QueryBatchItemPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "client_item_id": "client_item_id-value",
+          "dataset_id": "dataset_id-value",
+          "question": "question-value",
+          "status": "queued",
+          "job_id": "job_id-value",
+          "error_code": "error_code-value",
+          "query_id": "query_id-value"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "QueryBatchItemView": {
+      "id": "id-value",
+      "client_item_id": "client_item_id-value",
+      "dataset_id": "dataset_id-value",
+      "question": "question-value",
+      "status": "queued",
+      "job_id": "job_id-value",
+      "error_code": "error_code-value",
+      "query_id": "query_id-value"
+    },
+    "QueryBatchPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "workspace_id": "workspace_id-value",
+          "status": "queued",
+          "revision": 1,
+          "total_items": 1,
+          "counts": {
+            "example": 1
+          },
+          "cancellation_requested": false,
+          "created_at": "2026-10-27T12:34:56Z",
+          "expires_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "QueryBatchResult": {
+      "batch_id": "batch_id-value",
+      "item_id": "item_id-value",
+      "status": "queued",
+      "result": {
+        "query_id": "query_id-value",
+        "execution_status": "OK",
+        "sql": "sql-value",
+        "preview": [
+          {
+            "example": {
+              "decimal": "12345678901234567890.12345678901234567890",
+              "integer": "9007199254740993"
+            }
+          }
+        ],
+        "row_count": 1,
+        "elapsed_ms": 1,
+        "truncated": false,
+        "chart_hint": "line",
+        "explanation": "explanation-value",
+        "clarification": {
+          "questions": [
+            "questions-value"
+          ],
+          "reasons": [
+            "reasons-value"
+          ]
+        },
+        "grounded_summary": {
+          "example": {
+            "decimal": "12345678901234567890.12345678901234567890",
+            "integer": "9007199254740993"
+          }
+        },
+        "usage": {
+          "total_input_tokens": 1,
+          "total_output_tokens": 1,
+          "total_tokens": 1,
+          "total_cost_usd": 0.25,
+          "total_latency_ms": 0.25,
+          "by_agent": [
+            {
+              "agent": "agent-value",
+              "model": "model-value",
+              "input_tokens": 1,
+              "output_tokens": 1,
+              "total_tokens": 1,
+              "cost_usd": 0.25,
+              "latency_ms": 0.25,
+              "calls": 1
+            }
+          ]
+        },
+        "snapshot_pins": {
+          "example": "snapshot_pins-value"
+        },
+        "knowledge_settings_snapshot": {
+          "tenant_id": "tenant_id-value",
+          "schema_version": 1,
+          "revision": 1,
+          "origin": "organization",
+          "documents": {
+            "answer_mode": "rag",
+            "retrieval_top_k": 1,
+            "retrieval_per_query_k": 1,
+            "retrieval_rrf_k": 1,
+            "query_expansion_enabled": false,
+            "query_expansion_n": 1,
+            "answer_top_k": 1,
+            "rlm_max_iters": 1,
+            "rlm_sub_budget": 1,
+            "rlm_max_depth": 1,
+            "rlm_self_consistency": 1,
+            "rlm_extended_reasoning": false
+          },
+          "structured": {
+            "top_k_schema": 1,
+            "top_k_examples": 1,
+            "top_k_metrics": 1,
+            "rrf_k": 1,
+            "generation_candidates": 1,
+            "max_refine_retries": 1,
+            "grounding_min_confidence": 0.25
+          },
+          "digest": "2d828ceecae2f7188752442624651e0e3e02c525cddf3908caf4fa10fe6b5fc5"
+        }
+      },
+      "error_code": "error_code-value"
+    },
+    "QueryBatchView": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "workspace_id": "workspace_id-value",
+      "status": "queued",
+      "revision": 1,
+      "total_items": 1,
+      "counts": {
+        "example": 1
+      },
+      "cancellation_requested": false,
+      "created_at": "2026-10-27T12:34:56Z",
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "QueryManifestItem": {
+      "client_item_id": "client_item_id-value",
+      "dataset_id": "dataset_id-value",
+      "question": "question-value"
+    },
     "QueryRequest": {
       "dataset_id": "dataset_id-value",
       "question": "question-value",
@@ -6350,6 +6766,9 @@
       "workspace_id": "workspace_id-value",
       "source_ids": [
         "source_ids-value"
+      ],
+      "knowledge_item_ids": [
+        "knowledge_item_ids-value"
       ],
       "tool_call_id": "tool_call_id-value",
       "tool_name": "python",
@@ -6803,6 +7222,14 @@
           "snapshot_id": "snapshot_id-value"
         }
       ]
+    },
+    "StagedFileReceipt": {
+      "receipt_id": "receipt_id-value",
+      "batch_id": "batch_id-value",
+      "item_id": "item_id-value",
+      "sha256": "sha256-value",
+      "size_bytes": 1,
+      "status": "staged"
     },
     "StoredResult": {
       "query_id": "query_id-value",

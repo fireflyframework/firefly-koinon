@@ -48,10 +48,12 @@ These links target the guides in the source repository:
 - [Administration, organization directory, paging, revisions, errors and private downloads](../../docs/guides/python-administration.md)
 - [Agentic, embedding, RAG and RLM responsibilities](../../docs/concepts/knowledge-runtime.md)
 - [Generated API reference](../../docs/reference/sdk-api.md)
+- [Durable file intake](../../docs/guides/bulk-intake.md) and [independent query batches](../../docs/guides/bulk-queries.md)
 
 | Capability | Representative helpers |
 | --- | --- |
 | Catalog and ingestion | `catalog`, `get`, `create`, `update`, `archive`, `restore`, `delete`, `upload`, `append_dataset_file` |
+| Durable batches | `create_file_batch` / `create_query_batch`, private items/results, revisioned cancellation and explicit receipt reconciliation |
 | Search and structured data | `search`, `query`, `schema`, table snapshots/provenance/coordinate methods, retained glossary helpers |
 | Immutable document history | `document_versions`, `document_version`, `document_extractions`, `document_parts`, `document_part`, `document_version_original` |
 | Content changes | `replace_document`, `reingest_document`, `replace_table`, `reingest_table` with current digest/snapshot preconditions |

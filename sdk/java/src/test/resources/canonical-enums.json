@@ -88,6 +88,19 @@
     "revoked",
     "expired"
   ],
+  "ExecutionStatus": [
+    "OK",
+    "REFINED_OK",
+    "FAILED",
+    "REJECTED_BY_FIREWALL"
+  ],
+  "ChartHint": [
+    "line",
+    "bar",
+    "table",
+    "pie",
+    "none"
+  ],
   "BrandingValuesFontFamily": [
     "Manrope",
     "Inter"
@@ -301,6 +314,45 @@
     "secret",
     "string_list",
     "select"
+  ],
+  "FileBatchCapabilitiesProcessingPolicy": [
+    "extract_only_v1"
+  ],
+  "FileBatchCapabilitiesStagingBackend": [
+    "private_local_posix",
+    "private_azure_blob",
+    "private_gcs_object"
+  ],
+  "FileBatchCapabilitiesStagingTopology": [
+    "single_host_shared_durable_posix",
+    "shared_private_object_store"
+  ],
+  "FileBatchCapabilitiesWriterFence": [
+    "primary_database_generation_lease"
+  ],
+  "FileBatchCapabilitiesWorker": [
+    "external_native_worker"
+  ],
+  "FileBatchItemViewStatus": [
+    "awaiting_upload",
+    "staged",
+    "queued",
+    "running",
+    "succeeded",
+    "failed",
+    "cancelled",
+    "reconciling"
+  ],
+  "FileBatchViewStatus": [
+    "expired",
+    "staging",
+    "queued",
+    "running",
+    "succeeded",
+    "partial",
+    "failed",
+    "cancelled",
+    "reconciling"
   ],
   "ProviderKind": [
     "ollama",
@@ -589,18 +641,28 @@
     "applied",
     "cancelled"
   ],
-  "ExecutionStatus": [
-    "OK",
-    "REFINED_OK",
-    "FAILED",
-    "REJECTED_BY_FIREWALL"
+  "QueryBatchCapabilitiesProcessingPolicy": [
+    "independent_nl_v1"
   ],
-  "ChartHint": [
-    "line",
-    "bar",
-    "table",
-    "pie",
-    "none"
+  "QueryBatchCapabilitiesConnectionMode": [
+    "explicit_provider"
+  ],
+  "QueryBatchItemViewStatus": [
+    "queued",
+    "running",
+    "succeeded",
+    "failed",
+    "cancelled",
+    "reconciling"
+  ],
+  "QueryBatchViewStatus": [
+    "queued",
+    "running",
+    "succeeded",
+    "partial",
+    "failed",
+    "cancelled",
+    "reconciling"
   ],
   "QueryResultExportInputKind": [
     "query_result"
@@ -658,6 +720,9 @@
   "SqlAttemptReceiptExecutionKind": [
     "imported_snapshot",
     "computed"
+  ],
+  "StagedFileReceiptStatus": [
+    "staged"
   ],
   "StoredResultCompleteness": [
     "bounded",

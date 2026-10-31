@@ -36,16 +36,24 @@ import base64
 import json
 import logging
 import uuid
+from contextlib import nullcontext
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from pyfly.container import service
+from pyfly.context.consumer_context import PRIVATE_CONSUMER_CONTEXT, consumer_context, public_consumer_data
 from pyfly.eda import EventPublisher
 from pyfly.scheduling import scheduled
 
 from flycanon.config import CanonSettings
 from flycanon.core.services.audit import AuditService
 from flycanon.core.services.sources.intake_service import IntakeService
+from flycanon.core.services.sources.lease import (
+    IngestLease,
+    IngestLeaseLost,
+    authorize_ingest_output,
+    bind_ingest_lease,
+)
 from flycanon.interfaces.dtos.source import SubmitSourceRequest
 from flycanon.interfaces.enums import SourceKind
 from flycanon.models.entities.ingest_job import IngestJobRow
@@ -115,8 +123,11 @@ class AsyncIngestService:
             "content_base64": base64.b64encode(content).decode("ascii"),
             "kind": request.kind.value if request.kind else SourceKind.unknown.value,
             "uri": request.uri,
-            "metadata": _serialise_metadata(request),
+            "metadata": public_consumer_data(_serialise_metadata(request)),
         }
+        captured = consumer_context()
+        if captured is not None:
+            payload[PRIVATE_CONSUMER_CONTEXT] = captured
         row = IngestJobRow(
             id=job_id,
             tenant_id=scope_tenant,
@@ -208,7 +219,7 @@ class AsyncIngestService:
     # Worker side
     # ------------------------------------------------------------------
 
-    async def process(self, job_id: str) -> None:
+    async def process(self, job_id: str, *, admission=None) -> None:
         """Run the intake pipeline for one queued job.
 
         Idempotent on terminal states -- if the job is already
@@ -287,6 +298,35 @@ class AsyncIngestService:
             )
             return
 
+        started = job.started_at
+        if started is None:
+            raise IngestLeaseLost()
+        if started.tzinfo is None:
+            started = started.replace(tzinfo=UTC)
+        lease = IngestLease(
+            job.id,
+            job.tenant_id,
+            job.workspace_id,
+            job.attempts,
+            started,
+            started + timedelta(seconds=self._settings.ingest_timeout_s),
+        )
+        with bind_ingest_lease(lease):
+            try:
+                async with admission(job, lease) if admission is not None else nullcontext():
+                    await self._process_claimed(job, lease_attempts)
+            except IngestLeaseLost:
+                return
+            except Exception as error:
+                await self._repository.mark_failed(
+                    job.id,
+                    code=str(getattr(error, "code", None) or "INGEST_FAILED"),
+                    message="Ingestion authority is unresolved; review and submit a new job",
+                    expected_attempts=lease_attempts,
+                )
+
+    async def _process_claimed(self, job, lease_attempts):
+        job_id = job.id
         payload = job.metadata_json or {}
         try:
             content_b64 = payload.get("content_base64") or ""
@@ -375,6 +415,8 @@ class AsyncIngestService:
                 # Webhook delivery is best-effort -- the durable
                 # record is the audit row.
                 await self._fire_webhook(job, status="succeeded", source_id=source.id)
+        except IngestLeaseLost:
+            return
         except Exception as exc:  # noqa: BLE001
             code = getattr(exc, "code", None) or type(exc).__name__
             await self._repository.append_event(
@@ -541,14 +583,46 @@ class AsyncIngestService:
             headers[HEADER_WEBHOOK_SIGNATURE] = sign_payload(secret, body)
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
+                try:
+                    lease = await authorize_ingest_output(
+                        required=bool(getattr(self._settings, "_require_model_bindings", False))
+                    )
+                    if lease is not None:
+                        current = await self._repository.get(
+                            job.id, tenant_id=lease.tenant_id, workspace_id=lease.workspace_id
+                        )
+                        started = current.started_at if current is not None else None
+                        if started is not None and started.tzinfo is None:
+                            started = started.replace(tzinfo=UTC)
+                        if (
+                            current is None
+                            or (
+                                current.id,
+                                current.tenant_id,
+                                current.workspace_id,
+                                current.attempts,
+                                started,
+                                current.status,
+                            )
+                            != (
+                                lease.id,
+                                lease.tenant_id,
+                                lease.workspace_id,
+                                lease.attempts,
+                                lease.started_at,
+                                status,
+                            )
+                            or status not in {"succeeded", "failed"}
+                        ):
+                            raise IngestLeaseLost()
+                except Exception:
+                    logger.warning(
+                        "webhook delivery denied", extra={"error_code": "CALLBACK_AUTHORITY_UNAVAILABLE"}
+                    )
+                    return
                 await client.post(job.callback_url, content=body, headers=headers)
         except Exception as exc:  # noqa: BLE001
-            logger.warning(
-                "webhook delivery failed job_id=%s url=%s: %s",
-                job.id,
-                job.callback_url,
-                exc,
-            )
+            logger.warning("webhook delivery failed", extra={"error_type": type(exc).__name__})
 
 
 def _serialise_metadata(request: SubmitSourceRequest) -> dict[str, Any]:

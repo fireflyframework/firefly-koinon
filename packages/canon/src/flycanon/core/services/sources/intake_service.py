@@ -88,6 +88,7 @@ from flycanon.core.services.sources.intake_transforms import (
     merge_artifacts,
 )
 from flycanon.core.services.sources.lineage.pipeline import DocumentLineagePipeline
+from flycanon.core.services.sources.lineage.ports import PublicationGuard, StageAuthorization
 from flycanon.core.services.storage.object_store import ObjectStore
 from flycanon.interfaces.dtos.intake import SourceRemoval as SourceRemoval
 from flycanon.interfaces.dtos.source import SubmitSourceRequest
@@ -167,6 +168,9 @@ class IntakeService:
         logical_source_key: str | None = None,
         operation_id: str | None = None,
         authorize_commit=None,
+        publication_guard: PublicationGuard | None = None,
+        validate_processing: StageAuthorization | None = None,
+        validate_publication: StageAuthorization | None = None,
     ) -> SourceRow:
         """Run the full intake pipeline and return the populated row."""
         if logical_source_key is not None:
@@ -184,6 +188,9 @@ class IntakeService:
                 operation_id=operation_id or logical_source_key,
                 authorize_commit=authorize_commit,
                 correlation_id=correlation_id,
+                publication_guard=publication_guard,
+                validate_processing=validate_processing,
+                validate_publication=validate_publication,
             )
         artifacts = await self._binary_normalizer.normalise(
             content,

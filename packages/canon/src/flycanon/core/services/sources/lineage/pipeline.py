@@ -4,6 +4,7 @@
 
 import contextlib
 from collections.abc import Awaitable, Callable, Sequence
+from contextlib import AsyncExitStack
 from typing import Any
 from uuid import uuid4
 
@@ -22,7 +23,12 @@ from flycanon.core.services.sources.intake_transforms import (
 )
 from flycanon.core.services.sources.lineage.capture import artifact, manifest, signature
 from flycanon.core.services.sources.lineage.dtos import Admission, DocumentScope
-from flycanon.core.services.sources.lineage.ports import LineageQuery, LineageRecord
+from flycanon.core.services.sources.lineage.ports import (
+    LineageQuery,
+    LineageRecord,
+    PublicationGuard,
+    StageAuthorization,
+)
 from flycanon.core.services.sources.lineage.service import DocumentLineage, identity
 from flycanon.interfaces.dtos.ingestion import IngestionResult
 from flycanon.interfaces.dtos.source import SubmitSourceRequest
@@ -53,6 +59,9 @@ class DocumentLineagePipeline:
         expected_extraction_id: str | None = None,
         authorize_commit: Callable[[], Awaitable[None]] | None = None,
         correlation_id: str | None = None,
+        publication_guard: PublicationGuard | None = None,
+        validate_processing: StageAuthorization | None = None,
+        validate_publication: StageAuthorization | None = None,
     ) -> SourceRow:
         service = self.components
         if not service.settings.store_originals:
@@ -66,17 +75,22 @@ class DocumentLineagePipeline:
             )
         scope = DocumentScope(tenant_id, str(workspace_id), actor or "")
         await self.lineage.require_schema()
-        admission = await self.lineage.admit(
-            scope,
-            logical_key=logical_key,
-            operation_id=operation_id,
-            content=content,
-            filename=filename,
-            media_type=content_type,
-            source_id=source_id,
-            expected_source_version_id=expected_source_version_id,
-            expected_extraction_id=expected_extraction_id,
-        )
+        if validate_processing is not None:
+            await validate_processing()
+        async with AsyncExitStack() as guards:
+            if publication_guard is not None:
+                await guards.enter_async_context(publication_guard())
+            admission = await self.lineage.admit(
+                scope,
+                logical_key=logical_key,
+                operation_id=operation_id,
+                content=content,
+                filename=filename,
+                media_type=content_type,
+                source_id=source_id,
+                expected_source_version_id=expected_source_version_id,
+                expected_extraction_id=expected_extraction_id,
+            )
         completed = await self.lineage.committed(scope, admission.source_id, admission.version_id)
         if completed is not None:
             head = await self.lineage.head(scope, admission.source_id)
@@ -90,7 +104,17 @@ class DocumentLineagePipeline:
             )
         try:
             return await self._transform(
-                scope, admission, request, content, filename, content_type, authorize_commit, correlation_id
+                scope,
+                admission,
+                request,
+                content,
+                filename,
+                content_type,
+                authorize_commit,
+                correlation_id,
+                publication_guard,
+                validate_processing,
+                validate_publication,
             )
         except Exception as error:
             await self.lineage.failed(scope, admission, type(error).__name__)
@@ -106,8 +130,13 @@ class DocumentLineagePipeline:
         content_type: str | None,
         authorize_commit: Callable[[], Awaitable[None]] | None,
         correlation_id: str | None,
+        publication_guard: PublicationGuard | None = None,
+        validate_processing: StageAuthorization | None = None,
+        validate_publication: StageAuthorization | None = None,
     ) -> SourceRow:
         service = self.components
+        if validate_processing is not None:
+            await validate_processing()
         outputs = await service.binary_normalizer.normalise(
             content, declared_media_type=content_type, filename=filename
         )
@@ -196,7 +225,11 @@ class DocumentLineagePipeline:
             embedding_registry=service.embedding_registry,
         )
         with bind_embedding_set(binding) if binding is not None else contextlib.nullcontext():
+            if validate_processing is not None:
+                await validate_processing()
             embeddings = await embedder.embed([chunk.content for chunk in result.chunks])
+            if validate_processing is not None:
+                await validate_processing()
             for chunk in result.chunks:
                 chunk.embedding_model = embedder.model
             return await self._promote(
@@ -210,6 +243,8 @@ class DocumentLineagePipeline:
                 embedder.model,
                 authorize_commit,
                 correlation_id,
+                publication_guard,
+                validate_publication,
             )
 
     async def _promote(
@@ -224,6 +259,8 @@ class DocumentLineagePipeline:
         embedding_model: str,
         authorize_commit: Callable[[], Awaitable[None]] | None,
         correlation_id: str | None,
+        publication_guard: PublicationGuard | None = None,
+        validate_publication: StageAuthorization | None = None,
     ) -> SourceRow:
         service, source = self.components, result.source
         extraction_id = str(uuid4())
@@ -238,9 +275,12 @@ class DocumentLineagePipeline:
             "_persisted_original": {"sha256": admission.sha256, "bytes": admission.bytes},
             "_source_lineage": {"version_id": admission.version_id, "extraction_id": extraction_id},
         }
-        if authorize_commit is not None:
-            await authorize_commit()
-        async with self.lineage.repository.write() as session:
+        async with AsyncExitStack() as guards:
+            if publication_guard is not None:
+                await guards.enter_async_context(publication_guard())
+            if authorize_commit is not None:
+                await authorize_commit()
+            session = await guards.enter_async_context(self.lineage.repository.write())
             head = await session.one(LineageQuery("head", scope, source_id=source.id, lock="update"))
             if (head["version_id"], head["extraction_id"]) != (
                 admission.expected_version_id,
@@ -336,6 +376,8 @@ class DocumentLineagePipeline:
                     "n_chunks": source.n_chunks,
                 },
             )
+            if validate_publication is not None:
+                await validate_publication()
         await publish_success(
             service.event_publisher, service.settings, source=updated, correlation_id=correlation_id
         )

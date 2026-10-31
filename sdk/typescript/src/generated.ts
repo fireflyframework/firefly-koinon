@@ -11,6 +11,16 @@ export interface AddKnowledge {
  "project_id": string;
  "parent_id": string;
 }
+export interface BatchQueryAgentUsage {
+ "agent": string;
+ "model"?: string | null;
+ "input_tokens"?: number;
+ "output_tokens"?: number;
+ "total_tokens"?: number;
+ "cost_usd"?: number;
+ "latency_ms"?: number;
+ "calls"?: number;
+}
 export interface AnswerAudit {
  "run_id": string;
  "provenance_status": "recorded" | "not_recorded";
@@ -139,6 +149,22 @@ export interface AuthorizedApplication {
  "last_used_at": string | null;
  "revoked_at": string | null;
 }
+export interface BatchQueryOutcome {
+ "query_id": string;
+ "execution_status": "OK" | "REFINED_OK" | "FAILED" | "REJECTED_BY_FIREWALL" | null;
+ "sql"?: string | null;
+ "preview"?: Array<Record<string,Json>> | null;
+ "row_count"?: number | null;
+ "elapsed_ms"?: number | null;
+ "truncated"?: boolean;
+ "chart_hint"?: "line" | "bar" | "table" | "pie" | "none" | null;
+ "explanation"?: string | null;
+ "clarification"?: BatchQueryClarificationFrame | null;
+ "grounded_summary"?: Record<string,Json> | null;
+ "usage"?: BatchQueryUsageSummary | null;
+ "snapshot_pins"?: Record<string,string>;
+ "knowledge_settings_snapshot": OrganizationKnowledgeSnapshot;
+}
 export interface BrandingInputValues {
  "product_name"?: string;
  "assistant_name"?: string;
@@ -176,6 +202,14 @@ export interface BrandingValues {
  "palette"?: BrandingPalettes;
  "font_family"?: "Manrope" | "Inter";
 }
+export interface BulkAction {
+ "expected_revision": number;
+}
+export interface BulkDestination {
+ "workspace_id": string;
+ "project_id": string;
+ "parent_id": string;
+}
 export interface CatalogProposal {
  "id": string;
  "run_id": string;
@@ -197,6 +231,10 @@ export interface CatalogProposalBefore {
 export interface CatalogProposalPatch {
  "name"?: string | null;
  "description"?: string | null;
+}
+export interface BatchQueryClarificationFrame {
+ "questions": Array<string>;
+ "reasons"?: Array<string>;
 }
 export interface CommittedKnowledge {
  "status"?: "committed";
@@ -401,7 +439,7 @@ export interface DocumentKnowledgeBounds {
 export interface DocumentKnowledgeCapabilities {
  "answer_modes": Array<"rag" | "rlm">;
  "rlm_curated_knowledge_supported": boolean;
- "rlm_curated_knowledge_reason": "KNOWLEDGE_RLM_UNQUALIFIED";
+ "rlm_curated_knowledge_reason": "KNOWLEDGE_RLM_UNQUALIFIED" | null;
  "rlm_model_role": "documents.rlm";
  "rlm_recorded_views_required": true;
  "rlm_recorded_views_reason": "RLM_DOCUMENT_VIEWS_REQUIRED";
@@ -660,6 +698,76 @@ export interface ExternalReviewView {
  "review": KnowledgeIntent;
  "status": "preview" | "committing" | "committed" | "cancelled" | "stale" | "unresolved";
  "expires_at": string;
+}
+export interface FileBatchCapabilities {
+ "configured": boolean;
+ "modes": Array<"document" | "dataset">;
+ "processing_policy"?: "extract_only_v1";
+ "staging_backend"?: "private_local_posix" | "private_azure_blob" | "private_gcs_object";
+ "staging_topology"?: "single_host_shared_durable_posix" | "shared_private_object_store";
+ "writer_fence"?: "primary_database_generation_lease";
+ "worker"?: "external_native_worker";
+ "automatic_unknown_replay"?: false;
+ "max_files": number;
+ "max_file_bytes": number;
+ "max_batch_bytes": number;
+ "max_active_batches_per_subject": number;
+}
+export interface FileBatchCreate {
+ "destination": BulkDestination;
+ "processing_policy"?: "extract_only_v1";
+ "items": Array<FileManifestItem>;
+}
+export interface FileBatchItemView {
+ "id": string;
+ "client_item_id": string;
+ "filename": string;
+ "mode": "document" | "dataset";
+ "size_bytes": number;
+ "sha256": string;
+ "status": "awaiting_upload" | "staged" | "queued" | "running" | "succeeded" | "failed" | "cancelled" | "reconciling";
+ "source_id": string;
+ "asset_id": string;
+ "job_id": string | null;
+ "file_version_id"?: string | null;
+ "table_ids"?: Array<string>;
+ "source_version_id"?: string | null;
+ "extraction_id"?: string | null;
+ "error_code"?: string | null;
+}
+export interface FileBatchPage {
+ "items": Array<FileBatchView>;
+ "total": number;
+ "page": number;
+ "page_size": number;
+ "pages": number;
+}
+export interface FileBatchView {
+ "id": string;
+ "tenant_id": string;
+ "destination": BulkDestination;
+ "status": "expired" | "staging" | "queued" | "running" | "succeeded" | "partial" | "failed" | "cancelled" | "reconciling";
+ "revision": number;
+ "total_items": number;
+ "total_bytes": number;
+ "counts": Record<string,number>;
+ "cancellation_requested": boolean;
+ "created_at": string;
+ "expires_at": string;
+}
+export interface FileItemPage {
+ "items": Array<FileBatchItemView>;
+ "total": number;
+ "page": number;
+ "page_size": number;
+ "pages": number;
+}
+export interface FileManifestItem {
+ "client_item_id": string;
+ "filename": string;
+ "mode": "document" | "dataset";
+ "size_bytes": number;
+ "sha256": string;
 }
 export interface Frozen {
 }
@@ -1546,6 +1654,78 @@ export interface ProvenanceTransformStep {
  "actor": string;
  "recorded_at": string;
 }
+export interface QueryBatchAction {
+ "expected_revision": number;
+}
+export interface QueryBatchCancellation {
+ "batch_id": string;
+ "revision": number;
+ "cancellation_requested"?: true;
+}
+export interface QueryBatchCapabilities {
+ "configured": boolean;
+ "processing_policy"?: "independent_nl_v1";
+ "automatic_unknown_replay"?: false;
+ "shared_conversation"?: false;
+ "connection_mode"?: "explicit_provider";
+ "max_queries"?: number;
+ "max_question_characters"?: number;
+ "max_question_bytes_per_batch"?: number;
+ "max_result_bytes"?: number;
+}
+export interface QueryBatchCreate {
+ "workspace_id": string;
+ "processing_policy"?: "independent_nl_v1";
+ "items": Array<QueryManifestItem>;
+}
+export interface QueryBatchItemPage {
+ "items": Array<QueryBatchItemView>;
+ "total": number;
+ "page": number;
+ "page_size": number;
+ "pages": number;
+}
+export interface QueryBatchItemView {
+ "id": string;
+ "client_item_id": string;
+ "dataset_id": string;
+ "question": string;
+ "status": "queued" | "running" | "succeeded" | "failed" | "cancelled" | "reconciling";
+ "job_id": string;
+ "error_code"?: string | null;
+ "query_id"?: string | null;
+}
+export interface QueryBatchPage {
+ "items": Array<QueryBatchView>;
+ "total": number;
+ "page": number;
+ "page_size": number;
+ "pages": number;
+}
+export interface QueryBatchResult {
+ "batch_id": string;
+ "item_id": string;
+ "status": "queued" | "running" | "succeeded" | "failed" | "cancelled" | "reconciling";
+ "result"?: BatchQueryOutcome | null;
+ "error_code"?: string | null;
+}
+export interface QueryBatchView {
+ "id": string;
+ "tenant_id": string;
+ "workspace_id": string;
+ "status": "queued" | "running" | "succeeded" | "partial" | "failed" | "cancelled" | "reconciling";
+ "revision": number;
+ "total_items": number;
+ "counts": Record<string,number>;
+ "cancellation_requested": boolean;
+ "created_at": string;
+ "expires_at": string;
+}
+export interface QueryManifestItem {
+ "client_item_id": string;
+ "dataset_id": string;
+ "question": string;
+}
 export interface QueryResultExportInput {
  "kind": "query_result";
  "dataset_id": string;
@@ -1578,7 +1758,8 @@ export interface RlmToolReceipt {
  "generation_id"?: string | null;
  "tenant_id": string;
  "workspace_id": string;
- "source_ids": Array<string>;
+ "source_ids"?: Array<string>;
+ "knowledge_item_ids"?: Array<string>;
  "tool_call_id": string;
  "tool_name": "python" | "final_answer";
  "request_sha256": string;
@@ -1688,6 +1869,14 @@ export interface SqlAttemptReceipt {
  "dataset_id"?: string | null;
  "native_dataset_id"?: string | null;
  "tables"?: Array<NativeTableSnapshot>;
+}
+export interface StagedFileReceipt {
+ "receipt_id": string;
+ "batch_id": string;
+ "item_id": string;
+ "sha256": string;
+ "size_bytes": number;
+ "status"?: "staged";
 }
 export interface StoredResult {
  "query_id": string;
@@ -1833,6 +2022,14 @@ export interface TableSnapshotSummary {
  "row_count"?: number | null;
  "actor"?: string | null;
  "recorded_at"?: string | null;
+}
+export interface BatchQueryUsageSummary {
+ "total_input_tokens"?: number;
+ "total_output_tokens"?: number;
+ "total_tokens"?: number;
+ "total_cost_usd"?: number;
+ "total_latency_ms"?: number;
+ "by_agent"?: Array<BatchQueryAgentUsage>;
 }
 export interface UserStatementEvidence {
  "kind"?: "user_statement";

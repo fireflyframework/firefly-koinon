@@ -7,6 +7,8 @@ from uuid import uuid4
 
 import pytest
 
+from koinon.workers.admission import WorkAdmission, WorkAdmissionSettings
+
 
 @pytest.mark.parametrize("wrong", ["tenant", "workspace", "status", None])
 async def test_native_append_verifies_scoped_active_dataset_and_retains_all_table_results(wrong):
@@ -37,7 +39,7 @@ async def test_native_append_verifies_scoped_active_dataset_and_retains_all_tabl
     container = SimpleNamespace(
         contains_type=lambda kind: kind in services, resolve=lambda kind: services[kind]
     )
-    domains = NativeDomains(container)
+    domains = NativeDomains(container, admission=WorkAdmission(WorkAdmissionSettings()))
     captures = []
 
     @asynccontextmanager

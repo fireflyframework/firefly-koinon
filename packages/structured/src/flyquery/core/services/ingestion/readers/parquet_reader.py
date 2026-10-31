@@ -18,7 +18,6 @@
 
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
 
 from flyquery.core.services.ingestion.coordinates import record_coordinates
@@ -29,6 +28,7 @@ from flyquery.core.services.ingestion.reader import (
     ProposedTable,
     TableExtractionRules,
 )
+from flyquery.core.services.ingestion.resources import account_path, copy_file, output_size
 
 
 class ParquetReader:
@@ -65,11 +65,13 @@ class ParquetReader:
 
     @staticmethod
     def _materialise_sync(source_path: str, target_parquet_key: str) -> MaterialiseResult:
+        account_path(source_path)
+        account_path(target_parquet_key)
         import pyarrow as pa
         import pyarrow.parquet as pq
 
         Path(target_parquet_key).parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(source_path, target_parquet_key)
+        copy_file(source_path, target_parquet_key)
         meta = pq.ParquetFile(target_parquet_key)
         names = meta.schema_arrow.names
         # Use logical type names from the Arrow schema for richer types
@@ -85,7 +87,7 @@ class ParquetReader:
         )
         return MaterialiseResult(
             target_parquet_key=target_parquet_key,
-            parquet_byte_size=Path(target_parquet_key).stat().st_size,
+            parquet_byte_size=output_size(target_parquet_key),
             n_rows_actual=meta.metadata.num_rows,
             columns=columns,
             coordinates=record_coordinates(

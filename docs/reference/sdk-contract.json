@@ -4,19 +4,19 @@
   "license": "Apache-2.0",
   "api_prefix": "/api/v1",
   "status": "Canonical API contract; development snapshot",
-  "canonical_operation_count": 193,
+  "canonical_operation_count": 212,
   "qualified_compatibility_operations": [
     {
       "operation": "GlossaryController.list_terms",
       "method": "GET",
       "path": "/api/v1/structured/glossary",
       "source": "backend/src/koinon/knowledge/legacy_read.py",
-      "source_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
+      "source_sha256": "bf254427e915dca7f772b8b84289cdc7e47b597fe8f81b0ef67adef07cc1b769",
       "native_controller": "GlossaryController",
       "native_method": "list_terms",
       "native_source_sha256": "d1837ae24422b157ef03732b03618ca180cf93f5b42b3dcab87512ff8346e4ee",
       "guard": "backend/src/koinon/knowledge/legacy_read.py",
-      "guard_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
+      "guard_sha256": "bf254427e915dca7f772b8b84289cdc7e47b597fe8f81b0ef67adef07cc1b769",
       "request_schema": null,
       "response_schema": "GlossaryPage",
       "sdk_python": "glossary_terms",
@@ -33,12 +33,12 @@
       "method": "GET",
       "path": "/api/v1/structured/glossary/{term_id}",
       "source": "backend/src/koinon/knowledge/legacy_read.py",
-      "source_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
+      "source_sha256": "bf254427e915dca7f772b8b84289cdc7e47b597fe8f81b0ef67adef07cc1b769",
       "native_controller": "GlossaryController",
       "native_method": "get_term",
       "native_source_sha256": "d1837ae24422b157ef03732b03618ca180cf93f5b42b3dcab87512ff8346e4ee",
       "guard": "backend/src/koinon/knowledge/legacy_read.py",
-      "guard_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
+      "guard_sha256": "bf254427e915dca7f772b8b84289cdc7e47b597fe8f81b0ef67adef07cc1b769",
       "request_schema": null,
       "response_schema": "GlossaryTermRead",
       "sdk_python": "glossary_term",
@@ -123,12 +123,12 @@
       "method": "GET",
       "path": "/api/v1/structured/agent/glossary",
       "source": "backend/src/koinon/knowledge/legacy_read.py",
-      "source_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
+      "source_sha256": "bf254427e915dca7f772b8b84289cdc7e47b597fe8f81b0ef67adef07cc1b769",
       "native_controller": "AgentGlossaryController",
       "native_method": "list_terms",
       "native_source_sha256": "977a2e4be797898ffc47d3414e9b22df8965cf699057af6d9b9e4cca60b37738",
       "guard": "backend/src/koinon/knowledge/legacy_read.py",
-      "guard_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
+      "guard_sha256": "bf254427e915dca7f772b8b84289cdc7e47b597fe8f81b0ef67adef07cc1b769",
       "request_schema": null,
       "response_schema": "GlossaryPage",
       "sdk_python": "glossary_terms",
@@ -145,12 +145,12 @@
       "method": "GET",
       "path": "/api/v1/structured/agent/glossary/{term_id}",
       "source": "backend/src/koinon/knowledge/legacy_read.py",
-      "source_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
+      "source_sha256": "bf254427e915dca7f772b8b84289cdc7e47b597fe8f81b0ef67adef07cc1b769",
       "native_controller": "AgentGlossaryController",
       "native_method": "get_term",
       "native_source_sha256": "977a2e4be797898ffc47d3414e9b22df8965cf699057af6d9b9e4cca60b37738",
       "guard": "backend/src/koinon/knowledge/legacy_read.py",
-      "guard_sha256": "d1f09aff67cf01a9ec17ded52f466e7c3badaf264f62d5205a853f371c08681c",
+      "guard_sha256": "bf254427e915dca7f772b8b84289cdc7e47b597fe8f81b0ef67adef07cc1b769",
       "request_schema": null,
       "response_schema": "GlossaryTermRead",
       "sdk_python": "glossary_term",
@@ -3884,6 +3884,748 @@
       "response_schema": "AttachmentPromotionView",
       "success_status": 201,
       "source_sha256": "f2a07d34a1db6a0ab35a7550fe5ec47b49bda9879df8289eadc4f8f6074dfe79",
+      "encoding": "application/json",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/source-batch-capabilities",
+      "category": "canonical",
+      "operation": "FileBatchController.capabilities",
+      "source": "backend/src/koinon/knowledge/bulk/controllers.py",
+      "line": 46,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": true
+        }
+      ],
+      "return_annotation": "FileBatchCapabilities",
+      "sdk_python": "file_batch_capabilities",
+      "sdk_typescript": "fileBatches.capabilities",
+      "sdk_java": "client.fileBatches.capabilities",
+      "request_schema": null,
+      "response_schema": "FileBatchCapabilities",
+      "success_status": 200,
+      "source_sha256": "4e89486a2f18d28080c9a93446853cb737399c761bdbcf3fcaa995e22be851d1",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/sources/batches",
+      "category": "canonical",
+      "operation": "FileBatchController.create",
+      "source": "backend/src/koinon/knowledge/bulk/controllers.py",
+      "line": 52,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[FileBatchCreate]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "FileBatchView",
+      "sdk_python": "create_file_batch",
+      "sdk_typescript": "fileBatches.create",
+      "sdk_java": "client.fileBatches.create",
+      "request_schema": "FileBatchCreate",
+      "response_schema": "FileBatchView",
+      "success_status": 201,
+      "source_sha256": "4e89486a2f18d28080c9a93446853cb737399c761bdbcf3fcaa995e22be851d1",
+      "encoding": "application/json",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/sources/batches",
+      "category": "canonical",
+      "operation": "FileBatchController.list",
+      "source": "backend/src/koinon/knowledge/bulk/controllers.py",
+      "line": 60,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "FileBatchPage",
+      "sdk_python": "file_batches",
+      "sdk_typescript": "fileBatches.list",
+      "sdk_java": "client.fileBatches.list",
+      "request_schema": null,
+      "response_schema": "FileBatchPage",
+      "success_status": 200,
+      "source_sha256": "4e89486a2f18d28080c9a93446853cb737399c761bdbcf3fcaa995e22be851d1",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/sources/batches/{batch_id}",
+      "category": "canonical",
+      "operation": "FileBatchController.get",
+      "source": "backend/src/koinon/knowledge/bulk/controllers.py",
+      "line": 72,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "batch_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "FileBatchView",
+      "sdk_python": "file_batch",
+      "sdk_typescript": "fileBatches.get",
+      "sdk_java": "client.fileBatches.get",
+      "request_schema": null,
+      "response_schema": "FileBatchView",
+      "success_status": 200,
+      "source_sha256": "4e89486a2f18d28080c9a93446853cb737399c761bdbcf3fcaa995e22be851d1",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/items",
+      "category": "canonical",
+      "operation": "FileBatchController.items",
+      "source": "backend/src/koinon/knowledge/bulk/controllers.py",
+      "line": 76,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "batch_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "FileItemPage",
+      "sdk_python": "file_batch_items",
+      "sdk_typescript": "fileBatches.items",
+      "sdk_java": "client.fileBatches.items",
+      "request_schema": null,
+      "response_schema": "FileItemPage",
+      "success_status": 200,
+      "source_sha256": "4e89486a2f18d28080c9a93446853cb737399c761bdbcf3fcaa995e22be851d1",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/items/{item_id}/content",
+      "category": "canonical",
+      "operation": "FileBatchController.content",
+      "source": "backend/src/koinon/knowledge/bulk/controllers.py",
+      "line": 89,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "batch_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "item_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "StagedFileReceipt",
+      "sdk_python": "upload_file_batch_item",
+      "sdk_typescript": "fileBatches.upload",
+      "sdk_java": "client.fileBatches.upload",
+      "request_schema": "BulkFileUpload",
+      "response_schema": "StagedFileReceipt",
+      "success_status": 200,
+      "source_sha256": "4e89486a2f18d28080c9a93446853cb737399c761bdbcf3fcaa995e22be851d1",
+      "encoding": "application/octet-stream",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/items/{item_id}/receipt",
+      "category": "canonical",
+      "operation": "FileBatchController.receipt",
+      "source": "backend/src/koinon/knowledge/bulk/controllers.py",
+      "line": 123,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "batch_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "item_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "StagedFileReceipt",
+      "sdk_python": "file_batch_item_receipt",
+      "sdk_typescript": "fileBatches.receipt",
+      "sdk_java": "client.fileBatches.receipt",
+      "request_schema": null,
+      "response_schema": "StagedFileReceipt",
+      "success_status": 200,
+      "source_sha256": "4e89486a2f18d28080c9a93446853cb737399c761bdbcf3fcaa995e22be851d1",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/submit",
+      "category": "canonical",
+      "operation": "FileBatchController.submit",
+      "source": "backend/src/koinon/knowledge/bulk/controllers.py",
+      "line": 129,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "batch_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[BulkAction]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "FileBatchView",
+      "sdk_python": "submit_file_batch",
+      "sdk_typescript": "fileBatches.submit",
+      "sdk_java": "client.fileBatches.submit",
+      "request_schema": "BulkAction",
+      "response_schema": "FileBatchView",
+      "success_status": 202,
+      "source_sha256": "4e89486a2f18d28080c9a93446853cb737399c761bdbcf3fcaa995e22be851d1",
+      "encoding": "application/json",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/cancel",
+      "category": "canonical",
+      "operation": "FileBatchController.cancel",
+      "source": "backend/src/koinon/knowledge/bulk/controllers.py",
+      "line": 137,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "batch_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[BulkAction]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "FileBatchView",
+      "sdk_python": "cancel_file_batch",
+      "sdk_typescript": "fileBatches.cancel",
+      "sdk_java": "client.fileBatches.cancel",
+      "request_schema": "BulkAction",
+      "response_schema": "FileBatchView",
+      "success_status": 200,
+      "source_sha256": "4e89486a2f18d28080c9a93446853cb737399c761bdbcf3fcaa995e22be851d1",
+      "encoding": "application/json",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/items/{item_id}/reconcile",
+      "category": "canonical",
+      "operation": "FileBatchController.reconcile",
+      "source": "backend/src/koinon/knowledge/bulk/controllers.py",
+      "line": 145,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "batch_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "item_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[BulkAction]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "FileBatchView",
+      "sdk_python": "reconcile_file_batch_item",
+      "sdk_typescript": "fileBatches.reconcile",
+      "sdk_java": "client.fileBatches.reconcile",
+      "request_schema": "BulkAction",
+      "response_schema": "FileBatchView",
+      "success_status": 200,
+      "source_sha256": "4e89486a2f18d28080c9a93446853cb737399c761bdbcf3fcaa995e22be851d1",
+      "encoding": "application/json",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/items/{item_id}/original/reconcile",
+      "category": "canonical",
+      "operation": "FileBatchController.recover_original",
+      "source": "backend/src/koinon/knowledge/bulk/controllers.py",
+      "line": 158,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "batch_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "item_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[BulkAction]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "FileBatchView",
+      "sdk_python": "reconcile_file_batch_original",
+      "sdk_typescript": "fileBatches.recoverOriginal",
+      "sdk_java": "client.fileBatches.recoverOriginal",
+      "request_schema": "BulkAction",
+      "response_schema": "FileBatchView",
+      "success_status": 200,
+      "source_sha256": "4e89486a2f18d28080c9a93446853cb737399c761bdbcf3fcaa995e22be851d1",
+      "encoding": "application/json",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/query-batch-capabilities",
+      "category": "canonical",
+      "operation": "QueryBatchController.capabilities",
+      "source": "backend/src/koinon/knowledge/bulk_queries/controllers.py",
+      "line": 29,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": true
+        }
+      ],
+      "return_annotation": "QueryBatchCapabilities",
+      "sdk_python": "query_batch_capabilities",
+      "sdk_typescript": "queryBatches.capabilities",
+      "sdk_java": "client.queryBatches.capabilities",
+      "request_schema": null,
+      "response_schema": "QueryBatchCapabilities",
+      "success_status": 200,
+      "source_sha256": "c6ae5f8eea05e05c972f44f0131557aa7cfede38674a0c57b9526237c36f6edc",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/queries/batches",
+      "category": "canonical",
+      "operation": "QueryBatchController.create",
+      "source": "backend/src/koinon/knowledge/bulk_queries/controllers.py",
+      "line": 37,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[QueryBatchCreate]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "QueryBatchView",
+      "sdk_python": "create_query_batch",
+      "sdk_typescript": "queryBatches.create",
+      "sdk_java": "client.queryBatches.create",
+      "request_schema": "QueryBatchCreate",
+      "response_schema": "QueryBatchView",
+      "success_status": 201,
+      "source_sha256": "c6ae5f8eea05e05c972f44f0131557aa7cfede38674a0c57b9526237c36f6edc",
+      "encoding": "application/json",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/queries/batches",
+      "category": "canonical",
+      "operation": "QueryBatchController.list",
+      "source": "backend/src/koinon/knowledge/bulk_queries/controllers.py",
+      "line": 45,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "QueryBatchPage",
+      "sdk_python": "query_batches",
+      "sdk_typescript": "queryBatches.list",
+      "sdk_java": "client.queryBatches.list",
+      "request_schema": null,
+      "response_schema": "QueryBatchPage",
+      "success_status": 200,
+      "source_sha256": "c6ae5f8eea05e05c972f44f0131557aa7cfede38674a0c57b9526237c36f6edc",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/queries/batches/{batch_id}",
+      "category": "canonical",
+      "operation": "QueryBatchController.get",
+      "source": "backend/src/koinon/knowledge/bulk_queries/controllers.py",
+      "line": 57,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "batch_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "QueryBatchView",
+      "sdk_python": "query_batch",
+      "sdk_typescript": "queryBatches.get",
+      "sdk_java": "client.queryBatches.get",
+      "request_schema": null,
+      "response_schema": "QueryBatchView",
+      "success_status": 200,
+      "source_sha256": "c6ae5f8eea05e05c972f44f0131557aa7cfede38674a0c57b9526237c36f6edc",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/queries/batches/{batch_id}/items",
+      "category": "canonical",
+      "operation": "QueryBatchController.items",
+      "source": "backend/src/koinon/knowledge/bulk_queries/controllers.py",
+      "line": 61,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "batch_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "QueryBatchItemPage",
+      "sdk_python": "query_batch_items",
+      "sdk_typescript": "queryBatches.items",
+      "sdk_java": "client.queryBatches.items",
+      "request_schema": null,
+      "response_schema": "QueryBatchItemPage",
+      "success_status": 200,
+      "source_sha256": "c6ae5f8eea05e05c972f44f0131557aa7cfede38674a0c57b9526237c36f6edc",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/queries/batches/{batch_id}/items/{item_id}/result",
+      "category": "canonical",
+      "operation": "QueryBatchController.result",
+      "source": "backend/src/koinon/knowledge/bulk_queries/controllers.py",
+      "line": 74,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "batch_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "item_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "QueryBatchResult",
+      "sdk_python": "query_batch_result",
+      "sdk_typescript": "queryBatches.result",
+      "sdk_java": "client.queryBatches.result",
+      "request_schema": null,
+      "response_schema": "QueryBatchResult",
+      "success_status": 200,
+      "source_sha256": "c6ae5f8eea05e05c972f44f0131557aa7cfede38674a0c57b9526237c36f6edc",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/queries/batches/{batch_id}/cancel",
+      "category": "canonical",
+      "operation": "QueryBatchController.cancel",
+      "source": "backend/src/koinon/knowledge/bulk_queries/controllers.py",
+      "line": 80,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "batch_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[QueryBatchAction]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "QueryBatchCancellation",
+      "sdk_python": "cancel_query_batch",
+      "sdk_typescript": "queryBatches.cancel",
+      "sdk_java": "client.queryBatches.cancel",
+      "request_schema": "QueryBatchAction",
+      "response_schema": "QueryBatchCancellation",
+      "success_status": 200,
+      "source_sha256": "c6ae5f8eea05e05c972f44f0131557aa7cfede38674a0c57b9526237c36f6edc",
+      "encoding": "application/json",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/queries/batches/{batch_id}/items/{item_id}/reconcile",
+      "category": "canonical",
+      "operation": "QueryBatchController.reconcile",
+      "source": "backend/src/koinon/knowledge/bulk_queries/controllers.py",
+      "line": 92,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "batch_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "item_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[QueryBatchAction]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "QueryBatchView",
+      "sdk_python": "reconcile_query_batch_item",
+      "sdk_typescript": "queryBatches.reconcile",
+      "sdk_java": "client.queryBatches.reconcile",
+      "request_schema": "QueryBatchAction",
+      "response_schema": "QueryBatchView",
+      "success_status": 200,
+      "source_sha256": "c6ae5f8eea05e05c972f44f0131557aa7cfede38674a0c57b9526237c36f6edc",
       "encoding": "application/json",
       "headers": [
         "Idempotency-Key (required; caller-supplied stable operation key)"

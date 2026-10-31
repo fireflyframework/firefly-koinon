@@ -11,11 +11,12 @@ from typing import Annotated, Any, Literal
 from urllib.parse import urlsplit, urlunsplit
 
 import httpx
-from mcp.server.mcpserver import Context, MCPServer
+from mcp.server.mcpserver import Context
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import CallToolResult, TextContent, ToolAnnotations
 from pydantic import Field
 from pyfly.kernel import UnauthorizedException
+from pyfly.mcp import McpServer as MCPServer
 
 from koinon.mcp.apps import KnowledgeReviewExtension
 from koinon.mcp.settings import McpSettings

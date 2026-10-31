@@ -21,6 +21,7 @@ from koinon_sdk.attachments import (
     PrivateChunkPage,
 )
 from koinon_sdk.authorized_applications import AuthorizedApplication
+from koinon_sdk.bulk_client import BulkClientMixin
 from koinon_sdk.connection_filters import (
     AttachmentChunkFilter,
     AttachmentFilter,
@@ -212,6 +213,7 @@ from koinon_sdk.organization_people import (
 )
 from koinon_sdk.proposals import CatalogProposal, ProposalConfirmation, ProposalRevision
 from koinon_sdk.provenance import TableProvenance, TableSnapshotPage
+from koinon_sdk.query_batch_client import QueryBatchClientMixin
 from koinon_sdk.sharing import (
     Share,
     ShareCreate,
@@ -230,7 +232,7 @@ class ApiError(Exception):
         self.transaction_id = request_id
 
 
-class KoinonClient:
+class KoinonClient(BulkClientMixin, QueryBatchClientMixin):
     def __init__(
         self,
         base_url: str,

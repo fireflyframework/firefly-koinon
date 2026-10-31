@@ -42,7 +42,9 @@ import logging
 import os
 import time
 import uuid
+from contextlib import nullcontext
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -64,6 +66,14 @@ from flyquery.core.services.ingestion.events import (
     emit_running,
     emit_stage,
 )
+from flyquery.core.services.ingestion.lease import (
+    JOBS,
+    IngestLease,
+    IngestLeaseLost,
+    bind_ingest_lease,
+    current_ingest_lease,
+)
+from flyquery.core.services.ingestion.resources import ingestion_resources
 from flyquery.data import StructuredSessions, unwrap_sessions, workspace_scope
 from flyquery.web.conventions.context import current_tenant_context
 
@@ -213,10 +223,24 @@ class IngestWorker:
             raise InvalidRequestException(
                 "Ingest event requires its persisted tenant/workspace scope", code="INGEST_SCOPE_REQUIRED"
             )
-        with workspace_scope(payload["tenant_id"], str(payload["workspace_id"])):
-            await self._handle_scoped(envelope)
+        await self.process(
+            payload.get("ingest_job_id") or payload.get("job_id"),
+            payload["tenant_id"],
+            str(payload["workspace_id"]),
+        )
 
-    async def _handle_scoped(self, envelope: Any) -> None:
+    async def process(self, job_id, tenant_id, workspace_id, *, admission=None):
+        """Process one durable job using its trusted scope and optional server admission."""
+        from types import SimpleNamespace
+
+        with workspace_scope(tenant_id, str(workspace_id)):
+            envelope = SimpleNamespace(payload={"ingest_job_id": str(job_id)})
+            if admission is None:
+                await self._handle_scoped(envelope)
+            else:
+                await self._handle_scoped(envelope, admission=admission)
+
+    async def _handle_scoped(self, envelope: Any, *, admission=None) -> None:
         """Main handler: load job row, run stages, update status."""
         payload = self._payload_of(envelope)
         job_id_raw = payload.get("ingest_job_id") or payload.get("job_id")
@@ -263,6 +287,24 @@ class IngestWorker:
             )
             return
 
+        with bind_ingest_lease(claimed):
+            if claimed.attempts > self._settings.ingest_max_attempts:
+                await self._mark_failed(
+                    job_id,
+                    InvalidRequestException(
+                        "Ingestion retry budget exhausted", code="INGEST_ATTEMPTS_EXHAUSTED"
+                    ),
+                )
+                return
+            try:
+                async with admission(job, claimed) if admission is not None else nullcontext():
+                    await self._execute_claimed(job_id, job, job_kind, tenant_id, workspace_id)
+            except IngestLeaseLost:
+                return
+            except Exception as error:
+                await self._mark_failed(job_id, error)
+
+    async def _execute_claimed(self, job_id, job, job_kind, tenant_id, workspace_id):
         await emit_running(
             ingest_job_id=job_id,
             tenant_id=tenant_id,
@@ -288,6 +330,8 @@ class IngestWorker:
             )
             logger.info("ingest job succeeded id=%s kind=%s", job_id, job_kind)
 
+        except IngestLeaseLost:
+            return
         except Exception as exc:  # noqa: BLE001
             failed_stage = getattr(exc, "_stage", "unknown")
             await emit_error(
@@ -301,6 +345,7 @@ class IngestWorker:
             await self._mark_failed(job_id, exc)
             logger.warning("ingest job failed id=%s kind=%s error=%s", job_id, job_kind, exc)
 
+    @ingestion_resources(settings=lambda instance: instance._settings)
     async def _run_stages(
         self,
         *,
@@ -355,6 +400,7 @@ class IngestWorker:
         else:
             raise ValueError(f"unknown job_kind={job_kind!r}")
 
+    @ingestion_resources(settings=lambda instance: instance._settings)
     async def _run_reparse(
         self,
         *,
@@ -611,6 +657,7 @@ class IngestWorker:
                     except OSError:
                         logger.warning("stage=worker local_parquet_cleanup_failed")
 
+    @ingestion_resources(settings=lambda instance: instance._settings)
     async def _run_sample_refresh(
         self,
         *,
@@ -764,57 +811,80 @@ class IngestWorker:
         repo = FileRepository(self._session_factory)
         return await repo.get(file_id)
 
-    async def _mark_running(self, job_id: uuid.UUID) -> bool:
-        """Atomic claim: flip PENDING → RUNNING. Returns True on success."""
-        async with infrastructure_unit(self._session_factory) as s:
-            result = await s.execute(
-                sa.text(
-                    "UPDATE flyquery_ingest_jobs "
-                    "SET status = 'RUNNING', started_at = now(), attempts = attempts + 1 "
-                    "WHERE id = :id AND status = 'PENDING' "
-                    "RETURNING id"
-                ),
-                {"id": job_id},
+    async def _mark_running(self, job_id: uuid.UUID) -> IngestLease | None:
+        context = current_tenant_context()
+        if context is None:
+            raise InvalidRequestException("Trusted ingestion scope is required", code="INGEST_SCOPE_REQUIRED")
+        now = datetime.now(UTC)
+        async with infrastructure_unit(self._session_factory) as session:
+            row = (
+                (
+                    await session.execute(
+                        sa.update(JOBS)
+                        .where(
+                            JOBS.c.id == job_id,
+                            JOBS.c.tenant_id == context.tenant_id,
+                            JOBS.c.workspace_id == uuid.UUID(context.workspace_id),
+                            sa.or_(
+                                JOBS.c.status == "PENDING",
+                                sa.and_(
+                                    JOBS.c.status == "RUNNING",
+                                    JOBS.c.started_at
+                                    <= now - timedelta(seconds=self._settings.processing_lease_s),
+                                ),
+                            ),
+                        )
+                        .values(status="RUNNING", started_at=now, attempts=JOBS.c.attempts + 1)
+                        .returning(JOBS.c.attempts)
+                    )
+                )
+                .mappings()
+                .one_or_none()
             )
-            return result.first() is not None
+            if row is None:
+                return None
+            return IngestLease(
+                job_id,
+                context.tenant_id,
+                uuid.UUID(context.workspace_id),
+                row["attempts"],
+                now,
+                now + timedelta(seconds=max(1, int(self._settings.processing_lease_s))),
+            )
 
     async def _mark_succeeded(self, job_id: uuid.UUID) -> None:
-        async with infrastructure_unit(self._session_factory) as s:
-            await s.execute(
-                sa.text(
-                    "UPDATE flyquery_ingest_jobs "
-                    "SET status = 'SUCCEEDED', finished_at = now() "
-                    "WHERE id = :id AND status = 'RUNNING'"
-                ),
-                {"id": job_id},
+        lease = current_ingest_lease()
+        if lease is None or lease.id != job_id:
+            raise IngestLeaseLost()
+        async with infrastructure_unit(self._session_factory) as session:
+            value = await session.execute(
+                sa.update(JOBS)
+                .where(lease.predicate(), JOBS.c.status == "RUNNING")
+                .values(status="SUCCEEDED", finished_at=datetime.now(UTC))
+                .returning(JOBS.c.id)
             )
-            # Same txn as the status flip: either both happen and the
-            # callback is durably queued, or both roll back. Without
-            # this atomicity a process crash between the two writes
-            # would silently drop the webhook for a "succeeded" job.
+            if value.scalar_one_or_none() is None:
+                raise IngestLeaseLost()
             await self._enqueue_callback_terminal(
-                session=s,
-                job_id=job_id,
-                status="SUCCEEDED",
-                result_json={},
+                session=session, job_id=job_id, status="SUCCEEDED", result_json={}
             )
 
     async def _mark_failed(self, job_id: uuid.UUID, exc: BaseException) -> None:
+        lease = current_ingest_lease()
+        if lease is None or lease.id != job_id:
+            raise IngestLeaseLost()
         error_json = {"error_type": type(exc).__name__, "message": str(exc)}
-        async with infrastructure_unit(self._session_factory) as s:
-            await s.execute(
-                sa.text(
-                    "UPDATE flyquery_ingest_jobs "
-                    "SET status = 'FAILED', finished_at = now(), result_json = CAST(:err AS jsonb) "
-                    "WHERE id = :id AND status IN ('RUNNING', 'PENDING')"
-                ),
-                {"id": job_id, "err": _json_dumps(error_json)},
+        async with infrastructure_unit(self._session_factory) as session:
+            value = await session.execute(
+                sa.update(JOBS)
+                .where(lease.predicate(), JOBS.c.status == "RUNNING")
+                .values(status="FAILED", finished_at=datetime.now(UTC), result_json=error_json)
+                .returning(JOBS.c.id)
             )
+            if value.scalar_one_or_none() is None:
+                raise IngestLeaseLost()
             await self._enqueue_callback_terminal(
-                session=s,
-                job_id=job_id,
-                status="FAILED",
-                result_json=error_json,
+                session=session, job_id=job_id, status="FAILED", result_json=error_json
             )
 
     async def _enqueue_callback_terminal(

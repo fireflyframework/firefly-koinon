@@ -1,11 +1,13 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
 from dataclasses import dataclass
+from typing import Self
 
 from flycanon.core.services.query.rlm.actions import RlmToolReceipt
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from koinon.evidence.dtos import SourceReference
+from koinon.evidence.rlm_scope import RlmResourceIdentifier, require_rlm_scope
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,7 +23,13 @@ class CapturedEvidence:
 class NativeRlmTool(RlmToolReceipt):
     tenant_id: str = Field(min_length=1, max_length=64)
     workspace_id: str = Field(min_length=1, max_length=64)
-    source_ids: tuple[str, ...] = Field(min_length=1, max_length=500)
+    source_ids: tuple[RlmResourceIdentifier, ...] = Field(default=(), max_length=500)
+    knowledge_item_ids: tuple[RlmResourceIdentifier, ...] = Field(default=(), max_length=500)
+
+    @model_validator(mode="after")
+    def coherent_corpus_scope(self) -> Self:
+        require_rlm_scope(self.source_ids, self.knowledge_item_ids)
+        return self
 
 
 @dataclass(frozen=True, slots=True)

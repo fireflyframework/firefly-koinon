@@ -7,19 +7,40 @@ from contextlib import suppress
 from uuid import uuid4
 
 from koinon.operations.settings import OperationalSettings
+from koinon.workers.admission import WorkAdmission, WorkAdmissionUnavailable
 
 
-async def run_consumers(queue, executor, settings: OperationalSettings):
+async def run_consumers(
+    queue,
+    executor,
+    settings: OperationalSettings,
+    *,
+    stop: asyncio.Event | None = None,
+    admission: WorkAdmission,
+):
     worker_id = str(uuid4())
 
     async def consume(index: int):
         identity = f"{worker_id}-{index}"
-        while True:
-            run = await queue.claim(identity)
+        while stop is None or not stop.is_set():
+            try:
+                async with admission.hold("conversation"):
+                    if stop is not None and stop.is_set():
+                        return
+                    run = await queue.claim(identity)
+                    if run is not None:
+                        await executor.execute(run.id, identity)
+            except WorkAdmissionUnavailable:
+                if stop is not None and stop.is_set():
+                    return
+                run = None
             if run is None:
-                await asyncio.sleep(0.5)
+                if stop is None:
+                    await asyncio.sleep(0.5)
+                else:
+                    with suppress(TimeoutError):
+                        await asyncio.wait_for(stop.wait(), 0.5)
                 continue
-            await executor.execute(run.id, identity)
 
     async with asyncio.TaskGroup() as tasks:
         for index in range(settings.worker_concurrency):
@@ -27,20 +48,9 @@ async def run_consumers(queue, executor, settings: OperationalSettings):
 
 
 async def run_worker():
-    from koinon.assistants.execution import AssistantExecutor
-    from koinon.assistants.queue import AssistantQueue
-    from koinon.main import app
+    from koinon.worker import run_worker as complete_worker
 
-    context = app.state.context
-    await context.start()
-    try:
-        await run_consumers(
-            context.get_bean(AssistantQueue),
-            context.get_bean(AssistantExecutor),
-            context.get_bean(OperationalSettings),
-        )
-    finally:
-        await context.stop()
+    await complete_worker()
 
 
 if __name__ == "__main__":

@@ -8,6 +8,8 @@ import pytest
 from test_facade import context as context
 from test_facade import upload
 
+from koinon.workers.admission import WorkAdmission, WorkAdmissionSettings
+
 
 async def test_document_chunks_authorize_ancestry_and_binding_before_native_read(context):
     from koinon.catalog.errors import AccessDenied
@@ -81,7 +83,8 @@ async def native_document(tmp_path):
     sources, chunks = SourceRepository(sessions), ChunkRepository(sessions)
     beans = {SourceRepository: sources, ChunkRepository: chunks, ObjectStore: objects}
     adapter = NativeDomains(
-        SimpleNamespace(contains_type=lambda kind: kind in beans, resolve=beans.__getitem__)
+        SimpleNamespace(contains_type=lambda kind: kind in beans, resolve=beans.__getitem__),
+        admission=WorkAdmission(WorkAdmissionSettings()),
     )
     async with sessions.begin() as session:
         session.add(

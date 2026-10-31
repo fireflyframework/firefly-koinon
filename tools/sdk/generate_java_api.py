@@ -18,6 +18,11 @@ def add(controller, group, methods):
         mapping[controller + "." + key] = (group, value)
 
 
+add("FileBatchController", "FileBatchesApi", {"capabilities":"capabilities", "create":"create", "list":"list",
+    "get":"get", "items":"items", "content":"upload", "receipt":"receipt", "submit":"submit",
+    "cancel":"cancel", "reconcile":"reconcile", "recover_original":"recoverOriginal"})
+add("QueryBatchController", "QueryBatchesApi", {"capabilities":"capabilities", "create":"create", "list":"list",
+    "get":"get", "items":"items", "result":"result", "cancel":"cancel", "reconcile":"reconcile"})
 add("McpConnectionController", "McpApi", {"get": "connection"})
 add("McpOrganizationConnectionController", "McpApi", {"get": "organizationConnection"})
 add("McpOAuthClientController", "McpOAuthClientsApi", {"readiness": "readiness", "page": "list", "create": "create", "retrieve": "get", "update": "update", "rotate_secret": "rotateSecret"})
@@ -198,6 +203,12 @@ def upper(s):
 
 
 filters = {
+    "QueryBatchController.capabilities": "QueryBatchScope",
+    "QueryBatchController.list": "QueryBatchFilter",
+    "QueryBatchController.items": "QueryBatchFilter",
+    "FileBatchController.capabilities": "FileBatchScope",
+    "FileBatchController.list": "FileBatchFilter",
+    "FileBatchController.items": "FileBatchFilter",
     "CorporateProfilesController.presentation": "OrganizationScopeFilter",
     "CorporateProfilesController.update_presentation": "OrganizationScopeFilter",
     "CorporateProfilesController.refresh_self": "OrganizationScopeFilter",
@@ -491,6 +502,9 @@ for group, operations in groups.items():
                     + typ
                     + ")"
                 )
+            if request == "BulkFileUpload":
+                return ("transport.bytes" + suffix + "(" + json.dumps(op["method"]) + "," + path_expr
+                    + ',input.content(),"application/octet-stream",options,' + typ + ")")
             if request == "AvatarUpload":
                 return (
                     "transport.bytes"

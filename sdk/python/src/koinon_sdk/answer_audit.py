@@ -3,19 +3,36 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/assistants/audit_dtos.py
-SHA256: 0b406bb923af8e5187ea0c323f792202f470c50cfb0c9b252fa720e4c95ea5b0
+SHA256: 1ba1cb9992d9a565a9306ca542c508ef2501c1073cb94f9283a404511be06247
+
+Source dependency: backend/src/koinon/evidence/rlm_scope.py
+SHA256: 5f018f523275c77d97aef6c6c82ff4015b0b5c46dcda0be2cd51eae09df2f0d4
 
 Server authorization and semantic validation remain authoritative.
 """
 
-from typing import Literal
+from collections.abc import Sequence
+from typing import Annotated, Literal, Self
 
-from pydantic import AwareDatetime, Field
+from pydantic import AwareDatetime, Field, model_validator
 
 from koinon_sdk._base import ResponseModel
 from koinon_sdk.evidence import SourceReference
 from koinon_sdk.memory import MemoryReceipt
 from koinon_sdk.organization_knowledge import OrganizationKnowledgeSnapshot
+
+RlmResourceIdentifier = Annotated[str, Field(min_length=1, max_length=64, strict=True)]
+
+
+def require_rlm_scope(documents: Sequence[str], knowledge: Sequence[str]) -> None:
+    if (
+        not documents
+        and (not knowledge)
+        or len(documents) + len(knowledge) > 500
+        or len(set(documents)) != len(documents)
+        or (len(set(knowledge)) != len(knowledge))
+    ):
+        raise ValueError("RLM tools require a nonempty, unique, bounded document or knowledge scope")
 
 
 class AuditValue(ResponseModel):
@@ -116,15 +133,27 @@ class PrivateFileReceipt(AuditValue):
 
 
 class RlmToolReceipt(AuditValue):
+    """An action admits a nonempty combination of document and knowledge IDs, at most 500 total.
+
+    Identifiers are unique within each domain. Content use requires separate exact-version execution receipts.
+    """
+
     result_id: str = Field(min_length=1, max_length=64)
     generation_id: str | None = None
     tenant_id: str = Field(min_length=1, max_length=64)
     workspace_id: str = Field(min_length=1, max_length=64, description="Admitted native execution workspace.")
-    source_ids: list[str] = Field(
-        min_length=1,
+    source_ids: list[RlmResourceIdentifier] = Field(
+        default_factory=list[RlmResourceIdentifier],
         max_length=500,
         description=(
-            "Admitted native source scope; actual content use requires separate execution-read evidence."
+            "Admitted native document source IDs; actual content use requires execution-read evidence."
+        ),
+    )
+    knowledge_item_ids: list[RlmResourceIdentifier] = Field(
+        default_factory=list[RlmResourceIdentifier],
+        max_length=500,
+        description=(
+            "Admitted canonical knowledge item IDs; exact versions and content use have separate receipts."
         ),
     )
     tool_call_id: str = Field(min_length=1, max_length=256)
@@ -150,6 +179,11 @@ class RlmToolReceipt(AuditValue):
     outcome: Literal["completed", "rejected", "failed", "halted"]
     execution_status: str = Field(min_length=1, max_length=32)
     execution_state: str = Field(min_length=1, max_length=32)
+
+    @model_validator(mode="after")
+    def coherent_corpus_scope(self) -> Self:
+        require_rlm_scope(self.source_ids, self.knowledge_item_ids)
+        return self
 
 
 class AnswerAudit(AuditValue):

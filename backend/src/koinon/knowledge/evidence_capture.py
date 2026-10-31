@@ -96,9 +96,23 @@ def failed_receipt(error, receipt, tenant_id, chain=None, binding=None):
 
         used = (
             execution_views(receipt)
-            if any(row.stage.startswith("rlm.") for row in receipt.native_reads) else None
+            if any(row.stage.startswith("rlm.") for row in receipt.native_reads)
+            else None
         )
-        sources.update({source.id: source for source in receipt.knowledge_sources.values()})
+        from koinon.knowledge.curated.rlm_receipts import execution_views as knowledge_execution_views
+
+        knowledge_used = knowledge_execution_views(receipt) if used is not None else None
+        sources.update(
+            {
+                source.id: source
+                for source in receipt.knowledge_sources.values()
+                if knowledge_used is None
+                or any(
+                    meta.item_id == source.asset_id and (meta.workspace_id, meta.item_id) in knowledge_used
+                    for meta in receipt.curated_rlm.metadata.values()
+                )
+            }
+        )
         for row in receipt.documents.values():
             if used is not None and (row.workspace_id, row.source_id) not in used:
                 continue
@@ -141,9 +155,9 @@ def failed_receipt(error, receipt, tenant_id, chain=None, binding=None):
 
 
 def checked_capture(receipt, *arguments):
-    capture = CapturedEvidence(*arguments, rlm_tools=(
-        tuple(receipt.rlm_tools) if receipt.rlm_tools is not None else None
-    ))
+    capture = CapturedEvidence(
+        *arguments, rlm_tools=(tuple(receipt.rlm_tools) if receipt.rlm_tools is not None else None)
+    )
     receipt.budget.envelope(capture)
     return capture
 
@@ -269,7 +283,11 @@ class NativeKnowledgeEvidence:
                         and source.knowledge_version_id == read.knowledge_version_id
                         and source.knowledge_version == read.knowledge_version
                     ]
-                    if read.tenant_id != tenant_id or not matches:
+                    if read.stage.startswith("rlm."):
+                        from koinon.knowledge.curated.rlm_verification import metadata_for_read
+
+                        metadata_for_read(receipt, read)
+                    elif read.tenant_id != tenant_id or not matches:
                         raise unavailable()
                     chain = await self.knowledge._chain(
                         subject, tenant_id, read.entity_id, "knowledge:search"
@@ -318,26 +336,46 @@ class NativeKnowledgeEvidence:
                 rlm = any(row.stage.startswith("rlm.") for row in receipt.native_reads)
                 complete = complete and (
                     verified_rlm_answer(receipt, data, admitted)
-                    if rlm else receipt.verified_document_answer(data)
+                    if rlm
+                    else receipt.verified_document_answer(data)
                 )
                 if rlm:
                     used = execution_views(receipt)
-                    used_assets = {
-                        chain[0].id for key, (chain, _) in admitted.items() if key in used
-                    }
+                    used_assets = {chain[0].id for key, (chain, _) in admitted.items() if key in used}
+                    from koinon.knowledge.curated.rlm_receipts import (
+                        execution_views as knowledge_execution_views,
+                    )
+
+                    knowledge_used = knowledge_execution_views(receipt)
+                    knowledge_assets = {item for _, item in knowledge_used}
                     sources = {
-                        identifier: source for identifier, source in sources.items()
-                        if source.kind != "document" or source.asset_id in used_assets
+                        identifier: source
+                        for identifier, source in sources.items()
+                        if source.kind == "document"
+                        and source.asset_id in used_assets
+                        or source.kind == "knowledge_version"
+                        and source.asset_id in knowledge_assets
                     }
-                    data = {**data, "hits": [
-                        hit for hit in data.get("hits", [])
-                        if str(hit.get("id")) in receipt.knowledge_sources
-                        or str(hit.get("id")) in receipt.documents
-                        and receipt.document_origins.get((
-                            receipt.documents[str(hit["id"])].workspace_id,
-                            receipt.documents[str(hit["id"])].source_id,
-                        ), (None,))[0] in used_assets
-                    ]}
+                    data = {
+                        **data,
+                        "hits": [
+                            hit
+                            for hit in data.get("hits", [])
+                            if str(hit.get("id")) in receipt.knowledge_sources
+                            and receipt.knowledge_sources[str(hit["id"])].asset_id in knowledge_assets
+                            or str(hit.get("id")) in receipt.documents
+                            and receipt.document_origins.get(
+                                (
+                                    receipt.documents[str(hit["id"])].workspace_id,
+                                    receipt.documents[str(hit["id"])].source_id,
+                                ),
+                                (None,),
+                            )[0]
+                            in used_assets
+                        ],
+                    }
+            for authorize in receipt.curated_rlm.authorizers:
+                await authorize()
             if receipt.authorize_knowledge is not None:
                 await receipt.authorize_knowledge()
             return checked_capture(

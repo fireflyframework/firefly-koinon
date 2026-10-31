@@ -50,9 +50,12 @@ import logging
 from typing import Any
 
 import httpx
+from pyfly.container import Provider
 from pyfly.container import service as service_bean
 
 from flyquery.config import FlyquerySettings
+from flyquery.core.services.callbacks.access import CallbackDeliveryAccess
+from flyquery.core.services.callbacks.admission import CallbackWorkAdmission
 from flyquery.core.services.callbacks.callback_dispatcher import (
     DeliveryOutcome,
     deliver,
@@ -83,10 +86,14 @@ class CallbackWorker:
         callback_outbox_repository: CallbackOutboxRepository,
         settings: FlyquerySettings,
         workspace_admin_repository: WorkspaceAdminRepository,
+        access: Provider[CallbackDeliveryAccess | None] | None = None,
+        work_admission: Provider[CallbackWorkAdmission | None] | None = None,
     ) -> None:
         self._repo = callback_outbox_repository
         self._settings = settings
         self._workspace_admin = workspace_admin_repository
+        self._access = access
+        self._work_admission = work_admission
         # Settings defaults: 5s poll, 25 rows / batch, 10s per-request timeout.
         # Per-attribute getattr so an older settings module without these knobs
         # falls back to sane values instead of AttributeError-ing on startup.
@@ -127,10 +134,27 @@ class CallbackWorker:
         logger.info("callback_worker_stopped")
 
     async def _drain_scopes(self, client: httpx.AsyncClient) -> None:
+        work = self._work_admission() if self._work_admission is not None else None
+        if work is None and getattr(self._settings, "_require_model_bindings", False):
+            raise RuntimeError("Managed callback work admission is unavailable")
         for scope in await self._workspace_admin.scopes():
             with workspace_scope(scope["tenant_id"], str(scope["id"])):
-                rows = await self._repo.claim_due_batch(limit=self._batch_size)
-                await asyncio.gather(*[self._dispatch(client, row) for row in rows])
+                if work is None:
+                    rows = await self._repo.claim_due_batch(
+                        limit=self._batch_size, lease_seconds=self._request_timeout_s + 30
+                    )
+                    await asyncio.gather(*[self._dispatch(client, row) for row in rows])
+                    continue
+                for _ in range(self._batch_size):
+                    if self._shutdown.is_set():
+                        return
+                    async with work.admit():
+                        rows = await self._repo.claim_due_batch(
+                            limit=1, lease_seconds=self._request_timeout_s + 30
+                        )
+                        if not rows:
+                            break
+                        await self._dispatch(client, rows[0])
 
     async def stop(self) -> None:
         self._shutdown.set()
@@ -148,6 +172,25 @@ class CallbackWorker:
             or str(row["workspace_id"]) != context.workspace_id
         ):
             raise RuntimeError("Callback row disagrees with its trusted workspace scope")
+        try:
+            access = self._access() if self._access is not None else None
+            if access is None and getattr(self._settings, "_require_model_bindings", False):
+                raise RuntimeError("Managed callback authority is unavailable")
+            if access is not None:
+                await access.authorize(row)
+        except Exception:
+            await self._repo.mark_attempt_failure(
+                id_=row["id"],
+                status_code=None,
+                error="CALLBACK_AUTHORITY_UNAVAILABLE",
+                backoff_seconds=0,
+                terminal=True,
+                claim=row,
+            )
+            logger.warning("Callback authority is unavailable; delivery was not attempted")
+            return
+        if not await self._repo.still_owned(row):
+            return
         outcome: DeliveryOutcome = await deliver(
             client=client,
             url=row["callback_url"],
@@ -159,10 +202,14 @@ class CallbackWorker:
             timeout_s=self._request_timeout_s,
         )
         if outcome.success:
-            await self._repo.mark_delivered(
+            settled = await self._repo.mark_delivered(
                 id_=row["id"],
                 status_code=outcome.status_code or 0,
+                claim=row,
             )
+            if not settled:
+                logger.warning("Callback delivery outcome lost its reservation")
+                return
             logger.info(
                 "callback_delivered id=%s job_id=%s status=%s",
                 row["id"],
@@ -174,13 +221,17 @@ class CallbackWorker:
         attempts_after = (row["attempts"] or 0) + 1
         terminal = attempts_after >= _MAX_ATTEMPTS
         backoff = 0 if terminal else _RETRY_BACKOFF_SECONDS[row["attempts"] or 0]
-        await self._repo.mark_attempt_failure(
+        settled = await self._repo.mark_attempt_failure(
             id_=row["id"],
             status_code=outcome.status_code,
             error=outcome.error or "unknown",
             backoff_seconds=backoff,
             terminal=terminal,
+            claim=row,
         )
+        if not settled:
+            logger.warning("Callback failure outcome lost its reservation")
+            return
         logger.warning(
             "callback_attempt_failed id=%s job_id=%s attempts=%d/%d terminal=%s status=%s error=%s",
             row["id"],

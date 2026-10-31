@@ -46,6 +46,7 @@ from koinon.knowledge.evidence_capture import NativeKnowledgeEvidence
 from koinon.knowledge.model_bindings import DomainConnections, KnowledgeConnectionResolver
 from koinon.organization_knowledge.dtos import OrganizationKnowledgeSnapshot, snapshot_digest
 from koinon.organization_knowledge.runtime import bind_snapshot
+from koinon.workers.admission import WorkAdmission, WorkAdmissionSettings
 
 
 @pytest.mark.parametrize("typed_terminal", [False, True])
@@ -239,7 +240,8 @@ async def test_admitted_rlm_policy_executes_native_codeact_and_returns_exact_imm
                 contains_type=lambda kind: kind in beans,
                 resolve=lambda kind: beans[kind],
                 registered_types=list,
-            )
+            ),
+            admission=WorkAdmission(WorkAdmissionSettings()),
         )
         asset = SimpleNamespace(id="asset", kind="document", name="Controlled scalar", workspace_id="space")
         parent = SimpleNamespace(id="canonical-source")

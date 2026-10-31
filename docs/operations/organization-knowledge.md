@@ -26,7 +26,7 @@ RLM also requires recorded immutable document views. Capabilities expose `rlm_re
 
 An RLM answer does not publish new knowledge. Any proposed repository change needs a separate review of the exact content, destination and source versions, followed by the user's explicit approval. A model-generated conclusion or a successful analysis run cannot supply that approval.
 
-Curated support requires the exact acknowledged published version and its complete ordered content, current access to its source roots, and citations that identify the knowledge version. Original document citations cannot stand in for a curated version's body. Keep the capability disabled until those reads, permissions and completion evidence are qualified together.
+Curated support requires the exact acknowledged published version and its complete ordered content, current access to its source roots, and citations that identify the knowledge version. Original document citations cannot stand in for a curated version's body. Keep the capability disabled until those reads, permissions and completion evidence are qualified together. The source implementation provides a separate typed curated-version reader and receipt path; this does not change the advertised capability or establish real-model acceptance. [Curated RLM evidence](../reference/curated-rlm-evidence.md) describes its version, scope and audit contracts.
 
 | Document parameter | Accepted values |
 | --- | --- |

@@ -40,14 +40,28 @@ def _page(value):
 
 
 def tool_scope(receipt, scope):
-    if (scope is None or provenance.current() is not scope or not scope.active or receipt.closed
-            or scope.observer is not receipt or scope.task is not receipt.owner
-            or scope.task.done() or scope.task.cancelling() or scope.loop.is_closed()
-            or get_ident() not in scope.threads or scope.tenant_id != receipt.tenant_id
-            or scope.actor != receipt.subject or not scope.source_ids
-            or any((scope.workspace_id, source) not in receipt.canonical_documents
-                   or scope.allowed_sources is not None and source not in scope.allowed_sources
-                   for source in scope.source_ids)):
+    if (
+        scope is None
+        or provenance.current() is not scope
+        or not scope.active
+        or receipt.closed
+        or scope.observer is not receipt
+        or scope.task is not receipt.owner
+        or scope.task.done()
+        or scope.task.cancelling()
+        or scope.loop.is_closed()
+        or get_ident() not in scope.threads
+        or scope.tenant_id != receipt.tenant_id
+        or scope.actor != receipt.subject
+        or not (scope.source_ids or scope.knowledge_ids)
+        or any((scope.workspace_id, item) not in receipt.curated_rlm.metadata for item in scope.knowledge_ids)
+        or any(
+            (scope.workspace_id, source) not in receipt.canonical_documents
+            or scope.allowed_sources is not None
+            and source not in scope.allowed_sources
+            for source in scope.source_ids
+        )
+    ):
         raise unavailable()
 
 
@@ -180,17 +194,29 @@ def document_execution_read(receipt, meta, read, scope):
         or getattr(receipt, "_rlm_document_views", {}).get(key) != read
         or (read.source_id, read.source_version_id, read.ingestion_extraction_id)
         != (meta.source_id, meta.source_version_id, meta.ingestion_extraction_id)
-        or scope.allowed_sources is not None and meta.source_id not in scope.allowed_sources
+        or scope.allowed_sources is not None
+        and meta.source_id not in scope.allowed_sources
         or key not in receipt.canonical_documents
     ):
         raise unavailable()
     provenance.authority(scope)
     database = receipt.source_contexts.get(read.source_id, NativeDatabaseContext())
     following = NativeReadFingerprint(
-        EXECUTION_READ, "canon", scope.tenant_id, scope.workspace_id, read.source_id,
-        read.input_sha256, (read.source_id,), (), engine=database.engine, database=database.database,
-        catalog=database.catalog, schema=database.schema, read_kind="document_extraction",
-        origin=receipt.source_origins.get(read.source_id), source_version_id=read.source_version_id,
+        EXECUTION_READ,
+        "canon",
+        scope.tenant_id,
+        scope.workspace_id,
+        read.source_id,
+        read.input_sha256,
+        (read.source_id,),
+        (),
+        engine=database.engine,
+        database=database.database,
+        catalog=database.catalog,
+        schema=database.schema,
+        read_kind="document_extraction",
+        origin=receipt.source_origins.get(read.source_id),
+        source_version_id=read.source_version_id,
         extraction_id=read.extraction_id,
     )
     receipt.budget.check(receipt, reads=[following])
@@ -205,9 +231,11 @@ def execution_views(receipt):
         key = (row.workspace_id, row.entity_id)
         view = registered.get(key)
         if (
-            row.stage == EXECUTION_READ and view is not None
+            row.stage == EXECUTION_READ
+            and view is not None
             and getattr(receipt, "_rlm_document_views", {}).get(key) == view
-            and row.domain == "canon" and row.tenant_id == receipt.tenant_id
+            and row.domain == "canon"
+            and row.tenant_id == receipt.tenant_id
             and row.source_ids == (view.source_id,)
             and (row.read_kind, row.source_version_id, row.extraction_id, row.content_sha256)
             == ("document_extraction", view.source_version_id, view.extraction_id, view.input_sha256)
@@ -224,15 +252,15 @@ def _citation_field(citation, name):
     return nested if nested is not None else direct
 
 
-def verified_rlm_answer(receipt, data, admitted):
+def _verified_document_answer(receipt, data, admitted):
     views = getattr(receipt, "_rlm_document_views", {})
-    if not views or not isinstance(data.get("answer"), str) or not data["answer"].strip():
-        return False
     parts = {page.part_id: (key, view, page) for key, view in views.items() for page in view.pages}
     if set(parts) != set(receipt.documents):
         return False
     reads, models, released = set(), set(), set()
     for row in receipt.native_reads:
+        if row.domain == "knowledge":
+            continue
         if not row.stage.startswith("rlm.") or row.tenant_id != receipt.tenant_id or row.domain != "canon":
             return False
         for source in row.source_ids:
@@ -272,6 +300,8 @@ def verified_rlm_answer(receipt, data, admitted):
     for citation in citations:
         if not isinstance(citation, dict):
             raise unavailable()
+        if citation.get("source_kind") == "knowledge_version":
+            continue
         part_id = _citation_field(citation, "source_part_id")
         found = parts.get(part_id)
         if found is None:
@@ -297,3 +327,18 @@ def verified_rlm_answer(receipt, data, admitted):
         ):
             raise unavailable()
     return used_citations
+
+
+def verified_rlm_answer(receipt, data, admitted):
+    from koinon.knowledge.curated.rlm_verification import verified
+
+    if (
+        not isinstance(data.get("answer"), str)
+        or not data["answer"].strip()
+        or not isinstance(data.get("citations"), list)
+        or not data["citations"]
+    ):
+        return False
+    if any(not isinstance(citation, dict) for citation in data["citations"]):
+        raise unavailable()
+    return _verified_document_answer(receipt, data, admitted) and verified(receipt, data)

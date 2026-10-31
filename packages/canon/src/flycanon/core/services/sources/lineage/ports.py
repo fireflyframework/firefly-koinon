@@ -2,13 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 """Typed application queries and native persistence units for document lineage."""
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol
 
 from flycanon.core.services.sources.lineage.dtos import DocumentScope
 from flycanon.models.entities.source import SourceRow
+
+type PublicationGuard = Callable[[], AbstractAsyncContextManager[None]]
+type StageAuthorization = Callable[[], Awaitable[None]]
 
 type LineageEntity = Literal["head", "version", "artifact", "extraction", "part", "step", "event", "source"]
 type LineageRecord = Mapping[str, Any]

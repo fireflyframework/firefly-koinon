@@ -19,6 +19,7 @@ from flycanon.core.agents.model_bindings import ModelBinding, push_bindings, res
 from flycanon.core.services.query import provenance
 from flycanon.core.services.query.rlm.corpus import SourceMeta
 from flycanon.core.services.query.rlm_answer_service import RLMAnswerService
+from flycanon.core.services.sources.lineage.dtos import DocumentCitationRef
 from flycanon.interfaces.dtos.query import AnswerRequest
 from flycanon.web.conventions.context import TenantContext, set_tenant_context
 
@@ -32,9 +33,30 @@ class Corpus:
 
     def resolve(self, key):
         return SourceMeta(
-            source_id="source", filename="source.txt", title=None, kind="text",
-            object_store_key="fixture", content_sha256="a" * 64,
-            tenant_id="fixture", workspace_id="workspace",
+            source_id="source",
+            filename="source.txt",
+            title=None,
+            kind="text",
+            object_store_key="fixture",
+            content_sha256="a" * 64,
+            tenant_id="fixture",
+            workspace_id="workspace",
+            source_version_id="fixture-version",
+            ingestion_extraction_id="fixture-extraction",
+        )
+
+    def citation_ref(self, key, page, content):
+        text = "first second"
+        if key != "A" or page != 0 or content not in text:
+            return None
+        return DocumentCitationRef(
+            "source",
+            "fixture-version",
+            "fixture-extraction",
+            "fixture-part",
+            sha256(text.encode()).hexdigest(),
+            None,
+            "recorded_loader",
         )
 
 
@@ -70,14 +92,29 @@ class Observer:
 
 @contextmanager
 def required(observer, model=None, output_mode="default"):
-    context = set_tenant_context(TenantContext(
-        tenant_id="fixture", workspace_id="workspace", actor="owner", correlation_id="consistency",
-    ))
+    context = set_tenant_context(
+        TenantContext(
+            tenant_id="fixture",
+            workspace_id="workspace",
+            actor="owner",
+            correlation_id="consistency",
+        )
+    )
     model = model or FunctionModel(lambda messages, info: ModelResponse(parts=[TextPart("1")]))
-    token = push_bindings(tenant_id="fixture", workspace_id="workspace", subject="owner",
-        bindings={"documents.rlm": ModelBinding(
-            model, {"max_tokens": 64}, "ollama", "chat", output_mode=output_mode,
-        )})
+    token = push_bindings(
+        tenant_id="fixture",
+        workspace_id="workspace",
+        subject="owner",
+        bindings={
+            "documents.rlm": ModelBinding(
+                model,
+                {"max_tokens": 64},
+                "ollama",
+                "chat",
+                output_mode=output_mode,
+            )
+        },
+    )
     try:
         with provenance.observe(observer, tenant_id="fixture", workspace_id="workspace", actor="owner"):
             yield token.scope
@@ -105,11 +142,12 @@ class Selector:
         return dict(input_tokens=5, output_tokens=2, estimated_cost_usd=0.0, by_model={})
 
 
-def service(monkeypatch, candidates, selector=None):
+def service(monkeypatch, candidates, selector=None, *, citations=True):
     settings = CanonSettings(rlm_self_consistency=len(candidates))
     cost = Cost()
-    result = RLMAnswerService(corpus_builder=Builder(), client=SimpleNamespace(),
-                             settings=settings, cost_service=cost)
+    result = RLMAnswerService(
+        corpus_builder=Builder(), client=SimpleNamespace(), settings=settings, cost_service=cost
+    )
     ordinal = count()
 
     def candidate(*args):
@@ -117,7 +155,13 @@ def service(monkeypatch, candidates, selector=None):
         value = candidates[next(ordinal)]
         if isinstance(value, BaseException):
             raise value
-        return value, [], False, dict(input_tokens=2, output_tokens=1, estimated_cost_usd=0.0, by_model={})
+        references = [{"filing": "A", "page": 0, "content": value}] if citations else []
+        return (
+            value,
+            references,
+            False,
+            dict(input_tokens=2, output_tokens=1, estimated_cost_usd=0.0, by_model={}),
+        )
 
     monkeypatch.setattr(result, "_run_once", candidate)
     if selector is not None:
@@ -126,8 +170,9 @@ def service(monkeypatch, candidates, selector=None):
 
 
 async def answer(service):
-    return await service.answer(AnswerRequest(question="Inspect the source"),
-                                tenant_id="fixture", workspace_id="workspace")
+    return await service.answer(
+        AnswerRequest(question="Inspect the source"), tenant_id="fixture", workspace_id="workspace"
+    )
 
 
 @pytest.mark.parametrize("partial", [False, True])
@@ -138,6 +183,13 @@ async def test_required_candidates_propagate_any_execution_failure(monkeypatch, 
     with required(Observer()), pytest.raises(ServiceUnavailableException) as raised:
         await answer(instance)
     assert raised.value is error and selector.calls == 0 and cost.calls == []
+
+
+async def test_required_selected_answer_without_citations_fails_before_cost(monkeypatch):
+    instance, cost = service(monkeypatch, ["first", "second"], Selector(), citations=False)
+    with required(Observer()), pytest.raises(ServiceUnavailableException) as raised:
+        await answer(instance)
+    assert raised.value.code == "EVIDENCE_UNAVAILABLE" and cost.calls == []
 
 
 async def test_required_selector_runs_on_an_authorized_worker_and_merges_actual_spend(monkeypatch):
@@ -216,22 +268,45 @@ async def test_required_selector_uses_actual_native_client_sdk_wire_and_ledger(m
 
     def respond(request):
         observed.append(json.loads(request.content))
-        return httpx2.Response(200, json={
-            "id": "offline-selector", "object": "chat.completion", "created": 0,
-            "model": "qualified-selector", "choices": [{"index": 0,
-                "message": {"role": "assistant", "content": "2"}, "finish_reason": "stop"}],
-            "usage": {"prompt_tokens": 5, "completion_tokens": 2, "total_tokens": 7},
-        })
+        return httpx2.Response(
+            200,
+            json={
+                "id": "offline-selector",
+                "object": "chat.completion",
+                "created": 0,
+                "model": "qualified-selector",
+                "choices": [
+                    {"index": 0, "message": {"role": "assistant", "content": "2"}, "finish_reason": "stop"}
+                ],
+                "usage": {"prompt_tokens": 5, "completion_tokens": 2, "total_tokens": 7},
+            },
+        )
 
-    monkeypatch.setattr("pydantic_ai.providers._openai_compatible.create_async_httpx2_client",
-        lambda: httpx2.AsyncClient(transport=httpx2.MockTransport(respond), trust_env=False))
-    model = await ModelFactory().build(ModelSpec(
-        provider="ollama", model="qualified-selector", model_class="OpenAIChatModel",
-        base_url="http://127.0.0.1:11434/v1", credential=Credential.none(),
-        options=ModelOptions(max_tokens=64),
-    ))
-    app = ApplicationContext(Config({"pyfly": {"banner": {"mode": "off"},
-        "agentic": {"enabled": True}, "eda": {"provider": "memory"}}}))
+    monkeypatch.setattr(
+        "pydantic_ai.providers._openai_compatible.create_async_httpx2_client",
+        lambda: httpx2.AsyncClient(transport=httpx2.MockTransport(respond), trust_env=False),
+    )
+    model = await ModelFactory().build(
+        ModelSpec(
+            provider="ollama",
+            model="qualified-selector",
+            model_class="OpenAIChatModel",
+            base_url="http://127.0.0.1:11434/v1",
+            credential=Credential.none(),
+            options=ModelOptions(max_tokens=64),
+        )
+    )
+    app = ApplicationContext(
+        Config(
+            {
+                "pyfly": {
+                    "banner": {"mode": "off"},
+                    "agentic": {"enabled": True},
+                    "eda": {"provider": "memory"},
+                }
+            }
+        )
+    )
     await app.start()
     instance, cost = service(monkeypatch, ["first", "second"])
     instance._settings._agent_factory = app.get_bean(AgentFactory)

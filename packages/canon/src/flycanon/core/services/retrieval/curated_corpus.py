@@ -13,6 +13,7 @@ from pyfly.kernel import ServiceUnavailableException
 
 if TYPE_CHECKING:
     from flycanon.core.services.retrieval.retrieval_service import Hit
+    from flycanon.interfaces.knowledge_corpus import CuratedRlmReader
 
 
 @dataclass
@@ -23,14 +24,16 @@ class CorpusLease:
     task: object
     documents: bool = True
     active: bool = True
+    actor: str = ""
+    rlm: "CuratedRlmReader | None" = None
 
 
 _current: ContextVar[CorpusLease | None] = ContextVar("curated_version_corpus", default=None)
 
 
 @contextmanager
-def bind(*, tenant_id, workspace_id, retrieve, documents=True):
-    lease = CorpusLease(tenant_id, workspace_id, retrieve, current_task(), documents)
+def bind(*, tenant_id, workspace_id, retrieve, documents=True, actor="", rlm=None):
+    lease = CorpusLease(tenant_id, workspace_id, retrieve, current_task(), documents, actor=actor, rlm=rlm)
     token = _current.set(lease)
     try:
         yield
@@ -67,3 +70,50 @@ def documents_enabled(*, tenant_id, workspace_id):
             "Curated corpus admission expired", code="KNOWLEDGE_CORPUS_SCOPE_EXPIRED"
         )
     return lease.documents
+
+
+def current_lease() -> CorpusLease | None:
+    return _current.get()
+
+
+def rlm_lease(*, tenant_id: str, workspace_id: str) -> CorpusLease | None:
+    lease = _current.get()
+    if lease is None or lease.rlm is None:
+        return None
+    if (
+        not lease.active
+        or current_task() is not lease.task
+        or (tenant_id, workspace_id) != (lease.tenant_id, lease.workspace_id)
+        or not lease.actor
+    ):
+        raise ServiceUnavailableException(
+            "Curated corpus admission expired", code="KNOWLEDGE_CORPUS_SCOPE_EXPIRED"
+        )
+    return lease
+
+
+async def authorize_rlm(scope) -> None:
+    lease = _current.get()
+    if lease is None or lease.rlm is None:
+        return
+
+    def valid():
+        return (
+            lease.active
+            and scope.active
+            and lease.task is scope.task
+            and not scope.task.done()
+            and not scope.task.cancelling()
+            and (lease.tenant_id, lease.workspace_id, lease.actor)
+            == (scope.tenant_id, scope.workspace_id, scope.actor)
+        )
+
+    if not valid():
+        raise ServiceUnavailableException(
+            "Curated corpus admission expired", code="KNOWLEDGE_CORPUS_SCOPE_EXPIRED"
+        )
+    await lease.rlm.authorize()
+    if not valid():
+        raise ServiceUnavailableException(
+            "Curated corpus admission expired", code="KNOWLEDGE_CORPUS_SCOPE_EXPIRED"
+        )

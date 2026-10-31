@@ -51,6 +51,9 @@ public final class KoinonClient implements AutoCloseable {
     return new OrganizationPeopleApi(transport, tenant);
   }
 
+  public FileBatchesApi fileBatches(String tenant) { return new FileBatchesApi(transport, tenant); }
+  public QueryBatchesApi queryBatches(String tenant) { return new QueryBatchesApi(transport, tenant); }
+
   public CorporateProfilesApi corporateProfiles(String tenant) {
     return new CorporateProfilesApi(transport, tenant);
   }

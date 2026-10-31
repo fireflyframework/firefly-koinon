@@ -45,10 +45,12 @@ These links target guides in the source repository:
 - [Administration, organization directory, paging, revisions, errors and private downloads](../../docs/guides/typescript-administration.md)
 - [Agentic, embedding, RAG and RLM responsibilities](../../docs/concepts/knowledge-runtime.md)
 - [Generated API reference](../../docs/reference/sdk-api.md)
+- [Durable file intake](../../docs/guides/bulk-intake.md) and [independent query batches](../../docs/guides/bulk-queries.md)
 
 | Capability | Client group |
 | --- | --- |
 | Catalog and ingestion | `catalog`, `sources`, `dataset.appendFile` |
+| Durable batches | `fileBatches`, `queryBatches`: private lifecycle, results, cancellation and explicit reconciliation |
 | Search and structured evidence | `search`, `query`, `dataset` schema/snapshot/provenance/coordinate methods, `structured.glossary`/`agentGlossary` |
 | Immutable document history | `documents.versions/version/extractions/parts/part/versionOriginal` |
 | Content changes | `documents.replace/reingest`, `dataset.replaceTable/reingestTable` with current digest/snapshot preconditions |

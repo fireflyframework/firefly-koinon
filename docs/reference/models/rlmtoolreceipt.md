@@ -19,7 +19,8 @@ Required means the key must be present. Nullable means its value may be `null`; 
 | `generation_id` | `string` or `null` | No | `null` |
 | `tenant_id` | `string` | Yes | Not specified |
 | `workspace_id` | `string` | Yes | Not specified |
-| `source_ids` | Array of `string` | Yes | Not specified |
+| `source_ids` | Array of `string` | No | Not specified |
+| `knowledge_item_ids` | Array of `string` | No | Not specified |
 | `tool_call_id` | `string` | Yes | Not specified |
 | `tool_name` | `string` | Yes | Not specified |
 | `request_sha256` | `string` | Yes | Not specified |
@@ -35,6 +36,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 ## Model constraints
 
 - Additional properties: permitted
+- An action admits a nonempty combination of document and knowledge IDs, at most 500 total.  Identifiers are unique within each domain. Content use requires separate exact-version execution receipts.
 
 ## Field constraints
 
@@ -56,9 +58,17 @@ Required means the key must be present. Nullable means its value may be `null`; 
 
 ### source_ids
 
-- Minimum items: `1`
 - Maximum items: `500`
-- Admitted native source scope; actual content use requires separate execution-read evidence.
+- Admitted native document source IDs; actual content use requires execution-read evidence.
+- Each item: Minimum length: `1`
+- Each item: Maximum length: `64`
+
+### knowledge_item_ids
+
+- Maximum items: `500`
+- Admitted canonical knowledge item IDs; exact versions and content use have separate receipts.
+- Each item: Minimum length: `1`
+- Each item: Maximum length: `64`
 
 ### tool_call_id
 
@@ -120,6 +130,7 @@ This is a schema definition, not an example request. It preserves all declared k
     ```json
     {
       "additionalProperties": true,
+      "description": "An action admits a nonempty combination of document and knowledge IDs, at most 500 total.\n\nIdentifiers are unique within each domain. Content use requires separate exact-version execution receipts.",
       "properties": {
         "result_id": {
           "maxLength": 64,
@@ -153,13 +164,25 @@ This is a schema definition, not an example request. It preserves all declared k
           "type": "string"
         },
         "source_ids": {
-          "description": "Admitted native source scope; actual content use requires separate execution-read evidence.",
+          "description": "Admitted native document source IDs; actual content use requires execution-read evidence.",
           "items": {
+            "maxLength": 64,
+            "minLength": 1,
             "type": "string"
           },
           "maxItems": 500,
-          "minItems": 1,
           "title": "Source Ids",
+          "type": "array"
+        },
+        "knowledge_item_ids": {
+          "description": "Admitted canonical knowledge item IDs; exact versions and content use have separate receipts.",
+          "items": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 500,
+          "title": "Knowledge Item Ids",
           "type": "array"
         },
         "tool_call_id": {
@@ -240,7 +263,6 @@ This is a schema definition, not an example request. It preserves all declared k
         "result_id",
         "tenant_id",
         "workspace_id",
-        "source_ids",
         "tool_call_id",
         "tool_name",
         "request_sha256",

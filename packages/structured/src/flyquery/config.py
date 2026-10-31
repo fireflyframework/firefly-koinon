@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
 
-from pydantic import Field, PrivateAttr
+from pydantic import Field, PrivateAttr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 if TYPE_CHECKING:
@@ -43,6 +43,19 @@ class FlyquerySettings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
+
+    @classmethod
+    def settings_customise_sources(
+        cls, settings_cls, init_settings, env_settings, dotenv_settings, file_secret_settings
+    ):
+        from flyquery.config_sources import ingestion_environment
+
+        return (
+            init_settings,
+            ingestion_environment(env_settings),
+            ingestion_environment(dotenv_settings),
+            file_secret_settings,
+        )
 
     _require_model_bindings: bool = PrivateAttr(default=False)
     _agent_factory: AgentFactory | None = PrivateAttr(default=None)
@@ -105,6 +118,23 @@ class FlyquerySettings(BaseSettings):
     # Upload caps
     max_file_mb: int = 2048
     max_workspace_gb: int = 200
+
+    # Ingestion resource policy is independent of query execution limits.
+    ingest_duckdb_memory_limit: str = Field(
+        default="512MiB", pattern=r"^[1-9][0-9]{0,5}(?:KiB|MiB|GiB|KB|MB|GB)$"
+    )
+    ingest_duckdb_threads: int = Field(default=1, strict=True, ge=1, le=64)
+    ingest_scratch_max_bytes: int = Field(default=8 * 1024**3, strict=True, ge=1, le=64 * 1024**3)
+    ingest_decompressed_max_bytes: int = Field(default=5 * 1024**3, strict=True, ge=1, le=64 * 1024**3)
+    ingest_native_connections: int = Field(default=32, strict=True, ge=1, le=32)
+    ingest_scratch_root: str | None = None
+
+    @model_validator(mode="after")
+    def validate_ingestion_resources(self):
+        from flyquery.core.services.ingestion.resources import IngestionResourcePolicy
+
+        IngestionResourcePolicy.from_settings(self)
+        return self
 
     # Ingestion knobs
     ingest_topic: str = "flyquery.ingest"

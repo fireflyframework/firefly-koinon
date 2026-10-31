@@ -8,6 +8,8 @@ from test_curated_intents import input_for
 from test_curated_native_commit import transaction_fixture
 from test_curated_native_events import native_lifecycle as native_lifecycle
 
+from koinon.workers.admission import WorkAdmission, WorkAdmissionSettings
+
 
 async def test_native_body_reads_are_versioned_and_drafts_never_replace_serving_content(
     curated, native_lifecycle
@@ -54,6 +56,9 @@ async def test_native_body_reads_are_versioned_and_drafts_never_replace_serving_
     await projector.apply(preview, first, projection)
     reads = context.get_bean(CuratedKnowledgeReads)
     reads.native = SimpleNamespace(datasource=lambda: native_lifecycle[1])
+    from koinon.knowledge.curated.whole_repository import CuratedWholePartRepository
+
+    context.get_bean(CuratedWholePartRepository).datasources = native_lifecycle[1].registry
     corpus = context.get_bean(CuratedBodyCorpus)
     admitted = await corpus.admit("issuer|reader", "north", [first.item_id])
     from koinon.knowledge.capture_receipt import NativeEvidenceReceipt
@@ -126,7 +131,7 @@ async def test_native_body_reads_are_versioned_and_drafts_never_replace_serving_
     facade = KnowledgeFacade(
         curated[1],
         context.get_bean(DomainBindingRepository),
-        NativeDomains(context.container),
+        NativeDomains(context.container, admission=WorkAdmission(WorkAdmissionSettings())),
         KnowledgeSettings(),
         SimpleNamespace(get=lambda: corpus),
         knowledge_settings=SimpleNamespace(

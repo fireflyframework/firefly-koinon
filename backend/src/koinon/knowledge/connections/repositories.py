@@ -4,13 +4,16 @@ from pyfly.container import repository
 from pyfly.data.relational.sqlalchemy import Repository
 from sqlalchemy import select
 
-from koinon.catalog.entities import AuditEvent
+from koinon.catalog.entities import AuditEvent, Tenant
 from koinon.knowledge.connections.entities import KnowledgeConnection
 
 
 @repository(name="knowledge.connection_repository")
 class KnowledgeConnectionRepository(Repository[KnowledgeConnection, str]):
     """Tenant defaults and canonical workspace overrides; credentials remain in providers."""
+
+    async def lock_tenant(self, tenant_id: str) -> None:
+        await self._require_session().scalar(select(Tenant).where(Tenant.id == tenant_id).with_for_update())
 
     async def find_conflicting_embedding_history(self, tenant_id, role, spaces, fingerprint):
         statement = (

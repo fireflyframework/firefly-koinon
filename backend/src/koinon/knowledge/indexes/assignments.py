@@ -6,7 +6,7 @@ from hashlib import sha256
 from json import dumps
 
 from pyfly.container import service
-from pyfly.data.relational.sqlalchemy import LockMode
+from pyfly.data.relational.sqlalchemy import LockMode, transactional
 from pyfly.kernel import ConflictException
 
 from koinon.knowledge.connections.entities import KnowledgeConnection, timestamp
@@ -47,7 +47,9 @@ class IndexAssignments:
             )
         return result
 
+    @transactional
     async def bind(self, subject, row, expected):
+        await self.connections.connections.lock_tenant(row.tenant_id)
         current = await self.snapshot(subject, row.tenant_id, expected, row.domain)
         if current != expected:
             raise ConflictException(

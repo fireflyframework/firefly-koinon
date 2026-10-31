@@ -207,6 +207,7 @@ skip = {
     "EvidenceResult",
     "BinaryDownload",
     "AvatarUpload",
+    "BulkFileUpload",
     "AttachmentUpload",
     "DatasetFileUpload",
     "SourceUpload",
@@ -277,6 +278,15 @@ for name, definition in defs.items():
             + ",".join("null" if wire == "source_reference" else key for wire, key, _, _, _ in fields)
             + ");}\n"
         )
+    if name == "RlmToolReceipt":
+        previous = [field for field in fields if field[0] != "knowledge_item_ids"]
+        body += (
+            "    public RlmToolReceipt("
+            + ", ".join(kind + " " + key for _, key, kind, _, _ in previous)
+            + "){this("
+            + ",".join("List.of()" if wire == "knowledge_item_ids" else key for wire, key, _, _, _ in fields)
+            + ");}\n"
+        )
     if name == "AttachmentObservation":
         body += (
             "    public AttachmentObservation { configured = Boolean.TRUE.equals(configured); }\n"
@@ -293,6 +303,9 @@ for name, definition in defs.items():
         )
     for wire, key, kind, raw, wrapped in fields:
         if wrapped:
+            continue
+        if name == "RlmToolReceipt" and wire in {"source_ids", "knowledge_item_ids"}:
+            copies.append(key + "=" + key + "==null?List.of():List.copyOf(" + key + ");")
             continue
         if kind == "JsonNode":
             copies.append(key + "=ModelValues.json(" + key + ");")

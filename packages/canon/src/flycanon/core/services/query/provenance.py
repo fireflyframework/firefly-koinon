@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Optional caller-owned pre-model document receipts; no standalone runtime policy."""
 
-from asyncio import current_task, get_running_loop, run_coroutine_threadsafe
+from asyncio import Task, current_task, get_running_loop, run_coroutine_threadsafe
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
@@ -19,11 +19,12 @@ class Observation:
     tenant_id: str
     workspace_id: str
     actor: str
-    task: object
+    task: Task[Any]
     active: bool = True
     threads: set = field(default_factory=set)
     lock: Any = field(default_factory=RLock)
     source_ids: set = field(default_factory=set)
+    knowledge_ids: set[str] = field(default_factory=set)
     allowed_sources: frozenset[str] | None = None
     loop: Any = None
     authorized: bool = False
@@ -34,7 +35,10 @@ _current: ContextVar[Observation | None] = ContextVar("document_evidence", defau
 
 @contextmanager
 def observe(observer, *, tenant_id, workspace_id, actor, dataset_id="", source_ids=None):
-    scope = Observation(observer, tenant_id, str(workspace_id), actor, current_task())
+    task = current_task()
+    if task is None:
+        raise ServiceUnavailableException("A request-owned task is required", code="EVIDENCE_UNAVAILABLE")
+    scope = Observation(observer, tenant_id, str(workspace_id), actor, task)
     scope.loop = get_running_loop()
     scope.allowed_sources = frozenset(map(str, source_ids)) if source_ids is not None else None
     token = _current.set(scope)
@@ -97,10 +101,21 @@ def worker(operation):
     return leased
 
 
+async def _authorize(scope):
+    from flycanon.core.services.retrieval.curated_corpus import authorize_rlm
+
+    await scope.observer.authorize()
+    await authorize_rlm(scope)
+
+
 async def authorize():
     scope = current()
     if scope is not None:
-        await scope.observer.authorize()
+        await _authorize(scope)
+        if current() is not scope:
+            raise ServiceUnavailableException(
+                "Native provenance scope has expired", code="EVIDENCE_UNAVAILABLE"
+            )
         scope.authorized = True
 
 
@@ -116,7 +131,7 @@ def authority(scope):
             )
         scope.authorized = False
     else:
-        future = run_coroutine_threadsafe(scope.observer.authorize(), scope.loop)
+        future = run_coroutine_threadsafe(_authorize(scope), scope.loop)
         try:
             future.result(timeout=10)
             current()
@@ -151,11 +166,19 @@ def model(stage, content):
     if scope is not None:
         with scope.lock:
             authority(scope)
-            if not scope.source_ids:
+            if not scope.source_ids and not scope.knowledge_ids:
                 raise ServiceUnavailableException(
                     "Native document provenance is missing", code="EVIDENCE_UNAVAILABLE"
                 )
-            scope.observer.document_sync(stage, content, tuple(sorted(scope.source_ids)), scope)
+            if scope.source_ids:
+                scope.observer.document_sync(stage, content, tuple(sorted(scope.source_ids)), scope)
+            if scope.knowledge_ids:
+                hook = getattr(scope.observer, "knowledge_sync", None)
+                if not callable(hook):
+                    raise ServiceUnavailableException(
+                        "Knowledge provenance observer is required", code="EVIDENCE_UNAVAILABLE"
+                    )
+                hook(stage, content, tuple(sorted(scope.knowledge_ids)), scope)
 
 
 def tool(receipt):
@@ -165,7 +188,8 @@ def tool(receipt):
         hook = getattr(scope.observer, "document_tool", None)
         if not callable(hook):
             raise ServiceUnavailableException(
-                "Native tool provenance observer is required", code="EVIDENCE_UNAVAILABLE",
+                "Native tool provenance observer is required",
+                code="EVIDENCE_UNAVAILABLE",
             )
         with scope.lock:
             authority(scope)
@@ -178,7 +202,8 @@ def before_tool():
         hook = getattr(scope.observer, "document_tool_start", None)
         if not callable(hook):
             raise ServiceUnavailableException(
-                "Native tool admission observer is required", code="EVIDENCE_UNAVAILABLE",
+                "Native tool admission observer is required",
+                code="EVIDENCE_UNAVAILABLE",
             )
         with scope.lock:
             authority(scope)
@@ -195,18 +220,34 @@ async def corpus(docs):
             raise ServiceUnavailableException(
                 "Native provenance observer is required", code="EVIDENCE_UNAVAILABLE"
             )
-    if scope is not None:
-        from flycanon.core.services.query.rlm.context_index import metadata_index
+        return None
+    from flycanon.core.services.query.rlm.context_index import metadata_index
+    from flycanon.interfaces.dtos.knowledge_corpus import KnowledgeVersionMeta
 
-        await scope.observer.authorize()
+    await authorize()
+    try:
         entries = []
         for key in docs:
             source = docs.resolve(key)
+            if type(source) is KnowledgeVersionMeta:
+                hook = getattr(scope.observer, "knowledge_corpus_meta", None)
+                if not callable(hook) or (source.tenant_id, source.workspace_id) != (
+                    scope.tenant_id,
+                    scope.workspace_id,
+                ):
+                    raise ServiceUnavailableException(
+                        "Knowledge corpus provenance is required", code="EVIDENCE_UNAVAILABLE"
+                    )
+                hook(source, scope)
+                scope.knowledge_ids.add(source.item_id)
+                entries.append({"filing_id": key, "filename": None, "title": source.title})
+                continue
             if (
                 source is None
                 or not source.source_id
                 or (source.tenant_id, source.workspace_id) != (scope.tenant_id, scope.workspace_id)
-                or (scope.allowed_sources is not None and str(source.source_id) not in scope.allowed_sources)
+                or scope.allowed_sources is not None
+                and str(source.source_id) not in scope.allowed_sources
             ):
                 raise ServiceUnavailableException(
                     "Native corpus provenance is missing", code="EVIDENCE_UNAVAILABLE"
@@ -215,10 +256,29 @@ async def corpus(docs):
             scope.observer.document_origin(str(source.source_id), source.filename)
             entries.append({"filing_id": key, "filename": source.filename, "title": source.title})
         context = metadata_index(entries)
-        scope.observer.document_sync(
-            "rlm.corpus", context, tuple(sorted(scope.source_ids)), scope
-        )
+        if scope.source_ids:
+            scope.observer.document_sync("rlm.corpus", context, tuple(sorted(scope.source_ids)), scope)
+        if scope.knowledge_ids:
+            hook = getattr(scope.observer, "knowledge_sync", None)
+            if not callable(hook):
+                raise ServiceUnavailableException(
+                    "Knowledge corpus observer is required", code="EVIDENCE_UNAVAILABLE"
+                )
+            hook("rlm.corpus", context, tuple(sorted(scope.knowledge_ids)), scope)
         return context
+    finally:
+        scope.authorized = False
+
+
+def knowledge_execution_read(meta, read):
+    scope = current()
+    hook = getattr(scope.observer, "knowledge_execution_read", None) if scope is not None else None
+    if scope is None or not callable(hook):
+        raise ServiceUnavailableException(
+            "Knowledge execution observer is required", code="EVIDENCE_UNAVAILABLE"
+        )
+    with scope.lock:
+        hook(meta, read, scope)
 
 
 async def database(session, rows):

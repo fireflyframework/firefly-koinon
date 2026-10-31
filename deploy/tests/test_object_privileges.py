@@ -23,6 +23,22 @@ class Statements:
 
 
 @pytest.mark.parametrize(
+    "table,privileges",
+    [
+        ("pyfly_mcp_sessions", "SELECT,INSERT,UPDATE,DELETE"),
+        ("pyfly_mcp_session_admission", "SELECT,INSERT,UPDATE"),
+    ],
+)
+def test_mcp_metadata_roles_cannot_keep_ddl_or_admission_delete(table, privileges):
+    connection = Statements()
+    module.grant_table(connection, table, "example_runtime")
+    assert connection.items == [
+        f'REVOKE ALL ON TABLE public."{table}" FROM "example_runtime"',
+        f'GRANT {privileges} ON TABLE public."{table}" TO "example_runtime"',
+    ]
+
+
+@pytest.mark.parametrize(
     "table",
     [
         "canon_source_artifacts",
@@ -52,7 +68,15 @@ def test_source_head_allows_pointer_updates_but_cannot_be_deleted():
     ]
 
 
-@pytest.mark.parametrize("table", ["koinon_bulk_batches", "koinon_bulk_items", "koinon_bulk_uploads", "koinon_bulk_quotas"])
+@pytest.mark.parametrize(
+    "table",
+    [
+        "koinon_bulk_batches",
+        "koinon_bulk_items",
+        "koinon_bulk_uploads",
+        "koinon_bulk_quotas",
+    ],
+)
 def test_bulk_prerequisite_tables_cannot_gain_delete_on_reprovisioning(table):
     connection = Statements()
     module.grant_table(connection, table, "example_runtime")

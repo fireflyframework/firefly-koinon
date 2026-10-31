@@ -36,6 +36,8 @@ from flyquery.core.services.ingestion.reader import (
     ProposedTable,
     TableExtractionRules,
 )
+from flyquery.core.services.ingestion.resources import BoundedTextWriter, account_path, output_size
+from flyquery.core.services.ingestion.resources import connect as connect_ingestion
 
 
 class JsonReader:
@@ -133,6 +135,8 @@ class JsonReader:
         target_parquet_key: str,
         type_infer_sample_rows: int,
     ) -> MaterialiseResult:
+        account_path(source_path)
+        account_path(target_parquet_key)
         import duckdb
 
         Path(target_parquet_key).parent.mkdir(parents=True, exist_ok=True)
@@ -161,9 +165,10 @@ class JsonReader:
             with tempfile.NamedTemporaryFile(
                 suffix=".jsonl", mode="w", delete=False, encoding="utf-8"
             ) as tmp:
+                writer = BoundedTextWriter(tmp)
                 for row in arr:
-                    tmp.write(json.dumps(row))
-                    tmp.write("\n")
+                    writer.write(json.dumps(row))
+                    writer.write("\n")
                 tmp_path = tmp.name
             input_path = tmp_path
         else:
@@ -171,7 +176,7 @@ class JsonReader:
             tmp_path = None
 
         try:
-            conn = duckdb.connect()
+            conn = connect_ingestion()
             try:
                 conn.execute("SET preserve_insertion_order=true")
                 # DuckDB 1.5 requires literal paths in COPY … TO
@@ -200,7 +205,7 @@ class JsonReader:
             if tmp_path:
                 Path(tmp_path).unlink(missing_ok=True)
 
-        byte_size = Path(target_parquet_key).stat().st_size
+        byte_size = output_size(target_parquet_key)
         return MaterialiseResult(
             target_parquet_key=target_parquet_key,
             parquet_byte_size=byte_size,

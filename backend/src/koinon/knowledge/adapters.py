@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Thin authorized calls into retained pipelines; no alternate inference engine."""
 
-from contextlib import asynccontextmanager, contextmanager, nullcontext
+from contextlib import AsyncExitStack, asynccontextmanager, contextmanager, nullcontext
 from dataclasses import asdict, is_dataclass
 from datetime import date, datetime
 from decimal import Decimal
@@ -31,9 +31,11 @@ from pyfly.kernel import (
 from sqlalchemy import text
 from starlette.requests import Request
 
+from koinon.knowledge.bulk_queries.query_ports import QueryCommit, QueryPublicationGuard
 from koinon.knowledge.model_bindings import KnowledgeConnectionResolver
 from koinon.knowledge.native_provenance import evidence_bound
 from koinon.organization_knowledge.dtos import OrganizationKnowledgeSnapshot
+from koinon.workers.admission import WorkAdmission
 
 
 def request_knowledge_settings(arguments) -> OrganizationKnowledgeSnapshot | None:
@@ -58,17 +60,35 @@ def model_bound(domain):
     def decorate(operation):
         @wraps(operation)
         async def bound(self, *args, **kwargs):
-            purpose, roles = self.model_requirements(domain, operation.__name__, kwargs)
-            async with self.model_connections(
-                domain,
-                kwargs["tenant_id"],
-                kwargs["workspace_id"],
-                kwargs["actor"],
-                purpose=purpose,
-                roles=roles,
-                catalog_workspace_id=kwargs.get("catalog_workspace_id"),
-            ):
-                return await operation(self, *args, **kwargs)
+            async with self.admission.hold("query", api=True):
+                purpose, roles = self.model_requirements(domain, operation.__name__, kwargs)
+                from pyfly.context.consumer_context import bind_consumer_context
+
+                from koinon.workers.execution import IngestionExecutionAuthority
+
+                execution = (
+                    self._resolve(IngestionExecutionAuthority)
+                    if purpose == "ingest" and self.container.contains_type(IngestionExecutionAuthority)
+                    else None
+                )
+                captured = await execution.capture(domain, kwargs, roles) if execution is not None else None
+                async with self.model_connections(
+                    domain,
+                    kwargs["tenant_id"],
+                    kwargs["workspace_id"],
+                    kwargs["actor"],
+                    purpose=purpose,
+                    roles=roles,
+                    catalog_workspace_id=kwargs.get("catalog_workspace_id"),
+                ):
+                    if captured is not None and execution is not None:
+                        await execution.validate(captured)
+                    with (
+                        bind_consumer_context(captured.model_dump(mode="json"))
+                        if captured is not None
+                        else nullcontext()
+                    ):
+                        return await operation(self, *args, **kwargs)
 
         return bound
 
@@ -139,8 +159,9 @@ def native_scope(domain, tenant_id, workspace_id, actor):
 
 @service(name="knowledge.native_domains")
 class NativeDomains:
-    def __init__(self, container: Container):
+    def __init__(self, container: Container, admission: WorkAdmission):
         self.container = container
+        self.admission = admission
 
     def model_requirements(self, domain, operation, arguments):
         policy = request_knowledge_settings(arguments)
@@ -159,7 +180,11 @@ class NativeDomains:
             mode = policy.documents.answer_mode if policy else getattr(settings, "answer_mode", "rag")
             purpose = "rlm" if answer and mode == "rlm" else "answer" if answer else "search"
             if answer:
-                if arguments.get("_curated_retrieve") is not None and purpose == "rlm":
+                if (
+                    arguments.get("_curated_retrieve") is not None
+                    and purpose == "rlm"
+                    and arguments.get("_curated_rlm") is None
+                ):
                     raise ServiceUnavailableException(
                         "Curated knowledge requires the qualified RAG answer path",
                         code="KNOWLEDGE_RLM_UNQUALIFIED",
@@ -310,6 +335,9 @@ class NativeDomains:
         source_catalog_id,
         catalog_workspace_id=None,
         authorize_commit=None,
+        publication_guard=None,
+        validate_processing=None,
+        validate_publication=None,
     ):
         from flycanon.core.services.sources.intake_service import IntakeService
         from flycanon.interfaces.dtos.source import SourceMetadata, SubmitSourceRequest
@@ -328,6 +356,15 @@ class NativeDomains:
                 logical_source_key=source_catalog_id,
                 operation_id=f"upload:{source_catalog_id}",
                 authorize_commit=authorize_commit,
+                **(
+                    {
+                        "publication_guard": publication_guard,
+                        "validate_processing": validate_processing,
+                        "validate_publication": validate_publication,
+                    }
+                    if publication_guard is not None
+                    else {}
+                ),
             )
         if source.status != "ingested":
             raise ServiceUnavailableException(
@@ -530,6 +567,7 @@ class NativeDomains:
         catalog_workspace_id=None,
         _capture=None,
         _curated_retrieve=None,
+        _curated_rlm=None,
         _knowledge_settings_snapshot=None,
     ):
         from flycanon.core.services.query.handlers import AnswerKnowledgeQuery, SearchKnowledgeQuery
@@ -566,6 +604,7 @@ class NativeDomains:
                 "answer": answer,
                 "source_ids": source_ids,
                 "_curated_retrieve": _curated_retrieve,
+                "_curated_rlm": _curated_rlm,
                 "_knowledge_settings_snapshot": policy,
             },
         )
@@ -574,12 +613,17 @@ class NativeDomains:
             raise InvalidRequestException(
                 "A nonempty admitted source set is required", code="EMPTY_SOURCE_SCOPE"
             )
+        rlm_reader = await _curated_rlm() if purpose == "rlm" and _curated_rlm is not None else None
+        if rlm_reader is not None and _capture is not None:
+            _capture.curated_rlm.authorizers.append(rlm_reader.authorize)
         curated = (
             curated_corpus.bind(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
                 retrieve=_curated_retrieve,
                 documents=bool(source_ids),
+                actor=actor,
+                rlm=rlm_reader,
             )
             if _curated_retrieve is not None
             else nullcontext()
@@ -649,6 +693,26 @@ class NativeDomains:
                         and read.workspace_id == workspace_id
                         and read.source_id in source_ids
                     ]
+            if purpose == "rlm" and _capture is not None and not result.get("no_answer", False):
+                result["hits"].extend(
+                    [
+                        {
+                            "chunk_id": identifier,
+                            "source_id": proof[2],
+                            "content": proof[4].quote,
+                            "score": 1.0,
+                            "page": None,
+                            "source_kind": "knowledge_version",
+                            "knowledge_item_id": proof[2],
+                            "knowledge_version": proof[4].knowledge_version,
+                        }
+                        for identifier, proof in _capture.knowledge_proofs.items()
+                        if proof[1] == workspace_id
+                        and (workspace_id, proof[4].knowledge_item_id) in _capture.curated_rlm.execution
+                    ]
+                )
+            if rlm_reader is not None:
+                await rlm_reader.authorize()
             return result
 
     async def document_revision(self, *, tenant_id, workspace_id, source_id, actor, lock=False):
@@ -1159,10 +1223,18 @@ class NativeDomains:
         catalog_workspace_id=None,
         _capture=None,
         _knowledge_settings_snapshot=None,
+        _query_commit: QueryCommit | None = None,
+        _query_publication_guard: QueryPublicationGuard | None = None,
     ):
         from flyquery.core.services.datasets.dataset_service import DatasetService
         from flyquery.core.services.query.runtime import StructuredQueryRuntimeFactory
 
+        if (_query_commit is None) != (_query_publication_guard is None) or (
+            _query_commit is not None and (sql is not None or conversation_id is not None)
+        ):
+            raise InvalidRequestException(
+                "Use a complete independent NL query publication", code="BULK_QUERY_PUBLICATION_INVALID"
+            )
         policy = request_knowledge_settings(
             {
                 "_knowledge_settings_snapshot": _knowledge_settings_snapshot,
@@ -1235,10 +1307,13 @@ class NativeDomains:
                     roles=roles,
                     catalog_workspace_id=catalog_workspace_id,
                 ),
-                self._resolve(StructuredQueryRuntimeFactory).unit(
-                    settings_overrides=policy.structured.model_dump() if policy else None
-                ) as runtime,
+                AsyncExitStack() as native,
             ):
+                runtime = await native.enter_async_context(
+                    self._resolve(StructuredQueryRuntimeFactory).unit(
+                        settings_overrides=policy.structured.model_dump() if policy else None
+                    )
+                )
                 result = await runtime.pipeline.answer(
                     tenant_id=tenant_id,
                     workspace_id=UUID(workspace_id),
@@ -1248,7 +1323,11 @@ class NativeDomains:
                     dataset_allowlist=dataset_allowlist,
                     conversation_id=UUID(conversation_id) if conversation_id else None,
                 )
-            output = _json(result)
+                output = _json(result)
+                if _query_commit is not None and _query_publication_guard is not None:
+                    async with _query_publication_guard():
+                        await _query_commit(output)
+                        await native.aclose()
             if _capture is not None:
                 _capture.query(tenant_id, workspace_id, actor, dataset_id, output)
             return output

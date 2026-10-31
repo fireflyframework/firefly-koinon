@@ -10,6 +10,8 @@ from pydantic_ai.models.test import TestModel
 from pyfly.agentic.config import AgenticConfig
 from pyfly.kernel import ServiceUnavailableException
 
+from koinon.workers.admission import WorkAdmission, WorkAdmissionSettings
+
 
 @pytest.fixture(
     params=[
@@ -392,7 +394,7 @@ async def test_product_missing_connection_fails_before_original_ingestion():
         resolve=lambda kind: intake,
     )
     with pytest.raises(ServiceUnavailableException) as error:
-        await NativeDomains(container).ingest_document(
+        await NativeDomains(container, admission=WorkAdmission(WorkAdmissionSettings())).ingest_document(
             tenant_id="north",
             workspace_id="workspace",
             actor="issuer|north",
@@ -447,7 +449,7 @@ async def test_product_resolver_keeps_native_connections_alive_until_original_ca
     container.register_instance(Resolver, Resolver())
     container.bind(KnowledgeConnectionResolver, Resolver)
     container.register_instance(DefaultQueryBus, SimpleNamespace(query=search))
-    result = await NativeDomains(container).search(
+    result = await NativeDomains(container, admission=WorkAdmission(WorkAdmissionSettings())).search(
         tenant_id="north",
         workspace_id="workspace",
         actor="issuer|north",
@@ -497,7 +499,7 @@ async def test_product_does_not_accept_an_optional_scope_or_silent_null_embeddin
     )
     try:
         with pytest.raises(ServiceUnavailableException) as error:
-            await NativeDomains(container).ingest_document(
+            await NativeDomains(container, admission=WorkAdmission(WorkAdmissionSettings())).ingest_document(
                 tenant_id="north",
                 workspace_id="workspace",
                 actor="issuer|north",

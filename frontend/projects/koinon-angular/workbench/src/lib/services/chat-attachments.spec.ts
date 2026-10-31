@@ -114,18 +114,19 @@ it('expires a ready selection without allowing expired IDs to be sent', async ()
   expect(files.attachments()[0].state).toBe('failed');
 });
 it('ignores an upload response after the owning context changes', async () => {
+  let registered=false;
   let release: () => void = () => {
     throw Error('Upload did not start');
   };
   const { files, facade, assistant } = setup(
     async () =>
       await new Promise((resolve) => {
+        registered=true;
         release = () => resolve(remote());
       }),
   );
   const selection = files.select([file()]);
-  await Promise.resolve();
-  await Promise.resolve();
+  await vi.waitFor(()=>expect(registered).toBe(true));
   expect(files.attachments()).toHaveLength(1);
   facade.tenantId.set('other');
   assistant.contextVersion.update((value) => value + 1);

@@ -21,6 +21,7 @@ from koinon.knowledge.adapters import native_scope
 from koinon.knowledge.connections.service import embedding_fingerprint
 from koinon.knowledge.indexes.lifecycle import IndexLifecycleService
 from koinon.knowledge.indexes.queue import IndexQueue
+from koinon.workers.admission import WorkAdmission
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +47,15 @@ class IndexWorkerSettings:
 
 @service(name="knowledge.index_worker")
 class IndexWorker:
-    def __init__(self, lifecycle: IndexLifecycleService, queue: IndexQueue, settings: IndexWorkerSettings):
+    def __init__(
+        self,
+        lifecycle: IndexLifecycleService,
+        queue: IndexQueue,
+        settings: IndexWorkerSettings,
+        admission: WorkAdmission,
+    ):
         self.lifecycle, self.queue, self.settings = lifecycle, queue, settings
+        self.admission = admission
         self.worker_id = "index-" + uuid4().hex
 
     @scheduled(fixed_delay=timedelta(seconds=1))
@@ -55,6 +63,10 @@ class IndexWorker:
         if not self.settings.enabled:
             return
         self.settings.validate()
+        async with self.admission.hold("index"):
+            await self._one()
+
+    async def _one(self):
         job_id = await self.queue.claim(self.worker_id, self.settings.lease_seconds)
         if job_id is None:
             return
@@ -149,18 +161,9 @@ class IndexWorker:
 
 
 async def run_worker():
-    from koinon.app import create_application
-    from koinon.operations.configuration import environment_configuration
+    from koinon.worker import run_worker as complete_worker
 
-    values = environment_configuration()
-    values.setdefault("koinon", {}).setdefault("knowledge", {}).setdefault("indexes", {})["enabled"] = True
-    application = create_application(values)
-    context = application.state.context
-    await context.start()
-    try:
-        await asyncio.Event().wait()
-    finally:
-        await context.stop()
+    await complete_worker()
 
 
 if __name__ == "__main__":

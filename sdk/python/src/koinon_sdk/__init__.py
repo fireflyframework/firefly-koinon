@@ -33,6 +33,31 @@ from koinon_sdk.attachments import (
     ReplaceTable,
 )
 from koinon_sdk.authorized_applications import AuthorizedApplication
+from koinon_sdk.bulk import (
+    BulkAction,
+    BulkDestination,
+    FileBatchCapabilities,
+    FileBatchCreate,
+    FileBatchItemView,
+    FileBatchPage,
+    FileBatchView,
+    FileItemPage,
+    FileManifestItem,
+    StagedFileReceipt,
+)
+from koinon_sdk.bulk_queries import (
+    BatchQueryOutcome,
+    QueryBatchAction,
+    QueryBatchCancellation,
+    QueryBatchCapabilities,
+    QueryBatchCreate,
+    QueryBatchItemPage,
+    QueryBatchItemView,
+    QueryBatchPage,
+    QueryBatchResult,
+    QueryBatchView,
+    QueryManifestItem,
+)
 from koinon_sdk.client import (
     ApiError,
     KoinonClient,
@@ -773,4 +798,31 @@ __all__ += [
     "MemoryReceipt",
     "MemoryTurnReference",
     "MemoryValue",
+]
+
+
+__all__ += [
+    "BulkAction",
+    "BulkDestination",
+    "FileBatchCapabilities",
+    "FileBatchCreate",
+    "FileBatchItemView",
+    "FileBatchPage",
+    "FileBatchView",
+    "FileItemPage",
+    "FileManifestItem",
+    "StagedFileReceipt",
+]
+__all__ += [
+    "BatchQueryOutcome",
+    "QueryBatchAction",
+    "QueryBatchCancellation",
+    "QueryBatchCapabilities",
+    "QueryBatchCreate",
+    "QueryBatchItemPage",
+    "QueryBatchItemView",
+    "QueryBatchPage",
+    "QueryBatchResult",
+    "QueryBatchView",
+    "QueryManifestItem",
 ]

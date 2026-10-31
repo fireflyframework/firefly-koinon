@@ -31,15 +31,33 @@ from __future__ import annotations
 import json
 import uuid
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import sqlalchemy as sa
 from pyfly.container import repository
-from pyfly.data.transaction import infrastructure_unit
+from pyfly.context.consumer_context import public_consumer_data
+from pyfly.data.transaction import Isolation, Propagation, TransactionTemplate, infrastructure_unit
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from flyquery.data import StructuredSessions, unwrap_sessions
+
+_OUTBOX = sa.table(
+    "flyquery_callback_outbox",
+    *[sa.column(name, sa.Uuid) for name in ("id", "ingest_job_id", "workspace_id")],
+    *[
+        sa.column(name, sa.String)
+        for name in ("tenant_id", "callback_url", "callback_secret", "event_type", "status", "last_error")
+    ],
+    sa.column("callback_headers", sa.JSON),
+    sa.column("payload_json", sa.JSON),
+    sa.column("attempts", sa.Integer),
+    sa.column("last_status_code", sa.Integer),
+    *[
+        sa.column(name, sa.DateTime(timezone=True))
+        for name in ("last_attempt_at", "next_attempt_at", "created_at", "finished_at")
+    ],
+)
 
 
 @repository(name="structured.CallbackOutboxRepository")
@@ -91,7 +109,7 @@ class CallbackOutboxRepository:
                 "secret": callback_secret,
                 "headers": json.dumps(callback_headers or {}),
                 "event": event_type,
-                "payload": json.dumps(payload, default=_json_default),
+                "payload": json.dumps(public_consumer_data(payload), default=_json_default),
             },
         )
         return new_id
@@ -100,57 +118,101 @@ class CallbackOutboxRepository:
         self,
         *,
         limit: int = 25,
+        lease_seconds: float = 40,
     ) -> list[dict[str, Any]]:
-        """Atomically claim up to ``limit`` PENDING rows whose ``next_attempt_at <= now()``.
+        """Reserve rows durably before releasing the claim transaction.
 
-        Uses ``FOR UPDATE SKIP LOCKED`` so peer workers don't grab the
-        same rows. The claim doesn't mutate ``status`` -- the worker
-        marks each row ``DELIVERED`` / ``FAILED`` / ``DEAD`` after the
-        HTTP call. The row stays ``PENDING`` while in flight; on worker
-        crash the next sweep re-claims it.
+        ``last_attempt_at`` is the monotonic reservation generation, separate
+        from completed delivery attempts. ``next_attempt_at`` is the lease
+        deadline until the fenced outcome schedules a retry or settles it.
         """
-        async with infrastructure_unit(self._factory) as s:
-            result = await s.execute(
-                sa.text(
-                    """
-                    SELECT id, ingest_job_id, tenant_id, workspace_id,
-                           callback_url, callback_secret, callback_headers,
-                           event_type, payload_json, status, attempts,
-                           last_attempt_at, last_status_code, last_error,
-                           next_attempt_at, created_at, finished_at
-                    FROM flyquery_callback_outbox
-                    WHERE status = 'PENDING' AND next_attempt_at <= now()
-                    ORDER BY next_attempt_at
-                    LIMIT :limit
-                    FOR UPDATE SKIP LOCKED
-                    """
-                ),
-                {"limit": int(limit)},
+        if not 1 <= limit <= 100 or not 1 <= lease_seconds <= 3600:
+            raise ValueError("Use a bounded callback batch and lease")
+        now = datetime.now(UTC)
+        table = _OUTBOX
+        async with infrastructure_unit(self._factory) as session:
+            rows = (
+                (
+                    await session.execute(
+                        sa.select(table)
+                        .where(table.c.status == "PENDING", table.c.next_attempt_at <= now)
+                        .order_by(table.c.next_attempt_at, table.c.id)
+                        .limit(limit)
+                        .with_for_update(skip_locked=True)
+                    )
+                )
+                .mappings()
+                .all()
             )
-            return [_row_to_dict(r) for r in result.mappings().all()]
+            reserved = []
+            for row in rows:
+                previous = row["last_attempt_at"]
+                if previous is not None and previous.tzinfo is None:
+                    previous = previous.replace(tzinfo=UTC)
+                generation = max(now, previous + timedelta(microseconds=1)) if previous else now
+                statement = (
+                    sa.update(table)
+                    .where(
+                        table.c.id == row["id"],
+                        table.c.status == "PENDING",
+                        table.c.next_attempt_at <= now,
+                        table.c.last_attempt_at == row["last_attempt_at"],
+                    )
+                    .values(
+                        last_attempt_at=generation,
+                        next_attempt_at=now + timedelta(seconds=lease_seconds),
+                        last_status_code=None,
+                        last_error=None,
+                    )
+                )
+                value = (await session.execute(statement.returning(*table.c))).mappings().one_or_none()
+                if value is not None:
+                    reserved.append(_row_to_dict(value))
+            return reserved
 
-    async def mark_delivered(
-        self,
-        *,
-        id_: uuid.UUID,
-        status_code: int,
-    ) -> None:
-        async with infrastructure_unit(self._factory) as s:
-            await s.execute(
-                sa.text(
-                    """
-                    UPDATE flyquery_callback_outbox
-                    SET status = 'DELIVERED',
-                        attempts = attempts + 1,
-                        last_attempt_at = now(),
-                        last_status_code = :code,
-                        last_error = NULL,
-                        finished_at = now()
-                    WHERE id = :id
-                    """
-                ),
-                {"id": id_, "code": int(status_code)},
+    @staticmethod
+    def _owned(id_: uuid.UUID, claim: dict[str, Any]):
+        table = _OUTBOX
+        if claim.get("id") != id_ or not isinstance(claim.get("last_attempt_at"), datetime):
+            raise ValueError("The exact callback reservation is required")
+        return sa.and_(
+            table.c.id == id_,
+            table.c.status == "PENDING",
+            table.c.attempts == claim["attempts"],
+            table.c.last_attempt_at == claim["last_attempt_at"],
+            table.c.next_attempt_at == claim["next_attempt_at"],
+            table.c.next_attempt_at > datetime.now(UTC),
+        )
+
+    async def still_owned(self, claim: dict[str, Any]) -> bool:
+        async with TransactionTemplate(
+            self._factory,
+            propagation=Propagation.REQUIRES_NEW,
+            isolation=Isolation.SERIALIZABLE,
+            read_only=True,
+            read_from_primary=True,
+        ).transaction() as unit:
+            assert unit is not None
+            return (
+                await unit.resource.scalar(sa.select(_OUTBOX.c.id).where(self._owned(claim["id"], claim)))
+                is not None
             )
+
+    async def mark_delivered(self, *, id_: uuid.UUID, status_code: int, claim: dict[str, Any]) -> bool:
+        async with infrastructure_unit(self._factory) as session:
+            value = await session.execute(
+                sa.update(_OUTBOX)
+                .where(self._owned(id_, claim))
+                .values(
+                    status="DELIVERED",
+                    attempts=_OUTBOX.c.attempts + 1,
+                    last_status_code=int(status_code),
+                    last_error=None,
+                    finished_at=datetime.now(UTC),
+                )
+                .returning(_OUTBOX.c.id)
+            )
+            return value.scalar_one_or_none() is not None
 
     async def mark_attempt_failure(
         self,
@@ -160,45 +222,21 @@ class CallbackOutboxRepository:
         error: str,
         backoff_seconds: int,
         terminal: bool,
-    ) -> None:
-        """Increment attempts; flip to DEAD if ``terminal`` else schedule retry."""
-        async with infrastructure_unit(self._factory) as s:
-            if terminal:
-                await s.execute(
-                    sa.text(
-                        """
-                        UPDATE flyquery_callback_outbox
-                        SET status = 'DEAD',
-                            attempts = attempts + 1,
-                            last_attempt_at = now(),
-                            last_status_code = :code,
-                            last_error = :err,
-                            finished_at = now()
-                        WHERE id = :id
-                        """
-                    ),
-                    {"id": id_, "code": status_code, "err": error[:1000]},
-                )
-            else:
-                await s.execute(
-                    sa.text(
-                        """
-                        UPDATE flyquery_callback_outbox
-                        SET attempts = attempts + 1,
-                            last_attempt_at = now(),
-                            last_status_code = :code,
-                            last_error = :err,
-                            next_attempt_at = now() + (:backoff || ' seconds')::interval
-                        WHERE id = :id
-                        """
-                    ),
-                    {
-                        "id": id_,
-                        "code": status_code,
-                        "err": error[:1000],
-                        "backoff": int(backoff_seconds),
-                    },
-                )
+        claim: dict[str, Any],
+    ) -> bool:
+        """Only the current reservation may spend a retry or settle delivery."""
+        now = datetime.now(UTC)
+        values: dict[str, Any] = dict(
+            attempts=_OUTBOX.c.attempts + 1, last_status_code=status_code, last_error=error[:1000]
+        )
+        values.update(status="DEAD", finished_at=now) if terminal else values.update(
+            next_attempt_at=now + timedelta(seconds=max(0, int(backoff_seconds)))
+        )
+        async with infrastructure_unit(self._factory) as session:
+            value = await session.execute(
+                sa.update(_OUTBOX).where(self._owned(id_, claim)).values(**values).returning(_OUTBOX.c.id)
+            )
+            return value.scalar_one_or_none() is not None
 
     async def list_for_job(
         self,

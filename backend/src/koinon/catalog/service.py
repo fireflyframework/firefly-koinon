@@ -405,6 +405,7 @@ class CatalogService:
 
     @transactional
     async def update(self, subject: str, tenant_id: str, entry_id: str, changes: dict) -> CatalogEntry:
+        await self._lock_tenant(tenant_id)
         entry = await self._scoped_entry(tenant_id, entry_id, lock=True)
         await self.authorize(subject, tenant_id, "catalog:write", entry.workspace_id)
         if self.restriction:
@@ -441,6 +442,7 @@ class CatalogService:
 
     @transactional
     async def delete(self, subject: str, tenant_id: str, entry_id: str) -> None:
+        await self._lock_tenant(tenant_id)
         entry = await self._scoped_entry(tenant_id, entry_id, lock=True)
         await self.authorize(subject, tenant_id, "catalog:write", entry.workspace_id)
         if self.restriction:
@@ -679,6 +681,7 @@ class CatalogService:
 
     @transactional
     async def archive(self, subject: str, tenant_id: str, entry_id: str) -> CatalogEntry:
+        await self._lock_tenant(tenant_id)
         entry = await self._scoped_entry(tenant_id, entry_id, lock=True)
         await self.authorize(subject, tenant_id, "catalog:write", entry.workspace_id)
         if self.restriction:
@@ -696,6 +699,7 @@ class CatalogService:
 
     @transactional
     async def restore(self, subject: str, tenant_id: str, entry_id: str) -> CatalogEntry:
+        await self._lock_tenant(tenant_id)
         entry = await self._scoped_entry(tenant_id, entry_id, lock=True)
         await self.authorize(subject, tenant_id, "catalog:write", entry.workspace_id)
         if self.restriction:

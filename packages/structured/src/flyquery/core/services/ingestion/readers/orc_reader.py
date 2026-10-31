@@ -28,6 +28,7 @@ from flyquery.core.services.ingestion.reader import (
     ProposedTable,
     TableExtractionRules,
 )
+from flyquery.core.services.ingestion.resources import account_path, output_size
 
 
 class OrcReader:
@@ -66,6 +67,8 @@ class OrcReader:
 
     @staticmethod
     def _materialise_sync(source_path: str, target_parquet_key: str) -> MaterialiseResult:
+        account_path(source_path)
+        account_path(target_parquet_key)
         import pyarrow as pa
         import pyarrow.orc as orc
         import pyarrow.parquet as pq
@@ -86,7 +89,7 @@ class OrcReader:
         )
         return MaterialiseResult(
             target_parquet_key=target_parquet_key,
-            parquet_byte_size=Path(target_parquet_key).stat().st_size,
+            parquet_byte_size=output_size(target_parquet_key),
             n_rows_actual=tbl.num_rows,
             columns=columns,
             coordinates=record_coordinates(

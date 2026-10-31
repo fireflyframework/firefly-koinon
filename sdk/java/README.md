@@ -97,6 +97,8 @@ The [shared operation manifest](../contract/operations.json) defines the canonic
 
 ## Preserve revisions and outcomes
 
+`fileBatches(tenant)` and `queryBatches(tenant)` provide separate durable intake and independent query lifecycles, private outcomes, revisioned cancellation and explicit receipt reconciliation. Follow the [file intake](../../docs/guides/bulk-intake.md) and [query batch](../../docs/guides/bulk-queries.md) guides. Unknown native outcomes are never replayed automatically; the general jobs API does not cancel these lifecycle jobs.
+
 Request records expose typed `with…` builders. Patch records use `JsonField<T>` to distinguish omission from explicit JSON null. Omission preserves a value; a `clear…` builder serializes null, which the server may reject for that field. For example, organization-source detachment uses explicit `manageLocally=true`, not `clearManagedProviderId()`.
 
 `RequestOptions` is immutable. Document content writes use the current original SHA256 as `If-Match` plus `documentRevision(sourceVersionId,extractionId)` to bind the current ingestion head. Table changes use the exact snapshot ID. Other management writes use their typed expected-revision fields. A conflict requires reading and reviewing current state, not a forced overwrite. Glossary `updatedAt` values remain exact native microsecond strings; do not reformat them before `If-Match`.

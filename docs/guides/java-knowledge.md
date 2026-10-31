@@ -260,3 +260,31 @@ Display the server's `before`, `after`, destination, evidence, expiry and curren
 A user-statement origin means exactly that; it is not an external-source citation. Server-issued MCP read receipts and external files use [external knowledge reviews](mcp-knowledge-management.md), with their own component-bound nonce and exact revision/digest rules. The Java methods do not manufacture receipt IDs, a human confirmation, provider access or provenance that the server did not observe.
 
 When a conversation-origin intent reports `remembered_context_present`, show the remembered-context explanation alongside the exact intent preview and obtain a separate decision. Only an explicit approval permits `include_remembered_context=true` on `KnowledgeConfirmation` (Java: `withIncludeRememberedContext(true)`). The examples above leave that consent disabled. Evidence marked `basis: remembered_context` remains attributed to its recorded historical source rather than being presented as new retrieval. See [conversation memory](conversation-memory.md#share-or-publish-an-answer-that-used-memory) for the complete behavior.
+## Search and query within the admitted scope
+
+```java
+import java.util.List;
+import org.fireflyframework.koinon.sdk.KoinonClient;
+import org.fireflyframework.koinon.sdk.model.*;
+
+public final class JavaKnowledgeReads {
+    public static SearchResponse passages(KoinonClient client, String tenant,
+            String workspace, List<String> selectedAssets, String question) {
+        return client.knowledge(tenant).search(SearchRequest.empty()
+            .withWorkspaceId(workspace).withAssetIds(selectedAssets)
+            .withQuestion(question).withLimit(10L).withAnswer(false));
+    }
+
+    public static QueryResponse query(KoinonClient client, String tenant,
+            String datasetId, String question, String reviewedReadOnlySql) {
+        return client.knowledge(tenant).query(QueryRequest.empty()
+            .withDatasetId(datasetId).withQuestion(question).withSql(reviewedReadOnlySql));
+    }
+}
+```
+
+Search requires `knowledge:search`; SQL requires `query:execute`, the current authorized dataset and the server's read-only query policy. Select a workspace and supported asset IDs deliberately; an empty selection must not be interpreted by your application as a new permission grant. `answer=false` requests retrieval without a generated answer, but retrieval can still use the deployment's configured embedding/search providers. Direct SQL remains subject to server admission and validation; a client-supplied SQL string cannot override them. Preserve typed exact values and returned truncation/metadata rather than assuming every result is complete.
+
+Generation can invoke configured models. Read [Knowledge runtime](../concepts/knowledge-runtime.md) before choosing RAG/RLM or embedding behavior, and [Conversations and reviewed actions](java-conversations.md) for durable answers and their audit.
+
+Use [durable bulk intake](bulk-intake.md) for saved document/dataset manifests, bounded originals, native per-file outcomes and explicit cancellation/reconciliation. `client.fileBatches(tenant)` includes synchronous and asynchronous typed operations; a single-file upload loop remains a separate caller-owned workflow.

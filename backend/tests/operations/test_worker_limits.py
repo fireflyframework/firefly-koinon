@@ -7,6 +7,7 @@ import pytest
 
 from koinon.assistants.worker import run_consumers
 from koinon.operations.settings import OperationalSettings
+from koinon.workers.admission import WorkAdmission, WorkAdmissionSettings
 
 
 async def test_configured_consumers_bound_inflight_runs_and_cancel_as_one_group():
@@ -33,7 +34,12 @@ async def test_configured_consumers_bound_inflight_runs_and_cancel_as_one_group(
                 active.remove(run_id)
 
     worker = asyncio.create_task(
-        run_consumers(Queue(), Executor(), OperationalSettings(worker_concurrency=2))
+        run_consumers(
+            Queue(),
+            Executor(),
+            OperationalSettings(worker_concurrency=2),
+            admission=WorkAdmission(WorkAdmissionSettings(worker_capacity=2)),
+        )
     )
     await asyncio.wait_for(entered.wait(), 1)
     assert len(active) == 2 and len(claimed) == 2 and len(set(claimed)) == 2
@@ -64,7 +70,12 @@ async def test_unexpected_consumer_failure_stops_peers_instead_of_leaking_worker
                 finished.set()
 
     with pytest.raises(ExceptionGroup) as error:
-        await run_consumers(Queue(), Executor(), OperationalSettings(worker_concurrency=2))
+        await run_consumers(
+            Queue(),
+            Executor(),
+            OperationalSettings(worker_concurrency=2),
+            admission=WorkAdmission(WorkAdmissionSettings(worker_capacity=2)),
+        )
     assert any(isinstance(item, RuntimeError) for item in error.value.exceptions)
     assert finished.is_set()
 

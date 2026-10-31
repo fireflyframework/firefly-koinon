@@ -2,7 +2,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # Canonical MCP access
 
-The adapter exposes existing koinon operations using the official Python MCP SDK (`mcp` 2.3.0 in the backend lockfile). Its `MCPServer` serves Streamable HTTP with JSON responses at `/mcp`. Modern per-request capability envelopes remain stateless; bounded legacy sessions retain the capabilities negotiated during initialization.
+The adapter exposes existing koinon operations using the official Python MCP SDK (`mcp` 2.3.0 in the backend lockfile) through the native pyfly JSON transport. Tools, resources, prompts and MCP Apps extension checks share one handler registry at `/mcp`. Modern per-request capability envelopes remain stateless; bounded legacy initialization metadata is shared in the primary repository.
 
 ```mermaid
 flowchart LR
@@ -86,11 +86,13 @@ Requests, authorization codes, grants and resource bearers pin the organization'
 
 ## Legacy session compatibility and scaling
 
-Legacy clients negotiate MCP Apps through `initialize`. Their sessions retain that declaration using the official SDK's bounded session manager. Native bearer authentication projects the actual current credential fingerprint, issuer and subject into SDK session ownership; a different credential cannot reuse a session. Every request and canonical operation still rechecks authentication and current permissions. Session IDs do not replace bearer credentials.
+Legacy clients negotiate MCP Apps through `initialize`. Native pyfly stores only their negotiated protocol, client declarations, credential/resource binding and expiry. Each request reconstructs a fresh SDK connection using that metadata. Native bearer authentication verifies the current credential fingerprint, issuer and subject before lookup; a different credential cannot reuse a session. Every canonical operation still rechecks current permissions. Session IDs and stored capabilities do not replace bearer credentials or permission checks.
 
-The default limit is 128 legacy sessions per process with a 900-second idle timeout. Modern protocol requests carry their capabilities independently and do not require these sessions. Legacy GET/SSE channels use session admission bounds rather than holding tool-operation permits; POST operations retain the configured concurrency limit.
+The default limit is 128 legacy sessions across instances for the configured MCP resource, with a 900-second idle timeout capped by credential expiry. Modern protocol requests carry their capabilities independently and do not require these sessions. POST operations retain the configured per-instance concurrency limit. Legacy GET returns 405 because this JSON endpoint offers no standalone SSE stream. DELETE removes shared initialization metadata.
 
-Legacy sessions are process-local negotiation state. MCP replicas need session affinity; a missing or expired session requires reinitialization. Losing that session does not lose canonical reviews, source receipts, staged bytes or committed knowledge, and does not authorize replaying an uncertain write. Refresh the recorded review/status under the new session. No distributed MCP session store is claimed.
+Initialize on one instance and continue on another using the same primary database and configured public resource, including after the original instance stops. Missing, expired, incompatible or differently owned session IDs return 404 and require standard reinitialization. Losing metadata does not lose canonical reviews, source receipts, staged bytes or committed knowledge, and never authorizes replaying an uncertain write. Refresh the recorded review/status under the new initialization. The transport provides no response replay, arbitrary MCP Tasks, subscriptions or server-initiated request channel; private approvals retain their existing one-use nonce, revision, digest and current-authority checks.
+
+Apply native migration `koinon_0026_mcp_sessions` before enabling MCP against a validation-only schema. It adds `pyfly_mcp_sessions` and `pyfly_mcp_session_admission` without changing retained knowledge. Production runtime performs no implicit table creation. Keep OAuth envelope keys, public resource configuration and limits consistent across rolling revisions; use the existing deployment role provisioner for the explicit metadata DML grants.
 
 ## Verification boundary
 

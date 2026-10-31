@@ -19,6 +19,23 @@ ROLES = (
 
 
 def grant_table(connection, table, role, *, document_control=False):
+    if table in {"pyfly_mcp_sessions", "pyfly_mcp_session_admission"}:
+        connection.execute(
+            sql.SQL("REVOKE ALL ON TABLE public.{} FROM {}").format(
+                sql.Identifier(table), sql.Identifier(role)
+            )
+        )
+        privileges = (
+            "SELECT,INSERT,UPDATE,DELETE"
+            if table == "pyfly_mcp_sessions"
+            else "SELECT,INSERT,UPDATE"
+        )
+        connection.execute(
+            sql.SQL("GRANT {} ON TABLE public.{} TO {}").format(
+                sql.SQL(privileges), sql.Identifier(table), sql.Identifier(role)
+            )
+        )
+        return
     immutable = (
         table.startswith(("flyquery_lineage_", "flyquery_coordinate_"))
         or table == "flyquery_snapshot_lineage"
@@ -34,6 +51,8 @@ def grant_table(connection, table, role, *, document_control=False):
             "canon_source_lineage_events",
             "koinon_mcp_read_receipts",
             "koinon_chat_memory_manifests",
+            "koinon_bulk_table_reservations",
+            "koinon_query_batch_references",
         }
     )
     receipt = table in {
@@ -53,6 +72,16 @@ def grant_table(connection, table, role, *, document_control=False):
         "koinon_organization_profile_mappings",
         "koinon_external_knowledge_reviews",
         "koinon_external_file_reviews",
+        "koinon_bulk_batches",
+        "koinon_bulk_items",
+        "koinon_bulk_uploads",
+        "koinon_bulk_quotas",
+        "koinon_bulk_upload_states",
+        "koinon_bulk_recoveries",
+        "flyquery_bulk_operations",
+        "koinon_query_batches",
+        "koinon_query_batch_items",
+        "flyquery_bulk_query_operations",
         "koinon_mcp_oauth_clients",
     }
     outbox = table.startswith("canon_knowledge_outbox_")
@@ -129,16 +158,12 @@ def grant_sequence(connection, name, role):
 
 def provision(*, grants=False, check=False):
     admin = make_url(os.environ["KOINON_MIGRATION_DATABASE_URL"])
-    urls = [
-        (make_url(os.environ[key]), bypass, prefixes) for key, bypass, prefixes in ROLES
-    ]
+    urls = [(make_url(os.environ[key]), bypass, prefixes) for key, bypass, prefixes in ROLES]
     if len({url.username for url, _, _ in urls}) != len(urls):
         raise ValueError("Each runtime/control datasource requires a distinct role")
     for url, _, _ in urls:
         if not url.username or not url.password or url.username == admin.username:
-            raise ValueError(
-                "Configure distinct runtime credentials separately from migration credentials"
-            )
+            raise ValueError("Configure distinct runtime credentials separately from migration credentials")
         if (url.host, url.port, url.database) != (
             admin.host,
             admin.port,
@@ -177,9 +202,7 @@ def provision(*, grants=False, check=False):
                     )
                 )
                 connection.execute(
-                    sql.SQL("GRANT USAGE ON SCHEMA public TO {}").format(
-                        sql.Identifier(url.username)
-                    )
+                    sql.SQL("GRANT USAGE ON SCHEMA public TO {}").format(sql.Identifier(url.username))
                 )
             if grants and not check:
                 for (name,) in connection.execute(
@@ -210,11 +233,7 @@ def provision(*, grants=False, check=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--grant", action="store_true", help="Grant scoped DML after migrations"
-    )
-    parser.add_argument(
-        "--check", action="store_true", help="Read privileges without changes"
-    )
+    parser.add_argument("--grant", action="store_true", help="Grant scoped DML after migrations")
+    parser.add_argument("--check", action="store_true", help="Read privileges without changes")
     args = parser.parse_args()
     provision(grants=args.grant, check=args.check)

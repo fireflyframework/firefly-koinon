@@ -3,14 +3,14 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/organization_knowledge/dtos.py
-SHA256: 2235abdf8a166dddbad313f4634406b736b4c4143ee7b71cad9f46d2a016f7d7
+SHA256: 64403e72d42ed99ca8b54e35e108b3d94a71df2334b042dde5d8ddeef63644d5
 
 Server authorization and semantic validation remain authoritative.
 """
 
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, model_validator
 
 from koinon_sdk._base import ResponseModel
 
@@ -77,13 +77,21 @@ class StructuredKnowledgeBounds(KnowledgePolicyValue):
 
 
 class DocumentKnowledgeCapabilities(KnowledgePolicyValue):
+    """Feature availability; model/provider readiness requires separate installation qualification."""
+
     answer_modes: list[Literal["rag", "rlm"]]
     rlm_curated_knowledge_supported: bool = Field(strict=True)
-    rlm_curated_knowledge_reason: Literal["KNOWLEDGE_RLM_UNQUALIFIED"]
+    rlm_curated_knowledge_reason: Literal["KNOWLEDGE_RLM_UNQUALIFIED"] | None
     rlm_model_role: Literal["documents.rlm"]
     rlm_recorded_views_required: Literal[True]
     rlm_recorded_views_reason: Literal["RLM_DOCUMENT_VIEWS_REQUIRED"]
     bounds: DocumentKnowledgeBounds
+
+    @model_validator(mode="after")
+    def coherent_curated_support(self) -> Self:
+        if self.rlm_curated_knowledge_supported != (self.rlm_curated_knowledge_reason is None):
+            raise ValueError("Curated RLM support and its qualification reason must agree")
+        return self
 
 
 class StructuredKnowledgeCapabilities(KnowledgePolicyValue):

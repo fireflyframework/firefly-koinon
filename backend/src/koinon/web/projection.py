@@ -9,7 +9,7 @@ import pkgutil
 from types import FunctionType
 from typing import Any
 
-from pyfly.container.scanner import scan_module_classes
+from pyfly.container.scanner import scan_module_classes, scan_package
 from pyfly.context import ApplicationContext
 
 from koinon.web.legacy_security import trusted_legacy_context
@@ -88,11 +88,42 @@ def _configuration(cls: type, domain: str) -> type:
     return type(f"{domain}.{cls.__name__}", (cls,), methods)
 
 
-def register_optional_domain(context: ApplicationContext, package: str, domain: str) -> dict:
+def register_product_package(context: ApplicationContext, package: str, *, controllers: bool = True) -> int:
+    if controllers:
+        return scan_package(package, context.container)
+    module = importlib.import_module(package)
+    modules = [module]
+    if hasattr(module, "__path__"):
+        modules.extend(
+            importlib.import_module(info.name)
+            for info in pkgutil.walk_packages(module.__path__, prefix=package + ".")
+        )
+    classes = {
+        kind
+        for current in modules
+        for kind in scan_module_classes(current)
+        if getattr(kind, "__pyfly_stereotype__", "") not in ("controller", "rest_controller")
+    }
+    for kind in sorted(classes, key=lambda value: (value.__module__, value.__qualname__)):
+        context.register_bean(kind)
+        for base in inspect.getmro(kind)[1:]:
+            if (
+                getattr(base, "_is_protocol", False)
+                or inspect.isabstract(base)
+                or ".ports" in base.__module__
+            ):
+                context.container.bind(base, kind)
+    return len(classes)
+
+
+def register_optional_domain(
+    context: ApplicationContext, package: str, domain: str, *, controllers: bool = True
+) -> dict:
     if importlib.util.find_spec(package) is None:
         return {"installed": False, "registered": False, "reason": "Optional package is not installed"}
     classes = set()
-    for package_name in (f"{package}.core", f"{package}.web.controllers"):
+    packages = (f"{package}.core", f"{package}.web.controllers") if controllers else (f"{package}.core",)
+    for package_name in packages:
         module = importlib.import_module(package_name)
         modules = [module]
         if hasattr(module, "__path__"):

@@ -115,7 +115,8 @@ def render(contract: dict) -> str:
                 "Dataset file append requires a stable Idempotency-Key, accepts one bounded multipart file and returns its canonical file-version "
                 "and new table identities. Existing snapshots are retained. Native sections commit independently; "
                 "pending or failed intake blocks dataset query/schema until reconciliation. Exact key/payload replays recheck permissions and return the stored completed receipt without native work. "
-                "There is no automatic retry, bulk/async intake or public recovery helper. PostgreSQL concurrency and configured-provider "
+                "Unknown outcomes are never retried automatically. [Durable file batches](../guides/bulk-intake.md) "
+                "provide a separate bounded asynchronous lifecycle and explicit receipt reconciliation. PostgreSQL concurrency and configured-provider "
                 "acceptance remain separate qualification gates."
             ),
             "",

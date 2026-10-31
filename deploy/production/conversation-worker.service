@@ -1,7 +1,7 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
 [Unit]
-Description=firefly koinon conversation worker
+Description=firefly koinon complete background worker
 After=network-online.target
 Wants=network-online.target
 
@@ -11,7 +11,8 @@ User=koinon
 Group=koinon
 WorkingDirectory=/opt/koinon/backend
 EnvironmentFile=/etc/koinon/runtime.env
-ExecStart=/opt/koinon/backend/.venv/bin/python -m koinon.assistants.worker
+Environment=KOINON_PROCESS_ROLE=worker
+ExecStart=/opt/koinon/backend/.venv/bin/python -m koinon.worker
 Restart=on-failure
 RestartSec=5
 TimeoutStopSec=45

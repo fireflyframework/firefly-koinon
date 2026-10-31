@@ -6,9 +6,9 @@ import importlib.util
 from contextlib import AsyncExitStack, asynccontextmanager
 from copy import deepcopy
 from json import JSONDecodeError
+from types import SimpleNamespace
 
 from pydantic import ValidationError
-from pyfly.container.scanner import scan_package
 from pyfly.context import ApplicationContext
 from pyfly.core import Config, pyfly_application
 from pyfly.kernel.exceptions import PyFlyException
@@ -30,6 +30,8 @@ from koinon.mcp.private_reviews import file_upload_preparer, private_review_read
 from koinon.mcp.read_capture import native_read_capture
 from koinon.mcp.server import create_mcp_server
 from koinon.mcp.settings import McpSettings
+from koinon.mcp.transport_identity import session_principal
+from koinon.operations.process import ProcessRole, process_configuration
 from koinon.organization_branding.dtos import BrandingValues
 from koinon.security.configuration import SecurityConfiguration, native_security_defaults
 from koinon.security.controllers import AuthController
@@ -37,7 +39,7 @@ from koinon.security.settings import OidcSettings
 from koinon.web.capabilities import CapabilitiesController, CapabilityRegistry, HealthController
 from koinon.web.domain_errors import register_domain_problems
 from koinon.web.legacy_security import LegacyMembershipFilter, LegacyOperationPolicies
-from koinon.web.projection import register_controller, register_optional_domain
+from koinon.web.projection import register_controller, register_optional_domain, register_product_package
 
 
 @pyfly_application(name="firefly koinon", version=__version__, scan_packages=["koinon.catalog"])
@@ -56,7 +58,8 @@ def merge_configuration(base: dict, overlay: dict) -> dict:
     return result
 
 
-def create_application(config: dict):
+def create_application(config: dict, *, role: ProcessRole = "api"):
+    config = process_configuration(config, role=role)
     settings = Config(config).bind(OidcSettings)
     defaults = {
         "koinon": {"knowledge": {"require_connections": True}},
@@ -76,6 +79,21 @@ def create_application(config: dict):
     mandatory["pyfly"]["session"].pop("concurrency")
     values = merge_configuration(values, mandatory)
     values = resolve_mcp_configuration(values)
+    if role == "api" and Config(values).get("koinon.mcp.enabled", False):
+        values = merge_configuration(
+            values,
+            {
+                "pyfly": {
+                    "mcp": {
+                        "sessions": {
+                            "enabled": True,
+                            "store": "sql",
+                            "datasource": "primary",
+                        }
+                    }
+                }
+            },
+        )
     context = ApplicationContext(Config(values))
     mcp_settings = Config(values).bind(McpSettings)
     context.container.register_instance(McpSettings, mcp_settings)
@@ -102,8 +120,9 @@ def create_application(config: dict):
         "koinon.exports",
         "koinon.sharing",
         "koinon.storage",
+        "koinon.workers",
     ):
-        scan_package(package, context.container)
+        register_product_package(context, package, controllers=role == "api")
     for cls in (
         ApplicationConfiguration,
         SecurityConfiguration,
@@ -112,7 +131,8 @@ def create_application(config: dict):
         HealthController,
         LegacyMembershipFilter,
     ):
-        context.register_bean(cls)
+        if role == "api" or cls not in (AuthController, HealthController, LegacyMembershipFilter):
+            context.register_bean(cls)
     for cls in (
         ContextController,
         McpConnectionController,
@@ -122,49 +142,62 @@ def create_application(config: dict):
         JobController,
         CapabilitiesController,
     ):
-        register_controller(context, cls)
+        if role == "api":
+            register_controller(context, cls)
     if (
         Config(values).get("koinon.knowledge.enabled", True)
         and importlib.util.find_spec("koinon.knowledge") is not None
     ):
-        scan_package("koinon.knowledge", context.container)
+        register_product_package(context, "koinon.knowledge", controllers=role == "api")
         for cls in list(context.container.registered_types()):
-            if cls.__module__.startswith("koinon.knowledge") and getattr(cls, "__pyfly_stereotype__", "") in (
-                "controller",
-                "rest_controller",
+            if (
+                role == "api"
+                and cls.__module__.startswith("koinon.knowledge")
+                and getattr(cls, "__pyfly_stereotype__", "")
+                in (
+                    "controller",
+                    "rest_controller",
+                )
             ):
                 register_controller(context, cls)
     for cls in list(context.container.registered_types()):
-        if cls.__module__.startswith(
-            (
-                "koinon.assistants",
-                "koinon.organization_chat",
-                "koinon.organization_knowledge",
-                "koinon.organization_branding",
-                "koinon.organization_people",
-                "koinon.corporate_profiles",
-                "koinon.profiles",
-                "koinon.tokens",
-                "koinon.authorized_applications",
-                "koinon.mcp_applications",
-                "koinon.corporate_identity",
-                "koinon.evidence",
-                "koinon.exports",
-                "koinon.sharing",
+        if (
+            role == "api"
+            and cls.__module__.startswith(
+                (
+                    "koinon.assistants",
+                    "koinon.organization_chat",
+                    "koinon.organization_knowledge",
+                    "koinon.organization_branding",
+                    "koinon.organization_people",
+                    "koinon.corporate_profiles",
+                    "koinon.profiles",
+                    "koinon.tokens",
+                    "koinon.authorized_applications",
+                    "koinon.mcp_applications",
+                    "koinon.corporate_identity",
+                    "koinon.evidence",
+                    "koinon.exports",
+                    "koinon.sharing",
+                )
             )
-        ) and getattr(cls, "__pyfly_stereotype__", "") in ("controller", "rest_controller"):
+            and getattr(cls, "__pyfly_stereotype__", "") in ("controller", "rest_controller")
+        ):
             register_controller(context, cls)
     legacy_enabled = Config(values).get("koinon.legacy.enabled", True)
     for package, domain in (("flycanon", "canon"), ("flyquery", "structured")):
         registry.domains[domain] = (
-            register_optional_domain(context, package, domain)
-            if legacy_enabled
+            register_optional_domain(context, package, domain, controllers=legacy_enabled and role == "api")
+            if Config(values).get("koinon.knowledge.enabled", True)
             else {
                 "installed": importlib.util.find_spec(package) is not None,
                 "registered": False,
-                "reason": "Optional domain is disabled",
+                "reason": "Knowledge domain is disabled",
             }
         )
+
+    if role == "worker":
+        return SimpleNamespace(state=SimpleNamespace(context=context, capability_registry=registry))
 
     @asynccontextmanager
     async def lifespan(app):
@@ -172,7 +205,7 @@ def create_application(config: dict):
         try:
             async with AsyncExitStack() as stack:
                 if mcp_settings.enabled:
-                    await stack.enter_async_context(app.state.mcp_server.session_manager.run())
+                    await stack.enter_async_context(app.state.mcp_transport.lifespan())
                 yield
         finally:
             await context.stop()
@@ -218,17 +251,25 @@ def create_application(config: dict):
             if Config(values).get("koinon.knowledge.enabled", True)
             else None,
         )
-        mcp_app = server.streamable_http_app(
-            stateless_http=False,
-            json_response=True,
+        from pyfly.mcp import McpSessionStore, McpTransport
+
+        security = mcp_settings.transport_security()
+        transport = McpTransport.from_server(
+            server.registry,
+            session_store=lambda: context.get_bean(McpSessionStore),
+            session_principal=lambda request, identity: session_principal(
+                request, identity, mcp_settings.public_url
+            ),
+            allowed_hosts=security.allowed_hosts,
+            allowed_origins=security.allowed_origins,
             max_sessions=mcp_settings.max_sessions,
             session_idle_timeout=mcp_settings.session_idle_timeout_seconds,
             max_request_body_size=mcp_settings.max_request_bytes,
-            transport_security=mcp_settings.transport_security(),
         )
-        app.router.routes.extend(mcp_app.routes)
+        app.router.routes.append(transport.route)
         app.add_middleware(McpHttpBoundary, settings=mcp_settings)
         app.state.mcp_server = server
+        app.state.mcp_transport = transport
         install_oauth(app, context)
     app.state.context = context
     app.state.capability_registry = registry

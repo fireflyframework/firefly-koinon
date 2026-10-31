@@ -17,6 +17,7 @@ from koinon.corporate_profiles.settings import CorporateProfileSettings
 from koinon.corporate_profiles.worker import CorporateProfileWorker
 from koinon.organization_people.service import OrganizationPeopleService
 from koinon.profiles.service import ProfileService
+from koinon.workers.admission import WorkAdmission, WorkAdmissionSettings
 
 
 async def test_native_module_discovery_wires_projector_and_worker_without_provider_requests(tmp_path):
@@ -44,6 +45,8 @@ async def test_native_module_discovery_wires_projector_and_worker_without_provid
         "koinon.corporate_profiles",
     ):
         scan_package(package, context.container)
+    context.register_bean(WorkAdmissionSettings)
+    context.register_bean(WorkAdmission)
     context.container.register(CorporateProviderRepository)
     context.container.register_instance(
         CorporateProfileSettings, CorporateProfileSettings(worker_enabled=False)

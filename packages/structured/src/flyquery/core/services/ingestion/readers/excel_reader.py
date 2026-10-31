@@ -76,6 +76,8 @@ from flyquery.core.services.ingestion.reader import (
     TableExtractionRules,
 )
 from flyquery.core.services.ingestion.readers.delimited import materialize, ranges
+from flyquery.core.services.ingestion.resources import BoundedTextWriter, account_path, output_size
+from flyquery.core.services.ingestion.resources import connect as connect_ingestion
 
 _NAME_SAFE_RE = re.compile(r"[^A-Za-z0-9_]+")
 # ``#section[<header>:<end>]`` (header row + data on the next rows, contiguous)
@@ -490,6 +492,8 @@ class ExcelReader:
         type_infer_sample_rows: int,
         max_title_rows: int,
     ) -> MaterialiseResult:
+        account_path(source_path)
+        account_path(target_parquet_key)
         import csv
 
         import duckdb
@@ -597,13 +601,13 @@ class ExcelReader:
         with tempfile.NamedTemporaryFile(
             suffix=".csv", mode="w", newline="", delete=False, encoding="utf-8"
         ) as tmp:
-            writer = csv.writer(tmp)
+            writer = csv.writer(BoundedTextWriter(tmp))
             for r in section_rows:
                 writer.writerow([_flatten(c) for c in r])
             tmp_path = tmp.name
 
         try:
-            conn = duckdb.connect()
+            conn = connect_ingestion()
             try:
                 receipt = materialize(
                     conn, tmp_path, target_parquet_key, sample_rows=type_infer_sample_rows, excel=True
@@ -625,7 +629,7 @@ class ExcelReader:
         finally:
             Path(tmp_path).unlink(missing_ok=True)
 
-        byte_size = Path(target_parquet_key).stat().st_size
+        byte_size = output_size(target_parquet_key)
         return MaterialiseResult(
             target_parquet_key=target_parquet_key,
             parquet_byte_size=byte_size,
