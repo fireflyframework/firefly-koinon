@@ -5,9 +5,9 @@ name: Documentation
 on:
   push:
     branches: [main]
-    paths: ["docs/**", "docs_theme/**", "mkdocs.yml", "tools/docs/**", ".github/workflows/docs.yml"]
+    paths: ["docs/**", "docs_theme/**", "mkdocs.yml", "tools/docs/**", "tools/sdk/**", "sdk/contract/**", ".github/workflows/docs.yml"]
   pull_request:
-    paths: ["docs/**", "docs_theme/**", "mkdocs.yml", "tools/docs/**", ".github/workflows/docs.yml"]
+    paths: ["docs/**", "docs_theme/**", "mkdocs.yml", "tools/docs/**", "tools/sdk/**", "sdk/contract/**", ".github/workflows/docs.yml"]
   workflow_dispatch:
 
 permissions:
@@ -33,6 +33,9 @@ jobs:
         run: python -m pip install -r docs/requirements.txt
       - name: Build and check documentation
         run: |
+          python -m unittest discover -s tools/sdk/tests -v
+          python tools/sdk/docs.py --check
+          python tools/sdk/tests/rendered_reference_test.py
           mkdocs build --strict
           python tools/docs/check_site.py site
       - name: Configure GitHub Pages
