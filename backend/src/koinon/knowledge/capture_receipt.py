@@ -70,6 +70,7 @@ class NativeEvidenceReceipt:
         self.model_snapshots: list[SnapshotRead] = []
         self.resolved_snapshots: list[SnapshotRead] = []
         self._attempts: list[NativeSqlAttempt] = []
+        self.authorize_knowledge: Callable[[], Awaitable[Any]] | None = None
         self.authorize_model: Callable[[], Awaitable[Any]] | None = None
         self.verify_structured: Callable[[Any, dict], Awaitable[bool | NativeDatabaseContext]] | None = None
         self.complete = True

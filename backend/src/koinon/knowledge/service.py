@@ -351,8 +351,11 @@ class KnowledgeFacade:
                 "Narrow the search to a workspace or project", code="SEARCH_SCOPE_TOO_WIDE"
             )
         hits, citations, answers = [], [], []
+        curated_selections = []
         policy = await settings_for_operation(self.knowledge_settings, subject, tenant_id)
-        _capture = _capture or NativeEvidenceReceipt(subject, tenant_id)
+        receipt: NativeEvidenceReceipt = (
+            _capture if _capture is not None else NativeEvidenceReceipt(subject, tenant_id)
+        )
         for (catalog_workspace, native_workspace), admitted in groups.items():
             knowledge = curated_groups.get((catalog_workspace, native_workspace), {})
             admitted_ids = tuple(asset.id for asset, _ in [*admitted.values(), *knowledge.values()])
@@ -361,18 +364,19 @@ class KnowledgeFacade:
                 for admitted_id in asset_ids:
                     await self._chain(subject, tenant_id, admitted_id, "knowledge:search")
 
-            _capture.authorize_model = authorize_model
-            if _capture is not None:
-                _capture.admit_documents(tenant_id, native_workspace, subject, admitted)
+            receipt.authorize_model = authorize_model
+            receipt.admit_documents(tenant_id, native_workspace, subject, admitted)
             curated_retrieve = None
             if knowledge and curated is not None:
                 selections = await curated.admit(
                     subject, tenant_id, [asset.id for asset, _ in knowledge.values()]
                 )
 
+                curated_selections.extend(selections)
+
                 async def fetch_curated(*, query, limit, selected=selections, native=native_workspace):
                     return await curated.search(
-                        subject, tenant_id, native, selected, query=query, limit=limit, _capture=_capture
+                        subject, tenant_id, native, selected, query=query, limit=limit, _capture=receipt
                     )
 
                 curated_retrieve = fetch_curated
@@ -386,7 +390,7 @@ class KnowledgeFacade:
                 answer=answer,
                 actor=subject,
                 _knowledge_settings_snapshot=policy,
-                **({"_capture": _capture} if _capture is not None else {}),
+                _capture=receipt,
                 **({"_curated_retrieve": curated_retrieve} if curated_retrieve is not None else {}),
             )
             for hit in result.get("hits", []):
@@ -397,7 +401,7 @@ class KnowledgeFacade:
                             "Domain returned unadmitted knowledge", code="DOMAIN_SCOPE_MISMATCH"
                         )
                     asset, _ = knowledge[source_id]
-                    proof = _capture.knowledge_sources.get(str(hit.get("chunk_id")))
+                    proof = receipt.knowledge_sources.get(str(hit.get("chunk_id")))
                     if proof is None or proof.asset_id != asset.id:
                         raise AccessDenied(
                             "Exact committed knowledge provenance is required", code="EVIDENCE_UNAVAILABLE"
@@ -421,13 +425,15 @@ class KnowledgeFacade:
                     raise AccessDenied("Domain returned an unadmitted source", code="DOMAIN_SCOPE_MISMATCH")
                 asset, source = admitted[source_id]
                 identifier = str(hit.get("chunk_id") or hit.get("id"))
-                observed = _capture.documents.get(identifier)
+                observed = receipt.documents.get(identifier)
                 source_reference = None
                 if observed is not None:
                     content = hit.get("content")
                     if (
-                        observed.workspace_id != native_workspace or observed.source_id != source_id
-                        or observed.chunk_id != identifier or not isinstance(content, str)
+                        observed.workspace_id != native_workspace
+                        or observed.source_id != source_id
+                        or observed.chunk_id != identifier
+                        or not isinstance(content, str)
                         or observed.digest != sha256(content.encode()).hexdigest()
                         or observed.quote != content[:8000]
                     ):
@@ -439,7 +445,7 @@ class KnowledgeFacade:
                     source_reference = document_reference(
                         observed, asset_id=asset.id, source_id=source.id, title=asset.name[:255]
                     ).model_dump(mode="json")
-                elif any(row.workspace_id == native_workspace for row in _capture.documents.values()):
+                elif any(row.workspace_id == native_workspace for row in receipt.documents.values()):
                     raise AccessDenied(
                         "Search hit has no matching source observation", code="EVIDENCE_UNAVAILABLE"
                     )
@@ -456,7 +462,7 @@ class KnowledgeFacade:
                 )
             for citation in result.get("citations", []):
                 if citation.get("source_kind") == "knowledge_version":
-                    proof = _capture.knowledge_sources.get(str(citation.get("chunk_id")))
+                    proof = receipt.knowledge_sources.get(str(citation.get("chunk_id")))
                     if citation.get("source_id") not in knowledge or proof is None:
                         raise AccessDenied("Answer cited unadmitted knowledge", code="DOMAIN_SCOPE_MISMATCH")
                     citations.append(
@@ -477,6 +483,13 @@ class KnowledgeFacade:
                 citations.append({**citation, "asset_id": asset.id, "source_id": source.id})
             if result.get("answer"):
                 answers.append(result["answer"])
+        if curated_selections and curated is not None:
+
+            async def authorize_knowledge():
+                await curated.authorize_release(subject, tenant_id, tuple(curated_selections))
+
+            receipt.authorize_knowledge = authorize_knowledge
+            await authorize_knowledge()
         response: dict = {"hits": sorted(hits, key=lambda hit: hit.get("score") or 0, reverse=True)[:limit]}
         if answer:
             response.update(answer="\n\n".join(answers), citations=citations)

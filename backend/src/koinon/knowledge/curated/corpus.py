@@ -6,7 +6,8 @@ from dataclasses import dataclass
 from hashlib import sha256
 
 from pyfly.container import service
-from pyfly.data.transaction import infrastructure_unit
+from pyfly.data.relational.sqlalchemy import transactional
+from pyfly.data.transaction import Propagation, infrastructure_unit
 from pyfly.kernel import InvalidRequestException
 from sqlalchemy import func, literal_column, select, text
 
@@ -21,6 +22,7 @@ from koinon.knowledge.curated.domain_entities import (
 )
 from koinon.knowledge.curated.ports import CuratedCorpusPort
 from koinon.knowledge.curated.reads import CuratedKnowledgeReads
+from koinon.knowledge.curated.release import CuratedReleaseFence
 
 
 @dataclass(frozen=True)
@@ -35,8 +37,8 @@ class ServingVersion:
 
 @service(name="knowledge.curated.corpus")
 class CuratedBodyCorpus(CuratedCorpusPort):
-    def __init__(self, reads: CuratedKnowledgeReads):
-        self.reads = reads
+    def __init__(self, reads: CuratedKnowledgeReads, release: CuratedReleaseFence):
+        self.reads, self.release = reads, release
 
     async def admit(self, subject, tenant_id, item_ids):
         admitted = []
@@ -61,6 +63,8 @@ class CuratedBodyCorpus(CuratedCorpusPort):
     async def search(self, subject, tenant_id, native_workspace_id, admitted, *, query, limit, _capture=None):
         if not query.strip() or not 1 <= limit <= 300 or len(admitted) > 128:
             raise InvalidRequestException("Narrow the curated search", code="INVALID_KNOWLEDGE_SEARCH")
+        item_ids = tuple(selection.item_id for selection in admitted)
+        stamp = await self.release.observe(subject, tenant_id, item_ids)
         selected = {}
         for selection in admitted:
             entry, state = await self.reads.scope(subject, tenant_id, selection.item_id)
@@ -100,18 +104,57 @@ class CuratedBodyCorpus(CuratedCorpusPort):
                     database = NativeDatabaseContext(
                         engine, identity.get("database"), identity.get("catalog"), identity.get("schema")
                     )
-                    for hit in hits:
-                        selection, version = selected[hit.metadata["knowledge_version_id"]]
-                        _capture.knowledge_read(
-                            tenant_id,
-                            native_workspace_id,
-                            subject,
-                            selection.workspace_id,
-                            hit,
-                            version.content_sha256,
-                            database,
-                        )
-                return hits
+        await self._validate_release(subject, tenant_id, native_workspace_id, admitted)
+        await self.release.require_unchanged(subject, tenant_id, item_ids, stamp)
+        if _capture is not None:
+            for hit in hits:
+                selection, version = selected[hit.metadata["knowledge_version_id"]]
+                _capture.knowledge_read(
+                    tenant_id,
+                    native_workspace_id,
+                    subject,
+                    selection.workspace_id,
+                    hit,
+                    version.content_sha256,
+                    database,
+                )
+        return hits
+
+    @transactional(datasource="primary", propagation=Propagation.REQUIRES_NEW, read_only=True)
+    async def _validate_release(self, subject, tenant_id, native_workspace_id, admitted):
+        # The native query can yield while access, bindings, or the serving head change.
+        for selection in admitted:
+            current = await self.reads.version(subject, tenant_id, selection.item_id, selection.version)
+            entry, state = await self.reads.scope(subject, tenant_id, selection.item_id)
+            await self.reads.authority.catalog.authorize(
+                subject, tenant_id, "knowledge:search", entry.workspace_id
+            )
+            if (
+                entry.workspace_id,
+                state.native_item_id,
+                state.native_workspace_id,
+                state.serving_version_id,
+                state.serving_version,
+            ) != (
+                selection.workspace_id,
+                selection.native_item_id,
+                native_workspace_id,
+                selection.version_id,
+                selection.version,
+            ) or (
+                current.selected_version.version_id != selection.version_id
+                or current.selected_version.version != selection.version
+                or not current.selected_version.serving
+                or current.selected_version.publication != "published"
+            ):
+                raise AccessDenied("The admitted serving version changed", code="KNOWLEDGE_VERSION_CONFLICT")
+
+    async def authorize_release(self, subject, tenant_id, admitted) -> None:
+        item_ids = tuple(selection.item_id for selection in admitted)
+        stamp = await self.release.observe(subject, tenant_id, item_ids)
+        for selection in admitted:
+            await self._validate_release(subject, tenant_id, selection.native_workspace_id, (selection,))
+        await self.release.require_unchanged(subject, tenant_id, item_ids, stamp)
 
     async def ranked(self, session, tenant_id, workspace_id, selected, query, limit):
         from flycanon.core.services.retrieval.retrieval_service import Hit
