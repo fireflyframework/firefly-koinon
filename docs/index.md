@@ -49,5 +49,6 @@
 
 Library keeps sources organized. Chat helps you explore them. Settings gives administrators control over access and configuration. Proposed knowledge updates require review before they change the repository. Read the [architecture guide](concepts/architecture.md) for identities and persistence boundaries.
 
-!!! warning "Evaluation release"
-    Version 26.10.0-alpha.1 is intended for evaluation. Production acceptance and migration parity remain incomplete. Read the [published release and verified journeys](releases/26.10.0-alpha.1.md), including the remaining provider, deployment and migration acceptance.
+## Version 26.10.1
+
+koinon uses CalVer `YY.MM.Patch`. Read the [release notes](releases/26.10.1.md), follow the [guided setup](guides/knowledge-setup.md), and configure your environment with the [deployment guide](operations/production.md). The [qualification history](operations/qualification.md) records the scope and results of individual checks.

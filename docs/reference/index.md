@@ -21,4 +21,4 @@ The [API and SDK reference](sdk-api.md) connects the complete method index to [A
 
 ## Release evidence
 
-Read the [published release status](../releases/26.10.0-alpha.1.md) and [qualification history](../operations/qualification.md) before treating an example, configuration or local test as production acceptance.
+Read the [26.10.1 release notes](../releases/26.10.1.md) for distribution and runtime requirements. The [qualification history](../operations/qualification.md) records checks against specific revisions and environments.

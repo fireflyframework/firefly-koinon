@@ -19,11 +19,11 @@ From this directory, the equivalent commands are `mvn verify` and `mvn install`.
 <dependency>
   <groupId>org.fireflyframework</groupId>
   <artifactId>koinon-sdk</artifactId>
-  <version>26.10.0-alpha.2</version>
+  <version>26.10.1</version>
 </dependency>
 ```
 
-This development artifact is installed in your local Maven repository; these commands do not publish to Maven Central. Compilation targets Java 21 bytecode with `-Xlint:all -Werror`; CI has Java 21 and 25 jobs. `tools/sdk/check_java_consumer.py` checks JAR notices, bytecode and an external typed consumer. Package checks do not establish live authenticated API, provider or production acceptance.
+This SDK is installed in your local Maven repository; these commands do not publish to Maven Central. Compilation targets Java 21 bytecode with `-Xlint:all -Werror`; CI has Java 21 and 25 jobs. `tools/sdk/check_java_consumer.py` checks JAR notices, bytecode and an external typed consumer. Package checks do not establish live authenticated API, provider or production acceptance.
 
 ## Connect
 
