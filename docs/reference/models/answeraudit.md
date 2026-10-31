@@ -19,6 +19,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 | `provenance_status` | `string` | Yes | Not specified |
 | `source_provenance_complete` | `boolean` or `null` | No | `null` |
 | `knowledge_settings_snapshot` | [`OrganizationKnowledgeSnapshot`](organizationknowledgesnapshot.md) or `null` | No | `null` |
+| `memory` | [`MemoryReceipt`](memoryreceipt.md) or `null` | No | `null` |
 | `generations` | Array of [`GenerationReceipt`](generationreceipt.md) | No | Not specified |
 | `sources` | Array of [`SourceReference`](sourcereference.md) | No | Not specified |
 | `private_files` | Array of [`PrivateFileReceipt`](privatefilereceipt.md) | No | Not specified |
@@ -100,6 +101,17 @@ This is a schema definition, not an example request. It preserves all declared k
           "anyOf": [
             {
               "$ref": "#/$defs/OrganizationKnowledgeSnapshot"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "memory": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MemoryReceipt"
             },
             {
               "type": "null"

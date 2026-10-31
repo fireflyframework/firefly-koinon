@@ -19,7 +19,11 @@ import {
   KoinonTextPipe,
 } from '@fireflyframework/koinon-angular';
 import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
-import type { AgentConfiguration, OrganizationChatSettings } from '@fireflyframework/koinon-sdk';
+import type {
+  AgentConfiguration,
+  OrganizationChatSettings,
+  OrganizationMemoryPolicy,
+} from '@fireflyframework/koinon-sdk';
 import { ORGANIZATION_CHAT_SPANISH } from './organization-chat-spanish';
 registerKoinonSpanish(ORGANIZATION_CHAT_SPANISH);
 @Component({
@@ -39,6 +43,43 @@ export class KoinonOrganizationChatSettings implements OnInit, OnDestroy {
   readonly settings = signal<OrganizationChatSettings | null>(null);
   readonly agents = signal<AgentConfiguration[]>([]);
   readonly selectedId = signal('');
+  readonly memory = signal<Required<OrganizationMemoryPolicy>>({
+    allow_project_memory: true,
+    max_history_messages: 40,
+    max_history_tokens: 8192,
+    max_project_memory_messages: 20,
+  });
+  readonly memoryChanged = computed(() => {
+    const saved = this.settings()?.memory;
+    return (
+      !!saved &&
+      (Object.keys(this.memory()) as (keyof OrganizationMemoryPolicy)[]).some(
+        (key) => this.memory()[key] !== saved[key],
+      )
+    );
+  });
+  readonly memoryError = computed(() => {
+    const policy = this.memory();
+    if (
+      [policy.max_history_messages, policy.max_project_memory_messages].some(
+        (value) => typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 40,
+      ) ||
+      typeof policy.max_history_tokens !== 'number' ||
+      !Number.isInteger(policy.max_history_tokens) ||
+      policy.max_history_tokens < 0 ||
+      policy.max_history_tokens > 65536
+    )
+      return 'Enter whole numbers within the memory limits.';
+    return policy.max_project_memory_messages > policy.max_history_messages
+      ? 'Project memory cannot exceed the total history limit.'
+      : '';
+  });
+  updateMemory<K extends keyof OrganizationMemoryPolicy>(
+    key: K,
+    value: Required<OrganizationMemoryPolicy>[K],
+  ) {
+    this.memory.update((policy) => ({ ...policy, [key]: value }));
+  }
   readonly pending = signal(false);
   readonly saving = signal(false);
   readonly stale = signal(false);
@@ -55,7 +96,8 @@ export class KoinonOrganizationChatSettings implements OnInit, OnDestroy {
       !this.pending() &&
       !this.saving() &&
       !this.stale() &&
-      (this.selectedId() || null) !== this.settings()?.default_agent_id,
+      !this.memoryError() &&
+      ((this.selectedId() || null) !== this.settings()?.default_agent_id || this.memoryChanged()),
   );
   constructor() {
     effect(() => {
@@ -126,6 +168,7 @@ export class KoinonOrganizationChatSettings implements OnInit, OnDestroy {
       this.settings.set(settings);
       this.agents.set(agents);
       this.selectedId.set(settings.default_agent_id ?? '');
+      if (settings.memory) this.memory.set({ ...this.memory(), ...settings.memory });
       this.stale.set(false);
     } catch (error) {
       if (this.current(epoch)) this.fail(error);
@@ -144,10 +187,12 @@ export class KoinonOrganizationChatSettings implements OnInit, OnDestroy {
       const value = await this.clients.get().organizationChat.update(tenant, {
         default_agent_id: this.selectedId() || null,
         expected_revision: this.settings()!.revision,
+        ...(this.memoryChanged() ? { memory: this.memory() } : {}),
       });
       if (!this.current(epoch)) return;
       this.settings.set(value);
       this.selectedId.set(value.default_agent_id ?? '');
+      if (value.memory) this.memory.set({ ...this.memory(), ...value.memory });
       this.notice.set('Organization chat saved.');
     } catch (error) {
       if (this.current(epoch)) {

@@ -3,7 +3,7 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/sharing/dtos.py
-SHA256: c0152ae90375a5c59848103da7792d26f2c864ac5a934cfbb1bd5e09e4957544
+SHA256: ed1ac376f2a612ee93c01ea25ab0290513f00c6ad1b8d18410dbef95a9c414fa
 
 Server authorization and semantic validation remain authoritative.
 """
@@ -32,6 +32,7 @@ class ShareCreate(Input):
     expected_revision: Revision
     expires_in_hours: int = Field(default=24, ge=1, le=168)
     recipient_policy: Literal["organization_current_acl"] = "organization_current_acl"
+    include_remembered_context: bool = Field(default=False, strict=True)
 
 
 class ShareReview(Frozen):
@@ -43,6 +44,7 @@ class ShareReview(Frozen):
     messages: tuple[ConversationMessage, ...]
     sources: tuple[SourceReference, ...]
     source_manifest_complete: bool
+    remembered_context_present: bool = False
     recipient_policy: Literal["organization_current_acl"] = "organization_current_acl"
     omissions: tuple[str, ...] = ()
     expires_at: AwareDatetime

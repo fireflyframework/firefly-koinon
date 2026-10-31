@@ -11,6 +11,7 @@ async function setup(
     disabled?: boolean;
     conflict?: boolean;
     spanish?: boolean;
+    memory?: boolean;
   } = {},
 ) {
   await mockService(page);
@@ -19,6 +20,12 @@ async function setup(
     submitted = false;
   const writes: unknown[] = [],
     submittedAgents: string[] = [];
+  let memory = {
+    allow_project_memory: true,
+    max_history_messages: 30,
+    max_history_tokens: 4096,
+    max_project_memory_messages: 12,
+  };
   const agent = (id: string, name: string, scope = {}) => ({
     id,
     name,
@@ -45,6 +52,7 @@ async function setup(
     default_agent_id: defaultId,
     revision,
     configured: !!defaultId,
+    ...(options.memory ? { memory } : {}),
     can_run: !!defaultId && !(options.disabled && defaultId === 'second'),
     status: !defaultId
       ? 'unconfigured'
@@ -94,6 +102,7 @@ async function setup(
             409,
           );
         defaultId = body.default_agent_id;
+        if (body.memory) memory = { ...memory, ...body.memory };
         ++revision;
       }
       return json(settings());
@@ -149,6 +158,59 @@ async function openAgents(page: Page, spanish = false) {
     await page.getByRole('button', { name: spanish ? 'Agentes' : 'Agents', exact: true }).click();
 }
 for (const width of [1440, 390])
+  for (const theme of ['light', 'dark'])
+    test(`organization memory policy fits ${width} ${theme} and needs an explicit save`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.addInitScript((theme) => localStorage.setItem('koinon-theme', theme), theme);
+      const service = await setup(page, { memory: true });
+      await openAgents(page);
+      const editor = page.locator('ffk-organization-chat-settings');
+      const permission = editor.getByRole('checkbox', { name: /Allow personal project memory/ });
+      await expect(permission).toBeChecked();
+      const total = editor.getByRole('spinbutton', { name: 'Total history messages', exact: true });
+      await expect(total).toHaveValue('30');
+      await editor
+        .getByRole('spinbutton', { name: 'Messages from other project chats', exact: true })
+        .fill('31');
+      await expect(
+        editor.getByRole('button', { name: 'Save organization chat', exact: true }),
+      ).toBeDisabled();
+      await expect(editor.getByRole('status')).toHaveText(
+        'Project memory cannot exceed the total history limit.',
+      );
+      expect(service.writes).toHaveLength(0);
+      await editor
+        .getByRole('spinbutton', { name: 'Messages from other project chats', exact: true })
+        .fill('12');
+      await permission.uncheck();
+      expect(service.writes).toHaveLength(0);
+      const output = process.env['KOINON_UI_CAPTURE_DIR'] ?? 'test-results/organization-memory';
+      await mkdir(output, { recursive: true });
+      await editor.screenshot({
+        path: resolve(output, `organization-memory-${width}-${theme}.png`),
+        animations: 'disabled',
+      });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+      await editor.getByRole('button', { name: 'Save organization chat', exact: true }).click();
+      await expect(editor.getByRole('status')).toHaveText('Organization chat saved.');
+      expect(service.writes).toEqual([
+        {
+          default_agent_id: 'second',
+          expected_revision: 4,
+          memory: {
+            allow_project_memory: false,
+            max_history_messages: 30,
+            max_history_tokens: 4096,
+            max_project_memory_messages: 12,
+          },
+        },
+      ]);
+    });
+for (const width of [1440, 390])
   test(`organization agent is configured once and a fresh standard chat uses it at ${width}px`, async ({
     page,
   }) => {
@@ -166,7 +228,9 @@ for (const width of [1440, 390])
     await editor.getByRole('button', { name: 'Save organization chat', exact: true }).click();
     await expect(editor.getByRole('status')).toContainText('Organization chat saved.');
     expect(service.writes).toEqual([{ default_agent_id: 'second', expected_revision: 4 }]);
-    const output = resolve(process.cwd(), '.qualification-v23/organization-chat-captures');
+    const output =
+      process.env['KOINON_UI_CAPTURE_DIR'] ??
+      resolve(process.cwd(), '.qualification-v23/organization-chat-captures');
     await mkdir(output, { recursive: true });
     await page.screenshot({
       path: resolve(output, `organization-agent-${width}.png`),

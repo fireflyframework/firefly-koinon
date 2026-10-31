@@ -3,7 +3,7 @@
 from datetime import datetime
 
 from pyfly.data.relational.sqlalchemy import Base, UtcDateTime
-from sqlalchemy import CheckConstraint, ForeignKey, ForeignKeyConstraint, String
+from sqlalchemy import JSON, CheckConstraint, ForeignKey, ForeignKeyConstraint, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 
@@ -19,6 +19,7 @@ class OrganizationChatSetting(Base):
     )
     tenant_id: Mapped[str] = mapped_column(ForeignKey("lattice_tenants.id"), primary_key=True)
     default_agent_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    memory_policy_json: Mapped[dict | None] = mapped_column(JSON(none_as_null=True), nullable=True)
     revision: Mapped[int] = mapped_column()
     updated_by: Mapped[str] = mapped_column(String(512))
     updated_at: Mapped[datetime] = mapped_column(UtcDateTime())

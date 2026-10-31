@@ -9,10 +9,11 @@ from inspect import isawaitable
 from io import BytesIO
 from uuid import UUID
 
-from pyfly.container import service
+from pyfly.container import Provider, service
 from pyfly.core import Config
 from pyfly.kernel import ConflictException, GoneException, PayloadTooLargeException, ResourceNotFoundException
 
+from koinon.assistants.memory.egress import MemoryEgress
 from koinon.catalog.errors import AccessDenied
 from koinon.evidence.dtos import ResultColumn, StoredResult
 from koinon.evidence.ports import StoredResultPort
@@ -23,13 +24,26 @@ from koinon.knowledge.service import KnowledgeFacade
 
 @service(name="knowledge.stored_results")
 class NativeStoredResults(StoredResultPort):
-    def __init__(self, knowledge: KnowledgeFacade, domains: NativeDomains, config: Config):
+    def __init__(
+        self,
+        knowledge: KnowledgeFacade,
+        domains: NativeDomains,
+        config: Config,
+        memory: Provider[MemoryEgress | None] | None = None,
+    ):
         self.knowledge, self.domains, self.settings = knowledge, domains, config.bind(EvidenceSettings)
+        self.memory = memory
+
+    async def memory_check(self, subject, tenant_id, query_id):
+        memory = self.memory.get() if self.memory else None
+        if memory:
+            await memory.query(subject, tenant_id, query_id)
 
     async def load(self, subject, tenant_id, dataset_id, query_id):
         from flyquery.core.services.query.query_repository import QueryRepository
 
         self.settings.validate()
+        await self.memory_check(subject, tenant_id, query_id)
         chain = await self.knowledge._chain(subject, tenant_id, dataset_id)
         if chain[0].kind != "dataset":
             raise AccessDenied("Select an authorized dataset result", code="EVIDENCE_UNAVAILABLE")
@@ -72,6 +86,7 @@ class NativeStoredResults(StoredResultPort):
                     raise ResourceNotFoundException(
                         "No stored result artifact exists", code="RESULT_ARTIFACT_UNAVAILABLE"
                     )
+                await self.memory_check(subject, tenant_id, query_id)
                 return self.empty(dataset_id, query_id, expiry), None
             expected = (
                 f"flyquery/{tenant_id}/{workspace_uuid}/{binding.native_id}/results/{query_uuid}.parquet"
@@ -137,6 +152,7 @@ class NativeStoredResults(StoredResultPort):
             snapshot_ids=(),
             expires_at=expiry,
         )
+        await self.memory_check(subject, tenant_id, query_id)
         return result, bytes(body)
 
     @staticmethod
@@ -177,4 +193,5 @@ class NativeStoredResults(StoredResultPort):
             await self.knowledge._chain(subject, tenant_id, result.asset_id)
             if current.expires_at <= datetime.now(UTC):
                 raise GoneException("This stored result expired", code="RESULT_EXPIRED")
+            await self.memory_check(subject, tenant_id, result.query_id)
             yield content[position : position + 1024 * 1024]

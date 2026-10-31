@@ -27,6 +27,7 @@ import type { Citation, ChatThread, ChatFolder } from '@fireflyframework/koinon-
 import {
   KoinonAssistant,
   KoinonFacade,
+  KoinonClientContext,
   KoinonButton,
   KoinonBadge,
   KoinonIcon,
@@ -90,6 +91,7 @@ export class KoinonChatPage implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('messageViewport') private messageViewport?: ElementRef<HTMLElement>;
   @ViewChild('historyToggle') private historyToggle?: ElementRef<HTMLButtonElement>;
   readonly a = inject(KoinonAssistant);
+  private readonly clients = inject(KoinonClientContext);
   readonly files = inject(KoinonChatAttachments);
   readonly fileReferences = computed(() => [
     ...new Map(
@@ -209,6 +211,7 @@ export class KoinonChatPage implements OnInit, AfterViewInit, OnDestroy {
   }
   ngOnDestroy() {
     this.observer?.disconnect();
+    this.closeArtifact();
   }
   setup() {
     this.setupRequested.emit();
@@ -256,6 +259,44 @@ export class KoinonChatPage implements OnInit, AfterViewInit, OnDestroy {
   auditCitation(citation: Citation) {
     this.closeArtifact();
     this.onCitation(citation);
+  }
+  async auditConversation(id: string) {
+    if (this.a.running()) return;
+    const selection = this.artifactSelection(),
+      tenant = this.f.tenantId(),
+      revision = this.clients.revision();
+    if (!selection || this.artifactAction() !== 'audit') return;
+    try {
+      const thread = await this.clients.get().chat.get(tenant, id);
+      if (
+        selection !== this.artifactSelection() ||
+        tenant !== this.f.tenantId() ||
+        revision !== this.clients.revision() ||
+        this.a.running()
+      )
+        return;
+      if (
+        (thread.scope.workspace_id ?? '') !== this.f.workspaceId() ||
+        (thread.scope.project_id ?? '') !== this.f.projectId()
+      ) {
+        this.a.error.set(
+          'This conversation is no longer available in the current knowledge scope.',
+        );
+        return;
+      }
+      this.closeArtifact();
+      this.selectThread(thread);
+    } catch (error) {
+      if (
+        selection !== this.artifactSelection() ||
+        tenant !== this.f.tenantId() ||
+        revision !== this.clients.revision()
+      )
+        return;
+      if (error instanceof Error && 'status' in error && error.status === 401)
+        this.f.authRequired.set(true);
+      this.a.error.set('The recorded conversation could not be opened.');
+    }
   }
   userInitials() {
     return (this.actions?.displayName?.() || 'Your account')
@@ -305,6 +346,9 @@ export class KoinonChatPage implements OnInit, AfterViewInit, OnDestroy {
     this.historyOpen.set(false);
     if (wasOpen)
       afterNextRender(() => this.historyToggle?.nativeElement.focus(), { injector: this.injector });
+  }
+  deletedConversation(threadId: string) {
+    if (this.a.threadId() === threadId) this.startConversation();
   }
   trackScroll() {
     const viewport = this.messageViewport?.nativeElement;

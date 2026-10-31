@@ -74,6 +74,7 @@ nav:
           - Files and formats: guides/intake-formats.md
           - Versions and lineage: guides/lineage.md
           - Agents and chat: guides/agents.md
+          - Conversation memory: guides/conversation-memory.md
           - Exports, sharing and sources: guides/exports-sharing.md
   - Administration:
       - Overview: guides/configuration-overview.md

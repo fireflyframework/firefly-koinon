@@ -42,7 +42,8 @@ label {
   font-size: 12px;
   color: var(--ui-muted);
 }
-select {
+select,
+input[type='number'] {
   width: 100%;
   box-sizing: border-box;
   min-height: 44px;
@@ -53,7 +54,8 @@ select {
   color: var(--ui-text);
   font: inherit;
 }
-select:focus-visible {
+select:focus-visible,
+input:focus-visible {
   outline: 2px solid var(--ui-focus, var(--ui-accent));
   outline-offset: 3px;
 }
@@ -65,11 +67,62 @@ select:focus-visible {
 .feedback ffk-icon {
   flex-shrink: 0;
 }
+.memory-policy {
+  flex-basis: 100%;
+  min-width: 0;
+  margin: 8px 0 0;
+  padding: 16px 0 0;
+  border: 0;
+}
+legend {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 0;
+}
+.memory-toggle {
+  flex-direction: row;
+  align-items: flex-start;
+  min-width: 0;
+  min-height: 44px;
+  margin-top: 16px;
+  color: var(--ui-text);
+  cursor: pointer;
+}
+.memory-toggle input {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  margin: 2px 4px 0 0;
+  accent-color: var(--ui-accent);
+}
+.memory-toggle small {
+  display: block;
+  margin-top: 4px;
+  color: var(--ui-muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.memory-limits {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+.memory-limits label {
+  min-width: 0;
+  justify-content: space-between;
+}
+#organization-memory-error:empty {
+  display: none;
+}
 @media (max-width: 600px) {
   section {
     padding: 16px;
   }
   form > ffk-button {
     width: 100%;
+  }
+  .memory-limits {
+    grid-template-columns: 1fr;
   }
 }

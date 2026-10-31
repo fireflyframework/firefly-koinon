@@ -130,20 +130,57 @@ class NativeCuratedKnowledge(NativeKnowledgeCommitPort):
             raise AccessDenied(
                 "An explicit matching user confirmation is required", code="KNOWLEDGE_CONFIRMATION_REQUIRED"
             )
-        current = await self.authority.destination(row.subject, row.tenant_id, preview.destination.id)
-        if current != preview.destination:
-            raise ConflictException("Destination changed after review", code="KNOWLEDGE_DESTINATION_CHANGED")
-        await self.authority.evidence(row.subject, row.tenant_id, preview.evidence)
-        await self.authority.origins(
-            row.subject,
-            row.tenant_id,
-            current.id,
-            preview.evidence,
-            row.originating_token_ids,
-            write_token_ids=tuple(
-                value for value in (row.preview_token_id, row.confirming_token_id) if value
-            ),
-        )
+
+        async def validate():
+            current = await self.authority.destination(row.subject, row.tenant_id, preview.destination.id)
+            if current != preview.destination:
+                raise ConflictException(
+                    "Destination changed after review", code="KNOWLEDGE_DESTINATION_CHANGED"
+                )
+            await self.authority.evidence(row.subject, row.tenant_id, preview.evidence)
+            await self.authority.origins(
+                row.subject,
+                row.tenant_id,
+                current.id,
+                preview.evidence,
+                row.originating_token_ids,
+                write_token_ids=tuple(
+                    value for value in (row.preview_token_id, row.confirming_token_id) if value
+                ),
+            )
+
+        memory_context = row.request_json.get("_memory_context", {})
+        if memory_context.get("bindings"):
+            await self.authority.memory_check(
+                row.subject,
+                row.tenant_id,
+                memory_context,
+                transfer=True,
+                consent=memory_context.get("consented", False)
+                or row.request_json.get("include_remembered_context", False),
+                release_check=validate,
+                token_ids=tuple(
+                    sorted(
+                        set(row.originating_token_ids)
+                        | {value for value in (row.preview_token_id, row.confirming_token_id) if value}
+                    )
+                ),
+                asset_ids=tuple(
+                    sorted(
+                        {
+                            preview.destination.id,
+                            *(
+                                item.source.asset_id
+                                for item in preview.evidence
+                                if isinstance(item, DocumentEvidence | StructuredEvidence)
+                            ),
+                        }
+                    )
+                ),
+                release=("curated", row.id),
+            )
+        else:
+            await validate()
         return row
 
     async def commit(self, operation):

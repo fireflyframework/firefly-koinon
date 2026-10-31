@@ -195,6 +195,10 @@ async def test_query_tool_borrows_exact_recorded_structured_policy_through_evide
     queue = context.get_bean(AssistantQueue)
     run = await queue.claim("query-worker")
     assert run.id == submitted["run_id"]
+    generation = await queue.begin_generation(
+        run.id, "query-worker", model_id="controlled", model_class="controlled", api="chat"
+    )
+    await service.memory.get().build(run, generation_id=generation)
     recorded = snapshot_for_run(run)
     assert recorded is not None
     await change_policy(context, structured_changes={"generation_candidates": 7, "max_refine_retries": 0})

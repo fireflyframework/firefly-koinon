@@ -20,6 +20,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 | `target_item_id` | `string` or `null` | No | `null` |
 | `expected_version` | `integer` or `null` | No | `null` |
 | `content` | [`KnowledgeContent`](knowledgecontent.md) | Yes | Not specified |
+| `include_remembered_context` | `boolean` | No | `false` |
 | `origin` | [`UserStatementOrigin`](userstatementorigin.md) or [`ConversationOrigin`](conversationorigin.md) or [`ExternalProposalOrigin`](externalproposalorigin.md) | Yes | Not specified |
 
 ## Model constraints
@@ -110,6 +111,11 @@ This is a schema definition, not an example request. It preserves all declared k
         },
         "content": {
           "$ref": "#/$defs/KnowledgeContent"
+        },
+        "include_remembered_context": {
+          "default": false,
+          "title": "Include Remembered Context",
+          "type": "boolean"
         },
         "origin": {
           "discriminator": {

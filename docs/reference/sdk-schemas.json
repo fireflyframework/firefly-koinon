@@ -464,6 +464,17 @@
           ],
           "default": null
         },
+        "memory": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MemoryReceipt"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "generations": {
           "items": {
             "$ref": "#/$defs/GenerationReceipt"
@@ -2478,6 +2489,11 @@
         "revision": {
           "title": "Revision",
           "type": "integer"
+        },
+        "memory_enabled": {
+          "default": false,
+          "title": "Memory Enabled",
+          "type": "boolean"
         },
         "conversation_count": {
           "title": "Conversation Count",
@@ -4957,6 +4973,15 @@
         },
         "source": {
           "$ref": "#/$defs/SourceReference"
+        },
+        "basis": {
+          "default": "direct",
+          "enum": [
+            "direct",
+            "remembered_context"
+          ],
+          "title": "Basis",
+          "type": "string"
         }
       },
       "required": [
@@ -7360,6 +7385,11 @@
             }
           ],
           "default": null
+        },
+        "memory_enabled": {
+          "default": false,
+          "title": "Memory Enabled",
+          "type": "boolean"
         }
       },
       "required": [
@@ -7399,6 +7429,11 @@
           ],
           "default": null,
           "title": "Parent Id"
+        },
+        "memory_enabled": {
+          "default": false,
+          "title": "Memory Enabled",
+          "type": "boolean"
         }
       },
       "required": [
@@ -9856,6 +9891,11 @@
           "pattern": "^[a-f0-9]{64}$",
           "title": "Authorization Digest",
           "type": "string"
+        },
+        "include_remembered_context": {
+          "default": false,
+          "title": "Include Remembered Context",
+          "type": "boolean"
         }
       },
       "required": [
@@ -10645,6 +10685,11 @@
           "title": "Authorization Digest",
           "type": "string"
         },
+        "remembered_context_present": {
+          "default": false,
+          "title": "Remembered Context Present",
+          "type": "boolean"
+        },
         "status": {
           "enum": [
             "preview",
@@ -10746,6 +10791,11 @@
         },
         "content": {
           "$ref": "#/$defs/KnowledgeContent"
+        },
+        "include_remembered_context": {
+          "default": false,
+          "title": "Include Remembered Context",
+          "type": "boolean"
         },
         "origin": {
           "discriminator": {
@@ -12328,6 +12378,232 @@
       "title": "Membership",
       "type": "object"
     },
+    "MemoryReceipt": {
+      "additionalProperties": true,
+      "properties": {
+        "validation_mode": {
+          "default": "generation",
+          "enum": [
+            "generation",
+            "historical_replay"
+          ],
+          "title": "Validation Mode",
+          "type": "string"
+        },
+        "generation_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Generation Id",
+          "type": "string"
+        },
+        "policy_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Policy Version",
+          "type": "integer"
+        },
+        "mode": {
+          "enum": [
+            "current_thread",
+            "personal_project"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "folder_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Folder Id"
+        },
+        "folder_revision": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Folder Revision"
+        },
+        "scope_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Scope Sha256",
+          "type": "string"
+        },
+        "manifest_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Manifest Sha256",
+          "type": "string"
+        },
+        "organization_policy_revision": {
+          "maximum": 2147483647,
+          "minimum": 0,
+          "title": "Organization Policy Revision",
+          "type": "integer"
+        },
+        "effective_policy": {
+          "$ref": "#/$defs/OrganizationMemoryPolicy"
+        },
+        "turns": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/MemoryTurnReference"
+          },
+          "maxItems": 20,
+          "title": "Turns",
+          "type": "array"
+        },
+        "dependency_count": {
+          "maximum": 128,
+          "minimum": 0,
+          "title": "Dependency Count",
+          "type": "integer"
+        },
+        "context_available": {
+          "default": true,
+          "title": "Context Available",
+          "type": "boolean"
+        },
+        "unavailable_dependency_count": {
+          "default": 0,
+          "maximum": 128,
+          "minimum": 0,
+          "title": "Unavailable Dependency Count",
+          "type": "integer"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "generation_id",
+        "mode",
+        "scope_sha256",
+        "manifest_sha256",
+        "organization_policy_revision",
+        "effective_policy",
+        "dependency_count",
+        "created_at"
+      ],
+      "title": "MemoryReceipt",
+      "type": "object"
+    },
+    "MemoryTurnReference": {
+      "additionalProperties": true,
+      "properties": {
+        "run_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Run Id",
+          "type": "string"
+        },
+        "generation_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Generation Id"
+        },
+        "thread_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Thread Id",
+          "type": "string"
+        },
+        "conversation_title": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Conversation Title",
+          "type": "string"
+        },
+        "user_created_at": {
+          "format": "date-time",
+          "title": "User Created At",
+          "type": "string"
+        },
+        "user_message_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "User Message Id",
+          "type": "string"
+        },
+        "user_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "User Sha256",
+          "type": "string"
+        },
+        "answer_message_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Answer Message Id",
+          "type": "string"
+        },
+        "answer_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Answer Sha256",
+          "type": "string"
+        },
+        "answer_included": {
+          "default": false,
+          "title": "Answer Included",
+          "type": "boolean"
+        },
+        "availability": {
+          "default": "available",
+          "enum": [
+            "available",
+            "archived",
+            "deleted",
+            "moved",
+            "memory_disabled",
+            "changed",
+            "unverified"
+          ],
+          "title": "Availability",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "thread_id",
+        "conversation_title",
+        "user_created_at",
+        "user_message_id",
+        "user_sha256",
+        "answer_message_id",
+        "answer_sha256"
+      ],
+      "title": "MemoryTurnReference",
+      "type": "object"
+    },
+    "MemoryValue": {
+      "additionalProperties": true,
+      "properties": {},
+      "title": "MemoryValue",
+      "type": "object"
+    },
     "MessageSelection": {
       "additionalProperties": false,
       "properties": {
@@ -13727,6 +14003,9 @@
           "title": "Configured",
           "type": "boolean"
         },
+        "memory": {
+          "$ref": "#/$defs/OrganizationMemoryPolicy"
+        },
         "can_run": {
           "title": "Can Run",
           "type": "boolean"
@@ -13775,6 +14054,11 @@
           "minimum": 0,
           "title": "Expected Revision",
           "type": "integer"
+        },
+        "memory": {
+          "$ref": "#/$defs/OrganizationMemoryPolicyInput",
+          "default": null,
+          "title": "Memory"
         }
       },
       "required": [
@@ -13980,6 +14264,72 @@
         "digest"
       ],
       "title": "OrganizationKnowledgeSnapshot",
+      "type": "object"
+    },
+    "OrganizationMemoryPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "allow_project_memory": {
+          "default": true,
+          "title": "Allow Project Memory",
+          "type": "boolean"
+        },
+        "max_history_messages": {
+          "default": 40,
+          "maximum": 40,
+          "minimum": 0,
+          "title": "Max History Messages",
+          "type": "integer"
+        },
+        "max_history_tokens": {
+          "default": 8192,
+          "maximum": 65536,
+          "minimum": 0,
+          "title": "Max History Tokens",
+          "type": "integer"
+        },
+        "max_project_memory_messages": {
+          "default": 20,
+          "maximum": 40,
+          "minimum": 0,
+          "title": "Max Project Memory Messages",
+          "type": "integer"
+        }
+      },
+      "title": "OrganizationMemoryPolicy",
+      "type": "object"
+    },
+    "OrganizationMemoryPolicyInput": {
+      "additionalProperties": false,
+      "properties": {
+        "allow_project_memory": {
+          "default": true,
+          "title": "Allow Project Memory",
+          "type": "boolean"
+        },
+        "max_history_messages": {
+          "default": 40,
+          "maximum": 40,
+          "minimum": 0,
+          "title": "Max History Messages",
+          "type": "integer"
+        },
+        "max_history_tokens": {
+          "default": 8192,
+          "maximum": 65536,
+          "minimum": 0,
+          "title": "Max History Tokens",
+          "type": "integer"
+        },
+        "max_project_memory_messages": {
+          "default": 20,
+          "maximum": 40,
+          "minimum": 0,
+          "title": "Max Project Memory Messages",
+          "type": "integer"
+        }
+      },
+      "title": "OrganizationMemoryPolicyInput",
       "type": "object"
     },
     "OrganizationPerson": {
@@ -18774,6 +19124,11 @@
           "default": "organization_current_acl",
           "title": "Recipient Policy",
           "type": "string"
+        },
+        "include_remembered_context": {
+          "default": false,
+          "title": "Include Remembered Context",
+          "type": "boolean"
         }
       },
       "required": [
@@ -18862,6 +19217,11 @@
         },
         "source_manifest_complete": {
           "title": "Source Manifest Complete",
+          "type": "boolean"
+        },
+        "remembered_context_present": {
+          "default": false,
+          "title": "Remembered Context Present",
           "type": "boolean"
         },
         "recipient_policy": {
@@ -19651,6 +20011,15 @@
         },
         "source": {
           "$ref": "#/$defs/SourceReference"
+        },
+        "basis": {
+          "default": "direct",
+          "enum": [
+            "direct",
+            "remembered_context"
+          ],
+          "title": "Basis",
+          "type": "string"
         }
       },
       "required": [
@@ -22285,6 +22654,12 @@
     "AuthorizedApplication": {
       "$ref": "#/$defs/AuthorizedApplication"
     },
+    "OrganizationMemoryPolicyInput": {
+      "$ref": "#/$defs/OrganizationMemoryPolicyInput"
+    },
+    "OrganizationMemoryPolicy": {
+      "$ref": "#/$defs/OrganizationMemoryPolicy"
+    },
     "OrganizationChatSettings": {
       "$ref": "#/$defs/OrganizationChatSettings"
     },
@@ -22524,6 +22899,15 @@
     },
     "CorporateProfileRefresh": {
       "$ref": "#/$defs/CorporateProfileRefresh"
+    },
+    "MemoryValue": {
+      "$ref": "#/$defs/MemoryValue"
+    },
+    "MemoryTurnReference": {
+      "$ref": "#/$defs/MemoryTurnReference"
+    },
+    "MemoryReceipt": {
+      "$ref": "#/$defs/MemoryReceipt"
     },
     "Page[AuditEvent]": {
       "$ref": "#/$defs/Page_AuditEvent_"

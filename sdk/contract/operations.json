@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "api_prefix": "/api/v1",
   "status": "Canonical API contract; development snapshot",
-  "canonical_operation_count": 192,
+  "canonical_operation_count": 193,
   "qualified_compatibility_operations": [
     {
       "operation": "GlossaryController.list_terms",
@@ -1322,7 +1322,7 @@
       "category": "canonical",
       "operation": "AssistantController.threads",
       "source": "backend/src/koinon/assistants/controllers.py",
-      "line": 35,
+      "line": 36,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1408,7 +1408,7 @@
       "request_schema": null,
       "response_schema": "Page[ChatThread]",
       "success_status": 200,
-      "source_sha256": "9fa9314543321790b21a061cb1c89e14945ff1f4f7f1a3343503f27394a8d730",
+      "source_sha256": "5d44e2f7530fe7ec0b3c63bfc397b329975b1e5d2ec98e10d5e5c182506e5104",
       "encoding": "application/json",
       "headers": []
     },
@@ -1418,7 +1418,7 @@
       "category": "canonical",
       "operation": "AssistantController.thread_create",
       "source": "backend/src/koinon/assistants/controllers.py",
-      "line": 66,
+      "line": 67,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1440,7 +1440,7 @@
       "request_schema": "ThreadInput",
       "response_schema": "ChatThread",
       "success_status": 201,
-      "source_sha256": "9fa9314543321790b21a061cb1c89e14945ff1f4f7f1a3343503f27394a8d730",
+      "source_sha256": "5d44e2f7530fe7ec0b3c63bfc397b329975b1e5d2ec98e10d5e5c182506e5104",
       "encoding": "application/json",
       "headers": []
     },
@@ -1450,7 +1450,7 @@
       "category": "canonical",
       "operation": "AssistantController.messages",
       "source": "backend/src/koinon/assistants/controllers.py",
-      "line": 76,
+      "line": 77,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1486,7 +1486,7 @@
       "request_schema": null,
       "response_schema": "Page[ChatMessage]",
       "success_status": 200,
-      "source_sha256": "9fa9314543321790b21a061cb1c89e14945ff1f4f7f1a3343503f27394a8d730",
+      "source_sha256": "5d44e2f7530fe7ec0b3c63bfc397b329975b1e5d2ec98e10d5e5c182506e5104",
       "encoding": "application/json",
       "headers": []
     },
@@ -1496,7 +1496,7 @@
       "category": "canonical",
       "operation": "AssistantController.submit",
       "source": "backend/src/koinon/assistants/controllers.py",
-      "line": 89,
+      "line": 90,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1524,7 +1524,7 @@
       "request_schema": "RunInput",
       "response_schema": "ChatRun",
       "success_status": 202,
-      "source_sha256": "9fa9314543321790b21a061cb1c89e14945ff1f4f7f1a3343503f27394a8d730",
+      "source_sha256": "5d44e2f7530fe7ec0b3c63bfc397b329975b1e5d2ec98e10d5e5c182506e5104",
       "encoding": "application/json",
       "headers": []
     },
@@ -1534,7 +1534,7 @@
       "category": "canonical",
       "operation": "AssistantController.cancel",
       "source": "backend/src/koinon/assistants/controllers.py",
-      "line": 100,
+      "line": 101,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1556,7 +1556,7 @@
       "request_schema": null,
       "response_schema": "ChatRun",
       "success_status": 200,
-      "source_sha256": "9fa9314543321790b21a061cb1c89e14945ff1f4f7f1a3343503f27394a8d730",
+      "source_sha256": "5d44e2f7530fe7ec0b3c63bfc397b329975b1e5d2ec98e10d5e5c182506e5104",
       "encoding": "application/json",
       "headers": []
     },
@@ -1566,7 +1566,7 @@
       "category": "canonical",
       "operation": "AssistantController.retry",
       "source": "backend/src/koinon/assistants/controllers.py",
-      "line": 104,
+      "line": 105,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1588,7 +1588,7 @@
       "request_schema": null,
       "response_schema": "ChatRun",
       "success_status": 202,
-      "source_sha256": "9fa9314543321790b21a061cb1c89e14945ff1f4f7f1a3343503f27394a8d730",
+      "source_sha256": "5d44e2f7530fe7ec0b3c63bfc397b329975b1e5d2ec98e10d5e5c182506e5104",
       "encoding": "application/json",
       "headers": []
     },
@@ -1598,7 +1598,7 @@
       "category": "canonical",
       "operation": "AssistantController.events",
       "source": "backend/src/koinon/assistants/controllers.py",
-      "line": 108,
+      "line": 109,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1620,7 +1620,7 @@
       "request_schema": null,
       "response_schema": "StreamEvent",
       "success_status": 200,
-      "source_sha256": "9fa9314543321790b21a061cb1c89e14945ff1f4f7f1a3343503f27394a8d730",
+      "source_sha256": "5d44e2f7530fe7ec0b3c63bfc397b329975b1e5d2ec98e10d5e5c182506e5104",
       "encoding": "text/event-stream",
       "headers": [
         "Last-Event-ID (last fully processed opaque event ID)"
@@ -1632,7 +1632,7 @@
       "category": "canonical",
       "operation": "AssistantController.result",
       "source": "backend/src/koinon/assistants/controllers.py",
-      "line": 161,
+      "line": 171,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1660,7 +1660,7 @@
       "request_schema": null,
       "response_schema": "EvidenceResult",
       "success_status": 200,
-      "source_sha256": "9fa9314543321790b21a061cb1c89e14945ff1f4f7f1a3343503f27394a8d730",
+      "source_sha256": "5d44e2f7530fe7ec0b3c63bfc397b329975b1e5d2ec98e10d5e5c182506e5104",
       "encoding": "application/json",
       "headers": []
     },
@@ -1670,7 +1670,7 @@
       "category": "canonical",
       "operation": "AssistantController.activities",
       "source": "backend/src/koinon/assistants/controllers.py",
-      "line": 169,
+      "line": 179,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1706,7 +1706,7 @@
       "request_schema": null,
       "response_schema": "Page[ToolActivity]",
       "success_status": 200,
-      "source_sha256": "9fa9314543321790b21a061cb1c89e14945ff1f4f7f1a3343503f27394a8d730",
+      "source_sha256": "5d44e2f7530fe7ec0b3c63bfc397b329975b1e5d2ec98e10d5e5c182506e5104",
       "encoding": "application/json",
       "headers": []
     },
@@ -1716,7 +1716,7 @@
       "category": "canonical",
       "operation": "AssistantController.audit",
       "source": "backend/src/koinon/assistants/controllers.py",
-      "line": 182,
+      "line": 192,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1738,7 +1738,7 @@
       "request_schema": null,
       "response_schema": "AnswerAudit",
       "success_status": 200,
-      "source_sha256": "9fa9314543321790b21a061cb1c89e14945ff1f4f7f1a3343503f27394a8d730",
+      "source_sha256": "5d44e2f7530fe7ec0b3c63bfc397b329975b1e5d2ec98e10d5e5c182506e5104",
       "encoding": "application/json",
       "headers": []
     },
@@ -1820,7 +1820,7 @@
       "request_schema": null,
       "response_schema": "Page[ChatFolder]",
       "success_status": 200,
-      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
+      "source_sha256": "8457df3c778b10e43efe99d555be31a5936a2b03867030e12cac61532197fe29",
       "encoding": "application/json",
       "headers": []
     },
@@ -1852,7 +1852,7 @@
       "request_schema": "FolderCreate",
       "response_schema": "ChatFolder",
       "success_status": 201,
-      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
+      "source_sha256": "8457df3c778b10e43efe99d555be31a5936a2b03867030e12cac61532197fe29",
       "encoding": "application/json",
       "headers": []
     },
@@ -1884,7 +1884,7 @@
       "request_schema": null,
       "response_schema": "ChatFolder",
       "success_status": 200,
-      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
+      "source_sha256": "8457df3c778b10e43efe99d555be31a5936a2b03867030e12cac61532197fe29",
       "encoding": "application/json",
       "headers": []
     },
@@ -1922,7 +1922,7 @@
       "request_schema": "FolderPatch",
       "response_schema": "ChatFolder",
       "success_status": 200,
-      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
+      "source_sha256": "8457df3c778b10e43efe99d555be31a5936a2b03867030e12cac61532197fe29",
       "encoding": "application/json",
       "headers": []
     },
@@ -1960,7 +1960,7 @@
       "request_schema": null,
       "response_schema": "void",
       "success_status": 204,
-      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
+      "source_sha256": "8457df3c778b10e43efe99d555be31a5936a2b03867030e12cac61532197fe29",
       "encoding": "application/json",
       "headers": []
     },
@@ -1992,7 +1992,7 @@
       "request_schema": null,
       "response_schema": "ChatThread",
       "success_status": 200,
-      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
+      "source_sha256": "8457df3c778b10e43efe99d555be31a5936a2b03867030e12cac61532197fe29",
       "encoding": "application/json",
       "headers": []
     },
@@ -2030,7 +2030,7 @@
       "request_schema": "ThreadPatch",
       "response_schema": "ChatThread",
       "success_status": 200,
-      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
+      "source_sha256": "8457df3c778b10e43efe99d555be31a5936a2b03867030e12cac61532197fe29",
       "encoding": "application/json",
       "headers": []
     },
@@ -2068,7 +2068,45 @@
       "request_schema": "TitleRequest",
       "response_schema": "TitleSuggestion",
       "success_status": 200,
-      "source_sha256": "7b4d1dcafaa2bbe18a7bb2e0ed8ff4abb3f4b814bcd164974dfc5aaf84d007f7",
+      "source_sha256": "8457df3c778b10e43efe99d555be31a5936a2b03867030e12cac61532197fe29",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/tenants/{tenant_id}/chat/threads/{thread_id}",
+      "category": "canonical",
+      "operation": "ChatHistoryController.delete_thread",
+      "source": "backend/src/koinon/assistants/history/controllers.py",
+      "line": 129,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "thread_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "expected_revision",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": true
+        }
+      ],
+      "return_annotation": null,
+      "sdk_python": "delete_thread",
+      "sdk_typescript": "chat.delete",
+      "sdk_java": "client.chat.delete",
+      "request_schema": null,
+      "response_schema": "void",
+      "success_status": 204,
+      "source_sha256": "8457df3c778b10e43efe99d555be31a5936a2b03867030e12cac61532197fe29",
       "encoding": "application/json",
       "headers": []
     },
@@ -6622,7 +6660,7 @@
       "request_schema": null,
       "response_schema": "OrganizationChatSettings",
       "success_status": 200,
-      "source_sha256": "8f2c14859c6228fca1c3ef45c1f8649d3ef86bfbb959c357a81685da338e26b5",
+      "source_sha256": "85ee10136705e0c3a79d462cf13e6a08780dd932672c1d7ca0fc551de4582695",
       "encoding": "application/json",
       "headers": []
     },
@@ -6654,7 +6692,7 @@
       "request_schema": "OrganizationChatSettingsInput",
       "response_schema": "OrganizationChatSettings",
       "success_status": 200,
-      "source_sha256": "8f2c14859c6228fca1c3ef45c1f8649d3ef86bfbb959c357a81685da338e26b5",
+      "source_sha256": "85ee10136705e0c3a79d462cf13e6a08780dd932672c1d7ca0fc551de4582695",
       "encoding": "application/json",
       "headers": []
     },

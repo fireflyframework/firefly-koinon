@@ -17,6 +17,12 @@ const organizationSettings = {
   configured: true,
   can_run: true,
   status: 'ready',
+  memory: {
+    allow_project_memory: true,
+    max_history_messages: 30,
+    max_history_tokens: 4096,
+    max_project_memory_messages: 12,
+  },
 };
 async function mount(
   options: { denied?: boolean; conflict?: boolean; failure?: number; spanish?: boolean } = {},
@@ -37,6 +43,8 @@ async function mount(
                 default_agent_id: (request?.body as { default_agent_id: string | null })
                   .default_agent_id,
                 revision: 5,
+                memory:
+                  (request?.body as { memory?: unknown }).memory ?? organizationSettings.memory,
               }
             : organizationSettings
         ) as T;
@@ -114,6 +122,53 @@ it('renders one organization chat choice using the saved default and excludes sc
   expect(
     requests.some((request) => request.path.endsWith('/chat/settings') && request.method === 'GET'),
   ).toBe(true);
+});
+it('saves an explicit organization memory policy without changing the selected agent', async () => {
+  const { fixture, requests } = await mount();
+  const toggle = fixture.nativeElement.querySelector(
+    '#organization-project-memory',
+  ) as HTMLInputElement;
+  expect(toggle).not.toBeNull();
+  expect(toggle.checked).toBe(true);
+  toggle.click();
+  fixture.detectChanges();
+  await fixture.whenStable();
+  const button = fixture.nativeElement.querySelector(
+    'ffk-organization-chat-settings button[type=submit]',
+  ) as HTMLButtonElement;
+  expect(button.disabled).toBe(false);
+  button.click();
+  await fixture.whenStable();
+  fixture.detectChanges();
+  expect(requests.find((request) => request.method === 'PUT')?.body).toEqual({
+    default_agent_id: 'second',
+    expected_revision: 4,
+    memory: { ...organizationSettings.memory, allow_project_memory: false },
+  });
+  expect(button.disabled).toBe(true);
+});
+it('keeps invalid memory limits local and does not submit a policy above the saved total', async () => {
+  const { fixture, requests } = await mount();
+  const input = fixture.nativeElement.querySelector(
+    '#organization-project-messages',
+  ) as HTMLInputElement;
+  expect(input).not.toBeNull();
+  input.value = '31';
+  input.dispatchEvent(new Event('input'));
+  fixture.detectChanges();
+  await fixture.whenStable();
+  fixture.detectChanges();
+  expect(
+    (
+      fixture.nativeElement.querySelector(
+        'ffk-organization-chat-settings button[type=submit]',
+      ) as HTMLButtonElement
+    ).disabled,
+  ).toBe(true);
+  expect(fixture.nativeElement.textContent).toContain(
+    'Project memory cannot exceed the total history limit.',
+  );
+  expect(requests.filter((request) => request.method === 'PUT')).toHaveLength(0);
 });
 it('saves and clears the organization default with the observed revision', async () => {
   const { fixture, requests } = await mount();

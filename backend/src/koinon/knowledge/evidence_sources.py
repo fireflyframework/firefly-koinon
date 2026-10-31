@@ -38,6 +38,30 @@ class NativeSourceResolver(SourceResolverPort):
     async def resolve_for_write(self, subject, tenant_id, sources):
         return await self.resolve(subject, tenant_id, sources, _lock_parts=True)
 
+    async def resolve_bounds(self, subject, tenant_id, sources):
+        from koinon.knowledge.curated.dtos import DocumentEvidence, StructuredEvidence
+
+        output = {}
+        for reference in sources:
+            if reference.kind != "knowledge_version":
+                output[reference.id] = reference
+                continue
+            await self.knowledge_version(subject, tenant_id, reference)
+            reader = self.curated.get() if self.curated else None
+            if reader is None:
+                raise unavailable()
+            selected = (
+                await reader.version(subject, tenant_id, reference.asset_id, reference.knowledge_version)
+            ).selected_version
+            if selected.version_id != reference.knowledge_version_id:
+                raise unavailable()
+            for evidence in selected.evidence:
+                if isinstance(evidence, DocumentEvidence | StructuredEvidence):
+                    output[evidence.source.id] = evidence.source
+        if len(output) > 500:
+            raise PayloadTooLargeException("Select fewer transitive sources", code="EVIDENCE_TOO_LARGE")
+        return tuple(output[key] for key in sorted(output))
+
     async def resolve(self, subject, tenant_id, sources, *, _lock_parts=False):
         if len(sources) > 500:
             raise PayloadTooLargeException("Select fewer source references", code="EVIDENCE_TOO_LARGE")
@@ -100,9 +124,14 @@ class NativeSourceResolver(SourceResolverPort):
                 resolved = await self.document(subject, tenant_id, reference, binding)
             else:
                 resolved = await self.dataset(subject, tenant_id, reference, binding)
-            result.append(reference.model_copy(update={
-                "availability": resolved["availability"], "current_revision": resolved["current_revision"],
-            }))
+            result.append(
+                reference.model_copy(
+                    update={
+                        "availability": resolved["availability"],
+                        "current_revision": resolved["current_revision"],
+                    }
+                )
+            )
         for reference in sources:
             await self.knowledge._chain(subject, tenant_id, reference.asset_id)
         return tuple(result)

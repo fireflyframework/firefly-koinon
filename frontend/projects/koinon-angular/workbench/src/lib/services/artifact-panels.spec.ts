@@ -147,6 +147,40 @@ it('keeps share review separate from creation and offers no implicit host link',
   expect(fixture.nativeElement.textContent).toContain('No sharing link is configured.');
   fixture.destroy();
 });
+it('requires a fresh explicit choice before sharing an answer that used personal memory', async () => {
+  const bodies: unknown[] = [];
+  const setup = providers(async <T>(_method: HttpMethod, path: string, options?: RequestOptions) => {
+    if (path.endsWith('/reviews')) return { ...reviewed, remembered_context_present: true } as T;
+    bodies.push(options?.body);
+    return { id: 'share', title: 'Reviewed notes', revision, status: 'active',
+      created_at: '2026-10-31T00:00:00Z', expires_at: '2099-01-01T00:00:00Z' } as T;
+  });
+  TestBed.configureTestingModule({ imports: [KoinonShareReview], providers: setup.values });
+  const fixture = TestBed.createComponent(KoinonShareReview);
+  fixture.componentRef.setInput('open', true);
+  fixture.componentRef.setInput('selection', { thread_id: 'thread', message_ids: ['m'] });
+  fixture.detectChanges();
+  button(fixture.nativeElement, 'Review shared content').click();
+  await fixture.whenStable(); fixture.detectChanges();
+  expect(button(fixture.nativeElement, 'Create share').disabled).toBe(true);
+  expect(bodies).toHaveLength(0);
+  const consent = fixture.nativeElement.querySelector('input[name=rememberedContextConsent]') as HTMLInputElement;
+  expect(consent).not.toBeNull();
+  expect(consent.checked).toBe(false);
+  consent.click(); await fixture.whenStable(); fixture.detectChanges();
+  expect(button(fixture.nativeElement, 'Create share').disabled).toBe(false);
+  button(fixture.nativeElement, 'Review shared content').click();
+  await fixture.whenStable(); fixture.detectChanges();
+  expect((fixture.nativeElement.querySelector('input[name=rememberedContextConsent]') as HTMLInputElement).checked).toBe(false);
+  expect(button(fixture.nativeElement, 'Create share').disabled).toBe(true);
+  (fixture.nativeElement.querySelector('input[name=rememberedContextConsent]') as HTMLInputElement).click();
+  await fixture.whenStable(); fixture.detectChanges();
+  button(fixture.nativeElement, 'Create share').click();
+  await fixture.whenStable(); fixture.detectChanges();
+  expect(bodies).toEqual([{ review_id: 'review', expected_revision: revision,
+    expires_in_hours: 24, recipient_policy: 'organization_current_acl', include_remembered_context: true }]);
+  fixture.destroy();
+});
 it('clears a supplied source manifest when the authorized context changes', async () => {
   const setup = providers(async <T>() => ({}) as T);
   TestBed.configureTestingModule({ imports: [KoinonSourceDrawer], providers: setup.values });

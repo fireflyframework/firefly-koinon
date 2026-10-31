@@ -17,6 +17,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 | --- | --- | --- | --- |
 | `kind` | `string` | No | `"structured_snapshot"` |
 | `source` | [`SourceReference`](sourcereference.md) | Yes | Not specified |
+| `basis` | `string` | No | `"direct"` |
 
 ## Model constraints
 
@@ -27,6 +28,10 @@ Required means the key must be present. Nullable means its value may be `null`; 
 ### kind
 
 - Exact value: `"structured_snapshot"`
+
+### basis
+
+- Allowed values: `"direct"`, `"remembered_context"`
 
 
 ## Exact JSON Schema
@@ -47,6 +52,15 @@ This is a schema definition, not an example request. It preserves all declared k
         },
         "source": {
           "$ref": "#/$defs/SourceReference"
+        },
+        "basis": {
+          "default": "direct",
+          "enum": [
+            "direct",
+            "remembered_context"
+          ],
+          "title": "Basis",
+          "type": "string"
         }
       },
       "required": [

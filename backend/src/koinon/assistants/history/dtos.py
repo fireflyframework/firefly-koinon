@@ -19,6 +19,7 @@ class FolderCreate(Input):
     name: str = Field(min_length=1, max_length=120)
     parent_id: str | None = Field(default=None, min_length=1, max_length=64)
     scope: KnowledgeScope | None = None
+    memory_enabled: bool = Field(default=False, strict=True)
 
     @field_validator("name")
     @classmethod
@@ -30,6 +31,7 @@ class FolderPatch(Input):
     expected_revision: int = Field(ge=1, strict=True)
     name: str | None = Field(default=None, min_length=1, max_length=120)
     parent_id: str | None = Field(default=None, min_length=1, max_length=64)
+    memory_enabled: bool = Field(default=False, strict=True)
 
     @field_validator("name")
     @classmethod

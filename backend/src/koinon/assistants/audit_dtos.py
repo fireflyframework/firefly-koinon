@@ -4,6 +4,7 @@ from typing import Literal
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
+from koinon.assistants.memory.dtos import MemoryReceipt
 from koinon.evidence.dtos import SourceReference
 from koinon.organization_knowledge.dtos import OrganizationKnowledgeSnapshot
 
@@ -151,24 +152,32 @@ class RlmToolReceipt(AuditValue):
     generation_id: str | None = None
     tenant_id: str = Field(min_length=1, max_length=64)
     workspace_id: str = Field(min_length=1, max_length=64, description="Admitted native execution workspace.")
-    source_ids: list[str] = Field(min_length=1, max_length=500, description=(
-        "Admitted native source scope; actual content use requires separate execution-read evidence."
-    ))
+    source_ids: list[str] = Field(
+        min_length=1,
+        max_length=500,
+        description=(
+            "Admitted native source scope; actual content use requires separate execution-read evidence."
+        ),
+    )
     tool_call_id: str = Field(min_length=1, max_length=256)
     tool_name: Literal["python", "final_answer"]
     request_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     schema_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     arguments_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
-    result_sha256: str = Field(pattern=r"^[0-9a-f]{64}$", description=(
-        "SHA-256 of the actual ToolReturnPart JSON serialization, sorted keys, compact UTF-8."
-    ))
-    result_kind: Literal["tool_return", "accepted_final", "execution_failure"] = Field(description=(
-        "tool_return is preserved into subsequent SDK history. accepted_final and execution_failure "
-        "seal the actual host result locally without asserting a subsequent provider delivery."
-    ))
-    execution_sha256: str = Field(pattern=r"^[0-9a-f]{64}$", description=(
-        "SHA-256 of the exact public VM feed dataclass, sorted keys, compact UTF-8."
-    ))
+    result_sha256: str = Field(
+        pattern=r"^[0-9a-f]{64}$",
+        description=("SHA-256 of the actual ToolReturnPart JSON serialization, sorted keys, compact UTF-8."),
+    )
+    result_kind: Literal["tool_return", "accepted_final", "execution_failure"] = Field(
+        description=(
+            "tool_return is preserved into subsequent SDK history. accepted_final and execution_failure "
+            "seal the actual host result locally without asserting a subsequent provider delivery."
+        )
+    )
+    execution_sha256: str = Field(
+        pattern=r"^[0-9a-f]{64}$",
+        description=("SHA-256 of the exact public VM feed dataclass, sorted keys, compact UTF-8."),
+    )
     outcome: Literal["completed", "rejected", "failed", "halted"]
     execution_status: str = Field(min_length=1, max_length=32)
     execution_state: str = Field(min_length=1, max_length=32)
@@ -179,13 +188,18 @@ class AnswerAudit(AuditValue):
     provenance_status: Literal["recorded", "not_recorded"]
     source_provenance_complete: bool | None = None
     knowledge_settings_snapshot: OrganizationKnowledgeSnapshot | None = None
+    memory: MemoryReceipt | None = None
     generations: list[GenerationReceipt] = Field(default_factory=list, max_length=100)
     sources: list[SourceReference] = Field(default_factory=list, max_length=500)
     private_files: list[PrivateFileReceipt] = Field(default_factory=list, max_length=10)
     native_reads: list[NativeReadReceipt] = Field(default_factory=list, max_length=1000)
     sql_attempts: list[SqlAttemptReceipt] = Field(default_factory=list, max_length=1000)
-    rlm_tools: list[RlmToolReceipt] | None = Field(default=None, max_length=1000, description=(
-        "Actual recorded RLM function actions. Null means unrecorded; "
-        "historical traces are never backfilled. "
-        "A list does not assert that an interrupted generation has a complete trace."
-    ))
+    rlm_tools: list[RlmToolReceipt] | None = Field(
+        default=None,
+        max_length=1000,
+        description=(
+            "Actual recorded RLM function actions. Null means unrecorded; "
+            "historical traces are never backfilled. "
+            "A list does not assert that an interrupted generation has a complete trace."
+        ),
+    )

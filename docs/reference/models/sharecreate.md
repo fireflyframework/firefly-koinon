@@ -19,6 +19,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 | `expected_revision` | `string` | Yes | Not specified |
 | `expires_in_hours` | `integer` | No | `24` |
 | `recipient_policy` | `string` | No | `"organization_current_acl"` |
+| `include_remembered_context` | `boolean` | No | `false` |
 
 ## Model constraints
 
@@ -78,6 +79,11 @@ This is a schema definition, not an example request. It preserves all declared k
           "default": "organization_current_acl",
           "title": "Recipient Policy",
           "type": "string"
+        },
+        "include_remembered_context": {
+          "default": false,
+          "title": "Include Remembered Context",
+          "type": "boolean"
         }
       },
       "required": [

@@ -1,6 +1,32 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 export const AUDIT_LINEAGE_SPANISH: Readonly<Record<string, string>> = {
+  'Conversation memory': 'Memoria de conversaciones',
+  'Context from your chats in this project': 'Contexto de tus chats en este proyecto',
+  'Context from this conversation': 'Contexto de esta conversación',
+  'Conversation context is separate from the sources used to verify this answer.':
+    'El contexto de la conversación se distingue de las fuentes que verifican esta respuesta.',
+  'Some recorded context is no longer available for reuse.':
+    'Parte del contexto registrado ya no está disponible para reutilizarse.',
+  'Question and answer were included': 'Se incluyeron la pregunta y la respuesta',
+  'Only the question was included': 'Solo se incluyó la pregunta',
+  'Available conversation': 'Conversación disponible',
+  'Archived conversation': 'Conversación archivada',
+  'Deleted conversation': 'Conversación eliminada',
+  'Conversation moved': 'Conversación trasladada',
+  'Memory disabled': 'Memoria desactivada',
+  'Conversation changed': 'La conversación ha cambiado',
+  'Context not verified': 'Contexto sin verificar',
+  'Open conversation': 'Abrir conversación',
+  'No earlier turns were included.': 'No se incluyeron intercambios anteriores.',
+  'Memory record and limits': 'Registro y límites de memoria',
+  'Total history messages': 'Mensajes totales del historial',
+  'Messages from other project chats': 'Mensajes de otros chats del proyecto',
+  'History token budget': 'Límite de tokens del historial',
+  'Recorded dependencies': 'Dependencias registradas',
+  'Memory record SHA-256': 'SHA-256 del registro de memoria',
+  'Memory details were not recorded for this answer.':
+    'No se registró el detalle de memoria de esta respuesta.',
   'Recorded knowledge policy': 'Política de conocimiento registrada',
   'Policy revision': 'Revisión de la política',
   'Policy origin': 'Origen de la política',

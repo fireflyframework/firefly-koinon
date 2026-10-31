@@ -37,6 +37,12 @@ async def test_default_is_persisted_per_organization_and_clear_never_falls_back(
         configured=False,
         can_run=False,
         status="unconfigured",
+        memory={
+            "allow_project_memory": True,
+            "max_history_messages": 40,
+            "max_history_tokens": 8192,
+            "max_project_memory_messages": 20,
+        },
     )
     _, agent = await configured(service)
     selected = await settings.update("issuer|admin", "north", agent["id"], 0)

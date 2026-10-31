@@ -255,6 +255,15 @@
               {{ 'Archive conversation' | ffkText }}
             </button>
           }
+          <button
+            type="button"
+            role="menuitem"
+            class="destructive"
+            [disabled]="threadBusy() || s.mutating()"
+            (click)="begin('delete-thread', null, thread)"
+          >
+            <ffk-icon name="trash" />{{ 'Delete conversation' | ffkText }}
+          </button>
         </div>
       }
     </div>
@@ -300,7 +309,7 @@
             <button type="button" role="menuitem" (click)="begin('create-folder', folder)">
               {{ 'New folder' | ffkText }}</button
             ><button type="button" role="menuitem" (click)="begin('rename-folder', folder)">
-              {{ 'Rename' | ffkText }}</button
+              <ffk-icon name="settings" />{{ 'Folder settings' | ffkText }}</button
             ><button type="button" role="menuitem" (click)="begin('delete-folder', folder)">
               {{ 'Remove folder' | ffkText }}
             </button>
@@ -413,6 +422,20 @@
           }
         }
       }
+      @if (form.kind === 'create-folder' || form.kind === 'rename-folder') {
+        <label class="memory-setting">
+          <input type="checkbox" name="memoryEnabled" [(ngModel)]="formMemoryEnabled" />
+          <span>
+            <strong>{{ 'Use memory from my chats in this folder' | ffkText }}</strong>
+            <small>{{ 'Only your chats with the same knowledge scope can contribute. Private files stay in their original chat.' | ffkText }}</small>
+          </span>
+        </label>
+        @if (memoryStatus() === 'disabled') {
+          <p class="help">{{ 'Your organization has disabled project memory. This preference applies only while organization policy allows it.' | ffkText }}</p>
+        } @else if (memoryStatus() === 'unavailable') {
+          <p class="help">{{ 'The organization memory policy could not be checked. Current server limits still apply.' | ffkText }}</p>
+        }
+      }
       @if (form.kind === 'move-thread') {
         <p class="help">
           {{ 'Moving a conversation does not change its knowledge scope.' | ffkText }}
@@ -485,6 +508,11 @@
           {{ 'Your conversation is kept. Restore it from Archived conversations.' | ffkText }}
         </p>
       }
+      @if (form.kind === 'delete-thread') {
+        <p><strong>{{ form.thread?.title }}</strong></p>
+        <p>{{ 'This conversation will be removed from your history and future memory. This cannot be undone.' | ffkText }}</p>
+        <p class="help">{{ 'Retained audit records are kept.' | ffkText }}</p>
+      }
       @if (s.error()) {
         <div class="error" role="alert">
           <p>{{ errorHelp() | ffkText }}</p>
@@ -497,12 +525,13 @@
         <p class="error" role="alert">{{ formError() | ffkText }}</p>
       }
       <footer class="form-actions">
-        <ffk-button variant="quiet" [disabled]="s.mutating()" (click)="panelClose()">{{
+        <ffk-button variant="quiet" icon="close" [disabled]="s.mutating()" (click)="panelClose()">{{
           'Cancel' | ffkText
         }}</ffk-button
         ><ffk-button
           type="submit"
-          [variant]="form.kind === 'delete-folder' ? 'danger' : 'primary'"
+          [variant]="form.kind === 'delete-folder' || form.kind === 'delete-thread' ? 'danger' : 'primary'"
+          [icon]="form.kind === 'delete-folder' || form.kind === 'delete-thread' ? 'trash' : 'check'"
           [loading]="s.mutating()"
           [disabled]="!canSave()"
           >{{ saveLabel() | ffkText }}</ffk-button

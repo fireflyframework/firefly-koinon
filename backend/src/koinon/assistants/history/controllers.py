@@ -124,3 +124,18 @@ class ChatHistoryController:
                 expected_revision=body.expected_revision,
             )
         ).model_dump()
+
+    @delete_mapping("/threads/{thread_id}", status_code=204)
+    async def delete_thread(
+        self,
+        tenant_id: PathVar[str],
+        thread_id: PathVar[str],
+        request: Request,
+        expected_revision: QueryParam[int],
+    ):
+        await self.history.delete_thread(
+            identity_from_request(request).subject,
+            tenant_id,
+            thread_id,
+            expected_revision=expected_revision,
+        )

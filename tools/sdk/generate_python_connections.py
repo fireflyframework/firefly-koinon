@@ -12,6 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCES = {
+    "memory": "backend/src/koinon/assistants/memory/dtos.py",
     "corporate_profiles": "backend/src/koinon/corporate_profiles/dtos.py",
     "organization_people": "backend/src/koinon/organization_people/dtos.py",
     "document_history": "backend/src/koinon/knowledge/document_history/dtos.py",
@@ -61,6 +62,10 @@ def render(source):
         declarations.append(limit)
     inputs = {"StrictInput"}
     for node in tree.body:
+        if source.parent.name == "memory" and isinstance(node, ast.ClassDef) and node.name not in {
+            "MemoryValue", "MemoryTurnReference", "MemoryReceipt"
+        }:
+            continue
         if isinstance(node, ast.Assign) and all(
             isinstance(target, ast.Name) for target in node.targets
         ):
@@ -70,6 +75,7 @@ def render(source):
             "AttachmentHistorySummary",
             "ExternalReviewChallenge",
             "ExternalFileReviewChallenge",
+            "MemoryManifest",
         }:
             bases = [ast.unparse(base) for base in node.bases]
             has_input_config = any(
@@ -112,6 +118,8 @@ def render(source):
                     and isinstance(item, ast.Assign))
                 or (source.parent.name in {"organization_people", "corporate_profiles"} and node.name == "Input"
                     and isinstance(item, ast.Assign))
+                or (source.parent.name == "organization_chat" and node.name in {"OrganizationMemoryPolicy", "OrganizationMemoryPolicyInput"}
+                    and isinstance(item, ast.Assign))
             ] or [ast.Pass()]
             if source.parent.name == "corporate_profiles" and node.name == "OrganizationPresentationInput":
                 original = next(value for value in ast.parse(source.read_text()).body
@@ -130,6 +138,21 @@ def render(source):
                 validator = next(value for value in node.body if isinstance(value, ast.FunctionDef))
                 validator.args.args[1].annotation = ast.Name(id="object", ctx=ast.Load())
                 validator.returns = ast.parse("Literal[True]", mode="eval").body
+            if source.parent.name == "curated" and node.name in {"DocumentEvidence", "StructuredEvidence"}:
+                original = next(value for value in ast.parse(source.read_text()).body
+                                if isinstance(value, ast.ClassDef) and value.name == node.name)
+                node.body.extend(value for value in original.body
+                                 if isinstance(value, ast.FunctionDef) and value.name == "serialize")
+            if source.parent.name == "organization_chat":
+                retained = {
+                    "OrganizationMemoryPolicy": "bounded_project",
+                    "OrganizationChatSettingsInput": "memory_nonnull_when_present",
+                }
+                if node.name in retained:
+                    original = next(value for value in ast.parse(source.read_text()).body
+                                    if isinstance(value, ast.ClassDef) and value.name == node.name)
+                    node.body.extend(value for value in original.body
+                                     if isinstance(value, ast.FunctionDef) and value.name == retained[node.name])
             for item in node.body:
                 if isinstance(item, ast.AnnAssign) and isinstance(item.annotation, ast.Name) and item.annotation.id == "dict":
                     item.annotation = ast.parse("dict[str, JsonValue]", mode="eval").body
@@ -142,9 +165,9 @@ def render(source):
     names = {node.id for node in ast.walk(module) if isinstance(node, ast.Name)}
     available = {
         "datetime": ["datetime"],
-        "typing": ["Annotated", "Literal", "Self"],
+        "typing": ["Annotated", "Literal", "Self", "cast"],
         "uuid": ["UUID"],
-        "pydantic": ["AwareDatetime", "ConfigDict", "Field", "JsonValue", "RootModel", "SecretStr", "StrictBool", "StrictFloat", "StrictInt", "StrictStr", "field_validator", "model_validator"],
+        "pydantic": ["AwareDatetime", "ConfigDict", "Field", "JsonValue", "RootModel", "SecretStr", "StrictBool", "StrictFloat", "StrictInt", "StrictStr", "SerializerFunctionWrapHandler", "field_validator", "model_validator", "model_serializer"],
         "pydantic.json_schema": ["SkipJsonSchema"],
         "koinon_sdk._base": ["DocumentRevisionPreconditions", "InputModel", "ResponseModel"],
         "koinon_sdk.contracts": ["Role"],
@@ -155,6 +178,8 @@ def render(source):
     available["koinon_sdk.evidence"] = ["ConversationIdentity", "ConversationMessage", "Frozen", "Identifier", "Revision", "SourceReference", "StoredResult"]
     available["koinon_sdk.exports"] = ["Input", "MessageSelection"]
     available["koinon_sdk.organization_knowledge"] = ["OrganizationKnowledgeSnapshot"]
+    available["koinon_sdk.organization_chat"] = ["OrganizationMemoryPolicy"]
+    available["koinon_sdk.memory"] = ["MemoryReceipt"]
     available["koinon_sdk.corporate_profiles"] = [
         "CorporatePresentationSummary", "CorporateProfileFieldCapability", "CorporateProfileSyncPolicy"
     ]

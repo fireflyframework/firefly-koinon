@@ -62,6 +62,7 @@ class ChatThread(Base):
         ForeignKey(f"{ChatFolder.__tablename__}.id", ondelete="SET NULL"), nullable=True, index=True
     )
     archived_at: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
     scope: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=now)
     updated_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=now)

@@ -3,14 +3,21 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/knowledge/curated/dtos.py
-SHA256: f716605b78a91a2b709f6357f15f6b74ec341b43a78e0e384e8cc97cff45d45d
+SHA256: f659970f5aa0d19abe44b2e6f271bd66e033e0ad8a8f20e0a9d1aeae9ae83636
 
 Server authorization and semantic validation remain authoritative.
 """
 
-from typing import Annotated, Literal
+from typing import Annotated, Literal, cast
 
-from pydantic import AwareDatetime, Field, field_validator
+from pydantic import (
+    AwareDatetime,
+    Field,
+    JsonValue,
+    SerializerFunctionWrapHandler,
+    field_validator,
+    model_serializer,
+)
 
 from koinon_sdk._base import ResponseModel
 from koinon_sdk.evidence import SourceReference
@@ -65,6 +72,7 @@ class KnowledgeIntentInput(Frozen):
     target_item_id: Identifier | None = None
     expected_version: int | None = Field(default=None, ge=1)
     content: KnowledgeContent
+    include_remembered_context: bool = Field(default=False, strict=True)
     origin: Annotated[
         UserStatementOrigin | ConversationOrigin | ExternalProposalOrigin, Field(discriminator="kind")
     ]
@@ -96,11 +104,27 @@ class ExternalProposalEvidence(Frozen):
 class DocumentEvidence(Frozen):
     kind: Literal["document_passage"] = "document_passage"
     source: SourceReference
+    basis: Literal["direct", "remembered_context"] = "direct"
+
+    @model_serializer(mode="wrap")
+    def serialize(self, handler: SerializerFunctionWrapHandler) -> dict[str, JsonValue]:
+        value = cast(dict[str, JsonValue], handler(self))
+        if "basis" not in self.model_fields_set:
+            value.pop("basis", None)
+        return value
 
 
 class StructuredEvidence(Frozen):
     kind: Literal["structured_snapshot"] = "structured_snapshot"
     source: SourceReference
+    basis: Literal["direct", "remembered_context"] = "direct"
+
+    @model_serializer(mode="wrap")
+    def serialize(self, handler: SerializerFunctionWrapHandler) -> dict[str, JsonValue]:
+        value = cast(dict[str, JsonValue], handler(self))
+        if "basis" not in self.model_fields_set:
+            value.pop("basis", None)
+        return value
 
 
 KnowledgeEvidence = Annotated[
@@ -148,6 +172,7 @@ class KnowledgeIntent(Frozen):
     after: KnowledgeContent
     evidence: tuple[KnowledgeEvidence, ...] = Field(min_length=1, max_length=500)
     authorization_digest: Sha256
+    remembered_context_present: bool = False
     status: Literal["preview", "committing", "committed", "cancelled", "stale", "unresolved"]
     created_at: AwareDatetime
     expires_at: AwareDatetime
@@ -158,6 +183,7 @@ class KnowledgeConfirmation(Frozen):
     confirm: Literal[True]
     expected_revision: int = Field(ge=1)
     authorization_digest: Sha256
+    include_remembered_context: bool = Field(default=False, strict=True)
 
     @field_validator("confirm", mode="before")
     @classmethod

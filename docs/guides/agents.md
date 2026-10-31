@@ -24,6 +24,8 @@ The Chat sidebar separates recent unfiled conversations from expandable folders.
 
 Conversation titles can be edited. When a title suggestion is available, review it before saving; a revision conflict requires reloading the current title. The sidebar chevron hides history while keeping the conversation and composer available. Mobile history opens as a focus-managed drawer.
 
+For personal context across your own chats, enable memory explicitly in the folder's settings. Organization limits, current source permissions and exact knowledge scope still apply. The [conversation memory guide](conversation-memory.md) explains configuration, context receipts, deletion and the same operations through all three SDKs.
+
 ## Private files in chat
 
 Use the composer's **+** menu, drag files onto the composer, or paste an image when the selected agent supports images. Available formats and size limits come from the deployment capability response. The composer shows each file's upload and reading state, and permits sending only after the selected files are ready. Images require a model with verified image input support; text extraction does not imply OCR support.

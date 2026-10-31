@@ -57,3 +57,33 @@ it('emits the persisted thread before closing and keeps unsuccessful writes open
   await failure.settled();
   expect(failure.dismiss).not.toHaveBeenCalled();
 });
+
+it('removes the active conversation only after a confirmed persisted deletion', async () => {
+  for (const successful of [true, false]) {
+    let resolve!: (value: boolean) => void;
+    const response = new Promise<boolean>((settle) => { resolve = settle; });
+    let tracked: Promise<void> | undefined;
+    const emit = vi.fn(), dismiss = vi.fn();
+    const sidebar = Object.assign(Object.create(KoinonConversationSidebar.prototype), {
+      edit: () => ({ kind: 'delete-thread', folder: null, thread: { id: 'owned-thread' }, revision: 3 }),
+      canSave: () => true,
+      tasks: { run: (action: () => Promise<void>) => { tracked = action(); } },
+      s: { deleteThread: () => response },
+      threadChanged: { emit: vi.fn() },
+      threadDeleted: { emit },
+      panel: { dismiss },
+    }) as KoinonConversationSidebar;
+    sidebar.save();
+    expect(emit).not.toHaveBeenCalled();
+    expect(dismiss).not.toHaveBeenCalled();
+    resolve(successful);
+    await tracked;
+    if (successful) {
+      expect(emit).toHaveBeenCalledExactlyOnceWith('owned-thread');
+      expect(dismiss).toHaveBeenCalledOnce();
+    } else {
+      expect(emit).not.toHaveBeenCalled();
+      expect(dismiss).not.toHaveBeenCalled();
+    }
+  }
+});

@@ -241,6 +241,7 @@ from koinon_sdk.mcp_applications import (
     McpOAuthClientValues,
     McpOAuthScope,
 )
+from koinon_sdk.memory import MemoryReceipt, MemoryTurnReference, MemoryValue
 from koinon_sdk.models import (
     AgentConfiguration,
     AgenticCapability,
@@ -330,7 +331,12 @@ from koinon_sdk.organization_branding import (
     OrganizationBranding,
     OrganizationBrandingInput,
 )
-from koinon_sdk.organization_chat import OrganizationChatSettings, OrganizationChatSettingsInput
+from koinon_sdk.organization_chat import (
+    OrganizationChatSettings,
+    OrganizationChatSettingsInput,
+    OrganizationMemoryPolicy,
+    OrganizationMemoryPolicyInput,
+)
 from koinon_sdk.organization_filters import (
     OrganizationPeopleFilter,
     OrganizationReportsFilter,
@@ -762,4 +768,9 @@ __all__ += [
     "OrganizationUnitPage",
     "OrganizationUnitPatch",
     "OrganizationUnitSummary",
+    "OrganizationMemoryPolicy",
+    "OrganizationMemoryPolicyInput",
+    "MemoryReceipt",
+    "MemoryTurnReference",
+    "MemoryValue",
 ]

@@ -42,6 +42,7 @@
   "ChatHistoryController.thread": "client.chat.get",
   "ChatHistoryController.patch_thread": "client.chat.update",
   "ChatHistoryController.title_suggestion": "client.chat.suggestTitle",
+  "ChatHistoryController.delete_thread": "client.chat.delete",
   "CatalogProposalController.get": "client.chatProposals.get",
   "CatalogProposalController.confirm": "client.chatProposals.confirm",
   "CatalogProposalController.cancel": "client.chatProposals.cancel",

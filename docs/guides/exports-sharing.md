@@ -68,9 +68,17 @@ async def download_reviewed_export(client: KoinonClient, tenant: str, review: Ex
 async def review_share(client: KoinonClient, tenant: str, thread: str, messages: list[str]):
     return await client.review_share(tenant, ShareReviewInput(thread_id=thread, message_ids=messages))
 
-async def create_reviewed_share(client: KoinonClient, tenant: str, review: ShareReview):
+async def create_reviewed_share(
+    client: KoinonClient, tenant: str, review: ShareReview, *,
+    user_approved_remembered_context: bool = False,
+):
+    if review.remembered_context_present and not user_approved_remembered_context:
+        raise ValueError("Review and approve the remembered context before sharing")
     return await client.create_share(tenant, ShareCreate(
         review_id=review.id, expected_revision=review.revision, expires_in_hours=24,
+        include_remembered_context=(
+            review.remembered_context_present and user_approved_remembered_context
+        ),
     ))
 
 async def read_shared_answer(client: KoinonClient, tenant: str, share_id: str):
@@ -103,9 +111,15 @@ final class ReviewedConversations {
         return client.shares(tenant).review(new ShareReviewInput(thread, messages));
     }
 
-    static Share createReviewedShare(KoinonClient client, String tenant, ShareReview review) {
+    static Share createReviewedShare(KoinonClient client, String tenant, ShareReview review,
+            boolean userApprovedRememberedContext) {
+        boolean remembered = Boolean.TRUE.equals(review.rememberedContextPresent());
+        if (remembered && !userApprovedRememberedContext) {
+            throw new IllegalArgumentException("Review and approve remembered context before sharing");
+        }
         return client.shares(tenant).create(new ShareCreate(review.id(), review.revision(), 24,
-            ShareRecipientPolicy.ORGANIZATION_CURRENT_ACL));
+            ShareRecipientPolicy.ORGANIZATION_CURRENT_ACL,
+            remembered && userApprovedRememberedContext));
     }
 
     static String savedAssistantName(SharedConversation shared) {
@@ -150,9 +164,17 @@ export async function reviewShare(
   return client.shares.review(tenant, {thread_id: thread, message_ids: messages});
 }
 
-export async function createReviewedShare(client: KoinonClient, tenant: string, review: ShareReview) {
+export async function createReviewedShare(
+  client: KoinonClient, tenant: string, review: ShareReview,
+  userApprovedRememberedContext = false,
+) {
+  if (review.remembered_context_present && !userApprovedRememberedContext) {
+    throw new Error('Review and approve the remembered context before sharing');
+  }
   return client.shares.create(tenant, {
     review_id: review.id, expected_revision: review.revision, expires_in_hours: 24,
+    include_remembered_context: Boolean(review.remembered_context_present)
+      && userApprovedRememberedContext,
   });
 }
 
@@ -165,7 +187,7 @@ export function savedAssistantName(shared: SharedConversation): string {
 }
 ```
 
-Only call `createReviewedShare` after the user accepts the preview. Read shares through the signed-in recipient's own client. A display fallback is a label, not evidence that an old identity was recorded.
+Only call `createReviewedShare` after the user accepts the preview. If `remembered_context_present` is true, ask separately before passing the remembered-context approval argument. It defaults to false in the Python and TypeScript helpers; Java requires the explicit decision. The server rechecks every recorded source and originating credential on later reads. See [conversation memory](conversation-memory.md#share-or-publish-an-answer-that-used-memory) for the consent and provenance rules. Read shares through the signed-in recipient's own client. A display fallback is a label, not evidence that an old identity was recorded.
 
 ## Inspect answer sources
 

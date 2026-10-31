@@ -18,6 +18,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 | `expected_revision` | `integer` | Yes | Not specified |
 | `name` | `string` or `null` | No | `null` |
 | `parent_id` | `string` or `null` | No | `null` |
+| `memory_enabled` | `boolean` | No | `false` |
 
 ## Model constraints
 
@@ -68,6 +69,11 @@ This is a schema definition, not an example request. It preserves all declared k
           ],
           "default": null,
           "title": "Parent Id"
+        },
+        "memory_enabled": {
+          "default": false,
+          "title": "Memory Enabled",
+          "type": "boolean"
         }
       },
       "required": [

@@ -16,6 +16,9 @@ from koinon.assistants.configuration_service import AssistantConfigurationServic
 from koinon.assistants.entities import AgentConfiguration, ChatMessage, ChatRun, ChatThread
 from koinon.assistants.lifecycle import identifier, timestamp
 from koinon.assistants.mappers import message_dto, thread_dto
+from koinon.assistants.memory.mappers import digest as memory_digest
+from koinon.assistants.memory.ports import ChatMemoryAccess
+from koinon.assistants.memory.projections import MemoryOutputCapture
 from koinon.assistants.probe import ProviderProbe
 from koinon.assistants.repositories import (
     AgentRepository,
@@ -57,6 +60,7 @@ class AssistantService:
         attachments: ChatAttachmentAccess | None = None,
         attachment_provider: Provider[ChatAttachmentAccess | None] | None = None,
         organization_knowledge: OrganizationKnowledgeService | None = None,
+        memory: Provider[ChatMemoryAccess | None] | None = None,
     ):
         self.catalog, self.providers, self.agents = catalog, providers, agents
         self.threads, self.message_repository, self.runs, self.events = threads, messages, runs, events
@@ -68,6 +72,7 @@ class AssistantService:
         self.attachments = attachments
         self.attachment_provider = attachment_provider
         self.organization_knowledge = organization_knowledge
+        self.memory = memory
 
     def _attachment_access(self) -> ChatAttachmentAccess | None:
         if self.attachments is not None:
@@ -88,7 +93,7 @@ class AssistantService:
 
     async def thread(self, subject: str, tenant_id: str, thread_id: str, *, lock=False) -> ChatThread:
         row = await self.threads.find_by_id(thread_id, lock=LockMode.PESSIMISTIC_WRITE if lock else None)
-        if row is None or row.tenant_id != tenant_id or row.subject != subject:
+        if row is None or row.tenant_id != tenant_id or row.subject != subject or row.deleted_at is not None:
             raise AccessDenied("Conversation is unavailable", code="ACCESS_DENIED")
         await self.validate_scope(subject, tenant_id, row.scope)
         return row
@@ -118,6 +123,8 @@ class AssistantService:
             await self.validate_scope(subject, tenant_id, scope)
         visible = []
         for row in await self.threads.find_all(subject=subject, tenant_id=tenant_id):
+            if row.deleted_at is not None:
+                continue
             try:
                 await self.validate_scope(subject, tenant_id, row.scope)
             except AccessDenied:
@@ -155,7 +162,7 @@ class AssistantService:
         attachments = self._attachment_access()
         for message, run_id, sequence in reversed(visible):
             if run_id:
-                await self.authorize_results(subject, tenant_id, run_id)
+                await self.authorize_results(subject, tenant_id, run_id, require_memory=False)
             summaries = (
                 await attachments.summaries_for_message(subject, tenant_id, thread_id, message.id)
                 if attachments is not None
@@ -191,6 +198,17 @@ class AssistantService:
                 .decode()
                 .rstrip("=")
             )
+        if self.memory is not None:
+            memory = self.memory.get()
+            if memory is not None:
+                await memory.authorize_many(
+                    subject,
+                    tenant_id,
+                    tuple(dict.fromkeys(row[1] for row in visible if row[1])),
+                    captures=tuple(
+                        MemoryOutputCapture(row[1], "sequence", row[2]) for row in visible if row[1]
+                    ),
+                )
         return {"items": items, "next_cursor": next_cursor}
 
     @transactional
@@ -327,6 +345,12 @@ class AssistantService:
         reset = await self.events.latest_reset(run_id)
         cursor = max(cursor, reset - 1) if reset is not None else cursor
         rows = await self.events.find_after(run_id, cursor)
+        if self.memory is not None:
+            memory = self.memory.get()
+            if memory is not None:
+                await memory.authorize(
+                    subject, tenant_id, run_id, captures=(MemoryOutputCapture(run_id, "reset", reset or 0),)
+                )
         return [
             {"id": str(event.sequence), "type": event.type, "data": event.data}
             for event in sorted(rows, key=lambda event: event.sequence)
@@ -458,14 +482,27 @@ class AssistantService:
                     for asset_id in row.payload.get("asset_ids", []):
                         await self.catalog.get(subject, tenant_id, asset_id)
 
-    async def authorize_results(self, subject: str, tenant_id: str, run_id: str, *, require_origin=True):
+    async def authorize_results(
+        self,
+        subject: str,
+        tenant_id: str,
+        run_id: str,
+        *,
+        require_origin=True,
+        require_memory=True,
+        result_rows=None,
+    ):
         run = await self.scoped(self.runs, tenant_id, run_id)
-        rows = await self.active_results(run)
+        rows = await self.active_results(run) if result_rows is None else result_rows
         for result in rows:
             for asset_id in result.payload.get("asset_ids", []):
                 await self.catalog.get(subject, tenant_id, asset_id)
         if require_origin:
             await self.origin_authority(subject, tenant_id, run, rows)
+        if require_memory and require_origin and self.memory is not None:
+            access = self.memory.get()
+            if access is not None:
+                await access.authorize(subject, tenant_id, run_id)
 
     @transactional(read_only=True)
     async def thread_page(
@@ -545,4 +582,13 @@ class AssistantService:
         for asset_id in rows[0].payload.get("asset_ids", []):
             await self.catalog.get(subject, tenant_id, asset_id)
         await self.origin_authority(subject, tenant_id, run, rows, include_run=False)
+        memory = self.memory.get() if self.memory is not None else None
+        if memory is not None:
+            await memory.authorize_result(
+                subject,
+                tenant_id,
+                run_id,
+                result_id,
+                memory_digest({"kind": rows[0].kind, "payload": rows[0].payload}),
+            )
         return {"id": rows[0].id, "run_id": run_id, "kind": rows[0].kind, "data": rows[0].payload["data"]}

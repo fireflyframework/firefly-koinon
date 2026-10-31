@@ -249,6 +249,7 @@ export class KoinonClient {
    },
    get:(tenantId:string,threadId:string,options:RequestOptions={})=>transport.request<ChatThread>('GET',`${tenant(tenantId)}/chat/threads/${id(threadId)}`,options),
    update:(tenantId:string,threadId:string,input:ThreadPatch,options:RequestOptions={})=>transport.request<ChatThread>('PATCH',`${tenant(tenantId)}/chat/threads/${id(threadId)}`,{...options,body:input}),
+   delete:(tenantId:string,threadId:string,expectedRevision:number,options:RequestOptions={})=>transport.request<void>('DELETE',`${tenant(tenantId)}/chat/threads/${id(threadId)}`,{...options,query:{expected_revision:expectedRevision}}),
    suggestTitle:(tenantId:string,threadId:string,input:TitleRequest,options:RequestOptions={})=>transport.request<TitleSuggestion>('POST',`${tenant(tenantId)}/chat/threads/${id(threadId)}/title-suggestion`,{...options,body:input}),
    folders:{
     get:(tenantId:string,folderId:string,options:RequestOptions={})=>transport.request<ChatFolder>('GET',`${tenant(tenantId)}/chat/folders/${id(folderId)}`,options),

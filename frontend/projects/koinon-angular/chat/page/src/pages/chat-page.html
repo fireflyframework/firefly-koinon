@@ -66,6 +66,7 @@
       (threadSelected)="selectThread($event)"
       (newConversationRequested)="startConversation($event)"
       (threadChanged)="a.applyThread($event)"
+      (threadDeleted)="deletedConversation($event)"
       (closeRequested)="closeHistory()"
     />
   </aside>
@@ -170,7 +171,11 @@
                     <span>{{ userInitials() }}</span>
                   }
                 } @else {
-                  @if(brandSymbol()){<img [src]="brandSymbol()" alt="" />}@else{<span>{{assistantName().slice(0,1).toUpperCase()}}</span>}
+                  @if (brandSymbol()) {
+                    <img [src]="brandSymbol()" alt="" />
+                  } @else {
+                    <span>{{ assistantName().slice(0, 1).toUpperCase() }}</span>
+                  }
                 }</span
               ><strong>{{ message.role === 'user' ? ('You' | ffkText) : assistantName() }}</strong
               ><time [attr.datetime]="message.created_at">{{
@@ -343,6 +348,7 @@
   (closed)="closeArtifact()"
   (resourceRequested)="auditResource($event)"
   (citationSelected)="auditCitation($event)"
+  (conversationRequested)="auditConversation($event)"
 />
 <ffk-export-dialog
   [open]="artifactAction() === 'export'"

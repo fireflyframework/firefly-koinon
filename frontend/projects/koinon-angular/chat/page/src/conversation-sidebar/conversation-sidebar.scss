@@ -188,6 +188,9 @@ input:focus-visible {
   border-radius: 8px;
 }
 .context-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 8px 10px;
   min-height: 36px;
   border: 0;
@@ -195,6 +198,34 @@ input:focus-visible {
   background: transparent;
   text-align: left;
   font-size: 12px;
+}
+.context-menu .destructive {
+  color: var(--ui-text, #272820);
+  font-weight: 600;
+}
+.memory-setting {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 24px;
+  cursor: pointer;
+}
+.memory-setting input {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0;
+  accent-color: var(--ui-accent, #855414);
+}
+.memory-setting span {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+.memory-setting small {
+  color: var(--ui-muted, #62645b);
+  font-size: 12px;
+  line-height: 1.6;
 }
 .context-menu button:hover,
 .context-menu button:focus-visible {

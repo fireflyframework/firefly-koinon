@@ -33,9 +33,14 @@ def grant_table(connection, table, role, *, document_control=False):
             "canon_source_transform_steps",
             "canon_source_lineage_events",
             "koinon_mcp_read_receipts",
+            "koinon_chat_memory_manifests",
         }
     )
     receipt = table in {
+        "koinon_bulk_batches",
+        "koinon_bulk_items",
+        "koinon_bulk_uploads",
+        "koinon_bulk_quotas",
         "canon_curated_heads",
         "canon_knowledge_commits",
         "canon_source_heads",

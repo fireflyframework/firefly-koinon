@@ -12,6 +12,9 @@ from pyfly.security.context import SecurityContext
 from pyfly.security.context_holder import SecurityContextHolder
 
 from koinon.assistants.lifecycle import timestamp
+from koinon.assistants.memory.egress import MemoryEgress
+from koinon.assistants.memory.egress_dtos import MemoryConversationSnapshot
+from koinon.assistants.memory.projections import MemoryOutputCapture
 from koinon.assistants.service import AssistantService
 from koinon.catalog.errors import AccessDenied
 from koinon.evidence.dtos import ConversationMessage, ConversationSnapshot, Presentation, SourceReference
@@ -27,8 +30,14 @@ def digest(value) -> str:
 
 @service(name="assistants.snapshots")
 class ConversationSnapshots(ConversationSnapshotPort):
-    def __init__(self, assistants: AssistantService, tokens: Provider[PersonalTokenRepository | None]):
+    def __init__(
+        self,
+        assistants: AssistantService,
+        tokens: Provider[PersonalTokenRepository | None],
+        egress: Provider[MemoryEgress | None] | None = None,
+    ):
         self.assistants, self.tokens = assistants, tokens
+        self.egress = egress
 
     async def _origin(self, subject, tenant_id, run):
         await self.assistants.validate_scope(subject, tenant_id, run.scope)
@@ -62,7 +71,19 @@ class ConversationSnapshots(ConversationSnapshotPort):
 
     async def _sources(self, subject, tenant_id, run, message):
         references, result_ids, complete = {}, [], True
-        available = {row.id: row for row in await self.assistants.results.find_all(run_id=run.id)}
+        identifiers = tuple(
+            artifact["id"]
+            for artifact in message.artifacts or []
+            if artifact.get("kind") == "openui" and artifact.get("id")
+        )
+        if len(identifiers) > 100:
+            raise InvalidRequestException("Select fewer evidence-bearing messages", code="SNAPSHOT_TOO_LARGE")
+        egress = self.egress.get() if self.egress else None
+        if egress:
+            _, rows = await egress.repository.fixed(subject, tenant_id, (run.id,), identifiers)
+        else:
+            rows = await self.assistants.results.find_all(run_id=run.id)
+        available = {row.id: row for row in rows}
         for artifact in message.artifacts or []:
             identifier = artifact.get("id")
             if artifact.get("kind") != "openui" or not identifier:
@@ -126,7 +147,7 @@ class ConversationSnapshots(ConversationSnapshotPort):
             complete = message.answer_policy.get("outcome") == "refused"
         return tuple(references[key] for key in sorted(references)), tuple(result_ids), complete
 
-    @transactional(read_only=True)
+    @transactional(read_only=True, read_from_primary=True)
     async def snapshot(
         self, subject: str, tenant_id: str, thread_id: str, message_ids: list[str]
     ) -> ConversationSnapshot:
@@ -144,7 +165,15 @@ class ConversationSnapshots(ConversationSnapshotPort):
         if {row[0].id for row in rows} != set(message_ids):
             raise AccessDenied("Selected conversation messages are unavailable", code="EVIDENCE_UNAVAILABLE")
         private_origin = await self.assistants.message_repository.private_context_origin(thread_id)
+        captures = tuple(
+            {
+                run.id: MemoryOutputCapture(run.id, "sequence", run.sequence)
+                for message, run in rows
+                if run is not None and message.role == "assistant"
+            }.values()
+        )
         messages, sources, tokens, complete, checked = [], {}, set(), True, set()
+        selections = {}
         for message, run in rows:
             if message.role not in {"user", "assistant"} or message.status not in {
                 "completed",
@@ -167,6 +196,8 @@ class ConversationSnapshots(ConversationSnapshotPort):
                 else ((), (), message.role == "user")
             )
             sources.update({value.id: value for value in refs})
+            if run is not None and message.role == "assistant":
+                selections.setdefault(run.id, set()).update(results)
             complete = complete and qualified
             private = private_origin is not None and message.created_at >= private_origin
             material = {
@@ -207,7 +238,19 @@ class ConversationSnapshots(ConversationSnapshotPort):
         }
         if len(json.dumps(material, ensure_ascii=False).encode()) > 5 * 1024 * 1024:
             raise InvalidRequestException("Select fewer messages for the snapshot", code="SNAPSHOT_TOO_LARGE")
-        return ConversationSnapshot(
+        egress = self.egress.get() if self.egress else None
+        bindings = (
+            await egress.bind(
+                subject,
+                tenant_id,
+                tuple(
+                    (run_id, tuple(sorted(identifiers))) for run_id, identifiers in sorted(selections.items())
+                ),
+            )
+            if egress
+            else ()
+        )
+        result = MemoryConversationSnapshot(
             **{
                 **material,
                 "messages": tuple(messages),
@@ -215,4 +258,8 @@ class ConversationSnapshots(ConversationSnapshotPort):
                 "originating_token_ids": tuple(sorted(tokens)),
             },
             revision=digest(material),
+            memory_bindings=bindings,
         )
+        if egress:
+            await egress.authorize(subject, tenant_id, bindings, captures=captures)
+        return result

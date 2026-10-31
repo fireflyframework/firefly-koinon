@@ -9,9 +9,15 @@ from pyfly.kernel import ConflictException, InvalidRequestException, ServiceUnav
 from pyfly.security.context import SecurityContext
 from pyfly.security.context_holder import SecurityContextHolder
 
+from koinon.assistants.memory.egress import MemoryEgress
 from koinon.catalog.errors import AccessDenied
 from koinon.catalog.service import PARENTS, CatalogService
-from koinon.evidence.ports import ConversationSnapshotPort, SourceResolverPort, WriteSourceResolverPort
+from koinon.evidence.ports import (
+    ConversationSnapshotPort,
+    SourceResolverPort,
+    TransitiveSourceResolverPort,
+    WriteSourceResolverPort,
+)
 from koinon.knowledge.curated.dtos import (
     ConversationOrigin,
     DocumentEvidence,
@@ -39,9 +45,11 @@ class CuratedAuthority:
         snapshots: Provider[ConversationSnapshotPort | None],
         sources: Provider[SourceResolverPort | None],
         read_receipts: Provider[ExternalReadReceiptPort | None] | None = None,
+        memory: Provider[MemoryEgress | None] | None = None,
     ):
         self.catalog, self.snapshots, self.sources = catalog, snapshots, sources
         self.read_receipts = read_receipts
+        self.memory = memory
 
     async def destination(self, subject, tenant_id, identifier, *, write=True):
         chain, seen, current = [], set(), identifier
@@ -87,7 +95,7 @@ class CuratedAuthority:
             ),
         )
 
-    async def observe(self, subject, tenant_id, request, recorded_at):
+    async def observe(self, subject, tenant_id, request, recorded_at, *, memory_capture=None):
         context = SecurityContextHolder.get_context()
         token = context.attributes.get("koinon_token_id") if context else None
         origins = {token} if token else set()
@@ -158,6 +166,17 @@ class CuratedAuthority:
         snapshot = await snapshots.snapshot(
             subject, tenant_id, request.origin.thread_id, list(request.origin.message_ids)
         )
+        bindings = getattr(snapshot, "memory_bindings", ())
+        memory = self.memory.get() if self.memory else None
+        remembered = await memory.authorize(subject, tenant_id, bindings) if memory else False
+        if bindings and memory is None:
+            raise ServiceUnavailableException(
+                "Conversation authority is unavailable", code="MEMORY_UNAVAILABLE"
+            )
+        if memory_capture is not None:
+            memory_capture.update(
+                {"present": remembered, "bindings": [value.model_dump(mode="json") for value in bindings]}
+            )
         if (
             snapshot.owner_subject != subject
             or snapshot.tenant_id != tenant_id
@@ -169,21 +188,75 @@ class CuratedAuthority:
                 "Select complete shared evidence or explicitly author your own statement",
                 code="KNOWLEDGE_PROVENANCE_REQUIRED",
             )
-        if any(source.kind == "knowledge_version" for source in snapshot.sources):
-            raise ServiceUnavailableException(
-                "Deriving repository knowledge from a published knowledge version "
-                "requires qualified transitive provenance",
-                code="CURATED_DERIVATION_UNQUALIFIED",
-            )
+        direct_sources = snapshot.sources
+        if any(source.kind == "knowledge_version" for source in direct_sources):
+            resolver = self.sources.get()
+            if not isinstance(resolver, TransitiveSourceResolverPort):
+                raise ServiceUnavailableException(
+                    "Transitive source provenance is unavailable", code="CURATED_DERIVATION_UNQUALIFIED"
+                )
+            direct_sources = await resolver.resolve_bounds(subject, tenant_id, direct_sources)
         evidence = tuple(
             DocumentEvidence(source=source)
             if source.kind == "document"
             else StructuredEvidence(source=source)
-            for source in snapshot.sources
+            for source in direct_sources
         )
+        if remembered and memory is not None:
+            inherited = await memory.remembered_sources(subject, tenant_id, bindings)
+            if any(source.kind == "knowledge_version" for source in inherited):
+                resolver = self.sources.get()
+                if not isinstance(resolver, TransitiveSourceResolverPort):
+                    raise ServiceUnavailableException(
+                        "Transitive source provenance is unavailable", code="CURATED_DERIVATION_UNQUALIFIED"
+                    )
+                inherited = await resolver.resolve_bounds(subject, tenant_id, inherited)
+            evidence = (
+                *evidence,
+                *(
+                    DocumentEvidence(source=source, basis="remembered_context")
+                    if source.kind == "document"
+                    else StructuredEvidence(source=source, basis="remembered_context")
+                    for source in inherited
+                ),
+            )
         origins.update(snapshot.originating_token_ids)
         await self.evidence(subject, tenant_id, evidence)
         return evidence, tuple(sorted(origins))
+
+    async def memory_check(
+        self,
+        subject,
+        tenant_id,
+        values,
+        *,
+        transfer=False,
+        consent=False,
+        release_check=None,
+        token_ids=(),
+        asset_ids=(),
+        release=None,
+    ):
+        from koinon.assistants.memory.egress_dtos import MemoryEgressBinding
+
+        bindings = tuple(MemoryEgressBinding.model_validate(value) for value in values.get("bindings", []))
+        port = self.memory.get() if self.memory else None
+        if bindings and port is None:
+            raise ServiceUnavailableException(
+                "Conversation authority is unavailable", code="MEMORY_UNAVAILABLE"
+            )
+        if port:
+            await port.authorize(
+                subject,
+                tenant_id,
+                bindings,
+                transfer=transfer,
+                consent=consent,
+                release_check=release_check,
+                token_ids=token_ids,
+                asset_ids=asset_ids,
+                release=release,
+            )
 
     async def evidence(self, subject, tenant_id, evidence, *, exact=True):
         sources = tuple(

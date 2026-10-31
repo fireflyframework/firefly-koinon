@@ -2062,6 +2062,42 @@
         },
         "digest": "2d828ceecae2f7188752442624651e0e3e02c525cddf3908caf4fa10fe6b5fc5"
       },
+      "memory": {
+        "validation_mode": "generation",
+        "generation_id": "generation_id-value",
+        "policy_version": 1,
+        "mode": "current_thread",
+        "folder_id": "folder_id-value",
+        "folder_revision": 1,
+        "scope_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "organization_policy_revision": 1,
+        "effective_policy": {
+          "allow_project_memory": false,
+          "max_history_messages": 1,
+          "max_history_tokens": 1,
+          "max_project_memory_messages": 1
+        },
+        "turns": [
+          {
+            "run_id": "run_id-value",
+            "generation_id": "generation_id-value",
+            "thread_id": "thread_id-value",
+            "conversation_title": "conversation_title-value",
+            "user_created_at": "2026-10-27T12:34:56Z",
+            "user_message_id": "user_message_id-value",
+            "user_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "answer_message_id": "answer_message_id-value",
+            "answer_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "answer_included": false,
+            "availability": "available"
+          }
+        ],
+        "dependency_count": 1,
+        "context_available": false,
+        "unavailable_dependency_count": 1,
+        "created_at": "2026-10-27T12:34:56Z"
+      },
       "generations": [
         {
           "id": "id-value",
@@ -2284,6 +2320,7 @@
             ]
           },
           "revision": 1,
+          "memory_enabled": false,
           "conversation_count": 1,
           "created_at": "2026-10-27T12:34:56Z",
           "updated_at": "2026-10-27T12:34:56Z"
@@ -2323,6 +2360,7 @@
         ]
       },
       "revision": 1,
+      "memory_enabled": false,
       "conversation_count": 1,
       "created_at": "2026-10-27T12:34:56Z",
       "updated_at": "2026-10-27T12:34:56Z"
@@ -2360,6 +2398,7 @@
         ]
       },
       "revision": 1,
+      "memory_enabled": false,
       "conversation_count": 1,
       "created_at": "2026-10-27T12:34:56Z",
       "updated_at": "2026-10-27T12:34:56Z"
@@ -2397,6 +2436,7 @@
         ]
       },
       "revision": 1,
+      "memory_enabled": false,
       "conversation_count": 1,
       "created_at": "2026-10-27T12:34:56Z",
       "updated_at": "2026-10-27T12:34:56Z"
@@ -2525,6 +2565,29 @@
       "based_on_revision": 1
     },
     "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "ChatHistoryController.delete_thread",
+    "group": "ChatApi",
+    "group_scoped": true,
+    "method": "delete",
+    "http": "DELETE",
+    "path": "/api/v1/tenants/tenant value/chat/threads/thread_id value",
+    "ids": {
+      "tenant_id": "tenant value",
+      "thread_id": "thread_id value"
+    },
+    "query": {
+      "expected_revision": 2
+    },
+    "filter": "ThreadDeleteFilter",
+    "request": null,
+    "response": "void",
+    "body": null,
+    "status": 204,
     "encoding": "application/json",
     "precondition": false,
     "idempotency": false
@@ -6154,6 +6217,7 @@
         }
       ],
       "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "remembered_context_present": false,
       "status": "preview",
       "created_at": "2026-10-27T12:34:56Z",
       "expires_at": "2026-10-27T12:34:56Z",
@@ -6239,6 +6303,7 @@
         }
       ],
       "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "remembered_context_present": false,
       "status": "preview",
       "created_at": "2026-10-27T12:34:56Z",
       "expires_at": "2026-10-27T12:34:56Z",
@@ -6364,6 +6429,7 @@
         }
       ],
       "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "remembered_context_present": false,
       "status": "preview",
       "created_at": "2026-10-27T12:34:56Z",
       "expires_at": "2026-10-27T12:34:56Z",
@@ -6889,6 +6955,7 @@
           }
         ],
         "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "remembered_context_present": false,
         "status": "preview",
         "created_at": "2026-10-27T12:34:56Z",
         "expires_at": "2026-10-27T12:34:56Z",
@@ -6979,6 +7046,7 @@
           }
         ],
         "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "remembered_context_present": false,
         "status": "preview",
         "created_at": "2026-10-27T12:34:56Z",
         "expires_at": "2026-10-27T12:34:56Z",
@@ -7109,6 +7177,7 @@
           }
         ],
         "authorization_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "remembered_context_present": false,
         "status": "preview",
         "created_at": "2026-10-27T12:34:56Z",
         "expires_at": "2026-10-27T12:34:56Z",
@@ -9281,6 +9350,12 @@
       "default_agent_id": "default_agent_id-value",
       "revision": 1,
       "configured": false,
+      "memory": {
+        "allow_project_memory": false,
+        "max_history_messages": 1,
+        "max_history_tokens": 1,
+        "max_project_memory_messages": 1
+      },
       "can_run": false,
       "status": "unconfigured"
     },
@@ -9308,6 +9383,12 @@
       "default_agent_id": "default_agent_id-value",
       "revision": 1,
       "configured": false,
+      "memory": {
+        "allow_project_memory": false,
+        "max_history_messages": 1,
+        "max_history_tokens": 1,
+        "max_project_memory_messages": 1
+      },
       "can_run": false,
       "status": "unconfigured"
     },
@@ -10589,6 +10670,7 @@
         }
       ],
       "source_manifest_complete": false,
+      "remembered_context_present": false,
       "recipient_policy": "organization_current_acl",
       "omissions": [
         "omissions-value"

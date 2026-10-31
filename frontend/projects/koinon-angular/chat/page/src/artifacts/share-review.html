@@ -9,7 +9,7 @@
   @if (!state.shareRecord()) {
     <p class="help">
       {{
-        'Private-derived answers and incomplete historical source manifests cannot be shared.'
+        'Answers derived from private attachments and incomplete source records cannot be shared.'
           | ffkText
       }}
     </p>
@@ -47,6 +47,13 @@
         <p class="help">
           {{ 'Review expires' | ffkText }} {{ review.expires_at | ffkDate: undefined : 'datetime' }}
         </p>
+        @if (review.remembered_context_present) {
+          <label class="checkbox">
+            <input type="checkbox" name="rememberedContextConsent" [(ngModel)]="includeRememberedContext" [disabled]="state.pending()" />
+            <span>{{ 'I reviewed this answer and agree to share its remembered context.' | ffkText }}</span>
+          </label>
+          <p class="help">{{ 'Only the selected messages will be shared. The original conversations stay private, and recipients must retain access to the supporting knowledge.' | ffkText }}</p>
+        }
       </section>
     }
     <div class="actions">
@@ -54,7 +61,7 @@
         'Review shared content' | ffkText
       }}</ffk-button>
       @if (state.shareReview()) {
-        <ffk-button variant="primary" [loading]="state.pending()" (click)="create()">{{
+        <ffk-button variant="primary" icon="link" [disabled]="!!state.shareReview()?.remembered_context_present && !includeRememberedContext" [loading]="state.pending()" (click)="create()">{{
           'Create share' | ffkText
         }}</ffk-button>
       }

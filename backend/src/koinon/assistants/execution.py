@@ -9,11 +9,10 @@ from contextlib import asynccontextmanager, nullcontext, suppress
 from pathlib import Path
 
 from pydantic_ai import Tool as PydanticTool
-from pydantic_ai.messages import ModelRequest, ModelResponse, SystemPromptPart, TextPart, UserPromptPart
+from pydantic_ai.messages import ModelRequest, SystemPromptPart, UserPromptPart
 from pydantic_ai.models import ModelRequestParameters
 from pydantic_ai.usage import UsageLimits
 from pyfly.agentic.factory import AgentFactory
-from pyfly.agentic.memory import ConversationMemory
 from pyfly.agentic.models import ModelFactory
 from pyfly.agentic.prompts import PromptLoader
 from pyfly.agentic.tools import agent_tool
@@ -34,6 +33,7 @@ from koinon.assistants.context_budget import ConservativeTokenEstimator, history
 from koinon.assistants.entities import ChatRun
 from koinon.assistants.grounding import evidence_view, has_evidence, refusal_message
 from koinon.assistants.lifecycle import timestamp
+from koinon.assistants.memory.service import PersonalConversationMemory
 from koinon.assistants.model_bindings import BorrowedModel, bind_model
 from koinon.assistants.private_citations import PrivateCitationLabels
 from koinon.assistants.queue import AssistantQueue
@@ -69,9 +69,11 @@ class AssistantExecutor:
         container: Container,
         models: ModelFactory,
         tool_availability: AssistantToolAvailability,
+        memory: PersonalConversationMemory,
     ):
         self.assistants, self.queue, self.container, self.models = assistants, queue, container, models
         self.tool_availability = tool_availability
+        self.memory = memory
         self.prompt = PromptLoader.from_file(Path(__file__).parent / "prompts" / "knowledge-guide.yaml")
 
     async def authority(self, run_id: str, worker_id: str):
@@ -290,6 +292,8 @@ class AssistantExecutor:
         )
         @tracked_tool(self.queue, self.authority, run_id, worker_id, "query_dataset")
         async def query_dataset(dataset_id: str, question: str) -> dict:
+            from flyquery.core.services.query.consumer_context import bind_consumer_context
+
             run, thread = await dataset_scope(dataset_id)
             await self.assistants.catalog.authorize(
                 thread.subject,
@@ -297,19 +301,26 @@ class AssistantExecutor:
                 "query:execute",
                 (await self.assistants.catalog.get(thread.subject, run.tenant_id, dataset_id)).workspace_id,
             )
-            async with captured_call(
-                "query",
-                self.knowledge_evidence().query,
-                thread.subject,
-                run.tenant_id,
-                dataset_id=dataset_id,
-                question=question,
-                assets=[dataset_id],
-            ) as capture:
-                view = await evidence("query", capture, [dataset_id])
-                if observed is not None:
-                    observed.add("query_dataset")
-                return view
+            memory = self.assistants.memory.get() if self.assistants.memory else None
+            if memory is None:
+                raise ServiceUnavailableException(
+                    "Query generation authority is unavailable", code="MEMORY_UNAVAILABLE"
+                )
+            consumer = await memory.query_context(thread.subject, run.tenant_id, run.id)
+            with bind_consumer_context(consumer):
+                async with captured_call(
+                    "query",
+                    self.knowledge_evidence().query,
+                    thread.subject,
+                    run.tenant_id,
+                    dataset_id=dataset_id,
+                    question=question,
+                    assets=[dataset_id],
+                ) as capture:
+                    view = await evidence("query", capture, [dataset_id])
+                    if observed is not None:
+                        observed.add("query_dataset")
+                    return view
 
         @agent_tool(
             name="propose_catalog_update",
@@ -404,51 +415,11 @@ class AssistantExecutor:
         *,
         token_budget: int | None = None,
         attachment_refs: tuple[AttachmentRef, ...] = (),
+        generation_id: str | None = None,
     ) -> list:
-        budget = self.assistants.settings.max_history_tokens if token_budget is None else token_budget
-        if budget <= 0:
-            return []
-        memory = ConversationMemory(max_tokens=budget, estimator=ConservativeTokenEstimator())
-        thread = await self.assistants.threads.find_by_id(run.thread_id)
-        previous = await self.assistants.runs.find_all(thread_id=run.thread_id, status="completed")
-        eligible = sorted(
-            (row for row in previous if row.scope == run.scope and row.created_at < run.created_at),
-            key=lambda row: row.created_at,
+        return await self.memory.build(
+            run, generation_id=generation_id, token_budget=token_budget, attachment_refs=attachment_refs
         )
-        access = self.assistants._attachment_access()
-        for old in eligible[-max(1, self.assistants.settings.max_history_messages // 2) :]:
-            if access is not None:
-                try:
-                    previous_refs = await access.for_run(thread.subject, run.tenant_id, run.thread_id, old.id)
-                except (AccessDenied, InvalidRequestException, ConflictException):
-                    continue
-                if previous_refs != attachment_refs:
-                    continue
-            await self.assistants.authorize_results(thread.subject, run.tenant_id, old.id)
-            user = await self.assistants.message_repository.find_by_id(old.user_message_id)
-            answer = await self.assistants.message_repository.find_by_id(old.message_id)
-            policy = getattr(answer, "answer_policy", {}) or {}
-            if policy.get("outcome") in {"refused", "review_required"}:
-                code = (
-                    "REVIEW_REQUIRED"
-                    if policy["outcome"] == "review_required"
-                    else policy.get("code", "KNOWLEDGE_ONLY")
-                )
-                previous_text = refusal_message("en-US", code)
-            else:
-                previous_text = (
-                    "Previous answer omitted. Retrieve the selected sources again before answering."
-                )
-            memory.add_turn(
-                run.thread_id,
-                user.text,
-                previous_text,
-                [
-                    ModelRequest(parts=[UserPromptPart(user.text)]),
-                    ModelResponse(parts=[TextPart(previous_text)]),
-                ],
-            )
-        return memory.get_message_history(run.thread_id)
 
     async def suggest_title(self, run_id: str, worker_id: str, *, timeout: float) -> None:
         from koinon.assistants.history.service import ChatHistoryService
@@ -679,8 +650,7 @@ class AssistantExecutor:
                     config=factory.runtime.config.model_copy(update={"default_temperature": None}),
                     retries=1,
                 )
-                history = await self.history(run, token_budget=budget, attachment_refs=refs)
-                await self.queue.begin_generation(
+                generation_id = await self.queue.begin_generation(
                     run_id,
                     worker_id,
                     model_id=agent_config.model_id,
@@ -689,9 +659,13 @@ class AssistantExecutor:
                     binding_output_mode=binding_output_mode,
                     model_options_sha256=options_fingerprint(state["api"], agent_config.model_options),
                 )
+                history = await self.history(
+                    run, token_budget=budget, attachment_refs=refs, generation_id=generation_id
+                )
                 pending = ""
                 citation_labels = PrivateCitationLabels(refs)
                 await self.authority(run_id, worker_id)
+                await self.memory.authorize(thread.subject, run.tenant_id, run.id)
                 async with await agent.run_stream(
                     user_prompt,
                     message_history=history,
@@ -703,6 +677,7 @@ class AssistantExecutor:
                 ) as stream:
                     async for delta in stream.stream_text(delta=True, debounce_by=0.05):
                         await self.authority(run_id, worker_id)
+                        await self.memory.authorize(thread.subject, run.tenant_id, run.id)
                         if delta:
                             pending += citation_labels.feed(delta)
                             if len(pending) > 256000:
@@ -747,6 +722,7 @@ class AssistantExecutor:
                             "reason": text,
                         },
                     )
+                    await self.memory.authorize(thread.subject, run.tenant_id, run.id)
                     await self.queue.append(run_id, worker_id, "message_delta", {"text": text})
         await self.authority(run_id, worker_id)
         await self.assistants.configuration_service.record_runtime_qualification(

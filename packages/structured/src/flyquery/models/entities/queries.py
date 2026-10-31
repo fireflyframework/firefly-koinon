@@ -74,6 +74,7 @@ class Query(Base):
     clarification_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     pii_findings_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     error_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    consumer_context: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     model_grounding: Mapped[str | None] = mapped_column(String, nullable=True)
     model_generation: Mapped[str | None] = mapped_column(String, nullable=True)
     model_critic: Mapped[str | None] = mapped_column(String, nullable=True)

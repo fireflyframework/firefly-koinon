@@ -156,6 +156,7 @@ export async function mockService(
         configured: !!id,
         can_run: !!id,
         status: id ? 'ready' : 'unconfigured',
+        memory: { allow_project_memory: true, max_history_messages: 40, max_history_tokens: 8192, max_project_memory_messages: 20 },
       });
     }
     if (path.endsWith('/knowledge/settings') && request.method() === 'GET')

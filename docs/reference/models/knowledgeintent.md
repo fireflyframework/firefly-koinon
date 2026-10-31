@@ -27,6 +27,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 | `after` | [`KnowledgeContent`](knowledgecontent.md) | Yes | Not specified |
 | `evidence` | Array of [`UserStatementEvidence`](userstatementevidence.md) or [`DocumentEvidence`](documentevidence.md) or [`StructuredEvidence`](structuredevidence.md) or [`ExternalProposalEvidence`](externalproposalevidence.md) | Yes | Not specified |
 | `authorization_digest` | `string` | Yes | Not specified |
+| `remembered_context_present` | `boolean` | No | `false` |
 | `status` | `string` | Yes | Not specified |
 | `created_at` | `string` | Yes | Not specified |
 | `expires_at` | `string` | Yes | Not specified |
@@ -212,6 +213,11 @@ This is a schema definition, not an example request. It preserves all declared k
           "pattern": "^[a-f0-9]{64}$",
           "title": "Authorization Digest",
           "type": "string"
+        },
+        "remembered_context_present": {
+          "default": false,
+          "title": "Remembered Context Present",
+          "type": "boolean"
         },
         "status": {
           "enum": [

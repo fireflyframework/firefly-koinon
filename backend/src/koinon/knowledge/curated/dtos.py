@@ -1,8 +1,18 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
-from typing import Annotated, Literal
+from typing import Annotated, Literal, cast
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    JsonValue,
+    SerializerFunctionWrapHandler,
+    field_validator,
+    model_serializer,
+    model_validator,
+)
 
 from koinon.evidence.dtos import SourceReference
 
@@ -77,6 +87,7 @@ class KnowledgeIntentInput(Frozen):
     target_item_id: Identifier | None = None
     expected_version: int | None = Field(default=None, ge=1)
     content: KnowledgeContent
+    include_remembered_context: bool = Field(default=False, strict=True)
     origin: Annotated[
         UserStatementOrigin | ConversationOrigin | ExternalProposalOrigin, Field(discriminator="kind")
     ]
@@ -117,6 +128,14 @@ class ExternalProposalEvidence(Frozen):
 class DocumentEvidence(Frozen):
     kind: Literal["document_passage"] = "document_passage"
     source: SourceReference
+    basis: Literal["direct", "remembered_context"] = "direct"
+
+    @model_serializer(mode="wrap")
+    def serialize(self, handler: SerializerFunctionWrapHandler) -> dict[str, JsonValue]:
+        value = cast(dict[str, JsonValue], handler(self))
+        if "basis" not in self.model_fields_set:
+            value.pop("basis", None)
+        return value
 
     @model_validator(mode="after")
     def exact_document(self):
@@ -132,6 +151,14 @@ class DocumentEvidence(Frozen):
 class StructuredEvidence(Frozen):
     kind: Literal["structured_snapshot"] = "structured_snapshot"
     source: SourceReference
+    basis: Literal["direct", "remembered_context"] = "direct"
+
+    @model_serializer(mode="wrap")
+    def serialize(self, handler: SerializerFunctionWrapHandler) -> dict[str, JsonValue]:
+        value = cast(dict[str, JsonValue], handler(self))
+        if "basis" not in self.model_fields_set:
+            value.pop("basis", None)
+        return value
 
     @model_validator(mode="after")
     def exact_snapshot(self):
@@ -190,6 +217,7 @@ class KnowledgeIntent(Frozen):
     after: KnowledgeContent
     evidence: tuple[KnowledgeEvidence, ...] = Field(min_length=1, max_length=500)
     authorization_digest: Sha256
+    remembered_context_present: bool = False
     status: Literal["preview", "committing", "committed", "cancelled", "stale", "unresolved"]
     created_at: AwareDatetime
     expires_at: AwareDatetime
@@ -200,6 +228,7 @@ class KnowledgeConfirmation(Frozen):
     confirm: Literal[True]
     expected_revision: int = Field(ge=1)
     authorization_digest: Sha256
+    include_remembered_context: bool = Field(default=False, strict=True)
 
     @field_validator("confirm", mode="before")
     @classmethod

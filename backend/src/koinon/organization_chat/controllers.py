@@ -35,5 +35,9 @@ class OrganizationChatController:
         self, tenant_id: PathVar[str], body: Valid[Body[OrganizationChatSettingsInput]], request: Request
     ) -> dict:
         return await self.settings.update(
-            identity_from_request(request).subject, tenant_id, body.default_agent_id, body.expected_revision
+            identity_from_request(request).subject,
+            tenant_id,
+            body.default_agent_id,
+            body.expected_revision,
+            **({"memory": body.memory} if "memory" in body.model_fields_set else {}),
         )

@@ -68,7 +68,12 @@ async def test_query_tool_does_not_pass_root_thread_id_as_a_native_conversation(
     )
     executor = object.__new__(AssistantExecutor)
     executor.assistants = SimpleNamespace(
-        catalog=catalog, validate_scope=AsyncMock(), settings=SimpleNamespace(tool_result_tokens=4096)
+        catalog=catalog,
+        validate_scope=AsyncMock(),
+        settings=SimpleNamespace(tool_result_tokens=4096),
+        memory=SimpleNamespace(
+            get=lambda: SimpleNamespace(query_context=AsyncMock(return_value={"kind": "controlled"}))
+        ),
     )
     executor.queue = SimpleNamespace(
         append=AsyncMock(),
@@ -136,6 +141,9 @@ async def test_cancelled_native_query_retains_audit_receipt_without_converting_c
         ),
         validate_scope=AsyncMock(),
         settings=SimpleNamespace(tool_result_tokens=4096),
+        memory=SimpleNamespace(
+            get=lambda: SimpleNamespace(query_context=AsyncMock(return_value={"kind": "controlled"}))
+        ),
     )
     executor.queue = SimpleNamespace(
         observation=AsyncMock(),

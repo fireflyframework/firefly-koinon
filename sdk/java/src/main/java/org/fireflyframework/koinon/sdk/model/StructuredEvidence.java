@@ -8,7 +8,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /** Typed canonical StructuredEvidence contract. */
 public record StructuredEvidence(
     @JsonProperty("kind") StructuredEvidenceKind kind,
-    @JsonProperty("source") SourceReference source
+    @JsonProperty("source") SourceReference source,
+    @JsonProperty("basis") DocumentEvidenceBasis basis
 ) implements KnowledgeEvidence {
+    public StructuredEvidence(StructuredEvidenceKind kind, SourceReference source){this(kind,source,null);}
 
 }
