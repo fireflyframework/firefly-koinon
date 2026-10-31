@@ -67,7 +67,7 @@ The caller owns the event loop, client lifecycle and token renewal. Register the
 
 The [complete Java example](headless-java.md) includes Java 21 records, lazy paging and a demand-aware SSE subscriber with explicit connection ownership.
 
-The Java 21 SDK uses the JDK HTTP client and Jackson. Its Maven coordinates are `org.fireflyframework:koinon-sdk:26.10.0-alpha.1`. This development artifact is built from `sdk/java`; a local package qualification does not publish it to Maven Central.
+The Java 21 SDK uses the JDK HTTP client and Jackson. Its Maven coordinates are `org.fireflyframework:koinon-sdk:26.10.0-alpha.2`. This development artifact is built from `sdk/java`; a local package qualification does not publish it to Maven Central.
 
 ```java
 import java.net.URI;

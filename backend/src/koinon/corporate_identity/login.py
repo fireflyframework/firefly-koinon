@@ -8,6 +8,7 @@ from pyfly.security.oauth2 import OAuth2AuthenticationSuccessHandler, OAuth2Auth
 from koinon.corporate_identity.challenges import CorporateLoginChallenges
 from koinon.corporate_identity.presentation import CorporatePresentation
 from koinon.corporate_identity.refresh import CorporateAccessRefresh
+from koinon.corporate_profiles.service import CorporateProfileService
 from koinon.organization_people.service import OrganizationPeopleService
 from koinon.profiles.service import ProfileService
 
@@ -52,8 +53,10 @@ class CorporateLoginSuccess(OAuth2AuthenticationSuccessHandler):
         profiles: ProfileService,
         presentation: CorporatePresentation | None = None,
         organization_people: OrganizationPeopleService | None = None,
+        corporate_profiles: CorporateProfileService | None = None,
     ):
         self.organization_people = organization_people
+        self.corporate_profiles = corporate_profiles
         self.challenges, self.refresh, self.profiles, self.presentation = (
             challenges,
             refresh,
@@ -71,6 +74,8 @@ class CorporateLoginSuccess(OAuth2AuthenticationSuccessHandler):
             await self.presentation.initialize(context)
         else:
             await self.profiles.get(f"{context.attributes['iss']}|{context.user_id}", context.attributes)
+        if self.corporate_profiles is not None:
+            await self.corporate_profiles.observe_login(context)
         if self.organization_people is not None:
             await self.organization_people.observe_login(context)
 
@@ -89,5 +94,8 @@ class CorporateLoginConfiguration:
         profiles: ProfileService,
         presentation: CorporatePresentation,
         organization_people: OrganizationPeopleService | None = None,
+        corporate_profiles: CorporateProfileService | None = None,
     ) -> OAuth2AuthenticationSuccessHandler:
-        return CorporateLoginSuccess(challenges, refresh, profiles, presentation, organization_people)
+        return CorporateLoginSuccess(
+            challenges, refresh, profiles, presentation, organization_people, corporate_profiles
+        )

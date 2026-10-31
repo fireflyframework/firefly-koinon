@@ -514,3 +514,14 @@ select:disabled {
 @container organization-directory (max-width:680px) {
   @include narrow-people-filters;
 }
+
+.directory-settings-view {
+  max-width: 920px;
+  min-width: 0;
+}
+.directory-settings-view > ffk-button {
+  margin: 0 0 20px;
+}
+.directory-settings-view .directory-heading {
+  margin-bottom: 28px;
+}

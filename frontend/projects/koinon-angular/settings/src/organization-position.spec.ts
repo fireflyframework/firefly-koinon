@@ -22,3 +22,30 @@ describe('organization position changes', () => {
     ).toEqual({ job_title: 'Principal', manager_id: null });
   });
 });
+
+import { TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
+import { KoinonOrganizationDirectory } from '@fireflyframework/koinon-angular/workbench';
+import { KoinonOrganizationPosition } from './organization-position';
+it('offers a scoped corporate refresh to an administrator with both required permissions', () => {
+  TestBed.configureTestingModule({
+    providers: [
+      {
+        provide: KoinonOrganizationDirectory,
+        useValue: {
+          pending: signal(false),
+          providers: signal(null),
+          f: { tenantPermissions: signal(new Set(['members:write', 'identity:manage'])) },
+        },
+      },
+    ],
+  });
+  const fixture = TestBed.createComponent(KoinonOrganizationPosition);
+  fixture.componentRef.setInput('person', {
+    ...person,
+    source: 'provider',
+    presentation: { status: 'current', provider_name: 'North' },
+  });
+  fixture.detectChanges();
+  expect(fixture.nativeElement.textContent).toContain('Sync now');
+});

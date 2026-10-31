@@ -12,6 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCES = {
+    "corporate_profiles": "backend/src/koinon/corporate_profiles/dtos.py",
     "organization_people": "backend/src/koinon/organization_people/dtos.py",
     "document_history": "backend/src/koinon/knowledge/document_history/dtos.py",
     "mcp_applications": "backend/src/koinon/mcp_applications/dtos.py",
@@ -109,9 +110,20 @@ def render(source):
                     and item.target.id != "model_config")
                 or (source.parent.name == "organization_knowledge" and node.name == "KnowledgePolicyValue"
                     and isinstance(item, ast.Assign))
-                or (source.parent.name == "organization_people" and node.name == "Input"
+                or (source.parent.name in {"organization_people", "corporate_profiles"} and node.name == "Input"
                     and isinstance(item, ast.Assign))
             ] or [ast.Pass()]
+            if source.parent.name == "corporate_profiles" and node.name == "OrganizationPresentationInput":
+                original = next(value for value in ast.parse(source.read_text()).body
+                                if isinstance(value, ast.ClassDef) and value.name == node.name)
+                for value in original.body:
+                    if isinstance(value, ast.FunctionDef) and value.name == "nonnull":
+                        value.args.args[1].annotation = ast.parse("ProfilePresentationMode | None", mode="eval").body
+                        value.returns = ast.Name(id="ProfilePresentationMode", ctx=ast.Load())
+                        node.body.append(value)
+                    elif isinstance(value, ast.FunctionDef) and value.name == "selected_mode":
+                        value.returns = ast.Name(id="Self", ctx=ast.Load())
+                        node.body.append(value)
             if source.parent.name == "curated" and node.name == "KnowledgeConfirmation":
                 original = next(value for value in ast.parse(source.read_text()).body if isinstance(value, ast.ClassDef) and value.name == node.name)
                 node.body.extend(value for value in original.body if isinstance(value, ast.FunctionDef) and value.name == "explicit")
@@ -130,9 +142,10 @@ def render(source):
     names = {node.id for node in ast.walk(module) if isinstance(node, ast.Name)}
     available = {
         "datetime": ["datetime"],
-        "typing": ["Annotated", "Literal"],
+        "typing": ["Annotated", "Literal", "Self"],
         "uuid": ["UUID"],
-        "pydantic": ["AwareDatetime", "ConfigDict", "Field", "JsonValue", "RootModel", "SecretStr", "StrictBool", "StrictFloat", "StrictInt", "StrictStr", "field_validator"],
+        "pydantic": ["AwareDatetime", "ConfigDict", "Field", "JsonValue", "RootModel", "SecretStr", "StrictBool", "StrictFloat", "StrictInt", "StrictStr", "field_validator", "model_validator"],
+        "pydantic.json_schema": ["SkipJsonSchema"],
         "koinon_sdk._base": ["DocumentRevisionPreconditions", "InputModel", "ResponseModel"],
         "koinon_sdk.contracts": ["Role"],
     }
@@ -142,6 +155,9 @@ def render(source):
     available["koinon_sdk.evidence"] = ["ConversationIdentity", "ConversationMessage", "Frozen", "Identifier", "Revision", "SourceReference", "StoredResult"]
     available["koinon_sdk.exports"] = ["Input", "MessageSelection"]
     available["koinon_sdk.organization_knowledge"] = ["OrganizationKnowledgeSnapshot"]
+    available["koinon_sdk.corporate_profiles"] = [
+        "CorporatePresentationSummary", "CorporateProfileFieldCapability", "CorporateProfileSyncPolicy"
+    ]
     if source.parent.name == "external_reviews":
         available["koinon_sdk.evidence"] = ["SourceReference"]
         available["koinon_sdk.curated"] = ["Action", "Frozen", "Identifier", "KnowledgeContent", "KnowledgeIntent", "KnowledgeDestination", "Sha256"]

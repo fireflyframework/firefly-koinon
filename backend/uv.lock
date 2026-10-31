@@ -977,7 +977,7 @@ wheels = [
 
 [[package]]
 name = "firefly-koinon"
-version = "26.10.0a1"
+version = "26.10.0a2"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
@@ -1049,7 +1049,7 @@ provides-extras = ["storage-azure", "storage-gcs", "storage-s3", "dev"]
 
 [[package]]
 name = "firefly-koinon-documents"
-version = "26.10.0a1"
+version = "26.10.0a2"
 source = { editable = "../packages/canon" }
 dependencies = [
     { name = "aiosqlite" },
@@ -1130,7 +1130,7 @@ provides-extras = ["storage-azure", "storage-gcs", "dev", "docling", "chroma", "
 
 [[package]]
 name = "firefly-koinon-storage"
-version = "26.10.0a1"
+version = "26.10.0a2"
 source = { editable = "../packages/storage" }
 
 [package.optional-dependencies]
@@ -1156,7 +1156,7 @@ provides-extras = ["azure", "gcs", "dev"]
 
 [[package]]
 name = "firefly-koinon-structured"
-version = "26.10.0a1"
+version = "26.10.0a2"
 source = { editable = "../packages/structured" }
 dependencies = [
     { name = "aiofiles" },

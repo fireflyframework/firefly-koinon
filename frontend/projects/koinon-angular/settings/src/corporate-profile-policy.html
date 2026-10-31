@@ -1,0 +1,254 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<section aria-labelledby="directory-sync-heading">
+  <h4 id="directory-sync-heading">{{ 'Profile sources' | ffkText }}</h4>
+  <label class="method-label"
+    >{{ 'Update method' | ffkText
+    }}<select
+      name="profile-update-method"
+      [ngModel]="value ? 'directory' : 'claims'"
+      (ngModelChange)="enable($event === 'directory')"
+      [disabled]="disabled"
+    >
+      <option value="claims">{{ 'Verified sign-in only' | ffkText }}</option>
+      <option value="directory">{{ 'Directory sync and field sources' | ffkText }}</option>
+    </select></label
+  >
+  <p class="help">
+    {{
+      (value
+        ? 'Directory sync keeps supported fields current between sign-ins. Access permissions stay separate.'
+        : 'Selected claims update these fields after verified sign-in. Unmapped fields are managed locally.'
+      ) | ffkText
+    }}
+  </p>
+  @if (value; as policy) {
+    <div class="source-row">
+      <label for="profile-name-source">{{ 'Display name' | ffkText }}</label>
+      <div class="source-controls">
+        <select
+          id="profile-name-source"
+          name="name-source"
+          [ngModel]="policy.name_source ?? 'directory'"
+          (ngModelChange)="update({ name_source: $event })"
+          [disabled]="disabled"
+        >
+          <option value="directory">{{ 'Corporate directory' | ffkText }}</option>
+          <option value="personal">{{ 'Personal profile' | ffkText }}</option>
+        </select>
+        @if (kind === 'keycloak' && (policy.name_source ?? 'directory') === 'directory') {
+          <label
+            >{{ 'Display name attribute' | ffkText
+            }}<input
+              name="kc-display_name"
+              maxlength="80"
+              pattern="[A-Za-z][A-Za-z0-9_]{0,79}"
+              [ngModel]="policy.keycloak_attributes?.display_name ?? ''"
+              (ngModelChange)="attribute('display_name', $event)"
+              [disabled]="disabled"
+          /></label>
+          <p class="help">
+            {{
+              'Leave the name attribute empty to use first and last names from Keycloak.' | ffkText
+            }}
+          </p>
+        }
+      </div>
+    </div>
+    <div class="source-row">
+      <label for="profile-avatar-source">{{ 'Photo' | ffkText }}</label>
+      <div class="source-controls">
+        <select
+          id="profile-avatar-source"
+          name="avatar-source"
+          [ngModel]="policy.avatar_source ?? 'directory'"
+          (ngModelChange)="update({ avatar_source: $event })"
+          [disabled]="disabled"
+        >
+          <option value="directory">{{ 'Corporate directory' | ffkText }}</option>
+          <option value="personal">{{ 'Personal profile' | ffkText }}</option>
+        </select>
+        @if (kind === 'keycloak' && (policy.avatar_source ?? 'directory') === 'directory') {
+          <label
+            >{{ 'Photo attribute' | ffkText
+            }}<input
+              name="kc-picture"
+              maxlength="80"
+              pattern="[A-Za-z][A-Za-z0-9_]{0,79}"
+              [ngModel]="policy.keycloak_attributes?.picture ?? ''"
+              (ngModelChange)="attribute('picture', $event)"
+              [disabled]="disabled"
+          /></label>
+          <p class="help">
+            {{
+              'Photos require an explicit Keycloak attribute and an HTTPS origin allowed by this installation. Arbitrary photo URLs are not accepted.'
+                | ffkText
+            }}
+          </p>
+        }
+      </div>
+    </div>
+  }
+  @for (field of positionFields; track field.key) {
+    <div class="source-row">
+      @if (value) {
+        <label [for]="'profile-source-' + field.key">{{ field.label | ffkText }}</label>
+      } @else {
+        <span class="legacy-field-label">{{ field.label | ffkText }}</span>
+      }
+      <div class="source-controls">
+        @if (value) {
+          <select
+            [id]="'profile-source-' + field.key"
+            [name]="field.key"
+            [ngModel]="source(field.key)"
+            (ngModelChange)="positionSource(field.key, $event)"
+            [disabled]="disabled"
+          >
+            <option
+              value="directory"
+              [disabled]="field.key === 'manager_source' && kind === 'entra'"
+            >
+              {{ 'Corporate directory' | ffkText }}
+            </option>
+            <option value="verified_claims">{{ 'Verified sign-in claims' | ffkText }}</option>
+            <option value="local">{{ 'Managed locally' | ffkText }}</option>
+          </select>
+        }
+        @if (!value || source(field.key) === 'verified_claims') {
+          <label
+            >{{ field.claimLabel | ffkText
+            }}<select
+              [id]="!value ? 'profile-source-' + field.key : 'profile-claim-' + field.claim"
+              [name]="'claim-' + field.claim"
+              [ngModel]="configuredClaim(field.claim)"
+              (ngModelChange)="claim(field.claim, $event)"
+              [disabled]="disabled"
+            >
+              <option value="">{{ 'Do not map' | ffkText }}</option>
+              @for (option of field.options; track option.value) {
+                <option [value]="option.value">{{ option.label | ffkText }}</option>
+              }
+              @if (existingClaim(field)) {
+                <option [value]="configuredClaim(field.claim)">
+                  {{ configuredClaim(field.claim) }}
+                </option>
+              }
+            </select></label
+          >
+        }
+        @if (value && source(field.key) === 'directory' && kind === 'keycloak') {
+          <label
+            >{{ field.attributeLabel | ffkText
+            }}<input
+              [name]="'kc-' + field.attribute"
+              maxlength="80"
+              pattern="[A-Za-z][A-Za-z0-9_]{0,79}"
+              [ngModel]="value.keycloak_attributes?.[field.attribute] ?? ''"
+              (ngModelChange)="attribute(field.attribute, $event)"
+              [disabled]="disabled"
+          /></label>
+        }
+        @if (
+          value &&
+          source(field.key) === 'directory' &&
+          field.key === 'unit_source' &&
+          kind === 'google_workspace'
+        ) {
+          <label
+            >{{ 'Google department source' | ffkText
+            }}<select
+              name="google-department"
+              [ngModel]="value.google_department ?? 'department'"
+              (ngModelChange)="update({ google_department: $event })"
+              [disabled]="disabled"
+            >
+              <option value="department">{{ 'Organization department' | ffkText }}</option>
+              <option value="org_unit_path">{{ 'Organizational unit path' | ffkText }}</option>
+            </select></label
+          >
+          <p class="help">
+            {{
+              'A Google organizational unit path is a directory label. It does not create an HR hierarchy.'
+                | ffkText
+            }}
+          </p>
+        }
+        @if (field.key === 'manager_source' && kind === 'entra') {
+          <p class="help">
+            {{ 'Microsoft Entra app-only connections cannot read managers.' | ffkText }}
+            {{ 'Use a verified manager claim or manage reporting lines locally.' | ffkText }}
+          </p>
+        }
+      </div>
+    </div>
+  }
+  @if (value; as policy) {
+    <section class="update-behavior" aria-labelledby="profile-update-behavior">
+      <h4 id="profile-update-behavior">{{ 'Update behavior' | ffkText }}</h4>
+      <label class="interval-label"
+        >{{ 'Refresh interval in minutes' | ffkText
+        }}<input
+          #interval="ngModel"
+          type="number"
+          name="sync-interval"
+          min="5"
+          max="1440"
+          step="1"
+          [ngModel]="(policy.interval_seconds ?? 900) / 60"
+          (ngModelChange)="updateInterval($event)"
+          [disabled]="disabled"
+          aria-describedby="profile-interval-help"
+          [attr.aria-invalid]="interval.invalid ? true : null"
+          required
+      /></label>
+      <p id="profile-interval-help" class="help">
+        {{ 'Choose an interval from 5 minutes to 24 hours.' | ffkText }}
+      </p>
+      <label class="check"
+        ><input
+          type="checkbox"
+          name="personal-overrides"
+          [ngModel]="policy.allow_personal_overrides ?? true"
+          (ngModelChange)="update({ allow_personal_overrides: $event })"
+          [disabled]="disabled"
+        />{{ 'Allow members to use their personal name and photo' | ffkText }}</label
+      >
+    </section>
+  }
+  <ng-content select="[data-profile-save]" />
+  @if (capabilities.length) {
+    <details class="saved-capabilities">
+      <summary>{{ 'Saved configuration capabilities' | ffkText }}</summary>
+      <p class="help">
+        {{
+          'These requirements describe the saved configuration. They do not confirm that provider consent has been granted. Save changes to update this list.'
+            | ffkText
+        }}
+      </p>
+      <ul class="capabilities">
+        @for (capability of capabilities; track capability.field) {
+          <li>
+            <strong>{{ fieldLabel(capability.field) | ffkText }}</strong>
+            <div>
+              <span>{{ sourceLabel(capability.source) | ffkText }}</span
+              ><span>{{
+                (capability.supported
+                  ? 'Supported configuration'
+                  : capabilityMessage(capability.code)
+                ) | ffkText
+              }}</span>
+              @if (capability.required_permissions?.length) {
+                <span
+                  >{{ 'Required provider permissions' | ffkText }}:
+                  @for (permission of capability.required_permissions; track permission) {
+                    {{ permission | ffkText }}{{ $last ? '' : ', ' }}
+                  }
+                </span>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    </details>
+  }
+</section>

@@ -49,4 +49,59 @@ export const ORGANIZATION_PROFILE_SPANISH: Readonly<Record<string, string>> = {
   'Organization unit removed.': 'Unidad de la organización eliminada.',
   'Directory visibility saved.': 'Visibilidad del directorio guardada.',
   'Profile mapping saved.': 'Asignación de datos del perfil guardada.',
+  'Organization presentation': 'Identidad en la organización',
+  'This is how your name and photo appear in this organization. Your saved personal profile is kept separately.':
+    'Así se muestran tu nombre y foto en esta organización. Tu perfil personal se conserva por separado.',
+  'Loading organization presentation…': 'Cargando la identidad en la organización…',
+  'Name unavailable': 'Nombre no disponible',
+  'Name source': 'Origen del nombre',
+  'Photo source': 'Origen de la foto',
+  'Corporate directory': 'Directorio corporativo',
+  'Last synced': 'Última sincronización',
+  'Name to use': 'Nombre que se mostrará',
+  'Photo to use': 'Foto que se mostrará',
+  'Organization name': 'Nombre de la organización',
+  'Personal name': 'Nombre personal',
+  'Organization photo': 'Foto de la organización',
+  'Personal photo': 'Foto personal',
+  'Save presentation': 'Guardar identidad',
+  'Your organization requires its corporate name and photo.':
+    'Tu organización exige el uso del nombre y la foto corporativos.',
+  'Profile source details': 'Detalles del origen del perfil',
+  'Refresh status': 'Actualizar estado',
+  'Sync now': 'Sincronizar ahora',
+  'Organization presentation saved.': 'Identidad en la organización guardada.',
+  'Up to date': 'Actualizado',
+  'Last synced profile retained': 'Se conserva el último perfil sincronizado',
+  'Refresh queued': 'Sincronización en cola',
+  'Refreshing profile': 'Sincronizando el perfil',
+  'Sign in with your organization provider to connect your profile.':
+    'Inicia sesión con el proveedor de tu organización para conectar tu perfil.',
+  'Corporate profile sync is not configured.':
+    'La sincronización del perfil corporativo no está configurada.',
+  'The profile source changed. Refresh the status before trying again.':
+    'El origen del perfil ha cambiado. Actualiza el estado antes de volver a intentarlo.',
+  'Corporate profile is temporarily unavailable.':
+    'El perfil corporativo no está disponible temporalmente.',
+  'Display name': 'Nombre para mostrar',
+  Photo: 'Foto',
+  'Profile field': 'Campo del perfil',
+  'Not set': 'Sin definir',
+  'Unsupported source': 'Origen no compatible',
+  'Last synced value retained': 'Se conserva el último valor sincronizado',
+  'Not yet observed': 'Todavía sin observar',
+  'Profile refresh queued. Check the status shortly.':
+    'La sincronización del perfil está en cola. Consulta el estado en unos momentos.',
+  'Profile refresh status updated.': 'Estado de sincronización del perfil actualizado.',
+  'Verified sign-in claims': 'Claims del inicio de sesión verificado',
+  'The organization administrator needs to configure a profile attribute.':
+    'El administrador de la organización debe configurar un atributo del perfil.',
+  'The organization administrator needs to configure a verified sign-in claim.':
+    'El administrador de la organización debe configurar un claim del inicio de sesión verificado.',
+  'The photo origin is not allowed by this installation.':
+    'Esta instalación no permite el origen de la foto.',
+  'The provider could not supply a usable value for this field.':
+    'El proveedor no pudo proporcionar un valor válido para este campo.',
+  'Ask your organization administrator to review the profile source, then sign in again.':
+    'Pide al administrador de tu organización que revise el origen del perfil y vuelve a iniciar sesión.',
 };

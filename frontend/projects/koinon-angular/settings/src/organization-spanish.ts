@@ -123,4 +123,99 @@ export const ORGANIZATION_SPANISH: Readonly<Record<string, string>> = {
   'Organization unit removed.': 'Unidad de la organización eliminada.',
   'Directory visibility saved.': 'Visibilidad del directorio guardada.',
   'Profile mapping saved.': 'Asignación de datos del perfil guardada.',
+  'Directory profile sync': 'Sincronización del perfil corporativo',
+  'Keep organization names, photos and positions up to date for members who have verified their identity. This does not import users or change access.':
+    'Mantén actualizados los nombres, las fotos y los puestos de las personas que hayan verificado su identidad. No se importan usuarios ni se cambia su acceso.',
+  'Microsoft Entra app-only connections cannot read managers.':
+    'Las conexiones de aplicación de Microsoft Entra no permiten consultar responsables.',
+  'Use a verified manager claim or manage reporting lines locally.':
+    'Utiliza un claim verificado del responsable o gestiona las relaciones jerárquicas aquí.',
+  'Enable directory profile sync': 'Activar la sincronización del perfil corporativo',
+  'Profile sources': 'Orígenes del perfil',
+  'Display name': 'Nombre para mostrar',
+  Photo: 'Foto',
+  'Corporate directory': 'Directorio corporativo',
+  'Personal profile': 'Perfil personal',
+  'Verified sign-in claims': 'Claims del inicio de sesión verificado',
+  'Refresh interval in minutes': 'Intervalo de actualización en minutos',
+  'Allow members to use their personal name and photo':
+    'Permitir que las personas usen su nombre y foto personales',
+  'Google department source': 'Origen del departamento en Google',
+  'Organization department': 'Departamento de la organización',
+  'Organizational unit path': 'Ruta de la unidad organizativa',
+  'A Google organizational unit path is a directory label. It does not create an HR hierarchy.':
+    'La ruta de una unidad organizativa de Google es una etiqueta del directorio. No crea una jerarquía de personal.',
+  'Keycloak presentation attributes': 'Atributos del perfil en Keycloak',
+  'Display name attribute': 'Atributo del nombre visible',
+  'Job title attribute': 'Atributo del puesto',
+  'Department attribute': 'Atributo del departamento',
+  'Manager reference attribute': 'Atributo de referencia del responsable',
+  'Photo attribute': 'Atributo de la foto',
+  'Photos require an explicit Keycloak attribute and an HTTPS origin allowed by this installation. Arbitrary photo URLs are not accepted.':
+    'Las fotos requieren un atributo explícito de Keycloak y un origen HTTPS permitido por esta instalación. No se aceptan URL de fotos arbitrarias.',
+  'Saved configuration capabilities': 'Capacidades de la configuración guardada',
+  'These requirements describe the saved configuration. They do not confirm that provider consent has been granted. Save changes to update this list.':
+    'Estos requisitos describen la configuración guardada. No confirman que se haya concedido el consentimiento en el proveedor. Guarda los cambios para actualizar la lista.',
+  'Supported configuration': 'Configuración compatible',
+  'Required provider permissions': 'Permisos necesarios en el proveedor',
+  'Configure the corresponding Keycloak attribute.':
+    'Configura el atributo de Keycloak correspondiente.',
+  'Select a verified sign-in claim above.':
+    'Selecciona arriba un claim del inicio de sesión verificado.',
+  'This field is unavailable with the saved configuration.':
+    'Este campo no está disponible con la configuración guardada.',
+  'Choose how verified sign-in and your corporate directory maintain organization profiles. Access roles stay separate.':
+    'Elige cómo se mantienen los perfiles de la organización mediante el inicio de sesión verificado y el directorio corporativo. Los roles de acceso se gestionan por separado.',
+  'These claim mappings use verified sign-in only. Directory synchronization is configured separately below.':
+    'Estas asignaciones de claims solo utilizan el inicio de sesión verificado. La sincronización del directorio se configura a continuación.',
+  'Corporate profile': 'Perfil corporativo',
+  'Last synced': 'Última sincronización',
+  'Sync now': 'Sincronizar ahora',
+  'A refresh updates supported profile fields only. It does not change access permissions.':
+    'La sincronización solo actualiza los campos del perfil compatibles. No modifica los permisos de acceso.',
+  'Profile refresh queued. Check the status shortly.':
+    'La sincronización del perfil está en cola. Consulta el estado en unos momentos.',
+  'Profile refresh status updated.': 'Estado de sincronización del perfil actualizado.',
+  'Up to date': 'Actualizado',
+  'Last synced profile retained': 'Se conserva el último perfil sincronizado',
+  'Refresh queued': 'Sincronización en cola',
+  'Refreshing profile': 'Sincronizando el perfil',
+  'Waiting for verified sign-in': 'Pendiente de un inicio de sesión verificado',
+  'Corporate profile sync is not configured.':
+    'La sincronización del perfil corporativo no está configurada.',
+  'Profile source conflict': 'Conflicto en el origen del perfil',
+  'Corporate profile is temporarily unavailable.':
+    'El perfil corporativo no está disponible temporalmente.',
+  'Review the profile source, then ask this person to sign in again.':
+    'Revisa el origen del perfil y pide a esta persona que vuelva a iniciar sesión.',
+  'Back to people': 'Volver a personas',
+  'Control directory visibility and how corporate profiles stay up to date.':
+    'Configura la visibilidad del directorio y la actualización de los perfiles corporativos.',
+  'Directory visibility': 'Visibilidad del directorio',
+  'Corporate profiles': 'Perfiles corporativos',
+  'Directory settings sections': 'Secciones de configuración del directorio',
+  'Choose who can browse people, teams and reporting lines.':
+    'Elige quién puede consultar las personas, los equipos y sus relaciones jerárquicas.',
+  'Choose a provider, set the source for each profile field, then save your settings.':
+    'Elige un proveedor, configura el origen de cada dato del perfil y guarda los cambios.',
+  'Enable profile updates': 'Activar las actualizaciones del perfil',
+  'Profile updates are paused. You can prepare and save the settings before enabling them.':
+    'Las actualizaciones del perfil están en pausa. Puedes preparar y guardar la configuración antes de activarlas.',
+  'Save profile settings': 'Guardar la configuración de los perfiles',
+  'Select the identity provider whose profile settings you want to manage.':
+    'Selecciona el proveedor de identidad cuyos perfiles quieres configurar.',
+  'Update method': 'Método de actualización',
+  'Verified sign-in only': 'Solo inicio de sesión verificado',
+  'Directory sync and field sources': 'Sincronización del directorio y orígenes por campo',
+  'Directory sync keeps supported fields current between sign-ins. Access permissions stay separate.':
+    'La sincronización del directorio mantiene actualizados los campos compatibles entre inicios de sesión. Los permisos de acceso se gestionan por separado.',
+  'Selected claims update these fields after verified sign-in. Unmapped fields are managed locally.':
+    'Los claims seleccionados actualizan estos campos tras un inicio de sesión verificado. Los campos sin asignación se gestionan aquí.',
+  'Leave the name attribute empty to use first and last names from Keycloak.':
+    'Deja vacío el atributo del nombre para utilizar el nombre y los apellidos de Keycloak.',
+  'Update behavior': 'Opciones de actualización',
+  'Choose an interval from 5 minutes to 24 hours.':
+    'Elige un intervalo de entre 5 minutos y 24 horas.',
+  'view-users or equivalent fine-grained user-view permission':
+    'view-users o un permiso equivalente para consultar usuarios',
 };

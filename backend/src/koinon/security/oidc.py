@@ -2,7 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 """Application policy over native pyfly OIDC validation and filters."""
 
+import logging
 from collections.abc import Callable
+from dataclasses import replace
 from typing import Any, cast
 
 from pyfly.context.request_context import RequestContext
@@ -23,8 +25,16 @@ from starlette.responses import JSONResponse, Response
 
 from koinon.mcp.transport_identity import transport_identity
 from koinon.mcp_auth.service import McpOAuthService
+from koinon.security.presentation_claims import (
+    DEFAULT_PRESENTATION_CLAIMS,
+    PresentationClaimSettings,
+    VerifiedProfileObserver,
+    bounded_presentation_claims,
+)
 from koinon.tokens.authorization import TokenRestriction
 from koinon.tokens.service import PREFIX, PersonalTokenService
+
+logger = logging.getLogger(__name__)
 
 IDENTITY_CLAIMS = ClaimMappings(
     principal_claims=("sub",),
@@ -42,22 +52,42 @@ IDENTITY_CLAIMS = ClaimMappings(
         "koinon_external_oid",
         "koinon_google_hd",
     ),
-    raw_attribute_claims=("auth_time", "amr", "groups", "hasgroups", "_claim_names", "koinon_groups_overage"),
+    raw_attribute_claims=(
+        "iat",
+        "auth_time",
+        "amr",
+        "groups",
+        "hasgroups",
+        "_claim_names",
+        "koinon_groups_overage",
+        *DEFAULT_PRESENTATION_CLAIMS,
+    ),
     authority_claims=(),
     scope_claims=("scope", "scp"),
 )
 
 
+def identity_claim_mappings(settings: PresentationClaimSettings | None = None) -> ClaimMappings:
+    names = (settings or PresentationClaimSettings()).names
+    return replace(
+        IDENTITY_CLAIMS,
+        raw_attribute_claims=tuple(dict.fromkeys((*IDENTITY_CLAIMS.raw_attribute_claims, *names))),
+    )
+
+
 class IdentityTokenValidator(JWKSTokenValidator):
-    def __init__(self, jwks_uri: str, **kwargs: Any):
-        kwargs["claim_mappings"] = IDENTITY_CLAIMS
+    def __init__(
+        self, jwks_uri: str, *, presentation_claims: PresentationClaimSettings | None = None, **kwargs: Any
+    ):
+        self.presentation_names = (presentation_claims or PresentationClaimSettings()).names
+        kwargs["claim_mappings"] = identity_claim_mappings(presentation_claims)
         super().__init__(jwks_uri, **kwargs)
 
     def validate(self, token: str, *, timeout: float | None = None) -> dict[str, Any]:
         claims = super().validate(token, timeout=timeout)
         if not all(isinstance(claims.get(key), str) and claims[key] for key in ("iss", "sub")):
             raise SecurityException("Verified issuer and subject required", code="INVALID_TOKEN")
-        return claims
+        return bounded_presentation_claims(claims, self.presentation_names)
 
 
 class ApiBearerFilter(OAuth2ResourceServerFilter):
@@ -69,11 +99,13 @@ class ApiBearerFilter(OAuth2ResourceServerFilter):
         tokens: PersonalTokenService | None = None,
         mcp_oauth: McpOAuthService | None = None,
         restriction: TokenRestriction | None = None,
+        observer: VerifiedProfileObserver | None = None,
     ):
         super().__init__(validator, error_mode="401")
         self.tokens = tokens
         self.mcp_oauth = mcp_oauth
         self.restriction = restriction
+        self.observer = observer
 
     async def do_filter(self, request: Request, call_next: CallNext) -> Response:
         path = request.url.path
@@ -138,7 +170,18 @@ class ApiBearerFilter(OAuth2ResourceServerFilter):
                     request_context.security_context = context
                 with SecurityContextHolder.using(context):
                     return await call_next(request)
-            return await super().do_filter(request, call_next)
+
+            async def after_verified(req: Request) -> Response:
+                context = req.state.security_context
+                with SecurityContextHolder.using(context):
+                    if self.observer is not None and context.is_authenticated:
+                        try:
+                            await self.observer.observe_bearer(context)
+                        except Exception:
+                            logger.warning("Corporate profile observation is unavailable")
+                    return await call_next(req)
+
+            return await super().do_filter(request, after_verified)
         if (path == "/bff" or path.startswith("/bff/") or path == "/auth/me") and request.headers.get(
             "authorization"
         ):
@@ -168,8 +211,16 @@ class VerifiedOidcLoginHandler(OAuth2LoginHandler):
         authorization_request_customizer: OAuth2AuthorizationRequestCustomizer | None = None,
         authentication_success_handler: OAuth2AuthenticationSuccessHandler | None = None,
         id_token_validator_factory: OidcTokenValidatorFactory | None = None,
+        presentation_claims: PresentationClaimSettings | None = None,
     ):
-        self.validator_factory = validator_factory or self._validator
+        self.validator_factory = validator_factory or (
+            lambda registration: IdentityTokenValidator(
+                registration.jwks_uri,
+                issuer=registration.issuer_uri,
+                audiences=[registration.client_id],
+                presentation_claims=presentation_claims,
+            )
+        )
         super().__init__(
             client_repository,
             concurrency=concurrency,
@@ -178,7 +229,7 @@ class VerifiedOidcLoginHandler(OAuth2LoginHandler):
             authentication_success_handler=authentication_success_handler,
             id_token_validator_factory=id_token_validator_factory
             or _IdentityValidatorFactory(lambda registration: self.validator_factory(registration)),
-            claim_mappings=IDENTITY_CLAIMS,
+            claim_mappings=identity_claim_mappings(presentation_claims),
             require_oidc_id_token=True,
         )
 

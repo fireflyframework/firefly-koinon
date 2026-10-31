@@ -46,8 +46,10 @@ class AuditController:
             sort=sort,
             order=order,
         )
-        actors = {
-            subject: await self.profiles.author_summary(subject)
-            for subject in dict.fromkeys(row.subject for row in result["items"])
-        }
+        actors = await self.profiles.author_summaries(
+            {row.subject for row in result["items"]},
+            actor=identity_from_request(request).subject,
+            tenant_id=tenant_id,
+            permission="audit:read",
+        )
         return {**result, "items": [audit_dto(row) for row in result["items"]], "actors": actors}

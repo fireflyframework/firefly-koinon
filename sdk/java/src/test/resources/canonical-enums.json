@@ -134,6 +134,54 @@
     "failed",
     "cancelled"
   ],
+  "ProfilePresentationMode": [
+    "organization",
+    "personal"
+  ],
+  "ProfileSyncStatus": [
+    "not_configured",
+    "not_bound",
+    "queued",
+    "running",
+    "current",
+    "stale",
+    "unavailable",
+    "conflict"
+  ],
+  "ProfileFieldName": [
+    "display_name",
+    "avatar",
+    "job_title",
+    "department",
+    "manager"
+  ],
+  "ProfileObservationSource": [
+    "directory",
+    "verified_claims",
+    "local",
+    "personal"
+  ],
+  "ProfileFieldStatus": [
+    "not_observed",
+    "current",
+    "empty",
+    "unavailable",
+    "unsupported",
+    "stale"
+  ],
+  "CorporateProfileSyncPolicyNameSource": [
+    "directory",
+    "personal"
+  ],
+  "ProfileFieldSource": [
+    "directory",
+    "verified_claims",
+    "local"
+  ],
+  "CorporateProfileSyncPolicyGoogleDepartment": [
+    "department",
+    "org_unit_path"
+  ],
   "DatasetFileAppendResultStatus": [
     "ready"
   ],

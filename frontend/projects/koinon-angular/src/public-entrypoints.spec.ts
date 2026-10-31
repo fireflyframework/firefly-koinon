@@ -4,8 +4,9 @@ import * as legacy from '@fireflyframework/koinon-angular';
 import * as workbench from '@fireflyframework/koinon-angular/workbench';
 import { SPANISH } from './lib/foundations/spanish';
 import { KNOWLEDGE_BEHAVIOR_SPANISH } from '../settings/src/knowledge-behavior-spanish';
-import { IDENTITY_SPANISH } from '../settings/src/identity-spanish';
 import { ORGANIZATION_SPANISH } from '../settings/src/organization-spanish';
+import { ORGANIZATION_PROFILE_SPANISH } from '../workbench/src/lib/organisms/organization-spanish';
+import { IDENTITY_SPANISH } from '../settings/src/identity-spanish';
 describe('published entrypoint compatibility', () => {
   it('preserves class and injection token identity across root and workbench', () => {
     for (const key of [
@@ -31,7 +32,8 @@ describe('published entrypoint compatibility', () => {
 for (const [feature, dictionary] of [
   ['knowledge behavior', KNOWLEDGE_BEHAVIOR_SPANISH],
   ['identity', IDENTITY_SPANISH],
-  ['organization', ORGANIZATION_SPANISH],
+  ['organization settings', ORGANIZATION_SPANISH],
+  ['corporate presentation', ORGANIZATION_PROFILE_SPANISH],
 ] as const) {
   for (const rootFirst of [true, false]) {
     it(`preserves existing translations when registering ${feature} ${rootFirst ? 'after' : 'before'} root`, () => {

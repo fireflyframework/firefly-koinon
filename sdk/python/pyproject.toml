@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 [project]
 name = "firefly-koinon-sdk"
-version = "26.10.0a1"
+version = "26.10.0a2"
 description = "Typed asynchronous Python client for firefly koinon"
 requires-python = ">=3.12"
 license = "Apache-2.0"

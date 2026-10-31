@@ -67,6 +67,31 @@ export class KoinonOrganizationPeople {
       });
     });
   }
+  openGovernance() {
+    this.editing.set(false);
+    this.filtersOpen.set(false);
+    this.governance.set(true);
+    afterNextRender(
+      () => {
+        this.host.nativeElement.closest('.settings-content')?.scrollTo({ top: 0 });
+        this.host.nativeElement
+          .querySelector<HTMLElement>('#directory-settings-heading')
+          ?.focus({ preventScroll: true });
+      },
+      { injector: this.injector },
+    );
+  }
+  closeGovernance() {
+    if (this.s.pending()) return;
+    this.governance.set(false);
+    afterNextRender(
+      () =>
+        this.host.nativeElement
+          .querySelector<HTMLButtonElement>('.directory-settings-trigger button')
+          ?.focus(),
+      { injector: this.injector },
+    );
+  }
   toggleFilters() {
     if (this.filtersOpen()) this.closeFilters();
     else this.filtersOpen.set(true);

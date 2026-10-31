@@ -76,7 +76,13 @@ import type { OrganizationPerson } from '@fireflyframework/koinon-sdk';
           </div>
           <div>
             <dt>{{ 'Department' | ffkText }}</dt>
-            <dd>{{ person.department?.name || ('Not provided' | ffkText) }}</dd>
+            <dd>
+              {{
+                person.department?.name ||
+                  person.presentation?.corporate_department ||
+                  ('Not provided' | ffkText)
+              }}
+            </dd>
           </div>
           <div>
             <dt>{{ 'Team or unit' | ffkText }}</dt>

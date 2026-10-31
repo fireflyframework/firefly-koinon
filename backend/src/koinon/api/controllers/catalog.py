@@ -68,7 +68,12 @@ class CatalogController:
         subjects = {
             actor for entry in result["items"] for actor in (entry.created_by, entry.updated_by) if actor
         }
-        actors = await self.profiles.author_summaries(subjects)
+        actors = await self.profiles.author_summaries(
+            subjects,
+            actor=identity_from_request(request).subject,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
         return {**result, "items": [entry_dto(entry) for entry in result["items"]], "actors": actors}
 
     @post_mapping("/tenants/{tenant_id}/catalog", status_code=201)

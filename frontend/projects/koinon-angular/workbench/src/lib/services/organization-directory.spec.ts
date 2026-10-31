@@ -252,3 +252,58 @@ it('treats a background avatar403 as access revocation rather than a quiet image
   rejectAvatar(Object.assign(new Error('Denied'), { status: 403 }));
   await vi.waitFor(() => expect(service.people()).toBeNull());
 });
+it('requires both tenant administration permissions before refreshing another person', async () => {
+  let writes = 0;
+  const { service } = setup(async <T>() => {
+    writes++;
+    return { tenant_id: 'north', status: 'queued' } as T;
+  });
+  await service.selectPerson(person);
+  expect(await service.refreshPerson(person)).toBe(false);
+  expect(writes).toBe(0);
+});
+it('queues a scoped person refresh without reporting completion or changing access', async () => {
+  let path = '';
+  let body: unknown;
+  const { service, permissions } = setup(
+    async <T>(_method: HttpMethod, p: string, options?: RequestOptions) => {
+      path = p;
+      body = options?.body;
+      return { tenant_id: 'north', status: 'queued' } as T;
+    },
+  );
+  permissions.set(new Set(['members:write', 'identity:manage']));
+  TestBed.tick();
+  await service.selectPerson(person);
+  await service.refreshPerson(person);
+  expect(path).toBe('/tenants/north/organization/people/p1/profile-refresh');
+  expect(body).toEqual({});
+  expect(service.notice()).toBe('Profile refresh queued. Check the status shortly.');
+});
+it('retains the last successful sync timestamp while a refresh is only queued', async () => {
+  const { service, permissions } = setup(
+    async <T>() => ({ tenant_id: 'north', status: 'queued' }) as T,
+  );
+  permissions.set(new Set(['members:write', 'identity:manage']));
+  TestBed.tick();
+  await service.selectPerson({
+    ...person,
+    presentation: { status: 'current', last_synced_at: '2026-10-30T09:00:00Z' },
+  });
+  await service.refreshPerson(person);
+  expect(service.selected()?.presentation?.last_synced_at).toBe('2026-10-30T09:00:00Z');
+  expect(service.selected()?.presentation?.status).toBe('queued');
+});
+it('does not refresh another person whose corporate source has a conflict', async () => {
+  let calls = 0;
+  const { service, permissions } = setup(async <T>() => {
+    calls++;
+    return { tenant_id: 'north', status: 'queued' } as T;
+  });
+  permissions.set(new Set(['members:write', 'identity:manage']));
+  TestBed.tick();
+  const conflict = { ...person, presentation: { status: 'conflict' as const } };
+  await service.selectPerson(conflict);
+  expect(await service.refreshPerson(conflict)).toBe(false);
+  expect(calls).toBe(0);
+});

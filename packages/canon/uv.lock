@@ -1344,7 +1344,7 @@ wheels = [
 
 [[package]]
 name = "firefly-koinon-documents"
-version = "26.10.0a1"
+version = "26.10.0a2"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
@@ -1462,7 +1462,7 @@ provides-extras = ["storage-azure", "storage-gcs", "dev", "docling", "chroma", "
 
 [[package]]
 name = "firefly-koinon-storage"
-version = "26.10.0a1"
+version = "26.10.0a2"
 source = { editable = "../storage" }
 
 [package.optional-dependencies]

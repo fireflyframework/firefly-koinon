@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "api_prefix": "/api/v1",
   "status": "Canonical API contract; development snapshot",
-  "canonical_operation_count": 188,
+  "canonical_operation_count": 192,
   "qualified_compatibility_operations": [
     {
       "operation": "GlossaryController.list_terms",
@@ -357,7 +357,7 @@
       "request_schema": null,
       "response_schema": "Page[AuditEvent]",
       "success_status": 200,
-      "source_sha256": "9cd8419bf1a442777ebc0fe3431fe0855c5e07794ef613a934b83fe2aca9f7be",
+      "source_sha256": "5ebbe1ddaf9761282740d98fe2eb58df9233bc5d6ff07826ad3d60696bde44dc",
       "encoding": "application/json",
       "headers": []
     },
@@ -481,7 +481,7 @@
       "request_schema": null,
       "response_schema": "Page[CatalogEntry]",
       "success_status": 200,
-      "source_sha256": "41fa56a03750a4c12c36bc3b185510a0b690f66a9d9018325e9b884a0d855689",
+      "source_sha256": "29864125b13ef7adf1c909abc56391a6121b82a9875c8c0d1414104a214e0310",
       "encoding": "application/json",
       "headers": []
     },
@@ -491,7 +491,7 @@
       "category": "canonical",
       "operation": "CatalogController.catalog_create",
       "source": "backend/src/koinon/api/controllers/catalog.py",
-      "line": 75,
+      "line": 80,
       "parameters": [
         {
           "name": "tenant_id",
@@ -513,7 +513,7 @@
       "request_schema": "CatalogCreate",
       "response_schema": "CatalogEntry",
       "success_status": 201,
-      "source_sha256": "41fa56a03750a4c12c36bc3b185510a0b690f66a9d9018325e9b884a0d855689",
+      "source_sha256": "29864125b13ef7adf1c909abc56391a6121b82a9875c8c0d1414104a214e0310",
       "encoding": "application/json",
       "headers": []
     },
@@ -523,7 +523,7 @@
       "category": "canonical",
       "operation": "CatalogController.catalog_get",
       "source": "backend/src/koinon/api/controllers/catalog.py",
-      "line": 84,
+      "line": 89,
       "parameters": [
         {
           "name": "tenant_id",
@@ -545,7 +545,7 @@
       "request_schema": null,
       "response_schema": "CatalogEntry",
       "success_status": 200,
-      "source_sha256": "41fa56a03750a4c12c36bc3b185510a0b690f66a9d9018325e9b884a0d855689",
+      "source_sha256": "29864125b13ef7adf1c909abc56391a6121b82a9875c8c0d1414104a214e0310",
       "encoding": "application/json",
       "headers": []
     },
@@ -555,7 +555,7 @@
       "category": "canonical",
       "operation": "CatalogController.catalog_patch",
       "source": "backend/src/koinon/api/controllers/catalog.py",
-      "line": 88,
+      "line": 93,
       "parameters": [
         {
           "name": "tenant_id",
@@ -583,7 +583,7 @@
       "request_schema": "CatalogUpdate",
       "response_schema": "CatalogEntry",
       "success_status": 200,
-      "source_sha256": "41fa56a03750a4c12c36bc3b185510a0b690f66a9d9018325e9b884a0d855689",
+      "source_sha256": "29864125b13ef7adf1c909abc56391a6121b82a9875c8c0d1414104a214e0310",
       "encoding": "application/json",
       "headers": []
     },
@@ -593,7 +593,7 @@
       "category": "canonical",
       "operation": "CatalogController.catalog_archive",
       "source": "backend/src/koinon/api/controllers/catalog.py",
-      "line": 104,
+      "line": 109,
       "parameters": [
         {
           "name": "tenant_id",
@@ -615,7 +615,7 @@
       "request_schema": null,
       "response_schema": "CatalogEntry",
       "success_status": 200,
-      "source_sha256": "41fa56a03750a4c12c36bc3b185510a0b690f66a9d9018325e9b884a0d855689",
+      "source_sha256": "29864125b13ef7adf1c909abc56391a6121b82a9875c8c0d1414104a214e0310",
       "encoding": "application/json",
       "headers": []
     },
@@ -625,7 +625,7 @@
       "category": "canonical",
       "operation": "CatalogController.catalog_restore",
       "source": "backend/src/koinon/api/controllers/catalog.py",
-      "line": 112,
+      "line": 117,
       "parameters": [
         {
           "name": "tenant_id",
@@ -647,7 +647,7 @@
       "request_schema": null,
       "response_schema": "CatalogEntry",
       "success_status": 200,
-      "source_sha256": "41fa56a03750a4c12c36bc3b185510a0b690f66a9d9018325e9b884a0d855689",
+      "source_sha256": "29864125b13ef7adf1c909abc56391a6121b82a9875c8c0d1414104a214e0310",
       "encoding": "application/json",
       "headers": []
     },
@@ -657,7 +657,7 @@
       "category": "canonical",
       "operation": "CatalogController.catalog_delete",
       "source": "backend/src/koinon/api/controllers/catalog.py",
-      "line": 120,
+      "line": 125,
       "parameters": [
         {
           "name": "tenant_id",
@@ -679,7 +679,7 @@
       "request_schema": null,
       "response_schema": "void",
       "success_status": 204,
-      "source_sha256": "41fa56a03750a4c12c36bc3b185510a0b690f66a9d9018325e9b884a0d855689",
+      "source_sha256": "29864125b13ef7adf1c909abc56391a6121b82a9875c8c0d1414104a214e0310",
       "encoding": "application/json",
       "headers": []
     },
@@ -856,7 +856,7 @@
       "request_schema": null,
       "response_schema": "Page[Membership]",
       "success_status": 200,
-      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
+      "source_sha256": "5791aaf461b67dfebc06cfc082841028752bdf489fc212ee229295f908ba03b1",
       "encoding": "application/json",
       "headers": []
     },
@@ -866,7 +866,7 @@
       "category": "canonical",
       "operation": "MembershipController.member_create",
       "source": "backend/src/koinon/api/controllers/memberships.py",
-      "line": 63,
+      "line": 66,
       "parameters": [
         {
           "name": "tenant_id",
@@ -888,7 +888,7 @@
       "request_schema": "MemberInput",
       "response_schema": "Membership",
       "success_status": 201,
-      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
+      "source_sha256": "5791aaf461b67dfebc06cfc082841028752bdf489fc212ee229295f908ba03b1",
       "encoding": "application/json",
       "headers": []
     },
@@ -898,7 +898,7 @@
       "category": "canonical",
       "operation": "MembershipController.member_patch",
       "source": "backend/src/koinon/api/controllers/memberships.py",
-      "line": 73,
+      "line": 76,
       "parameters": [
         {
           "name": "tenant_id",
@@ -926,7 +926,7 @@
       "request_schema": "MemberUpdate",
       "response_schema": "Membership",
       "success_status": 200,
-      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
+      "source_sha256": "5791aaf461b67dfebc06cfc082841028752bdf489fc212ee229295f908ba03b1",
       "encoding": "application/json",
       "headers": []
     },
@@ -936,7 +936,7 @@
       "category": "canonical",
       "operation": "MembershipController.member_delete",
       "source": "backend/src/koinon/api/controllers/memberships.py",
-      "line": 90,
+      "line": 93,
       "parameters": [
         {
           "name": "tenant_id",
@@ -958,7 +958,7 @@
       "request_schema": null,
       "response_schema": "void",
       "success_status": 204,
-      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
+      "source_sha256": "5791aaf461b67dfebc06cfc082841028752bdf489fc212ee229295f908ba03b1",
       "encoding": "application/json",
       "headers": []
     },
@@ -968,7 +968,7 @@
       "category": "canonical",
       "operation": "MembershipController.invitations_list",
       "source": "backend/src/koinon/api/controllers/memberships.py",
-      "line": 96,
+      "line": 99,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1012,7 +1012,7 @@
       "request_schema": null,
       "response_schema": "Page[Invitation]",
       "success_status": 200,
-      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
+      "source_sha256": "5791aaf461b67dfebc06cfc082841028752bdf489fc212ee229295f908ba03b1",
       "encoding": "application/json",
       "headers": []
     },
@@ -1022,7 +1022,7 @@
       "category": "canonical",
       "operation": "MembershipController.invitation_create",
       "source": "backend/src/koinon/api/controllers/memberships.py",
-      "line": 115,
+      "line": 118,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1044,7 +1044,7 @@
       "request_schema": "InvitationInput",
       "response_schema": "InvitationCreated",
       "success_status": 201,
-      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
+      "source_sha256": "5791aaf461b67dfebc06cfc082841028752bdf489fc212ee229295f908ba03b1",
       "encoding": "application/json",
       "headers": []
     },
@@ -1054,7 +1054,7 @@
       "category": "canonical",
       "operation": "MembershipController.invitation_revoke",
       "source": "backend/src/koinon/api/controllers/memberships.py",
-      "line": 129,
+      "line": 132,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1076,7 +1076,7 @@
       "request_schema": null,
       "response_schema": "void",
       "success_status": 204,
-      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
+      "source_sha256": "5791aaf461b67dfebc06cfc082841028752bdf489fc212ee229295f908ba03b1",
       "encoding": "application/json",
       "headers": []
     },
@@ -1086,7 +1086,7 @@
       "category": "canonical",
       "operation": "MembershipController.invitation_inspect",
       "source": "backend/src/koinon/api/controllers/memberships.py",
-      "line": 135,
+      "line": 138,
       "parameters": [
         {
           "name": "body",
@@ -1102,7 +1102,7 @@
       "request_schema": "InvitationToken",
       "response_schema": "InvitationPreview",
       "success_status": 200,
-      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
+      "source_sha256": "5791aaf461b67dfebc06cfc082841028752bdf489fc212ee229295f908ba03b1",
       "encoding": "application/json",
       "headers": []
     },
@@ -1112,7 +1112,7 @@
       "category": "canonical",
       "operation": "MembershipController.invitation_redeem",
       "source": "backend/src/koinon/api/controllers/memberships.py",
-      "line": 142,
+      "line": 145,
       "parameters": [
         {
           "name": "body",
@@ -1128,7 +1128,7 @@
       "request_schema": "InvitationToken",
       "response_schema": "Membership",
       "success_status": 201,
-      "source_sha256": "a3d3946b5bff51f9194748f3821d87328cf43de9172411d9940614d03b090257",
+      "source_sha256": "5791aaf461b67dfebc06cfc082841028752bdf489fc212ee229295f908ba03b1",
       "encoding": "application/json",
       "headers": []
     },
@@ -2998,6 +2998,162 @@
       "response_schema": "IdentityProvider",
       "success_status": 200,
       "source_sha256": "c3eaab84fe6c9467048940e6ef92eda9eb555497062fa112e8eaf4ca3a8f5535",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/organization/people/me/presentation",
+      "category": "canonical",
+      "operation": "CorporateProfilesController.presentation",
+      "source": "backend/src/koinon/corporate_profiles/controllers.py",
+      "line": 39,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "OrganizationPresentation",
+      "sdk_python": "organization_presentation",
+      "sdk_typescript": "corporateProfiles.presentation",
+      "sdk_java": "client.corporateProfiles.presentation",
+      "request_schema": null,
+      "response_schema": "OrganizationPresentation",
+      "success_status": 200,
+      "source_sha256": "c6bef27c79805706a27f7660ea7d34d3a82fc54be62486b9a60fa5fab1a5989b",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/tenants/{tenant_id}/organization/people/me/presentation",
+      "category": "canonical",
+      "operation": "CorporateProfilesController.update_presentation",
+      "source": "backend/src/koinon/corporate_profiles/controllers.py",
+      "line": 52,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[OrganizationPresentationInput]]",
+          "location": "body",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "OrganizationPresentation",
+      "sdk_python": "update_organization_presentation",
+      "sdk_typescript": "corporateProfiles.updatePresentation",
+      "sdk_java": "client.corporateProfiles.updatePresentation",
+      "request_schema": "OrganizationPresentationInput",
+      "response_schema": "OrganizationPresentation",
+      "success_status": 200,
+      "source_sha256": "c6bef27c79805706a27f7660ea7d34d3a82fc54be62486b9a60fa5fab1a5989b",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/organization/people/me/profile-refresh",
+      "category": "canonical",
+      "operation": "CorporateProfilesController.refresh_self",
+      "source": "backend/src/koinon/corporate_profiles/controllers.py",
+      "line": 70,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[CorporateProfileRefreshInput]]",
+          "location": "body",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "CorporateProfileRefresh",
+      "sdk_python": "refresh_organization_profile",
+      "sdk_typescript": "corporateProfiles.refreshSelf",
+      "sdk_java": "client.corporateProfiles.refreshSelf",
+      "request_schema": "CorporateProfileRefreshInput",
+      "response_schema": "CorporateProfileRefresh",
+      "success_status": 202,
+      "source_sha256": "c6bef27c79805706a27f7660ea7d34d3a82fc54be62486b9a60fa5fab1a5989b",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/organization/people/{person_id}/profile-refresh",
+      "category": "canonical",
+      "operation": "CorporateProfilesController.refresh_person",
+      "source": "backend/src/koinon/corporate_profiles/controllers.py",
+      "line": 84,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "person_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[CorporateProfileRefreshInput]]",
+          "location": "body",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "CorporateProfileRefresh",
+      "sdk_python": "refresh_organization_person_profile",
+      "sdk_typescript": "corporateProfiles.refreshPerson",
+      "sdk_java": "client.corporateProfiles.refreshPerson",
+      "request_schema": "CorporateProfileRefreshInput",
+      "response_schema": "CorporateProfileRefresh",
+      "success_status": 202,
+      "source_sha256": "c6bef27c79805706a27f7660ea7d34d3a82fc54be62486b9a60fa5fab1a5989b",
       "encoding": "application/json",
       "headers": []
     },
@@ -6589,7 +6745,7 @@
       "request_schema": null,
       "response_schema": "OrganizationPerson",
       "success_status": 200,
-      "source_sha256": "63e3d605010c264e0f5f66e76b851b1e5150f77f4b2064a285343ee3e650274f",
+      "source_sha256": "150f5e13f65b285e533a7da858a36cc3c0d15e75155835c89cf0d640af08f67c",
       "encoding": "application/json",
       "headers": []
     },
@@ -6678,7 +6834,7 @@
       "request_schema": null,
       "response_schema": "OrganizationPersonPage",
       "success_status": 200,
-      "source_sha256": "63e3d605010c264e0f5f66e76b851b1e5150f77f4b2064a285343ee3e650274f",
+      "source_sha256": "150f5e13f65b285e533a7da858a36cc3c0d15e75155835c89cf0d640af08f67c",
       "encoding": "application/json",
       "headers": []
     },
@@ -6710,7 +6866,7 @@
       "request_schema": "OrganizationPersonCreate",
       "response_schema": "OrganizationPerson",
       "success_status": 201,
-      "source_sha256": "63e3d605010c264e0f5f66e76b851b1e5150f77f4b2064a285343ee3e650274f",
+      "source_sha256": "150f5e13f65b285e533a7da858a36cc3c0d15e75155835c89cf0d640af08f67c",
       "encoding": "application/json",
       "headers": []
     },
@@ -6749,7 +6905,7 @@
       "request_schema": null,
       "response_schema": "OrganizationPerson",
       "success_status": 200,
-      "source_sha256": "63e3d605010c264e0f5f66e76b851b1e5150f77f4b2064a285343ee3e650274f",
+      "source_sha256": "150f5e13f65b285e533a7da858a36cc3c0d15e75155835c89cf0d640af08f67c",
       "encoding": "application/json",
       "headers": []
     },
@@ -6759,7 +6915,7 @@
       "category": "canonical",
       "operation": "OrganizationPeopleController.update",
       "source": "backend/src/koinon/organization_people/controllers.py",
-      "line": 123,
+      "line": 124,
       "parameters": [
         {
           "name": "tenant_id",
@@ -6787,7 +6943,7 @@
       "request_schema": "OrganizationPersonPatch",
       "response_schema": "OrganizationPerson",
       "success_status": 200,
-      "source_sha256": "63e3d605010c264e0f5f66e76b851b1e5150f77f4b2064a285343ee3e650274f",
+      "source_sha256": "150f5e13f65b285e533a7da858a36cc3c0d15e75155835c89cf0d640af08f67c",
       "encoding": "application/json",
       "headers": []
     },
@@ -6797,7 +6953,7 @@
       "category": "canonical",
       "operation": "OrganizationPeopleController.avatar",
       "source": "backend/src/koinon/organization_people/controllers.py",
-      "line": 138,
+      "line": 139,
       "parameters": [
         {
           "name": "tenant_id",
@@ -6826,7 +6982,7 @@
       "request_schema": null,
       "response_schema": "BinaryDownload",
       "success_status": 200,
-      "source_sha256": "63e3d605010c264e0f5f66e76b851b1e5150f77f4b2064a285343ee3e650274f",
+      "source_sha256": "150f5e13f65b285e533a7da858a36cc3c0d15e75155835c89cf0d640af08f67c",
       "encoding": "binary",
       "headers": [
         "If-None-Match (optional; avatars only)"
@@ -6838,7 +6994,7 @@
       "category": "canonical",
       "operation": "OrganizationPeopleController.reports",
       "source": "backend/src/koinon/organization_people/controllers.py",
-      "line": 154,
+      "line": 155,
       "parameters": [
         {
           "name": "tenant_id",
@@ -6881,7 +7037,7 @@
       "request_schema": null,
       "response_schema": "OrganizationPersonPage",
       "success_status": 200,
-      "source_sha256": "63e3d605010c264e0f5f66e76b851b1e5150f77f4b2064a285343ee3e650274f",
+      "source_sha256": "150f5e13f65b285e533a7da858a36cc3c0d15e75155835c89cf0d640af08f67c",
       "encoding": "application/json",
       "headers": []
     },
@@ -6891,7 +7047,7 @@
       "category": "canonical",
       "operation": "OrganizationPeopleController.units",
       "source": "backend/src/koinon/organization_people/controllers.py",
-      "line": 176,
+      "line": 177,
       "parameters": [
         {
           "name": "tenant_id",
@@ -6942,7 +7098,7 @@
       "request_schema": null,
       "response_schema": "OrganizationUnitPage",
       "success_status": 200,
-      "source_sha256": "63e3d605010c264e0f5f66e76b851b1e5150f77f4b2064a285343ee3e650274f",
+      "source_sha256": "150f5e13f65b285e533a7da858a36cc3c0d15e75155835c89cf0d640af08f67c",
       "encoding": "application/json",
       "headers": []
     },
@@ -6952,7 +7108,7 @@
       "category": "canonical",
       "operation": "OrganizationPeopleController.create_unit",
       "source": "backend/src/koinon/organization_people/controllers.py",
-      "line": 197,
+      "line": 198,
       "parameters": [
         {
           "name": "tenant_id",
@@ -6974,7 +7130,7 @@
       "request_schema": "OrganizationUnitInput",
       "response_schema": "OrganizationUnit",
       "success_status": 201,
-      "source_sha256": "63e3d605010c264e0f5f66e76b851b1e5150f77f4b2064a285343ee3e650274f",
+      "source_sha256": "150f5e13f65b285e533a7da858a36cc3c0d15e75155835c89cf0d640af08f67c",
       "encoding": "application/json",
       "headers": []
     },
@@ -6984,7 +7140,7 @@
       "category": "canonical",
       "operation": "OrganizationPeopleController.update_unit",
       "source": "backend/src/koinon/organization_people/controllers.py",
-      "line": 205,
+      "line": 206,
       "parameters": [
         {
           "name": "tenant_id",
@@ -7012,7 +7168,7 @@
       "request_schema": "OrganizationUnitPatch",
       "response_schema": "OrganizationUnit",
       "success_status": 200,
-      "source_sha256": "63e3d605010c264e0f5f66e76b851b1e5150f77f4b2064a285343ee3e650274f",
+      "source_sha256": "150f5e13f65b285e533a7da858a36cc3c0d15e75155835c89cf0d640af08f67c",
       "encoding": "application/json",
       "headers": []
     },
@@ -7022,7 +7178,7 @@
       "category": "canonical",
       "operation": "OrganizationPeopleController.delete_unit",
       "source": "backend/src/koinon/organization_people/controllers.py",
-      "line": 217,
+      "line": 218,
       "parameters": [
         {
           "name": "tenant_id",
@@ -7050,7 +7206,7 @@
       "request_schema": null,
       "response_schema": "void",
       "success_status": 204,
-      "source_sha256": "63e3d605010c264e0f5f66e76b851b1e5150f77f4b2064a285343ee3e650274f",
+      "source_sha256": "150f5e13f65b285e533a7da858a36cc3c0d15e75155835c89cf0d640af08f67c",
       "encoding": "application/json",
       "headers": []
     },
@@ -7060,7 +7216,7 @@
       "category": "canonical",
       "operation": "OrganizationPeopleController.settings",
       "source": "backend/src/koinon/organization_people/controllers.py",
-      "line": 232,
+      "line": 233,
       "parameters": [
         {
           "name": "tenant_id",
@@ -7076,7 +7232,7 @@
       "request_schema": null,
       "response_schema": "OrganizationDirectorySettings",
       "success_status": 200,
-      "source_sha256": "63e3d605010c264e0f5f66e76b851b1e5150f77f4b2064a285343ee3e650274f",
+      "source_sha256": "150f5e13f65b285e533a7da858a36cc3c0d15e75155835c89cf0d640af08f67c",
       "encoding": "application/json",
       "headers": []
     },
@@ -7086,7 +7242,7 @@
       "category": "canonical",
       "operation": "OrganizationPeopleController.update_settings",
       "source": "backend/src/koinon/organization_people/controllers.py",
-      "line": 236,
+      "line": 237,
       "parameters": [
         {
           "name": "tenant_id",
@@ -7108,7 +7264,7 @@
       "request_schema": "OrganizationDirectorySettingsInput",
       "response_schema": "OrganizationDirectorySettings",
       "success_status": 200,
-      "source_sha256": "63e3d605010c264e0f5f66e76b851b1e5150f77f4b2064a285343ee3e650274f",
+      "source_sha256": "150f5e13f65b285e533a7da858a36cc3c0d15e75155835c89cf0d640af08f67c",
       "encoding": "application/json",
       "headers": []
     },
@@ -7118,7 +7274,7 @@
       "category": "canonical",
       "operation": "OrganizationPeopleController.mapping",
       "source": "backend/src/koinon/organization_people/controllers.py",
-      "line": 244,
+      "line": 245,
       "parameters": [
         {
           "name": "tenant_id",
@@ -7140,7 +7296,7 @@
       "request_schema": null,
       "response_schema": "OrganizationProfileMapping",
       "success_status": 200,
-      "source_sha256": "63e3d605010c264e0f5f66e76b851b1e5150f77f4b2064a285343ee3e650274f",
+      "source_sha256": "150f5e13f65b285e533a7da858a36cc3c0d15e75155835c89cf0d640af08f67c",
       "encoding": "application/json",
       "headers": []
     },
@@ -7150,7 +7306,7 @@
       "category": "canonical",
       "operation": "OrganizationPeopleController.update_mapping",
       "source": "backend/src/koinon/organization_people/controllers.py",
-      "line": 250,
+      "line": 251,
       "parameters": [
         {
           "name": "tenant_id",
@@ -7178,7 +7334,7 @@
       "request_schema": "OrganizationProfileMappingInput",
       "response_schema": "OrganizationProfileMapping",
       "success_status": 200,
-      "source_sha256": "63e3d605010c264e0f5f66e76b851b1e5150f77f4b2064a285343ee3e650274f",
+      "source_sha256": "150f5e13f65b285e533a7da858a36cc3c0d15e75155835c89cf0d640af08f67c",
       "encoding": "application/json",
       "headers": []
     },

@@ -53,10 +53,13 @@ class MembershipController:
             page=page,
             page_size=page_size,
         )
-        actors = {
-            subject: await self.profiles.author_summary(subject)
-            for subject in dict.fromkeys(row.subject for row in result["items"])
-        }
+        actors = await self.profiles.author_summaries(
+            {row.subject for row in result["items"]},
+            actor=identity_from_request(request).subject,
+            tenant_id=tenant_id,
+            permission="members:write",
+            workspace_id=workspace_id,
+        )
         return {**result, "items": [member_dto(member) for member in result["items"]], "actors": actors}
 
     @post_mapping("/tenants/{tenant_id}/members", status_code=201)

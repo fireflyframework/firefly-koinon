@@ -37,7 +37,7 @@ def kind(schema):
 
 def render():
     classes=[]
-    for name in ('organization_people','document_history','mcp_applications','mcp','external_reviews','external_file_reviews','organization_branding','organization_knowledge','organization_chat','authorized_applications','indexes','identity','attachments','evidence','exports','sharing','proposals','glossary','answer_audit','provenance','coordinates','curated','dataset_files'):
+    for name in ('corporate_profiles','organization_people','document_history','mcp_applications','mcp','external_reviews','external_file_reviews','organization_branding','organization_knowledge','organization_chat','authorized_applications','indexes','identity','attachments','evidence','exports','sharing','proposals','glossary','answer_audit','provenance','coordinates','curated','dataset_files'):
         module=importlib.import_module('koinon_sdk.'+name)
         classes.extend(value for value in vars(module).values() if inspect.isclass(value) and issubclass(value,BaseModel) and value.__module__==module.__name__)
     from koinon_sdk.models import AttachmentHistorySummary
@@ -50,6 +50,9 @@ def render():
             lines.append('export type '+name+' = '+kind(schema)+';')
             continue
         required=set(schema.get('required',[]))
+        if not properties and schema.get('additionalProperties') is False:
+            lines.append('export type '+name+' = Record<string,never>;')
+            continue
         lines.append('export interface '+name+' {')
         for field,value in properties.items():
             lines.append(' '+json.dumps(field)+('' if field in required else '?')+': '+kind(value)+';')

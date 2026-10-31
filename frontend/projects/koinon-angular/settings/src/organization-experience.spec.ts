@@ -240,3 +240,35 @@ it('keeps filter disclosure and draft changes separate from explicit server filt
   expect(toggle.getAttribute('aria-expanded')).toBe('false');
   expect(calls).toHaveLength(2);
 });
+it('opens Directory settings as a focused subview and restores the existing People page', async () => {
+  const { f, calls } = setup([
+    { id: 'p1', profile_id: 'profile1', display_name: 'Alex', revision: 1 },
+  ]);
+  f.context.update((value) => ({
+    ...value!,
+    tenants: [{ id: 'north', name: 'North', roles: ['admin'], permissions: ['members:write'] }],
+  }));
+  const fixture = TestBed.createComponent(KoinonOrganizationPeople);
+  fixture.detectChanges();
+  await fixture.whenStable();
+  fixture.detectChanges();
+  const reads = calls.filter((call) => call.path.endsWith('/organization/people')).length;
+  const settings = Array.from(
+    fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>,
+  ).find((button) => button.textContent?.trim() === 'Directory settings');
+  settings!.click();
+  fixture.detectChanges();
+  await fixture.whenStable();
+  fixture.detectChanges();
+  expect(fixture.nativeElement.querySelector('.people-table')).toBeNull();
+  expect(fixture.nativeElement.querySelector('#organization-people-filters')).toBeNull();
+  const back = Array.from(
+    fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>,
+  ).find((button) => button.textContent?.trim() === 'Back to people');
+  expect(back).toBeDefined();
+  back!.click();
+  fixture.detectChanges();
+  await fixture.whenStable();
+  expect(fixture.nativeElement.querySelector('.people-table')).not.toBeNull();
+  expect(calls.filter((call) => call.path.endsWith('/organization/people')).length).toBe(reads);
+});

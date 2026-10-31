@@ -26,7 +26,8 @@ public record OrganizationPerson(
     @JsonProperty("managed_fields") List<OrganizationManagedField> managedFields,
     @JsonProperty("observed_at") Instant observedAt,
     @JsonProperty("updated_at") Instant updatedAt,
-    @JsonProperty("observation_status") OrganizationObservationStatus observationStatus
+    @JsonProperty("observation_status") OrganizationObservationStatus observationStatus,
+    @JsonProperty("presentation") CorporatePresentationSummary presentation
 ) {
     public OrganizationPerson {
         managedFields=managedFields==null?null:List.copyOf(managedFields);

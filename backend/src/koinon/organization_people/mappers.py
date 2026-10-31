@@ -35,7 +35,7 @@ def person_view(subject, row, profile, tenant_id, workspace_id, units, managers,
             department = current
             break
         current = units.get(current.parent_id)
-    manager = managers.get(row.manager_id) if row and row.manager_id else None
+    manager = managers.get(row.manager_id) if row and row.manager_id and not row.pending_manager else None
     url = None
     if profile and profile.avatar_version:
         identifier = row.id if row else profile.id

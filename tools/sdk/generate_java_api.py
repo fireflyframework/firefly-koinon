@@ -27,6 +27,10 @@ add("OrganizationChatController", "OrganizationChatApi", {"get": "get", "update"
 add("BrandingDefaultsController", "BrandingDefaultsApi", {"defaults": "defaults"})
 add("OrganizationBrandingController", "OrganizationBrandingApi", {"get": "get", "update": "update", "reset": "reset"})
 add("OrganizationKnowledgeController", "OrganizationKnowledgeApi", {"get": "get", "update": "update"})
+add("CorporateProfilesController", "CorporateProfilesApi", {
+    "presentation": "presentation", "update_presentation": "updatePresentation",
+    "refresh_self": "refreshSelf", "refresh_person": "refreshPerson",
+})
 add("OrganizationPeopleController", "OrganizationPeopleApi", {
     "self": "me", "page": "list", "create": "create", "get": "get", "update": "update",
     "avatar": "avatar", "reports": "reports", "units": "units", "create_unit": "createUnit",
@@ -194,6 +198,10 @@ def upper(s):
 
 
 filters = {
+    "CorporateProfilesController.presentation": "OrganizationScopeFilter",
+    "CorporateProfilesController.update_presentation": "OrganizationScopeFilter",
+    "CorporateProfilesController.refresh_self": "OrganizationScopeFilter",
+    "CorporateProfilesController.refresh_person": "OrganizationScopeFilter",
     "OrganizationPeopleController.self": "OrganizationScopeFilter",
     "OrganizationPeopleController.get": "OrganizationScopeFilter",
     "OrganizationPeopleController.avatar": "OrganizationScopeFilter",

@@ -3,7 +3,7 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/organization_people/dtos.py
-SHA256: 1958dd6b83316836d28f3fcaa57b92e46296fb29b4d3eaa6576ea08150aa3f52
+SHA256: e8755a7e85300eaf639405042cb1c14c5daadff0f376c6e6f80afcc9f08bc9cd
 
 Server authorization and semantic validation remain authoritative.
 """
@@ -14,6 +14,11 @@ from typing import Literal
 from pydantic import ConfigDict, Field
 
 from koinon_sdk._base import InputModel, ResponseModel
+from koinon_sdk.corporate_profiles import (
+    CorporatePresentationSummary,
+    CorporateProfileFieldCapability,
+    CorporateProfileSyncPolicy,
+)
 
 UnitKind = Literal["division", "department", "team"]
 Visibility = Literal["administrators", "shared_workspaces"]
@@ -58,6 +63,7 @@ class OrganizationPerson(Output):
     observed_at: datetime | None = None
     updated_at: datetime | None = None
     observation_status: Literal["not_observed", "current", "unavailable"] = "not_observed"
+    presentation: CorporatePresentationSummary | None = None
 
 
 class OrganizationPersonCreate(Input):
@@ -138,6 +144,7 @@ class OrganizationProfileMappingInput(Input):
     expected_revision: int = Field(ge=0, le=2147483646)
     enabled: bool
     fields: OrganizationProfileFields
+    profile_sync: CorporateProfileSyncPolicy | None = None
 
 
 class OrganizationProfileMapping(Output):
@@ -147,3 +154,7 @@ class OrganizationProfileMapping(Output):
     enabled: bool = False
     fields: OrganizationProfileFields = Field(default_factory=OrganizationProfileFields)
     source: Literal["verified_claims"] = "verified_claims"
+    profile_sync: CorporateProfileSyncPolicy | None = None
+    profile_capabilities: list[CorporateProfileFieldCapability] = Field(
+        default_factory=list[CorporateProfileFieldCapability], max_length=5
+    )

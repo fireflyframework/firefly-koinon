@@ -228,6 +228,49 @@ export class OrganizationDirectoryOperations {
       () => this.state.notice.set('Organization unit removed.'),
     );
   }
+  refreshPerson(person: OrganizationPerson) {
+    if (
+      !person.id ||
+      person.presentation?.status === 'conflict' ||
+      this.state.selected()?.id !== person.id ||
+      !this.state.f.tenantPermissions().has('members:write') ||
+      !this.state.f.tenantPermissions().has('identity:manage') ||
+      this.state.pending()
+    )
+      return Promise.resolve(false);
+    return this.state.run(
+      'write',
+      (signal) =>
+        this.state.clients
+          .get()
+          .corporateProfiles.refreshPerson(
+            this.state.f.tenantId(),
+            person.id!,
+            {},
+            this.state.scope(),
+            { signal },
+          ),
+      (value) => {
+        if (this.state.selected()?.id !== person.id || value.tenant_id !== this.state.f.tenantId())
+          return;
+        const selected = this.state.selected();
+        if (selected?.presentation)
+          this.state.selected.set({
+            ...selected,
+            presentation: {
+              ...selected.presentation,
+              status: value.status,
+              last_synced_at: value.last_synced_at ?? selected.presentation.last_synced_at,
+            },
+          });
+        this.state.notice.set(
+          value.status === 'queued' || value.status === 'running'
+            ? 'Profile refresh queued. Check the status shortly.'
+            : 'Profile refresh status updated.',
+        );
+      },
+    );
+  }
   loadSettings() {
     return this.state.run(
       'settings',

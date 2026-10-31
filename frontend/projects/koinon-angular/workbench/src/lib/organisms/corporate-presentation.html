@@ -1,0 +1,140 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<section aria-labelledby="corporate-presentation-heading">
+  <h3 id="corporate-presentation-heading">{{ 'Organization presentation' | ffkText }}</h3>
+  <p>
+    {{
+      'This is how your name and photo appear in this organization. Your saved personal profile is kept separately.'
+        | ffkText
+    }}
+  </p>
+  @if (state(); as s) {
+    @if (s.directory.error()) {
+      <p role="alert">{{ s.directory.error() | ffkText }}</p>
+    }
+    @if (s.loading()) {
+      <p role="status">{{ 'Loading organization presentation…' | ffkText }}</p>
+    }
+    @if (s.presentation(); as value) {
+      <div class="effective-profile">
+        <div class="avatar" aria-hidden="true">
+          @if (avatar()) {
+            <img [src]="avatar()" alt="" />
+          } @else {
+            <span>{{ (value.display_name || '?').slice(0, 1).toUpperCase() }}</span>
+          }
+        </div>
+        <div>
+          <strong>{{ value.display_name || ('Name unavailable' | ffkText) }}</strong>
+          <p>{{ value.provider_name || ('Personal profile' | ffkText) }}</p>
+        </div>
+      </div>
+      <p role="status">{{ status(value.status) | ffkText }}</p>
+      <dl>
+        <div>
+          <dt>{{ 'Name source' | ffkText }}</dt>
+          <dd>
+            {{
+              (value.name_source === 'organization' ? 'Corporate directory' : 'Personal profile')
+                | ffkText
+            }}
+          </dd>
+        </div>
+        <div>
+          <dt>{{ 'Photo source' | ffkText }}</dt>
+          <dd>
+            {{
+              (value.avatar_source === 'organization' ? 'Corporate directory' : 'Personal profile')
+                | ffkText
+            }}
+          </dd>
+        </div>
+        @if (value.last_synced_at) {
+          <div>
+            <dt>{{ 'Last synced' | ffkText }}</dt>
+            <dd>{{ value.last_synced_at | ffkDate }}</dd>
+          </div>
+        }
+      </dl>
+      @if (value.status !== 'not_configured') {
+        <form (ngSubmit)="save()">
+          @if (value.allow_personal_overrides) {
+            <div class="preferences">
+              <label
+                >{{ 'Name to use' | ffkText
+                }}<select
+                  name="organization-name-mode"
+                  [(ngModel)]="nameMode"
+                  [disabled]="s.pending() || s.loading()"
+                >
+                  <option value="organization">{{ 'Organization name' | ffkText }}</option>
+                  <option value="personal">{{ 'Personal name' | ffkText }}</option>
+                </select></label
+              ><label
+                >{{ 'Photo to use' | ffkText
+                }}<select
+                  name="organization-avatar-mode"
+                  [(ngModel)]="avatarMode"
+                  [disabled]="s.pending() || s.loading()"
+                >
+                  <option value="organization">{{ 'Organization photo' | ffkText }}</option>
+                  <option value="personal">{{ 'Personal photo' | ffkText }}</option>
+                </select></label
+              >
+            </div>
+            <ffk-button type="submit" [disabled]="s.loading()" [loading]="s.pending()">{{
+              'Save presentation' | ffkText
+            }}</ffk-button>
+          } @else {
+            <p>{{ 'Your organization requires its corporate name and photo.' | ffkText }}</p>
+          }
+        </form>
+      }
+      @if (value.fields?.length) {
+        <details>
+          <summary>{{ 'Profile source details' | ffkText }}</summary>
+          <dl class="field-observations">
+            @for (field of value.fields; track field.field) {
+              <div>
+                <dt>{{ fieldLabel(field.field) | ffkText }}</dt>
+                <dd>
+                  {{ fieldStatus(field.status) | ffkText
+                  }}<span class="field-source">{{ fieldSource(field.source) | ffkText }}</span>
+                  @if (field.code) {
+                    <span class="field-source">{{ fieldReason(field.code) | ffkText }}</span>
+                  }
+                  @if (field.observed_at) {
+                    <time>{{ field.observed_at | ffkDate }}</time>
+                  }
+                </dd>
+              </div>
+            }
+          </dl>
+        </details>
+      }
+    }
+    <div class="actions">
+      <ffk-button
+        variant="quiet"
+        icon="refresh"
+        [disabled]="s.loading() || s.pending()"
+        (click)="reload()"
+        >{{ 'Refresh status' | ffkText }}</ffk-button
+      >
+      @if (s.presentation() && canRefresh()) {
+        <ffk-button
+          variant="quiet"
+          [disabled]="s.loading()"
+          [loading]="s.pending()"
+          (click)="s.refresh()"
+          >{{ 'Sync now' | ffkText }}</ffk-button
+        >
+      }
+    </div>
+    @if (s.notice()) {
+      <p role="status">{{ s.notice() | ffkText }}</p>
+    }
+  } @else {
+    <p>{{ 'Corporate profile sync is not configured.' | ffkText }}</p>
+    <ffk-button variant="quiet" (click)="reload()">{{ 'Refresh status' | ffkText }}</ffk-button>
+  }
+</section>
