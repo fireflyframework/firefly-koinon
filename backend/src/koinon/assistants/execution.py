@@ -39,6 +39,9 @@ from koinon.assistants.private_citations import PrivateCitationLabels
 from koinon.assistants.queue import AssistantQueue
 from koinon.assistants.service import AssistantService
 from koinon.assistants.tool_activity import tracked_tool
+from koinon.assistants.tool_offering import AssistantToolAvailability
+from koinon.assistants.tool_offering_dtos import ToolOffering
+from koinon.assistants.tool_offering_mappers import private_offering, source_context
 from koinon.catalog.errors import AccessDenied
 from koinon.knowledge.attachments.ports import AttachmentRef
 from koinon.knowledge.capture_dtos import CapturedEvidence
@@ -60,9 +63,15 @@ _NATIVE_POLICY_REFUSALS = frozenset(
 @service(name="assistants.executor")
 class AssistantExecutor:
     def __init__(
-        self, assistants: AssistantService, queue: AssistantQueue, container: Container, models: ModelFactory
+        self,
+        assistants: AssistantService,
+        queue: AssistantQueue,
+        container: Container,
+        models: ModelFactory,
+        tool_availability: AssistantToolAvailability,
     ):
         self.assistants, self.queue, self.container, self.models = assistants, queue, container, models
+        self.tool_availability = tool_availability
         self.prompt = PromptLoader.from_file(Path(__file__).parent / "prompts" / "knowledge-guide.yaml")
 
     async def authority(self, run_id: str, worker_id: str):
@@ -117,7 +126,19 @@ class AssistantExecutor:
         grounded: set[str] | None = None,
         attachment_refs: tuple[AttachmentRef, ...] = (),
         private_search_enabled: bool = True,
+        offering: ToolOffering | None = None,
     ):
+        if attachment_refs:
+            offering = private_offering(attachment_refs, search_enabled=private_search_enabled)
+        else:
+            run, thread, _, _ = await self.authority(run_id, worker_id)
+            if offering is None:
+                offering = await self.tool_availability.resolve(
+                    thread.subject, run.tenant_id, run.scope, enabled
+                )
+            assert offering is not None
+            offered_names = offering.tools
+            enabled = [name for name in enabled if name in offered_names]
         remaining = getattr(self.assistants.settings, "tool_result_tokens", 4096)
         native_capture_lock = asyncio.Lock()
 
@@ -373,7 +394,7 @@ class AssistantExecutor:
             "propose_catalog_update": propose_catalog_update,
         }
         selected = [] if attachment_refs else [available[name] for name in enabled if name in available]
-        if private_search_enabled and any(ref.kind != "image" for ref in attachment_refs):
+        if offering is not None and "search_private_attachments" in offering.tools:
             selected.append(search_private_attachments)
         return selected
 
@@ -534,8 +555,19 @@ class AssistantExecutor:
                 ),
             ):
                 user_message = await self.assistants.message_repository.find_by_id(run.user_message_id)
+                private_search_enabled = not capability or capability["tools"]["supported"] is not False
+                offering = (
+                    private_offering(refs, search_enabled=private_search_enabled)
+                    if refs
+                    else await self.tool_availability.resolve(
+                        thread.subject, run.tenant_id, run.scope, agent_config.tools
+                    )
+                )
                 prompt = self.prompt.render(
-                    instructions=agent_config.instructions, question=user_message.text, **preferences
+                    instructions=agent_config.instructions,
+                    question=user_message.text,
+                    source_context=source_context(offering),
+                    **preferences,
                 )
                 factory = self.container.resolve(AgentFactory)
                 tools = await self.tools(
@@ -545,7 +577,8 @@ class AssistantExecutor:
                     observed_tools,
                     grounded_results,
                     attachment_refs=refs,
-                    private_search_enabled=not capability or capability["tools"]["supported"] is not False,
+                    offering=offering,
+                    private_search_enabled=private_search_enabled,
                 )
                 budget = history_budget(
                     self.assistants.settings,
