@@ -1,6 +1,6 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
-import type { FolderPatch, MemoryReceipt, OrganizationChatSettingsInput } from '../dist/index.js';
+import type { FolderPatch, MemoryReceipt, OrganizationChatSettingsInput } from '../src/index.js';
 
 const folder: FolderPatch = { expected_revision: 1, memory_enabled: false };
 const organization: OrganizationChatSettingsInput = { expected_revision: 1, default_agent_id: null, memory: { allow_project_memory: false } };
