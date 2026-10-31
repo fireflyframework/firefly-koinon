@@ -229,5 +229,18 @@ async def test_private_context_never_exposes_shared_persisting_domain_tools():
     enabled = ["search_knowledge", "query_dataset", "inspect_schema"]
     private = await executor.tools("run", "worker", enabled, attachment_refs=(ref(),))
     assert [tool.name for tool in private] == ["search_private_attachments"]
+    from koinon.assistants.tool_offering import AssistantToolAvailability
+
+    executor.authority = AsyncMock(
+        return_value=(
+            SimpleNamespace(tenant_id="north", scope={}),
+            SimpleNamespace(subject="issuer|reader"),
+            None,
+            None,
+        )
+    )
+    executor.tool_availability = AssistantToolAvailability(
+        SimpleNamespace(authorize=AsyncMock()), SimpleNamespace(validate_scope=AsyncMock(return_value={}))
+    )
     ordinary = await executor.tools("run", "worker", enabled)
     assert [tool.name for tool in ordinary] == enabled
