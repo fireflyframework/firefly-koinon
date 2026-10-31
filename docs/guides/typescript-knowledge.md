@@ -4,7 +4,31 @@
 
 Start with the [framework-neutral TypeScript client](headless-typescript.md). An ingestion integration needs `ingest:write`, its catalog dependencies and current write authority in the destination. A workspace-bound token can create admitted resources there; an asset-bound token does not admit arbitrary new destinations. See [API permissions](api-permissions.md).
 
+## Follow one asset through its lifecycle
+
+This chapter starts with an existing workspace, creates a destination, uploads one source, and then reads its processing and historical identities. Use a small authorized document first. Repeat the intake decision for a real XLSX or another supported structured file only after you understand the returned receipt. The SDK does not turn arbitrary spreadsheet bytes into an admitted dataset by changing a filename.
+
+You need `catalog:read` for browsing, `ingest:write` and its required catalog scopes for intake, `knowledge:search` for retrieval, and `query:execute` for SQL. Those scopes still intersect with current resource permissions. Use a workspace-bound integration for creating new assets. A token bounded to an existing asset is suitable for that asset's admitted operations, not for creating arbitrary siblings.
+
+[The complete knowledge source](../examples/typescript/README.md) includes this chapter's helpers, reviewed replacement and append functions, and a read-only history entry point. Set `KOINON_DOCUMENT_ID` to a document selected from the authorized catalog before running that entry point. It prints source-version IDs and SHA256 values; it does not upload or replace anything automatically.
+
+## Run the read-only chapter
+
+Download `support.mts`, the selected chapter module and `tsconfig.json` together, then use the Node package from setup. [Complete source and build instructions](../examples/typescript/README.md) include [the entry-point file](../examples/typescript/knowledge.mts). This history command additionally needs an authorized `KOINON_DOCUMENT_ID` selected from the catalog. Keep credentials in the approved environment rather than adding them to these commands.
+
+```sh
+npx tsc -p tsconfig.json
+node dist/knowledge.mjs
+```
+
+The result prints source-version IDs and SHA256 values from the first bounded page. No rows can mean no recorded versions in the authorized scope; preserve missing history instead of inventing a revision. If authorization fails, return to the setup chapter and inspect current context/scopes instead of broadening the request. The remaining helpers define the intended mutations, but this command does not invoke them.
+
 ## Create a destination and upload
+
+First choose whether the caller is creating a new destination or reusing an existing one. The example creates a project and collection so the returned parent IDs are concrete. Record both IDs immediately; a later upload failure does not roll those writes back. In a repeatable integration, create the destination once, persist it, and reuse it rather than creating a new project for every file.
+
+The upload's workspace, project, and parent identify the admitted destination. The filename is display metadata; the bytes are the source. Inspect the returned `source.id`, each `assets` entry, and optional `job_id`. Save that receipt before starting another file. If processing is asynchronous, inspect the identified job and resulting asset status before searching or querying the new content. An accepted request is not a completed extraction.
+
 
 The helper performs writes only when called. Supply a caller-selected `File` and an existing authorized workspace. The 32 MiB bound is this application's limit; the server also enforces supported formats, limits and extractors.
 
@@ -34,6 +58,35 @@ Use `mode: 'dataset'` for admitted structured formats. The transport builds mult
 For a bounded multi-file import, select/create the destination once and call `sources.uploadFile` sequentially with the same authorized project/collection IDs. Persist each receipt before advancing and bound the application's file count and per-file bytes. Stop and reconcile an ambiguous file outcome. The loop does not provide an atomic batch, background recovery or an automatic replay of the list.
 
 `catalog.update` changes names, descriptions and metadata. `archive`/`restore` are explicit reversible requests. `catalog.delete` is a separate destructive operation with current ancestry/dependency checks, not a curated-item deletion API. `dataset.appendFile` adds one file to an existing dataset with an explicit stable idempotency key. Preserve the key, exact payload and receipt. Pending or failed intake needs reconciliation; a client loop is neither an atomic batch nor a durable recovery process.
+
+## Import an XLSX as a dataset
+
+Select `dataset` intake for a supported workbook. Keep the original filename and bytes, and choose the same authorized destination deliberately. Set `mode: 'dataset'` in `sources.uploadFile`, as in the complete helper below. The destination IDs have the same meaning as the document example.
+
+The helper reuses the existing destination. A host can construct a `File` from caller-selected bytes; do not treat an extension as proof of the file's format.
+
+```typescript
+import {KoinonClient, type UploadResponse} from '@fireflyframework/koinon-sdk';
+
+export async function ingestDataset(
+  client: KoinonClient, tenant: string, workspace: string,
+  projectId: string, collectionId: string, file: File,
+): Promise<UploadResponse> {
+  if (!file.size || file.size > 32 * 1024 * 1024) {
+    throw new Error('Choose a nonempty file up to 32 MiB');
+  }
+  return client.sources.uploadFile(tenant, {
+    file, filename: file.name, workspace_id: workspace,
+    project_id: projectId, parent_id: collectionId, mode: 'dataset',
+  });
+}
+```
+
+After processing, call `dataset.schema` with the **returned dataset asset ID**. Inspect the returned tables and columns before writing SQL. A workbook can produce multiple tables; the source catalog ID, dataset asset ID, table ID, catalog file-version ID, and immutable table snapshot ID serve different purposes. Do not assume the upload source is itself the SQL dataset or manufacture table IDs from sheet labels.
+
+Append another supported file with `dataset.appendFile` only after the person has selected the existing dataset and the exact file. Generate and durably retain one idempotency key for that intended append before sending it. Keep that key bound to the same bytes and destination. Save the returned file-version and table IDs. A pending or unknown result needs reconciliation; changing the key does not turn it into a new safe attempt.
+
+Replacing a table requires its current snapshot precondition, while appending adds a file. Replacing a document requires its original digest and, when supplied, its matching source-version/extraction pair. These are different user decisions. Use the complete source's append and replacement helpers rather than using catalog metadata updates as a content upload.
 
 ## Search and query the admitted scope
 
@@ -85,6 +138,20 @@ export async function firstRecordedChunk(
 For tables, use `dataset.tableSnapshots` and its separate `current_snapshot_id`, then `tableProvenance` or coordinate reads with the exact selected snapshot. `file_section` coverage is not cell lineage; unknown origins remain null.
 
 `documents.replace`/`reingest` require the current unquoted `expected_sha256`. Bind `expected_source_version_id` and `expected_extraction_id` together when supplying a recorded head. Chunk invalidation acknowledgment defaults to false and must be explicit when required. Table replacement/reingestion uses `expectedSnapshotId`. The SDK quotes `If-Match`; reload and review after conflicts instead of forcing an overwrite.
+
+## Connect retrieval, SQL and lineage
+
+Start retrieval with a question and the chosen workspace; keep `answer=false` when you want matching passages without a generated answer. Check hit references and scores before asking for generation. Retrieval can still use a configured embedding service, so an error here may be a configuration/provider failure rather than an empty result. Do not remove scope filters to hide that failure.
+
+For structured data, inspect the schema, choose one actual dataset, and submit bounded read-only SQL using its real table and column names. Use a small row limit appropriate to your task. Inspect `execution_status`, truncation and immutable snapshot pins before displaying the result as complete. An authorization or SQL-firewall rejection must be corrected explicitly; the SDK does not run arbitrary SQL against the original upstream database.
+
+Call `lineage` for the selected catalog asset to read its currently authorized relationships. For document evidence, follow source version, extraction and part IDs. For table evidence, select a recorded snapshot before reading provenance or coordinates. A relationship edge explains a recorded connection; it is not proof that every cell has a known origin. Leave unavailable or unrecorded identities unknown.
+
+## Decide what to do after a content change
+
+Present the current digest/snapshot and the effects of replacement before asking for confirmation. The reviewed replacement helper takes the already reviewed identities; it does not silently read a newer revision and overwrite it. A conflict means the user must inspect the new head and make another decision. Keep invalidation acknowledgment false until the user understands the affected chunks or dependencies.
+
+After success, retain `ContentUpdate.asset`, `version`, and `effects`. Reload the current catalog and inspect its new native history before using old chunk or snapshot IDs as current. Historical IDs remain historical even when the asset name is unchanged. If a write times out, reconcile the saved operation and current state first; a missing HTTP response does not prove that no change occurred.
 
 ## Confirm curated knowledge only after review
 

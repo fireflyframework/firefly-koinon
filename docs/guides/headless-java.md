@@ -4,6 +4,29 @@
 
 Build a Java application or service against the same typed, authorized API used by the koinon interface. The SDK requires **Java 21 or later**, uses the JDK HTTP client and Jackson, and does not depend on the backend or a web framework. It provides synchronous methods, `CompletableFuture` methods, bounded file downloads and demand-driven SSE streams.
 
+## Work through the tutorial
+
+Start here when you have an API address and an account but have not written an integration yet. The first program establishes authentication, checks the available organization context, and pages through documents. It makes no changes. After it works, keep the same client configuration for [knowledge](java-knowledge.md), [conversations](java-conversations.md), and [administration](java-operations.md).
+
+Use the resource IDs from your first catalog read in the remaining chapters. Each chapter introduces the permissions, inputs and response fields needed for its operations.
+
+[Download the complete Java 21+ tutorial source and build instructions](../examples/java/README.md). The files include imports and entry points. Each chapter's default entry point reads existing state; write helpers are separate functions that your application calls after its own explicit decision. Keep all files for the selected language together.
+
+## Prepare the deployment and credential
+
+Ask your operator for an authorized API root, an organization, and a workspace you can read. Start with a credential whose scope includes `catalog:read` and whose resource bounds admit that workspace. Do not request every management scope merely to make the first request succeed.
+
+| Value | Where it comes from | How the program uses it |
+| --- | --- | --- |
+| `KOINON_API_URL` | Your deployment operator | API root ending in `/api/v1`, without a token in the URL. |
+| `KOINON_TOKEN` | A current API-audience OIDC access token or a scoped personal API token | The callback supplies it afresh for each request. |
+| `KOINON_TENANT_ID` | The organization's canonical ID in the current context | Every tenant operation uses this exact organization. |
+| `KOINON_WORKSPACE_ID` | An authorized workspace returned by the API | Catalog and knowledge filters stay inside this destination. |
+
+An OIDC access token comes from your host's approved identity flow. This tutorial does not implement that flow or ask for a refresh token. For a personal token, sign in through the ordinary account flow, review its permitted scopes and resource bounds, and save its one-time secret privately. An existing PAT cannot create another PAT. Never substitute a model-provider key, an ID token, or an MCP resource token.
+
+Set the variables through your shell's secure environment mechanism or secret manager. Avoid pasting live credentials into an example file, a terminal transcript, a URL, or a support ticket. A long-running host should renew its access token before returning it from the callback; replacing an expired token is the host's responsibility.
+
 ## Install from the repository
 
 From the repository root, with JDK 21 or later and Maven available:
@@ -23,7 +46,7 @@ Add the locally installed artifact to your application:
 </dependency>
 ```
 
-This is a development artifact; local installation does not publish it to Maven Central. The POM compiles with `--release 21`, all compiler warnings enabled and warnings treated as errors. CI has Java 21 and 25 jobs. Your application's compiler target must also be Java 21 or later. Package checks, hosted CI results and live deployment acceptance are separate evidence.
+Match the dependency version to the SDK version you installed locally. The POM targets Java 21 and checks all compiler warnings. Set your application's compiler target to Java 21 or later as well. The SDK JAR is also available from [GitHub Releases](https://github.com/fireflyframework/firefly-koinon/releases), alongside its checksums.
 
 ## Authenticate and browse
 
@@ -68,6 +91,18 @@ public final class JavaQuickstart {
 The supplier is called for each HTTP request, including stream subscription. In a long-running service, replace the environment lookup with your identity system's access-token supplier and renewal policy. The SDK does not implement sign-in, token refresh or role assignment. Personal-token creation and corporate identity/profile-mapping administration require the appropriate ordinary verified identity; a personal token cannot bootstrap those privileges. MCP resource credentials are not ordinary API bearer tokens.
 
 The client is `AutoCloseable`. It closes its own HTTP client and outstanding requests. If you inject an `HttpClient`, keep redirects disabled and close it yourself after closing the SDK. Redirect rejection keeps bearer credentials on the configured API origin.
+
+## Understand the first response
+
+Run the startup program only after choosing the deployment and credential above. The context response identifies the current subject, available organizations, memberships, workspaces, and applicable permissions. Select IDs from that response rather than displaying a guessed organization or treating a URL parameter as a grant. In an application, keep that context with the authenticated session and discard it when the identity changes.
+
+The catalog request returns a typed page. `items` contains the current authorized rows; `page`, `page_size` or `size`, `pages`, and `total` describe pagination when the endpoint supplies them. The helper asks for another server page lazily. It does not fetch a large list and slice it locally. An empty list can be a legitimate empty scope; it is not an invitation to remove the workspace filter.
+
+The printed IDs and names are the program's expected output. They are resource identities for later calls, not sample fixture IDs you should hardcode. Retain a selected document or dataset ID when moving to the next chapter. Keep names as labels, since renaming an asset does not change its identity.
+
+If the first call returns `401`, repair the host's token acquisition or expiry handling before continuing. If it returns `403`, compare the current role, requested scopes, resource bounds, and credential type. A wider token cannot repair a missing role. For a timeout or protocol error, retain only safe status and request-reference metadata; never print the token or a whole private response body.
+
+The SDK does not renew credentials, create a sign-in session, or reconnect a stream automatically. Keeping those responsibilities in the host lets a web application, command-line tool, and scheduled service use the same API without sharing browser cookies or credentials accidentally.
 
 ## Choose a workflow
 
