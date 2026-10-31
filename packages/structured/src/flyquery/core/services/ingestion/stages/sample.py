@@ -39,12 +39,18 @@ from pyfly.data.transaction import infrastructure_unit
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from flyquery.core.services.ingestion.native_call import run_native
+from flyquery.core.services.ingestion.resources import (
+    IngestionResourceLimitError,
+    ingestion_resources,
+)
+from flyquery.core.services.ingestion.resources import connect as connect_ingestion
 from flyquery.core.services.ingestion.stages.pii_tag import _apply_tag_and_policy
 from flyquery.core.services.pii.factory import build_pii_scanner
 
 logger = logging.getLogger(__name__)
 
 
+@ingestion_resources
 async def run_sample(
     *,
     tenant_id: str,
@@ -149,9 +155,7 @@ async def run_sample(
 def _read_parquet_column(parquet_key: str, col_name: str, n: int) -> list[Any]:
     """Read up to n non-null values from a Parquet file for a given column."""
     try:
-        import duckdb
-
-        conn = duckdb.connect()
+        conn = connect_ingestion()
         try:
             # Use parameterised query to avoid SQL injection via col_name
             # (DuckDB doesn't support ? in column identifiers, so we escape manually)
@@ -163,6 +167,8 @@ def _read_parquet_column(parquet_key: str, col_name: str, n: int) -> list[Any]:
             return [r[0] for r in rows]
         finally:
             conn.close()
+    except IngestionResourceLimitError:
+        raise
     except Exception as exc:
         logger.warning("stage=sample read_parquet failed col=%s: %s", col_name, exc)
         return []

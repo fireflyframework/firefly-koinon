@@ -17,6 +17,7 @@ from koinon.catalog.errors import AccessDenied, InvalidHierarchy
 from koinon.catalog.mappers import entry_dto
 from koinon.catalog.service import PARENTS, CatalogService
 from koinon.knowledge.adapters import NativeDomains
+from koinon.knowledge.bulk_queries.query_ports import QueryAuthorize, QueryCommit, QueryPublicationGuard
 from koinon.knowledge.capture_receipt import NativeEvidenceReceipt
 from koinon.knowledge.curated.ports import CuratedCorpusPort
 from koinon.knowledge.entities import DomainBinding
@@ -367,6 +368,7 @@ class KnowledgeFacade:
             receipt.authorize_model = authorize_model
             receipt.admit_documents(tenant_id, native_workspace, subject, admitted)
             curated_retrieve = None
+            curated_rlm = None
             if knowledge and curated is not None:
                 selections = await curated.admit(
                     subject, tenant_id, [asset.id for asset, _ in knowledge.values()]
@@ -380,6 +382,12 @@ class KnowledgeFacade:
                     )
 
                 curated_retrieve = fetch_curated
+                receipt.admit_knowledge(tenant_id, native_workspace, subject, knowledge, selections)
+
+                async def bind_curated_rlm(selected=selections, native=native_workspace):
+                    return await curated.rlm(subject, tenant_id, native, selected)
+
+                curated_rlm = bind_curated_rlm
             result = await self.domains.search(
                 tenant_id=tenant_id,
                 workspace_id=native_workspace,
@@ -392,6 +400,7 @@ class KnowledgeFacade:
                 _knowledge_settings_snapshot=policy,
                 _capture=receipt,
                 **({"_curated_retrieve": curated_retrieve} if curated_retrieve is not None else {}),
+                **({"_curated_rlm": curated_rlm} if curated_rlm is not None else {}),
             )
             for hit in result.get("hits", []):
                 source_id = hit.get("source_id")
@@ -506,6 +515,9 @@ class KnowledgeFacade:
         conversation_id=None,
         sql=None,
         _capture: NativeEvidenceReceipt | None = None,
+        _query_commit: QueryCommit | None = None,
+        _query_publication_guard: QueryPublicationGuard | None = None,
+        _query_authorize: QueryAuthorize | None = None,
     ):
         chain = await self._chain(subject, tenant_id, dataset_id, "query:execute")
         if chain[0].kind != "dataset":
@@ -516,10 +528,17 @@ class KnowledgeFacade:
         _capture = _capture or NativeEvidenceReceipt(subject, tenant_id)
 
         async def authorize_model():
+            if _query_authorize is not None:
+                await _query_authorize()
             current = await self._chain(subject, tenant_id, dataset_id, "query:execute")
             self._ready_dataset(current[0])
 
         _capture.authorize_model = authorize_model
+
+        async def commit(value):
+            if _query_commit is not None:
+                await _query_commit({**value, "knowledge_settings_snapshot": policy.model_dump(mode="json")})
+
         result = await self.domains.query(
             tenant_id=tenant_id,
             workspace_id=binding.native_workspace_id,
@@ -532,6 +551,11 @@ class KnowledgeFacade:
             actor=subject,
             _knowledge_settings_snapshot=policy,
             **({"_capture": _capture} if _capture is not None else {}),
+            **(
+                {"_query_commit": commit, "_query_publication_guard": _query_publication_guard}
+                if _query_commit is not None or _query_publication_guard is not None
+                else {}
+            ),
         )
         return {**result, "knowledge_settings_snapshot": policy.model_dump(mode="json")}
 

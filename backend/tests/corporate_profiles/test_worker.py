@@ -6,9 +6,10 @@ from unittest.mock import AsyncMock
 
 from koinon.corporate_profiles.settings import CorporateProfileSettings
 from koinon.corporate_profiles.worker import CorporateProfileWorker
+from koinon.workers.admission import WorkAdmission, WorkAdmissionSettings
 
 
-async def test_worker_claims_only_immediate_pair_and_prevents_overlapping_scheduled_dispatch():
+async def test_worker_admits_each_immediate_lease_and_prevents_overlapping_scheduled_dispatch():
     entered = asyncio.Event()
     release = asyncio.Event()
     active = set()
@@ -17,8 +18,7 @@ async def test_worker_claims_only_immediate_pair_and_prevents_overlapping_schedu
 
     async def claim(worker_id, limit):
         nonlocal count
-        assert not active, "No pending lease may wait behind a slow in-flight pair"
-        assert limit <= 2
+        assert limit == 1, "Every lease needs its own admission before claim"
         calls.append(limit)
         rows = list(range(count, count + limit))
         count += limit
@@ -33,18 +33,24 @@ async def test_worker_claims_only_immediate_pair_and_prevents_overlapping_schedu
             await release.wait()
         active.remove(lease)
 
-    worker = CorporateProfileWorker(SimpleNamespace(claim=claim, execute=execute), CorporateProfileSettings())
+    worker = CorporateProfileWorker(
+        SimpleNamespace(claim=claim, execute=execute),
+        CorporateProfileSettings(),
+        WorkAdmission(WorkAdmissionSettings(worker_capacity=2)),
+    )
     task = asyncio.create_task(worker.tick())
     await entered.wait()
     await worker.tick()
-    assert calls == [2] and count == 2
+    assert calls == [1, 1] and count == 2
     release.set()
     await task
-    assert count == 25 and calls == [2] * 12 + [1] and not worker._running
+    assert count == 25 and calls == [1] * 25 and not worker._running
 
 
 async def test_disabled_worker_does_not_execute_manual_or_signin_queued_work():
     refresher = SimpleNamespace(claim=AsyncMock(), execute=AsyncMock())
-    worker = CorporateProfileWorker(refresher, CorporateProfileSettings(worker_enabled=False))
+    worker = CorporateProfileWorker(
+        refresher, CorporateProfileSettings(worker_enabled=False), WorkAdmission(WorkAdmissionSettings())
+    )
     await worker.tick()
     refresher.claim.assert_not_awaited()

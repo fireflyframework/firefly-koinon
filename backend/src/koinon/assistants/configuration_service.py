@@ -73,6 +73,7 @@ class AssistantConfigurationService:
     async def save_provider(
         self, subject: str, tenant_id: str, values: dict, provider_id: str | None = None
     ) -> dict:
+        await self.catalog._lock_tenant(tenant_id)
         await self.catalog.authorize(subject, tenant_id, "providers:write")
         if set(values) - {"name", "kind", "api", "base_url", "model_ids", "secret", "enabled"}:
             raise InvalidRequestException("Unsupported provider fields", code="INVALID_PROVIDER")
@@ -396,6 +397,7 @@ class AssistantConfigurationService:
     async def _save_validation(
         self, subject: str, tenant_id: str, provider_id: str, revision: int, checks: list[dict]
     ):
+        await self.catalog._lock_tenant(tenant_id)
         await self.catalog.authorize(subject, tenant_id, "providers:write")
         row = await self.providers.find_by_id(provider_id, lock=LockMode.PESSIMISTIC_WRITE)
         if row is None or row.tenant_id != tenant_id or row.revision != revision:

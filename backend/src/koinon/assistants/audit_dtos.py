@@ -1,11 +1,12 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
-from typing import Literal
+from typing import Literal, Self
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
 from koinon.assistants.memory.dtos import MemoryReceipt
 from koinon.evidence.dtos import SourceReference
+from koinon.evidence.rlm_scope import RlmResourceIdentifier, require_rlm_scope
 from koinon.organization_knowledge.dtos import OrganizationKnowledgeSnapshot
 
 
@@ -148,15 +149,27 @@ class PrivateFileReceipt(AuditValue):
 
 
 class RlmToolReceipt(AuditValue):
+    """An action admits a nonempty combination of document and knowledge IDs, at most 500 total.
+
+    Identifiers are unique within each domain. Content use requires separate exact-version execution receipts.
+    """
+
     result_id: str = Field(min_length=1, max_length=64)
     generation_id: str | None = None
     tenant_id: str = Field(min_length=1, max_length=64)
     workspace_id: str = Field(min_length=1, max_length=64, description="Admitted native execution workspace.")
-    source_ids: list[str] = Field(
-        min_length=1,
+    source_ids: list[RlmResourceIdentifier] = Field(
+        default_factory=list,
         max_length=500,
         description=(
-            "Admitted native source scope; actual content use requires separate execution-read evidence."
+            "Admitted native document source IDs; actual content use requires execution-read evidence."
+        ),
+    )
+    knowledge_item_ids: list[RlmResourceIdentifier] = Field(
+        default_factory=list,
+        max_length=500,
+        description=(
+            "Admitted canonical knowledge item IDs; exact versions and content use have separate receipts."
         ),
     )
     tool_call_id: str = Field(min_length=1, max_length=256)
@@ -181,6 +194,11 @@ class RlmToolReceipt(AuditValue):
     outcome: Literal["completed", "rejected", "failed", "halted"]
     execution_status: str = Field(min_length=1, max_length=32)
     execution_state: str = Field(min_length=1, max_length=32)
+
+    @model_validator(mode="after")
+    def coherent_corpus_scope(self) -> Self:
+        require_rlm_scope(self.source_ids, self.knowledge_item_ids)
+        return self
 
 
 class AnswerAudit(AuditValue):

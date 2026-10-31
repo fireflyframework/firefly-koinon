@@ -1,5 +1,9 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
+import {createLazyFileBatchesApi} from './file-batch-loader.js';
+import {createLazyQueryBatchesApi} from './query-batch-loader.js';
+export type {QueryBatchesApi,QueryBatchPageFilter} from './query-batches.js';
+export type {FileBatchesApi,FileBatchPageFilter} from './file-batches.js';
 import {createLazyOrganizationPeopleApi} from './organization-loader.js';
 import {createLazyCorporateProfilesApi} from './corporate-profile-loader.js';
 export type {CorporateProfilesApi} from './corporate-profiles.js';
@@ -85,6 +89,8 @@ export class KoinonClient {
  readonly organizationChat;
  readonly organizationPeople;
  readonly corporateProfiles;
+ readonly fileBatches;
+ readonly queryBatches;
  readonly people;
  readonly knowledgeConnections;
  readonly knowledgeIndexes;
@@ -184,6 +190,8 @@ export class KoinonClient {
   };
   this.organizationPeople=createLazyOrganizationPeopleApi(transport);
   this.corporateProfiles=createLazyCorporateProfilesApi(transport);
+  this.fileBatches=createLazyFileBatchesApi(transport);
+  this.queryBatches=createLazyQueryBatchesApi(transport);
   this.people={
    list:(tenantId:string,filter:{workspace_id?:string;q?:string;limit?:number;after?:string|undefined}={},options:RequestOptions={})=>transport.request<Page<Person>>('GET',`${tenant(tenantId)}/people`,{...options,query:{...filter}}),
    avatar:(tenantId:string,profileId:string,workspaceId?:string,options:RequestOptions={})=>transport.request<BinaryDownload>('GET',`${tenant(tenantId)}/people/${id(profileId)}/avatar`,{...options,query:{workspace_id:workspaceId},responseType:'download'}),

@@ -44,6 +44,11 @@ from pyfly.data.transaction import infrastructure_unit
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from flyquery.core.services.ingestion.native_call import run_native
+from flyquery.core.services.ingestion.resources import (
+    IngestionResourceLimitError,
+    ingestion_resources,
+)
+from flyquery.core.services.ingestion.resources import connect as connect_ingestion
 
 logger = logging.getLogger(__name__)
 
@@ -129,6 +134,7 @@ def _is_temporal(data_type: str) -> bool:
     return data_type.lower().split("(")[0].strip() in _TEMPORAL_TYPES
 
 
+@ingestion_resources
 async def run_profile(
     *,
     tenant_id: str,
@@ -159,9 +165,7 @@ async def run_profile(
         col_name: str = col["qualified_name"].rsplit(".", 1)[-1]
         data_type: str = col["data_type"] or ""
 
-        profile = await run_native(
-            _profile_column_sync, parquet_key, col_name, data_type, n_rows_actual
-        )
+        profile = await run_native(_profile_column_sync, parquet_key, col_name, data_type, n_rows_actual)
         if profile is not None:
             computed[col_name] = (col_id, data_type, profile)
 
@@ -174,6 +178,8 @@ async def run_profile(
         refs = await run_native(_detect_self_references, parquet_key, computed, n_rows_actual)
         for ref_col, entity_col in refs.items():
             computed[ref_col][2]["references_column"] = entity_col
+    except IngestionResourceLimitError:
+        raise
     except Exception as exc:  # noqa: BLE001 -- detection is best-effort
         logger.warning("stage=profile self-reference detection failed snapshot=%s err=%s", snapshot_id, exc)
 
@@ -206,7 +212,6 @@ def _detect_self_references(
     Returns ``{ref_col: entity_col}``. No names/keywords are inspected --
     this generalises to any dataset's manager/owner/parent columns.
     """
-    import duckdb
 
     text_cols = {
         name: prof["distinct_estimate"]
@@ -221,7 +226,7 @@ def _detect_self_references(
         return {}
 
     refs: dict[str, str] = {}
-    con = duckdb.connect()
+    con = connect_ingestion()
     try:
         for ref_col, d_ref in text_cols.items():
             if d_ref < 3:
@@ -239,6 +244,8 @@ def _detect_self_references(
                         f"FROM read_parquet(?) WHERE {s_ref} IS NOT NULL AND {s_ref} <> ''",
                         [parquet_key, parquet_key],
                     ).fetchone()
+                except IngestionResourceLimitError:
+                    raise
                 except Exception:  # noqa: BLE001 -- skip uncomparable columns
                     continue
                 if row and row[0] and (row[1] / row[0]) >= 0.6:
@@ -275,9 +282,7 @@ def _profile_column_sync(
 ) -> dict[str, Any] | None:
     """Run a single DuckDB query to compute profile metrics for one column."""
     try:
-        import duckdb
-
-        conn = duckdb.connect()
+        conn = connect_ingestion()
         try:
             safe_col = '"' + col_name.replace('"', '""') + '"'
 
@@ -351,6 +356,8 @@ def _profile_column_sync(
         finally:
             conn.close()
 
+    except IngestionResourceLimitError:
+        raise
     except Exception as exc:
         logger.warning("stage=profile column_profile failed col=%s: %s", col_name, exc)
         return None

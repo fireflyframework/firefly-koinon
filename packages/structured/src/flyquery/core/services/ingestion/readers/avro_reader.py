@@ -29,6 +29,7 @@ from flyquery.core.services.ingestion.reader import (
     ProposedTable,
     TableExtractionRules,
 )
+from flyquery.core.services.ingestion.resources import account_path, output_size
 
 
 class AvroReader:
@@ -73,6 +74,8 @@ class AvroReader:
 
     @staticmethod
     def _materialise_sync(source_path: str, target_parquet_key: str) -> MaterialiseResult:
+        account_path(source_path)
+        account_path(target_parquet_key)
         import fastavro
         import pyarrow as pa
         import pyarrow.parquet as pq
@@ -101,7 +104,7 @@ class AvroReader:
         )
         return MaterialiseResult(
             target_parquet_key=target_parquet_key,
-            parquet_byte_size=Path(target_parquet_key).stat().st_size,
+            parquet_byte_size=output_size(target_parquet_key),
             n_rows_actual=len(records),
             columns=columns,
             coordinates=record_coordinates(

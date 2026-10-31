@@ -21,11 +21,12 @@ import asyncio
 import bz2
 import gzip
 import os
-import shutil
 import tempfile
 import threading
 import zipfile
 from pathlib import Path
+
+from flyquery.core.services.ingestion.resources import bounded_copy, copy_file, current_scope
 
 MAX_DECOMPRESSED_BYTES = 5 * 1024 * 1024 * 1024  # 5 GB safety cap
 
@@ -95,24 +96,34 @@ def _sync(source_path: str, compression: str) -> str:
     # We only need the path, then we hand it to ``gzip.open`` / ``bz2.open`` /
     # ``zipfile`` to populate. ``mkstemp`` gives us that without the open file
     # handle that SIM115 would otherwise rightly complain about.
-    fd, out_path = tempfile.mkstemp(suffix=inner_ext)
+    scratch_root = current_scope().policy.scratch_root
+    if scratch_root is None:
+        fd, out_path = tempfile.mkstemp(suffix=inner_ext)
+    else:
+        fd, out_path = tempfile.mkstemp(suffix=inner_ext, dir=scratch_root)
     try:
         os.close(fd)
         if compression == "gz":
             with gzip.open(source_path, "rb") as src, open(out_path, "wb") as dst:
-                _bounded_copy(src, dst, MAX_DECOMPRESSED_BYTES)
+                _bounded_copy(
+                    src, dst, min(MAX_DECOMPRESSED_BYTES, current_scope().policy.decompressed_max_bytes)
+                )
         elif compression == "bz2":
             with bz2.open(source_path, "rb") as src, open(out_path, "wb") as dst:
-                _bounded_copy(src, dst, MAX_DECOMPRESSED_BYTES)
+                _bounded_copy(
+                    src, dst, min(MAX_DECOMPRESSED_BYTES, current_scope().policy.decompressed_max_bytes)
+                )
         elif compression == "zip":
             with zipfile.ZipFile(source_path, "r") as zf:
                 files = [n for n in zf.namelist() if not n.endswith("/")]
                 if len(files) != 1:
                     raise ValueError(f"zip must contain exactly one file; got multiple files: {files}")
                 with zf.open(files[0]) as src, open(out_path, "wb") as dst:
-                    _bounded_copy(src, dst, MAX_DECOMPRESSED_BYTES)
+                    _bounded_copy(
+                        src, dst, min(MAX_DECOMPRESSED_BYTES, current_scope().policy.decompressed_max_bytes)
+                    )
         elif compression == "none":
-            shutil.copyfile(source_path, out_path)
+            copy_file(source_path, out_path)
     except BaseException:
         Path(out_path).unlink(missing_ok=True)
         raise
@@ -121,12 +132,4 @@ def _sync(source_path: str, compression: str) -> str:
 
 
 def _bounded_copy(src, dst, cap: int) -> None:
-    total = 0
-    while True:
-        chunk = src.read(64 * 1024)
-        if not chunk:
-            break
-        total += len(chunk)
-        if total > cap:
-            raise ValueError(f"decompressed size exceeded cap ({cap} bytes)")
-        dst.write(chunk)
+    bounded_copy(src, dst, cap)

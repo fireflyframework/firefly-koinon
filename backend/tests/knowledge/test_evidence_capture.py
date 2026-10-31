@@ -9,6 +9,7 @@ import pytest
 from koinon.catalog.errors import AccessDenied
 from koinon.knowledge.capture_receipt import NativeEvidenceReceipt
 from koinon.knowledge.evidence_capture import NativeKnowledgeEvidence
+from koinon.workers.admission import WorkAdmission, WorkAdmissionSettings
 
 
 def prepared():
@@ -135,7 +136,10 @@ async def test_actual_native_search_adapter_observes_native_dto_before_canonical
             )
         )
     )
-    domains = NativeDomains(SimpleNamespace(contains_type=lambda kind: True, resolve=lambda kind: bus))
+    domains = NativeDomains(
+        SimpleNamespace(contains_type=lambda kind: True, resolve=lambda kind: bus),
+        admission=WorkAdmission(WorkAdmissionSettings()),
+    )
     receipt = NativeEvidenceReceipt("owner", "tenant")
     result = await NativeDomains.search.__wrapped__(
         domains,
@@ -175,7 +179,10 @@ async def test_actual_native_schema_adapter_observes_raw_snapshot_ids_before_ret
             ]
         ),
     )
-    domains = NativeDomains(SimpleNamespace(contains_type=lambda kind: True, resolve=lambda kind: service))
+    domains = NativeDomains(
+        SimpleNamespace(contains_type=lambda kind: True, resolve=lambda kind: service),
+        admission=WorkAdmission(WorkAdmissionSettings()),
+    )
     receipt = NativeEvidenceReceipt("owner", "tenant")
     result = await domains.schema(
         tenant_id="tenant",

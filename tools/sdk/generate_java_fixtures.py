@@ -92,6 +92,7 @@ fixtures = {
         "JsonValue",
         "BinaryDownload",
         "AvatarUpload",
+        "BulkFileUpload",
         "AttachmentUpload",
         "DatasetFileUpload",
         "SourceUpload",

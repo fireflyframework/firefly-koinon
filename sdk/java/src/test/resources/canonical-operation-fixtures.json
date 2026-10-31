@@ -2233,6 +2233,9 @@
           "source_ids": [
             "source_ids-value"
           ],
+          "knowledge_item_ids": [
+            "knowledge_item_ids-value"
+          ],
           "tool_call_id": "tool_call_id-value",
           "tool_name": "python",
           "request_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -4953,6 +4956,790 @@
       }
     },
     "status": 201,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": true
+  },
+  {
+    "operation": "FileBatchController.capabilities",
+    "group": "FileBatchesApi",
+    "group_scoped": true,
+    "method": "capabilities",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/source-batch-capabilities",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {
+      "workspace_id": "workspace_id value"
+    },
+    "filter": "FileBatchScope",
+    "request": null,
+    "response": "FileBatchCapabilities",
+    "body": {
+      "configured": false,
+      "modes": [
+        "document"
+      ],
+      "processing_policy": "extract_only_v1",
+      "staging_backend": "private_local_posix",
+      "staging_topology": "single_host_shared_durable_posix",
+      "writer_fence": "primary_database_generation_lease",
+      "worker": "external_native_worker",
+      "automatic_unknown_replay": false,
+      "max_files": 1,
+      "max_file_bytes": 1,
+      "max_batch_bytes": 1,
+      "max_active_batches_per_subject": 1
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "FileBatchController.create",
+    "group": "FileBatchesApi",
+    "group_scoped": true,
+    "method": "create",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/sources/batches",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "FileBatchCreate",
+    "response": "FileBatchView",
+    "body": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "destination": {
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "parent_id": "parent_id-value"
+      },
+      "status": "expired",
+      "revision": 1,
+      "total_items": 1,
+      "total_bytes": 1,
+      "counts": {
+        "example": 1
+      },
+      "cancellation_requested": false,
+      "created_at": "2026-10-27T12:34:56Z",
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "status": 201,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": true
+  },
+  {
+    "operation": "FileBatchController.list",
+    "group": "FileBatchesApi",
+    "group_scoped": true,
+    "method": "list",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/sources/batches",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {
+      "page": 2,
+      "page_size": 2
+    },
+    "filter": "FileBatchFilter",
+    "request": null,
+    "response": "FileBatchPage",
+    "body": {
+      "items": [
+        {
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "destination": {
+            "workspace_id": "workspace_id-value",
+            "project_id": "project_id-value",
+            "parent_id": "parent_id-value"
+          },
+          "status": "expired",
+          "revision": 1,
+          "total_items": 1,
+          "total_bytes": 1,
+          "counts": {
+            "example": 1
+          },
+          "cancellation_requested": false,
+          "created_at": "2026-10-27T12:34:56Z",
+          "expires_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "FileBatchController.get",
+    "group": "FileBatchesApi",
+    "group_scoped": true,
+    "method": "get",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/sources/batches/batch_id value",
+    "ids": {
+      "tenant_id": "tenant value",
+      "batch_id": "batch_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "FileBatchView",
+    "body": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "destination": {
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "parent_id": "parent_id-value"
+      },
+      "status": "expired",
+      "revision": 1,
+      "total_items": 1,
+      "total_bytes": 1,
+      "counts": {
+        "example": 1
+      },
+      "cancellation_requested": false,
+      "created_at": "2026-10-27T12:34:56Z",
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "FileBatchController.items",
+    "group": "FileBatchesApi",
+    "group_scoped": true,
+    "method": "items",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/sources/batches/batch_id value/items",
+    "ids": {
+      "tenant_id": "tenant value",
+      "batch_id": "batch_id value"
+    },
+    "query": {
+      "page": 2,
+      "page_size": 2
+    },
+    "filter": "FileBatchFilter",
+    "request": null,
+    "response": "FileItemPage",
+    "body": {
+      "items": [
+        {
+          "id": "id-value",
+          "client_item_id": "client_item_id-value",
+          "filename": "filename-value",
+          "mode": "document",
+          "size_bytes": 1,
+          "sha256": "sha256-value",
+          "status": "awaiting_upload",
+          "source_id": "source_id-value",
+          "asset_id": "asset_id-value",
+          "job_id": "job_id-value",
+          "file_version_id": "file_version_id-value",
+          "table_ids": [
+            "table_ids-value"
+          ],
+          "source_version_id": "source_version_id-value",
+          "extraction_id": "extraction_id-value",
+          "error_code": "error_code-value"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "FileBatchController.content",
+    "group": "FileBatchesApi",
+    "group_scoped": true,
+    "method": "upload",
+    "http": "PUT",
+    "path": "/api/v1/tenants/tenant value/sources/batches/batch_id value/items/item_id value/content",
+    "ids": {
+      "tenant_id": "tenant value",
+      "batch_id": "batch_id value",
+      "item_id": "item_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "BulkFileUpload",
+    "response": "StagedFileReceipt",
+    "body": {
+      "receipt_id": "receipt_id-value",
+      "batch_id": "batch_id-value",
+      "item_id": "item_id-value",
+      "sha256": "sha256-value",
+      "size_bytes": 1,
+      "status": "staged"
+    },
+    "status": 200,
+    "encoding": "application/octet-stream",
+    "precondition": false,
+    "idempotency": true
+  },
+  {
+    "operation": "FileBatchController.receipt",
+    "group": "FileBatchesApi",
+    "group_scoped": true,
+    "method": "receipt",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/sources/batches/batch_id value/items/item_id value/receipt",
+    "ids": {
+      "tenant_id": "tenant value",
+      "batch_id": "batch_id value",
+      "item_id": "item_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "StagedFileReceipt",
+    "body": {
+      "receipt_id": "receipt_id-value",
+      "batch_id": "batch_id-value",
+      "item_id": "item_id-value",
+      "sha256": "sha256-value",
+      "size_bytes": 1,
+      "status": "staged"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "FileBatchController.submit",
+    "group": "FileBatchesApi",
+    "group_scoped": true,
+    "method": "submit",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/sources/batches/batch_id value/submit",
+    "ids": {
+      "tenant_id": "tenant value",
+      "batch_id": "batch_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "BulkAction",
+    "response": "FileBatchView",
+    "body": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "destination": {
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "parent_id": "parent_id-value"
+      },
+      "status": "expired",
+      "revision": 1,
+      "total_items": 1,
+      "total_bytes": 1,
+      "counts": {
+        "example": 1
+      },
+      "cancellation_requested": false,
+      "created_at": "2026-10-27T12:34:56Z",
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "status": 202,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": true
+  },
+  {
+    "operation": "FileBatchController.cancel",
+    "group": "FileBatchesApi",
+    "group_scoped": true,
+    "method": "cancel",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/sources/batches/batch_id value/cancel",
+    "ids": {
+      "tenant_id": "tenant value",
+      "batch_id": "batch_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "BulkAction",
+    "response": "FileBatchView",
+    "body": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "destination": {
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "parent_id": "parent_id-value"
+      },
+      "status": "expired",
+      "revision": 1,
+      "total_items": 1,
+      "total_bytes": 1,
+      "counts": {
+        "example": 1
+      },
+      "cancellation_requested": false,
+      "created_at": "2026-10-27T12:34:56Z",
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": true
+  },
+  {
+    "operation": "FileBatchController.reconcile",
+    "group": "FileBatchesApi",
+    "group_scoped": true,
+    "method": "reconcile",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/sources/batches/batch_id value/items/item_id value/reconcile",
+    "ids": {
+      "tenant_id": "tenant value",
+      "batch_id": "batch_id value",
+      "item_id": "item_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "BulkAction",
+    "response": "FileBatchView",
+    "body": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "destination": {
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "parent_id": "parent_id-value"
+      },
+      "status": "expired",
+      "revision": 1,
+      "total_items": 1,
+      "total_bytes": 1,
+      "counts": {
+        "example": 1
+      },
+      "cancellation_requested": false,
+      "created_at": "2026-10-27T12:34:56Z",
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": true
+  },
+  {
+    "operation": "FileBatchController.recover_original",
+    "group": "FileBatchesApi",
+    "group_scoped": true,
+    "method": "recoverOriginal",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/sources/batches/batch_id value/items/item_id value/original/reconcile",
+    "ids": {
+      "tenant_id": "tenant value",
+      "batch_id": "batch_id value",
+      "item_id": "item_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "BulkAction",
+    "response": "FileBatchView",
+    "body": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "destination": {
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "parent_id": "parent_id-value"
+      },
+      "status": "expired",
+      "revision": 1,
+      "total_items": 1,
+      "total_bytes": 1,
+      "counts": {
+        "example": 1
+      },
+      "cancellation_requested": false,
+      "created_at": "2026-10-27T12:34:56Z",
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": true
+  },
+  {
+    "operation": "QueryBatchController.capabilities",
+    "group": "QueryBatchesApi",
+    "group_scoped": true,
+    "method": "capabilities",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/query-batch-capabilities",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {
+      "workspace_id": "workspace_id value"
+    },
+    "filter": "QueryBatchScope",
+    "request": null,
+    "response": "QueryBatchCapabilities",
+    "body": {
+      "configured": false,
+      "processing_policy": "independent_nl_v1",
+      "automatic_unknown_replay": false,
+      "shared_conversation": false,
+      "connection_mode": "explicit_provider",
+      "max_queries": 1,
+      "max_question_characters": 1,
+      "max_question_bytes_per_batch": 1,
+      "max_result_bytes": 1
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "QueryBatchController.create",
+    "group": "QueryBatchesApi",
+    "group_scoped": true,
+    "method": "create",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/queries/batches",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "QueryBatchCreate",
+    "response": "QueryBatchView",
+    "body": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "workspace_id": "workspace_id-value",
+      "status": "queued",
+      "revision": 1,
+      "total_items": 1,
+      "counts": {
+        "example": 1
+      },
+      "cancellation_requested": false,
+      "created_at": "2026-10-27T12:34:56Z",
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "status": 201,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": true
+  },
+  {
+    "operation": "QueryBatchController.list",
+    "group": "QueryBatchesApi",
+    "group_scoped": true,
+    "method": "list",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/queries/batches",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {
+      "page": 2,
+      "page_size": 2
+    },
+    "filter": "QueryBatchFilter",
+    "request": null,
+    "response": "QueryBatchPage",
+    "body": {
+      "items": [
+        {
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "workspace_id": "workspace_id-value",
+          "status": "queued",
+          "revision": 1,
+          "total_items": 1,
+          "counts": {
+            "example": 1
+          },
+          "cancellation_requested": false,
+          "created_at": "2026-10-27T12:34:56Z",
+          "expires_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "QueryBatchController.get",
+    "group": "QueryBatchesApi",
+    "group_scoped": true,
+    "method": "get",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/queries/batches/batch_id value",
+    "ids": {
+      "tenant_id": "tenant value",
+      "batch_id": "batch_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "QueryBatchView",
+    "body": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "workspace_id": "workspace_id-value",
+      "status": "queued",
+      "revision": 1,
+      "total_items": 1,
+      "counts": {
+        "example": 1
+      },
+      "cancellation_requested": false,
+      "created_at": "2026-10-27T12:34:56Z",
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "QueryBatchController.items",
+    "group": "QueryBatchesApi",
+    "group_scoped": true,
+    "method": "items",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/queries/batches/batch_id value/items",
+    "ids": {
+      "tenant_id": "tenant value",
+      "batch_id": "batch_id value"
+    },
+    "query": {
+      "page": 2,
+      "page_size": 2
+    },
+    "filter": "QueryBatchFilter",
+    "request": null,
+    "response": "QueryBatchItemPage",
+    "body": {
+      "items": [
+        {
+          "id": "id-value",
+          "client_item_id": "client_item_id-value",
+          "dataset_id": "dataset_id-value",
+          "question": "question-value",
+          "status": "queued",
+          "job_id": "job_id-value",
+          "error_code": "error_code-value",
+          "query_id": "query_id-value"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "QueryBatchController.result",
+    "group": "QueryBatchesApi",
+    "group_scoped": true,
+    "method": "result",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/queries/batches/batch_id value/items/item_id value/result",
+    "ids": {
+      "tenant_id": "tenant value",
+      "batch_id": "batch_id value",
+      "item_id": "item_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "QueryBatchResult",
+    "body": {
+      "batch_id": "batch_id-value",
+      "item_id": "item_id-value",
+      "status": "queued",
+      "result": {
+        "query_id": "query_id-value",
+        "execution_status": "OK",
+        "sql": "sql-value",
+        "preview": [
+          {
+            "example": {
+              "decimal": "12345678901234567890.12345678901234567890",
+              "integer": "9007199254740993"
+            }
+          }
+        ],
+        "row_count": 1,
+        "elapsed_ms": 1,
+        "truncated": false,
+        "chart_hint": "line",
+        "explanation": "explanation-value",
+        "clarification": {
+          "questions": [
+            "questions-value"
+          ],
+          "reasons": [
+            "reasons-value"
+          ]
+        },
+        "grounded_summary": {
+          "example": {
+            "decimal": "12345678901234567890.12345678901234567890",
+            "integer": "9007199254740993"
+          }
+        },
+        "usage": {
+          "total_input_tokens": 1,
+          "total_output_tokens": 1,
+          "total_tokens": 1,
+          "total_cost_usd": 0.25,
+          "total_latency_ms": 0.25,
+          "by_agent": [
+            {
+              "agent": "agent-value",
+              "model": "model-value",
+              "input_tokens": 1,
+              "output_tokens": 1,
+              "total_tokens": 1,
+              "cost_usd": 0.25,
+              "latency_ms": 0.25,
+              "calls": 1
+            }
+          ]
+        },
+        "snapshot_pins": {
+          "example": "snapshot_pins-value"
+        },
+        "knowledge_settings_snapshot": {
+          "tenant_id": "tenant_id-value",
+          "schema_version": 1,
+          "revision": 1,
+          "origin": "organization",
+          "documents": {
+            "answer_mode": "rag",
+            "retrieval_top_k": 1,
+            "retrieval_per_query_k": 1,
+            "retrieval_rrf_k": 1,
+            "query_expansion_enabled": false,
+            "query_expansion_n": 1,
+            "answer_top_k": 1,
+            "rlm_max_iters": 1,
+            "rlm_sub_budget": 1,
+            "rlm_max_depth": 1,
+            "rlm_self_consistency": 1,
+            "rlm_extended_reasoning": false
+          },
+          "structured": {
+            "top_k_schema": 1,
+            "top_k_examples": 1,
+            "top_k_metrics": 1,
+            "rrf_k": 1,
+            "generation_candidates": 1,
+            "max_refine_retries": 1,
+            "grounding_min_confidence": 0.25
+          },
+          "digest": "2d828ceecae2f7188752442624651e0e3e02c525cddf3908caf4fa10fe6b5fc5"
+        }
+      },
+      "error_code": "error_code-value"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "QueryBatchController.cancel",
+    "group": "QueryBatchesApi",
+    "group_scoped": true,
+    "method": "cancel",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/queries/batches/batch_id value/cancel",
+    "ids": {
+      "tenant_id": "tenant value",
+      "batch_id": "batch_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "QueryBatchAction",
+    "response": "QueryBatchCancellation",
+    "body": {
+      "batch_id": "batch_id-value",
+      "revision": 1,
+      "cancellation_requested": true
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": true
+  },
+  {
+    "operation": "QueryBatchController.reconcile",
+    "group": "QueryBatchesApi",
+    "group_scoped": true,
+    "method": "reconcile",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/queries/batches/batch_id value/items/item_id value/reconcile",
+    "ids": {
+      "tenant_id": "tenant value",
+      "batch_id": "batch_id value",
+      "item_id": "item_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "QueryBatchAction",
+    "response": "QueryBatchView",
+    "body": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "workspace_id": "workspace_id-value",
+      "status": "queued",
+      "revision": 1,
+      "total_items": 1,
+      "counts": {
+        "example": 1
+      },
+      "cancellation_requested": false,
+      "created_at": "2026-10-27T12:34:56Z",
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "status": 200,
     "encoding": "application/json",
     "precondition": false,
     "idempotency": true

@@ -41,7 +41,8 @@ def test_structured_product_extension_preserves_standalone_head():
     standalone.set_main_option("path_separator", "os")
     assert ScriptDirectory.from_config(standalone).get_heads() == ["0015_versioned_embedding_sets"]
     product = ScriptDirectory.from_config(deploy.history_config("structured", versions, None))
-    assert product.get_heads() == ["0019_consumer_context"]
+    assert product.get_heads() == ["0020_bulk_query_operations"]
+    assert product.get_revision("0020_bulk_query_operations").down_revision == "0019_consumer_context"
     assert product.get_revision("0019_consumer_context").down_revision == "0018_bulk_operations"
     assert product.get_revision("0018_bulk_operations").down_revision == "0017_snapshot_coordinates"
     assert product.get_revision("0017_snapshot_coordinates").down_revision == "0016_immutable_file_lineage"

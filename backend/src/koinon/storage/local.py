@@ -3,6 +3,7 @@
 import asyncio
 import os
 import tempfile
+from contextlib import suppress
 from pathlib import Path
 
 from koinon.storage.ports import BlobTooLargeError, validate_key
@@ -35,7 +36,10 @@ class LocalBlobStore:
         path = self._path(key)
         await asyncio.to_thread(self._write, path, data)
 
-    def _write(self, path: Path, data: bytes):
+    async def put_immutable(self, key: str, data: bytes, content_type: str | None = None) -> None:
+        await asyncio.to_thread(self._write, self._path(key), data, replace=False)
+
+    def _write(self, path: Path, data: bytes, *, replace: bool = True):
         path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         temporary = None
         try:
@@ -44,7 +48,11 @@ class LocalBlobStore:
                 stream.write(data)
                 stream.flush()
                 os.fsync(stream.fileno())
-            os.replace(temporary, path)
+            if replace:
+                os.replace(temporary, path)
+            else:
+                with suppress(FileExistsError):
+                    os.link(temporary, path)
             directory = path.parent
             while True:
                 descriptor = os.open(directory, os.O_RDONLY)

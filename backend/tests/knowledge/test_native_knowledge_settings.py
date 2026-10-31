@@ -14,6 +14,7 @@ from test_policy_runtime_scope import snapshot
 from koinon.knowledge.adapters import NativeDomains
 from koinon.knowledge.model_bindings import DomainConnections, KnowledgeConnectionResolver
 from koinon.organization_knowledge.dtos import OrganizationKnowledgeSnapshot, snapshot_digest
+from koinon.workers.admission import WorkAdmission, WorkAdmissionSettings
 
 
 def selected(**changes):
@@ -53,7 +54,7 @@ def domains():
         resolve=lambda kind: beans[kind],
         registered_types=lambda: [],
     )
-    return NativeDomains(container), requests, scopes, beans
+    return NativeDomains(container, admission=WorkAdmission(WorkAdmissionSettings())), requests, scopes, beans
 
 
 def test_document_role_requirements_follow_the_same_effective_engine_policy():

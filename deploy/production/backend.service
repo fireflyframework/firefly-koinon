@@ -14,6 +14,7 @@ Environment=PYFLY_SERVER_HOST=127.0.0.1
 Environment=PYFLY_SERVER_PORT=18781
 Environment=PYFLY_SERVER_TYPE=uvicorn
 EnvironmentFile=/etc/koinon/runtime.env
+Environment=KOINON_PROCESS_ROLE=api
 ExecStart=/usr/bin/env FORWARDED_ALLOW_IPS=127.0.0.1 /opt/koinon/backend/.venv/bin/python -m koinon.serve
 Restart=on-failure
 RestartSec=5

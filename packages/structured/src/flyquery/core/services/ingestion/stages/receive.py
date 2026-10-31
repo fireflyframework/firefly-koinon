@@ -42,6 +42,9 @@ from flyquery.core.services.ingestion.caps import (
     enforce_upload_cap,
 )
 from flyquery.core.services.ingestion.format_detect import detect_format
+from flyquery.core.services.ingestion.resources import (
+    ingestion_resources,
+)
 from flyquery.core.services.storage.object_store import ObjectStore
 
 logger = logging.getLogger(__name__)
@@ -59,6 +62,7 @@ class ReceiveResult:
     local_temp_path: str
 
 
+@ingestion_resources
 async def run_receive(
     *,
     tenant_id: str,
@@ -71,6 +75,7 @@ async def run_receive(
     session_factory: async_sessionmaker[AsyncSession],
     settings: Any,  # FlyquerySettings
     workspace_storage_used_bytes: int,
+    file_id: uuid.UUID | None = None,
 ) -> ReceiveResult:
     """Execute Stage 1: receive."""
     size_bytes = len(file_bytes)
@@ -86,7 +91,7 @@ async def run_receive(
     file_format, compression = detect_format(filename, head)
 
     # --- 4. Assign file_id + build storage key ---
-    file_id = uuid.uuid4()
+    file_id = file_id or uuid.uuid4()
     ext = _pick_ext(filename, file_format, compression)
     object_store_key = f"flyquery/{tenant_id}/{workspace_id}/{dataset_id}/files/{file_id}{ext}"
 
@@ -103,6 +108,9 @@ async def run_receive(
             os.close(fd)
             raise
         with stream:
+            from flyquery.core.services.ingestion.resources import current_scope
+
+            current_scope().account(local_temp_path, len(file_bytes))
             stream.write(file_bytes)
 
         # --- 7. Insert flyquery_files row ---

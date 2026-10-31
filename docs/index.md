@@ -21,7 +21,7 @@
   </section>
   <section class="doc-entry">
     <h3>Operate a deployment</h3>
-    <div><p>Configure infrastructure, preserve data and plan backup and recovery.</p><p><a href="operations/">Operations guide</a> <a href="operations/backup-restore/">Backup and restore</a></p></div>
+    <div><p>Install a release, connect its infrastructure and establish the first organization.</p><p><a href="operations/installation/">Install koinon</a> <a href="concepts/architecture/#reference-deployment">Reference architecture</a> <a href="operations/first-start/">First start</a></p></div>
   </section>
 </div>
 

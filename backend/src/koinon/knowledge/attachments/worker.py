@@ -22,6 +22,7 @@ from koinon.knowledge.attachments.entities import ChatAttachmentChunk, timestamp
 from koinon.knowledge.attachments.extraction import ExtractionFailure
 from koinon.knowledge.attachments.lifecycle import AttachmentLifecycle
 from koinon.knowledge.attachments.parser import PrivateAttachmentParser
+from koinon.workers.admission import WorkAdmission
 
 logger = logging.getLogger(__name__)
 KINDS = ("chat.attachment.extract", "chat.attachment.expire", "chat.attachment.purge")
@@ -34,9 +35,11 @@ class AttachmentWorker:
         lifecycle: AttachmentLifecycle,
         parser: PrivateAttachmentParser,
         processing: AttachmentProcessingState,
+        admission: WorkAdmission,
     ):
         self.lifecycle, self.reader, self.parser = lifecycle, lifecycle.reader, parser
         self.processing = processing
+        self.admission = admission
         self.worker_id = "private-files-" + uuid4().hex
 
     @scheduled(fixed_delay=timedelta(seconds=1))
@@ -44,6 +47,10 @@ class AttachmentWorker:
         if not self.reader.settings.worker_enabled:
             return
         self.reader.settings.validate()
+        async with self.admission.hold("attachment"):
+            await self._one()
+
+    async def _one(self):
         job_id = await self.claim()
         self.processing.last_tick = timestamp()
         if job_id is None:

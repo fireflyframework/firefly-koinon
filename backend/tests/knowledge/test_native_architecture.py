@@ -9,6 +9,7 @@ from pyfly.container import Container
 from pyfly.container.exceptions import NoUniqueBeanError
 
 from koinon.knowledge.adapters import NativeDomains
+from koinon.workers.admission import WorkAdmission, WorkAdmissionSettings
 
 
 class NativePort:
@@ -30,7 +31,10 @@ def test_native_resolution_honors_primary_interface_binding():
     container.bind(NativePort, FirstNative)
     container.bind(NativePort, SecondNative)
     container.get_registration(SecondNative).primary = True
-    assert isinstance(NativeDomains(container)._resolve(NativePort), SecondNative)
+    assert isinstance(
+        NativeDomains(container, admission=WorkAdmission(WorkAdmissionSettings()))._resolve(NativePort),
+        SecondNative,
+    )
 
 
 def test_native_resolution_does_not_mask_ambiguous_interface_binding():
@@ -39,7 +43,7 @@ def test_native_resolution_does_not_mask_ambiguous_interface_binding():
         container.register(kind)
         container.bind(NativePort, kind)
     with pytest.raises(NoUniqueBeanError):
-        NativeDomains(container)._resolve(NativePort)
+        NativeDomains(container, admission=WorkAdmission(WorkAdmissionSettings()))._resolve(NativePort)
 
 
 async def test_index_coverage_uses_injected_native_domains(monkeypatch):
@@ -89,6 +93,7 @@ def test_history_port_override_and_disabled_canon_share_one_native_lifecycle(tmp
     from koinon.app import create_application
     from koinon.knowledge.document_history.ports import DocumentHistoryPort
     from koinon.knowledge.document_history.service import DocumentHistoryService
+    from koinon.knowledge.service import KnowledgeFacade
 
     calls = []
 
@@ -105,7 +110,7 @@ def test_history_port_override_and_disabled_canon_share_one_native_lifecycle(tmp
     app = create_application(
         {
             "koinon": {
-                "knowledge": {"enabled": True},
+                "knowledge": {"enabled": False},
                 "legacy": {"enabled": False},
                 "security": {
                     "issuer": "https://identity.example.test",
@@ -130,6 +135,8 @@ def test_history_port_override_and_disabled_canon_share_one_native_lifecycle(tmp
         }
     )
     context = app.state.context
+    context.register_bean(DocumentHistoryService)
+    context.container.register_instance(KnowledgeFacade, SimpleNamespace())
     replacement = SimpleNamespace(versions=AsyncMock())
     context.container.register_instance(DocumentHistoryPort, replacement)
     context.register_bean(Witness)
@@ -203,7 +210,7 @@ async def test_query_uses_public_managed_runtime_inside_model_bindings():
     container = Container()
     for kind, value in services.items():
         container.register_instance(kind, value)
-    domains = NativeDomains(container)
+    domains = NativeDomains(container, admission=WorkAdmission(WorkAdmissionSettings()))
     domains.model_connections = models
     result = await domains.query(
         tenant_id="tenant",

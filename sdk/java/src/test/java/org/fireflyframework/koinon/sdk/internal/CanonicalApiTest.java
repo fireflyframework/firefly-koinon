@@ -105,6 +105,9 @@ final class CanonicalApiTest {
                   assertTrue(content.contains("acknowledge_chunk_invalidation"));
                   assertTrue(content.contains("true"));
                 }
+              } else if (request.equals("BulkFileUpload")) {
+                assertArrayEquals(new byte[] {1, 2, 3}, received);
+                assertEquals("application/octet-stream", exchange.getRequestHeaders().getFirst("Content-Type"));
               } else if (request.equals("AvatarUpload")) {
                 assertArrayEquals(new byte[] {1, 2, 3}, received);
                 assertEquals("image/png", exchange.getRequestHeaders().getFirst("Content-Type"));
@@ -240,6 +243,7 @@ final class CanonicalApiTest {
       else if (type == DocumentReplacement.class)
         args[i] = new DocumentReplacement(file, "text/plain", true);
       else if (type == TableReplacement.class) args[i] = new TableReplacement(file, "text/plain");
+      else if (type == BulkFileUpload.class) args[i] = new BulkFileUpload(new byte[] {1, 2, 3});
       else if (type == AvatarUpload.class)
         args[i] = new AvatarUpload(new byte[] {1, 2, 3}, ImageMediaType.PNG);
       else if (name.equals("filter"))

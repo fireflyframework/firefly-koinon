@@ -83,8 +83,15 @@ class AssistantQueue:
 
     @transactional
     async def begin_generation(
-        self, run_id, worker_id, *, model_id, model_class, api,
-        binding_output_mode=None, model_options_sha256=None,
+        self,
+        run_id,
+        worker_id,
+        *,
+        model_id,
+        model_class,
+        api,
+        binding_output_mode=None,
+        model_options_sha256=None,
     ):
         from koinon.assistants.audit_dtos import GenerationReceipt
         from koinon.assistants.entities import ToolResult
@@ -336,20 +343,36 @@ class AssistantQueue:
                 SqlAttemptReceipt(result_id=result_id, generation_id=generation_id, **asdict(row))
                 for row in capture.sql_attempts
             ]
-            tools = [RlmToolReceipt(result_id=result_id, generation_id=generation_id,
-                                    **row.model_dump(mode="json")) for row in capture.rlm_tools or ()]
+            tools = [
+                RlmToolReceipt(
+                    result_id=result_id, generation_id=generation_id, **row.model_dump(mode="json")
+                )
+                for row in capture.rlm_tools or ()
+            ]
             if (
                 len(reads) > 512
                 or len(attempts) > 128
                 or len(tools) > 256
                 or any(row.tenant_id != run.tenant_id for row in tools)
-                or any(not set(row.source_ids) <= {
-                    source for read in reads for source in read.source_ids
-                } for row in tools)
                 or any(row.tenant_id != run.tenant_id for row in reads)
                 or len({row.ordinal for row in attempts}) != len(attempts)
             ):
                 raise ValueError("Invalid native receipt scope")
+            from koinon.evidence.rlm_scope import require_observed_rlm_scope
+
+            for row in tools:
+                require_observed_rlm_scope(
+                    row.source_ids,
+                    row.knowledge_item_ids,
+                    document_sources={
+                        source for read in reads if read.domain == "documents" for source in read.source_ids
+                    },
+                    knowledge_items={
+                        read.knowledge_item_id
+                        for read in reads
+                        if read.domain == "knowledge" and read.knowledge_item_id is not None
+                    },
+                )
             thread = await self.assistants.threads.find_by_id(run.thread_id)
             entries = {}
             for read in reads:

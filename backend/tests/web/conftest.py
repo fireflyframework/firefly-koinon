@@ -3,6 +3,8 @@
 import json
 import time
 from dataclasses import asdict
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import jwt
 import pytest
@@ -33,7 +35,11 @@ def bearer(subject="admin"):
 
 @pytest.fixture
 def client(tmp_path, monkeypatch, request):
+    monkeypatch.setenv("FLYCANON_ALLOW_IN_MEMORY_ADAPTERS", "true")
+    monkeypatch.setenv("FLYQUERY_ALLOW_IN_MEMORY_ADAPTERS", "true")
     from flycanon.config import CanonSettings
+    from flycanon.core import configuration as canon_configuration
+    from flycanon.core.services.retrieval import CorpusContext
     from flyquery.config import FlyquerySettings
 
     from koinon.app import create_application
@@ -47,6 +53,15 @@ def client(tmp_path, monkeypatch, request):
         original(self, uri, **kwargs)
 
     monkeypatch.setattr(IdentityTokenValidator, "__init__", local_validator)
+    monkeypatch.setattr(
+        canon_configuration,
+        "build_corpus_context",
+        lambda **kwargs: CorpusContext(
+            corpus=SimpleNamespace(initialise=AsyncMock(), close=AsyncMock()),
+            vector_store=SimpleNamespace(initialise=AsyncMock(), close=AsyncMock()),
+            backend="pgvector",
+        ),
+    )
     oidc = OidcSettings(
         issuer=ISSUER,
         jwks_uri=f"{ISSUER}/certs",
@@ -63,6 +78,10 @@ def client(tmp_path, monkeypatch, request):
                 "security": asdict(oidc),
                 "legacy": {"enabled": False},
                 "knowledge": {"enabled": False},
+                "storage": {
+                    "documents": {"root": str(tmp_path / "documents")},
+                    "structured": {"root": str(tmp_path / "structured")},
+                },
             },
             "pyfly": {
                 "data": {
@@ -70,6 +89,13 @@ def client(tmp_path, monkeypatch, request):
                         "enabled": True,
                         "ddl-auto": "create",
                         "url": f"sqlite+aiosqlite:///{tmp_path / 'app.db'}",
+                        "datasources": {
+                            name: {
+                                "url": f"sqlite+aiosqlite:///{tmp_path / (name + '.db')}",
+                                "ddl-auto": "none",
+                            }
+                            for name in ("canon", "canon_admin", "structured", "structured_admin")
+                        },
                     }
                 }
             },
@@ -77,13 +103,16 @@ def client(tmp_path, monkeypatch, request):
     )
     (tmp_path / "documents").mkdir()
     (tmp_path / "structured").mkdir()
-    app.state.context.container.register_instance(
-        CanonSettings,
-        CanonSettings(answer_mode="rag", object_store_localfs_root=str(tmp_path / "documents")),
-    )
-    app.state.context.container.register_instance(
-        FlyquerySettings, FlyquerySettings(object_store_base=str(tmp_path / "structured"))
-    )
+    from flycanon.core.services.sources.async_ingest_service import AsyncIngestService
+
+    if not app.state.context.container.contains_type(AsyncIngestService):
+        app.state.context.container.register_instance(
+            CanonSettings,
+            CanonSettings(answer_mode="rag", object_store_localfs_root=str(tmp_path / "documents")),
+        )
+        app.state.context.container.register_instance(
+            FlyquerySettings, FlyquerySettings(object_store_base=str(tmp_path / "structured"))
+        )
     if hasattr(request, "param"):
         from koinon.web.projection import register_controller
 

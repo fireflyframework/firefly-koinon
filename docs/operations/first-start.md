@@ -1,20 +1,27 @@
 <!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
 # First start in production
 
-Use this order for a new installation. It connects the [production deployment](production.md) with [guided organization configuration](../guides/knowledge-setup.md). Keep the release, configuration and recovery records together. An existing installation follows the upgrade procedure below and keeps its data and memberships.
+Use this order after [installing a matching release](installation.md). It connects the [production deployment](production.md) with [guided organization configuration](../guides/knowledge-setup.md). Keep the release, configuration and recovery records together. An existing installation follows the upgrade procedure below and keeps its data and memberships.
 
 ## 1. Prepare persistent storage and private PostgreSQL
 
 Choose persistent roots for original documents, structured artifacts and private chat files before starting the API or workers. All replicas must use the intended shared storage. Follow [storage configuration](storage-configuration.md) for the three independent profiles and required cloud extras.
 
-For an Azure VM, verify the attached data disk by its expected LUN, size and disk identity using the VM attachment record and the guest's supported device mapping. NVMe guests can expose different names and Azure links from SCSI guests. Do not assume `/dev/sdc`, a SCSI LUN path or the first NVMe device is the data disk. Inspect before mounting:
+For a filesystem-backed deployment, identify the intended persistent volume using
+your platform's attachment record and the host's supported device mapping. Match
+its identity, size and existing filesystem before mounting. On Linux, inspect:
 
 ```sh
 lsblk -o NAME,PATH,SIZE,FSTYPE,MOUNTPOINTS,MODEL,SERIAL
 findmnt --target /var/lib/koinon --output SOURCE,TARGET,FSTYPE,OPTIONS
 ```
 
-Inspect `/dev/disk/azure` links if the image provides them, and resolve the chosen link to its actual device. Match that result to the attachment's LUN and disk identity. A missing SCSI link does not establish that an NVMe disk is missing. Preserve existing filesystems, UUIDs and contents; do not format a retained disk to make a setup command succeed. Mount the verified filesystem persistently, then check ownership and the service's writable paths. Confirm the storage directory resolves to that persistent filesystem, including after a restart. The systemd templates permit writes under `/var/lib/koinon`.
+Device names vary across hosts and storage drivers. Do not assume a particular
+disk name or format a retained volume to make setup succeed. For containers,
+verify the persistent volume and its mount inside the running workload; a
+container's writable layer is not durable storage. Confirm ownership, service
+write permissions and persistence after replacement. The systemd templates
+permit writes under `/var/lib/koinon`; adapt that path for your platform.
 
 Keep PostgreSQL on the reviewed private network and verify its DNS resolution and firewall path from the application host. Configure all five explicit runtime datasource URLs:
 
@@ -46,7 +53,7 @@ Follow [migrations](migrations.md) in order: provision roles, apply the three mi
 
 Start the migrated API with its runtime credentials and persistent storage. Serve the management build and backend routes through the reviewed HTTPS proxy. Use the [management proxy instructions](production.md#serve-the-management-application); login, callback, `/auth`, API, MCP and discovery routes must reach the backend. Confirm `/health` for liveness and `/ready` for the real database check.
 
-The API and sign-in screen must be available **before** creating the first application tenant. A successful identity-provider login does not grant organization membership. Start the separate conversation worker before testing generated chat answers; API readiness alone does not consume that queue. See [backend operation](production.md#operate-the-backend) for worker templates and connection budgets.
+The API and sign-in screen must be available **before** creating the first application tenant. A successful identity-provider login does not grant organization membership. Start the complete background process with `python -m koinon.worker` before testing generated chat answers or scheduled work. Set `KOINON_PROCESS_ROLE=worker` for that process and `api` for the HTTP process. API readiness alone does not consume queues or run maintenance. See [backend operation](production.md#operate-the-backend) for worker templates and connection budgets.
 
 ## 4. Sign in, verify the subject, then bootstrap
 

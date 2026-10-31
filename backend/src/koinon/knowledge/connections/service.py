@@ -157,6 +157,7 @@ class KnowledgeConnectionService:
             raise InvalidRequestException(
                 "Provide valid scoped knowledge connection fields", code="INVALID_KNOWLEDGE_CONNECTION"
             ) from error
+        await self.connections.lock_tenant(tenant_id)
         await self.authority(subject, tenant_id, data.workspace_id)
         role = ROLES.get(data.role)
         if role is None or role.domain != data.domain:
@@ -322,6 +323,7 @@ class KnowledgeConnectionService:
 
     @transactional
     async def delete(self, subject, tenant_id, identifier, *, expected_revision):
+        await self.connections.lock_tenant(tenant_id)
         row = await self.scoped(tenant_id, identifier)
         await self.authority(subject, tenant_id, row.workspace_id)
         row = await self.scoped(tenant_id, identifier, lock=True)

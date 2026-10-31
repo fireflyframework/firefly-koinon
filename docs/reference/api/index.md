@@ -8,8 +8,8 @@ Choose an area, then an operation. Each operation records its exact SDK mappings
 | Area | Operations |
 | --- | --- |
 | [Catalog and proposals](catalog.md) | 10 |
-| [Sources, files and lineage](sources.md) | 22 |
-| [Search and queries](queries.md) | 2 |
+| [Sources, files and lineage](sources.md) | 33 |
+| [Search and queries](queries.md) | 10 |
 | [Curated knowledge](curated-knowledge.md) | 7 |
 | [Chat and attachments](chat.md) | 31 |
 | [Exports and sharing](exports-sharing.md) | 11 |
@@ -21,6 +21,6 @@ Choose an area, then an operation. Each operation records its exact SDK mappings
 | [Applications and MCP](applications-mcp.md) | 22 |
 | [Platform configuration and operations](platform.md) | 11 |
 
-These 193 canonical operations are separate from the [qualified retained glossary API](../sdk-api.md#qualified-retained-glossary-api).
+These 212 canonical operations are separate from the [qualified retained glossary API](../sdk-api.md#qualified-retained-glossary-api).
 
 [Browse retained glossary operation details](retained-glossary.md).

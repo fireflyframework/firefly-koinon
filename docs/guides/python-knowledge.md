@@ -55,7 +55,7 @@ async def ingest_document(
 
 Use `mode="dataset"` for admitted structured formats. Retain the returned source, asset identities and optional `job_id`; acceptance is not proof that extraction or indexing finished. Inspect `job(tenant, job_id)` when supplied and the resulting catalog status. Do not automatically repeat project creation or upload after a timeout: reconcile the authorized catalog and retained receipts first.
 
-For a bounded multi-file import, create or select the destination once, then call `upload` sequentially with those same authorized project/collection IDs. Persist each receipt before advancing and cap the application's file count and per-file bytes. Stop after an ambiguous outcome and reconcile that file. This is a caller-owned loop, not an atomic batch, background recovery API or automatic retry of the list.
+For saved multi-file manifests, bounded uploads and per-file recovery, use [durable bulk intake](bulk-intake.md). A sequential loop around `upload` remains a caller-owned loop: persist each receipt, bound its files and stop to reconcile ambiguous outcomes. It does not make the list atomic.
 
 `update` changes catalog names, descriptions and metadata. `archive` and `restore` are explicit reversible operations. `delete` is a separate destructive catalog request with current ancestry and dependency checks; it is not a curated-item deletion API. `append_dataset_file` adds one file to an existing dataset with a caller-owned stable `idempotency_key`. Persist that key with the exact bytes and receipt. A changed payload conflicts, and a pending outcome needs reconciliation rather than a new key or a replayed batch.
 

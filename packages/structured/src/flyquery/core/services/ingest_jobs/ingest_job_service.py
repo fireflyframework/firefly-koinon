@@ -23,6 +23,7 @@ from decimal import Decimal
 from typing import Any
 
 from pyfly.container import service as service_bean
+from pyfly.context.consumer_context import public_consumer_data
 
 from flyquery.config import FlyquerySettings
 from flyquery.core.eda.ingest_publisher import IngestPublisher, IngestRequestedEvent
@@ -323,8 +324,8 @@ def _to_read(row: dict[str, Any]) -> IngestJobRead:
         job_kind=row["job_kind"],
         status=row["status"],
         attempts=row["attempts"],
-        request_json=row.get("request_json") or {},
-        result_json=row.get("result_json") or {},
+        request_json=public_consumer_data(row.get("request_json") or {}),
+        result_json=public_consumer_data(row.get("result_json") or {}),
         cost_cents=Decimal(str(row.get("cost_cents") or 0)),
         elapsed_ms=row.get("elapsed_ms"),
         started_at=row.get("started_at"),

@@ -14,11 +14,14 @@ from pydantic.json_schema import models_json_schema
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'sdk/python/src'))
 
+# Preserve the existing required response fields exported by types.ts.
+ALIASES = {name: 'BatchQuery' + name for name in ('AgentUsage', 'UsageSummary', 'ClarificationFrame')}
+
 
 def kind(schema):
     if '$ref' in schema:
         name=schema['$ref'].split('/')[-1]
-        return 'Json' if name=='JsonValue' else name
+        return 'Json' if name=='JsonValue' else ALIASES.get(name,name)
     if 'const' in schema:return json.dumps(schema['const'])
     if 'enum' in schema:return ' | '.join(json.dumps(value) for value in schema['enum'])
     variants=schema.get('anyOf',schema.get('oneOf'))
@@ -37,7 +40,7 @@ def kind(schema):
 
 def render():
     classes=[]
-    for name in ('memory','corporate_profiles','organization_people','document_history','mcp_applications','mcp','external_reviews','external_file_reviews','organization_branding','organization_knowledge','organization_chat','authorized_applications','indexes','identity','attachments','evidence','exports','sharing','proposals','glossary','answer_audit','provenance','coordinates','curated','dataset_files'):
+    for name in ('memory','bulk_queries','bulk','corporate_profiles','organization_people','document_history','mcp_applications','mcp','external_reviews','external_file_reviews','organization_branding','organization_knowledge','organization_chat','authorized_applications','indexes','identity','attachments','evidence','exports','sharing','proposals','glossary','answer_audit','provenance','coordinates','curated','dataset_files'):
         module=importlib.import_module('koinon_sdk.'+name)
         classes.extend(value for value in vars(module).values() if inspect.isclass(value) and issubclass(value,BaseModel) and value.__module__==module.__name__)
     from koinon_sdk.models import AttachmentHistorySummary
@@ -45,6 +48,7 @@ def render():
     _,schemas=models_json_schema([(value,'validation') for value in classes],ref_template='#/$defs/{model}')
     lines=['// Copyright 2026 Firefly Software Foundation','// SPDX-License-Identifier: Apache-2.0','// Generated from source-backed standalone SDK wire schemas.',"import type {Json} from './types.js';",'']
     for name,schema in sorted(schemas['$defs'].items()):
+        name=ALIASES.get(name,name)
         properties=schema.get('properties')
         if properties is None:
             lines.append('export type '+name+' = '+kind(schema)+';')

@@ -114,10 +114,11 @@ async def run_reconcile(
     triggered_by: str,
     session_factory: async_sessionmaker[AsyncSession],
     settings: Any | None = None,
+    snapshot_id: uuid.UUID | None = None,
 ) -> ReconcileResult:
     """Execute Stage 3: reconcile."""
     mat = parsed.result
-    snapshot_id = uuid.uuid4()
+    snapshot_id = snapshot_id or uuid.uuid4()
 
     # Snapshot hash = hash of (column_name, data_type) pairs for change detection
     col_sig = sorted((c.name, c.data_type) for c in mat.columns)

@@ -43,8 +43,7 @@ import inspect
 import json
 import logging
 from asyncio import get_running_loop, run_coroutine_threadsafe
-from collections.abc import Sequence
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from functools import lru_cache
 from importlib.metadata import distributions
 from types import MappingProxyType
@@ -58,37 +57,14 @@ from flycanon.core.services.sources.lineage.dtos import DocumentCitationRef, Doc
 from flycanon.core.services.sources.lineage.service import DocumentLineage
 from flycanon.core.services.sources.lineage.whole_read import WholeDocumentReader
 from flycanon.core.services.storage.object_store import ObjectStore
+from flycanon.interfaces.dtos.rlm_corpus import Filters, SourceMeta
 from flycanon.interfaces.enums import SourceKind
+from flycanon.interfaces.knowledge_corpus import RlmCorpus
 from flycanon.models.entities.source import SourceRow
 from flycanon.models.repositories.knowledge_repository import KnowledgeRepository
 from flycanon.models.repositories.source_repository import SourceRepository
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True, slots=True)
-class SourceMeta:
-    """The source pointer kept alongside each document for citations.
-
-    Mirrors the citation-relevant fields the RAG ``Hit`` carries
-    (``source_id`` / ``source_filename`` / ``source_title`` /
-    ``source_kind``) so the answer service can hydrate citations the same
-    way regardless of which retrieval engine produced them.
-    """
-
-    source_id: str
-    filename: str | None
-    title: str | None
-    kind: str
-    object_store_key: str
-    # Compatibility pipeline-input hash; this is not the raw original identity.
-    content_sha256: str
-    tenant_id: str = ""
-    workspace_id: str = ""
-    raw_sha256: str | None = None
-    raw_bytes: int | None = None
-    source_version_id: str | None = None
-    ingestion_extraction_id: str | None = None
 
 
 class CanonDocStore:
@@ -350,10 +326,14 @@ class CanonCorpusBuilder:
         tenant_id: str,
         workspace_id: str,
         filters: Filters | None = None,
-    ) -> CanonDocStore:
+    ) -> RlmCorpus:
         from flycanon.core.agents.model_bindings import current_scope
+        from flycanon.core.services.query.rlm.knowledge_corpus import CombinedCorpus, build_knowledge_store
         from flycanon.core.services.sources.lineage.service import DocumentLineage
 
+        knowledge_store = await build_knowledge_store(
+            tenant_id=tenant_id, workspace_id=workspace_id, filters=filters
+        )
         rows = await self._list_in_scope(tenant_id, workspace_id, filters)
         binding = current_scope()
         required = binding is not None and binding.required
@@ -416,13 +396,14 @@ class CanonCorpusBuilder:
             key = self._readable_key(row, used_keys)
             used_keys.add(key)
             sources[key] = meta
-        return CanonDocStore(
+        documents = CanonDocStore(
             sources,
             object_store=self._object_store,
             registry=self._registry,
             cache=self._cache,
             whole_reader=whole_reader,
         )
+        return CombinedCorpus(documents, knowledge_store) if knowledge_store is not None else documents
 
     async def _list_in_scope(
         self,
@@ -445,14 +426,20 @@ class CanonCorpusBuilder:
         empty resolution (the items cite nothing) restricts the corpus to
         nothing, matching the RAG path where no hit would survive the filter.
         """
+        from flycanon.core.services.retrieval import curated_corpus
+        from flycanon.core.services.retrieval.curated_corpus import documents_enabled
+
+        if not documents_enabled(tenant_id=tenant_id, workspace_id=workspace_id):
+            return []
         f = filters or Filters()
+        curated_lease = curated_corpus.current_lease()
         knowledge_source_ids = (
             await self._knowledge.resolve_source_ids_for_items(
                 f.knowledge_item_ids,
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
             )
-            if f.knowledge_item_ids
+            if f.knowledge_item_ids and not (curated_lease is not None and curated_lease.rlm is not None)
             else None
         )
         rows: list[SourceRow] = []
@@ -485,23 +472,6 @@ class CanonCorpusBuilder:
         while f"{base}#{n}" in used:
             n += 1
         return f"{base}#{n}"
-
-
-@dataclass(slots=True)
-class Filters:
-    """Corpus-scoping filters -- the ``AnswerRequest`` filter fields.
-
-    Compose with AND; empty / ``None`` is a no-op, mirroring the RAG
-    ``_Filters`` semantics. The values are plain strings (the caller passes
-    enum ``.value``\\ s, as the RAG search service does).
-    """
-
-    source_ids: Sequence[str] | None = None
-    knowledge_item_ids: Sequence[str] | None = None
-    domains: Sequence[str] | None = None
-    jurisdictions: Sequence[str] | None = None
-    tags: Sequence[str] | None = None
-    statuses: Sequence[str] | None = None
 
 
 def _matches(row: SourceRow, f: Filters, knowledge_source_ids: set[str] | None) -> bool:

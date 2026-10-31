@@ -8,6 +8,7 @@ from pyfly.kernel import ConflictException
 from test_index_persistence import index_rows as index_rows
 
 from koinon.knowledge.indexes.worker import IndexWorker, IndexWorkerSettings
+from koinon.workers.admission import WorkAdmission, WorkAdmissionSettings
 
 
 def test_worker_lease_must_cover_provider_budget_and_commit_margin():
@@ -31,7 +32,7 @@ async def test_expired_worker_is_denied_before_provider_secret_or_model_client(i
         ),
         fence=AsyncMock(side_effect=ConflictException("Lease lost", code="INDEX_LEASE_LOST")),
     )
-    worker = IndexWorker(lifecycle, queue, IndexWorkerSettings())
+    worker = IndexWorker(lifecycle, queue, IndexWorkerSettings(), WorkAdmission(WorkAdmissionSettings()))
     with pytest.raises(ConflictException):
         await worker.execute("job")
     provider.assert_not_awaited()

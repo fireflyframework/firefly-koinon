@@ -17,7 +17,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 | --- | --- | --- | --- |
 | `answer_modes` | Array of `string` | Yes | Not specified |
 | `rlm_curated_knowledge_supported` | `boolean` | Yes | Not specified |
-| `rlm_curated_knowledge_reason` | `string` | Yes | Not specified |
+| `rlm_curated_knowledge_reason` | `string` or `null` | Yes | Not specified |
 | `rlm_model_role` | `string` | Yes | Not specified |
 | `rlm_recorded_views_required` | `boolean` | Yes | Not specified |
 | `rlm_recorded_views_reason` | `string` | Yes | Not specified |
@@ -26,6 +26,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 ## Model constraints
 
 - Additional properties: not permitted
+- Feature availability; model/provider readiness requires separate installation qualification.
 
 ## Field constraints
 
@@ -35,7 +36,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 
 ### rlm_curated_knowledge_reason
 
-- Exact value: `"KNOWLEDGE_RLM_UNQUALIFIED"`
+- anyOf branch 1 (`string`): Exact value: `"KNOWLEDGE_RLM_UNQUALIFIED"`
 
 ### rlm_model_role
 
@@ -59,6 +60,7 @@ This is a schema definition, not an example request. It preserves all declared k
     ```json
     {
       "additionalProperties": false,
+      "description": "Feature availability; model/provider readiness requires separate installation qualification.",
       "properties": {
         "answer_modes": {
           "items": {
@@ -76,9 +78,16 @@ This is a schema definition, not an example request. It preserves all declared k
           "type": "boolean"
         },
         "rlm_curated_knowledge_reason": {
-          "const": "KNOWLEDGE_RLM_UNQUALIFIED",
-          "title": "Rlm Curated Knowledge Reason",
-          "type": "string"
+          "anyOf": [
+            {
+              "const": "KNOWLEDGE_RLM_UNQUALIFIED",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Rlm Curated Knowledge Reason"
         },
         "rlm_model_role": {
           "const": "documents.rlm",

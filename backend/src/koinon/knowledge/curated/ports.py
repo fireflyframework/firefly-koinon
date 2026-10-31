@@ -3,8 +3,11 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
+from flycanon.interfaces.knowledge_corpus import CuratedRlmReader
 from pydantic import Field
+from pyfly.kernel import ServiceUnavailableException
 
+from koinon.knowledge.curated.corpus_dtos import ServingVersion
 from koinon.knowledge.curated.dtos import (
     Frozen,
     Identifier,
@@ -61,6 +64,13 @@ class CuratedCorpusPort(ABC):
     async def search(
         self, subject, tenant_id, native_workspace_id, admitted, *, query, limit, _capture=None
     ) -> list: ...
+
+    async def rlm(
+        self, subject: str, tenant_id: str, native_workspace_id: str, admitted: tuple[ServingVersion, ...]
+    ) -> CuratedRlmReader:
+        raise ServiceUnavailableException(
+            "This corpus does not provide qualified whole-version RLM views", code="KNOWLEDGE_RLM_UNQUALIFIED"
+        )
 
     async def authorize_release(self, subject, tenant_id, admitted) -> None:
         from pyfly.kernel import ServiceUnavailableException

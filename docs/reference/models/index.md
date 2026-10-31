@@ -3,7 +3,7 @@
 
 # Wire models
 
-The canonical schema contains 345 definitions and 337 named model aliases. Supporting definitions are included so every schema reference can be followed. Language-specific generated names can differ from wire names; consult the SDK imports in the workflow guides.
+The canonical schema contains 367 definitions and 358 named model aliases. Supporting definitions are included so every schema reference can be followed. Language-specific generated names can differ from wire names; consult the SDK imports in the workflow guides.
 
 Each page lists field presence, nullability, defaults and validation constraints. The downloadable [complete schema](../sdk-schemas.json) remains the machine-readable contract.
 
@@ -41,12 +41,16 @@ Each page lists field presence, nullability, defaults and validation constraints
 
 ## B
 
+- [`BatchQueryOutcome`](batchqueryoutcome.md)
 - [`BinaryDownload`](binarydownload.md)
 - [`BrandingInputValues`](brandinginputvalues.md)
 - [`BrandingPalette`](brandingpalette.md)
 - [`BrandingPalettes`](brandingpalettes.md)
 - [`BrandingResetInput`](brandingresetinput.md)
 - [`BrandingValues`](brandingvalues.md)
+- [`BulkAction`](bulkaction.md)
+- [`BulkDestination`](bulkdestination.md)
+- [`BulkFileUpload`](bulkfileupload.md)
 
 ## C
 
@@ -155,6 +159,13 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`FeatureCapability`](featurecapability.md)
 - [`FieldOption`](fieldoption.md)
 - [`FieldSchema`](fieldschema.md)
+- [`FileBatchCapabilities`](filebatchcapabilities.md)
+- [`FileBatchCreate`](filebatchcreate.md)
+- [`FileBatchItemView`](filebatchitemview.md)
+- [`FileBatchPage`](filebatchpage.md)
+- [`FileBatchView`](filebatchview.md)
+- [`FileItemPage`](fileitempage.md)
+- [`FileManifestItem`](filemanifestitem.md)
 - [`FolderCreate`](foldercreate.md)
 - [`FolderPatch`](folderpatch.md)
 - [`Frozen`](frozen.md)
@@ -347,6 +358,16 @@ Each page lists field presence, nullability, defaults and validation constraints
 
 ## Q
 
+- [`QueryBatchAction`](querybatchaction.md)
+- [`QueryBatchCancellation`](querybatchcancellation.md)
+- [`QueryBatchCapabilities`](querybatchcapabilities.md)
+- [`QueryBatchCreate`](querybatchcreate.md)
+- [`QueryBatchItemPage`](querybatchitempage.md)
+- [`QueryBatchItemView`](querybatchitemview.md)
+- [`QueryBatchPage`](querybatchpage.md)
+- [`QueryBatchResult`](querybatchresult.md)
+- [`QueryBatchView`](querybatchview.md)
+- [`QueryManifestItem`](querymanifestitem.md)
 - [`QueryRequest`](queryrequest.md)
 - [`QueryResponse`](queryresponse.md)
 - [`QueryResultExportInput`](queryresultexportinput.md)
@@ -376,6 +397,7 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`SourceReference`](sourcereference.md)
 - [`SourceUpload`](sourceupload.md)
 - [`SqlAttemptReceipt`](sqlattemptreceipt.md)
+- [`StagedFileReceipt`](stagedfilereceipt.md)
 - [`StoredResult`](storedresult.md)
 - [`StreamEvent`](streamevent.md)
 - [`StructuredEvidence`](structuredevidence.md)

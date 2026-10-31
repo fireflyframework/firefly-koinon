@@ -11,7 +11,7 @@ class TenantGucCustomizer:
     def __init__(self, datasource_name: str):
         self.datasources = frozenset({datasource_name})
 
-    async def after_begin(self, connection, datasource) -> None:
+    async def after_begin(self, connection, datasource):
         context = current_tenant_context()
         if context is not None and datasource.url.get_backend_name() == "postgresql":
             await connection.execute(
@@ -21,3 +21,7 @@ class TenantGucCustomizer:
                 text("SELECT set_config('app.workspace_id', :workspace, true)"),
                 {"workspace": context.workspace_id},
             )
+
+        from flycanon.core.services.sources.lease import fence_ingest_transaction
+
+        return await fence_ingest_transaction(connection)

@@ -48,9 +48,11 @@ from flycanon.core.agents.model_bindings import current_scope, model_reference
 from flycanon.core.services.billing.cost_service import CostService
 from flycanon.core.services.query import provenance
 from flycanon.core.services.query.rlm.chat import RlmChatClient
-from flycanon.core.services.query.rlm.corpus import CanonCorpusBuilder, CanonDocStore, Filters
+from flycanon.core.services.query.rlm.citation_mapper import map_citations as _map_citations
+from flycanon.core.services.query.rlm.corpus import CanonCorpusBuilder, Filters
 from flycanon.core.services.query.rlm.session import RLMSession
-from flycanon.interfaces.dtos.query import AnswerRequest, AnswerResponse, Hit
+from flycanon.interfaces.dtos.query import AnswerRequest, AnswerResponse
+from flycanon.interfaces.knowledge_corpus import RlmCorpus
 
 logger = logging.getLogger(__name__)
 
@@ -65,9 +67,7 @@ _NOT_FOUND_MARKERS = ("do not contain", "not found", "no documents", "cannot fin
 # loop exhausted ``rlm_max_iters`` without ever calling ``final()`` and the
 # plain-text fallback came back empty. Paired with ``no_answer=True`` so the
 # caller treats it as an explanatory note rather than a substantive answer.
-_NO_ANSWER_NOTE = (
-    "The engine could not produce a grounded answer to that question from the available documents."
-)
+_NO_ANSWER_NOTE = "The selected knowledge does not contain enough evidence to answer this question."
 
 # Cap on how many prior turns we fold into the question for conversational
 # parity, and how much of each we keep -- bounded so a long history can't
@@ -149,7 +149,7 @@ class RLMAnswerService:
         if len(docs) == 0:
             elapsed_ms = int((time.perf_counter() - start) * 1000)
             return AnswerResponse(
-                answer=("There are no documents in the canon that support an answer to that question."),
+                answer=("The selected knowledge does not provide enough evidence to answer this question."),
                 citations=[],
                 model=model_id,
                 elapsed_ms=elapsed_ms,
@@ -171,8 +171,10 @@ class RLMAnswerService:
         n = max(1, self._settings.rlm_self_consistency)
         if n > 1 and on_turn is None:
             runs = await asyncio.gather(
-                *(asyncio.to_thread(self._run_once, docs, question, max_iters, None, corpus_context)
-                  for _ in range(n)),
+                *(
+                    asyncio.to_thread(self._run_once, docs, question, max_iters, None, corpus_context)
+                    for _ in range(n)
+                ),
                 return_exceptions=True,
             )
             if required:
@@ -197,6 +199,7 @@ class RLMAnswerService:
                 self._run_once, docs, question, max_iters, on_turn, corpus_context
             )
 
+        await provenance.authorize()
         citations = _map_citations(cites, docs)
         # A blank answer is a degenerate non-answer: the CodeAct loop ran out of
         # iterations without calling ``final()``, so the engine handed back an
@@ -217,8 +220,19 @@ class RLMAnswerService:
             answer_text = _NO_ANSWER_NOTE
             citations = []
 
+        if required and not no_answer and not citations:
+            raise ServiceUnavailableException(
+                "An answer requires citations to executed immutable knowledge inputs",
+                code="EVIDENCE_UNAVAILABLE",
+            )
         elapsed_ms = int((time.perf_counter() - start) * 1000)
         await self._record_cost(usage, elapsed_ms, tenant_id, workspace_id)
+        await provenance.authorize()
+        if required and current_scope() is not scope:
+            raise ServiceUnavailableException(
+                "The admitted knowledge connection lifetime has ended",
+                code="KNOWLEDGE_MODEL_SCOPE_CLOSED",
+            )
         logger.info(
             "rlm answered question=%s docs=%d citations=%d elapsed_ms=%d",
             request.question[:80],
@@ -237,7 +251,7 @@ class RLMAnswerService:
     @provenance.worker
     def _run_once(
         self,
-        docs: CanonDocStore,
+        docs: RlmCorpus,
         question: str,
         max_iters: int,
         on_turn: Callable[[int, list[str]], None] | None,
@@ -315,8 +329,11 @@ class RLMAnswerService:
             return 0, client.token_totals()
         if required:
             value = reply.strip() if type(reply) is str else ""
-            if (len(value) > len(str(len(answers))) or not re.fullmatch(r"[1-9][0-9]*", value)
-                    or not 1 <= int(value) <= len(answers)):
+            if (
+                len(value) > len(str(len(answers)))
+                or not re.fullmatch(r"[1-9][0-9]*", value)
+                or not 1 <= int(value) <= len(answers)
+            ):
                 raise ServiceUnavailableException(
                     "The selected model did not return one valid candidate number.",
                     code="RLM_SELECTOR_PROTOCOL_REQUIRED",
@@ -370,64 +387,6 @@ def _filters_from_request(request: AnswerRequest) -> Filters:
         tags=request.tags,
         statuses=[s.value for s in request.statuses] if request.statuses else None,
     )
-
-
-def _map_citations(cites: list[dict], docs: CanonDocStore) -> list[Hit]:
-    """Turn engine citation dicts into hydrated :class:`Hit` rows.
-
-    Each engine citation is ``{"filing": key, "page": int (0-based),
-    "content": snippet}``. The readable ``filing`` key is resolved back to
-    its source via :meth:`CanonDocStore.resolve`; citations whose key no
-    longer resolves are dropped. Versioned documents use the actual immutable
-    view part and recorded-loader page metadata. Standalone legacy documents
-    retain their previous synthetic page mapping.
-    """
-    citations: list[Hit] = []
-    for cite in cites:
-        key = cite.get("filing")
-        if not isinstance(key, str):
-            continue
-        meta = docs.resolve(key)
-        if meta is None:
-            continue
-        content = cite.get("content", "")
-        if getattr(meta, "source_version_id", None) is not None:
-            index = cite.get("page", 0)
-            if type(index) is not int or not isinstance(content, str):
-                continue
-            reference = docs.citation_ref(key, index, content)
-            if reference is None:
-                continue
-            page = None
-            chunk_id = reference.part_id
-            metadata = {
-                "source_version_id": reference.source_version_id,
-                "extraction_id": reference.extraction_id,
-                "source_part_id": reference.part_id,
-                "source_part_sha256": reference.sha256,
-                "page_basis": reference.page_basis,
-            }
-            if reference.recorded_page is not None:
-                metadata["recorded_page"] = str(reference.recorded_page)
-        else:
-            page = max(1, int(cite.get("page", 0)) + 1)
-            chunk_id = f"{meta.source_id}#p{page}"
-            metadata = {}
-        citations.append(
-            Hit(
-                chunk_id=chunk_id,
-                source_id=meta.source_id,
-                source_filename=meta.filename,
-                source_title=meta.title,
-                source_kind=meta.kind,
-                page=page,
-                content=str(content),
-                score=1.0,
-                section_path=None,
-                metadata=metadata,
-            )
-        )
-    return citations
 
 
 def _question_with_history(

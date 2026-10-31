@@ -22,9 +22,30 @@ from koinon_sdk import coordinates, curated, dataset_files, authorized_applicati
 from koinon_sdk import organization_knowledge
 from koinon_sdk import organization_branding, mcp, external_reviews, external_file_reviews
 from koinon_sdk import mcp_applications, document_history
-from koinon_sdk import organization_people, corporate_profiles, memory
+from koinon_sdk import organization_people, corporate_profiles, memory, bulk, bulk_queries
 
 rows = """
+QueryBatchController.capabilities|query_batch_capabilities|queryBatches.capabilities|-|QueryBatchCapabilities
+QueryBatchController.create|create_query_batch|queryBatches.create|QueryBatchCreate|QueryBatchView
+QueryBatchController.list|query_batches|queryBatches.list|-|QueryBatchPage
+QueryBatchController.get|query_batch|queryBatches.get|-|QueryBatchView
+QueryBatchController.items|query_batch_items|queryBatches.items|-|QueryBatchItemPage
+QueryBatchController.result|query_batch_result|queryBatches.result|-|QueryBatchResult
+QueryBatchController.cancel|cancel_query_batch|queryBatches.cancel|QueryBatchAction|QueryBatchCancellation
+QueryBatchController.reconcile|reconcile_query_batch_item|queryBatches.reconcile|QueryBatchAction|QueryBatchView
+
+FileBatchController.capabilities|file_batch_capabilities|fileBatches.capabilities|-|FileBatchCapabilities
+FileBatchController.create|create_file_batch|fileBatches.create|FileBatchCreate|FileBatchView
+FileBatchController.list|file_batches|fileBatches.list|-|FileBatchPage
+FileBatchController.get|file_batch|fileBatches.get|-|FileBatchView
+FileBatchController.items|file_batch_items|fileBatches.items|-|FileItemPage
+FileBatchController.content|upload_file_batch_item|fileBatches.upload|BulkFileUpload|StagedFileReceipt
+FileBatchController.receipt|file_batch_item_receipt|fileBatches.receipt|-|StagedFileReceipt
+FileBatchController.submit|submit_file_batch|fileBatches.submit|BulkAction|FileBatchView
+FileBatchController.cancel|cancel_file_batch|fileBatches.cancel|BulkAction|FileBatchView
+FileBatchController.reconcile|reconcile_file_batch_item|fileBatches.reconcile|BulkAction|FileBatchView
+FileBatchController.recover_original|reconcile_file_batch_original|fileBatches.recoverOriginal|BulkAction|FileBatchView
+
 CorporateProfilesController.presentation|organization_presentation|corporateProfiles.presentation|-|OrganizationPresentation
 CorporateProfilesController.update_presentation|update_organization_presentation|corporateProfiles.updatePresentation|OrganizationPresentationInput|OrganizationPresentation
 CorporateProfilesController.refresh_self|refresh_organization_profile|corporateProfiles.refreshSelf|CorporateProfileRefreshInput|CorporateProfileRefresh
@@ -398,6 +419,8 @@ for op in inventory["operations"]:
         if response == "StreamEvent"
         else "binary"
         if response == "BinaryDownload"
+        else "application/octet-stream"
+        if request == "BulkFileUpload"
         else "application/json"
     )
     op["headers"] = (
@@ -408,7 +431,7 @@ for op in inventory["operations"]:
         else ["If-None-Match (optional; avatars only)"]
         if response == "BinaryDownload" and "avatar" in op["path"]
         else ["Idempotency-Key (required; caller-supplied stable operation key)"]
-        if op["operation"] in {"KnowledgeIndexesController.create", "KnowledgeIndexesController.resume", "ChatAttachmentsController.upload", "ChatAttachmentsController.retry", "ChatAttachmentsController.knowledge", "CuratedKnowledgeController.confirm", "DatasetFilesController.append", "ExternalKnowledgeReviewController.stage", "ExternalKnowledgeReviewController.approve", "ExternalFileReviewController.stage", "ExternalFileReviewController.approve"}
+        if (op["operation"].startswith(("FileBatchController.", "QueryBatchController.")) and op["method"] != "GET") or op["operation"] in {"KnowledgeIndexesController.create", "KnowledgeIndexesController.resume", "ChatAttachmentsController.upload", "ChatAttachmentsController.retry", "ChatAttachmentsController.knowledge", "CuratedKnowledgeController.confirm", "DatasetFilesController.append", "ExternalKnowledgeReviewController.stage", "ExternalKnowledgeReviewController.approve", "ExternalFileReviewController.stage", "ExternalFileReviewController.approve"}
         else []
     )
     if op["operation"] in {"ContentController.document", "ContentController.reingest_document"}:
@@ -418,7 +441,7 @@ assert not mapping, mapping
 assert not unmapped, "Canonical API operations awaiting typed SDK mapping: " + ", ".join(unmapped)
 
 classes = {}
-for module in (models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files, authorized_applications, organization_chat, organization_knowledge, organization_branding, mcp, external_reviews, external_file_reviews, mcp_applications, document_history, organization_people, corporate_profiles, memory):
+for module in (models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files, authorized_applications, organization_chat, organization_knowledge, organization_branding, mcp, external_reviews, external_file_reviews, mcp_applications, document_history, organization_people, corporate_profiles, memory, bulk, bulk_queries):
     classes.update(
         {
             name: value
@@ -469,6 +492,7 @@ schemas["$defs"].update(
         },
         "AttachmentUpload": {"type":"object", "required":["file"], "properties":{"file":{"type":"string", "contentEncoding":"binary"}}},
         "DatasetFileUpload": {"type":"object", "required":["file"], "additionalProperties":False, "properties":{"file":{"type":"string", "contentEncoding":"binary"}}},
+        "BulkFileUpload": {"type":"string", "contentEncoding":"binary", "description":"Exact admitted original bytes, 1..33554432 bytes; raw application/octet-stream, never JSON/base64/multipart."},
         "AvatarUpload": {
             "type": "string",
             "contentEncoding": "binary",

@@ -34,6 +34,8 @@ from flyquery.core.services.ingestion.reader import (
     TableExtractionRules,
 )
 from flyquery.core.services.ingestion.readers.delimited import materialize, ranges
+from flyquery.core.services.ingestion.resources import account_path, output_size
+from flyquery.core.services.ingestion.resources import connect as connect_ingestion
 
 logger = logging.getLogger(__name__)
 
@@ -74,11 +76,10 @@ class CsvReader:
     @staticmethod
     def _head_columns_and_estimate(path: str) -> tuple[int, int]:
         """Sniff the dialect, count columns, estimate row count."""
-        import duckdb
 
         # DuckDB auto_detect handles encoding (UTF-8 default; falls back) +
         # delimiter sniff.
-        conn = duckdb.connect()
+        conn = connect_ingestion()
         try:
             cols_row = conn.execute(
                 "SELECT count(*) FROM (DESCRIBE SELECT * FROM read_csv_auto(?, sample_size=4096))",
@@ -99,10 +100,12 @@ class CsvReader:
         workspace_locale: str,
         type_infer_sample_rows: int,
     ) -> MaterialiseResult:
+        account_path(source_path)
+        account_path(target_parquet_key)
         import duckdb
 
         Path(target_parquet_key).parent.mkdir(parents=True, exist_ok=True)
-        conn = duckdb.connect()
+        conn = connect_ingestion()
         try:
             receipt = materialize(
                 conn,
@@ -125,7 +128,7 @@ class CsvReader:
                 )
                 for i, r in enumerate(schema)
             )
-            byte_size = Path(target_parquet_key).stat().st_size
+            byte_size = output_size(target_parquet_key)
             return MaterialiseResult(
                 target_parquet_key=target_parquet_key,
                 parquet_byte_size=byte_size,

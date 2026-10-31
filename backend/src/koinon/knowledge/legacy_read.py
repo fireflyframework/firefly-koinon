@@ -9,10 +9,12 @@ from uuid import UUID
 from pyfly.container import component
 from pyfly.data.relational.datasource_registry import DataSourceRegistry
 from pyfly.data.transaction import infrastructure_unit
+from pyfly.kernel import ServiceUnavailableException
 from sqlalchemy import text
 
 from koinon.catalog.errors import AccessDenied
 from koinon.knowledge.adapters import native_scope
+from koinon.knowledge.bulk_queries.native_repository import NativeQueryRepository
 from koinon.knowledge.service import KnowledgeFacade
 from koinon.web.capabilities import CapabilityRegistry
 from koinon.web.legacy_security import LegacyOperationPolicies
@@ -208,8 +210,10 @@ class LegacyReadAdmission:
         datasources: DataSourceRegistry,
         policies: LegacyOperationPolicies,
         capabilities: CapabilityRegistry,
+        query_reads: NativeQueryRepository | None = None,
     ):
         self.knowledge, self.datasources = knowledge, datasources
+        self.query_reads = query_reads
         for domain, path, permission in READ_OPERATIONS:
             if capabilities.domains.get(domain, {}).get("registered"):
                 policies.register(
@@ -237,6 +241,12 @@ class LegacyReadAdmission:
             raise AccessDenied(
                 "Resource is outside the admitted scope", code="LEGACY_SCOPE_DENIED"
             ) from error
+        if domain == "structured" and kind == "query":
+            if self.query_reads is None:
+                raise ServiceUnavailableException(
+                    "Retained query admission is unavailable", code="LEGACY_QUERY_AUTHORITY_REQUIRED"
+                )
+            return await self.query_reads.legacy_query_metadata(identifier, tenant, native_workspace)
         table = TABLES[domain][kind]
         columns = {"id", "tenant_id", "workspace_id"} | {
             column for column, _ in PARENTS[domain].get(kind, ())

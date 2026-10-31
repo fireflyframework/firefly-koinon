@@ -119,9 +119,12 @@ nav:
   - Operations:
       - Overview: operations/README.md
       - Deploy and configure:
+          - Install koinon: operations/installation.md
+          - Reference deployment: concepts/architecture.md
           - Local environment: operations/local-deployment.md
           - First start in production: operations/first-start.md
           - Production: operations/production.md
+          - Worker roles and scaling: operations/workers.md
           - Configuration and observations: operations/configuration.md
           - MCP authentication: operations/mcp-authentication.md
       - Storage and ECM:

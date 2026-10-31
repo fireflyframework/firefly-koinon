@@ -50,6 +50,9 @@ class NativeEvidenceReceipt:
         self.budget = NativeCaptureBudget(self.limits)
         self.operation = operation
         self.subject, self.tenant_id, self.owner = subject, tenant_id, current_task()
+        from koinon.knowledge.curated.rlm_state import CuratedRlmState
+
+        self.curated_rlm = CuratedRlmState()
         self.documents: dict[str, DocumentRead] = {}
         self.knowledge_sources: dict[str, SourceReference] = {}
         self.knowledge_proofs: dict[str, tuple] = {}
@@ -94,6 +97,31 @@ class NativeEvidenceReceipt:
             key = (str(workspace_id), str(native_id))
             self.canonical_documents[key] = asset.id
             self.document_origins[key] = (asset.id, asset.workspace_id, source.id, asset.name)
+
+    def admit_knowledge(self, tenant_id, workspace_id, actor, admitted, selections):
+        from koinon.knowledge.curated.rlm_receipts import admit
+
+        admit(self, tenant_id, workspace_id, actor, admitted, selections)
+
+    def knowledge_corpus_meta(self, meta, scope):
+        from koinon.knowledge.curated.rlm_receipts import corpus_meta
+
+        corpus_meta(self, meta, scope)
+
+    def knowledge_sync(self, stage, content, identifiers, scope):
+        from koinon.knowledge.curated.rlm_receipts import sync
+
+        sync(self, stage, content, identifiers, scope)
+
+    def knowledge_view_parts(self, meta, read, scope):
+        from koinon.knowledge.curated.rlm_receipts import view_parts
+
+        view_parts(self, meta, read, scope)
+
+    def knowledge_execution_read(self, meta, read, scope):
+        from koinon.knowledge.curated.rlm_receipts import execution_read
+
+        execution_read(self, meta, read, scope)
 
     def knowledge_read(
         self, tenant_id, workspace_id, actor, canonical_workspace_id, hit, content_sha256, database=None
@@ -513,10 +541,19 @@ class NativeEvidenceReceipt:
         return (
             source,
             sha256(content.encode()).hexdigest(),
-            *(metadata.get(key) for key in (
-                "source_version_id", "extraction_id", "source_part_id", "source_part_sha256",
-                "source_part_kind", "projection_chunk_id", "page_basis", "recorded_page",
-            )),
+            *(
+                metadata.get(key)
+                for key in (
+                    "source_version_id",
+                    "extraction_id",
+                    "source_part_id",
+                    "source_part_sha256",
+                    "source_part_kind",
+                    "projection_chunk_id",
+                    "page_basis",
+                    "recorded_page",
+                )
+            ),
         )
 
     async def document_retrieval_parts(self, hits, scope):
@@ -524,8 +561,11 @@ class NativeEvidenceReceipt:
 
         def require_scope():
             if (
-                current() is not scope or scope is None or not scope.active
-                or scope.observer is not self or scope.task is not self.owner
+                current() is not scope
+                or scope is None
+                or not scope.active
+                or scope.observer is not self
+                or scope.task is not self.owner
                 or current_task() is not self.owner
             ):
                 raise ServiceUnavailableException(
@@ -537,7 +577,8 @@ class NativeEvidenceReceipt:
                     continue
                 if (
                     (scope.workspace_id, str(hit.source_id)) not in self.canonical_documents
-                    or scope.allowed_sources is not None and str(hit.source_id) not in scope.allowed_sources
+                    or scope.allowed_sources is not None
+                    and str(hit.source_id) not in scope.allowed_sources
                 ):
                     raise ServiceUnavailableException(
                         "Native retrieval source is not admitted", code="EVIDENCE_UNAVAILABLE"
@@ -590,7 +631,8 @@ class NativeEvidenceReceipt:
 
     def verified_document_answer(self, data):
         if (
-            not isinstance(data.get("answer"), str) or not data["answer"].strip()
+            not isinstance(data.get("answer"), str)
+            or not data["answer"].strip()
             or not (self._answer_documents or self._answer_knowledge)
         ):
             return False
@@ -608,9 +650,9 @@ class NativeEvidenceReceipt:
         if knowledge:
             self.knowledge_model(stage, prompt, knowledge, scope)
             if stage in {"answer", "answer.fallback"}:
-                self._answer_knowledge.update({
-                    hit.chunk_id: self.knowledge_sources[hit.chunk_id] for hit in knowledge
-                })
+                self._answer_knowledge.update(
+                    {hit.chunk_id: self.knowledge_sources[hit.chunk_id] for hit in knowledge}
+                )
             hits = [hit for hit in hits if hit not in knowledge]
             if not hits:
                 return
@@ -681,10 +723,16 @@ class NativeEvidenceReceipt:
         tool_scope(self, scope)
         if self._pending_rlm_tools < 1 or type(receipt) is not RlmToolReceipt:
             raise ServiceUnavailableException(
-                "Tool receipt has no admitted action", code="EVIDENCE_UNAVAILABLE",
+                "Tool receipt has no admitted action",
+                code="EVIDENCE_UNAVAILABLE",
             )
-        row = NativeRlmTool(**receipt.model_dump(), tenant_id=scope.tenant_id,
-                            workspace_id=scope.workspace_id, source_ids=tuple(sorted(scope.source_ids)))
+        row = NativeRlmTool(
+            **receipt.model_dump(),
+            tenant_id=scope.tenant_id,
+            workspace_id=scope.workspace_id,
+            source_ids=tuple(sorted(scope.source_ids)),
+            knowledge_item_ids=tuple(sorted(scope.knowledge_ids)),
+        )
         self._pending_rlm_tools -= 1
         self.budget.check(self, tools=[row])
         self.rlm_tools = [*(self.rlm_tools or []), row]
@@ -744,9 +792,7 @@ class NativeEvidenceReceipt:
         for source in sources:
             database = self.source_contexts.get(source, NativeDatabaseContext())
             extraction = (
-                self.document_extractions.get((scope.workspace_id, source))
-                if stage != "rlm.corpus"
-                else None
+                self.document_extractions.get((scope.workspace_id, source)) if stage != "rlm.corpus" else None
             )
             pending_reads.append(
                 NativeReadFingerprint(

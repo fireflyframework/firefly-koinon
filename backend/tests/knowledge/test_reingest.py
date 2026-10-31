@@ -10,6 +10,8 @@ from test_content import updates
 from test_facade import context as context
 from test_facade import upload
 
+from koinon.workers.admission import WorkAdmission, WorkAdmissionSettings
+
 
 async def test_document_reingest_checks_alias_writes_before_reading_stored_original(context):
     from koinon.catalog.errors import AccessDenied
@@ -106,7 +108,8 @@ async def test_native_table_bytes_are_bounded_and_hash_verified_before_reingesti
     )
     beans = {FlyquerySettings: SimpleNamespace(native_datasource=lambda: object()), ObjectStore: store}
     adapter = NativeDomains(
-        SimpleNamespace(contains_type=lambda kind: kind in beans, resolve=beans.__getitem__)
+        SimpleNamespace(contains_type=lambda kind: kind in beans, resolve=beans.__getitem__),
+        admission=WorkAdmission(WorkAdmissionSettings()),
     )
     arguments = dict(
         tenant_id="north",

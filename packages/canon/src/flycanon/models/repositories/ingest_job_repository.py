@@ -234,6 +234,7 @@ class IngestJobRepository:
                     IngestJobRow.started_at < cutoff,
                 )
                 .limit(limit)
+                .with_for_update(skip_locked=True)
             )
             reclaimed = [
                 ReclaimedJob(job_id=row.id, tenant_id=row.tenant_id, workspace_id=row.workspace_id)
@@ -243,7 +244,11 @@ class IngestJobRepository:
                 return []
             await session.execute(
                 update(IngestJobRow)
-                .where(IngestJobRow.id.in_([job.job_id for job in reclaimed]))
+                .where(
+                    IngestJobRow.id.in_([job.job_id for job in reclaimed]),
+                    IngestJobRow.status == "running",
+                    IngestJobRow.started_at < cutoff,
+                )
                 .values(status="queued", error_code=None, error_message=None)
             )
             return reclaimed

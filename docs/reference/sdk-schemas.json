@@ -1465,6 +1465,185 @@
       "title": "AuthorizedApplication",
       "type": "object"
     },
+    "BatchQueryOutcome": {
+      "additionalProperties": true,
+      "properties": {
+        "query_id": {
+          "format": "uuid",
+          "title": "Query Id",
+          "type": "string"
+        },
+        "execution_status": {
+          "anyOf": [
+            {
+              "enum": [
+                "OK",
+                "REFINED_OK",
+                "FAILED",
+                "REJECTED_BY_FIREWALL"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Execution Status"
+        },
+        "sql": {
+          "anyOf": [
+            {
+              "maxLength": 65536,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sql"
+        },
+        "preview": {
+          "anyOf": [
+            {
+              "items": {
+                "additionalProperties": {
+                  "$ref": "#/$defs/JsonValue"
+                },
+                "type": "object"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Preview"
+        },
+        "row_count": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Row Count"
+        },
+        "elapsed_ms": {
+          "anyOf": [
+            {
+              "maximum": 3600000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Elapsed Ms"
+        },
+        "truncated": {
+          "default": false,
+          "title": "Truncated",
+          "type": "boolean"
+        },
+        "chart_hint": {
+          "anyOf": [
+            {
+              "enum": [
+                "line",
+                "bar",
+                "table",
+                "pie",
+                "none"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chart Hint"
+        },
+        "explanation": {
+          "anyOf": [
+            {
+              "maxLength": 65536,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Explanation"
+        },
+        "clarification": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ClarificationFrame"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "grounded_summary": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/JsonValue"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Grounded Summary"
+        },
+        "usage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UsageSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "snapshot_pins": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "maxProperties": 128,
+          "title": "Snapshot Pins",
+          "type": "object"
+        },
+        "knowledge_settings_snapshot": {
+          "$ref": "#/$defs/OrganizationKnowledgeSnapshot"
+        }
+      },
+      "required": [
+        "query_id",
+        "execution_status",
+        "knowledge_settings_snapshot"
+      ],
+      "title": "BatchQueryOutcome",
+      "type": "object"
+    },
     "BrandingInputValues": {
       "additionalProperties": true,
       "properties": {
@@ -1719,6 +1898,52 @@
         }
       },
       "title": "BrandingValues",
+      "type": "object"
+    },
+    "BulkAction": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "maximum": 2147483647,
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "expected_revision"
+      ],
+      "title": "BulkAction",
+      "type": "object"
+    },
+    "BulkDestination": {
+      "additionalProperties": false,
+      "properties": {
+        "workspace_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Workspace Id",
+          "type": "string"
+        },
+        "project_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Project Id",
+          "type": "string"
+        },
+        "parent_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Parent Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "workspace_id",
+        "project_id",
+        "parent_id"
+      ],
+      "title": "BulkDestination",
       "type": "object"
     },
     "Capabilities": {
@@ -5254,6 +5479,7 @@
     },
     "DocumentKnowledgeCapabilities": {
       "additionalProperties": false,
+      "description": "Feature availability; model/provider readiness requires separate installation qualification.",
       "properties": {
         "answer_modes": {
           "items": {
@@ -5271,9 +5497,16 @@
           "type": "boolean"
         },
         "rlm_curated_knowledge_reason": {
-          "const": "KNOWLEDGE_RLM_UNQUALIFIED",
-          "title": "Rlm Curated Knowledge Reason",
-          "type": "string"
+          "anyOf": [
+            {
+              "const": "KNOWLEDGE_RLM_UNQUALIFIED",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Rlm Curated Knowledge Reason"
         },
         "rlm_model_role": {
           "const": "documents.rlm",
@@ -7358,6 +7591,471 @@
         "required"
       ],
       "title": "FieldSchema",
+      "type": "object"
+    },
+    "FileBatchCapabilities": {
+      "additionalProperties": true,
+      "properties": {
+        "configured": {
+          "title": "Configured",
+          "type": "boolean"
+        },
+        "modes": {
+          "items": {
+            "enum": [
+              "document",
+              "dataset"
+            ],
+            "type": "string"
+          },
+          "title": "Modes",
+          "type": "array"
+        },
+        "processing_policy": {
+          "const": "extract_only_v1",
+          "default": "extract_only_v1",
+          "title": "Processing Policy",
+          "type": "string"
+        },
+        "staging_backend": {
+          "default": "private_local_posix",
+          "enum": [
+            "private_local_posix",
+            "private_azure_blob",
+            "private_gcs_object"
+          ],
+          "title": "Staging Backend",
+          "type": "string"
+        },
+        "staging_topology": {
+          "default": "single_host_shared_durable_posix",
+          "enum": [
+            "single_host_shared_durable_posix",
+            "shared_private_object_store"
+          ],
+          "title": "Staging Topology",
+          "type": "string"
+        },
+        "writer_fence": {
+          "const": "primary_database_generation_lease",
+          "default": "primary_database_generation_lease",
+          "title": "Writer Fence",
+          "type": "string"
+        },
+        "worker": {
+          "const": "external_native_worker",
+          "default": "external_native_worker",
+          "title": "Worker",
+          "type": "string"
+        },
+        "automatic_unknown_replay": {
+          "const": false,
+          "default": false,
+          "title": "Automatic Unknown Replay",
+          "type": "boolean"
+        },
+        "max_files": {
+          "title": "Max Files",
+          "type": "integer"
+        },
+        "max_file_bytes": {
+          "title": "Max File Bytes",
+          "type": "integer"
+        },
+        "max_batch_bytes": {
+          "title": "Max Batch Bytes",
+          "type": "integer"
+        },
+        "max_active_batches_per_subject": {
+          "title": "Max Active Batches Per Subject",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "configured",
+        "modes",
+        "max_files",
+        "max_file_bytes",
+        "max_batch_bytes",
+        "max_active_batches_per_subject"
+      ],
+      "title": "FileBatchCapabilities",
+      "type": "object"
+    },
+    "FileBatchCreate": {
+      "additionalProperties": false,
+      "properties": {
+        "destination": {
+          "$ref": "#/$defs/BulkDestination"
+        },
+        "processing_policy": {
+          "const": "extract_only_v1",
+          "default": "extract_only_v1",
+          "title": "Processing Policy",
+          "type": "string"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/FileManifestItem"
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "destination",
+        "items"
+      ],
+      "title": "FileBatchCreate",
+      "type": "object"
+    },
+    "FileBatchItemView": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "client_item_id": {
+          "title": "Client Item Id",
+          "type": "string"
+        },
+        "filename": {
+          "title": "Filename",
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "document",
+            "dataset"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "size_bytes": {
+          "title": "Size Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "awaiting_upload",
+            "staged",
+            "queued",
+            "running",
+            "succeeded",
+            "failed",
+            "cancelled",
+            "reconciling"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        },
+        "asset_id": {
+          "title": "Asset Id",
+          "type": "string"
+        },
+        "job_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Job Id"
+        },
+        "file_version_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "File Version Id"
+        },
+        "table_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Table Ids",
+          "type": "array"
+        },
+        "source_version_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Version Id"
+        },
+        "extraction_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Extraction Id"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        }
+      },
+      "required": [
+        "id",
+        "client_item_id",
+        "filename",
+        "mode",
+        "size_bytes",
+        "sha256",
+        "status",
+        "source_id",
+        "asset_id",
+        "job_id"
+      ],
+      "title": "FileBatchItemView",
+      "type": "object"
+    },
+    "FileBatchPage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/FileBatchView"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "total": {
+          "title": "Total",
+          "type": "integer"
+        },
+        "page": {
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "pages": {
+          "title": "Pages",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size",
+        "pages"
+      ],
+      "title": "FileBatchPage",
+      "type": "object"
+    },
+    "FileBatchView": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "tenant_id": {
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "destination": {
+          "$ref": "#/$defs/BulkDestination"
+        },
+        "status": {
+          "enum": [
+            "expired",
+            "staging",
+            "queued",
+            "running",
+            "succeeded",
+            "partial",
+            "failed",
+            "cancelled",
+            "reconciling"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "revision": {
+          "maximum": 2147483647,
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "total_items": {
+          "title": "Total Items",
+          "type": "integer"
+        },
+        "total_bytes": {
+          "title": "Total Bytes",
+          "type": "integer"
+        },
+        "counts": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "propertyNames": {
+            "enum": [
+              "awaiting_upload",
+              "staged",
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled",
+              "reconciling"
+            ]
+          },
+          "title": "Counts",
+          "type": "object"
+        },
+        "cancellation_requested": {
+          "title": "Cancellation Requested",
+          "type": "boolean"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "destination",
+        "status",
+        "revision",
+        "total_items",
+        "total_bytes",
+        "counts",
+        "cancellation_requested",
+        "created_at",
+        "expires_at"
+      ],
+      "title": "FileBatchView",
+      "type": "object"
+    },
+    "FileItemPage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/FileBatchItemView"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "total": {
+          "title": "Total",
+          "type": "integer"
+        },
+        "page": {
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "pages": {
+          "title": "Pages",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size",
+        "pages"
+      ],
+      "title": "FileItemPage",
+      "type": "object"
+    },
+    "FileManifestItem": {
+      "additionalProperties": false,
+      "properties": {
+        "client_item_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Client Item Id",
+          "type": "string"
+        },
+        "filename": {
+          "maxLength": 255,
+          "minLength": 1,
+          "title": "Filename",
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "document",
+            "dataset"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "size_bytes": {
+          "maximum": 33554432,
+          "minimum": 1,
+          "title": "Size Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "client_item_id",
+        "filename",
+        "mode",
+        "size_bytes",
+        "sha256"
+      ],
+      "title": "FileManifestItem",
       "type": "object"
     },
     "FolderCreate": {
@@ -18034,6 +18732,457 @@
       "title": "ProviderType",
       "type": "object"
     },
+    "QueryBatchAction": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "maximum": 2147483647,
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "expected_revision"
+      ],
+      "title": "QueryBatchAction",
+      "type": "object"
+    },
+    "QueryBatchCancellation": {
+      "additionalProperties": true,
+      "properties": {
+        "batch_id": {
+          "title": "Batch Id",
+          "type": "string"
+        },
+        "revision": {
+          "maximum": 2147483647,
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "cancellation_requested": {
+          "const": true,
+          "default": true,
+          "title": "Cancellation Requested",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "batch_id",
+        "revision"
+      ],
+      "title": "QueryBatchCancellation",
+      "type": "object"
+    },
+    "QueryBatchCapabilities": {
+      "additionalProperties": true,
+      "properties": {
+        "configured": {
+          "title": "Configured",
+          "type": "boolean"
+        },
+        "processing_policy": {
+          "const": "independent_nl_v1",
+          "default": "independent_nl_v1",
+          "title": "Processing Policy",
+          "type": "string"
+        },
+        "automatic_unknown_replay": {
+          "const": false,
+          "default": false,
+          "title": "Automatic Unknown Replay",
+          "type": "boolean"
+        },
+        "shared_conversation": {
+          "const": false,
+          "default": false,
+          "title": "Shared Conversation",
+          "type": "boolean"
+        },
+        "connection_mode": {
+          "const": "explicit_provider",
+          "default": "explicit_provider",
+          "title": "Connection Mode",
+          "type": "string"
+        },
+        "max_queries": {
+          "default": 20,
+          "title": "Max Queries",
+          "type": "integer"
+        },
+        "max_question_characters": {
+          "default": 8000,
+          "title": "Max Question Characters",
+          "type": "integer"
+        },
+        "max_question_bytes_per_batch": {
+          "default": 65536,
+          "title": "Max Question Bytes Per Batch",
+          "type": "integer"
+        },
+        "max_result_bytes": {
+          "default": 1048576,
+          "title": "Max Result Bytes",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "configured"
+      ],
+      "title": "QueryBatchCapabilities",
+      "type": "object"
+    },
+    "QueryBatchCreate": {
+      "additionalProperties": false,
+      "properties": {
+        "workspace_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Workspace Id",
+          "type": "string"
+        },
+        "processing_policy": {
+          "const": "independent_nl_v1",
+          "default": "independent_nl_v1",
+          "title": "Processing Policy",
+          "type": "string"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/QueryManifestItem"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "workspace_id",
+        "items"
+      ],
+      "title": "QueryBatchCreate",
+      "type": "object"
+    },
+    "QueryBatchItemPage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/QueryBatchItemView"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "total": {
+          "title": "Total",
+          "type": "integer"
+        },
+        "page": {
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "pages": {
+          "title": "Pages",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size",
+        "pages"
+      ],
+      "title": "QueryBatchItemPage",
+      "type": "object"
+    },
+    "QueryBatchItemView": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "client_item_id": {
+          "title": "Client Item Id",
+          "type": "string"
+        },
+        "dataset_id": {
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "question": {
+          "title": "Question",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "queued",
+            "running",
+            "succeeded",
+            "failed",
+            "cancelled",
+            "reconciling"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        },
+        "query_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Query Id"
+        }
+      },
+      "required": [
+        "id",
+        "client_item_id",
+        "dataset_id",
+        "question",
+        "status",
+        "job_id"
+      ],
+      "title": "QueryBatchItemView",
+      "type": "object"
+    },
+    "QueryBatchPage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/QueryBatchView"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "total": {
+          "title": "Total",
+          "type": "integer"
+        },
+        "page": {
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "pages": {
+          "title": "Pages",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size",
+        "pages"
+      ],
+      "title": "QueryBatchPage",
+      "type": "object"
+    },
+    "QueryBatchResult": {
+      "additionalProperties": true,
+      "properties": {
+        "batch_id": {
+          "title": "Batch Id",
+          "type": "string"
+        },
+        "item_id": {
+          "title": "Item Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "queued",
+            "running",
+            "succeeded",
+            "failed",
+            "cancelled",
+            "reconciling"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "result": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BatchQueryOutcome"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        }
+      },
+      "required": [
+        "batch_id",
+        "item_id",
+        "status"
+      ],
+      "title": "QueryBatchResult",
+      "type": "object"
+    },
+    "QueryBatchView": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "tenant_id": {
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "workspace_id": {
+          "title": "Workspace Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "queued",
+            "running",
+            "succeeded",
+            "partial",
+            "failed",
+            "cancelled",
+            "reconciling"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "revision": {
+          "maximum": 2147483647,
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "total_items": {
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Total Items",
+          "type": "integer"
+        },
+        "counts": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "propertyNames": {
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled",
+              "reconciling"
+            ]
+          },
+          "title": "Counts",
+          "type": "object"
+        },
+        "cancellation_requested": {
+          "title": "Cancellation Requested",
+          "type": "boolean"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "workspace_id",
+        "status",
+        "revision",
+        "total_items",
+        "counts",
+        "cancellation_requested",
+        "created_at",
+        "expires_at"
+      ],
+      "title": "QueryBatchView",
+      "type": "object"
+    },
+    "QueryManifestItem": {
+      "additionalProperties": false,
+      "properties": {
+        "client_item_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Client Item Id",
+          "type": "string"
+        },
+        "dataset_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "question": {
+          "maxLength": 8000,
+          "minLength": 1,
+          "title": "Question",
+          "type": "string"
+        }
+      },
+      "required": [
+        "client_item_id",
+        "dataset_id",
+        "question"
+      ],
+      "title": "QueryManifestItem",
+      "type": "object"
+    },
     "QueryRequest": {
       "additionalProperties": false,
       "properties": {
@@ -18434,6 +19583,7 @@
     },
     "RlmToolReceipt": {
       "additionalProperties": true,
+      "description": "An action admits a nonempty combination of document and knowledge IDs, at most 500 total.\n\nIdentifiers are unique within each domain. Content use requires separate exact-version execution receipts.",
       "properties": {
         "result_id": {
           "maxLength": 64,
@@ -18467,13 +19617,25 @@
           "type": "string"
         },
         "source_ids": {
-          "description": "Admitted native source scope; actual content use requires separate execution-read evidence.",
+          "description": "Admitted native document source IDs; actual content use requires execution-read evidence.",
           "items": {
+            "maxLength": 64,
+            "minLength": 1,
             "type": "string"
           },
           "maxItems": 500,
-          "minItems": 1,
           "title": "Source Ids",
+          "type": "array"
+        },
+        "knowledge_item_ids": {
+          "description": "Admitted canonical knowledge item IDs; exact versions and content use have separate receipts.",
+          "items": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 500,
+          "title": "Knowledge Item Ids",
           "type": "array"
         },
         "tool_call_id": {
@@ -18554,7 +19716,6 @@
         "result_id",
         "tenant_id",
         "workspace_id",
-        "source_ids",
         "tool_call_id",
         "tool_name",
         "request_sha256",
@@ -19875,6 +21036,46 @@
         "executed"
       ],
       "title": "SqlAttemptReceipt",
+      "type": "object"
+    },
+    "StagedFileReceipt": {
+      "additionalProperties": true,
+      "properties": {
+        "receipt_id": {
+          "title": "Receipt Id",
+          "type": "string"
+        },
+        "batch_id": {
+          "title": "Batch Id",
+          "type": "string"
+        },
+        "item_id": {
+          "title": "Item Id",
+          "type": "string"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        },
+        "size_bytes": {
+          "title": "Size Bytes",
+          "type": "integer"
+        },
+        "status": {
+          "const": "staged",
+          "default": "staged",
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "receipt_id",
+        "batch_id",
+        "item_id",
+        "sha256",
+        "size_bytes"
+      ],
+      "title": "StagedFileReceipt",
       "type": "object"
     },
     "StoredResult": {
@@ -21880,6 +23081,11 @@
         }
       }
     },
+    "BulkFileUpload": {
+      "type": "string",
+      "contentEncoding": "binary",
+      "description": "Exact admitted original bytes, 1..33554432 bytes; raw application/octet-stream, never JSON/base64/multipart."
+    },
     "AvatarUpload": {
       "type": "string",
       "contentEncoding": "binary",
@@ -22914,6 +24120,69 @@
     },
     "MemoryReceipt": {
       "$ref": "#/$defs/MemoryReceipt"
+    },
+    "BulkDestination": {
+      "$ref": "#/$defs/BulkDestination"
+    },
+    "FileManifestItem": {
+      "$ref": "#/$defs/FileManifestItem"
+    },
+    "FileBatchCreate": {
+      "$ref": "#/$defs/FileBatchCreate"
+    },
+    "BulkAction": {
+      "$ref": "#/$defs/BulkAction"
+    },
+    "FileBatchCapabilities": {
+      "$ref": "#/$defs/FileBatchCapabilities"
+    },
+    "FileBatchItemView": {
+      "$ref": "#/$defs/FileBatchItemView"
+    },
+    "FileBatchView": {
+      "$ref": "#/$defs/FileBatchView"
+    },
+    "FileItemPage": {
+      "$ref": "#/$defs/FileItemPage"
+    },
+    "FileBatchPage": {
+      "$ref": "#/$defs/FileBatchPage"
+    },
+    "StagedFileReceipt": {
+      "$ref": "#/$defs/StagedFileReceipt"
+    },
+    "QueryManifestItem": {
+      "$ref": "#/$defs/QueryManifestItem"
+    },
+    "QueryBatchCreate": {
+      "$ref": "#/$defs/QueryBatchCreate"
+    },
+    "QueryBatchAction": {
+      "$ref": "#/$defs/QueryBatchAction"
+    },
+    "QueryBatchCapabilities": {
+      "$ref": "#/$defs/QueryBatchCapabilities"
+    },
+    "BatchQueryOutcome": {
+      "$ref": "#/$defs/BatchQueryOutcome"
+    },
+    "QueryBatchView": {
+      "$ref": "#/$defs/QueryBatchView"
+    },
+    "QueryBatchItemView": {
+      "$ref": "#/$defs/QueryBatchItemView"
+    },
+    "QueryBatchResult": {
+      "$ref": "#/$defs/QueryBatchResult"
+    },
+    "QueryBatchPage": {
+      "$ref": "#/$defs/QueryBatchPage"
+    },
+    "QueryBatchItemPage": {
+      "$ref": "#/$defs/QueryBatchItemPage"
+    },
+    "QueryBatchCancellation": {
+      "$ref": "#/$defs/QueryBatchCancellation"
     },
     "Page[AuditEvent]": {
       "$ref": "#/$defs/Page_AuditEvent_"

@@ -95,6 +95,9 @@ async def test_curated_release_keeps_catalog_ciam_and_fresh_checks_in_one_fixed_
 
     corpus = CuratedBodyCorpus(
         SimpleNamespace(version=version, scope=scope, authority=SimpleNamespace(catalog=authority.managed)),
+        SimpleNamespace(),
+        SimpleNamespace(),
+        SimpleNamespace(catalog=authority.managed),
         Release(),
     )
     selected = tuple(

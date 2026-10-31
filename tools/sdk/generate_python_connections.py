@@ -3,8 +3,8 @@
 """Generate standalone SDK field contracts without importing server or framework code."""
 
 import argparse
-import copy
 import ast
+import copy
 import hashlib
 import subprocess
 import sys
@@ -13,6 +13,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SOURCES = {
     "memory": "backend/src/koinon/assistants/memory/dtos.py",
+    "bulk_queries": "backend/src/koinon/knowledge/bulk_queries/dtos.py",
+    "bulk": "backend/src/koinon/knowledge/bulk/dtos.py",
     "corporate_profiles": "backend/src/koinon/corporate_profiles/dtos.py",
     "organization_people": "backend/src/koinon/organization_people/dtos.py",
     "document_history": "backend/src/koinon/knowledge/document_history/dtos.py",
@@ -51,6 +53,17 @@ def render(source):
             elif isinstance(node, ast.ClassDef) and node.name == "Presentation":
                 node.name = "EvidencePresentation"
     declarations = []
+    scope_dependency = None
+    if source.name == "audit_dtos.py":
+        scope_dependency = ROOT / "backend/src/koinon/evidence/rlm_scope.py"
+        helper = ast.parse(scope_dependency.read_text())
+        declarations.extend(
+            node for node in helper.body
+            if (isinstance(node, ast.Assign) and any(
+                isinstance(target, ast.Name) and target.id == "RlmResourceIdentifier"
+                for target in node.targets
+            )) or (isinstance(node, ast.FunctionDef) and node.name == "require_rlm_scope")
+        )
     if source.parent.name == "organization_branding":
         image_tree = ast.parse(source.with_name("images.py").read_text())
         limit = next(
@@ -60,7 +73,7 @@ def render(source):
         )
         assert isinstance(ast.literal_eval(limit.value), int)
         declarations.append(limit)
-    inputs = {"StrictInput"}
+    inputs = {"StrictInput", "Input"}
     for node in tree.body:
         if source.parent.name == "memory" and isinstance(node, ast.ClassDef) and node.name not in {
             "MemoryValue", "MemoryTurnReference", "MemoryReceipt"
@@ -91,7 +104,8 @@ def render(source):
             )
             frozen = any(isinstance(item, ast.Assign) and isinstance(item.value, ast.Call) and any(keyword.arg == "frozen" and isinstance(keyword.value, ast.Constant) and keyword.value.value is True for keyword in item.value.keywords) for item in node.body)
             is_input = (
-                node.name.endswith("Input")
+                node.name in inputs
+                or node.name.endswith("Input")
                 or (has_input_config and not frozen)
                 or any(base in inputs for base in bases)
             )
@@ -107,6 +121,7 @@ def render(source):
             ]
             if source.parent.name == "external_reviews" and (node.name.endswith("Input") or node.name == "ExternalReviewDecision"):
                 node.bases = [ast.Name(id="InputModel", ctx=ast.Load())]
+            original_body = copy.deepcopy(node.body)
             node.decorator_list = []
             node.body = [
                 item
@@ -121,6 +136,16 @@ def render(source):
                 or (source.parent.name == "organization_chat" and node.name in {"OrganizationMemoryPolicy", "OrganizationMemoryPolicyInput"}
                     and isinstance(item, ast.Assign))
             ] or [ast.Pass()]
+            preserved_validator = (
+                "coherent_corpus_scope" if source.name == "audit_dtos.py" and node.name == "RlmToolReceipt"
+                else "coherent_curated_support" if source.parent.name == "organization_knowledge"
+                and node.name == "DocumentKnowledgeCapabilities" else None
+            )
+            if preserved_validator is not None:
+                if original_body and isinstance(original_body[0], ast.Expr) and isinstance(original_body[0].value, ast.Constant):
+                    node.body.insert(0, original_body[0])
+                node.body.extend(value for value in original_body
+                                 if isinstance(value, ast.FunctionDef) and value.name == preserved_validator)
             if source.parent.name == "corporate_profiles" and node.name == "OrganizationPresentationInput":
                 original = next(value for value in ast.parse(source.read_text()).body
                                 if isinstance(value, ast.ClassDef) and value.name == node.name)
@@ -164,6 +189,7 @@ def render(source):
     module = ast.fix_missing_locations(ast.Module(body=declarations, type_ignores=[]))
     names = {node.id for node in ast.walk(module) if isinstance(node, ast.Name)}
     available = {
+        "collections.abc": ["Sequence"],
         "datetime": ["datetime"],
         "typing": ["Annotated", "Literal", "Self", "cast"],
         "uuid": ["UUID"],
@@ -180,6 +206,7 @@ def render(source):
     available["koinon_sdk.organization_knowledge"] = ["OrganizationKnowledgeSnapshot"]
     available["koinon_sdk.organization_chat"] = ["OrganizationMemoryPolicy"]
     available["koinon_sdk.memory"] = ["MemoryReceipt"]
+    available["koinon_sdk.models"] = ["ClarificationFrame", "UsageSummary"]
     available["koinon_sdk.corporate_profiles"] = [
         "CorporatePresentationSummary", "CorporateProfileFieldCapability", "CorporateProfileSyncPolicy"
     ]
@@ -192,11 +219,17 @@ def render(source):
         if any(name in names for name in values)
     )
     digest = hashlib.sha256(source.read_bytes()).hexdigest()
+    dependency_notice = (
+        f"Source dependency: {scope_dependency.relative_to(ROOT)}\n"
+        f"SHA256: {hashlib.sha256(scope_dependency.read_bytes()).hexdigest()}\n\n"
+        if scope_dependency else ""
+    )
     description = (
         '"""Generated wire fields.\n\n'
         f"Source: {source.relative_to(ROOT)}\n"
         f"SHA256: {digest}\n\n"
-        "Server authorization and semantic validation remain authoritative.\n"
+        + dependency_notice
+        + "Server authorization and semantic validation remain authoritative.\n"
         '"""\n'
     )
     content = HEADER + description + imports + "\n\n\n" + ast.unparse(module) + "\n"

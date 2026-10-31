@@ -32,6 +32,7 @@ import os
 import re
 import tempfile
 import uuid
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -52,9 +53,16 @@ from flyquery.core.services.ingestion.native_call import run_native
 from flyquery.core.services.ingestion.reader import (
     ColumnSchema,
     MaterialiseResult,
+    ProposedTable,
     TableExtractionRules,
 )
 from flyquery.core.services.ingestion.reader_factory import get_reader
+from flyquery.core.services.ingestion.resources import (
+    IngestionResourceLimitError,
+    account_path,
+    ingestion_resources,
+)
+from flyquery.core.services.ingestion.resources import connect as connect_ingestion
 from flyquery.core.services.storage.object_store import ObjectStore
 
 logger = logging.getLogger(__name__)
@@ -154,10 +162,9 @@ async def _rename_parquet_columns(
     Uses DuckDB's ``COPY (SELECT col0 AS new0, col1 AS new1, ...) TO file``
     so the type information from the materialise step is preserved.
     """
-    import duckdb
 
     def _sync() -> None:
-        conn = duckdb.connect()
+        conn = connect_ingestion()
         tmp_path: str | None = None
         try:
             conn.execute("SET preserve_insertion_order=true")
@@ -169,6 +176,7 @@ async def _rename_parquet_columns(
             sel = ", ".join(select_clauses)
             fd, tmp_path = tempfile.mkstemp(suffix=".rename.tmp", dir=Path(parquet_path).parent)
             os.close(fd)
+            account_path(tmp_path)
             src = parquet_path.replace("'", "''")
             tgt = tmp_path.replace("'", "''")
             conn.execute(
@@ -193,10 +201,9 @@ async def _read_parquet_sample(parquet_path: str, n_rows: int = 5) -> tuple[list
     each inner list has up to ``n_rows`` cell values pulled from the head
     of the Parquet.
     """
-    import duckdb
 
     def _sync() -> tuple[list[str], list[list[Any]]]:
-        conn = duckdb.connect()
+        conn = connect_ingestion()
         try:
             src = parquet_path.replace("'", "''")
             rows = conn.execute(f"SELECT * FROM read_parquet('{src}') LIMIT {int(n_rows)}").fetchall()
@@ -314,6 +321,8 @@ async def _propose_meaningful_column_names(
             proposed = _dedupe_names(proposed, fallback_prefix=section_prefix)
     except lineage.LineageError:
         raise
+    except IngestionResourceLimitError:
+        raise
     except Exception as exc:  # noqa: BLE001
         logger_.warning(
             "stage=parse rename_agent_failed err=%s -- using section-prefixed fallback",
@@ -384,6 +393,7 @@ class ParsedTable:
     lineage_receipt: dict | None = None
 
 
+@ingestion_resources
 async def run_parse(
     *,
     tenant_id: str,
@@ -413,10 +423,18 @@ async def run_parse(
     original_filename: str | None = None,
     append_only: bool = False,
     max_tables: int | None = None,
+    extract_only: bool = False,
+    reserve_tables: Callable[[tuple[ProposedTable, ...]], Awaitable[tuple[uuid.UUID, ...]]] | None = None,
 ) -> list[ParsedTable]:
     """Execute Stage 2: parse."""
     if append_only and existing_table_id is not None:
         raise InvalidRequestException("Append cannot replace an existing table", code="INVALID_APPEND_TARGET")
+    if type(extract_only) is not bool or (
+        reserve_tables is not None and (existing_table_id is not None or max_tables is None)
+    ):
+        raise InvalidRequestException(
+            "Reserved parsing requires bounded new tables", code="INVALID_APPEND_TARGET"
+        )
     if max_tables is not None and (type(max_tables) is not int or not 1 <= max_tables <= 128):
         raise InvalidRequestException("Use a table bound from 1 to 128", code="INVALID_TABLE_BOUND")
     # 1. Decompress if needed
@@ -495,6 +513,16 @@ async def run_parse(
                 proposed = [proposed[match_idx]]
                 logger.info("re-upload: filtered proposed sections by %s", match_reason)
 
+        reserved = await reserve_tables(tuple(proposed)) if reserve_tables is not None else None
+        if reserved is not None and (
+            not reserved
+            or len(reserved) != len(proposed)
+            or len(set(reserved)) != len(reserved)
+            or any(not isinstance(value, uuid.UUID) for value in reserved)
+        ):
+            raise ConflictException(
+                "Reserved table identities differ", code="DATASET_TABLE_RESERVATION_CONFLICT"
+            )
         parsed: list[ParsedTable] = []
 
         # When re-uploading into an existing slot, we only materialise the
@@ -509,7 +537,7 @@ async def run_parse(
                 )
                 break
 
-            table_id = existing_table_id if existing_table_id is not None else uuid.uuid4()
+            table_id = reserved[i] if reserved is not None else existing_table_id or uuid.uuid4()
 
             # If there's only one table (CSV/TSV/single-sheet), prefer the
             # original filename stem so the table is named "orders" not a
@@ -570,8 +598,10 @@ async def run_parse(
                         type_infer_sample_rows=settings.type_infer_sample_rows,
                         max_title_rows=settings.max_title_rows,
                     )
+                except IngestionResourceLimitError:
+                    raise
                 except Exception as exc:  # noqa: BLE001
-                    if append_only:
+                    if append_only or extract_only or reserved is not None:
                         raise
                     logger.warning(
                         "stage=parse failed_to_materialise table=%s path=%s err=%s",
@@ -606,15 +636,18 @@ async def run_parse(
                 # downstream stages see the new names from the start.
                 section_label_for_naming = pt.name.split("__", 1)[-1] if "__" in pt.name else pt.name
                 try:
-                    with lineage.section(run_id):
-                        mat_result = await _propose_meaningful_column_names(
-                            section_label=section_label_for_naming,
-                            mat_result=mat_result,
-                            parquet_path=local_parquet,
-                            settings=settings,
-                            logger_=logger,
-                        )
+                    if not extract_only:
+                        with lineage.section(run_id):
+                            mat_result = await _propose_meaningful_column_names(
+                                section_label=section_label_for_naming,
+                                mat_result=mat_result,
+                                parquet_path=local_parquet,
+                                settings=settings,
+                                logger_=logger,
+                            )
                 except lineage.LineageError:
+                    raise
+                except IngestionResourceLimitError:
                     raise
                 except Exception as exc:  # noqa: BLE001
                     logger.warning(
@@ -642,6 +675,8 @@ async def run_parse(
                 # ingest_service cleans up after publish.
                 parquet_bytes = Path(local_parquet).read_bytes()
                 await object_store.put(parquet_key, parquet_bytes, "application/octet-stream")
+            except IngestionResourceLimitError:
+                raise
             except Exception:
                 # Materialise / upload failed; clean up the temp file
                 # immediately since no downstream stage will use it.
@@ -671,6 +706,10 @@ async def run_parse(
                     session_factory=session_factory,
                     append_only=append_only,
                 )
+                if reserved is not None and table_id != reserved[i]:
+                    raise ConflictException(
+                        "A reserved table cannot be reassociated", code="DATASET_TABLE_RESERVATION_CONFLICT"
+                    )
 
             # Update source_file_id on existing table
             if existing_table_id is not None:
@@ -772,8 +811,8 @@ async def _insert_table(
     """
     conflict = (
         "ON CONFLICT (dataset_id, name) DO NOTHING"
-        if append_only else
-        "ON CONFLICT (dataset_id, name) DO UPDATE "
+        if append_only
+        else "ON CONFLICT (dataset_id, name) DO UPDATE "
         "SET source_file_id = EXCLUDED.source_file_id, updated_at = now()"
     )
     async with infrastructure_unit(session_factory) as s:

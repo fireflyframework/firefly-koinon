@@ -431,3 +431,103 @@ def _versioned_intake(dependencies):
         DocumentLineage(dependencies["source_repository"], dependencies["object_store"]),
     )
     return IntakeService(**dependencies, lineage_pipeline=pipeline, intake_policy=pipeline.components.policy)
+
+
+async def test_bulk_guard_owns_raw_admission_and_native_commit_but_never_parsing_or_embedding(
+    lineage, repositories
+):
+    from contextlib import asynccontextmanager
+
+    from flycanon.interfaces.dtos.source import SubmitSourceRequest
+
+    intake = intake_fixture(lineage, repositories)
+    held = []
+    checks = []
+
+    @asynccontextmanager
+    async def guard():
+        assert not held
+        held.append(True)
+        try:
+            yield
+        finally:
+            held.pop()
+
+    async def validate_processing():
+        assert not held
+        checks.append("processing")
+
+    async def validate_publication():
+        assert held
+        checks.append("publication")
+
+    original = intake._indexer.replace_for_source.side_effect
+
+    async def indexed(**kwargs):
+        assert held
+        return 1
+
+    intake._indexer.replace_for_source.side_effect = indexed
+    source = await intake.submit(
+        request=SubmitSourceRequest(),
+        content=b"bulk original",
+        tenant_id="t",
+        workspace_id="w",
+        actor="actor",
+        filename="one.txt",
+        logical_source_key="bulk-doc",
+        operation_id="bulk-operation",
+        publication_guard=guard,
+        validate_processing=validate_processing,
+        validate_publication=validate_publication,
+    )
+    assert (
+        source.status == "ingested"
+        and checks.count("processing") >= 2
+        and checks.count("publication") == 1
+        and not held
+    )
+    assert original is None
+
+
+async def test_bulk_final_publication_denial_rolls_back_head_and_chunks_but_retains_original(
+    lineage, repositories
+):
+    from contextlib import asynccontextmanager
+
+    from flycanon.core.services.sources.lineage.dtos import DocumentScope
+    from flycanon.interfaces.dtos.source import SubmitSourceRequest
+
+    intake = intake_fixture(lineage, repositories)
+
+    @asynccontextmanager
+    async def guard():
+        yield
+
+    async def deny():
+        raise RuntimeError("live generation was revoked before commit")
+
+    with pytest.raises(RuntimeError, match="revoked before commit"):
+        await intake.submit(
+            request=SubmitSourceRequest(),
+            content=b"bulk raw",
+            tenant_id="t",
+            workspace_id="w",
+            actor="actor",
+            filename="one.txt",
+            logical_source_key="bulk-doc",
+            operation_id="bulk-denied",
+            publication_guard=guard,
+            validate_publication=deny,
+        )
+    from flycanon.core.services.sources.lineage.ports import LineageQuery
+
+    scope = DocumentScope("t", "w", "actor")
+    async with lineage.repository.read() as unit:
+        version = await unit.one(LineageQuery("version", scope, equal={"operation_id": "bulk-denied"}))
+    head = await lineage.head(scope, version["source_id"])
+    assert head["version_id"] is None and head["extraction_id"] is None
+    assert await repositories["chunk"].list_for_source(version["source_id"]) == []
+    assert (
+        await lineage.original(scope, version["source_id"], version["id"], max_bytes=8)
+    ).content == b"bulk raw"

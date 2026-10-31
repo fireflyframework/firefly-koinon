@@ -78,6 +78,9 @@ async def _two_workspace_case(curated, native_lifecycle):
         )
     reads = context.get_bean(CuratedKnowledgeReads)
     reads.native = SimpleNamespace(datasource=lambda: native_lifecycle[1])
+    from koinon.knowledge.curated.whole_repository import CuratedWholePartRepository
+
+    context.get_bean(CuratedWholePartRepository).datasources = native_lifecycle[1].registry
     corpus = context.get_bean(CuratedBodyCorpus)
     selected = await corpus.admit("issuer|reader", "north", [row.item_id for row in published])
     return reads, corpus, selected, published, primary

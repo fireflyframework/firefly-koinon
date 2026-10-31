@@ -183,6 +183,7 @@ _MONTY_TOOL = [{
     **_PY_TOOL[0],
     "description": (
         "Execute the Monty Python subset with native re and the supplied docs, llm, rlm, and final helpers. "
+        "Returns printed output and the JSON value of the last expression. "
         "Use docs.get(fid), docs.pages(fid), and docs.keys(); "
         "host files, environment, and network are unavailable. "
         "Finish with final(answer, filings=[...], pages=[...], found=True)."
@@ -929,7 +930,11 @@ class RLMSession:
             raise unavailable("Unrecognized secure execution control feedback")
         if not feed.result.success:
             return str(feed.result.error_type) + ": " + str(feed.result.error), None
-        return feed.result.stdout or "(no output)", None
+        output = feed.result.stdout
+        if feed.result.output is not None:
+            value = json.dumps(feed.result.output, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
+            output += ("\n" if output and not output.endswith("\n") else "") + value
+        return output or "(no output)", None
 
     def _run_block(self, code: str, runner, docs, question):
         """Run one code block via ``runner``; return ``(stdout, final_or_None)``.

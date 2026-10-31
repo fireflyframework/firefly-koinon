@@ -69,8 +69,18 @@ def allocated_outputs(monkeypatch, tmp_path):
 
 @pytest.mark.parametrize(
     "scenario",
-    ["success", "reservation", "skip", "cancel_materialise", "cancel_step", "begin_failure",
-     "table_failure", "later_table_failure", "later_version_failure", "reupload_failure"],
+    [
+        "success",
+        "reservation",
+        "skip",
+        "cancel_materialise",
+        "cancel_step",
+        "begin_failure",
+        "table_failure",
+        "later_table_failure",
+        "later_version_failure",
+        "reupload_failure",
+    ],
 )
 async def test_parse_transfers_only_returned_outputs(monkeypatch, tmp_path, allocated_outputs, scenario):
     from flyquery.core.services.ingestion.stages import parse
@@ -122,9 +132,16 @@ async def test_parse_transfers_only_returned_outputs(monkeypatch, tmp_path, allo
 
     monkeypatch.setattr(parse.lineage, "emit", emit)
     args = dict(
-        tenant_id="owned", workspace_id=uuid4(), dataset_id=uuid4(), file_id=uuid4(),
-        local_temp_path=str(source), file_format="csv", compression="none", object_store=store,
-        session_factory=object(), settings=SimpleNamespace(type_infer_sample_rows=10, max_title_rows=3),
+        tenant_id="owned",
+        workspace_id=uuid4(),
+        dataset_id=uuid4(),
+        file_id=uuid4(),
+        local_temp_path=str(source),
+        file_format="csv",
+        compression="none",
+        object_store=store,
+        session_factory=object(),
+        settings=SimpleNamespace(type_infer_sample_rows=10, max_title_rows=3),
     )
     if scenario == "reupload_failure":
         args["existing_table_id"] = uuid4()
@@ -154,7 +171,6 @@ async def test_parse_transfers_only_returned_outputs(monkeypatch, tmp_path, allo
 async def test_registered_reader_accepts_reserved_empty_private_output(tmp_path, file_format):
     import pyarrow as pa
     import pyarrow.parquet as pq
-
     from flyquery.core.services.ingestion.reader import TableExtractionRules
     from flyquery.core.services.ingestion.reader_factory import get_reader
 
@@ -190,9 +206,14 @@ async def test_registered_reader_accepts_reserved_empty_private_output(tmp_path,
     else:
         import fastavro
 
-        schema = {"type": "record", "name": "Row", "fields": [
-            {"name": "item", "type": "string"}, {"name": "amount", "type": "long"},
-        ]}
+        schema = {
+            "type": "record",
+            "name": "Row",
+            "fields": [
+                {"name": "item", "type": "string"},
+                {"name": "amount", "type": "long"},
+            ],
+        }
         with source.open("wb") as stream:
             fastavro.writer(stream, schema, rows)
     fd, target = tempfile.mkstemp(suffix=".parquet", dir=tmp_path)
@@ -201,7 +222,11 @@ async def test_registered_reader_accepts_reserved_empty_private_output(tmp_path,
     reader = get_reader(file_format)
     proposed = await reader.enumerate_tables(str(source), TableExtractionRules())
     result = await reader.materialise(
-        str(source), proposed[0], target, workspace_locale="en-US", type_infer_sample_rows=10,
+        str(source),
+        proposed[0],
+        target,
+        workspace_locale="en-US",
+        type_infer_sample_rows=10,
     )
     assert result.n_rows_actual == 2
     assert pq.read_table(target).to_pylist() == rows
@@ -214,7 +239,6 @@ async def test_stage_native_consumers_finish_before_cancellation_returns(monkeyp
     import duckdb
     import pyarrow as pa
     import pyarrow.parquet as pq
-
     from flyquery.core.services.ingestion.stages import parse, profile, sample
 
     source = tmp_path / "owned.parquet"
@@ -240,28 +264,44 @@ async def test_stage_native_consumers_finish_before_cancellation_returns(monkeyp
         monkeypatch.setattr(duckdb, "connect", block(duckdb.connect))
         if operation == "rename":
             pending = parse._rename_parquet_columns(
-                parquet_path=str(source), current_columns=["amount"], proposed_columns=["value"],
+                parquet_path=str(source),
+                current_columns=["amount"],
+                proposed_columns=["value"],
             )
         else:
             pending = parse._read_parquet_sample(str(source))
     else:
-        columns = [{"id": uuid4(), "qualified_name": "orders.amount", "data_type": "INTEGER",
-                    "pii_tag": "NONE", "description": None}]
+        columns = [
+            {
+                "id": uuid4(),
+                "qualified_name": "orders.amount",
+                "data_type": "INTEGER",
+                "pii_tag": "NONE",
+                "description": None,
+            }
+        ]
         module = sample if operation == "sample" else profile
         monkeypatch.setattr(module, "_load_columns", AsyncMock(return_value=columns))
         if operation == "sample":
             monkeypatch.setattr(sample, "build_pii_scanner", lambda _: object())
             monkeypatch.setattr(sample, "_read_parquet_column", block(sample._read_parquet_column))
             pending = sample.run_sample(
-                tenant_id="owned", snapshot_id=uuid4(), parquet_key=str(source), session_factory=object(),
+                tenant_id="owned",
+                snapshot_id=uuid4(),
+                parquet_key=str(source),
+                session_factory=object(),
                 settings=SimpleNamespace(pii_scanner="none", sample_n=2),
             )
         else:
             name = "_profile_column_sync" if operation == "profile" else "_detect_self_references"
             monkeypatch.setattr(profile, name, block(getattr(profile, name)))
             pending = profile.run_profile(
-                tenant_id="owned", snapshot_id=uuid4(), parquet_key=str(source), n_rows_actual=2,
-                session_factory=object(), settings=SimpleNamespace(profile_row_threshold=10),
+                tenant_id="owned",
+                snapshot_id=uuid4(),
+                parquet_key=str(source),
+                n_rows_actual=2,
+                session_factory=object(),
+                settings=SimpleNamespace(profile_row_threshold=10),
             )
     task = asyncio.create_task(pending)
     try:
@@ -281,7 +321,6 @@ async def test_stage_native_consumers_finish_before_cancellation_returns(monkeyp
 
 async def test_failed_native_rename_reclaims_only_its_private_sidecar(monkeypatch, tmp_path):
     import duckdb
-
     from flyquery.core.services.ingestion.stages import parse
 
     source = tmp_path / "owned.parquet"
@@ -312,10 +351,12 @@ async def test_failed_native_rename_reclaims_only_its_private_sidecar(monkeypatc
 
     connection = Connection()
     monkeypatch.setattr(tempfile, "mkstemp", reserve)
-    monkeypatch.setattr(duckdb, "connect", lambda: connection)
+    monkeypatch.setattr(duckdb, "connect", lambda **kwargs: connection)
     with pytest.raises(RuntimeError, match="COPY failed"):
         await parse._rename_parquet_columns(
-            parquet_path=str(source), current_columns=["amount"], proposed_columns=["value"],
+            parquet_path=str(source),
+            current_columns=["amount"],
+            proposed_columns=["value"],
         )
     assert connection.closed
     assert outputs and all(not output.exists() for output in outputs)

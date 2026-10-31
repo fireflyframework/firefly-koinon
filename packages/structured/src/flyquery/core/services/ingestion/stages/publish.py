@@ -49,6 +49,7 @@ async def run_publish(
     n_rows_actual: int,
     publisher: IngestPublisher,
     session_factory: async_sessionmaker[AsyncSession],
+    emit_event: bool = True,
 ) -> None:
     """Execute Stage 10: atomic READY swap + EDA publish."""
     # --- Atomic transaction: flip snapshot + table ---
@@ -98,7 +99,8 @@ async def run_publish(
         n_columns=n_columns,
         n_rows_actual=n_rows_actual,
     )
-    await publisher.publish_schema_updated(event)
+    if emit_event:
+        await publisher.publish_schema_updated(event)
 
     logger.info(
         "stage=publish snapshot_id=%s table_id=%s status=READY",

@@ -9,6 +9,8 @@ import pytest
 from test_document_reads import native_document as native_document
 from test_native_adapters import configured_connections
 
+from koinon.workers.admission import WorkAdmission, WorkAdmissionSettings
+
 
 def add_bean(adapter, kind, value):
     contains, resolve = adapter.container.contains_type, adapter.container.resolve
@@ -90,7 +92,8 @@ async def test_native_table_reupload_rejects_mismatched_parent_and_stale_snapsho
     ingestion = SimpleNamespace(ingest_reupload=AsyncMock())
     beans = {DatasetService: datasets, TableService: tables, IngestService: ingestion}
     adapter = NativeDomains(
-        SimpleNamespace(contains_type=lambda kind: kind in beans, resolve=beans.__getitem__)
+        SimpleNamespace(contains_type=lambda kind: kind in beans, resolve=beans.__getitem__),
+        admission=WorkAdmission(WorkAdmissionSettings()),
     )
     arguments = dict(
         tenant_id="north",

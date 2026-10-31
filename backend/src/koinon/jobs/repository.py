@@ -14,7 +14,8 @@ class JobRepository(Repository[Job, str]):
     async def claim(self, worker_id: str, lease_seconds: int) -> Job | None:
         session = self._require_session()
         now = datetime.now(UTC)
-        expired = and_(Job.status == "running", Job.lease_until < now)
+        ordinary = Job.kind.not_in(["knowledge.bulk.intake", "knowledge.bulk.query"])
+        expired = and_(ordinary, Job.status == "running", Job.lease_until < now)
         await session.execute(
             update(Job)
             .where(expired, Job.attempts >= Job.max_attempts)
@@ -23,6 +24,7 @@ class JobRepository(Repository[Job, str]):
         candidate = await session.scalar(
             select(Job)
             .where(
+                ordinary,
                 or_(and_(Job.status == "queued", Job.available_at <= now), expired),
                 Job.attempts < Job.max_attempts,
             )

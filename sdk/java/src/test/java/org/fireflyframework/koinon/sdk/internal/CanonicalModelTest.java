@@ -35,6 +35,7 @@ final class CanonicalModelTest {
             "AttachmentUpload",
             "DatasetFileUpload",
             "AvatarUpload",
+            "BulkFileUpload",
             "BinaryDownload",
             "DocumentReplacement",
             "JsonValue",

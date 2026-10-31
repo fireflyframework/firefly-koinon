@@ -147,7 +147,7 @@ async def test_empty_corpus_returns_no_answer():
 
     assert resp.no_answer is True
     assert resp.citations == []
-    assert "no documents" in resp.answer.lower()
+    assert "selected knowledge" in resp.answer.lower() and "evidence" in resp.answer.lower()
     assert resp.model == get_settings().rlm_root_model
     assert resp.elapsed_ms >= 0
     # scope is threaded into the corpus build

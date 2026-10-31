@@ -55,7 +55,7 @@ export async function ingestDocument(
 
 Use `mode: 'dataset'` for admitted structured formats. The transport builds multipart fields and preserves the browser's boundary; do not set `Content-Type` yourself. Retain source/asset identities and `job_id` if supplied. Request acceptance is distinct from completed extraction and indexing. Inspect `jobs.get` and resulting catalog status.
 
-For a bounded multi-file import, select/create the destination once and call `sources.uploadFile` sequentially with the same authorized project/collection IDs. Persist each receipt before advancing and bound the application's file count and per-file bytes. Stop and reconcile an ambiguous file outcome. The loop does not provide an atomic batch, background recovery or an automatic replay of the list.
+For saved multi-file manifests, bounded uploads and per-file recovery, use [durable bulk intake](bulk-intake.md). A sequential `sources.uploadFile` loop remains caller-owned: persist receipts, bound its files and reconcile ambiguous outcomes. It does not make the list atomic.
 
 `catalog.update` changes names, descriptions and metadata. `archive`/`restore` are explicit reversible requests. `catalog.delete` is a separate destructive operation with current ancestry/dependency checks, not a curated-item deletion API. `dataset.appendFile` adds one file to an existing dataset with an explicit stable idempotency key. Preserve the key, exact payload and receipt. Pending or failed intake needs reconciliation; a client loop is neither an atomic batch nor a durable recovery process.
 

@@ -5,6 +5,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from koinon.workers.admission import WorkAdmission, WorkAdmissionSettings
+
 
 def configured_connections(container, embeddings=None):
     from contextlib import asynccontextmanager
@@ -96,7 +98,9 @@ async def test_document_adapter_runs_retained_normalize_load_chunk_embed_index_a
     )
     try:
         with bind_embedding_set(EmbeddingSetBinding("controlled-set", "test", "controlled", 128)):
-            result = await NativeDomains(container).ingest_document(
+            result = await NativeDomains(
+                container, admission=WorkAdmission(WorkAdmissionSettings())
+            ).ingest_document(
                 tenant_id="north",
                 workspace_id="workspace",
                 filename="evidence.md",
@@ -128,7 +132,7 @@ def test_missing_native_domain_fails_actionably_instead_of_constructing_another_
 
     container = Container()
     with pytest.raises(ServiceUnavailableException, match="not enabled"):
-        NativeDomains(container)._resolve(dict)
+        NativeDomains(container, admission=WorkAdmission(WorkAdmissionSettings()))._resolve(dict)
 
 
 def test_retained_domain_denial_remains_an_actionable_native_denial_and_resets_scope():
@@ -169,7 +173,9 @@ async def test_original_bytes_must_be_durable_before_document_upload_is_ready():
         registered_types=lambda: [],
     )
     with pytest.raises(ServiceUnavailableException, match="original bytes"):
-        await NativeDomains(configured_connections(container)).ingest_document(
+        await NativeDomains(
+            configured_connections(container), admission=WorkAdmission(WorkAdmissionSettings())
+        ).ingest_document(
             tenant_id="north",
             workspace_id="workspace",
             filename="facts.md",
@@ -201,7 +207,9 @@ async def test_structured_workspace_provisioning_preserves_catalog_uuid_through_
         resolve=lambda cls: service,
         registered_types=lambda: [],
     )
-    result = await NativeDomains(container).ensure_workspace(
+    result = await NativeDomains(
+        container, admission=WorkAdmission(WorkAdmissionSettings())
+    ).ensure_workspace(
         domain="structured",
         tenant_id="north",
         catalog_id=catalog_id,
@@ -237,7 +245,9 @@ async def test_document_search_dispatches_original_cqrs_messages_with_trusted_sc
     container = SimpleNamespace(
         contains_type=lambda cls: cls is DefaultQueryBus, resolve=lambda cls: bus, registered_types=lambda: []
     )
-    result = await NativeDomains(configured_connections(container)).search(
+    result = await NativeDomains(
+        configured_connections(container), admission=WorkAdmission(WorkAdmissionSettings())
+    ).search(
         tenant_id="north",
         workspace_id="workspace",
         source_ids=["native-source"],
@@ -269,7 +279,7 @@ async def test_direct_sql_uses_retained_ast_classifier_before_resolving_an_execu
         registered_types=lambda: [],
     )
     with pytest.raises(InvalidRequestException, match="read-only"):
-        await NativeDomains(container).query(
+        await NativeDomains(container, admission=WorkAdmission(WorkAdmissionSettings())).query(
             tenant_id="north",
             workspace_id=workspace_id,
             dataset_id=dataset_id,
@@ -318,7 +328,7 @@ async def test_direct_sql_returns_original_answer_contract_with_trusted_native_r
         resolve=lambda cls: registered[cls],
         registered_types=lambda: [],
     )
-    result = await NativeDomains(container).query(
+    result = await NativeDomains(container, admission=WorkAdmission(WorkAdmissionSettings())).query(
         tenant_id="north",
         workspace_id=workspace_id,
         dataset_id=dataset_id,
@@ -369,7 +379,8 @@ async def test_canonical_dataset_query_borrows_only_read_authority_even_for_an_a
             contains_type=lambda kind: kind in services,
             resolve=lambda kind: services[kind],
             registered_types=lambda: [],
-        )
+        ),
+        admission=WorkAdmission(WorkAdmissionSettings()),
     )
     domains.model_requirements = lambda *arguments: ("query", ())
 

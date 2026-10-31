@@ -20,6 +20,7 @@ AREAS = (
         "sources",
         "Sources, files and lineage",
         (
+            "FileBatchController",
             "DocumentHistoryController",
             "ContentController",
             "DatasetFilesController",
@@ -27,7 +28,7 @@ AREAS = (
             "TableCoordinateController",
         ),
     ),
-    ("queries", "Search and queries", ()),
+    ("queries", "Search and queries", ("QueryBatchController",)),
     ("curated-knowledge", "Curated knowledge", ("CuratedKnowledgeController",)),
     (
         "chat",

@@ -36,6 +36,7 @@ from pyfly.kernel import InvalidRequestException, PayloadTooLargeException
 from flyquery.config import FlyquerySettings
 from flyquery.core.eda.ingest_publisher import IngestPublisher
 from flyquery.core.services.ingestion import lineage
+from flyquery.core.services.ingestion.resources import IngestionResourceLimitError, ingestion_resources
 from flyquery.core.services.ingestion.stages.describe import run_describe
 from flyquery.core.services.ingestion.stages.embed import run_embed
 from flyquery.core.services.ingestion.stages.parse import run_parse
@@ -96,6 +97,7 @@ class IngestService:
         # rate limit. ``settings.ingest_section_concurrency`` defaults to 8.
         self._stage_semaphore = asyncio.Semaphore(getattr(settings, "ingest_section_concurrency", 8))
 
+    @ingestion_resources(settings=lambda instance: instance._settings)
     async def ingest_upload(
         self,
         *,
@@ -200,7 +202,7 @@ class IngestService:
                     )
                 )
         finally:
-            for parsed in parsed_tables[len(section_tasks):]:
+            for parsed in parsed_tables[len(section_tasks) :]:
                 local_parquet_path = getattr(parsed, "local_parquet_path", None)
                 if local_parquet_path:
                     try:
@@ -301,6 +303,8 @@ class IngestService:
                         )
                 except lineage.LineageError:
                     raise
+                except IngestionResourceLimitError:
+                    raise
                 except Exception as exc:  # noqa: BLE001
                     logger.warning("stage=sample snapshot=%s skipped err=%s", rec.snapshot_id, exc)
 
@@ -316,6 +320,8 @@ class IngestService:
                             settings=self._settings,
                         )
                 except lineage.LineageError:
+                    raise
+                except IngestionResourceLimitError:
                     raise
                 except Exception as exc:  # noqa: BLE001
                     logger.warning("stage=profile snapshot=%s skipped err=%s", rec.snapshot_id, exc)
@@ -334,6 +340,8 @@ class IngestService:
                             settings=self._settings,
                         )
                 except lineage.LineageError:
+                    raise
+                except IngestionResourceLimitError:
                     raise
                 except Exception as exc:  # noqa: BLE001
                     if not self._settings.allow_provider_fallback:
@@ -378,6 +386,7 @@ class IngestService:
                 except OSError:
                     logger.warning("stage=ingest local_parquet_cleanup_failed")
 
+    @ingestion_resources(settings=lambda instance: instance._settings)
     async def ingest_reupload(
         self,
         *,
@@ -472,7 +481,7 @@ class IngestService:
                     )
                 )
         finally:
-            for parsed in parsed_tables[len(section_tasks):]:
+            for parsed in parsed_tables[len(section_tasks) :]:
                 local_parquet_path = getattr(parsed, "local_parquet_path", None)
                 if local_parquet_path:
                     try:

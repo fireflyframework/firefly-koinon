@@ -9,6 +9,17 @@ Use the linked wire models for field constraints. Operation metadata does not en
 
 ## On this page
 
+- [Capabilities](#filebatchcontroller-capabilities) (GET)
+- [Create](#filebatchcontroller-create) (POST)
+- [List](#filebatchcontroller-list) (GET)
+- [Get](#filebatchcontroller-get) (GET)
+- [Items](#filebatchcontroller-items) (GET)
+- [Content](#filebatchcontroller-content) (PUT)
+- [Receipt](#filebatchcontroller-receipt) (GET)
+- [Submit](#filebatchcontroller-submit) (POST)
+- [Cancel](#filebatchcontroller-cancel) (POST)
+- [Reconcile](#filebatchcontroller-reconcile) (POST)
+- [Recover original](#filebatchcontroller-recover-original) (POST)
 - [Upload](#knowledgecontroller-upload) (POST)
 - [Schema](#knowledgecontroller-schema) (GET)
 - [Lineage](#knowledgecontroller-lineage) (GET)
@@ -31,6 +42,479 @@ Use the linked wire models for field constraints. Operation metadata does not en
 - [Cells](#tablecoordinatecontroller-cells) (POST)
 - [Rows](#tablecoordinatecontroller-rows) (GET)
 - [Columns](#tablecoordinatecontroller-columns) (GET)
+
+<!-- operation: FileBatchController.capabilities -->
+<a id="filebatchcontroller-capabilities"></a>
+## Capabilities
+
+```http
+GET /api/v1/tenants/{tenant_id}/source-batch-capabilities
+```
+
+Contract operation: `FileBatchController.capabilities`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `file_batch_capabilities` |
+| TypeScript | `fileBatches.capabilities` |
+| Java | `client.fileBatches.capabilities` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `workspace_id` | query | `QueryParam[str]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | No request schema declared |
+| Response schema | [`FileBatchCapabilities`](../models/filebatchcapabilities.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: FileBatchController.create -->
+<a id="filebatchcontroller-create"></a>
+## Create
+
+```http
+POST /api/v1/tenants/{tenant_id}/sources/batches
+```
+
+Contract operation: `FileBatchController.create`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `create_file_batch` |
+| TypeScript | `fileBatches.create` |
+| Java | `client.fileBatches.create` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[FileBatchCreate]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`FileBatchCreate`](../models/filebatchcreate.md) |
+| Response schema | [`FileBatchView`](../models/filebatchview.md) |
+| Success status | `201` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+- `Idempotency-Key (required; caller-supplied stable operation key)`
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: FileBatchController.list -->
+<a id="filebatchcontroller-list"></a>
+## List
+
+```http
+GET /api/v1/tenants/{tenant_id}/sources/batches
+```
+
+Contract operation: `FileBatchController.list`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `file_batches` |
+| TypeScript | `fileBatches.list` |
+| Java | `client.fileBatches.list` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `page` | query | `QueryParam[int]` | No | `1` |
+| `page_size` | query | `QueryParam[int]` | No | `25` |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | No request schema declared |
+| Response schema | [`FileBatchPage`](../models/filebatchpage.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: FileBatchController.get -->
+<a id="filebatchcontroller-get"></a>
+## Get
+
+```http
+GET /api/v1/tenants/{tenant_id}/sources/batches/{batch_id}
+```
+
+Contract operation: `FileBatchController.get`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `file_batch` |
+| TypeScript | `fileBatches.get` |
+| Java | `client.fileBatches.get` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `batch_id` | path | `PathVar[str]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | No request schema declared |
+| Response schema | [`FileBatchView`](../models/filebatchview.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: FileBatchController.items -->
+<a id="filebatchcontroller-items"></a>
+## Items
+
+```http
+GET /api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/items
+```
+
+Contract operation: `FileBatchController.items`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `file_batch_items` |
+| TypeScript | `fileBatches.items` |
+| Java | `client.fileBatches.items` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `batch_id` | path | `PathVar[str]` | Yes | Not specified |
+| `page` | query | `QueryParam[int]` | No | `1` |
+| `page_size` | query | `QueryParam[int]` | No | `25` |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | No request schema declared |
+| Response schema | [`FileItemPage`](../models/fileitempage.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: FileBatchController.content -->
+<a id="filebatchcontroller-content"></a>
+## Content
+
+```http
+PUT /api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/items/{item_id}/content
+```
+
+Contract operation: `FileBatchController.content`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `upload_file_batch_item` |
+| TypeScript | `fileBatches.upload` |
+| Java | `client.fileBatches.upload` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `batch_id` | path | `PathVar[str]` | Yes | Not specified |
+| `item_id` | path | `PathVar[str]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`BulkFileUpload`](../models/bulkfileupload.md) |
+| Response schema | [`StagedFileReceipt`](../models/stagedfilereceipt.md) |
+| Success status | `200` |
+| Declared encoding | `application/octet-stream` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+- `Idempotency-Key (required; caller-supplied stable operation key)`
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: FileBatchController.receipt -->
+<a id="filebatchcontroller-receipt"></a>
+## Receipt
+
+```http
+GET /api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/items/{item_id}/receipt
+```
+
+Contract operation: `FileBatchController.receipt`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `file_batch_item_receipt` |
+| TypeScript | `fileBatches.receipt` |
+| Java | `client.fileBatches.receipt` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `batch_id` | path | `PathVar[str]` | Yes | Not specified |
+| `item_id` | path | `PathVar[str]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | No request schema declared |
+| Response schema | [`StagedFileReceipt`](../models/stagedfilereceipt.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: FileBatchController.submit -->
+<a id="filebatchcontroller-submit"></a>
+## Submit
+
+```http
+POST /api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/submit
+```
+
+Contract operation: `FileBatchController.submit`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `submit_file_batch` |
+| TypeScript | `fileBatches.submit` |
+| Java | `client.fileBatches.submit` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `batch_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[BulkAction]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`BulkAction`](../models/bulkaction.md) |
+| Response schema | [`FileBatchView`](../models/filebatchview.md) |
+| Success status | `202` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+- `Idempotency-Key (required; caller-supplied stable operation key)`
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: FileBatchController.cancel -->
+<a id="filebatchcontroller-cancel"></a>
+## Cancel
+
+```http
+POST /api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/cancel
+```
+
+Contract operation: `FileBatchController.cancel`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `cancel_file_batch` |
+| TypeScript | `fileBatches.cancel` |
+| Java | `client.fileBatches.cancel` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `batch_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[BulkAction]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`BulkAction`](../models/bulkaction.md) |
+| Response schema | [`FileBatchView`](../models/filebatchview.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+- `Idempotency-Key (required; caller-supplied stable operation key)`
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: FileBatchController.reconcile -->
+<a id="filebatchcontroller-reconcile"></a>
+## Reconcile
+
+```http
+POST /api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/items/{item_id}/reconcile
+```
+
+Contract operation: `FileBatchController.reconcile`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `reconcile_file_batch_item` |
+| TypeScript | `fileBatches.reconcile` |
+| Java | `client.fileBatches.reconcile` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `batch_id` | path | `PathVar[str]` | Yes | Not specified |
+| `item_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[BulkAction]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`BulkAction`](../models/bulkaction.md) |
+| Response schema | [`FileBatchView`](../models/filebatchview.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+- `Idempotency-Key (required; caller-supplied stable operation key)`
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: FileBatchController.recover_original -->
+<a id="filebatchcontroller-recover-original"></a>
+## Recover original
+
+```http
+POST /api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/items/{item_id}/original/reconcile
+```
+
+Contract operation: `FileBatchController.recover_original`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `reconcile_file_batch_original` |
+| TypeScript | `fileBatches.recoverOriginal` |
+| Java | `client.fileBatches.recoverOriginal` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `batch_id` | path | `PathVar[str]` | Yes | Not specified |
+| `item_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[BulkAction]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`BulkAction`](../models/bulkaction.md) |
+| Response schema | [`FileBatchView`](../models/filebatchview.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+- `Idempotency-Key (required; caller-supplied stable operation key)`
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
 
 <!-- operation: KnowledgeController.upload -->
 <a id="knowledgecontroller-upload"></a>

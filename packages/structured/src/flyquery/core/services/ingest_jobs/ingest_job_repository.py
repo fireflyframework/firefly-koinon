@@ -24,6 +24,7 @@ from typing import Any, cast
 
 import sqlalchemy as sa
 from pyfly.container import repository
+from pyfly.context.consumer_context import PRIVATE_CONSUMER_CONTEXT, consumer_context, public_consumer_data
 from pyfly.data.transaction import infrastructure_unit
 
 from flyquery.data import StructuredSessions, unwrap_sessions
@@ -61,6 +62,10 @@ class IngestJobRepository:
     ) -> dict[str, Any]:
         import json
 
+        request = public_consumer_data(request_json or {})
+        captured = consumer_context()
+        if captured is not None:
+            request[PRIVATE_CONSUMER_CONTEXT] = captured
         async with infrastructure_unit(self._factory) as s:
             result = await s.execute(
                 sa.text(
@@ -87,7 +92,7 @@ class IngestJobRepository:
                     "table_id": table_id,
                     "file_id": file_id,
                     "kind": job_kind,
-                    "req": json.dumps(request_json or {}),
+                    "req": json.dumps(request),
                     "cb_url": callback_url,
                     "cb_secret": callback_secret,
                     "cb_headers": json.dumps(callback_headers or {}),
@@ -296,7 +301,7 @@ class IngestJobRepository:
                     "                    || CAST(:patch AS jsonb) "
                     "WHERE id = :id"
                 ),
-                {"id": job_id, "patch": _json.dumps(patch)},
+                {"id": job_id, "patch": _json.dumps(public_consumer_data(patch))},
             )
 
     async def cancel(
