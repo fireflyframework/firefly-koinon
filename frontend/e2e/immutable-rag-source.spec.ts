@@ -197,6 +197,18 @@ for (const width of [1440, 390])
       await panel.locator('summary').click();
       await expect(panel.getByText('version-used', { exact: true })).toBeVisible();
       await expect(panel.getByText(sha256, { exact: true })).toBeVisible();
+      const back = panel.getByRole('button', { name: spanish ? 'Volver a las fuentes' : 'Back to sources', exact: true });
+      const action = await back.evaluate((node) => {
+        const icon = node.querySelector('ffk-icon')!.getBoundingClientRect();
+        const text = [...node.querySelector('span')!.childNodes].find((child) => child.nodeType === Node.TEXT_NODE && child.textContent?.trim())!;
+        const range = document.createRange(); range.selectNodeContents(text);
+        const label = range.getBoundingClientRect();
+        return { gap: label.left - icon.right, centerDifference: Math.abs((label.top + label.bottom - icon.top - icon.bottom) / 2), height: node.getBoundingClientRect().height };
+      });
+      expect(action.gap).toBeGreaterThanOrEqual(7);
+      expect(action.gap).toBeLessThanOrEqual(9);
+      expect(action.centerDifference).toBeLessThanOrEqual(1.5);
+      expect(action.height).toBeGreaterThanOrEqual(width < 700 ? 44 : 40);
       const geometry = await panel.evaluate((node) => ({
         width: node.getBoundingClientRect().width,
         viewport: innerWidth,
