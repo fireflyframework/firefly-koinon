@@ -165,3 +165,48 @@ def test_postgres_generation_uniqueness_and_mutable_tool_lifecycles(pg_release):
             ).fetchone()[0]
             == 4
         )
+
+
+def test_fresh_postgres_metadata_index_enforces_generation_and_reset_uniqueness():
+    from sqlalchemy.dialects.postgresql import dialect
+    from sqlalchemy.schema import CreateIndex
+
+    from koinon.assistants.entities import ToolResult
+
+    uri = os.environ.get("KOINON_ANSWER_RELEASE_TEST_PG_URL")
+    if not uri:
+        pytest.skip("Requires an explicitly owned PostgreSQL fixture")
+    database = "answer_metadata_" + uuid4().hex[:12]
+    with psycopg.connect(uri, autocommit=True) as owner:
+        owner.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(database)))
+    url = make_url(uri).set(database=database)
+    index = next(
+        item for item in ToolResult.__table__.indexes if item.name == "uq_koinon_answer_release_generation"
+    )
+    with psycopg.connect(str(url), autocommit=True) as owner:
+        owner.execute(
+            "CREATE TABLE koinon_chat_tool_results "
+            "(id text PRIMARY KEY,run_id text NOT NULL,kind text NOT NULL,payload json NOT NULL)"
+        )
+        owner.execute(str(CreateIndex(index).compile(dialect=dialect())))
+        for identifier, payload in (
+            ("generation", {"generation_id": "generation"}),
+            ("refusal", {"generation_id": None}),
+            ("retry-refusal", {"generation_id": None, "reset_sequence": 7}),
+        ):
+            owner.execute(
+                "INSERT INTO koinon_chat_tool_results VALUES (%s,'run','answer_release',%s)",
+                (identifier, Jsonb(payload)),
+            )
+        for payload in (
+            {"generation_id": "generation", "reset_sequence": 7},
+            {"generation_id": None},
+            {"generation_id": None, "reset_sequence": 7},
+        ):
+            with pytest.raises(psycopg.errors.UniqueViolation):
+                owner.execute(
+                    "INSERT INTO koinon_chat_tool_results VALUES ('duplicate','run','answer_release',%s)",
+                    (Jsonb(payload),),
+                )
+        owner.execute("INSERT INTO koinon_chat_tool_results VALUES ('ordinary','run','proposal','{}')")
+        assert owner.execute("SELECT count(*) FROM koinon_chat_tool_results").fetchone()[0] == 4

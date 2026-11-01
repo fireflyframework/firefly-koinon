@@ -17,6 +17,7 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.sql.expression import Grouping
 
 from koinon.answers.guards import release_guards
 from koinon.assistants.history.entities import ChatFolder
@@ -149,12 +150,14 @@ Index(
     "uq_koinon_answer_release_generation",
     ToolResult.run_id,
     func.coalesce(ToolResult.payload["generation_id"].as_string(), ""),
-    case(
-        (
-            ToolResult.payload["generation_id"].as_string().is_(None),
-            func.coalesce(ToolResult.payload["reset_sequence"].as_integer(), 0),
-        ),
-        else_=0,
+    Grouping(
+        case(
+            (
+                ToolResult.payload["generation_id"].as_string().is_(None),
+                func.coalesce(ToolResult.payload["reset_sequence"].as_integer(), 0),
+            ),
+            else_=0,
+        )
     ),
     unique=True,
     sqlite_where=ToolResult.kind == "answer_release",
