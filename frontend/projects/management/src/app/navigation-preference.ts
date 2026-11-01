@@ -1,6 +1,6 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
-type NavigationWindow = {localStorage: Pick<Storage, 'getItem' | 'setItem'>};
+interface NavigationWindow {localStorage: Pick<Storage, 'getItem' | 'setItem'>}
 const key = 'koinon-navigation-collapsed';
 export function readNavigationPreference(window: NavigationWindow | null): boolean {
   try { return window?.localStorage.getItem(key) === 'true'; } catch { return false; }
