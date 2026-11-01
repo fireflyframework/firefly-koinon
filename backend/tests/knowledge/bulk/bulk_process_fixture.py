@@ -26,7 +26,7 @@ def context_for(url, root, cloud=None):
             }
         )
     )
-    for package in ("koinon.catalog", "koinon.jobs", "koinon.knowledge.bulk"):
+    for package in ("koinon.catalog", "koinon.jobs", "koinon.storage", "koinon.knowledge.bulk"):
         scan_package(package, context.container)
     from koinon.assistants.repositories import ProviderRepository
     from koinon.knowledge.connections.repositories import KnowledgeConnectionRepository
