@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 from pyfly.agentic.factory import AgentFactory
+from pyfly.cache import CacheAdapter
 from pyfly.container import bean, configuration
 from pyfly.core import Config
 from pyfly.data.relational.datasource_registry import DataSourceRegistry
@@ -29,7 +30,8 @@ from flyquery.core.services.auth.agent_token_service import (
     RateLimiter,
     _RateLimiter,
 )
-from flyquery.core.services.auth.redis_rate_limiter import RedisRateLimiter
+from flyquery.core.services.auth.postgres_rate_limiter import PostgresRateLimiter
+from flyquery.core.services.cache_support import cache_backend
 from flyquery.core.services.execution.ast_classifier import AstClassifier
 from flyquery.core.services.execution.duckdb_executor import DuckDBExecutor
 from flyquery.core.services.execution.scope_guard import ScopeGuard
@@ -48,7 +50,7 @@ from flyquery.web.conventions.idempotency import (
     IdempotencyStore,
     InMemoryIdempotencyStore,
 )
-from flyquery.web.conventions.redis_idempotency import RedisIdempotencyStore
+from flyquery.web.conventions.postgres_idempotency import PostgresIdempotencyStore
 
 
 @configuration(name="structured.FlyqueryConfiguration")
@@ -124,17 +126,15 @@ class FlyqueryConfiguration:
     # ------------------------------------------------------------------
 
     @bean(name="structured.rate_limiter")
-    def rate_limiter(self, settings: FlyquerySettings) -> RateLimiter:
-        """Per-token sliding-window rate limiter.
+    def rate_limiter(self, settings: FlyquerySettings, cache: CacheAdapter | None = None) -> RateLimiter:
+        """Use native primary PostgreSQL unless an alternate backend is explicit."""
+        backend = cache_backend(settings, "rate_limit_backend")
+        if backend == "postgres":
+            return PostgresRateLimiter(cache)
+        if backend == "redis":
+            from flyquery.core.services.auth.redis_rate_limiter import RedisRateLimiter
 
-        Backend selection mirrors canon (memory: lock_step_conventions_canon_radar):
-        * ``FLYQUERY_RATE_LIMIT_BACKEND=redis`` -- always Redis.
-        * ``FLYQUERY_RATE_LIMIT_BACKEND=in_memory`` -- always in-memory.
-        * unset / ``auto`` (default) -- Redis when ``redis_url`` is configured.
-        """
-        if _use_redis(settings, "rate_limit_backend"):
-            client = _build_redis_client(settings)
-            return RedisRateLimiter(client)
+            return RedisRateLimiter(_build_redis_client(settings))
         return _RateLimiter()
 
     @bean(name="structured.agent_token_repository")
@@ -207,10 +207,17 @@ class FlyqueryConfiguration:
     # ------------------------------------------------------------------
 
     @bean(name="structured.idempotency_store")
-    def idempotency_store(self, settings: FlyquerySettings) -> IdempotencyStore:
-        if _use_redis(settings, "idempotency_backend"):
-            client = _build_redis_client(settings)
-            return RedisIdempotencyStore(client)
+    def idempotency_store(
+        self, settings: FlyquerySettings, cache: CacheAdapter | None = None
+    ) -> IdempotencyStore:
+        """Use native primary PostgreSQL unless an alternate backend is explicit."""
+        backend = cache_backend(settings, "idempotency_backend")
+        if backend == "postgres":
+            return PostgresIdempotencyStore(cache)
+        if backend == "redis":
+            from flyquery.web.conventions.redis_idempotency import RedisIdempotencyStore
+
+            return RedisIdempotencyStore(_build_redis_client(settings))
         return InMemoryIdempotencyStore()
 
 
@@ -220,23 +227,8 @@ class FlyqueryConfiguration:
 
 
 def _use_redis(settings: FlyquerySettings, backend_field: str) -> bool:
-    explicit = getattr(settings, backend_field, "auto") or "auto"
-    explicit = explicit.lower()
-    if explicit == "redis":
-        if not settings.redis_url:
-            raise RuntimeError("Configure FLYQUERY_REDIS_URL for persistent agent adapters")
-        return True
-    if explicit in {"in_memory", "memory"}:
-        if settings.allow_in_memory_adapters:
-            return False
-        raise RuntimeError(
-            "Configure FLYQUERY_REDIS_URL or explicitly enable isolated development memory adapters"
-        )
-    if settings.redis_url:
-        return True
-    if settings.allow_in_memory_adapters:
-        return False
-    raise RuntimeError("Configure FLYQUERY_REDIS_URL for persistent agent adapters")
+    """Compatibility helper for explicit Redis selection only."""
+    return cache_backend(settings, backend_field) == "redis"
 
 
 def _build_redis_client(settings: FlyquerySettings):  # noqa: ANN202

@@ -30,6 +30,10 @@ def test_generated_configuration_separates_migration_authority_and_encryption_ke
         for line in (directory / "migration.env").read_text().splitlines()
     )
     assert "KOINON_MIGRATION_DATABASE_URL" not in runtime
+    assert runtime["KOINON_CACHE_PROVIDER"] == "postgres"
+    assert runtime["KOINON_CACHE_DATASOURCE"] == "primary"
+    assert not any("REDIS" in key for key in runtime)
+    assert not (directory / "redis_password").exists()
     assert "KOINON_MASTER_KEY" not in migration
     assert len(base64.urlsafe_b64decode(runtime["KOINON_MASTER_KEY"])) == 32
     assert (directory / "master_key").read_text().strip() == runtime[

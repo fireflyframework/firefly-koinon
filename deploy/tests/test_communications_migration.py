@@ -7,12 +7,13 @@ from pathlib import Path
 import sqlalchemy as sa
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
-
 from koinon.communications import entities
 
 
 def test_communications_migration_retains_originals_and_matches_frozen_native_tables():
-    path = Path(__file__).parents[1] / "migrations/native_versions/0030_communications.py"
+    path = (
+        Path(__file__).parents[1] / "migrations/native_versions/0030_communications.py"
+    )
     spec = importlib.util.spec_from_file_location("communications_upgrade", path)
     migration = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(migration)
@@ -21,8 +22,12 @@ def test_communications_migration_retains_originals_and_matches_frozen_native_ta
     engine = sa.create_engine("sqlite://")
     try:
         with engine.begin() as connection:
-            connection.exec_driver_sql("CREATE TABLE retained_original (id TEXT PRIMARY KEY)")
-            connection.exec_driver_sql("INSERT INTO retained_original VALUES ('same-preserved-data')")
+            connection.exec_driver_sql(
+                "CREATE TABLE retained_original (id TEXT PRIMARY KEY)"
+            )
+            connection.exec_driver_sql(
+                "INSERT INTO retained_original VALUES ('same-preserved-data')"
+            )
             with Operations.context(MigrationContext.configure(connection)):
                 migration.upgrade()
             assert (
@@ -36,15 +41,19 @@ def test_communications_migration_retains_originals_and_matches_frozen_native_ta
                 if inspect.isclass(value)
                 and value.__module__ == entities.__name__
                 and hasattr(value, "__table__")
+                and value is not entities.BootstrapContactRecord
             ]
             assert len(tables) == 9
             for table in tables:
-                actual = {column["name"]: column for column in inspector.get_columns(table.name)}
+                actual = {
+                    column["name"]: column
+                    for column in inspector.get_columns(table.name)
+                }
                 assert set(actual) == {column.name for column in table.columns}
                 for column in table.columns:
                     assert actual[column.name]["nullable"] == column.nullable
-                assert {index["name"] for index in inspector.get_indexes(table.name)} == {
-                    index.name for index in table.indexes
-                }
+                assert {
+                    index["name"] for index in inspector.get_indexes(table.name)
+                } == {index.name for index in table.indexes}
     finally:
         engine.dispose()

@@ -105,31 +105,18 @@ class CanonSettings(BaseSettings):
     # file. Default ``postgres`` because the service already runs
     # Postgres for persistence -- no extra broker is required.
     eda_adapter: str = Field(default="postgres", description="memory | postgres | redis | kafka")
-    # Empty default means "no Redis available" so the rate-limit +
-    # idempotency adapters fall back to the in-memory variants unless
-    # an operator explicitly opts into Redis by exporting
-    # ``FLYCANON_REDIS_URL``. Setting a localhost default here would
-    # cause every CI run + container that lacks a Redis sidecar to
-    # crash on the first agent-token revoke ("Connect call failed
-    # ('127.0.0.1', 6379)").
+    # Redis is an explicit compatibility backend; URLs never select it implicitly.
     redis_url: str = ""
 
     # -- Rate limiter + idempotency backend selection -------------------
-    # Per-adapter overrides for the auth + replay surfaces. ``auto``
-    # (the default) picks Redis when ``redis_url`` is set, else falls
-    # back to the in-process implementation. ``redis`` forces Redis;
-    # ``in_memory`` forces the in-process variant even when
-    # ``redis_url`` is configured (useful for local dev with a shared
-    # Redis instance but per-process MVP semantics). See
-    # :func:`flycanon.core.configuration._use_redis` for the
-    # resolution.
+    # PostgreSQL uses the managed native primary. Memory also needs the isolated-development opt-in.
     rate_limit_backend: str = Field(
-        default="auto",
-        description="``auto`` | ``redis`` | ``in_memory``.",
+        default="postgres",
+        description="``postgres`` (also ``auto``) | explicit ``redis`` | isolated ``in_memory``.",
     )
     idempotency_backend: str = Field(
-        default="auto",
-        description="``auto`` | ``redis`` | ``in_memory``.",
+        default="postgres",
+        description="``postgres`` (also ``auto``) | explicit ``redis`` | isolated ``in_memory``.",
     )
 
     # Topics for the event families flycanon publishes. Downstream
@@ -425,19 +412,11 @@ class CanonSettings(BaseSettings):
     rlm_sandbox_timeout_s: int = Field(default=30, ge=1)
 
     # -- Corpus page cache ----------------------------------------------
-    # Shared cache layered over the lazy RLM corpus store: an in-scope
-    # filing's original is fetched from the object store + PyMuPDF-
-    # extracted at most once per process (in-memory LRU) and once per
-    # fleet (shared Redis). Keyed by the source's ``content_sha256`` so a
-    # re-ingested source (new bytes -> new sha) misses the stale entry
-    # automatically. Backend selection mirrors
-    # :func:`flycanon.core.configuration._use_redis`: ``auto`` (the
-    # default) uses Redis when ``redis_url`` is set, in-memory otherwise;
-    # ``redis`` / ``in_memory`` force one or the other. The Redis client
-    # is synchronous (read from the RLM engine's worker thread).
+    # The corpus builder supplies a scoped, verified-original/reader key. Versioned views use their
+    # immutable reader instead. Worker-thread cache calls bridge to the managed application loop.
     corpus_cache_backend: str = Field(
-        default="auto",
-        description="Corpus page-cache backend: ``auto`` | ``redis`` | ``in_memory``.",
+        default="postgres",
+        description="Corpus cache: postgres (also auto), explicit redis, or isolated in_memory.",
     )
     # Per-entry TTL (seconds) for both backends.
     corpus_cache_ttl_s: int = Field(default=3600, ge=0)

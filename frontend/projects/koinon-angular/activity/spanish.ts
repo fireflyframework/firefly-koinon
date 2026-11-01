@@ -8,7 +8,7 @@ export const ACTIVITY_SPANISH: Readonly<Record<string, string>> = {
     'Parte de la actividad de este periodo no se observó. Las cifras disponibles no implican un historial completo.',
   'Observations since': 'Observaciones desde',
   Created: 'Creados',
-  Updated: 'Actualizados',
+  Updated: 'Modificado',
   Consulted: 'Consultados',
   Partial: 'Parcial',
   Unavailable: 'No disponible',

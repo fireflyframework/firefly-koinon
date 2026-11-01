@@ -1,4 +1,5 @@
 # Copyright 2024-2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,36 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Shared page-text cache layered over the lazy :class:`CanonDocStore`.
+"""Shared page text over scoped verified-original keys supplied by the corpus builder.
 
-The store fetches each in-scope filing's original from the
-:class:`ObjectStore` and extracts its page list on first access -- the
-fetch + PyMuPDF extraction is the expensive part of an RLM query, and it
-otherwise happens once per :class:`CanonDocStore`, i.e. once per query.
-This module shares that work across queries (and, with the Redis
-backend, across replicas).
-
-The cache is keyed by the source's ``content_sha256``: identical bytes
-hit the same entry no matter which workspace/key route to them, and a
-re-ingested source (new bytes -> new sha) misses the stale entry
-automatically, so there is no explicit invalidation path.
-
-Two backends, both exposing the same synchronous
-``get(key) -> list[str] | None`` / ``set(key, pages)`` surface (the
-cache is read from the RLM engine's worker thread, so it must be
-synchronous -- NOT ``redis.asyncio``):
-
-* :class:`MemoryPageCache` -- a bounded LRU (:class:`OrderedDict`,
-  capped at ``max_entries``) with a per-entry TTL. It is a process
-  singleton shared across concurrent REPL worker threads, so every
-  mutation is guarded by a :class:`threading.Lock`.
-* :class:`RedisPageCache` -- a synchronous :class:`redis.Redis` client
-  storing the page list as JSON with ``EX = ttl`` so Redis evicts
-  entries natively. A single fetch on one replica warms the whole
-  fleet.
-
-:func:`build_page_cache` selects the backend from
-:class:`CanonSettings`, mirroring :func:`flycanon.core.configuration._use_redis`.
+PostgreSQL uses the managed primary cache and application event loop. Explicit Redis compatibility
+and isolated-development memory implementations retain the synchronous worker-thread protocol.
+Versioned document views continue through their immutable authorized reader rather than this cache.
 """
 
 from __future__ import annotations
@@ -53,11 +29,16 @@ import time
 from collections import OrderedDict
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
+from datetime import timedelta
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-import redis
+from pyfly.cache import CacheAdapter
+
+if TYPE_CHECKING:
+    import redis
 
 from flycanon.config import CanonSettings
+from flycanon.core.services.cache_support import CacheCodec, ManagedCacheBridge, cache_backend, postgres_cache
 
 logger = logging.getLogger(__name__)
 
@@ -178,44 +159,46 @@ class RedisPageCache:
         self._client.set(self._key(key), json.dumps(pages), ex=self._ttl)
 
 
-def build_page_cache(settings: CanonSettings) -> CorpusPageCache:
-    """Select the corpus page-cache backend from settings.
+class PostgresPageCache(ManagedCacheBridge):
+    """Typed page lists in a dedicated native cache, accessed from RLM worker threads."""
 
-    Resolution is identical to
-    :func:`flycanon.core.configuration._use_redis` (the same logic the
-    rate-limit and idempotency stores use), kept inline here only to
-    avoid a circular import (``configuration`` imports this module):
+    def __init__(self, cache: CacheAdapter | None, *, ttl_s: int, timeout_seconds: float = 5):
+        super().__init__(timeout_seconds=timeout_seconds)
+        if type(ttl_s) is not int or ttl_s < 0:
+            raise ValueError("Corpus cache TTL must be a nonnegative integer")
+        self._cache = postgres_cache(cache, "canon.corpus-pages.v1")
+        self._ttl = timedelta(seconds=ttl_s)
+        self._codec = CacheCodec[list[str]]("corpus-pages.v1", list[str])
 
-    * ``FLYCANON_CORPUS_CACHE_BACKEND=redis`` -- always Redis.
-    * ``FLYCANON_CORPUS_CACHE_BACKEND=in_memory`` -- always in-memory.
-    * unset / ``auto`` (the default) / any unknown value -- Redis when
-      ``redis_url`` is set, in-memory otherwise.
+    def get(self, key: str) -> list[str] | None:
+        if self._ttl <= timedelta(0):
+            return None
+        raw = self.call(lambda: self._cache.get(key))
+        return self._codec.decode(raw) if raw is not None else None
 
-    The Redis client is synchronous: the cache is read from the RLM
-    engine's worker thread, so it must not be ``redis.asyncio``.
-    """
-    explicit = (settings.corpus_cache_backend or "auto").lower()
-    if explicit == "redis":
-        use_redis = True
-    elif explicit in {"in_memory", "memory"}:
-        use_redis = False
-    else:
-        use_redis = bool(settings.redis_url)
-    if use_redis:
-        return RedisPageCache(
-            redis.Redis.from_url(settings.redis_url),
-            ttl_s=settings.corpus_cache_ttl_s,
-        )
-    return MemoryPageCache(
-        ttl_s=settings.corpus_cache_ttl_s,
-        max_entries=settings.corpus_cache_max_entries,
-    )
+    def set(self, key: str, pages: list[str]) -> None:
+        if self._ttl > timedelta(0):
+            value = self._codec.encode(pages)
+            self.call(lambda: self._cache.put(key, value, self._ttl))
+
+
+def build_page_cache(settings: CanonSettings, cache: CacheAdapter | None = None) -> CorpusPageCache:
+    """Select the declared backend; no availability-based fallback is permitted."""
+    backend = cache_backend(settings, "corpus_cache_backend")
+    if backend == "postgres":
+        return PostgresPageCache(cache, ttl_s=settings.corpus_cache_ttl_s)
+    if backend == "redis":
+        import redis
+
+        return RedisPageCache(redis.Redis.from_url(settings.redis_url), ttl_s=settings.corpus_cache_ttl_s)
+    return MemoryPageCache(ttl_s=settings.corpus_cache_ttl_s, max_entries=settings.corpus_cache_max_entries)
 
 
 __all__ = [
     "CorpusPageCache",
     "MemoryPageCache",
     "NowFn",
+    "PostgresPageCache",
     "RedisPageCache",
     "build_page_cache",
 ]

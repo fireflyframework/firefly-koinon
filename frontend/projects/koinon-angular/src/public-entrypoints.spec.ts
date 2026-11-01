@@ -7,6 +7,7 @@ import { KNOWLEDGE_BEHAVIOR_SPANISH } from '../settings/src/knowledge-behavior-s
 import { ORGANIZATION_SPANISH } from '../settings/src/organization-spanish';
 import { ORGANIZATION_PROFILE_SPANISH } from '../workbench/src/lib/organisms/organization-spanish';
 import { IDENTITY_SPANISH } from '../settings/src/identity-spanish';
+import { ACTIVITY_SPANISH } from '../activity/spanish';
 describe('published entrypoint compatibility', () => {
   it('preserves class and injection token identity across root and workbench', () => {
     for (const key of [
@@ -34,6 +35,7 @@ for (const [feature, dictionary] of [
   ['identity', IDENTITY_SPANISH],
   ['organization settings', ORGANIZATION_SPANISH],
   ['corporate presentation', ORGANIZATION_PROFILE_SPANISH],
+  ['knowledge activity', ACTIVITY_SPANISH],
 ] as const) {
   for (const rootFirst of [true, false]) {
     it(`preserves existing translations when registering ${feature} ${rootFirst ? 'after' : 'before'} root`, () => {

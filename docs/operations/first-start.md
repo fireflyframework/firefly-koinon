@@ -35,6 +35,8 @@ Keep PostgreSQL on the reviewed private network and verify its DNS resolution an
 
 Apply the approved TLS mode and trusted CA to **every** URL; configuring primary alone does not configure the other four. For SQLAlchemy/asyncpg URLs, the driver parameter is `ssl`, such as `?ssl=verify-full`, with the trusted CA available to the service through `PGSSLROOTCERT`. Verify the certificate hostname against the database DNS name. Migration and backup tooling have their own connection requirements: the backup wrapper accepts libpq `sslmode`/`sslrootcert` options and rejects unsupported ones. Do not copy query parameters between drivers blindly. [Operator configuration](configuration.md) explains independent pools and timeouts.
 
+The [shared cache](postgresql-cache.md) also uses the registered primary PostgreSQL datasource. Keep `pyfly.cache.enabled: true`, `pyfly.cache.provider: postgres` and `pyfly.cache.postgres.datasource: primary`. Apply native migration 34 and the current runtime grants before starting the application. Replay responses, corpus pages and shared rolling limits use separate namespaces and retain their state across replica replacement.
+
 ## 2. Establish secrets, roles and migrations
 
 Prepare the protected runtime configuration from the [production templates](production.md). Configure the identity issuer, API audience, registered callback, client credentials, public HTTPS origin and trusted proxy. Generic identity providers also need the correct authorization, token and JWKS endpoints. Keep secure cookies enabled outside loopback development.

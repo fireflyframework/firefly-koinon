@@ -19,6 +19,33 @@ ROLES = (
 
 
 def grant_table(connection, table, role, *, document_control=False):
+    if table == "koinon_bootstrap_contacts":
+        from koinon.communications.bootstrap_guards import IMMUTABLE_CONTACT_COLUMNS
+
+        connection.execute(
+            sql.SQL("REVOKE ALL ON TABLE public.{} FROM {}").format(
+                sql.Identifier(table), sql.Identifier(role)
+            )
+        )
+        columns = sql.SQL(", ").join(
+            sql.Identifier(name)
+            for name in (*IMMUTABLE_CONTACT_COLUMNS, "canonical_subject")
+        )
+        for privilege in ("INSERT", "UPDATE"):
+            connection.execute(
+                sql.SQL("REVOKE {} ({}) ON TABLE public.{} FROM {}").format(
+                    sql.SQL(privilege),
+                    columns,
+                    sql.Identifier(table),
+                    sql.Identifier(role),
+                )
+            )
+        connection.execute(
+            sql.SQL(
+                "GRANT SELECT, UPDATE (canonical_subject) ON TABLE public.{} TO {}"
+            ).format(sql.Identifier(table), sql.Identifier(role))
+        )
+        return
     if table == "koinon_bootstrap_identity_grants":
         from koinon.bootstrap.entities import ACTIVATION_COLUMNS, IMMUTABLE_COLUMNS
 

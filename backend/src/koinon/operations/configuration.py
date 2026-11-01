@@ -197,6 +197,16 @@ def environment_configuration() -> dict:
     if boolean(source.get("pyfly.data.relational.migrations.enabled", False), "data.migrations.enabled"):
         raise ValueError("Runtime migrations are disabled; use the separate migration job")
     relational["ddl-auto"] = policy
+    cache = pyfly.setdefault("cache", {})
+    cache["enabled"] = boolean(value("CACHE_ENABLED", "pyfly.cache.enabled", True), "CACHE_ENABLED")
+    cache["provider"] = string("CACHE_PROVIDER", "pyfly.cache.provider", "postgres").strip().lower()
+    if cache["provider"] not in {"postgres", "auto", "memory", "redis"}:
+        raise ValueError("CACHE_PROVIDER names an unsupported cache provider")
+    shared = cache.setdefault("postgres", {})
+    if not shared.get("url") or explicit("CACHE_DATASOURCE") is not None:
+        shared["datasource"] = string("CACHE_DATASOURCE", "pyfly.cache.postgres.datasource", "primary")
+        if not shared["datasource"].strip():
+            raise ValueError("CACHE_DATASOURCE must name a registered datasource")
 
     def pool(alias, path, default_size):
         def inherited(key, default):

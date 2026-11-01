@@ -14,11 +14,14 @@ from pyfly.kernel import ConflictException, InvalidRequestException, ServiceUnav
 from pyfly.security.context import SecurityContext
 from pyfly.security.context_holder import SecurityContextHolder
 
+import koinon.jobs.entities  # noqa: F401 -- declare the queue FK target for native metadata fixtures
+from koinon.bootstrap.repositories import BootstrapGrantRepository
 from koinon.catalog.entities import Membership, Tenant
 from koinon.catalog.errors import AccessDenied
 from koinon.catalog.repositories import MembershipRepository, TenantRepository
 from koinon.catalog.service import CatalogService
 from koinon.communications.administration import CommunicationsAdministration
+from koinon.communications.bootstrap_contacts import BootstrapContacts
 from koinon.communications.configuration import CommunicationsConfiguration
 from koinon.communications.content import CommunicationContent
 from koinon.communications.crypto import CommunicationsCipher, RecipientReferences
@@ -35,6 +38,7 @@ from koinon.communications.outbox import CommunicationOutbox
 from koinon.communications.readiness import EmailReadiness
 from koinon.communications.recipients import RecipientService
 from koinon.communications.repositories import (
+    BootstrapContactRepository,
     CommunicationPolicyRepository,
     EmailInvitationRepository,
     NotificationPreferenceRepository,
@@ -122,6 +126,9 @@ async def email_context(tmp_path):
         context.container.register_instance(kind, value)
     context.container.register_instance(EmailReadiness, OwnedReadiness())
     for kind in (
+        BootstrapContacts,
+        BootstrapContactRepository,
+        BootstrapGrantRepository,
         CommunicationsAdministration,
         NotificationService,
         CommunicationOutbox,

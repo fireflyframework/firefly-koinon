@@ -41,6 +41,11 @@ koinon:
       request_timeout_seconds: 10
       max_object_bytes: 67108864
 pyfly:
+  cache:
+    enabled: true
+    provider: postgres
+    postgres:
+      datasource: primary
   data:
     relational:
       enabled: true

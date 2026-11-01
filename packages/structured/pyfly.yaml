@@ -64,6 +64,9 @@ pyfly:
     enabled: true
   cache:
     enabled: true
+    provider: postgres
+    postgres:
+      datasource: primary
 
   eda:
     enabled: true

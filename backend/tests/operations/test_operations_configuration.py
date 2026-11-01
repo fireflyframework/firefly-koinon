@@ -9,6 +9,33 @@ from pyfly.config.properties.server import resolve_app_port
 from pyfly.core import Config
 
 
+def test_cache_defaults_reuse_primary_postgresql_without_a_second_connection(monkeypatch):
+    from koinon.operations.configuration import environment_configuration
+
+    monkeypatch.delenv("KOINON_CONFIG_FILE", raising=False)
+    monkeypatch.setenv("KOINON_OIDC_ISSUER", "https://identity.example/realm")
+    monkeypatch.setenv("KOINON_DATABASE_URL", "postgresql+asyncpg://runtime@localhost/knowledge")
+    values = environment_configuration()
+    cache = values["pyfly"]["cache"]
+    assert cache["enabled"] is True
+    assert cache["provider"] == "postgres"
+    assert cache["postgres"]["datasource"] == "primary"
+    assert "url" not in cache["postgres"]
+
+
+def test_cache_aliases_preserve_explicit_named_datasource_and_validate_provider(monkeypatch):
+    from koinon.operations.configuration import environment_configuration
+
+    monkeypatch.delenv("KOINON_CONFIG_FILE", raising=False)
+    monkeypatch.setenv("KOINON_OIDC_ISSUER", "https://identity.example/realm")
+    monkeypatch.setenv("KOINON_DATABASE_URL", "postgresql+asyncpg://runtime@localhost/knowledge")
+    monkeypatch.setenv("KOINON_CACHE_DATASOURCE", "shared")
+    assert environment_configuration()["pyfly"]["cache"]["postgres"]["datasource"] == "shared"
+    monkeypatch.setenv("KOINON_CACHE_PROVIDER", "unsupported")
+    with pytest.raises(ValueError, match="CACHE_PROVIDER"):
+        environment_configuration()
+
+
 def test_generated_oauth_aliases_bind_native_settings_without_exposing_key(monkeypatch):
     from cryptography.fernet import Fernet
 

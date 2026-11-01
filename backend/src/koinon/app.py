@@ -68,6 +68,7 @@ def create_application(config: dict, *, role: ProcessRole = "api"):
         "pyfly": {
             "cqrs": {"enabled": True},
             "agentic": {"enabled": True},
+            "cache": {"enabled": True, "provider": "postgres", "postgres": {"datasource": "primary"}},
             "eda": {"provider": "memory"},
             "aop": {"enabled": True},
             "web": {"actuator": {"enabled": False}, "problem-details": {"enabled": True}},
@@ -247,6 +248,7 @@ def create_application(config: dict, *, role: ProcessRole = "api"):
             app,
             mcp_settings,
             canonical_bearer,
+            application_context=context,
             installation_branding=BrandingValues.model_validate(Config(values).get("koinon.branding", {})),
             oauth_enabled=Config(values).get("koinon.mcp.oauth.enabled", False),
             can_request_scopes=can_request_scopes,

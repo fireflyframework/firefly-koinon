@@ -7,7 +7,6 @@ import base64
 import os
 import secrets
 from pathlib import Path
-from urllib.parse import quote
 
 
 def generate(directory: Path):
@@ -18,7 +17,6 @@ def generate(directory: Path):
             "database_admin_password",
             "keycloak_database_password",
             "keycloak_admin_password",
-            "redis_password",
             "demo_password",
             "oidc_client_secret",
         )
@@ -44,6 +42,9 @@ def generate(directory: Path):
         "KOINON_OIDC_CLIENT_SECRET": values["oidc_client_secret"],
         "KOINON_FRONTEND_URI": "http://127.0.0.1:18782",
         "KOINON_SCHEMA_POLICY": "validate",
+        "KOINON_CACHE_ENABLED": "true",
+        "KOINON_CACHE_PROVIDER": "postgres",
+        "KOINON_CACHE_DATASOURCE": "primary",
         "KOINON_MASTER_KEY": master_key,
         "KOINON_ASSISTANTS_ALLOWED_PROVIDER_HOSTS": '["127.0.0.1","localhost"]',
         "PYFLY_SERVER_HOST": "127.0.0.1",
@@ -69,10 +70,6 @@ def generate(directory: Path):
     runtime["FLYQUERY_DATABASE_URL_ADMIN"] = runtime[
         "KOINON_STRUCTURED_ADMIN_DATABASE_URL"
     ]
-    for key, database in (("FLYCANON_REDIS_URL", 0), ("FLYQUERY_REDIS_URL", 1)):
-        runtime[key] = (
-            f"redis://:{quote(values['redis_password'], safe='')}@127.0.0.1:18787/{database}"
-        )
     migration = {
         key: value
         for key, value in runtime.items()

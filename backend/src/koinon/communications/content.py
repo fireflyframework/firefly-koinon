@@ -193,7 +193,7 @@ class CommunicationContent:
         body_key = (
             "security_" + values.get("subtype", "")
             if kind == "security"
-            else "welcome_description"
+            else ("welcome_pending_description" if values.get("bootstrap_pending") else "welcome_description")
             if kind == "welcome"
             else kind + "_body"
         )

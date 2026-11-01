@@ -1344,7 +1344,7 @@ wheels = [
 
 [[package]]
 name = "firefly-koinon-documents"
-version = "26.10.1"
+version = "26.10.2"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
@@ -1362,7 +1362,7 @@ dependencies = [
     { name = "psycopg", extra = ["binary"] },
     { name = "pydantic" },
     { name = "pydantic-settings" },
-    { name = "pyfly", extra = ["agentic", "agentic-binary", "agentic-openai-embeddings", "agentic-script-execution", "agentic-security", "agentic-vectorstores-pgvector", "cli", "client", "data-relational", "eda", "fastapi", "observability", "postgresql", "redis", "scheduling", "security"] },
+    { name = "pyfly", extra = ["agentic", "agentic-binary", "agentic-openai-embeddings", "agentic-script-execution", "agentic-security", "agentic-vectorstores-pgvector", "cache", "cli", "client", "data-relational", "eda", "fastapi", "observability", "postgresql", "redis", "scheduling", "security"] },
     { name = "pymupdf" },
     { name = "pypdf" },
     { name = "pytesseract" },
@@ -1436,9 +1436,9 @@ requires-dist = [
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
     { name = "pydantic", specifier = ">=2.10.0" },
     { name = "pydantic-settings", specifier = ">=2.7.0" },
-    { name = "pyfly", extras = ["agentic-vectorstores-chroma"], marker = "extra == 'chroma'", git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=19c6c7f5b67fc2597d230353279c72a6ee983086" },
-    { name = "pyfly", extras = ["agentic-vectorstores-qdrant"], marker = "extra == 'qdrant'", git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=19c6c7f5b67fc2597d230353279c72a6ee983086" },
-    { name = "pyfly", extras = ["fastapi", "observability", "security", "data-relational", "postgresql", "eda", "redis", "client", "scheduling", "cli", "agentic", "agentic-security", "agentic-script-execution", "agentic-openai-embeddings", "agentic-binary", "agentic-vectorstores-pgvector"], git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=19c6c7f5b67fc2597d230353279c72a6ee983086" },
+    { name = "pyfly", extras = ["agentic-vectorstores-chroma"], marker = "extra == 'chroma'", git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=bd0eb79f66fc2d9b839acb594048a07d2f92354a" },
+    { name = "pyfly", extras = ["agentic-vectorstores-qdrant"], marker = "extra == 'qdrant'", git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=bd0eb79f66fc2d9b839acb594048a07d2f92354a" },
+    { name = "pyfly", extras = ["cache", "fastapi", "observability", "security", "data-relational", "postgresql", "eda", "redis", "client", "scheduling", "cli", "agentic", "agentic-security", "agentic-script-execution", "agentic-openai-embeddings", "agentic-binary", "agentic-vectorstores-pgvector"], git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=bd0eb79f66fc2d9b839acb594048a07d2f92354a" },
     { name = "pymupdf", specifier = ">=1.24" },
     { name = "pypdf", specifier = ">=4.3.0" },
     { name = "pyright", marker = "extra == 'dev'", specifier = ">=1.1" },
@@ -1464,7 +1464,7 @@ provides-extras = ["storage-azure", "storage-gcs", "dev", "docling", "chroma", "
 
 [[package]]
 name = "firefly-koinon-storage"
-version = "26.10.1"
+version = "26.10.2"
 source = { editable = "../storage" }
 
 [package.optional-dependencies]
@@ -3808,8 +3808,8 @@ wheels = [
 
 [[package]]
 name = "pyfly"
-version = "26.10.28"
-source = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=19c6c7f5b67fc2597d230353279c72a6ee983086#19c6c7f5b67fc2597d230353279c72a6ee983086" }
+version = "26.10.31"
+source = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=bd0eb79f66fc2d9b839acb594048a07d2f92354a#bd0eb79f66fc2d9b839acb594048a07d2f92354a" }
 dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
@@ -3935,6 +3935,13 @@ agentic-vectorstores-qdrant = [
     { name = "python-dotenv" },
     { name = "pyyaml" },
     { name = "qdrant-client" },
+]
+cache = [
+    { name = "aiosqlite" },
+    { name = "alembic" },
+    { name = "asyncpg" },
+    { name = "redis", extra = ["hiredis"] },
+    { name = "sqlalchemy", extra = ["asyncio"] },
 ]
 cli = [
     { name = "click" },

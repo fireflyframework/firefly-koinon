@@ -3,7 +3,6 @@
 """Small MCP adapter over fixed canonical API operations in the same process."""
 
 import asyncio
-import contextvars
 import json
 import re
 from collections.abc import Awaitable, Callable
@@ -15,11 +14,13 @@ from mcp.server.mcpserver import Context
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import CallToolResult, TextContent, ToolAnnotations
 from pydantic import Field
+from pyfly.context import ApplicationContext
 from pyfly.kernel import UnauthorizedException
 from pyfly.mcp import McpServer as MCPServer
 
 from koinon.activity.dtos import ActivityWindow
 from koinon.mcp.apps import KnowledgeReviewExtension
+from koinon.mcp.execution import isolated_application_call
 from koinon.mcp.observations import McpActivityExtension, MetricsResolver, RecorderResolver
 from koinon.mcp.settings import McpSettings
 from koinon.organization_branding.dtos import BrandingValues
@@ -89,10 +90,12 @@ class CanonicalDispatcher:
         settings: McpSettings,
         canonical_bearer: Callable[[str], Awaitable[str]] | None,
         can_request_scopes: Callable[[str, tuple[str, ...]], Awaitable[bool]] | None = None,
+        application_context: ApplicationContext | None = None,
     ):
         self.app, self.settings, self.canonical_bearer = app, settings, canonical_bearer
         self.capacity = asyncio.Semaphore(settings.max_concurrency)
         self.can_request_scopes = can_request_scopes
+        self.application_context = application_context
         parsed = urlsplit(settings.public_url)
         self.resource_metadata_url = urlunsplit(
             (parsed.scheme, parsed.netloc, "/.well-known/oauth-protected-resource/mcp", "", "")
@@ -109,7 +112,7 @@ class CanonicalDispatcher:
             scheme.lower() == "bearer"
             and raw
             and self.can_request_scopes is not None
-            and await self.can_request_scopes(raw, required_scopes)
+            and await self.additional_scopes_available(raw, required_scopes)
         ):
             challenge = (
                 f'Bearer resource_metadata="{self.resource_metadata_url}", '
@@ -123,6 +126,12 @@ class CanonicalDispatcher:
                 _meta={"mcp/www_authenticate": [challenge]},
             )
         raise ToolError("Canonical request denied (403, TOKEN_INSUFFICIENT_SCOPE)")
+
+    async def additional_scopes_available(self, raw: str, required_scopes: tuple[str, ...]) -> bool:
+        callback = self.can_request_scopes
+        return callback is not None and await isolated_application_call(
+            self.application_context, lambda: callback(raw, required_scopes)
+        )
 
     async def call(
         self,
@@ -198,7 +207,7 @@ class CanonicalDispatcher:
                         response.status_code == 403
                         and code == "TOKEN_INSUFFICIENT_SCOPE"
                         and self.can_request_scopes is not None
-                        and await self.can_request_scopes(raw, required_scopes)
+                        and await self.additional_scopes_available(raw, required_scopes)
                     ):
                         challenge = (
                             f'Bearer resource_metadata="{self.resource_metadata_url}", '
@@ -223,7 +232,7 @@ class CanonicalDispatcher:
         async with self.capacity:
             try:
                 async with asyncio.timeout(self.settings.timeout_seconds):
-                    return await asyncio.create_task(isolated(), context=contextvars.Context())
+                    return await isolated_application_call(self.application_context, isolated)
             except TimeoutError as error:
                 raise ToolError("Canonical request timed out") from error
 
@@ -265,6 +274,7 @@ def create_mcp_server(
     installation_branding: BrandingValues | None = None,
     activity_recorder: RecorderResolver | None = None,
     activity_metrics: MetricsResolver | None = None,
+    application_context: ApplicationContext | None = None,
 ) -> MCPServer:
     server = MCPServer(
         name=installation_branding.product_name
@@ -288,7 +298,13 @@ def create_mcp_server(
             "If the app is unsupported, leave knowledge unchanged; do not redirect for approval."
         ),
     )
-    api = CanonicalDispatcher(app, settings, canonical_bearer, can_request_scopes if oauth_enabled else None)
+    api = CanonicalDispatcher(
+        app,
+        settings,
+        canonical_bearer,
+        can_request_scopes if oauth_enabled else None,
+        application_context,
+    )
 
     def oauth_metadata(name):
         if not oauth_enabled:

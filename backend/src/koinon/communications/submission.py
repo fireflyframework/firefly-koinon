@@ -14,6 +14,7 @@ from pyfly.notifications import Attachment, EmailMessage
 
 from koinon.activity.dtos import ActivityWindow
 from koinon.activity.ports import ActivitySummaryReader
+from koinon.communications.bootstrap_contacts import BootstrapContacts, PreparedBootstrapContact
 from koinon.communications.content import CommunicationContent
 from koinon.communications.crypto import CommunicationsCipher
 from koinon.communications.delivery import EmailDispatcher
@@ -58,6 +59,7 @@ class EmailSubmission:
         identities: RecipientIdentityRepository,
         digests: DigestScheduler,
         summaries: ActivitySummaryReader | None = None,
+        bootstrap_contacts: BootstrapContacts | None = None,
     ):
         self.state, self.outbox, self.invitations, self.invitation_service = (
             state,
@@ -74,6 +76,7 @@ class EmailSubmission:
             dispatcher,
         )
         self.identities, self.digests, self.summaries = identities, digests, summaries
+        self.bootstrap_contacts = bootstrap_contacts
 
     async def _notice_allowed(self, event):
         if event.kind in {"security", "access_removed"}:
@@ -93,6 +96,10 @@ class EmailSubmission:
         event = await self.outbox.find_by_id(ticket.id)
         if event is None:
             return None
+        if event.kind == "welcome" and event.event_json.get("bootstrap_contact_id"):
+            if self.bootstrap_contacts is None:
+                raise recipient_unavailable()
+            return event, None, None, None
         if event.kind == "invitation":
             row = await self.invitations.find_by_id(event.invitation_id)
             if (
@@ -144,10 +151,19 @@ class EmailSubmission:
 
     @transactional
     async def _begin(self, ticket, prepared, expected_owner):
-        await self.invitation_service.catalog._lock_tenant(prepared.provider.tenant_id)
+        bootstrap = isinstance(prepared, PreparedBootstrapContact)
+        await self.invitation_service.catalog._lock_tenant(
+            prepared.tenant_id if bootstrap else prepared.provider.tenant_id
+        )
         event = await self.outbox.find_by_id(ticket.id, lock=LockMode.PESSIMISTIC_WRITE)
         if event is None or event.owner_subject != expected_owner:
             return False
+        if bootstrap:
+            if self.bootstrap_contacts is None or not await self.bootstrap_contacts.validate(event, prepared):
+                return False
+            policy = await self.policies.find_by_id(event.tenant_id)
+            self.readiness.require_ready(sender_id=policy.sender_id if policy else None)
+            return await self.state.begin_send(ticket)
         await self.recipients.ensure_current(prepared.provider)
         self.invitation_service._fresh(prepared)
         if event.kind == "invitation":
@@ -184,7 +200,16 @@ class EmailSubmission:
                 )
                 return
             event, invitation, provider, external = target
-            prepared = await self.recipients.observe(provider, external)
+            prepared = (
+                await self.bootstrap_contacts.prepare(event)
+                if provider is None and self.bootstrap_contacts
+                else await self.recipients.observe(provider, external)
+            )
+            if prepared is None:
+                await self.state.stop_preparation(
+                    ticket, "cancelled", failure_code="DELIVERY_NO_LONGER_ELIGIBLE"
+                )
+                return
             sender = await self._sender(event.tenant_id)
             summary = await self._summary(event) if event.kind == "digest" else None
             summary_hash = sha256(summary.model_dump_json().encode()).hexdigest() if summary else None
