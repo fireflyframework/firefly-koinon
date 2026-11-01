@@ -187,6 +187,8 @@ def create_application(config: dict, *, role: ProcessRole = "api"):
                     "koinon.evidence",
                     "koinon.exports",
                     "koinon.sharing",
+                    "koinon.communications",
+                    "koinon.activity",
                 )
             )
             and getattr(cls, "__pyfly_stereotype__", "") in ("controller", "rest_controller")
