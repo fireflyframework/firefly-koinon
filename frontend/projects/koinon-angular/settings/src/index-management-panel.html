@@ -300,7 +300,7 @@
   @if (editing() && canManage()) {
     <section class="editor" aria-labelledby="index-plan-title">
       @if (!v.plan) {
-        <h4 id="index-plan-title">{{ 'Plan an index for this space' | ffkText }}</h4>
+        <h4 id="index-plan-title" tabindex="-1">{{ 'Plan an index for this space' | ffkText }}</h4>
         <p>
           {{
             'The selected model must support embeddings. Preparing a plan contacts that provider with bounded test inputs and may incur provider usage.'
@@ -370,7 +370,7 @@
       }
       @if (v.plan; as plan) {
         <div class="plan-review">
-          <h4 id="index-plan-title">{{ 'Review before building' | ffkText }}</h4>
+          <h4 id="index-plan-title" tabindex="-1">{{ 'Review before building' | ffkText }}</h4>
           <p>
             {{
               'Building creates a separate version. It does not replace the active target until you explicitly activate it.'
@@ -405,7 +405,7 @@
               (click)="editing.set(false); state.closeReview()"
               >{{ 'Close plan' | ffkText }}</ffk-button
             >
-            <ffk-button variant="quiet" [disabled]="v.busy" (click)="state.closeReview()">{{
+            <ffk-button variant="quiet" [disabled]="v.busy" (click)="changeModel()">{{
               'Change model' | ffkText
             }}</ffk-button>
             <ffk-button
@@ -422,7 +422,7 @@
   }
   @if (v.review; as review) {
     <section class="action-review" aria-labelledby="index-action-title">
-      <h4 id="index-action-title">{{ actionLabels[review.action] | ffkText }}</h4>
+      <h4 id="index-action-title" tabindex="-1">{{ actionLabels[review.action] | ffkText }}</h4>
       <p>{{ actionHelp[review.action] | ffkText }}</p>
       <dl>
         <dt>{{ 'Model' | ffkText }}</dt>
