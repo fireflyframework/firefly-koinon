@@ -437,3 +437,52 @@ async def test_custom_tag_display_preserves_case_and_filter_matching_is_normaliz
     page = await service.page("issuer|reader", "north", tag="finance")
     assert page["summaries"][workspace.id]["tags"] == ["Finance", "PII", "API"]
     assert (await service.page("issuer|reader", "north", tag="PII"))["total"] == 1
+
+
+async def test_system_workspace_cannot_be_deleted_archived_or_stripped_of_protection(catalog):
+    from pyfly.kernel import ConflictException
+
+    from koinon.catalog.errors import InvalidHierarchy
+    from koinon.catalog.mappers import entry_dto
+
+    service, session, _ = catalog
+    root = await service._write_create(
+        "system:installation",
+        "north",
+        kind="workspace",
+        name="Organization",
+        create_id="system-space",
+        installation_run_id="installation-run",
+        system_key="organization",
+    )
+    await session.commit()
+    assert root.workspace_id == root.id
+    assert root.system_key == "organization"
+    assert root.installation_run_id == "installation-run"
+    assert entry_dto(root)["system_managed"] is True
+    for operation in (service.delete, service.archive):
+        with pytest.raises(ConflictException, match="System knowledge spaces"):
+            await operation("issuer|alice", "north", root.id)
+    for field in ("system_key", "installation_run_id"):
+        with pytest.raises(InvalidHierarchy):
+            await service.update("issuer|alice", "north", root.id, {field: None})
+    root = await service.update("issuer|alice", "north", root.id, {"metadata": {"tags": ["team"]}})
+    assert root.system_key == "organization"
+    assert root.installation_run_id == "installation-run"
+    assert root.status == "ready"
+
+
+async def test_ordinary_user_workspaces_remain_deletable_and_cannot_claim_system_fields(catalog):
+    from pydantic import ValidationError
+
+    from koinon.catalog.dtos import CatalogCreate, CatalogPatch
+    from koinon.catalog.mappers import entry_dto
+
+    service, _, _ = catalog
+    root = await service.create("issuer|alice", "north", kind="workspace", name="User space")
+    assert entry_dto(root)["system_managed"] is False
+    await service.delete("issuer|alice", "north", root.id)
+    for model in (CatalogCreate, CatalogPatch):
+        fields = {"kind": "workspace", "name": "Forged"} if model is CatalogCreate else {}
+        with pytest.raises(ValidationError):
+            model.model_validate({**fields, "system_key": "organization"})
