@@ -9,7 +9,12 @@ import {
 } from '@angular/core';
 import { KoinonI18n } from '@fireflyframework/koinon-angular';
 import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
-registerKoinonSpanish({ Notifications: 'Notificaciones', unread: 'sin leer' });
+registerKoinonSpanish({
+  Notifications: 'Notificaciones',
+  unread: 'sin leer',
+  'Unread count unavailable': 'Recuento de notificaciones no disponible',
+  'Checking unread notifications': 'Consultando notificaciones sin leer',
+});
 @Component({
   selector: 'ffk-notification-trigger',
   template: `<button
@@ -30,7 +35,9 @@ registerKoinonSpanish({ Notifications: 'Notificaciones', unread: 'sin leer' });
     >
       <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
     </svg>
-    @if (count()) {
+    @if (unavailable) {
+      <span class="count" aria-hidden="true">!</span>
+    } @else if (count()) {
       <span class="count" aria-hidden="true">{{ count() > 99 ? '99+' : count() }}</span>
     }
   </button>`,
@@ -96,6 +103,7 @@ registerKoinonSpanish({ Notifications: 'Notificaciones', unread: 'sin leer' });
 export class KoinonNotificationTrigger {
   @Input() unread: number | null = null;
   @Input() disabled = false;
+  @Input() unavailable = false;
   @Output() opened = new EventEmitter<void>();
   private readonly i18n = inject(KoinonI18n);
   count() {
@@ -104,6 +112,12 @@ export class KoinonNotificationTrigger {
       : 0;
   }
   label() {
+    if (this.unavailable)
+      return this.i18n.text('Notifications') + ', ' + this.i18n.text('Unread count unavailable');
+    if (this.unread === null)
+      return (
+        this.i18n.text('Notifications') + ', ' + this.i18n.text('Checking unread notifications')
+      );
     const count = this.count();
     return (
       this.i18n.text('Notifications') + (count ? ', ' + count + ' ' + this.i18n.text('unread') : '')

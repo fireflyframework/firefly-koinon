@@ -58,6 +58,7 @@ async function fixture(page: Page, ready = true) {
   });
   await mockService(page);
   const writes: { path: string; method: string; body: unknown; csrf: string | undefined }[] = [];
+  let noticeRead = false;
   let preview: EmailPreview = {
     subject: 'Invitation to Knowledge operations',
     sender_name: 'Knowledge operations',
@@ -245,7 +246,11 @@ async function fixture(page: Page, ready = true) {
             },
             201,
           );
-    if (path.endsWith('/unread-count')) return json({ unread: 7 });
+    if (path === '/notifications/notice/read' && method === 'POST') {
+      noticeRead = true;
+      return json({ id: 'notice', read_at: '2026-11-01T12:00:00Z' });
+    }
+    if (path.endsWith('/unread-count')) return json({ unread: noticeRead ? 6 : 7 });
     if (path === '/notifications')
       return json({
         items: [
@@ -255,7 +260,7 @@ async function fixture(page: Page, ready = true) {
             title: 'Access token revoked',
             body: 'A personal access token was revoked. No credential is included.',
             created_at: '2026-10-31T12:00:00Z',
-            read_at: null,
+            read_at: noticeRead ? '2026-11-01T12:00:00Z' : null,
             tenant_id: 'tenant-one',
             organization_name: 'Knowledge operations',
             target: { kind: 'none', id: null },
@@ -330,6 +335,20 @@ async function capture(page: Page, name: string) {
   }
 }
 for (const width of [1440, 390])
+  test(`notification read updates the live header count at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 960 });
+    const state = await fixture(page);
+    await page.goto('/account/notifications');
+    await expect(page.getByRole('button', { name: 'Notifications, 7 unread', exact: true })).toBeVisible();
+    await expect(page.getByText('Access token revoked', { exact: true })).toBeVisible();
+    await capture(page, 'inbox-unread-' + width);
+    await page.getByRole('button', { name: 'Mark as read', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Notifications, 6 unread', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Mark as read', exact: true })).toHaveCount(0);
+    expect(state.writes.filter((row) => row.path === '/notifications/notice/read')).toHaveLength(1);
+    await capture(page, 'inbox-read-' + width);
+  });
+for (const width of [1440, 390])
   test(`recipient-bound invitation uses the actual lazy host at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
     const state = await fixture(page);
@@ -401,7 +420,7 @@ test('disabled email preserves in-app notifications and shows readiness instead 
 }) => {
   await fixture(page, false);
   await page.goto('/account/notifications');
-  await expect(page.getByRole('heading', { name: 'Your notifications' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Your notifications' })).toBeVisible();
   await expect(page.getByText('Access token revoked', { exact: true })).toBeVisible();
   await openAdministration(page, 'Settings');
   await page.getByRole('button', { name: 'Communications', exact: true }).click();

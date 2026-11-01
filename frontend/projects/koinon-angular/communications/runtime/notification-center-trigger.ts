@@ -10,17 +10,25 @@ import {
   inject,
   untracked,
 } from '@angular/core';
-import { KoinonNotificationTrigger } from '@fireflyframework/koinon-angular/communications';
+import {
+  KoinonNotificationRefresh,
+  KoinonNotificationTrigger,
+} from '@fireflyframework/koinon-angular/communications';
 import { KoinonCommunicationsSession } from './session';
 @Component({
   selector: 'ffk-notification-center-trigger',
   imports: [KoinonNotificationTrigger],
   providers: [KoinonCommunicationsSession],
-  template: `<ffk-notification-trigger [unread]="unread()" (opened)="open()" />`,
+  template: `<ffk-notification-trigger
+    [unread]="unread()"
+    [unavailable]="!!session.error()"
+    (opened)="open()"
+  />`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KoinonNotificationCenterTrigger {
   readonly session = inject(KoinonCommunicationsSession);
+  private readonly updates = inject(KoinonNotificationRefresh);
   @Input() actions?: { opened: () => void };
   open() {
     this.opened.emit();
@@ -31,6 +39,7 @@ export class KoinonNotificationCenterTrigger {
   constructor() {
     effect(() => {
       this.session.key();
+      this.updates.revision();
       untracked(() => {
         this.unread.set(null);
         void this.load();
