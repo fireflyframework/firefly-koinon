@@ -81,7 +81,7 @@ for (const width of [1440, 390])
     let aborted = false;
     await page.route('**/*.js', async (route) => {
       const response = await route.fetch();
-      if ((await response.text()).includes('.drop-zone')) {
+      if (/selectors:\[\[[`"']ffk-workbench-dialogs[`"']\]\]/.test(await response.text())) {
         aborted = true;
         await route.abort();
       } else await route.fulfill({ response });
@@ -114,4 +114,50 @@ for (const width of [1440, 390])
     await page.keyboard.press('Escape');
     await expect(dialog).toHaveCount(0);
     await expect(add).toBeFocused();
+    await add.click();
+    await expect(dialog).toBeVisible();
+    await close.click();
+    await expect(dialog).toHaveCount(0);
+    await expect(add).toBeFocused();
   });
+
+test('a failed nested upload body preserves close and recovers after the instructed page refresh', async ({
+  page,
+}) => {
+  await mockService(page);
+  await page.goto('/library');
+  await expect(page.getByRole('heading', { name: 'Library', exact: true })).toBeVisible();
+  let aborted = false;
+  await page.route('**/*.js', async (route) => {
+    const response = await route.fetch();
+    if (/selectors:\[\[[`"']ffk-library-upload-panel[`"']\]\]/.test(await response.text())) {
+      aborted = true;
+      await route.abort();
+    } else await route.fulfill({ response });
+  });
+  const add = page.getByRole('button', { name: 'Add knowledge', exact: true });
+  await add.click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: /Upload files/ })
+    .click();
+  const upload = page.getByRole('dialog', { name: 'Upload files', exact: true });
+  await expect(upload.getByRole('alert')).toHaveText(
+    'This panel could not be opened. Refresh this page and try again.',
+  );
+  expect(aborted).toBe(true);
+  await upload.getByRole('button', { name: 'Close dialog', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(add).toBeFocused();
+  await page.unroute('**/*.js');
+  await page.reload();
+  await add.click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: /Upload files/ })
+    .click();
+  await expect(upload.getByLabel('Choose files')).toBeAttached();
+  await upload.getByRole('button', { name: 'Close dialog', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(add).toBeFocused();
+});
