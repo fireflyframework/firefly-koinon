@@ -34,9 +34,13 @@
     <p>{{ (entry.kind === 'workspace' ? 'System space' : 'System folder') | ffkText }}</p>
   }
   <p class="description">{{ entry.description || 'No description yet.' }}</p>
-  <ffk-badge [tone]="entry.status === 'failed' ? 'attention' : 'neutral'">{{
+  @if (!['source', 'document', 'dataset', 'table'].includes(entry.kind) || !['ready', 'active'].includes(entry.status)) {
+  <ffk-badge [tone]="['failed', 'error'].includes(entry.status) ? 'attention' : 'neutral'">{{
     view.status(entry.status) | ffkText
-  }}</ffk-badge>
+  }}</ffk-badge> }
+  @if (['source', 'document', 'dataset', 'table'].includes(entry.kind)) {
+    <ffk-knowledge-availability [entry]="entry" [details]="true"/>
+  }
   <dl>
     <dt>{{ 'Location' | ffkText }}</dt>
     <dd>{{ parentName || 'Library' }}</dd>

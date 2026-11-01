@@ -204,6 +204,7 @@ test('header sorting and metadata filters query the whole collection and reset p
   await expect
     .poll(() => service.reads.filter((read) => read.query['view'] === 'library').at(-1)?.query)
     .toMatchObject({ sort: 'created_at', order: 'desc', format: 'pdf', page: '1' });
+  await expect.poll(() => service.observations.length).toBeGreaterThan(0);
   expect(service.writes).toEqual([]);
 });
 for (const width of [320, 390])

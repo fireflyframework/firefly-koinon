@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "api_prefix": "/api/v1",
   "status": "Canonical API contract; development snapshot",
-  "canonical_operation_count": 238,
+  "canonical_operation_count": 240,
   "qualified_compatibility_operations": [
     {
       "operation": "GlossaryController.list_terms",
@@ -4833,6 +4833,74 @@
       "headers": [
         "Idempotency-Key (required; caller-supplied stable operation key)"
       ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/catalog/availability",
+      "category": "canonical",
+      "operation": "KnowledgeAvailabilityController.observe",
+      "source": "backend/src/koinon/knowledge/availability/controller.py",
+      "line": 21,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[AvailabilityRequest]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "knowledge_availability",
+      "sdk_typescript": "availability.observe",
+      "sdk_java": "client.catalog.availability",
+      "request_schema": "AvailabilityRequest",
+      "response_schema": "AvailabilityResponse",
+      "success_status": 200,
+      "source_sha256": "18a3a3131196a157100161e1142f200933a451e89aa637cca6911135e003dca5",
+      "sdk_typescript_factory": "createAvailabilityApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/availability",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-processing",
+      "category": "canonical",
+      "operation": "KnowledgeAvailabilityController.processing",
+      "source": "backend/src/koinon/knowledge/availability/controller.py",
+      "line": 29,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ProcessingRequest]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "knowledge_processing",
+      "sdk_typescript": "availability.processing",
+      "sdk_java": "client.catalog.processing",
+      "request_schema": "ProcessingRequest",
+      "response_schema": "ProcessingResponse",
+      "success_status": 200,
+      "source_sha256": "18a3a3131196a157100161e1142f200933a451e89aa637cca6911135e003dca5",
+      "sdk_typescript_factory": "createAvailabilityApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/availability",
+      "encoding": "application/json",
+      "headers": []
     },
     {
       "method": "GET",

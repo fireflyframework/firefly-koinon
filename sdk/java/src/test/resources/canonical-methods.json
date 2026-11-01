@@ -113,6 +113,8 @@
   "ChatAttachmentsController.retry": "client.chatAttachments.retry",
   "ChatAttachmentsController.delete": "client.chatAttachments.remove",
   "ChatAttachmentsController.knowledge": "client.chatAttachments.promote",
+  "KnowledgeAvailabilityController.observe": "client.catalog.availability",
+  "KnowledgeAvailabilityController.processing": "client.catalog.processing",
   "FileBatchController.capabilities": "client.fileBatches.capabilities",
   "FileBatchController.create": "client.fileBatches.create",
   "FileBatchController.list": "client.fileBatches.list",

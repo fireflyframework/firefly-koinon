@@ -10,7 +10,9 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from koinon.catalog.system_guards import system_space_guards
 
-INTERNAL_METADATA_KEYS = frozenset({"_koinon_lifecycle", "_koinon_intake", "_koinon_external_review"})
+INTERNAL_METADATA_KEYS = frozenset(
+    {"_koinon_lifecycle", "_koinon_intake", "_koinon_external_review", "_koinon_processing"}
+)
 
 
 class Tenant(Base):

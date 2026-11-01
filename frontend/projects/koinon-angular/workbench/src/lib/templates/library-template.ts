@@ -91,8 +91,8 @@ import { friendlyStatus } from '../services/library-tree';
                 }}<select name="status" [value]="statusFilter" (change)="statusFilter=$any($event.target).value">
                   <option value="">{{ 'All statuses' | ffkText }}</option>
                   <option value="ready">{{ 'Ready' | ffkText }}</option>
-                  <option value="processing">{{ 'Processing' | ffkText }}</option>
-                  <option value="failed">{{ 'Needs attention' | ffkText }}</option>
+                  <option value="pending">{{ 'Processing' | ffkText }}</option>
+                  <option value="error">{{ 'Needs attention' | ffkText }}</option>
                 </select></label
               >
               <label

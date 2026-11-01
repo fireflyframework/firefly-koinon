@@ -17,7 +17,7 @@
 >
   <header>
     <div>
-      @if (w.dialog() !== 'sign-out') {<span class="eyebrow">{{
+      @if (w.dialog() !== 'sign-out' && w.dialog() !== 'upload') {<span class="eyebrow">{{
         (w.dialog() === 'account'
           ? 'Account'
           : w.dialog() === 'upload'
@@ -178,129 +178,12 @@
     </div>
   }
   @if (w.dialog() === 'upload') {
-    @if (w.uploadState() === 'complete') {
-      <div class="upload-complete">
-        <span class="completed-mark"><ffk-icon name="check" /></span>
-        <h3>
-          {{ w.uploadedCount() }} {{ w.uploadedCount() === 1 ? 'file received' : 'files received' }}
-        </h3>
-        <p>
-          {{
-            'Open the result to see its current status, or follow processing in Activity.' | ffkText
-          }}
-        </p>
-        <div class="dialog-actions">
-          <ffk-button variant="quiet" (click)="w.closeDialog()">{{ 'Done' | ffkText }}</ffk-button
-          ><ffk-button variant="primary" (click)="w.openUploadResult()">{{
-            'Open result' | ffkText
-          }}</ffk-button>
-        </div>
-      </div>
-    } @else {
-      <form (submit)="$event.preventDefault(); w.upload()">
-        <div class="upload-location">
-          <div>
-            <span>{{ 'Destination folder' | ffkText }}</span
-            ><strong>{{ w.uploadDestinationName() }}</strong>
-          </div>
-          <ffk-button
-            variant="quiet"
-            [disabled]="w.uploadState() === 'receiving'"
-            (click)="w.uploadDestinationOpen.set(!w.uploadDestinationOpen())"
-            >{{ w.formParent ? 'Change' : 'Choose folder' }}</ffk-button
-          >
-        </div>
-        @if (w.uploadDestinationOpen()) {
-          <div class="upload-folder-picker">
-            <p>{{ 'Choose a folder inside a project.' | ffkText }}</p>
-            @defer (when !!w.dialog()) {
-              <ffk-folder-tree
-                [entries]="w.allEntries()"
-                [currentId]="w.formParent"
-                [contextKey]="w.f.tenantId()"
-                [error]="w.f.error()"
-                [loadChildren]="w.loadTreeChildren"
-                [selectableKinds]="w.uploadFolderKinds"
-                (selected)="w.chooseUploadFolder($event)"
-              />
-            } @error {
-              <p role="alert">
-                {{ 'This panel could not be opened. Refresh this page and try again.' | ffkText }}
-              </p>
-            }
-          </div>
-        }
-        <label for="upload-mode">{{ 'Use these files as' | ffkText }}</label
-        ><select
-          id="upload-mode"
-          name="mode"
-          [value]="w.uploadMode"
-          (change)="w.uploadMode = $any($event.target).value"
-          [disabled]="w.uploadState() === 'receiving'"
-        >
-          <option value="document">{{ 'Documents to read and search' | ffkText }}</option>
-          <option value="dataset">{{ 'Data to explore with queries' | ffkText }}</option>
-        </select>
-        <div class="drop-zone" (dragover)="$event.preventDefault()" (drop)="w.captureDrop($event)">
-          <ffk-icon name="upload" /><strong>{{ 'Drop your files here' | ffkText }}</strong
-          ><span>{{ 'or choose files from your computer' | ffkText }}</span
-          ><input
-            type="file"
-            id="upload-files"
-            [attr.aria-label]="'Choose files' | ffkText"
-            multiple
-            (change)="w.captureFiles($event)"
-            [disabled]="w.uploadState() === 'receiving'"
-          />
-        </div>
-        @if (w.files.length) {
-          <div class="upload-preview" [attr.aria-label]="'Files to upload' | ffkText">
-            @for (file of w.files; track $index) {
-              <div>
-                <ffk-icon name="file" /><span [title]="file.name">{{ file.name }}</span
-                ><small>{{ file.size | number }} bytes</small
-                ><span class="upload-file-state">{{
-                  w.uploadedFiles().has(file)
-                    ? 'Received'
-                    : w.uploadCurrentFile() === file
-                      ? 'Receiving…'
-                      : w.uploadFailedFile() === file
-                        ? 'Needs attention'
-                        : 'Ready to upload'
-                }}</span>
-              </div>
-            }
-          </div>
-        }
-        @if (w.uploadState() === 'receiving') {
-          <div class="upload-progress" role="status">
-            <span class="workbench-status-line"></span>Receiving file {{ w.uploadedCount() + 1 }} of
-            {{ w.files.length }}. {{ w.uploadedCount() }} received.
-          </div>
-        }
-        <p class="field-help">
-          {{
-            'Available formats depend on your organization’s ingestion services. Files are validated when received.'
-              | ffkText
-          }}
-        </p>
-        <div class="dialog-actions">
-          <ffk-button
-            variant="quiet"
-            [disabled]="w.uploadState() === 'receiving'"
-            (click)="w.closeDialog()"
-            >{{ 'Cancel' | ffkText }}</ffk-button
-          ><ffk-button
-            type="submit"
-            variant="primary"
-            icon="upload"
-            [disabled]="!w.files.length || !w.formParent"
-            [loading]="w.uploadState() === 'receiving'"
-            >Upload {{ w.remainingFiles() || '' }}
-            {{ w.remainingFiles() === 1 ? 'file' : 'files' }}</ffk-button
-          >
-        </div>
-      </form>
+    @defer (when w.dialog()==='upload') {
+      <ffk-library-upload-panel [w]="w" />
+    } @loading {
+      <ffk-skeleton width="80%" height="24px" [label]="'Opening panel' | ffkText" />
+    } @error {
+      <p role="alert">{{ 'This panel could not be opened. Refresh this page and try again.' | ffkText }}</p>
     }
   }
   @if (w.dialog() === 'query') {

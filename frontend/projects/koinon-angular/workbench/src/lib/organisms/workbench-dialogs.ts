@@ -2,12 +2,13 @@
 import {registerKoinonSpanish} from '../foundations/i18n';
 import {PANEL_SPANISH} from '../foundations/panel-spanish.generated';
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
-import { DecimalPipe, JsonPipe } from '@angular/common';
+import { JsonPipe } from '@angular/common';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import type { KoinonWorkbench } from '../koinon-angular';
 import { KoinonTextPipe } from '../foundations/i18n';
 import { KoinonAccountPanel } from './account-panel';
 import { KoinonMoveFolder } from './move-folder';
+import { KoinonLibraryUploadPanel } from './library-upload-panel';
 import { KoinonFolderTree } from './folder-tree';
 import { KoinonCodeBlock } from '../atoms/code-block';
 import { KoinonButton } from '../atoms/button';
@@ -22,13 +23,13 @@ registerKoinonSpanish(PANEL_SPANISH);
 @Component({
   selector: 'ffk-workbench-dialogs',
   imports: [
-    DecimalPipe,
     JsonPipe,
     CdkTrapFocus,
     KoinonTextPipe,
     KoinonAccountPanel,
     KoinonFolderTree,
     KoinonMoveFolder,
+    KoinonLibraryUploadPanel,
     KoinonCodeBlock,
     KoinonButton,
     KoinonIcon,

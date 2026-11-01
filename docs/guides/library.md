@@ -27,6 +27,8 @@ The request includes the parent and update timestamp you last observed. If anoth
 
 A move between spaces or Library projects returns `KNOWLEDGE_TRANSFER_REQUIRED`. This operation deliberately does not rewrite native scopes, indexes or source provenance. Cross-boundary transfer needs its own reviewed migration; it is not implemented by changing a parent identifier.
 
+At the Library home, the server-paginated list contains spaces only. Open a space to see its projects, then open a project or folder to browse its children. Names in different levels are not peer spaces. Global knowledge search remains a separate action; the home list does not filter a previously downloaded recursive catalog on the client.
+
 ## Find and open
 
 Choose the organization and space you have access to. Browse folders with the list, breadcrumb or knowledge tree. Search narrows the current context; clear the search to return to the folder. Opening an item and inspecting its details are separate actions, so a details drawer does not interrupt browsing.
@@ -58,6 +60,59 @@ flowchart LR
 ```
 
 Editors can add and maintain knowledge in their authorized scope. Viewers can read and ask questions. Analysts can also query datasets. A missing permission should explain the action that requires access without exposing information from another organization or space.
+
+### Process ordinary uploads through the worker
+
+When queued original storage is configured, **Add knowledge** registers a bounded file batch, verifies each selected original's SHA-256 in sequence, transfers the originals as raw bodies, and submits the batch to the file-intake worker. The API process receives and stages the bytes; it does not parse those queued documents or tables. A configured queue failure does not switch to synchronous parsing.
+
+The panel checks the server's current limits before sending files. The native upper bounds are 128 MiB per original and 512 MiB across the batch; an operator can configure lower bounds. The aggregate limit does not permit a single 512 MiB file. If queued storage is explicitly unavailable, only files within the observed synchronous limit, at most 32 MiB, can use the existing synchronous path. Unknown readiness blocks transfer rather than guessing a limit.
+
+**Queued**, **Extraction complete** and cancellation outcomes come from the retained batch. A persisted worker-start record alone does not establish that a worker is still processing it: **Processing** requires the current native observation. Without that proof, the panel shows **Worker state not verified**. Current readable, queryable and searchable availability is shown separately from the original batch's outcome. Finishing extraction does not establish vector coverage or activate a search index.
+
+If a transfer or submission acknowledgment is lost, choose **Check status**. The panel reads the retained batch and originals without sending them again. **Reconcile retained original** asks the native recovery operation to verify an already retained original; it does not reupload it or blindly repeat parsing. Inspect unfinished or reconciliation-required outcomes before starting different work. A partial synchronous response can also leave native effects, so its uncertain remainder is not automatically retried.
+
+**Request cancellation** uses the current native batch revision. It stops pending work; already published effects can remain. Closing the panel stops its bounded automatic checks and leaves submitted work running. Keep the panel open while resolving an uncertain upload: its request keys remain bound to the current authenticated client and scope, and are cleared when that identity or scope changes. The batch itself remains on the server and is available through the file-batch API after a page reload.
+
+Queued storage configuration does not prove worker availability. Operators must run the [complete worker role](../operations/workers.md) and explicitly enable `koinon.knowledge.bulk.worker_enabled` in its configuration. The query-batch scheduler has its own `query_worker_enabled` setting. For an environment-based local launch, scope the flag to the worker command:
+
+```sh
+PYFLY_KOINON_KNOWLEDGE_BULK_WORKER_ENABLED=true python -m koinon.worker
+```
+
+Do not apply that worker-only environment override to the API process, which rejects enabled background-worker flags. The file-batch capability response identifies the required external worker and configured storage, not a live worker heartbeat. Resource limits, parser supervision and original retention still apply; this interface does not qualify an arbitrary file or establish a universal memory minimum.
+
+## Understand availability
+
+A successful upload records the result of that request. It does not establish that a source is searchable. Library rows and details observe the current native source, extraction or table snapshot separately from catalog metadata.
+
+- **Text available** means that the current document has a recorded extraction and matching text chunks. It does not promise complete extraction of every page or image.
+- **Searchable** additionally requires matching vectors in the active embedding set and its qualified native search index. A queued or running index job can show **Queued** or **Indexing** while text remains readable.
+- **Available to query** means that the current dataset or table has an active, recorded snapshot. Provider health and a future query's success remain separate checks.
+- **Queued** and **Processing** require a durable job record. A synchronous upload does not acquire an invented queue stage. **Not checked** remains visible when native evidence is absent, unsupported or changes during the observation.
+
+An unsuccessful replacement can leave a serving version available. Details show the observed serving revision separately from the latest recorded replacement or reingestion attempt. **Observed version remains available** does not authorize retrying a failed operation or establish which effects a failed request committed. Check the retained attempt and current revision before recovery.
+
+Availability reads check current organization, space and asset permissions before and after native observations. They are bounded to the visible items and show an observation time. They are not an execution reservation: a later request checks authority and native state again. Missing native state or revision drift stays unknown instead of falling back to a ready catalog status.
+
+Administrators can open **Activity** to inspect current knowledge jobs and server-recorded content attempts. The processing list is paginated. Earlier synchronous stages without durable records remain unavailable. Bulk jobs do not offer the generic job cancellation button; cancellation requires the bulk operation's own current batch and revision contract.
+
+### Observe availability from an SDK
+
+Use the same authenticated transport and current tenant as the rest of your client. The TypeScript factory is a secondary entry point so ordinary SDK clients do not load processing UI code:
+
+```typescript
+import type { KoinonTransport } from '@fireflyframework/koinon-sdk';
+import { createAvailabilityApi } from '@fireflyframework/koinon-sdk/availability';
+
+async function inspect(transport: KoinonTransport, tenantId: string, assetId: string) {
+  const availability = createAvailabilityApi(transport);
+  const observation = await availability.observe(tenantId, { asset_ids: [assetId] });
+  const asset = observation.items[assetId];
+  return { observedAt: observation.observed_at, asset };
+}
+```
+
+The equivalent Python operations are `knowledge_availability` and `knowledge_processing`; Java exposes `catalog(tenantId).availability` and `catalog(tenantId).processing`. The [generated SDK reference](../reference/sdk-api.md) records their typed inputs and outputs. Availability accepts at most 100 unique asset IDs. Administrator processing pages accept at most 50 records and require current jobs-management authority over the complete requested scope; asset-restricted credentials cannot read whole-workspace history.
 
 ## Maintain and inspect
 

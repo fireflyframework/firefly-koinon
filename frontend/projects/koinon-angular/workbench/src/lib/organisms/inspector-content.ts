@@ -2,13 +2,14 @@
 import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { KoinonTextPipe, KoinonDatePipe } from '../foundations/i18n';
+import { KoinonKnowledgeAvailability } from './knowledge-availability';
 import { KoinonButton } from '../atoms/button';
 import { KoinonBadge } from '../atoms/badge';
 import { KoinonIcon } from '../atoms/icon';
 import type { KoinonInspector } from './inspector';
 @Component({
   selector: 'ffk-inspector-content',
-  imports: [KoinonTextPipe, KoinonDatePipe, CdkTrapFocus, KoinonButton, KoinonBadge, KoinonIcon],
+  imports: [KoinonTextPipe, KoinonDatePipe, CdkTrapFocus, KoinonButton, KoinonBadge, KoinonIcon, KoinonKnowledgeAvailability],
   templateUrl: './inspector-content.html',
   styleUrl: './inspector.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -94,10 +94,12 @@ export async function mockService(
     summaries?: Record<string, CatalogSummary>;
     actors?: Record<string, PublicActor>;
     organizationAgent?: string | null;
+    queuedStorageConfigured?: boolean;
   } = {},
 ) {
   const rows = structuredClone(fixtures);
   const reads: { path: string; query: Record<string, string> }[] = [];
+  const observations: { path: string; body: unknown }[] = [];
   const previousStatus = new Map<string, string>();
   const writes: { path: string; method: string; body: unknown; csrf?: string }[] = [];
   await page
@@ -162,7 +164,12 @@ export async function mockService(
         configured: !!id,
         can_run: !!id,
         status: id ? 'ready' : 'unconfigured',
-        memory: { allow_project_memory: true, max_history_messages: 40, max_history_tokens: 8192, max_project_memory_messages: 20 },
+        memory: {
+          allow_project_memory: true,
+          max_history_messages: 40,
+          max_history_tokens: 8192,
+          max_project_memory_messages: 20,
+        },
       });
     }
     if (path.endsWith('/knowledge/settings') && request.method() === 'GET')
@@ -212,6 +219,30 @@ export async function mockService(
           },
         ],
       });
+    if (request.method() === 'POST' && path.endsWith('/catalog/availability')) {
+      const body = request.postDataJSON() as { asset_ids: string[] };
+      observations.push({ path, body });
+      return respond({
+        observed_at: '2026-11-01T00:00:00Z',
+        items: Object.fromEntries(
+          body.asset_ids.map((id) => [
+            id,
+            {
+              phase: 'unknown',
+              read: { state: 'unknown', reason: 'NOT_OBSERVED' },
+              search: { state: 'unknown', reason: 'NOT_OBSERVED' },
+              query: { state: 'unknown', reason: 'NOT_OBSERVED' },
+              revision: {},
+              latest_attempt: null,
+            },
+          ]),
+        ),
+      });
+    }
+    if (request.method() === 'POST' && path.endsWith('/knowledge-processing')) {
+      observations.push({ path, body: request.postDataJSON() });
+      return respond({ observed_at: '2026-11-01T00:00:00Z', items: [], next_page: null });
+    }
     if (request.method() === 'GET')
       reads.push({ path, query: Object.fromEntries(url.searchParams) });
     if (request.method() !== 'GET') {
@@ -246,9 +277,10 @@ export async function mockService(
           body.parent_id ?? null,
           { description: body.description ?? '' },
         );
-        const parent = rows.find(row => row.id === created.parent_id);
-        created.workspace_id = created.kind === 'workspace' ? created.id : parent?.workspace_id ?? null;
-        created.project_id = created.kind === 'project' ? created.id : parent?.project_id ?? null;
+        const parent = rows.find((row) => row.id === created.parent_id);
+        created.workspace_id =
+          created.kind === 'workspace' ? created.id : (parent?.workspace_id ?? null);
+        created.project_id = created.kind === 'project' ? created.id : (parent?.project_id ?? null);
         rows.push(created);
         return respond(created, 201);
       }
@@ -485,19 +517,17 @@ export async function mockService(
           },
         ],
       });
-    if (path.endsWith('/sources/upload'))
-      return respond(
-        {
-          source: entry('source-uploaded', 'source', 'Uploaded source', 'collection-one'),
-          assets: [],
-        },
-        201,
-      );
+    if (path.endsWith('/source-batch-capabilities')) return respond({configured: options.queuedStorageConfigured === true, modes:['document','dataset'], max_files:100, max_file_bytes:134217728, max_batch_bytes:536870912, max_active_batches_per_subject:3, synchronous_max_file_bytes:33554432,processing_policy:'extract_only_v1',staging_backend:'private_local_posix',staging_topology:'single_host_shared_durable_posix',writer_fence:'primary_database_generation_lease',worker:'external_native_worker',automatic_unknown_replay:false,large_file_transport:'queued_file_spool',quota_semantics:'lifetime_admission_bytes'});
+    if (path.endsWith('/sources/upload')) {
+      const source=entry('source-uploaded','source','Uploaded source','collection-one');
+      rows.push(source);
+      return respond({source,assets:[]},201);
+    }
     if (path.startsWith('/structured'))
       return respond({ items: [], total: 0, limit: 50, offset: 0 });
     return respond({ detail: 'No controlled test fixture is defined for this operation.' }, 404);
   });
-  return { rows, writes, reads };
+  return { rows, writes, reads, observations };
 }
 export async function setDarkAppearance(page: Page, spanish = false) {
   const label = spanish ? 'Usar tema oscuro' : 'Use dark theme';

@@ -58,6 +58,14 @@ export interface AnswerAudit {
  "sql_attempts"?: Array<SqlAttemptReceipt>;
  "rlm_tools"?: Array<RlmToolReceipt> | null;
 }
+export interface AssetAvailability {
+ "phase"?: "unknown" | "queued" | "processing" | "indexing" | "complete" | "failed" | "cancelled" | "reconciliation_required";
+ "read"?: AvailabilityCapability;
+ "search"?: AvailabilityCapability;
+ "query"?: AvailabilityCapability;
+ "revision"?: AvailabilityRevision;
+ "latest_attempt"?: AvailabilityAttempt | null;
+}
 export interface AttachmentCapabilities {
  "storage": AttachmentObservation;
  "database": AttachmentObservation;
@@ -172,6 +180,29 @@ export interface AuthorizedApplication {
  "expires_at": string;
  "last_used_at": string | null;
  "revoked_at": string | null;
+}
+export interface AvailabilityAttempt {
+ "id": string;
+ "operation": string;
+ "state": "unknown" | "queued" | "processing" | "indexing" | "complete" | "failed" | "cancelled" | "reconciliation_required";
+}
+export interface AvailabilityCapability {
+ "state"?: "ready" | "pending" | "unavailable" | "unknown" | "not_applicable";
+ "reason"?: string;
+}
+export interface AvailabilityRequest {
+ "asset_ids": Array<string>;
+ "workspace_id"?: string | null;
+}
+export interface AvailabilityResponse {
+ "observed_at": string;
+ "items": Record<string,AssetAvailability>;
+}
+export interface AvailabilityRevision {
+ "source_version_id"?: string | null;
+ "extraction_id"?: string | null;
+ "snapshot_id"?: string | null;
+ "active_index_id"?: string | null;
 }
 export interface BatchQueryOutcome {
  "query_id": string;
@@ -1674,6 +1705,24 @@ export interface PrivateFileReceipt {
  "sha256": string;
  "used_revision": number;
  "availability": "available" | "expired" | "deleted" | "changed" | "unavailable";
+}
+export interface ProcessingActivity {
+ "id": string;
+ "resource_id": string;
+ "operation": string;
+ "state": "unknown" | "queued" | "processing" | "indexing" | "complete" | "failed" | "cancelled" | "reconciliation_required";
+ "updated_at": string;
+ "availability": AssetAvailability;
+}
+export interface ProcessingRequest {
+ "page"?: number;
+ "page_size"?: number;
+ "workspace_id"?: string | null;
+}
+export interface ProcessingResponse {
+ "observed_at": string;
+ "items": Array<ProcessingActivity>;
+ "next_page"?: number | null;
 }
 export interface ProjectActivity {
  "project_id": string;

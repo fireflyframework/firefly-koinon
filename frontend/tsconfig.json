@@ -16,6 +16,7 @@
       "@fireflyframework/koinon-angular/communications/preferences": ["./dist/koinon-angular/communications/preferences"],
       "@fireflyframework/koinon-angular/communications/runtime": ["./dist/koinon-angular/communications/runtime"],
       "@fireflyframework/koinon-sdk/communications": ["../sdk/typescript/dist/communications"],
+      "@fireflyframework/koinon-sdk/availability": ["../sdk/typescript/dist/availability"],
       "@fireflyframework/koinon-sdk": ["../sdk/typescript/dist"],
       "@fireflyframework/koinon-angular/communications/schedule": ["./dist/koinon-angular/communications/schedule"],
       "@fireflyframework/koinon-angular": ["./dist/koinon-angular"],

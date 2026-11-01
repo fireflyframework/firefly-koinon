@@ -1,0 +1,259 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+@if (error()) {
+  <p role="alert">{{ error() | ffkText }}</p>
+}
+@if (runtime(); as api) {
+  @if (retained()) {
+    <section class="retained" aria-live="polite">
+      @if (view()?.transferring) {
+        <p role="status">
+          {{ label(view()?.stage || 'observed', true) | ffkText }}
+          @if (view()?.currentFile) {
+            <strong>{{ view()?.currentFile }}</strong>
+          }
+        </p>
+      }
+      @if (!view()?.batch && !view()?.uncertain && view()?.stage === 'observed') {
+        <h3>
+          {{ view()?.received }}
+          {{ (view()?.received === 1 ? 'file received' : 'files received') | ffkText }}
+        </h3>
+      } @else {
+        <h3>
+          {{
+            (view()?.uncertain ? 'Upload outcome not confirmed' : 'Last observed state') | ffkText
+          }}
+        </h3>
+      }
+      @if (view()?.batch; as batch) {
+        <ffk-badge
+          [tone]="
+            ['failed', 'partial', 'reconciling'].includes(batch.status) ? 'attention' : 'neutral'
+          "
+          >{{ batchLabel(batch.status) | ffkText }}</ffk-badge
+        >
+        <p class="reference">{{ 'Reference' | ffkText }}: {{ batch.id }}</p>
+      }
+      <p>{{ view()?.message || '' | ffkText }}</p>
+      @if (view()?.availabilityObservedAt) {
+        <p class="field-help">
+          {{ 'Checked' | ffkText }}:
+          {{ view()?.availabilityObservedAt || '' | ffkDate: undefined : 'datetime' }}
+        </p>
+      }
+      @if (checksPaused()) {
+        <p class="field-help">
+          {{ 'Automatic checks paused. Check status for a fresh observation.' | ffkText }}
+        </p>
+      }
+      @for (item of view()?.items || []; track item.id) {
+        <div class="record">
+          <div>
+            <strong>{{ item.filename }}</strong
+            ><span>{{ label(item.status) | ffkText }}</span
+            ><small
+              >{{ 'Current availability' | ffkText }}: {{ currentLabel(item) | ffkText }}</small
+            >
+          </div>
+          @if (api.coordinator.canRecover(item)) {
+            <ffk-button variant="quiet" (click)="api.coordinator.recoverOriginal(item.id)">{{
+              'Reconcile retained original' | ffkText
+            }}</ffk-button>
+          }
+        </div>
+      }
+      @if (!view()?.batch && view()?.uncertain) {
+        <div class="upload-preview">
+          @for (file of w.files; track $index) {
+            <div>
+              <ffk-icon name="file" /><span>{{ file.name }}</span
+              ><small>{{
+                (w.uploadedFiles().has(file) ? 'Received' : 'Outcome not confirmed') | ffkText
+              }}</small>
+            </div>
+          }
+        </div>
+      }
+      <p class="field-help">
+        {{
+          'Closing this panel stops its automatic checks. It does not cancel submitted work.'
+            | ffkText
+        }}
+      </p>
+      <div class="dialog-actions">
+        <ffk-button
+          variant="quiet"
+          (click)="w.closeDialog()"
+          [disabled]="w.uploadState() === 'receiving'"
+          >{{ 'Done' | ffkText }}</ffk-button
+        >
+        @if (view()?.batch || view()?.uncertain) {
+          <ffk-button variant="quiet" (click)="api.folder()" [disabled]="!!view()?.busy">{{
+            'Open current folder' | ffkText
+          }}</ffk-button>
+        }
+        <ffk-button (click)="check()" [disabled]="!!view()?.busy">{{
+          'Check status' | ffkText
+        }}</ffk-button>
+        @if (api.coordinator.canContinue()) {
+          <ffk-button variant="primary" (click)="api.coordinator.continue()">{{
+            (view()?.items?.every(itemStaged) ? 'Submit for processing' : 'Continue upload')
+              | ffkText
+          }}</ffk-button>
+        }
+        @if (view()?.batch; as batch) {
+          @if (
+            ['staging', 'queued', 'running'].includes(batch.status) && !batch.cancellation_requested
+          ) {
+            <ffk-button
+              variant="quiet"
+              (click)="api.coordinator.cancel()"
+              [disabled]="!!view()?.busy"
+              >{{ 'Request cancellation' | ffkText }}</ffk-button
+            >
+          }
+          <ffk-button
+            variant="primary"
+            (click)="api.open()"
+            [disabled]="!view()?.items?.length || !!view()?.busy"
+            >{{ 'Open result' | ffkText }}</ffk-button
+          >
+          @if (
+            ['succeeded', 'partial', 'failed', 'cancelled', 'expired'].includes(batch.status) &&
+            !view()?.uncertain
+          ) {
+            <ffk-button variant="quiet" (click)="fresh()">{{
+              'Choose more files' | ffkText
+            }}</ffk-button>
+          }
+        } @else if (!view()?.uncertain) {
+          <ffk-button variant="primary" (click)="api.open()">{{
+            'Open result' | ffkText
+          }}</ffk-button>
+          <ffk-button variant="quiet" (click)="fresh()">{{
+            'Choose more files' | ffkText
+          }}</ffk-button>
+        }
+      </div>
+      <p class="field-help">
+        {{ 'Cancellation stops pending work; already published effects can remain.' | ffkText }}
+      </p>
+    </section>
+  } @else {
+    <form (submit)="$event.preventDefault(); w.upload()">
+      <div class="upload-location">
+        <div>
+          <span class="destination-label">{{ 'Destination folder' | ffkText }}</span>
+          @if (w.formParent) {
+            <strong>{{ w.uploadDestinationName() }}</strong>
+          }
+        </div>
+        @if (w.formParent && !w.uploadDestinationOpen()) {
+          <ffk-button
+            variant="quiet"
+            [disabled]="!!view()?.busy"
+            (click)="w.uploadDestinationOpen.set(true)"
+            >{{ 'Change' | ffkText }}</ffk-button
+          >
+        }
+      </div>
+      @if (!w.formParent || w.uploadDestinationOpen()) {
+        <div class="upload-folder-picker">
+          <ffk-folder-tree
+            [entries]="w.allEntries()"
+            [currentId]="w.formParent"
+            [revealId]="treeStart()"
+            [contextKey]="w.f.tenantId()"
+            [error]="w.f.error()"
+            [loadChildren]="w.loadTreeChildren"
+            [selectableKinds]="w.uploadFolderKinds"
+            [canSelect]="api.canSelect"
+            (selected)="w.chooseUploadFolder($event)"
+          />
+        </div>
+      }
+      <p class="field-help">
+        {{ 'Only folders where you can add knowledge are selectable.' | ffkText }}
+      </p>
+      <label for="upload-mode">{{ 'Use these files as' | ffkText }}</label>
+      <select
+        id="upload-mode"
+        name="mode"
+        [value]="w.uploadMode"
+        (change)="w.uploadMode = $any($event.target).value"
+        [disabled]="!!view()?.busy"
+      >
+        <option value="document">{{ 'Documents for reading' | ffkText }}</option>
+        <option value="dataset">{{ 'Data to explore with queries' | ffkText }}</option>
+      </select>
+      <div class="drop-zone" (dragover)="$event.preventDefault()" (drop)="w.captureDrop($event)">
+        <ffk-icon name="upload" /><strong>{{ 'Drop your files here' | ffkText }}</strong>
+        <span>{{ 'or choose files from your computer' | ffkText }}</span>
+        <input
+          type="file"
+          id="upload-files"
+          [attr.aria-label]="'Choose files' | ffkText"
+          multiple
+          (change)="w.captureFiles($event)"
+          [disabled]="!!view()?.busy"
+        />
+      </div>
+      @if (w.files.length) {
+        <div class="upload-preview" [attr.aria-label]="'Files to upload' | ffkText">
+          @for (file of w.files; track $index) {
+            <div>
+              <ffk-icon name="file" /><span [title]="file.name">{{ file.name }}</span
+              ><small>{{ file.size | number }} bytes</small>
+            </div>
+          }
+        </div>
+      }
+      @if (view()?.busy) {
+        <div class="upload-progress" role="status">
+          <strong>{{ label(view()?.stage || 'checking', true) | ffkText }}</strong>
+          @if (view()?.currentFile) {
+            <span>{{ view()?.currentFile }}</span>
+          }
+        </div>
+      }
+      @if (view()?.message) {
+        <p role="alert">{{ view()?.message || '' | ffkText }}</p>
+      }
+      @if (limits(); as limits) {
+        <p class="field-help">
+          {{ 'Maximum per file' | ffkText }}: {{ limits.max_file_bytes / 1048576 | number }} MiB.
+          {{ 'Maximum batch' | ffkText }}: {{ limits.max_batch_bytes / 1048576 | number }} MiB.
+        </p>
+      } @else {
+        <p class="field-help">{{ 'Configured limits are checked before transfer.' | ffkText }}</p>
+      }
+      <p class="field-help">
+        {{
+          'Worker extraction records text or tables. Search availability is checked separately.'
+            | ffkText
+        }}
+      </p>
+      <div class="dialog-actions">
+        <ffk-button variant="quiet" [disabled]="!!view()?.busy" (click)="w.closeDialog()">{{
+          'Cancel' | ffkText
+        }}</ffk-button>
+        <ffk-button
+          type="submit"
+          variant="primary"
+          icon="upload"
+          [disabled]="
+            !w.files.length ||
+            !w.formParent ||
+            !!view()?.busy ||
+            !api.canSelect(w.allEntries().find(selectedFolder))
+          "
+          [loading]="!!view()?.busy"
+          >{{ 'Upload' | ffkText }} {{ w.files.length }}
+          {{ (w.files.length === 1 ? 'file' : 'files') | ffkText }}</ffk-button
+        >
+      </div>
+    </form>
+  }
+} @else if (!error()) {
+  <ffk-skeleton width="80%" height="24px" [label]="'Opening panel' | ffkText" />
+}

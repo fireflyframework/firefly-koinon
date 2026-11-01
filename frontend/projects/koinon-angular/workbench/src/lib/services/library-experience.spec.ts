@@ -306,3 +306,10 @@ it('keeps contextual creation and knowledge upload as distinct authorized action
   fixture.detectChanges();
   expect(fixture.nativeElement.querySelector('.library-actions')).toBeNull();
 });
+
+it('offers only native catalog status values for Processing and Needs attention', () => {
+  const fixture = setup();
+  const options = Array.from(fixture.nativeElement.querySelectorAll('select[name="status"] option')) as HTMLOptionElement[];
+  expect(options.find(option => option.textContent?.trim() === 'Processing')?.value).toBe('pending');
+  expect(options.find(option => option.textContent?.trim() === 'Needs attention')?.value).toBe('error');
+});

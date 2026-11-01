@@ -9,6 +9,8 @@ Use the linked wire models for field constraints. Operation metadata does not en
 
 ## On this page
 
+- [Observe](#knowledgeavailabilitycontroller-observe) (POST)
+- [Processing](#knowledgeavailabilitycontroller-processing) (POST)
 - [Roles](#knowledgeconnectionscontroller-roles) (GET)
 - [List connections](#knowledgeconnectionscontroller-list-connections) (GET)
 - [Create](#knowledgeconnectionscontroller-create) (POST)
@@ -26,6 +28,90 @@ Use the linked wire models for field constraints. Operation metadata does not en
 - [Resume](#knowledgeindexescontroller-resume) (POST)
 - [Get](#organizationknowledgecontroller-get) (GET)
 - [Update](#organizationknowledgecontroller-update) (PUT)
+
+<!-- operation: KnowledgeAvailabilityController.observe -->
+<a id="knowledgeavailabilitycontroller-observe"></a>
+## Observe
+
+```http
+POST /api/v1/tenants/{tenant_id}/catalog/availability
+```
+
+Contract operation: `KnowledgeAvailabilityController.observe`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `knowledge_availability` |
+| TypeScript | `availability.observe` |
+| Java | `client.catalog.availability` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[AvailabilityRequest]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`AvailabilityRequest`](../models/availabilityrequest.md) |
+| Response schema | [`AvailabilityResponse`](../models/availabilityresponse.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: KnowledgeAvailabilityController.processing -->
+<a id="knowledgeavailabilitycontroller-processing"></a>
+## Processing
+
+```http
+POST /api/v1/tenants/{tenant_id}/knowledge-processing
+```
+
+Contract operation: `KnowledgeAvailabilityController.processing`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `knowledge_processing` |
+| TypeScript | `availability.processing` |
+| Java | `client.catalog.processing` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[ProcessingRequest]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`ProcessingRequest`](../models/processingrequest.md) |
+| Response schema | [`ProcessingResponse`](../models/processingresponse.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
 
 <!-- operation: KnowledgeConnectionsController.roles -->
 <a id="knowledgeconnectionscontroller-roles"></a>
