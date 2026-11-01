@@ -1,6 +1,6 @@
 # Qualification and remaining work
 
-The [26.11.4 release notes](../releases/26.11.4.md) describe the current package versions and requirements. This page retains the detailed qualification history, including the [earlier release record](../releases/26.10.0-alpha.1.md), and separates it from checks on the owned management environment. Passing an isolated test does not deploy that change or qualify an external client.
+The [26.11.5 release notes](../releases/26.11.5.md) describe the current package versions and requirements. This page retains the detailed qualification history, including the [earlier release record](../releases/26.10.0-alpha.1.md), and separates it from checks on the owned management environment. Passing an isolated test does not deploy that change or qualify an external client.
 
 ## Evaluation release 26.10.0-alpha.1
 
