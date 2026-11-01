@@ -45,6 +45,17 @@ from koinon_sdk.attachments import (
     ReplaceTable,
 )
 from koinon_sdk.authorized_applications import AuthorizedApplication
+from koinon_sdk.availability import (
+    AssetAvailability,
+    AvailabilityAttempt,
+    AvailabilityCapability,
+    AvailabilityRequest,
+    AvailabilityResponse,
+    AvailabilityRevision,
+    ProcessingActivity,
+    ProcessingRequest,
+    ProcessingResponse,
+)
 from koinon_sdk.bulk import (
     BulkAction,
     BulkDestination,
@@ -877,11 +888,15 @@ __all__ += [
     "DigestSchedule",
 ]
 
-from koinon_sdk.availability import (
-    AssetAvailability, AvailabilityAttempt, AvailabilityCapability, AvailabilityRequest,
-    AvailabilityResponse, AvailabilityRevision, ProcessingActivity, ProcessingRequest, ProcessingResponse,
-)
+
 __all__ += [
-    "AssetAvailability", "AvailabilityAttempt", "AvailabilityCapability", "AvailabilityRequest",
-    "AvailabilityResponse", "AvailabilityRevision", "ProcessingActivity", "ProcessingRequest", "ProcessingResponse",
+    "AssetAvailability",
+    "AvailabilityAttempt",
+    "AvailabilityCapability",
+    "AvailabilityRequest",
+    "AvailabilityResponse",
+    "AvailabilityRevision",
+    "ProcessingActivity",
+    "ProcessingRequest",
+    "ProcessingResponse",
 ]
