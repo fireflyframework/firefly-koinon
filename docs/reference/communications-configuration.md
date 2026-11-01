@@ -2,7 +2,7 @@
 
 Communications use native pyfly notifications, templates, scheduling and primary database transactions. The installation owns the transport and verified sender allowlist. Organization administrators select an allowed sender, branding, language and summary policy; they cannot configure arbitrary SMTP hosts, credentials, HTML or subject templates.
 
-Use pyfly 26.10.28 or newer in the 26.10 series. Apply the native communications migration and provision its runtime table privileges before enabling communications. Run the complete worker role separately from API processes. The API never starts the communications scheduler.
+Use the product's pinned pyfly version, 26.10.31 in this release. Apply the native communications migration and provision its runtime table privileges before enabling communications. Run the complete worker role separately from API processes. The API never starts the communications scheduler.
 
 ## Enable inbox and select a transport
 
@@ -78,3 +78,9 @@ The worker's native scheduled tick runs every 15 seconds. It reconciles schedule
 Native browser pages require a matching native session, reject authorization-header credentials, bound form bodies and retain CSRF protection. Own inbox/preferences permit explicitly scoped personal tokens (`notifications:read`, `notifications:write`, with write implying read) and survive membership loss. Email acceptance/decline remain interactive; new administrative communications APIs require current `members:write` authority and the PAT's tenant/workspace ceiling. Activity email preview additionally requires `activity:read` for a personal token.
 
 Initial administrator welcomes have one persisted installation UUID and a unique immutable-identity admission. Brand, domain, release and template changes cannot produce a new automatic welcome. Before a fresh verified identity binding, the welcome is visible in-app with explicitly suppressed email. The first verified native login may complete that initial pending admission only while the real email channel is ready. Disabled and unknown submissions are not replayed automatically.
+
+For welcome before first sign-in, an operator can instead admit a fresh contact observation tied to an
+existing exact pending bootstrap identity grant. See [initial administrator welcome](bootstrap-welcome.md)
+for the protected-file command, fifteen-minute import freshness, twenty-four-hour delivery boundary,
+required live public origin and signed-login association. This initial contact does not enable ongoing
+security email or digests without the separate verified directory delivery binding.

@@ -125,8 +125,10 @@ nav:
           - Reference deployment: concepts/architecture.md
           - Local environment: operations/local-deployment.md
           - First start in production: operations/first-start.md
+          - Initial administrator welcome: reference/bootstrap-welcome.md
           - Production: operations/production.md
           - Worker roles and scaling: operations/workers.md
+          - Shared PostgreSQL cache: operations/postgresql-cache.md
           - Configuration and observations: operations/configuration.md
           - Activity summaries: operations/activity-summaries.md
           - MCP authentication: operations/mcp-authentication.md
@@ -140,7 +142,8 @@ nav:
           - Migrations: operations/migrations.md
           - Backup and restore: operations/backup-restore.md
       - Release evidence:
-          - Release notes: releases/26.10.1.md
+          - Release notes: releases/26.10.2.md
+          - Version 26.10.1: releases/26.10.1.md
           - Earlier release: releases/26.10.0-alpha.1.md
           - Qualification history: operations/qualification.md
           - Organization chat checks: operations/organization-chat-qualification.md

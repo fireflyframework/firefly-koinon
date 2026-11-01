@@ -56,6 +56,7 @@ async def runtime(tmp_path):
     from koinon.bootstrap.entities import BootstrapIdentityGrant
     from koinon.catalog.entities import CatalogEntry, Membership, Tenant
     from koinon.communications.entities import (
+        BootstrapContactRecord,
         InstallationRecord,
         NotificationRecord,
         OutboxRecord,
@@ -73,6 +74,7 @@ async def runtime(tmp_path):
         OutboxRecord.__table__,
         NotificationRecord.__table__,
         WelcomeAdmissionRecord.__table__,
+        BootstrapContactRecord.__table__,
     }
     while dependencies := {key.column.table for table in tables for key in table.foreign_keys} - tables:
         tables.update(dependencies)
@@ -118,7 +120,7 @@ async def runtime(tmp_path):
     class Welcome:
         fail = False
 
-        async def admit(self, subject, tenant_id):
+        async def admit(self, subject, tenant_id, *, bootstrap_grant_id=None):
             assert await context.get_bean(MembershipRepository).find_all(subject=subject, tenant_id=tenant_id)
             await context.get_bean(AuditRepository).save(
                 AuditEvent(id=str(uuid4()), tenant_id=tenant_id, subject=subject, action="fixture.welcome")
@@ -229,8 +231,8 @@ async def test_cancellation_rolls_back_activation_and_all_prior_effects(runtime)
     await service.seed("inert-org", "Inert organization", seed())
     original = welcome.admit
 
-    async def cancelled(*args):
-        await original(*args)
+    async def cancelled(*args, **kwargs):
+        await original(*args, **kwargs)
         raise asyncio.CancelledError
 
     welcome.admit = cancelled

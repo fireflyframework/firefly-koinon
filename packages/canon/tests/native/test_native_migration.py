@@ -1,3 +1,5 @@
+# Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 """Behavioral contracts for the canon native application boundary."""
 
 from pathlib import Path
@@ -130,10 +132,12 @@ async def test_repository_write_joins_and_rolls_back_the_native_unit(repositorie
 
 def test_persistent_agent_adapters_never_silently_fall_back_to_memory():
     from flycanon.config import CanonSettings
-    from flycanon.core.configuration import _use_redis
+    from flycanon.core.configuration import CanonCoreConfiguration
 
-    with pytest.raises(RuntimeError, match="FLYCANON_REDIS_URL"):
-        _use_redis(CanonSettings(redis_url="", allow_in_memory_adapters=False), "idempotency_backend")
+    with pytest.raises(RuntimeError, match="primary"):
+        CanonCoreConfiguration().idempotency_store(
+            CanonSettings(redis_url="", allow_in_memory_adapters=False)
+        )
 
 
 def test_chroma_requires_a_server_unless_development_memory_is_explicit():

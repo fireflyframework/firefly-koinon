@@ -8,7 +8,7 @@ import pytest
 from pyfly.kernel import ServiceUnavailableException
 
 from flyquery.config import FlyquerySettings
-from flyquery.core.configuration import _use_redis
+from flyquery.core.configuration import FlyqueryConfiguration
 from flyquery.core.services.retrieval.embedder import FireflyEmbedder, build_embedder
 
 
@@ -31,9 +31,9 @@ async def test_embedding_provider_failure_is_actionable_by_default():
         await embedder.embed_batch(["evidence"])
 
 
-def test_persistent_agent_adapters_require_redis_unless_memory_is_explicit():
-    with pytest.raises(RuntimeError, match="FLYQUERY_REDIS_URL"):
-        _use_redis(FlyquerySettings(redis_url=""), "idempotency_backend")
+def test_persistent_agent_adapters_require_native_primary_by_default():
+    with pytest.raises(RuntimeError, match="primary"):
+        FlyqueryConfiguration().idempotency_store(FlyquerySettings(redis_url=""))
 
 
 def test_local_structured_agents_request_native_json_schema_output():

@@ -130,6 +130,10 @@ _COPY = {
         "role_operator": "operator",
         "role_admin": "administrator",
         "welcome_heading": "Welcome to {product}",
+        "welcome_pending_description": (
+            "An initial organization administrator enrollment is reserved for your corporate identity. "
+            "Sign in with SSO to verify your identity and activate access."
+        ),
         "welcome_description": (
             "Your administrator access is ready. Sign in with your corporate account to "
             "configure your organization."
@@ -245,6 +249,10 @@ _COPY = {
         "role_operator": "operador",
         "role_admin": "administrador",
         "welcome_heading": "Bienvenido a {product}",
+        "welcome_pending_description": (
+            "Se ha reservado una incorporación como administrador de la organización para tu identidad "
+            "corporativa. Inicia sesión con SSO para verificar tu identidad y activar el acceso."
+        ),
         "welcome_description": (
             "Tu acceso de administrador está preparado. Inicia sesión con tu cuenta "
             "corporativa para configurar la organización."

@@ -286,8 +286,8 @@ class FlyquerySettings(BaseSettings):
 
     # Auth + backends
     redis_url: str = ""
-    rate_limit_backend: str = "auto"
-    idempotency_backend: str = "auto"
+    rate_limit_backend: str = "postgres"
+    idempotency_backend: str = "postgres"
 
     # EDA
     eda_adapter: str = "postgres"

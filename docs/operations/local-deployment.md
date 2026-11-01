@@ -2,7 +2,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # Start a local koinon environment
 
-This guide prepares a **new local development environment**. It does not adopt or reset an existing installation. The Compose template supplies PostgreSQL 17.11 with pgvector 0.8.7, Redis 8.2.3 and Keycloak 26.8.1. The API and conversation worker run separately on your machine; Angular is optional.
+This guide prepares a **new local development environment**. It does not adopt or reset an existing installation. The Compose template supplies PostgreSQL 17.11 with pgvector 0.8.7 and Keycloak 26.8.1. The native shared cache uses the primary PostgreSQL datasource. The API and conversation worker run separately on your machine; Angular is optional.
 
 The commands use a POSIX shell on Linux or macOS. On Windows, use a Linux environment such as WSL 2 with Docker integration and keep these paths in that environment. The Compose template was structurally checked; it was not executed during qualification. Equivalent private services were tested separately. See [qualification](qualification.md) for those boundaries.
 
@@ -22,7 +22,6 @@ Check that the local ports are free before continuing:
 | --- | ---: |
 | PostgreSQL | 18783 |
 | Keycloak | 18784 |
-| Redis | 18787 |
 | API | 18781 |
 | Optional management frontend | 18782 |
 
@@ -37,7 +36,7 @@ backend/.venv/bin/python deploy/generate_local_configuration.py "$KOINON_LOCAL_D
 export KOINON_SECRETS_DIR="$KOINON_LOCAL_DIR/secrets"
 ```
 
-The generator refuses an existing secret directory. It creates mode-0600 files in a mode-0700 directory, with separate database credentials, local identity credentials, a Redis password and an encryption master key. Keep this directory: generating another one is not a credential rotation or a recovery procedure.
+The generator refuses an existing secret directory. It creates mode-0600 files in a mode-0700 directory, with separate database credentials, local identity credentials and an encryption master key. Keep this directory: generating another one is not a credential rotation or a recovery procedure.
 
 Create explicit local roots for original documents, structured objects and private chat files:
 

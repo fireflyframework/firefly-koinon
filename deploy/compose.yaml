@@ -21,13 +21,6 @@ services:
       timeout: 3s
       retries: 30
     mem_limit: 512m
-  redis:
-    image: redis:8.2.3-bookworm
-    entrypoint: ["/bin/sh", "/opt/koinon/start.sh"]
-    ports: ["127.0.0.1:18787:6379"]
-    volumes: ["redis-data:/data", "./redis/start.sh:/opt/koinon/start.sh:ro"]
-    secrets: [redis_password]
-    mem_limit: 192m
   keycloak:
     image: quay.io/keycloak/keycloak:26.8.1
     entrypoint: ["/bin/sh", "/opt/koinon/start.sh"]
@@ -56,12 +49,9 @@ secrets:
     file: ${KOINON_SECRETS_DIR:?}/keycloak_database_password
   keycloak_admin_password:
     file: ${KOINON_SECRETS_DIR:?}/keycloak_admin_password
-  redis_password:
-    file: ${KOINON_SECRETS_DIR:?}/redis_password
   demo_password:
     file: ${KOINON_SECRETS_DIR:?}/demo_password
   oidc_client_secret:
     file: ${KOINON_SECRETS_DIR:?}/oidc_client_secret
 volumes:
   postgres-data:
-  redis-data:

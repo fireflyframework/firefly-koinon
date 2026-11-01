@@ -9,6 +9,7 @@ from sqlalchemy.dialects.postgresql import insert as postgres_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from koinon.communications.entities import (
+    BootstrapContactRecord,
     CommunicationPolicyRecord,
     EmailInvitationRecord,
     NotificationPreferenceRecord,
@@ -16,6 +17,11 @@ from koinon.communications.entities import (
     OutboxRecord,
     RecipientIdentityRecord,
 )
+
+
+@repository(name="communications.bootstrap_contacts")
+class BootstrapContactRepository(Repository[BootstrapContactRecord, str]):
+    pass
 
 
 @repository(name="communications.invitations")

@@ -69,9 +69,12 @@ pyfly:
   cqrs:
     enabled: true
 
-  # Cache -- Redis-backed (falls back to in-memory if Redis URL is unset).
+  # Cache -- shared native primary PostgreSQL; alternate providers require explicit configuration.
   cache:
     enabled: true
+    provider: postgres
+    postgres:
+      datasource: primary
 
   # EDA -- knowledge-lifecycle event bus, wired by pyfly's
   # EdaAutoConfiguration. Default provider is ``postgres`` which uses

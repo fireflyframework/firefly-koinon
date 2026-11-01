@@ -39,6 +39,7 @@ from pyfly.agentic.content.binary import (
     build_office_converter,
 )
 from pyfly.agentic.factory import AgentFactory
+from pyfly.cache import CacheAdapter
 from pyfly.container import bean, configuration
 from pyfly.core import Config
 from pyfly.data.relational.datasource_registry import DataSourceRegistry
@@ -57,8 +58,9 @@ from flycanon.core.services.auth.agent_token_service import (
     RateLimiter,
     _RateLimiter,
 )
-from flycanon.core.services.auth.redis_rate_limiter import RedisRateLimiter
+from flycanon.core.services.auth.postgres_rate_limiter import PostgresRateLimiter
 from flycanon.core.services.billing.cost_service import CostService
+from flycanon.core.services.cache_support import cache_backend
 from flycanon.core.services.consolidation import (
     Consolidator,
 )
@@ -118,7 +120,7 @@ from flycanon.web.conventions.idempotency import (
     IdempotencyStore,
     InMemoryIdempotencyStore,
 )
-from flycanon.web.conventions.redis_idempotency import RedisIdempotencyStore
+from flycanon.web.conventions.postgres_idempotency import PostgresIdempotencyStore
 
 logger = logging.getLogger(__name__)
 
@@ -306,26 +308,15 @@ class CanonCoreConfiguration:
     # ------------------------------------------------------------------
 
     @bean(name="canon.rate_limiter")
-    def rate_limiter(self, settings: CanonSettings) -> RateLimiter:
-        """Per-token sliding-window rate limiter.
+    def rate_limiter(self, settings: CanonSettings, cache: CacheAdapter | None = None) -> RateLimiter:
+        """Use native primary PostgreSQL unless an alternate backend is explicit."""
+        backend = cache_backend(settings, "rate_limit_backend")
+        if backend == "postgres":
+            return PostgresRateLimiter(cache)
+        if backend == "redis":
+            from flycanon.core.services.auth.redis_rate_limiter import RedisRateLimiter
 
-        Backend selection:
-
-        * ``FLYCANON_RATE_LIMIT_BACKEND=redis`` -- always Redis.
-        * ``FLYCANON_RATE_LIMIT_BACKEND=in_memory`` -- always
-          in-memory (even when ``redis_url`` is set).
-        * unset / ``auto`` (the default) -- Redis when ``redis_url``
-          is configured, otherwise an actionable configuration error.
-
-        In-memory is fine for single-replica dev / test posture but
-        does NOT enforce ``rate_limit_rpm`` correctly across replicas;
-        production deployments behind a load balancer MUST use the
-        Redis variant or the per-replica buckets effectively multiply
-        the budget by the replica count.
-        """
-        if _use_redis(settings, "rate_limit_backend"):
-            client = _build_redis_client(settings)
-            return RedisRateLimiter(client)
+            return RedisRateLimiter(_build_redis_client(settings))
         return _RateLimiter()
 
     @bean(name="canon.agent_token_service")
@@ -342,16 +333,22 @@ class CanonCoreConfiguration:
     # A singleton :class:`IdempotencyStore` bean is shared by every
     # agent controller so a replayed POST with the same
     # ``Idempotency-Key`` returns the original response body without
-    # re-dispatching the command. Backend selection mirrors
-    # :meth:`rate_limiter`: Redis when ``redis_url`` is set (or
-    # ``FLYCANON_IDEMPOTENCY_BACKEND=redis``), in-memory otherwise.
+    # re-dispatching the command. Backend selection uses native primary
+    # PostgreSQL unless an alternate backend is explicitly configured.
     # ------------------------------------------------------------------
 
     @bean(name="canon.idempotency_store")
-    def idempotency_store(self, settings: CanonSettings) -> IdempotencyStore:
-        if _use_redis(settings, "idempotency_backend"):
-            client = _build_redis_client(settings)
-            return RedisIdempotencyStore(client)
+    def idempotency_store(
+        self, settings: CanonSettings, cache: CacheAdapter | None = None
+    ) -> IdempotencyStore:
+        """Use native primary PostgreSQL unless an alternate backend is explicit."""
+        backend = cache_backend(settings, "idempotency_backend")
+        if backend == "postgres":
+            return PostgresIdempotencyStore(cache)
+        if backend == "redis":
+            from flycanon.web.conventions.redis_idempotency import RedisIdempotencyStore
+
+            return RedisIdempotencyStore(_build_redis_client(settings))
         return InMemoryIdempotencyStore()
 
     @bean(name="canon.api_key_principal_filter")
@@ -562,18 +559,11 @@ class CanonCoreConfiguration:
     # ------------------------------------------------------------------
 
     @bean(name="canon.corpus_page_cache")
-    def corpus_page_cache(self, settings: CanonSettings) -> CorpusPageCache:
-        """Shared page-text cache layered over the lazy RLM corpus store.
-
-        A process singleton (so the in-memory LRU persists across
-        requests) injected into :meth:`canon_corpus_builder`. Backend
-        selection mirrors :meth:`rate_limiter` / :meth:`idempotency_store`
-        via :func:`build_page_cache`: Redis when ``redis_url`` is set (or
-        ``FLYCANON_CORPUS_CACHE_BACKEND=redis``), in-memory otherwise.
-        The Redis client is synchronous because the cache is read from
-        the RLM engine's worker thread.
-        """
-        return build_page_cache(settings)
+    def corpus_page_cache(
+        self, settings: CanonSettings, cache: CacheAdapter | None = None
+    ) -> CorpusPageCache:
+        """Shared typed page cache; synchronous reads use the managed application loop."""
+        return build_page_cache(settings, cache)
 
     @bean(name="canon.canon_corpus_builder")
     def canon_corpus_builder(
@@ -700,39 +690,13 @@ class CanonCoreConfiguration:
 # ----------------------------------------------------------------------
 # Redis adapter helpers
 #
-# Shared by :meth:`CanonCoreConfiguration.rate_limiter` and
-# :meth:`CanonCoreConfiguration.idempotency_store`. Build one async
-# Redis client per process and reuse it across adapters so both share
-# the connection pool.
+# Used only when the Redis compatibility backend is explicitly selected.
 # ----------------------------------------------------------------------
 
 
 def _use_redis(settings: CanonSettings, backend_field: str) -> bool:
-    """Return ``True`` when the matching adapter should use Redis.
-
-    Three inputs decide:
-
-    * ``settings.<backend_field>`` -- explicit env override
-      (``redis`` / ``in_memory`` / ``auto``).
-    * ``settings.redis_url`` -- when set, Redis is the default.
-    * ``backend_field`` -- the per-adapter knob name; lets the
-      rate-limit and idempotency stores be configured independently.
-
-    Memory requires the explicit isolated-development switch. Missing Redis
-    never silently weakens fleet-wide guarantees.
-    """
-    explicit = getattr(settings, backend_field, "auto") or "auto"
-    explicit = explicit.lower()
-    if explicit not in {"redis", "in_memory", "memory", "auto"}:
-        raise ValueError(f"Unknown canon {backend_field}: {explicit!r}")
-    if explicit in {"redis", "auto"} and settings.redis_url:
-        return True
-    if explicit != "redis" and settings.allow_in_memory_adapters:
-        return False
-    raise RuntimeError(
-        f"Canon {backend_field} requires FLYCANON_REDIS_URL. "
-        "Only isolated development/tests may set FLYCANON_ALLOW_IN_MEMORY_ADAPTERS=true."
-    )
+    """Compatibility helper for explicit Redis selection only."""
+    return cache_backend(settings, backend_field) == "redis"
 
 
 def _build_redis_client(settings: CanonSettings):  # noqa: ANN202

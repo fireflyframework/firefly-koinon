@@ -150,7 +150,8 @@ class BootstrapGrants:
             )
             if not existing:
                 await self.members.save(member)
-            await self.welcome.admit(subject, row.tenant_id)
+            await self.grants.activate(row, subject, member.id, now)
+            await self.welcome.admit(subject, row.tenant_id, bootstrap_grant_id=row.id)
             await self.audits.save(
                 AuditEvent(
                     id=str(uuid4()),
@@ -161,7 +162,6 @@ class BootstrapGrants:
                     details={"bootstrap_grant_id": row.id},
                 )
             )
-            await self.grants.activate(row, subject, member.id, now)
 
 
 @configuration

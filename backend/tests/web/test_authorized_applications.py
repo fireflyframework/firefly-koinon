@@ -186,8 +186,6 @@ def test_replacement_failure_rolls_back_code_grant_and_private_credential(oauth,
 
 
 def test_connections_survive_a_fresh_application_context_and_revocation_crosses_instances(oauth):
-    import pytest
-    from pyfly.kernel import UnauthorizedException
     from starlette.testclient import TestClient
 
     from koinon.mcp_auth.service import McpOAuthService
@@ -202,13 +200,12 @@ def test_connections_survive_a_fresh_application_context_and_revocation_crosses_
         assert (
             restarted.get("/api/v1/authorized-applications/" + row["id"], headers=bearer()).status_code == 200
         )
-        assert restarted.portal.call(service.canonical_bearer, opaque)
+        assert mcp_call(restarted, opaque).json()["result"]["isError"] is False
         assert (
             restarted.delete("/api/v1/authorized-applications/" + row["id"], headers=bearer()).status_code
             == 204
         )
-        with pytest.raises(UnauthorizedException):
-            oauth.portal.call(original.canonical_bearer, opaque)
+        assert mcp_call(oauth, opaque).status_code == 401
 
 
 def authorization_code(client, scope="catalog:read", workspace=None):

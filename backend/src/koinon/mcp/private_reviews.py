@@ -2,8 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 """Reauthenticate component operations without retaining the canonical request context."""
 
-import asyncio
-import contextvars
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -17,6 +15,7 @@ from koinon.knowledge.curated.authority import CuratedAuthority
 from koinon.knowledge.external_reviews.file_dtos import CHUNK_BYTES
 from koinon.knowledge.external_reviews.file_service import ExternalFileReviews
 from koinon.knowledge.external_reviews.service import ExternalKnowledgeReviews
+from koinon.mcp.execution import isolated_application_call
 from koinon.mcp_auth.service import McpOAuthService
 from koinon.organization_branding.service import OrganizationBrandingService
 
@@ -38,7 +37,7 @@ async def authenticated_operation(
             return await work(issuer + "|" + subject)
 
     try:
-        return await asyncio.create_task(isolated(), context=contextvars.Context())
+        return await isolated_application_call(context, isolated)
     except AccessDenied as error:
         if error.code == "TOKEN_INSUFFICIENT_SCOPE":
             raise ReviewScopeRequired("Additional knowledge authorization is required") from None

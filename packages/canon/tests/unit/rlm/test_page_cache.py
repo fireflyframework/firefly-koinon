@@ -1,4 +1,5 @@
 # Copyright 2024-2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -164,20 +165,23 @@ def test_redis_cache_satisfies_protocol():
 # -- build_page_cache factory --------------------------------------------
 
 
-def test_build_page_cache_auto_no_redis_url_is_memory():
+def test_build_page_cache_auto_requires_native_primary():
     settings = CanonSettings(corpus_cache_backend="auto", redis_url="")
-    cache = build_page_cache(settings)
-    assert isinstance(cache, MemoryPageCache)
+    with pytest.raises(RuntimeError, match="primary"):
+        build_page_cache(settings)
 
 
 def test_build_page_cache_memory_forced_even_with_redis_url():
-    settings = CanonSettings(corpus_cache_backend="memory", redis_url="redis://localhost:6379/0")
+    settings = CanonSettings(
+        corpus_cache_backend="memory", allow_in_memory_adapters=True, redis_url="redis://localhost:6379/0"
+    )
     assert isinstance(build_page_cache(settings), MemoryPageCache)
 
 
-def test_build_page_cache_auto_with_redis_url_is_redis():
+def test_build_page_cache_auto_ignores_redis_url():
     settings = CanonSettings(corpus_cache_backend="auto", redis_url="redis://localhost:6379/0")
-    assert isinstance(build_page_cache(settings), RedisPageCache)
+    with pytest.raises(RuntimeError, match="primary"):
+        build_page_cache(settings)
 
 
 def test_build_page_cache_redis_forced():
@@ -188,6 +192,7 @@ def test_build_page_cache_redis_forced():
 def test_build_page_cache_honours_memory_knobs():
     settings = CanonSettings(
         corpus_cache_backend="memory",
+        allow_in_memory_adapters=True,
         corpus_cache_ttl_s=7,
         corpus_cache_max_entries=3,
     )

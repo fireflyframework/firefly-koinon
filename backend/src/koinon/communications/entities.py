@@ -191,6 +191,38 @@ class WelcomeAdmissionRecord(Base):
     created_at: Mapped[datetime] = mapped_column(UtcDateTime())
 
 
+class BootstrapContactRecord(Base):
+    __tablename__ = "koinon_bootstrap_contacts"
+    __table_args__ = (
+        UniqueConstraint("installation_id", "identity_sha256", name="uq_bootstrap_contact_identity"),
+        UniqueConstraint("grant_id", name="uq_bootstrap_contact_grant"),
+        UniqueConstraint("event_id", name="uq_bootstrap_contact_event"),
+        CheckConstraint("expires_at > observed_at", name="ck_bootstrap_contact_expiry"),
+    )
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    installation_id: Mapped[str] = mapped_column(ForeignKey(InstallationRecord.installation_id))
+    grant_id: Mapped[str] = mapped_column(ForeignKey("koinon_bootstrap_identity_grants.id"))
+    identity_sha256: Mapped[str] = mapped_column(String(64))
+    event_id: Mapped[str] = mapped_column(ForeignKey(OutboxRecord.id))
+    contact_ciphertext: Mapped[str] = mapped_column(Text)
+    observed_at: Mapped[datetime] = mapped_column(UtcDateTime())
+    expires_at: Mapped[datetime] = mapped_column(UtcDateTime())
+    canonical_subject: Mapped[str | None] = mapped_column(String(512), nullable=True, index=True)
+
+
+def _bootstrap_contact_guards():
+    from koinon.communications.bootstrap_guards import contact_guards
+
+    for dialect in ("sqlite", "postgresql"):
+        for statement in contact_guards(dialect):
+            event.listen(
+                BootstrapContactRecord.__table__, "after_create", DDL(statement).execute_if(dialect=dialect)
+            )
+
+
+_bootstrap_contact_guards()
+
+
 class DigestSubscriptionRecord(Base):
     __tablename__ = "koinon_digest_subscriptions"
     __table_args__ = (
