@@ -48,6 +48,8 @@ def render(contract: dict) -> str:
             "This keeps email and notification management out of applications that only use knowledge or chat. "
             "Availability observations similarly use `createAvailabilityApi` from "
             "`@fireflyframework/koinon-sdk/availability`; `availability.*` refers to its returned API. "
+            "Platform observations use `createPlatformHealthApi` from `@fireflyframework/koinon-sdk/platform-health`; "
+            "`platformHealth.*` refers to its returned API. "
             "Python exposes those methods on `KoinonClient`; Java exposes the corresponding typed API groups."
         ),
         "",

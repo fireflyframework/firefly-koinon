@@ -24,7 +24,7 @@ import {
   KoinonFolderTree,
   friendlyStatus,
 } from '@fireflyframework/koinon-angular';
-import {KoinonCommunicationsSettings} from '@fireflyframework/koinon-angular/communications/admin';
+import { KoinonCommunicationsSettings } from '@fireflyframework/koinon-angular/communications/admin';
 import { KoinonModelOptionsForm } from './model-options-form';
 import { describeModelOptions, parseModelOptions, type ModelOptionValues } from './model-options';
 import { KoinonOrganizationPeople } from './organization-directory';
@@ -52,13 +52,20 @@ import { KoinonOrganizationChatSettings } from './organization-chat-settings';
 import { KoinonIdentityAppearance } from './identity-appearance';
 import { KoinonMcpApplications } from './mcp-applications';
 import { KoinonConfiguration } from './configuration';
+import { platformHealthAccess } from './platform-health-access';
+import { KoinonPlatformHealthPanel } from './platform-health-panel';
 import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
 import { ORGANIZATION_SPANISH } from './organization-spanish';
-registerKoinonSpanish({ ...ORGANIZATION_SPANISH, Applications: 'Aplicaciones' });
+registerKoinonSpanish({
+  ...ORGANIZATION_SPANISH,
+  Applications: 'Aplicaciones',
+  'Platform health': 'Salud de la plataforma',
+});
 @Component({
   selector: 'ffk-settings-page',
   imports: [
     KoinonCommunicationsSettings,
+    KoinonPlatformHealthPanel,
     KoinonIdentityAppearance,
     KoinonMcpApplications,
     KoinonTextPipe,
@@ -98,13 +105,19 @@ export class KoinonSettingsPage implements OnInit {
     toggleNavigation?: () => void;
   };
   private readonly collapsed = signal(false);
-  navigationCollapsed() { return this.actions?.navigationCollapsed?.() ?? this.collapsed(); }
-  toggleNavigation() { if(this.actions?.toggleNavigation) this.actions.toggleNavigation(); else this.collapsed.update(value=>!value); }
+  navigationCollapsed() {
+    return this.actions?.navigationCollapsed?.() ?? this.collapsed();
+  }
+  toggleNavigation() {
+    if (this.actions?.toggleNavigation) this.actions.toggleNavigation();
+    else this.collapsed.update((value) => !value);
+  }
   readonly c = inject(KoinonConfiguration);
   readonly f = inject(KoinonFacade);
   private readonly i18n = inject(KoinonI18n);
   private readonly clients = inject(KoinonClientContext);
   private readonly tasks = inject(PendingTasks);
+  private deferredProviderMetadata = false;
   readonly section = signal('providers');
   readonly editor = signal<'provider' | 'agent' | null>(null);
   readonly step = signal(1);
@@ -159,7 +172,7 @@ export class KoinonSettingsPage implements OnInit {
       label: 'Knowledge & AI',
       sections: ['sources', 'providers', 'models', 'agents', 'storage'],
     },
-    { id: 'operations', label: 'Operations', sections: ['audit', 'operations'] },
+    { id: 'operations', label: 'Operations', sections: ['health', 'audit', 'operations'] },
   ];
   readonly tabs = [
     {
@@ -188,16 +201,21 @@ export class KoinonSettingsPage implements OnInit {
     { id: 'models', label: 'Knowledge models', permission: 'providers:write', icon: 'link' },
     { id: 'agents', label: 'Agents', permission: 'agents:write', icon: 'chat' },
     { id: 'storage', label: 'Storage & indexing', permission: 'indexes:manage', icon: 'table' },
+    { id: 'health', label: 'Platform health', permission: 'audit:read', icon: 'info' },
     { id: 'audit', label: 'Audit', permission: 'audit:read', icon: 'shield' },
     { id: 'operations', label: 'Operations', permission: 'jobs:manage', icon: 'jobs' },
   ];
   ngOnInit() {
     this.tasks.run(async () => {
-      const metadata = this.allowed('providers:write') ? this.c.load() : undefined;
       const requested = this.actions?.section?.() || 'providers';
       const initial =
         this.tabs.find((tab) => tab.id === requested && this.tabAllowed(tab)) ??
         this.tabs.find((tab) => this.tabAllowed(tab));
+      this.deferredProviderMetadata = initial?.id === 'health';
+      const metadata =
+        !this.deferredProviderMetadata && this.allowed('providers:write')
+          ? this.c.load()
+          : undefined;
       if (initial) await this.openSection(initial.id);
       await metadata;
     });
@@ -208,6 +226,7 @@ export class KoinonSettingsPage implements OnInit {
     );
   }
   tabAllowed(tab: { id: string; permission: string }) {
+    if (tab.id === 'health') return platformHealthAccess(this.f.context(), this.f.tenantId());
     if (['people', 'structure'].includes(tab.id))
       return this.f.tenantPermissions().has('members:write');
     return this.allowed(tab.permission) || (tab.id === 'models' && this.allowed('settings:write'));
@@ -221,11 +240,21 @@ export class KoinonSettingsPage implements OnInit {
     this.section.set(section);
     this.editor.set(null);
     this.formError.set('');
+    const metadata =
+      this.deferredProviderMetadata &&
+      ['providers', 'agents', 'models', 'sources'].includes(section) &&
+      this.allowed('providers:write') &&
+      !this.c.configuration() &&
+      !this.c.pending()
+        ? this.c.load()
+        : undefined;
+    if (metadata) this.deferredProviderMetadata = false;
     if (section === 'agents') await this.c.loadAgents();
     if (section === 'access') await this.f.loadMembers();
     if (section === 'operations') await this.f.loadJobs();
     if (section === 'storage') await this.c.load();
     if (section === 'sources') await this.loadSources();
+    await metadata;
   }
   beginProvider(provider?: ModelProvider) {
     this.providerRecord.set(provider ?? null);

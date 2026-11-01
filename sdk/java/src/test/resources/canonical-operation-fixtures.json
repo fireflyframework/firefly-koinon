@@ -13147,6 +13147,115 @@
     "idempotency": false
   },
   {
+    "operation": "PlatformController.health",
+    "group": "PlatformHealthApi",
+    "group_scoped": true,
+    "method": "health",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/platform/health",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "PlatformHealth",
+    "body": {
+      "tenant_id": "tenant_id-value",
+      "checked_at": "2026-10-27T12:34:56Z",
+      "summary": {
+        "passed": 1,
+        "failed": 1,
+        "unknown": 1,
+        "disabled": 1
+      },
+      "components": [
+        {
+          "id": "database-primary",
+          "configured": false,
+          "status": "passed",
+          "basis": "observed",
+          "freshness": "current",
+          "observed_at": "2026-10-27T12:34:56Z",
+          "expires_at": "2026-10-27T12:34:56Z",
+          "reason": "DATABASE_OK",
+          "remediation": "none",
+          "counts": {
+            "observed_total": 1,
+            "observed_ready": 1,
+            "observed_pending": 1,
+            "observed_running": 1,
+            "observed_failed": 1
+          },
+          "coverage": "complete"
+        }
+      ]
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "PlatformController.system_information",
+    "group": "PlatformHealthApi",
+    "group_scoped": true,
+    "method": "systemInformation",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/platform/system-information",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "SystemInformation",
+    "body": {
+      "tenant_id": "tenant_id-value",
+      "checked_at": "2026-10-27T12:34:56Z",
+      "product": "koinon",
+      "components": [
+        {
+          "id": "backend",
+          "distribution": "firefly-koinon",
+          "version": "version-value",
+          "available": false
+        }
+      ],
+      "serving_role": "api",
+      "capabilities": {
+        "knowledge_enabled": false,
+        "mcp_enabled": false,
+        "communications_enabled": false,
+        "scheduled_consumers_enabled": false
+      },
+      "limits": [
+        {
+          "id": "api_capacity",
+          "value": 1,
+          "unit": "operations",
+          "scope": "process"
+        }
+      ],
+      "build_revision": "build_revision-value",
+      "license_expression": "Apache-2.0",
+      "copyright": "Copyright 2026 Firefly Software Foundation",
+      "artifacts": [
+        {
+          "component": "backend",
+          "kind": "license",
+          "present": false,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "content_type": "text/plain"
+        }
+      ]
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
     "operation": "ProfileController.get",
     "group": "ProfileApi",
     "group_scoped": false,

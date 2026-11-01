@@ -222,6 +222,8 @@
   "OrganizationPeopleController.update_settings": "client.organizationPeople.updateSettings",
   "OrganizationPeopleController.mapping": "client.organizationPeople.mapping",
   "OrganizationPeopleController.update_mapping": "client.organizationPeople.updateMapping",
+  "PlatformController.health": "client.platformHealth.health",
+  "PlatformController.system_information": "client.platformHealth.systemInformation",
   "ProfileController.get": "client.profile.get",
   "ProfileController.update": "client.profile.update",
   "ProfileController.avatar": "client.profile.avatar",

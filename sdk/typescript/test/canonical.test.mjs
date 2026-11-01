@@ -5,6 +5,7 @@ import {test} from 'node:test';
 import {FetchTransport,KoinonClient} from '../dist/index.js';
 import {createCommunicationsApi} from '../dist/communications.js';
 import {createAvailabilityApi} from '../dist/availability.js';
+import {createPlatformHealthApi} from '../dist/platform-health.js';
 
 test('canonical content and knowledge assignment helpers preserve preconditions and explicit null',async()=>{
  const seen=[];
@@ -41,6 +42,7 @@ test('canonical operation map resolves helpers and precision strings are unchang
  const factories={
   createCommunicationsApi:{module:'communications',api:createCommunicationsApi({request:async()=>({})})},
   createAvailabilityApi:{module:'availability',api:createAvailabilityApi({request:async()=>({})})},
+  createPlatformHealthApi:{module:'platform-health',prefix:'platformHealth',api:createPlatformHealthApi({request:async()=>({})})},
  };
  for(const operation of contract.operations){
   const path=operation.sdk_typescript.split('.');
@@ -49,7 +51,7 @@ test('canonical operation map resolves helpers and precision strings are unchang
    const factory=factories[operation.sdk_typescript_factory];
    assert.ok(factory,operation.sdk_typescript_factory);
    assert.equal(operation.sdk_typescript_module,`@fireflyframework/koinon-sdk/${factory.module}`);
-   assert.equal(path.shift(),factory.module);value=factory.api;
+   assert.equal(path.shift(),factory.prefix??factory.module);value=factory.api;
   }
   for(const part of path)value=value[part];assert.equal(typeof value,'function',operation.operation);
  }

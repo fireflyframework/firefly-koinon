@@ -44,6 +44,8 @@ Use the linked wire models for field constraints. Operation metadata does not en
 - [Get](#organizationbrandingcontroller-get) (GET)
 - [Update](#organizationbrandingcontroller-update) (PUT)
 - [Reset](#organizationbrandingcontroller-reset) (POST)
+- [Health](#platformcontroller-health) (GET)
+- [System information](#platformcontroller-system-information) (GET)
 - [Capabilities](#capabilitiescontroller-capabilities) (GET)
 
 <!-- operation: ActivityController.personal -->
@@ -1502,6 +1504,88 @@ These are the declared path, query and body arguments. Multipart and binary inpu
 | --- | --- |
 | Request schema | [`BrandingResetInput`](../models/brandingresetinput.md) |
 | Response schema | [`OrganizationBranding`](../models/organizationbranding.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: PlatformController.health -->
+<a id="platformcontroller-health"></a>
+## Health
+
+```http
+GET /api/v1/tenants/{tenant_id}/platform/health
+```
+
+Contract operation: `PlatformController.health`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `platform_health` |
+| TypeScript | `platformHealth.health` |
+| Java | `client.platformHealth.health` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | No request schema declared |
+| Response schema | [`PlatformHealth`](../models/platformhealth.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: PlatformController.system_information -->
+<a id="platformcontroller-system-information"></a>
+## System information
+
+```http
+GET /api/v1/tenants/{tenant_id}/platform/system-information
+```
+
+Contract operation: `PlatformController.system_information`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `system_information` |
+| TypeScript | `platformHealth.systemInformation` |
+| Java | `client.platformHealth.systemInformation` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | No request schema declared |
+| Response schema | [`SystemInformation`](../models/systeminformation.md) |
 | Success status | `200` |
 | Declared encoding | `application/json` |
 
