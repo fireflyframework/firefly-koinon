@@ -71,7 +71,7 @@ The corresponding API input uses `domain`, `role`, `workspace_id`, `mode`, `prov
 
 For an embedding role, supply `dimensions`, `storage_dimensions` and the approved existing `space_id`. These are compatibility facts, not tuning guesses. Document vector and storage dimensions must match. The current structured assignment uses storage dimensions of 1536 and requires the selected dimensions to fit that space. Read the current setup and role descriptors before saving; this form does not create an arbitrary compatible space by accepting a name.
 
-After saving, reload the assignment and perform its intended operation. A revision conflict reports `KNOWLEDGE_CONNECTION_CONFLICT`: read the current `revision`, review the change and submit its `expected_revision` only after that review. `KNOWLEDGE_EMBEDDING_REINDEX_REQUIRED` means the proposed binding is incompatible with retained indexed knowledge. Plan the supported reindexing procedure rather than deleting and recreating the assignment. Both errors leave the failed change unaccepted.
+After saving, reload the assignment and perform its intended operation. A revision conflict reports `KNOWLEDGE_CONNECTION_CONFLICT`: read the current `revision`, review the change and submit its `expected_revision` only after that review. `KNOWLEDGE_EMBEDDING_REINDEX_REQUIRED` means the proposed binding is incompatible with retained indexed knowledge. Use **Storage & indexing** to [plan and build a compatible separate index](../operations/knowledge-indexes.md), then explicitly review activation, rather than deleting and recreating the assignment. Both errors leave the failed change unaccepted.
 
 ## 6. Configure the organization's chat agent
 

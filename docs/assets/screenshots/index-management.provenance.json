@@ -1,0 +1,25 @@
+{
+  "copyright": "Copyright 2026 Firefly Software Foundation",
+  "license": "Apache-2.0",
+  "base_commit": "cc01940bd252356e99bae9b48ec550721e06b21e",
+  "capture": "Compiled management application with controlled API fixtures; no live organization or cloud-provider data.",
+  "journey": "frontend/e2e/index-management.spec.ts",
+  "viewport_widths": [
+    1440,
+    390
+  ],
+  "notes": "Provider names, counts, model identifiers and revisions are illustrative fixture values. These captures document the index lifecycle UI source change, not a deployed provider acceptance.",
+  "source_files": {
+    "frontend/projects/koinon-angular/settings/src/index-management-contract.ts": "11421ae99e8aeffd3110cca13af09fc36c26e2cf0b60bbce1647ddeaebf03abb",
+    "frontend/projects/koinon-angular/settings/src/index-management-journal.ts": "7b07e8074377041bb7b745b8a419f5c3596b2817f83ca6c8577364fe8de448e1",
+    "frontend/projects/koinon-angular/settings/src/index-management-panel.html": "777eebc23781b0634b0da2a11ded5eb7a721b2bc4628a6491a1a7531f7e32321",
+    "frontend/projects/koinon-angular/settings/src/index-management-panel.scss": "f5750d14231b34e9c156feccde287a8ac3f2af3ad38371d4f8732e176b226817",
+    "frontend/projects/koinon-angular/settings/src/index-management-panel.ts": "922caad138624a0ff650de0687c627e122085a551e423e56798f0318f5bec1d7",
+    "frontend/projects/koinon-angular/settings/src/index-management-spanish.ts": "46fd3709f0e13fe747078d01be108063580303637d8925ee2b0b1af5e2815a4f",
+    "frontend/projects/koinon-angular/settings/src/index-management-state.ts": "3020a7d427af60a53de811b9c4a89bb237013c4b6ffe350f9867e9957e31b979"
+  },
+  "files": {
+    "index-plan-1440.png": "52c263a3c20477cecd46c7a7f4d393eb7f3f10cf0fbccb54f8a9abb65ce158fb",
+    "index-recovery-390.png": "e6bc83085ac5485c1e0658a2989240dbffbab7d052164481612dafd4087d2b6d"
+  }
+}

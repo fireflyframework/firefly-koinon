@@ -719,19 +719,22 @@
           <h2>{{ 'Storage & indexing' | ffkText }}</h2>
           <p>
             {{
-              'Check the storage and indexing services available to your organization.' | ffkText
+              'Manage knowledge indexes and inspect deployment configuration.' | ffkText
             }}
           </p>
         </div>
-        <ffk-button variant="quiet" icon="refresh" [disabled]="c.pending()" (click)="c.load()">{{
-          'Refresh' | ffkText
-        }}</ffk-button>
       </header>
       @defer (on immediate) {
-        <ffk-deployment-panel
-          [deployment]="c.configuration()?.deployment"
-          [workspaceNames]="workspaceNames()"
-        />
+        <ffk-index-management-panel [configuration]="c.configuration()" />
+        <details class="deployment-observations">
+          <summary>{{ 'Deployment observations' | ffkText }}</summary>
+          <p>{{ 'These read-only observations describe deployment storage, indexes and database connections.' | ffkText }}</p>
+          <ffk-button variant="quiet" icon="refresh" [disabled]="c.pending()" (click)="c.load()">{{ 'Refresh deployment observations' | ffkText }}</ffk-button>
+          <ffk-deployment-panel
+            [deployment]="c.configuration()?.deployment"
+            [workspaceNames]="workspaceNames()"
+          />
+        </details>
       } @loading {
         <ffk-skeleton width="60%" height="12px" [label]="'Opening settings section' | ffkText" />
       } @error {
