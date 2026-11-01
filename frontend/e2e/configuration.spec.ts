@@ -293,6 +293,7 @@ test('deployment diagnostics keep an unprobed store unknown and expose no edit a
   await page.goto('/library');
   await openAdministration(page, 'Settings');
   await page.getByRole('button', { name: 'Storage & indexing', exact: true }).click();
+  await page.getByText('Deployment observations', { exact: true }).click();
   await expect(
     page.getByText('Managed by your deployment administrator.', { exact: true }),
   ).toBeVisible();

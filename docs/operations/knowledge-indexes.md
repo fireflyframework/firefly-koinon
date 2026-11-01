@@ -4,7 +4,43 @@
 
 Use this procedure when an existing workspace needs a new compatible embedding index, such as after a reviewed model change. The lifecycle creates a separate target, builds it through durable work and activates it explicitly. It does not require deleting the active index or its retained source history.
 
-**Storage & indexing** in Settings shows observations. It does not currently provide the plan, build and activation forms described here. Use the authorized API or typed SDK operations in the [knowledge connections and indexes reference](../reference/api/knowledge-services.md). Database extension installation, control-role grants and storage bindings remain deployment work.
+Use **Settings**, then **Storage & indexing**, for the guided lifecycle below. The same operations are available through the authorized API and typed SDKs in the [knowledge connections and indexes reference](../reference/api/knowledge-services.md). Database extension installation, control-role grants and storage bindings remain deployment work.
+
+## Use the administration panel
+
+Start with a knowledge space you are authorized to manage. **Knowledge type** separates **Documents** from **Datasets**; a plan or action for one does not apply to the other. The **Build state** filter narrows the managed records, and the list is paged. **Refresh indexes** rereads records without calling an embedding model or repeating a mutation.
+
+The **Active native target** strip is read separately from the managed list. It can describe a retained native target without a lifecycle record. A record marked **Recorded active, not confirmed** is not proof that the native pointer currently selects it. If the native inventory cannot be verified completely within the bounded inspection, correct that condition before proceeding; an empty or partial response does not establish an inactive workspace.
+
+1. Choose **Plan a new index**, then select an enabled **Embedding provider** and one of its declared models. Read the usage notice before choosing **Check embeddings and prepare plan**. This is an explicit provider request, not a passive configuration refresh.
+2. In **Review before building**, check the provider, model, measured dimensions, storage dimensions, recorded chunks, qualification and warnings. Choose **Change model** to return to selection or **Close plan** to leave without building.
+3. Choose **Build this index** only after review. The panel rereads the provider configuration, native target and selected embedding assignment before submitting a keyed request. A changed revision requires a new plan. The panel uses a batch size of 32; other supported batch sizes are available through the API.
+4. Inspect the selected **Index details** and use **Refresh indexes** to read progress. **Queued**, **Building** and **Awaiting physical index** mean work remains. The details show recorded chunks and vectors, dimensions, qualification, revision and retained identities. No timer automatically submits work.
+5. When the target is ready, choose **Activate index**. Review the current active target, target revision and assignment revision, then confirm **Activate index** in that review. The panel checks them again before sending. Read back the native active target and perform the small functional check described below.
+
+![Reviewing an index build in the administration panel](../assets/screenshots/index-plan-1440.png)
+
+This desktop capture uses controlled example data. The measured dimensions and provider qualification in a real installation come from its explicit plan request.
+
+The available controls follow the current record and authority. **Cancel build**, **Resume build**, **Finish activation** and **Restore previous index** each open a separate review; they are not one-click substitutes for inspection. A native active target cannot be resumed. Cancellation does not delete knowledge, and a provider may still be completing work after the request.
+
+### If the browser cannot confirm an action
+
+An **Index action not confirmed** notice retains the exact request in session storage for this browser tab, bound to the signed-in subject, organization, space and knowledge type. It contains operation fields and, for keyed operations, the original idempotency key; it contains no credentials or provider endpoint. Session storage must be usable before the panel sends mutations. This bounded tab journal holds at most eight actions and 16 KiB and is not a durable operator change record. Closing the tab can remove it.
+
+**Inspect current state** performs reads only. A newly visible target alone does not prove that an uncertain create request produced it. For create or resume, **Review saved request** explains the consequences before **Submit saved request** explicitly sends the original body and original key. If the earlier request was not accepted, this can start work and incur usage. Signing in, refreshing the page and restoring the notice never resend it automatically. Current authority is checked again; a saved request cannot preserve a revoked permission.
+
+Activation and cancellation are not automatically replayed. Inspection may establish the current target state without attributing it to a particular request. An unfinished activation requires a fresh review of **Finish activation** or **Restore previous index**, using the currently observed revisions. Keep uncertain server and provider outcomes in the operator record rather than clearing database rows or creating replacement keys.
+
+![Reviewing interrupted activation recovery on a narrow screen](../assets/screenshots/index-recovery-390.png){ width="390" }
+
+This controlled example shows a fresh **Finish activation** review. It is not a recommendation to finish every failed transition; inspect the current target and assignment first.
+
+### Inspect deployment observations separately
+
+Expand **Deployment observations** below the lifecycle panel for the read-only file-store, search-index and datasource descriptor. **Refresh deployment observations** rereads that descriptor; it does not build an index, migrate storage or install an extension. Interpret **Checked**, **Not checked** and each reason as described in [configuration observations](configuration.md).
+
+## API and SDK procedure
 
 ## Before starting
 

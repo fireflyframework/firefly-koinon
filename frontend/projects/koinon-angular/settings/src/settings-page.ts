@@ -54,6 +54,7 @@ import { KoinonMcpApplications } from './mcp-applications';
 import { KoinonConfiguration } from './configuration';
 import { platformHealthAccess } from './platform-health-access';
 import { KoinonPlatformHealthPanel } from './platform-health-panel';
+import { KoinonIndexManagementPanel } from './index-management-panel';
 import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
 import { ORGANIZATION_SPANISH } from './organization-spanish';
 registerKoinonSpanish({
@@ -64,6 +65,7 @@ registerKoinonSpanish({
 @Component({
   selector: 'ffk-settings-page',
   imports: [
+    KoinonIndexManagementPanel,
     KoinonCommunicationsSettings,
     KoinonPlatformHealthPanel,
     KoinonIdentityAppearance,
