@@ -21,6 +21,9 @@
         [attr.aria-label]="productName + ', ' + ('Chat' | ffkText)"
         (click)="go('chat', $event)"
         >@if(logo()){<img [src]="logo()" [alt]="productName"/>}@else{<strong class="custom-brand-name">{{productName}}</strong>}</a>
+    }
+    <div class="header-navigation" [class.has-search]="!personalAccount && destination === 'library'">
+      @if (showNavigation) {
       <nav class="main-navigation" [attr.aria-label]="'Main navigation' | ffkText">
         @for (item of destinations; track item.id) {
           <button
@@ -34,6 +37,19 @@
           </button>
         }
       </nav>
+      }
+    @if (!personalAccount && destination === 'library') {
+      <div class="global-search">
+        <ffk-search-field
+          [value]="search"
+          (valueChange)="searchChanged.emit($event)"
+          (searchSubmitted)="searchSubmitted.emit($event)"
+        />
+      </div>
+    }
+    </div>
+    <div class="header-actions">
+      @if (showNavigation) {
       @if (organizations.length > 1) {
       <div class="header-organization">
         <label class="organization">
@@ -52,17 +68,7 @@
         </label>
       </div>
       }
-    }
-    @if (!personalAccount && destination === 'library') {
-      <div class="global-search">
-        <ffk-search-field
-          [value]="search"
-          (valueChange)="searchChanged.emit($event)"
-          (searchSubmitted)="searchSubmitted.emit($event)"
-        />
-      </div>
-    }
-    <div class="header-actions">
+      }
       <ng-content select="[ffkHeaderNotifications]" />
       <button
         class="icon-button"

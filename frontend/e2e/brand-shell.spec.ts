@@ -17,6 +17,9 @@ for (const custom of [false, true])
       await page.route('**/chat/{threads,folders}*', (route) =>
         route.fulfill({ json: { items: [], page: 1, page_size: 25, total: 0, pages: 0 } }),
       );
+      await page.route('**/bff/api/v1/tenants/*/agents*', (route) =>
+        route.fulfill({ json: { items: [], page: 1, page_size: 25, total: 0, pages: 0 } }),
+      );
       const logo = await page.evaluate(() => {
         const canvas = document.createElement('canvas');
         canvas.width = 200;
@@ -42,6 +45,8 @@ for (const custom of [false, true])
       await expect(page.getByRole('combobox', { name: 'Organization', exact: true })).toHaveCount(0);
       const header = page.locator('ffk-shell .topbar'),
         brand = header.locator('.brand');
+      const actions = (await header.locator('.header-actions').boundingBox())!;
+      expect(Math.abs(actions.x + actions.width - (width - (width > 1100 ? 32 : 16)))).toBeLessThanOrEqual(1);
       await expect(brand).toHaveAccessibleName(`${branding.product_name}, Chat`);
       await expect(page.locator('ffk-shell footer ffk-powered-by')).toHaveCount(custom ? 1 : 0);
       if (custom) {
@@ -59,6 +64,7 @@ for (const custom of [false, true])
         const nav = (await header
           .getByRole('navigation', { name: 'Main navigation', exact: true })
           .boundingBox())!;
+        expect(Math.abs(nav.y + nav.height / 2 - actions.y - actions.height / 2)).toBeLessThanOrEqual(1);
         expect(Math.abs(logo.x - group.x)).toBeLessThanOrEqual(1);
         const art = (await brand.locator('img').boundingBox())!;
         expect(nav.x - art.x - art.width).toBeGreaterThanOrEqual(24);
