@@ -14,7 +14,7 @@ from pyfly.security.context_holder import SecurityContextHolder
 
 from koinon.catalog.errors import AccessDenied
 from koinon.knowledge.curated.authority import CuratedAuthority
-from koinon.knowledge.external_reviews.file_dtos import CHUNK_BYTES, MAX_FILE_BYTES
+from koinon.knowledge.external_reviews.file_dtos import CHUNK_BYTES
 from koinon.knowledge.external_reviews.file_service import ExternalFileReviews
 from koinon.knowledge.external_reviews.service import ExternalKnowledgeReviews
 from koinon.mcp_auth.service import McpOAuthService
@@ -89,13 +89,7 @@ def file_upload_preparer(context: ApplicationContext):
                 principal, tenant_id, destination_id
             )
             files = context.get_bean(ExternalFileReviews)
-            _, storage_limit = files.storage.configured()
-            maximum = min(
-                MAX_FILE_BYTES,
-                files.settings.max_file_bytes,
-                files.facade().settings.max_upload_bytes,
-                storage_limit,
-            )
+            maximum = files.capacity()
             return {
                 "setup": {
                     "tenant_id": tenant_id,

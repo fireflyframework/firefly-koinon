@@ -8,12 +8,14 @@ import os
 import signal
 import subprocess
 import sys
+import time
 from collections.abc import Callable
 from contextlib import suppress
 from datetime import datetime, timedelta
 from typing import Protocol
 from uuid import uuid4
 
+import psutil
 from pyfly.container import service
 from pyfly.kernel import ConflictException
 from pyfly.scheduling import scheduled
@@ -21,6 +23,32 @@ from pyfly.scheduling import scheduled
 from koinon.knowledge.bulk.entities import now
 from koinon.knowledge.bulk.queue import BulkLease, BulkQueue
 from koinon.knowledge.bulk.settings import BulkSettings
+from koinon.workers.admission import WorkAdmission
+
+
+def claimed_child_environment():
+    values = os.environ.copy()
+    values.update(
+        {
+            "PYFLY_KOINON_PROCESS_ROLE": "api",
+            "PYFLY_KOINON_KNOWLEDGE_BULK_WORKER_ENABLED": "false",
+            "PYFLY_KOINON_KNOWLEDGE_BULK_QUERY_WORKER_ENABLED": "false",
+            "PYFLY_SCHEDULING_ENABLED": "false",
+        }
+    )
+    return values
+
+
+def claimed_child_configuration(values):
+    from copy import deepcopy
+
+    result = deepcopy(values)
+    result.setdefault("koinon", {}).setdefault("process", {})["role"] = "api"
+    result["koinon"].setdefault("knowledge", {}).setdefault("bulk", {}).update(
+        worker_enabled=False, query_worker_enabled=False
+    )
+    result.setdefault("pyfly", {}).setdefault("scheduling", {})["enabled"] = False
+    return result
 
 
 def arm_child_deadline(seconds: int) -> None:
@@ -55,32 +83,71 @@ def child_deadline_seconds(lease: ProcessLease, settings: BulkSettings) -> int:
     return max(0, min(settings.processing_timeout_seconds, remaining))
 
 
+_CHILD_TERM_GRACE_SECONDS = 15
+
+
+def record_owned_session(process):
+    # Only call immediately after our Popen(start_new_session=True), before any reap.
+    process._koinon_owned_session_pid = process.pid
+    return process
+
+
+def _owned_child_exit(process):
+    if os.name != "posix" or not hasattr(os, "WNOWAIT") or process.returncode is not None:
+        raise RuntimeError("Unreaped child ownership is required before group cleanup")
+    try:
+        status = os.waitid(os.P_PID, process.pid, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+        if status is None:
+            if os.getpgid(process.pid) != process.pid or os.getsid(process.pid) != process.pid:
+                raise RuntimeError("Child session ownership changed")
+            record_owned_session(process)
+        elif getattr(process, "_koinon_owned_session_pid", None) != process.pid:
+            raise RuntimeError("Exited child requires its spawn-time session ownership")
+        return status
+    except (ChildProcessError, ProcessLookupError):
+        raise RuntimeError("Unreaped child ownership was lost") from None
+
+
+def _owned_group_live(process):
+    _owned_child_exit(process)
+    for member in psutil.process_iter(["pid", "status"]):
+        try:
+            if (
+                member.info["status"] not in {psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD}
+                and os.getpgid(member.pid) == process.pid
+                and os.getsid(member.pid) == process.pid
+            ):
+                return True
+        except (ProcessLookupError, psutil.NoSuchProcess):
+            continue
+    return False
+
+
 def stop_owned_child(process, *, signal_group=os.killpg) -> None:
-    if process.poll() is not None:
-        process.wait(timeout=1)
-        return
-    if os.name == "posix":
+    # WNOWAIT keeps our child PID reserved until every live session/group member stops.
+    # Never poll()/wait() first: reaping the leader would permit group-ID reuse.
+    _owned_child_exit(process)
+    if _owned_group_live(process):
+        _owned_child_exit(process)
         with suppress(ProcessLookupError):
             signal_group(process.pid, signal.SIGTERM)
-    else:
-        process.terminate()
-    try:
-        process.wait(timeout=15)
-    except subprocess.TimeoutExpired:
-        if process.poll() is None:
-            if os.name == "posix":
-                with suppress(ProcessLookupError):
-                    signal_group(process.pid, signal.SIGKILL)
-            else:
-                process.kill()
-        process.wait(timeout=5)
+        deadline = time.monotonic() + _CHILD_TERM_GRACE_SECONDS
+        while _owned_group_live(process) and time.monotonic() < deadline:
+            time.sleep(0.05)
+        if _owned_group_live(process):
+            _owned_child_exit(process)
+            with suppress(ProcessLookupError):
+                signal_group(process.pid, signal.SIGKILL)
+        while _owned_group_live(process):
+            time.sleep(0.05)
+    process.wait(timeout=5)
 
 
 async def wait_owned_child(process) -> int:
     while True:
-        result = process.poll()
-        if result is not None:
-            return result
+        status = _owned_child_exit(process)
+        if status is not None:
+            return status.si_status if status.si_code == os.CLD_EXITED else -status.si_status
         await asyncio.sleep(0.1)
 
 
@@ -89,12 +156,14 @@ class ProcessSupervisor[Lease: ProcessLease]:
         self,
         queue: ProcessQueue[Lease],
         settings: BulkSettings,
+        admission: WorkAdmission,
         *,
         module: str,
         prefix: str,
         enabled: Callable[[], bool],
     ):
         self.queue, self.settings = queue, settings
+        self.admission = admission
         self.module, self.enabled = module, enabled
         self.worker_id = prefix + uuid4().hex
         self._busy = asyncio.Lock()
@@ -103,7 +172,7 @@ class ProcessSupervisor[Lease: ProcessLease]:
     async def tick(self) -> None:
         if not self.enabled() or self._busy.locked():
             return
-        async with self._busy:
+        async with self._busy, self.admission.hold("bulk"):
             lease = await self.queue.claim(self.worker_id)
             if lease is not None:
                 await self.supervise(lease)
@@ -140,25 +209,34 @@ class ProcessSupervisor[Lease: ProcessLease]:
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 start_new_session=True,
+                env=claimed_child_environment(),
             )
         except OSError:
             await self._unknown(lease, "BULK_CHILD_START_FAILED", unknown=False)
             return
+        record_owned_session(process)
+        failure = None
         try:
             async with asyncio.timeout(child_deadline_seconds(lease, self.settings)):
                 await wait_owned_child(process)
         except BaseException as error:
-            cleanup = asyncio.create_task(asyncio.to_thread(stop_owned_child, process))
-            while not cleanup.done():
-                try:
-                    await asyncio.shield(cleanup)
-                except asyncio.CancelledError:
-                    continue
+            failure = error
+        cleanup = asyncio.create_task(asyncio.to_thread(stop_owned_child, process))
+        while not cleanup.done():
+            try:
+                await asyncio.shield(cleanup)
+            except asyncio.CancelledError as error:
+                failure = failure or error
+        try:
             cleanup.result()
-            await self._unknown(lease, "BULK_WORKER_STOPPED")
-            if isinstance(error, TimeoutError):
-                return
+        except BaseException:
+            self.admission.close_workers()
             raise
+        if failure is not None:
+            await self._unknown(lease, "BULK_WORKER_STOPPED")
+            if isinstance(failure, TimeoutError):
+                return
+            raise failure
         await self._unknown(lease, "BULK_CHILD_OUTCOME_UNCONFIRMED")
 
     async def _unknown(self, lease: Lease, code: str, *, unknown: bool = True) -> None:
@@ -171,10 +249,11 @@ class ProcessSupervisor[Lease: ProcessLease]:
 
 @service(name="knowledge.bulk.worker")
 class BulkWorker(ProcessSupervisor[BulkLease]):
-    def __init__(self, queue: BulkQueue, settings: BulkSettings):
+    def __init__(self, queue: BulkQueue, settings: BulkSettings, admission: WorkAdmission):
         super().__init__(
             queue,
             settings,
+            admission,
             module="koinon.knowledge.bulk.worker",
             prefix="bulk-",
             enabled=lambda: settings.worker_enabled,
@@ -214,8 +293,7 @@ async def run_worker(
     from koinon.knowledge.bulk.execution import BulkExecutor
     from koinon.operations.configuration import environment_configuration
 
-    values = environment_configuration()
-    values.setdefault("pyfly", {}).setdefault("scheduling", {})["enabled"] = False
+    values = claimed_child_configuration(environment_configuration())
     app = create_application(values)
     context = app.state.context
     await context.start()

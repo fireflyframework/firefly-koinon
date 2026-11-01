@@ -21,6 +21,9 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 
+from koinon_storage import local_files
+from koinon_storage.client_lifecycle import ClientLifecycle
+
 from flycanon.core.services.storage.object_store import ObjectStore, ObjectTooLargeError
 
 
@@ -34,6 +37,7 @@ class LocalFsObjectStore(ObjectStore):
     """
 
     def __init__(self, root: str) -> None:
+        self._lifecycle = ClientLifecycle()
         self._root = Path(root).expanduser().resolve()
         self._root.mkdir(parents=True, exist_ok=True)
 
@@ -58,6 +62,18 @@ class LocalFsObjectStore(ObjectStore):
     def _write(path: Path, data: bytes) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)
+
+    async def create_file(self, key, path, content_type=None):
+        return await self._lifecycle.run(
+            lambda: local_files.create_file(self._root, self._path(key), key, path, 128 * 1024**2)
+        )
+
+    async def download_file(self, reference, path, *, max_bytes):
+        await self._lifecycle.run(
+            lambda: local_files.download_file(
+                self._root, self._path(reference.key), reference, path, max_bytes
+            )
+        )
 
     async def get(self, key: str) -> bytes:
         path = self._path(key)

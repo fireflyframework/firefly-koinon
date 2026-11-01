@@ -1,4 +1,5 @@
 <!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+@if(emailMode();as mode){@defer(when !!emailMode()){<ffk-email-invitations [initialMode]="mode" [roles]="roles" (closed)="closeEmail()"/>}}@else{
 @if (!editor()) {
   <header class="heading">
     <div>
@@ -9,7 +10,7 @@
       <ffk-button (click)="open('existing', null, $event)">{{
         'Add existing person' | ffkText
       }}</ffk-button
-      ><ffk-button variant="primary" (click)="open('invite', null, $event)">{{
+      ><ffk-button (click)="open('invite', null, $event)">{{'Create legacy invitation link'|ffkText}}</ffk-button><ffk-button variant="primary" (click)="openEmail('compose',$event)">{{
         'Invite person' | ffkText
       }}</ffk-button>
     </div>
@@ -21,8 +22,9 @@
       [attr.aria-current]="tab() === 'invitations' ? 'page' : null"
       (click)="navigate('invitations')"
     >
-      {{ 'Invitations' | ffkText }}
+      {{ 'Legacy invitation links' | ffkText }}
     </button>
+    <button (click)="openEmail('list',$event)">{{'Email invitations'|ffkText}}</button>
   </nav>
 }
 @if (service.pending()) {
@@ -43,7 +45,7 @@
 @if (editor()) {
   <header class="editor-heading">
     <ffk-button
-      variant="quiet"
+      variant="back"
       icon="chevron-left"
       [disabled]="service.pending()"
       (click)="close()"
@@ -440,4 +442,6 @@
     (pageChanged)="loadInvitations($event)"
     (sizeChanged)="pageSize = $event; loadInvitations()"
   />
+}
+
 }

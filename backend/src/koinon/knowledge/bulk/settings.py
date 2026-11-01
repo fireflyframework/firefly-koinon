@@ -20,7 +20,7 @@ class BulkSettings:
     gcs_prefix: str = ""
     gcs_endpoint_url: str = ""
     storage_request_timeout_seconds: int = 10
-    max_local_storage_operations: int = 8
+    max_local_storage_operations: int = 1
     upload_lease_seconds: int = 180
     recovery_lease_seconds: int = 90
     max_recoveries_per_tenant: int = 2
@@ -28,9 +28,9 @@ class BulkSettings:
     worker_enabled: bool = False
     query_worker_enabled: bool = False
     max_files: int = 100
-    max_file_bytes: int = 32 * 1024 * 1024
-    max_batch_bytes: int = 256 * 1024 * 1024
-    max_staged_bytes_per_tenant: int = 1024 * 1024 * 1024
+    max_file_bytes: int = 128 * 1024 * 1024
+    max_batch_bytes: int = 512 * 1024 * 1024
+    max_staged_bytes_per_tenant: int = 16 * 1024 * 1024 * 1024
     max_uploads_per_tenant: int = 2
     max_uploads_global: int = 8
     max_workers_per_tenant: int = 2
@@ -52,9 +52,9 @@ class BulkSettings:
             (self.max_recoveries_per_tenant, 8),
             (self.max_recoveries_global, 32),
             (self.max_files, 100),
-            (self.max_file_bytes, 32 * 1024 * 1024),
-            (self.max_batch_bytes, 256 * 1024 * 1024),
-            (self.max_staged_bytes_per_tenant, 1024 * 1024 * 1024),
+            (self.max_file_bytes, 128 * 1024 * 1024),
+            (self.max_batch_bytes, 512 * 1024 * 1024),
+            (self.max_staged_bytes_per_tenant, 16 * 1024 * 1024 * 1024),
             (self.max_uploads_per_tenant, 2),
             (self.max_uploads_global, 8),
             (self.max_workers_per_tenant, 2),

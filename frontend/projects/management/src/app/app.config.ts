@@ -3,6 +3,7 @@ import { provideHttpClient, withXsrfConfiguration } from '@angular/common/http';
 import { type ApplicationConfig, inject, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { FetchTransport, KoinonClient } from '@fireflyframework/koinon-sdk';
 import {
+  KOINON_ACTIVITY_LOADER,KOINON_COMMUNICATIONS_LOADER,
   KOINON_CHAT_LOADER,
   KOINON_SETTINGS_LOADER,
   KOINON_INVITATION_LOADER,
@@ -26,6 +27,7 @@ export function csrfToken(): string | null {
 const transport = new FetchTransport({ baseUrl: '/bff/api/v1', credentials: 'include', csrfToken });
 export const appConfig: ApplicationConfig = {
   providers: [
+    {provide:KOINON_ACTIVITY_LOADER,useValue:()=>import('@fireflyframework/koinon-angular/activity').then(module=>module.KoinonActivityPanel)},{provide:KOINON_COMMUNICATIONS_LOADER,useValue:(kind:'trigger'|'center'|'email')=>kind==='trigger'?import('@fireflyframework/koinon-angular/communications/runtime').then(module=>module.KoinonNotificationCenterTrigger):kind==='email'?import('@fireflyframework/koinon-angular/communications/invitations').then(module=>module.KoinonEmailInvitationAcceptance):import('@fireflyframework/koinon-angular/communications/inbox').then(module=>module.KoinonNotificationCenter)},
     {
       provide: KOINON_TENANT_RESOLVER,
       useFactory: () => {

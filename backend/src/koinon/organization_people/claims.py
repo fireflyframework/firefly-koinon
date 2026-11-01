@@ -38,7 +38,7 @@ async def observe_login(service, context, *, observed_at=None):
             continue
         mapping, provider = grouped[tenant_id][0]
         try:
-            identity = verified_identity(policy(provider), claims)
+            identity = verified_identity(policy(provider, getattr(service, "oidc", None)), claims)
         except Exception:
             continue
         expected_revision = mapping.revision
@@ -54,7 +54,7 @@ async def observe_login(service, context, *, observed_at=None):
         ):
             continue
         try:
-            identity = verified_identity(policy(fresh), claims)
+            identity = verified_identity(policy(fresh, getattr(service, "oidc", None)), claims)
         except Exception:
             continue
         if not await service.people.member(

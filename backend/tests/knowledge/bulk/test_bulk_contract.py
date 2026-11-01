@@ -26,7 +26,7 @@ def test_manifest_is_bounded_portable_and_rejects_path_or_duplicate_client_ident
     for key, value in [
         ("filename", "../secret"),
         ("size_bytes", True),
-        ("size_bytes", 33554433),
+        ("size_bytes", 134217729),
         ("sha256", "nope"),
         ("mode", "curated"),
     ]:

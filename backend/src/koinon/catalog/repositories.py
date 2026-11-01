@@ -143,6 +143,11 @@ class MembershipRepository(Repository[Membership, str]):
 class CatalogRepository(Repository[CatalogEntry, str]):
     """Scoped catalog entries shared by both domains."""
 
+    async def scope_kind(self, tenant_id: str, entry_id: str) -> str | None:
+        return await self._require_session().scalar(
+            select(CatalogEntry.kind).where(CatalogEntry.tenant_id == tenant_id, CatalogEntry.id == entry_id)
+        )
+
     async def file_intake_for_key(self, tenant_id, dataset_id, key_sha256):
         return list(
             (

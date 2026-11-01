@@ -5,6 +5,8 @@ from pyfly.kernel import SecurityException
 from pyfly.security.context import SecurityContext
 from pyfly.security.oauth2 import OAuth2AuthenticationSuccessHandler, OAuth2AuthorizationRequestCustomizer
 
+from koinon.bootstrap.ports import BootstrapLoginObserver
+from koinon.communications.ports import CommunicationIdentityObserver
 from koinon.corporate_identity.challenges import CorporateLoginChallenges
 from koinon.corporate_identity.presentation import CorporatePresentation
 from koinon.corporate_identity.refresh import CorporateAccessRefresh
@@ -54,7 +56,11 @@ class CorporateLoginSuccess(OAuth2AuthenticationSuccessHandler):
         presentation: CorporatePresentation | None = None,
         organization_people: OrganizationPeopleService | None = None,
         corporate_profiles: CorporateProfileService | None = None,
+        communications: CommunicationIdentityObserver | None = None,
+        bootstrap: BootstrapLoginObserver | None = None,
     ):
+        self.bootstrap = bootstrap
+        self.communications = communications
         self.organization_people = organization_people
         self.corporate_profiles = corporate_profiles
         self.challenges, self.refresh, self.profiles, self.presentation = (
@@ -69,6 +75,8 @@ class CorporateLoginSuccess(OAuth2AuthenticationSuccessHandler):
         request.state.session.remove_attribute("koinon_identity_test")
         if identifier:
             await self.challenges.complete(identifier, context)
+        if self.bootstrap is not None:
+            await self.bootstrap.observe_login(request, registration, context)
         await self.refresh.login(context)
         if self.presentation is not None:
             await self.presentation.initialize(context)
@@ -78,6 +86,8 @@ class CorporateLoginSuccess(OAuth2AuthenticationSuccessHandler):
             await self.corporate_profiles.observe_login(context)
         if self.organization_people is not None:
             await self.organization_people.observe_login(context)
+        if self.communications is not None:
+            await self.communications.observe_login(context)
 
 
 @configuration
@@ -95,7 +105,16 @@ class CorporateLoginConfiguration:
         presentation: CorporatePresentation,
         organization_people: OrganizationPeopleService | None = None,
         corporate_profiles: CorporateProfileService | None = None,
+        communications: CommunicationIdentityObserver | None = None,
+        bootstrap: BootstrapLoginObserver | None = None,
     ) -> OAuth2AuthenticationSuccessHandler:
         return CorporateLoginSuccess(
-            challenges, refresh, profiles, presentation, organization_people, corporate_profiles
+            challenges,
+            refresh,
+            profiles,
+            presentation,
+            organization_people,
+            corporate_profiles,
+            communications,
+            bootstrap,
         )

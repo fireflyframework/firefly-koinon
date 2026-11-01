@@ -18,6 +18,7 @@ MCP_SCOPES = frozenset(
         "query:execute",
         "chat:use",
         "evidence:read",
+        "activity:read",
     }
 )
 

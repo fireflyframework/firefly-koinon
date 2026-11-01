@@ -3,7 +3,7 @@
 
 # Wire models
 
-The canonical schema contains 367 definitions and 358 named model aliases. Supporting definitions are included so every schema reference can be followed. Language-specific generated names can differ from wire names; consult the SDK imports in the workflow guides.
+The canonical schema contains 409 definitions and 400 named model aliases. Supporting definitions are included so every schema reference can be followed. Language-specific generated names can differ from wire names; consult the SDK imports in the workflow guides.
 
 Each page lists field presence, nullability, defaults and validation constraints. The downloadable [complete schema](../sdk-schemas.json) remains the machine-readable contract.
 
@@ -11,7 +11,13 @@ Each page lists field presence, nullability, defaults and validation constraints
 
 ## A
 
+- [`ActivityCoverage`](activitycoverage.md)
+- [`ActivityEmailPreviewInput`](activityemailpreviewinput.md)
+- [`ActivitySummary`](activitysummary.md)
+- [`ActivityValue`](activityvalue.md)
+- [`ActivityWindow`](activitywindow.md)
 - [`AddKnowledge`](addknowledge.md)
+- [`AdministrativeSummarySchedule`](administrativesummaryschedule.md)
 - [`AgentConfiguration`](agentconfiguration.md)
 - [`AgentInput`](agentinput.md)
 - [`AgentUsage`](agentusage.md)
@@ -73,6 +79,11 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`ClarificationFrame`](clarificationframe.md)
 - [`Column`](column.md)
 - [`CommittedKnowledge`](committedknowledge.md)
+- [`CommunicationCapabilities`](communicationcapabilities.md)
+- [`CommunicationIssue`](communicationissue.md)
+- [`CommunicationPolicy`](communicationpolicy.md)
+- [`CommunicationPolicyInput`](communicationpolicyinput.md)
+- [`CommunicationUsageSummary`](communicationusagesummary.md)
 - [`Configuration`](configuration.md)
 - [`ConnectionPool`](connectionpool.md)
 - [`ContentEffects`](contenteffects.md)
@@ -101,14 +112,21 @@ Each page lists field presence, nullability, defaults and validation constraints
 
 ## D
 
+- [`DailyActivity`](dailyactivity.md)
 - [`DatasetFileAppendResult`](datasetfileappendresult.md)
 - [`DatasetFileUpload`](datasetfileupload.md)
 - [`DatasetSchema`](datasetschema.md)
 - [`Deleted`](deleted.md)
+- [`DeliveryPage`](deliverypage.md)
+- [`DeliveryRecord`](deliveryrecord.md)
 - [`DeploymentConfiguration`](deploymentconfiguration.md)
 - [`DeploymentDatasource`](deploymentdatasource.md)
 - [`DeploymentIndex`](deploymentindex.md)
 - [`DeploymentStorage`](deploymentstorage.md)
+- [`DigestSchedule`](digestschedule.md)
+- [`DigestSchedulePreview`](digestschedulepreview.md)
+- [`DirectoryRecipient`](directoryrecipient.md)
+- [`DirectoryRecipientPage`](directoryrecipientpage.md)
 - [`DocumentChunk`](documentchunk.md)
 - [`DocumentChunks`](documentchunks.md)
 - [`DocumentEvidence`](documentevidence.md)
@@ -130,6 +148,10 @@ Each page lists field presence, nullability, defaults and validation constraints
 
 ## E
 
+- [`EmailInvitation`](emailinvitation.md)
+- [`EmailInvitationInput`](emailinvitationinput.md)
+- [`EmailInvitationPage`](emailinvitationpage.md)
+- [`EmailPreview`](emailpreview.md)
 - [`EntraCredential`](entracredential.md)
 - [`EntraSettings`](entrasettings.md)
 - [`EvidenceManifest`](evidencemanifest.md)
@@ -205,8 +227,10 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`Input`](input.md)
 - [`Invitation`](invitation.md)
 - [`InvitationCreated`](invitationcreated.md)
+- [`InvitationDelivery`](invitationdelivery.md)
 - [`InvitationInput`](invitationinput.md)
 - [`InvitationPreview`](invitationpreview.md)
+- [`InvitationReview`](invitationreview.md)
 - [`InvitationToken`](invitationtoken.md)
 
 ## J
@@ -219,6 +243,7 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`KeycloakCredential`](keycloakcredential.md)
 - [`KeycloakProfileAttributes`](keycloakprofileattributes.md)
 - [`KeycloakSettings`](keycloaksettings.md)
+- [`KnowledgeActivityCounts`](knowledgeactivitycounts.md)
 - [`KnowledgeCancellation`](knowledgecancellation.md)
 - [`KnowledgeCommitOutcome`](knowledgecommitoutcome.md)
 - [`KnowledgeCommitReceipt`](knowledgecommitreceipt.md)
@@ -250,6 +275,7 @@ Each page lists field presence, nullability, defaults and validation constraints
 
 ## M
 
+- [`McpActivityCounts`](mcpactivitycounts.md)
 - [`McpConnectionDescriptor`](mcpconnectiondescriptor.md)
 - [`McpOAuthClient`](mcpoauthclient.md)
 - [`McpOAuthClientCredential`](mcpoauthclientcredential.md)
@@ -271,6 +297,7 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`MemoryValue`](memoryvalue.md)
 - [`MessageSelection`](messageselection.md)
 - [`MetricsObservation`](metricsobservation.md)
+- [`ModelActivityCounts`](modelactivitycounts.md)
 - [`ModelCapability`](modelcapability.md)
 - [`ModelConnection`](modelconnection.md)
 - [`ModelParameters`](modelparameters.md)
@@ -284,9 +311,18 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`NativeReadOrigin`](nativereadorigin.md)
 - [`NativeReadReceipt`](nativereadreceipt.md)
 - [`NativeTableSnapshot`](nativetablesnapshot.md)
+- [`NotificationDetails`](notificationdetails.md)
+- [`NotificationPreferenceRule`](notificationpreferencerule.md)
+- [`NotificationPreferenceRuleInput`](notificationpreferenceruleinput.md)
+- [`NotificationPreferences`](notificationpreferences.md)
+- [`NotificationPreferencesInput`](notificationpreferencesinput.md)
+- [`NotificationTarget`](notificationtarget.md)
+- [`NotificationUnreadCount`](notificationunreadcount.md)
 
 ## O
 
+- [`ObservedCost`](observedcost.md)
+- [`ObservedCount`](observedcount.md)
 - [`OpenUIArtifact`](openuiartifact.md)
 - [`OperationalLimits`](operationallimits.md)
 - [`OperationalObservation`](operationalobservation.md)
@@ -318,6 +354,8 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`OrganizationUnitPatch`](organizationunitpatch.md)
 - [`OrganizationUnitSummary`](organizationunitsummary.md)
 - [`Output`](output.md)
+- [`OwnNotification`](ownnotification.md)
+- [`OwnNotificationPage`](ownnotificationpage.md)
 
 ## P
 
@@ -345,6 +383,7 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`PrivateChunkView`](privatechunkview.md)
 - [`PrivateFileReceipt`](privatefilereceipt.md)
 - [`ProfileUpdate`](profileupdate.md)
+- [`ProjectActivity`](projectactivity.md)
 - [`PromotedCatalogEntry`](promotedcatalogentry.md)
 - [`ProposalConfirmation`](proposalconfirmation.md)
 - [`ProposalRevision`](proposalrevision.md)
@@ -374,6 +413,8 @@ Each page lists field presence, nullability, defaults and validation constraints
 
 ## R
 
+- [`RecipientProvider`](recipientprovider.md)
+- [`RecipientProviderPage`](recipientproviderpage.md)
 - [`ReplaceDocument`](replacedocument.md)
 - [`ReplaceTable`](replacetable.md)
 - [`ResultColumn`](resultcolumn.md)
@@ -438,3 +479,4 @@ Each page lists field presence, nullability, defaults and validation constraints
 ## V
 
 - [`ValidationResult`](validationresult.md)
+- [`VerifiedSenderOption`](verifiedsenderoption.md)

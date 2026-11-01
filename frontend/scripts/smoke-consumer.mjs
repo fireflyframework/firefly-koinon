@@ -30,6 +30,16 @@ for (const entry of [
   'fireflyframework-koinon-angular-chat-page',
   'fireflyframework-koinon-angular-chat-evidence',
   'fireflyframework-koinon-angular-settings',
+  'fireflyframework-koinon-angular-communications',
+  'fireflyframework-koinon-angular-communications-runtime',
+  'fireflyframework-koinon-angular-communications-invitations',
+  'fireflyframework-koinon-angular-communications-inbox',
+  'fireflyframework-koinon-angular-communications-preferences',
+  'fireflyframework-koinon-angular-communications-admin',
+  'fireflyframework-koinon-angular-communications-schedule',
+  'fireflyframework-koinon-angular-communications-email-preview',
+  'fireflyframework-koinon-angular-activity',
+  'fireflyframework-koinon-angular-activity-window',
 ]) {
   const built = readFileSync(
       new URL('../dist/koinon-angular/fesm2022/' + entry + '.mjs', import.meta.url),

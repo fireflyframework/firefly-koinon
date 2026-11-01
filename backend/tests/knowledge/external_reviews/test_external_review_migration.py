@@ -31,8 +31,15 @@ def test_0020_matches_private_review_entity_without_modifying_retained_rows(tmp_
         for entity in (ExternalReviewRow, ExternalFileReviewRow, ExternalReadReceiptRow):
             table = entity.__table__
             columns = {value["name"]: value for value in inspect(connection).get_columns(table.name)}
-            assert set(columns) == set(table.columns.keys())
-            assert all(columns[value.name]["nullable"] == value.nullable for value in table.columns)
+            introduced_later = (
+                {"bulk_batch_id", "blob_reference_json"} if entity is ExternalFileReviewRow else set()
+            )
+            assert set(columns) == set(table.columns.keys()) - introduced_later
+            assert all(
+                columns[value.name]["nullable"] == value.nullable
+                for value in table.columns
+                if value.name not in introduced_later
+            )
             assert {value["name"] for value in inspect(connection).get_indexes(table.name)} == {
                 value.name for value in table.indexes
             }

@@ -16,6 +16,7 @@ from compatibility import qualified_glossary
 
 root = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(root / "sdk/python/src"))
+from koinon_sdk import activity, communications
 from koinon_sdk import contracts, models, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance
 from koinon_sdk.client import KoinonClient
 from koinon_sdk import coordinates, curated, dataset_files, authorized_applications, organization_chat
@@ -25,6 +26,30 @@ from koinon_sdk import mcp_applications, document_history
 from koinon_sdk import organization_people, corporate_profiles, memory, bulk, bulk_queries
 
 rows = """
+CommunicationsController.providers|communication_providers|communications.recipients.providers|-|RecipientProviderPage
+CommunicationsController.recipients_search|communication_recipients|communications.recipients.list|-|DirectoryRecipientPage
+CommunicationsController.preview|preview_email_invitation|communications.emailInvitations.preview|EmailInvitationInput|EmailPreview
+CommunicationsController.create|create_email_invitation|communications.emailInvitations.create|EmailInvitationInput|EmailInvitation
+CommunicationsController.page|email_invitations|communications.emailInvitations.list|-|EmailInvitationPage
+CommunicationsController.revoke|revoke_email_invitation|communications.emailInvitations.revoke|-|void
+CommunicationsController.resend|resend_email_invitation|communications.emailInvitations.resend|-|EmailInvitation
+CommunicationsController.inspect|email_invitation|communications.emailInvitations.review|-|InvitationReview
+CommunicationsController.accept|accept_email_invitation|communications.emailInvitations.accept|-|Membership
+CommunicationsController.decline|decline_email_invitation|communications.emailInvitations.decline|-|InvitationReview
+CommunicationsController.capabilities|communications_capabilities|communications.administration.capabilities|-|CommunicationCapabilities
+CommunicationsController.policy|communications_policy|communications.administration.policy|-|CommunicationPolicy
+CommunicationsController.policy_update|update_communications_policy|communications.administration.updatePolicy|CommunicationPolicyInput|CommunicationPolicy
+CommunicationsController.deliveries|communication_deliveries|communications.administration.deliveries|-|DeliveryPage
+CommunicationsController.delivery|communication_delivery|communications.administration.delivery|-|DeliveryRecord
+CommunicationsController.retry|retry_communication_delivery|communications.administration.retry|-|DeliveryRecord
+NotificationController.page|notifications|communications.notifications.list|-|OwnNotificationPage
+NotificationController.unread_count|notification_unread_count|communications.notifications.unreadCount|-|NotificationUnreadCount
+NotificationController.read|read_notification|communications.notifications.markRead|-|OwnNotification
+NotificationController.preferences|notification_preferences|communications.notifications.preferences|-|NotificationPreferences
+NotificationController.preferences_update|update_notification_preferences|communications.notifications.updatePreferences|NotificationPreferencesInput|NotificationPreferences
+NotificationController.preferences_preview|preview_notification_schedule|communications.notifications.previewPreferences|NotificationPreferencesInput|DigestSchedulePreview
+NotificationController.email_preview|preview_activity_email|communications.notifications.previewEmail|ActivityEmailPreviewInput|EmailPreview
+
 QueryBatchController.capabilities|query_batch_capabilities|queryBatches.capabilities|-|QueryBatchCapabilities
 QueryBatchController.create|create_query_batch|queryBatches.create|QueryBatchCreate|QueryBatchView
 QueryBatchController.list|query_batches|queryBatches.list|-|QueryBatchPage
@@ -183,6 +208,8 @@ CorporateIdentityController.mapping_remove|remove_identity_mapping|identity.remo
 CorporateIdentityController.activate|activate_identity_provider|identity.activate|IdentityActivation|IdentityProvider
 CorporateIdentityController.disable|disable_identity_provider|identity.disable|IdentityRevision|IdentityProvider
 
+ActivityController.personal|personal_activity|activity.personal|ActivityWindow|ActivitySummary
+ActivityController.administrative|administrative_activity|activity.administrative|ActivityWindow|ActivitySummary
 AuditController.audit|audit|audit.list|-|Page[AuditEvent]
 CatalogController.catalog_list|catalog|catalog.list|-|Page[CatalogEntry]
 CatalogController.catalog_create|create|catalog.create|CatalogCreate|CatalogEntry
@@ -386,6 +413,9 @@ for op in inventory["operations"]:
         success_status=status,
         source_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
     )
+    if ts.startswith("communications."):
+        op["sdk_typescript_factory"] = "createCommunicationsApi"
+        op["sdk_typescript_module"] = "@fireflyframework/koinon-sdk/communications"
     if op["operation"] in {"CuratedKnowledgeController.confirm", "ExternalKnowledgeReviewController.approve", "ExternalFileReviewController.approve"}:
         op["success_statuses"] = [200, 202]
     defaults = (
@@ -431,7 +461,7 @@ for op in inventory["operations"]:
         else ["If-None-Match (optional; avatars only)"]
         if response == "BinaryDownload" and "avatar" in op["path"]
         else ["Idempotency-Key (required; caller-supplied stable operation key)"]
-        if (op["operation"].startswith(("FileBatchController.", "QueryBatchController.")) and op["method"] != "GET") or op["operation"] in {"KnowledgeIndexesController.create", "KnowledgeIndexesController.resume", "ChatAttachmentsController.upload", "ChatAttachmentsController.retry", "ChatAttachmentsController.knowledge", "CuratedKnowledgeController.confirm", "DatasetFilesController.append", "ExternalKnowledgeReviewController.stage", "ExternalKnowledgeReviewController.approve", "ExternalFileReviewController.stage", "ExternalFileReviewController.approve"}
+        if (op["operation"].startswith(("FileBatchController.", "QueryBatchController.")) and op["method"] != "GET") or op["operation"] in {"KnowledgeIndexesController.create", "KnowledgeIndexesController.resume", "ChatAttachmentsController.upload", "ChatAttachmentsController.retry", "ChatAttachmentsController.knowledge", "CuratedKnowledgeController.confirm", "DatasetFilesController.append", "ExternalKnowledgeReviewController.stage", "ExternalKnowledgeReviewController.approve", "ExternalFileReviewController.stage", "ExternalFileReviewController.approve", "CommunicationsController.create"}
         else []
     )
     if op["operation"] in {"ContentController.document", "ContentController.reingest_document"}:
@@ -441,7 +471,7 @@ assert not mapping, mapping
 assert not unmapped, "Canonical API operations awaiting typed SDK mapping: " + ", ".join(unmapped)
 
 classes = {}
-for module in (models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files, authorized_applications, organization_chat, organization_knowledge, organization_branding, mcp, external_reviews, external_file_reviews, mcp_applications, document_history, organization_people, corporate_profiles, memory, bulk, bulk_queries):
+for module in (communications, activity, models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files, authorized_applications, organization_chat, organization_knowledge, organization_branding, mcp, external_reviews, external_file_reviews, mcp_applications, document_history, organization_people, corporate_profiles, memory, bulk, bulk_queries):
     classes.update(
         {
             name: value
@@ -492,7 +522,7 @@ schemas["$defs"].update(
         },
         "AttachmentUpload": {"type":"object", "required":["file"], "properties":{"file":{"type":"string", "contentEncoding":"binary"}}},
         "DatasetFileUpload": {"type":"object", "required":["file"], "additionalProperties":False, "properties":{"file":{"type":"string", "contentEncoding":"binary"}}},
-        "BulkFileUpload": {"type":"string", "contentEncoding":"binary", "description":"Exact admitted original bytes, 1..33554432 bytes; raw application/octet-stream, never JSON/base64/multipart."},
+        "BulkFileUpload": {"type":"string", "contentEncoding":"binary", "description":"Exact admitted original bytes, 1..134217728 bytes; raw application/octet-stream, never JSON/base64/multipart."},
         "AvatarUpload": {
             "type": "string",
             "contentEncoding": "binary",

@@ -138,6 +138,11 @@ class SecurityConfiguration:
             "/oauth2/**",
             "/login/oauth2/**",
             "/logout",
+            "/auth/invitations/email/**",
+            "/auth/notifications",
+            "/auth/setup",
+            "/auth/notifications/preferences",
+            "/auth/communications/fonts/**",
             "/.well-known/oauth-protected-resource/mcp",
             "/.well-known/oauth-authorization-server/oauth2/mcp",
         ).permit_all().request_matchers(

@@ -17,6 +17,9 @@ from koinon.catalog.errors import AccessDenied
 from koinon.knowledge.external_reviews.service import fingerprint
 from koinon.tokens.authorization import TokenRestriction
 
+MCP_TENANT_CLAIM = "koinon_tenant_id"
+MCP_WORKSPACE_CLAIM = "koinon_workspace_ids"
+
 
 def session_principal(request, context: SecurityContext, resource: str) -> McpSessionPrincipal:
     """Bind metadata to this request's freshly verified grant, never a cached bearer."""
@@ -52,12 +55,22 @@ async def transport_identity(context: SecurityContext, raw: str, restriction: To
         ) from error
     if grant is None:
         raise UnauthorizedException("An active MCP credential is required", code="MCP_AUTH_REQUIRED")
+    workspaces = grant.workspace_ids
+    workspace_claim = (
+        {MCP_WORKSPACE_CLAIM: list(workspaces)}
+        if isinstance(workspaces, list)
+        and len(workspaces) == 1
+        and isinstance(workspaces[0], str)
+        and 1 <= len(workspaces[0]) <= 64
+        and grant.asset_ids is None
+        else {}
+    )
     return AuthCredentials(grant.scopes), AuthenticatedUser(
         AccessToken(
             token=raw,
             client_id=fingerprint(grant),
             subject=subject,
-            claims={"iss": issuer},
+            claims={"iss": issuer, MCP_TENANT_CLAIM: grant.tenant_id, **workspace_claim},
             scopes=grant.scopes,
             expires_at=int(grant.expires_at.timestamp()),
         )

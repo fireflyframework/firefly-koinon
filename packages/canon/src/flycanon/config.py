@@ -487,7 +487,7 @@ class CanonSettings(BaseSettings):
     object_store_gcs_prefix: str = ""
     object_store_gcs_endpoint_url: str = ""
     object_store_request_timeout_seconds: int = 10
-    object_store_max_object_bytes: int = 64 * 1024 * 1024
+    object_store_max_object_bytes: int = 256 * 1024 * 1024
 
     # Whether intake persists the original uploaded bytes to the object
     # store and records the key on the source row (``object_store_key``).
@@ -502,7 +502,14 @@ class CanonSettings(BaseSettings):
         default="paragraph",
         description="``token`` | ``sentence`` | ``paragraph``.",
     )
-    max_bytes: int = 32 * 1024 * 1024  # 32 MiB
+    max_bytes: int = 32 * 1024 * 1024
+    inline_max_bytes: int | None = Field(default=None, gt=0, le=32 * 1024**2)
+    file_expanded_max_bytes: int = Field(default=256 * 1024**2, gt=0, le=256 * 1024**2)
+    file_scratch_max_bytes: int = Field(default=1024**3, gt=0, le=1024**3)
+    file_child_rss_max_bytes: int = Field(default=768 * 1024**2, gt=0, le=768 * 1024**2)
+    file_wall_seconds: int = Field(default=120, gt=0, le=120)
+    file_text_max_bytes: int = Field(default=16 * 1024**2, gt=0, le=16 * 1024**2)
+    file_chunks_max: int = Field(default=4096, gt=0, le=4096)
     # Timeout for URL-fetched source intake (``POST /api/v1/sources``
     # with ``uri`` set instead of ``content_base64``). Origins that
     # take longer than this fail with ``url_fetch_failed`` rather than

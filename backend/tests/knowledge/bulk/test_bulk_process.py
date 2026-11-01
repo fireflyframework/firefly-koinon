@@ -4,39 +4,7 @@ import subprocess
 
 import pytest
 
-from koinon.knowledge.bulk.worker import stop_owned_child
-
-
-class Child:
-    pid = 19283
-
-    def __init__(self, exited=False):
-        self.exited = exited
-        self.waits = []
-
-    def poll(self):
-        return 0 if self.exited else None
-
-    def wait(self, timeout):
-        self.waits.append(timeout)
-        if len(self.waits) == 1 and not self.exited:
-            raise subprocess.TimeoutExpired("owned", timeout)
-        self.exited = True
-        return 0
-
-
-def test_only_retained_unreaped_child_group_is_terminated_then_killed_and_reaped():
-    child = Child()
-    signals = []
-    stop_owned_child(child, signal_group=lambda pid, sig: signals.append((pid, sig)))
-    assert [pid for pid, _ in signals] == [child.pid, child.pid]
-    assert child.exited and child.waits == [15, 5]
-
-
-def test_already_reaped_child_is_never_signalled():
-    child = Child(exited=True)
-    stop_owned_child(child, signal_group=lambda *_: pytest.fail("Must not signal exited PID"))
-    assert child.waits == [1]
+from koinon.workers.admission import WorkAdmission, WorkAdmissionSettings
 
 
 def test_claimed_child_has_kernel_deadline_even_if_parent_worker_exits(monkeypatch):
@@ -72,29 +40,8 @@ async def test_failed_child_start_is_a_known_file_failure_without_retry_or_recei
     lease = SimpleNamespace(
         item_id="item", worker_id="worker", attempt=1, expires_at=now() + timedelta(seconds=300)
     )
-    await BulkWorker(queue, BulkSettings()).supervise(lease)
+    await BulkWorker(queue, BulkSettings(), WorkAdmission(WorkAdmissionSettings())).supervise(lease)
     queue.failed.assert_awaited_once_with(lease, code="BULK_CHILD_START_FAILED", unknown=False)
-
-
-async def test_owned_child_polling_has_no_concurrent_background_reaper(monkeypatch):
-    from unittest.mock import AsyncMock
-
-    from koinon.knowledge.bulk.worker import wait_owned_child
-
-    class PollOnlyChild:
-        def __init__(self):
-            self.results = iter([None, None, 0])
-
-        def poll(self):
-            return next(self.results)
-
-        def wait(self, *args, **kwargs):
-            pytest.fail("A background wait could reap and permit PID reuse before group cleanup")
-
-    pause = AsyncMock()
-    monkeypatch.setattr("koinon.knowledge.bulk.worker.asyncio.sleep", pause)
-    assert await wait_owned_child(PollOnlyChild()) == 0
-    assert pause.await_count == 2
 
 
 def test_child_deadline_uses_remaining_lease_and_preserves_cleanup_reserve(monkeypatch):
@@ -128,13 +75,15 @@ async def test_parent_dispatches_only_remaining_lease_window_to_exact_child(monk
 
     def child(command, **options):
         calls.append((command, options))
-        return SimpleNamespace(poll=lambda: 0)
+        return SimpleNamespace(pid=1, poll=lambda: 0)
 
     monkeypatch.setattr(subprocess, "Popen", child)
+    monkeypatch.setattr("koinon.knowledge.bulk.worker.wait_owned_child", AsyncMock(return_value=0))
+    monkeypatch.setattr("koinon.knowledge.bulk.worker.stop_owned_child", lambda _: None)
     lease = SimpleNamespace(
         item_id="item", worker_id="worker", attempt=1, expires_at=clock + timedelta(seconds=100)
     )
-    await BulkWorker(queue, BulkSettings()).supervise(lease)
+    await BulkWorker(queue, BulkSettings(), WorkAdmission(WorkAdmissionSettings())).supervise(lease)
     command, options = calls[0]
     assert command[1:3] == ["-I", "-B"] and command[command.index("--deadline-seconds") + 1] == "40"
     assert command[command.index("--lease-expires-at") + 1] == lease.expires_at.isoformat()

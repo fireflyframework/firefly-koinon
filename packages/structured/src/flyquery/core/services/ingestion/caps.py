@@ -1,4 +1,5 @@
 # Copyright 2024-2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,6 +70,11 @@ def enforce_upload_cap(
         settings: Object with `max_file_mb` and `max_workspace_gb` attributes.
     """
     max_file_bytes = settings.max_file_mb * 1024 * 1024
+    exact_file_bytes = getattr(settings, "max_file_bytes", None)
+    if exact_file_bytes is not None:
+        if type(exact_file_bytes) is not int or exact_file_bytes < 1:
+            raise ValueError("Exact upload byte limit must be a positive integer")
+        max_file_bytes = min(max_file_bytes, exact_file_bytes)
     max_workspace_bytes = settings.max_workspace_gb * 1024 * 1024 * 1024
 
     if size_bytes > max_file_bytes:

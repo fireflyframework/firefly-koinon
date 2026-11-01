@@ -11,16 +11,18 @@ from pyfly.container import service
 
 from koinon.knowledge.bulk.entities import now
 from koinon.knowledge.bulk.settings import BulkSettings
-from koinon.knowledge.bulk.worker import ProcessSupervisor, arm_child_deadline
+from koinon.knowledge.bulk.worker import ProcessSupervisor, arm_child_deadline, claimed_child_configuration
 from koinon.knowledge.bulk_queries.queue import QueryBatchQueue, QueryLease
+from koinon.workers.admission import WorkAdmission
 
 
 @service(name="knowledge.bulk_queries.worker")
 class QueryWorker(ProcessSupervisor[QueryLease]):
-    def __init__(self, queue: QueryBatchQueue, settings: BulkSettings):
+    def __init__(self, queue: QueryBatchQueue, settings: BulkSettings, admission: WorkAdmission):
         super().__init__(
             queue,
             settings,
+            admission,
             module="koinon.knowledge.bulk_queries.worker",
             prefix="query-",
             enabled=lambda: settings.query_worker_enabled,
@@ -55,8 +57,7 @@ async def run_worker(
     from koinon.knowledge.bulk_queries.execution import QueryBatchExecutor
     from koinon.operations.configuration import environment_configuration
 
-    values = environment_configuration()
-    values.setdefault("pyfly", {}).setdefault("scheduling", {})["enabled"] = False
+    values = claimed_child_configuration(environment_configuration())
     app = create_application(values)
     context = app.state.context
     await context.start()

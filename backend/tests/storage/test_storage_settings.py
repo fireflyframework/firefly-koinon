@@ -17,7 +17,7 @@ from koinon.storage.settings import AttachmentStorageProfile
         {"s3_endpoint_url": "https://example.test/?key=value"},
         {"request_timeout_seconds": 0},
         {"max_object_bytes": True},
-        {"max_object_bytes": 67108865},
+        {"max_object_bytes": 268435457},
         {"root": False},
     ],
 )
@@ -53,3 +53,11 @@ def test_native_file_profiles_preserve_values_without_aliases():
     )
     profile = Config({"koinon": values}).bind(AttachmentStorageProfile)
     assert profile.root == "/retained/private" and profile.max_object_bytes == 8192
+
+
+def test_larger_shared_object_bound_preserves_separate_chat_file_limits():
+    from koinon.knowledge.attachments.settings import AttachmentSettings
+
+    profile = AttachmentStorageProfile(max_object_bytes=256 * 1024**2)
+    assert profile.max_object_bytes == 256 * 1024**2
+    assert AttachmentSettings().max_file_bytes == 20 * 1024**2

@@ -118,6 +118,9 @@ def environment_configuration() -> dict:
     )
     koinon = base.setdefault("koinon", {})
     koinon["security"] = asdict(security)
+    from koinon.communications.settings import InstallationLinks
+
+    koinon["public_url"] = InstallationLinks(public_url=string("PUBLIC_URL", "koinon.public_url")).public_url
     mcp = koinon.setdefault("mcp", {})
     mcp["enabled"] = boolean(value("MCP_ENABLED", "koinon.mcp.enabled", False), "MCP_ENABLED")
     mcp["public_url"] = string("MCP_PUBLIC_URL", "koinon.mcp.public_url")
@@ -368,7 +371,7 @@ def configure_storage(koinon, value):
                 selected = integer(selected, alias, 0, 604800)
             elif key in {"request_timeout_seconds", "max_object_bytes"}:
                 selected = integer(
-                    selected, alias, 1, 60 if key == "request_timeout_seconds" else 64 * 1024 * 1024
+                    selected, alias, 1, 60 if key == "request_timeout_seconds" else 256 * 1024 * 1024
                 )
             else:
                 selected = text(selected, alias)

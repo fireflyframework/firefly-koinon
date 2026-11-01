@@ -12,6 +12,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCES = {
+    "communications": "backend/src/koinon/communications/dtos.py",
+    "activity": "backend/src/koinon/activity/dtos.py",
     "memory": "backend/src/koinon/assistants/memory/dtos.py",
     "bulk_queries": "backend/src/koinon/knowledge/bulk_queries/dtos.py",
     "bulk": "backend/src/koinon/knowledge/bulk/dtos.py",
@@ -121,6 +123,8 @@ def render(source):
             ]
             if source.parent.name == "external_reviews" and (node.name.endswith("Input") or node.name == "ExternalReviewDecision"):
                 node.bases = [ast.Name(id="InputModel", ctx=ast.Load())]
+            if source.parent.name == "activity" and node.name == "ActivityWindow":
+                node.bases = [ast.Name(id="InputModel", ctx=ast.Load())]
             original_body = copy.deepcopy(node.body)
             node.decorator_list = []
             node.body = [
@@ -190,7 +194,8 @@ def render(source):
     names = {node.id for node in ast.walk(module) if isinstance(node, ast.Name)}
     available = {
         "collections.abc": ["Sequence"],
-        "datetime": ["datetime"],
+        "datetime": ["UTC", "datetime"],
+        "decimal": ["Decimal"],
         "typing": ["Annotated", "Literal", "Self", "cast"],
         "uuid": ["UUID"],
         "pydantic": ["AwareDatetime", "ConfigDict", "Field", "JsonValue", "RootModel", "SecretStr", "StrictBool", "StrictFloat", "StrictInt", "StrictStr", "SerializerFunctionWrapHandler", "field_validator", "model_validator", "model_serializer"],
@@ -201,6 +206,8 @@ def render(source):
     declared = {node.name for node in module.body if isinstance(node, ast.ClassDef)}
     declared.update(target.id for node in module.body if isinstance(node, ast.Assign) for target in node.targets if isinstance(target, ast.Name))
     names -= declared
+    available["koinon_sdk.activity"] = ["ActivitySummary", "ActivityWindow"]
+    available["koinon_sdk.organization_branding"] = ["BrandingValues"]
     available["koinon_sdk.evidence"] = ["ConversationIdentity", "ConversationMessage", "Frozen", "Identifier", "Revision", "SourceReference", "StoredResult"]
     available["koinon_sdk.exports"] = ["Input", "MessageSelection"]
     available["koinon_sdk.organization_knowledge"] = ["OrganizationKnowledgeSnapshot"]

@@ -10,12 +10,30 @@
     "noPropertyAccessFromIndexSignature": true,
     "noImplicitReturns": true,
     "paths": {
+      "@fireflyframework/koinon-angular/activity": ["./dist/koinon-angular/activity"],
+      "@fireflyframework/koinon-angular/activity/window": ["./dist/koinon-angular/activity/window"],
+      "@fireflyframework/koinon-angular/communications/email-preview": ["./dist/koinon-angular/communications/email-preview"],
+      "@fireflyframework/koinon-angular/communications/preferences": ["./dist/koinon-angular/communications/preferences"],
+      "@fireflyframework/koinon-angular/communications/runtime": ["./dist/koinon-angular/communications/runtime"],
+      "@fireflyframework/koinon-sdk/communications": ["../sdk/typescript/dist/communications"],
+      "@fireflyframework/koinon-sdk": ["../sdk/typescript/dist"],
+      "@fireflyframework/koinon-angular/communications/schedule": ["./dist/koinon-angular/communications/schedule"],
       "@fireflyframework/koinon-angular": ["./dist/koinon-angular"],
       "@fireflyframework/koinon-angular/workbench": ["./dist/koinon-angular/workbench"],
       "@fireflyframework/koinon-angular/chat": ["./dist/koinon-angular/chat"],
       "@fireflyframework/koinon-angular/chat/page": ["./dist/koinon-angular/chat/page"],
       "@fireflyframework/koinon-angular/chat/evidence": ["./dist/koinon-angular/chat/evidence"],
-      "@fireflyframework/koinon-angular/settings": ["./dist/koinon-angular/settings"]
+      "@fireflyframework/koinon-angular/settings": ["./dist/koinon-angular/settings"],
+      "@fireflyframework/koinon-angular/communications": ["./dist/koinon-angular/communications"],
+      "@fireflyframework/koinon-angular/communications/invitations": [
+        "./dist/koinon-angular/communications/invitations"
+      ],
+      "@fireflyframework/koinon-angular/communications/inbox": [
+        "./dist/koinon-angular/communications/inbox"
+      ],
+      "@fireflyframework/koinon-angular/communications/admin": [
+        "./dist/koinon-angular/communications/admin"
+      ]
     },
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,

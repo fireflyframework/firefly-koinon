@@ -46,6 +46,13 @@ class BulkIntakePort(ABC):
     async def inspect(self, lease: BulkLease) -> NativeObservation: ...
     @abstractmethod
     async def execute(self, lease: BulkLease, content: bytes) -> NativeCommit: ...
+    async def execute_file(self, lease: BulkLease, path) -> NativeCommit:
+        from pyfly.kernel import ConflictException
+
+        raise ConflictException(
+            "This native intake does not support file transport", code="BULK_FILE_INTAKE_REQUIRED"
+        )
+
     async def finalize_prepared(self, lease: BulkLease) -> NativeCommit:
         from pyfly.kernel import ConflictException
 

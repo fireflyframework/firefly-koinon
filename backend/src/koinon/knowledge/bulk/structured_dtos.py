@@ -22,7 +22,7 @@ class StructuredOperationIdentity(NativeValue, frozen=True):
     catalog_file_version_id: str = Field(min_length=1, max_length=64)
     filename: str = Field(min_length=1, max_length=255)
     sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
-    size_bytes: int = Field(strict=True, ge=1, le=33554432)
+    size_bytes: int = Field(strict=True, ge=1, le=134217728)
 
 
 class StructuredTablePlan(NativeValue, frozen=True):
@@ -48,7 +48,7 @@ class StructuredCommitReceipt(NativeValue, frozen=True):
     file_id: UUID
     dataset_id: UUID
     sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
-    size_bytes: int = Field(strict=True, ge=1, le=33554432)
+    size_bytes: int = Field(strict=True, ge=1, le=134217728)
     object_key: str = Field(min_length=1, max_length=2048, repr=False)
     tables: tuple[PreparedStructuredTable, ...] = Field(min_length=1, max_length=16)
 

@@ -18,6 +18,8 @@ def require_personal_permission(request: Request, permission: str) -> RequestIde
         granted = set(scopes)
         if "profile:write" in granted:
             granted.add("profile:read")
+        if "notifications:write" in granted:
+            granted.add("notifications:read")
         if permission not in granted:
             raise AccessDenied("Personal token has no profile permission", code="ACCESS_DENIED")
     return identity

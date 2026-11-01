@@ -154,6 +154,52 @@ class IntakeService:
             embedding_registry=self._embedding_registry,
         )
 
+    async def submit_file(self, *, path, original_reference, request, **arguments):
+        from koinon_storage.files import source_file
+
+        from flycanon.core.services.ingestion.file_parser import DocumentFilePolicy, parse_document_file
+
+        with source_file(path, self._settings.max_bytes):
+            pass
+        if original_reference is None:
+            operation = arguments.get("operation_id") or ""
+            if not operation or not arguments.get("tenant_id") or not arguments.get("workspace_id"):
+                raise ValueError("A scoped document operation is required for file intake")
+            operation_digest = hashlib.sha256(operation.encode()).hexdigest()
+            key = f"koinon/{arguments['tenant_id']}/{arguments['workspace_id']}/originals/{operation_digest}"
+            original_reference = await self._object_store.create_file(
+                key, path, arguments.get("content_type")
+            )
+        with source_file(path, self._settings.max_bytes) as (_, size, digest):
+            if (size, digest) != (original_reference.size_bytes, original_reference.sha256):
+                raise ValueError("Prepared document differs from its admitted original")
+        policy = DocumentFilePolicy(
+            raw_max_bytes=self._settings.max_bytes,
+            expanded_max_bytes=self._settings.file_expanded_max_bytes,
+            scratch_max_bytes=self._settings.file_scratch_max_bytes,
+            child_rss_max_bytes=self._settings.file_child_rss_max_bytes,
+            wall_seconds=self._settings.file_wall_seconds,
+            text_max_bytes=self._settings.file_text_max_bytes,
+            chunks_max=self._settings.file_chunks_max,
+        )
+        prepared = await parse_document_file(path, filename=arguments.get("filename"), policy=policy)
+        if self._lineage_pipeline is None:
+            raise RuntimeError("Queued document ingestion requires native immutable lineage")
+        if request.kind == SourceKind.unknown:
+            with contextlib.suppress(ValueError):
+                request = request.model_copy(update={"kind": SourceKind(prepared.kind)})
+        arguments.setdefault("content_type", None)
+        arguments.setdefault("correlation_id", None)
+        return await self._lineage_pipeline.run(
+            request=request,
+            content=b"",
+            original_reference=original_reference,
+            prepared_document=prepared,
+            logical_key=arguments.pop("logical_source_key"),
+            operation_id=arguments.pop("operation_id"),
+            **arguments,
+        )
+
     async def submit(
         self,
         *,

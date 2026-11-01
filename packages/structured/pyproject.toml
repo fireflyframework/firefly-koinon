@@ -19,7 +19,7 @@ dependencies = [
     "firefly-koinon-storage==26.10.1",
     # Firefly Framework runtime -- same extras canon uses so a fresh
     # `uv sync` boots the full stack.
-    "pyfly[fastapi,observability,security,data-relational,postgresql,eda,redis,client,scheduling,cli,agentic]>=26.10.27,<26.11",
+    "pyfly[fastapi,observability,security,data-relational,postgresql,eda,redis,client,scheduling,cli,agentic]>=26.10.28,<26.11",
     # GenAI metaframework -- FireflyAgent over pydantic-ai + the OpenAI
     # embeddings provider. flyquery builds its own pgvector hybrid retriever
     # and declares sqlglot directly below for its Text-to-SQL pipeline.
@@ -48,6 +48,7 @@ dependencies = [
     # DuckDB's scoped file reads require the allowed_paths security setting.
     "duckdb>=1.3.2",
     "pyarrow>=17.0",
+    "psutil>=6,<9",
 
     # sqlglot -- SQL AST parser / validator / transpiler for the
     # Text-to-SQL pipeline (query classification, example mining,
@@ -122,7 +123,7 @@ build-backend = "hatchling.build"
 [tool.uv.sources]
 firefly-koinon-storage = { path = "../storage", editable = true }
 # Pin the immutable commit associated with the official framework release tag.
-pyfly = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git", rev = "0f7971cd98f1379a53935202f72b79979ff9b791" }
+pyfly = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git", rev = "19c6c7f5b67fc2597d230353279c72a6ee983086" }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/flyquery"]

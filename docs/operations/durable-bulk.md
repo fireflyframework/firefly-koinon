@@ -27,7 +27,7 @@ koinon:
       storage_request_timeout_seconds: 10
       upload_lease_seconds: 180
       recovery_lease_seconds: 90
-      max_local_storage_operations: 8
+      max_local_storage_operations: 1
 ```
 
 Provision the private namespace and narrow runtime object permissions separately.
@@ -87,11 +87,15 @@ drains admitted SDK work; shutdown rejects new staging I/O and drains owned call
 Socket timeouts are not hard process deadlines. Budget physical overlap across
 replica maxima, overlapping revisions and the platform's shutdown grace period.
 
-The HTTP body has an admitted-size bound and a 60-second deadline. Choose upload and
+The HTTP body has an admitted-size bound and a 120-second deadline. Choose upload and
 verification leases to cover normal body/transport/verification budgets with margin.
-A 32 MiB body may have more than one in-memory copy; do not size container memory from
-one copy or assume a logical lease cancels a blocked thread. Cloud multipart or
+The raw upload spools into an owned bounded file rather than a whole-file byte array.
+Do not assume that a logical lease cancels a blocked thread or size the whole worker
+from a single parser limit. Cloud multipart or
 resumable sessions also require provider lifecycle policy.
+
+The [typed Library file profile](../reference/library-file-ingestion.md) supplies the
+128 MiB raw, 512 MiB batch and 256 MiB expansion bounds.
 
 Configure [ingestion resources](ingestion-resources.md) separately from staging and
 query execution. Object storage does not remove parser memory or local scratch.
@@ -106,7 +110,7 @@ a reviewed cutover. A cloud worker cannot silently reinterpret a legacy local ke
 transfer original bytes, their registered locator and integrity evidence explicitly.
 
 Byte reservations include uncertain, missing and late attempt objects. The published
-reservation counter remains monotone; current defaults allow 1 GiB retained staging
+reservation counter remains monotone; the installation Library profile admits at most 16 GiB of lifetime staging
 per tenant and four admitted attempts per item. There is no automatic quota credit
 or deletion workflow. Plan capacity and retention accordingly. A future append-only
 release ledger must prove actual retired staging, a provider barrier against late

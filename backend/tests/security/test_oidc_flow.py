@@ -77,7 +77,11 @@ async def test_native_authorization_pkce_state_nonce_session_rotation_and_replay
     assert result.status_code == 302
     assert exchanges == [("one-time-code", verifier)]
     assert session.id != "before-auth"
-    assert session.get_attribute("SECURITY_CONTEXT").attributes == {"iss": ISSUER, "sub": "user-1"}
+    assert session.get_attribute("SECURITY_CONTEXT").attributes == {
+        "iss": ISSUER,
+        "sub": "user-1",
+        "aud": "browser",
+    }
     assert session.get_attribute("oauth2_state") is None
     assert (await login._handle_callback(request(session, callback))).status_code == 400
     assert len(exchanges) == 1

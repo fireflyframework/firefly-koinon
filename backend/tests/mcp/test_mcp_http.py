@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from datetime import UTC, datetime, timedelta
 
-from http_fixtures import bearer
+from http_fixtures import ISSUER, bearer
 from http_fixtures import client as client
 from mcp.types import CLIENT_CAPABILITIES_META_KEY, PROTOCOL_VERSION_META_KEY
 
@@ -151,8 +151,10 @@ def test_answer_audit_keeps_unknown_provenance_and_rejects_another_user(client, 
     from pathlib import Path
 
     monkeypatch.syspath_prepend(str(Path(__file__).parents[1] / "web"))
-    seed = runpy.run_path(str(Path(__file__).parents[1] / "web" / "test_chat_sse.py"))["seed"]
-    run_id = client.portal.call(seed, client.native_app.state.context)
+    seed = runpy.run_path(str(Path(__file__).parents[1] / "web" / "chat_seed.py"))["seed"]
+    from functools import partial
+
+    run_id = client.portal.call(partial(seed, issuer=ISSUER), client.native_app.state.context)
     owner = create_pat(client, scopes=["chat:use"])["token"]
     other = create_pat(client, subject="editor", scopes=["chat:use"])["token"]
     arguments = {"tenant_id": "north", "run_id": run_id}

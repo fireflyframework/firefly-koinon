@@ -13,9 +13,11 @@ from koinon.catalog.errors import AccessDenied
 from koinon.catalog.service import CatalogService
 from koinon.corporate_identity.directory import NativeCorporateDirectory
 from koinon.corporate_identity.dtos import (
+    EntraSettings,
     IdentityProvider,
     IdentityProviderInput,
     IdentityProviderPatch,
+    KeycloakSettings,
     ProviderKind,
     ProviderStatus,
 )
@@ -55,8 +57,21 @@ class CorporateIdentityService:
         )
 
     def _configuration(self, kind, alias, settings):
+        if isinstance(settings, EntraSettings) and settings.identity_mode == "direct":
+            if (
+                kind != "entra"
+                or alias is not None
+                or self.oidc.issuer != f"https://login.microsoftonline.com/{settings.tenant_id}/v2.0"
+                or settings.client_id != self.oidc.client_id
+            ):
+                raise InvalidRequestException(
+                    "Direct Entra must match the native tenant, issuer and client",
+                    code="INVALID_IDENTITY_PROVIDER",
+                )
+            return
         if settings.kind != kind or (
-            alias is None and (kind != "keycloak" or settings.issuer != self.oidc.issuer)
+            alias is None
+            and (not isinstance(settings, KeycloakSettings) or settings.issuer != self.oidc.issuer)
         ):
             raise InvalidRequestException(
                 "The corporate connection must preserve the configured broker issuer.",

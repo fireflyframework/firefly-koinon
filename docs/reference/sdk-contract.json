@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "api_prefix": "/api/v1",
   "status": "Canonical API contract; development snapshot",
-  "canonical_operation_count": 212,
+  "canonical_operation_count": 237,
   "qualified_compatibility_operations": [
     {
       "operation": "GlossaryController.list_terms",
@@ -265,6 +265,70 @@
     }
   ],
   "operations": [
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/activity/personal",
+      "category": "canonical",
+      "operation": "ActivityController.personal",
+      "source": "backend/src/koinon/activity/controllers.py",
+      "line": 21,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ActivityWindow]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "ActivitySummary",
+      "sdk_python": "personal_activity",
+      "sdk_typescript": "activity.personal",
+      "sdk_java": "client.activity.personal",
+      "request_schema": "ActivityWindow",
+      "response_schema": "ActivitySummary",
+      "success_status": 200,
+      "source_sha256": "dd2880d95f4b0cbfd73f365c3a00347f766d6e1fe3b7afb92b92a6aedb7b3993",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/activity/administration",
+      "category": "canonical",
+      "operation": "ActivityController.administrative",
+      "source": "backend/src/koinon/activity/controllers.py",
+      "line": 27,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ActivityWindow]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "ActivitySummary",
+      "sdk_python": "administrative_activity",
+      "sdk_typescript": "activity.administrative",
+      "sdk_java": "client.activity.administrative",
+      "request_schema": "ActivityWindow",
+      "response_schema": "ActivitySummary",
+      "success_status": 200,
+      "source_sha256": "dd2880d95f4b0cbfd73f365c3a00347f766d6e1fe3b7afb92b92a6aedb7b3993",
+      "encoding": "application/json",
+      "headers": []
+    },
     {
       "method": "GET",
       "path": "/api/v1/tenants/{tenant_id}/audit",
@@ -2480,6 +2544,849 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/communications/recipient-providers",
+      "category": "canonical",
+      "operation": "CommunicationsController.providers",
+      "source": "backend/src/koinon/communications/controllers.py",
+      "line": 70,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 20
+        }
+      ],
+      "return_annotation": "RecipientProviderPage",
+      "sdk_python": "communication_providers",
+      "sdk_typescript": "communications.recipients.providers",
+      "sdk_java": "client.communications.recipientProviders",
+      "request_schema": null,
+      "response_schema": "RecipientProviderPage",
+      "success_status": 200,
+      "source_sha256": "37c98532e00effcf5272fcdfe77aec12e9b1397770c0a08f5c358ad7a072c1fd",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/communications/recipients",
+      "category": "canonical",
+      "operation": "CommunicationsController.recipients_search",
+      "source": "backend/src/koinon/communications/controllers.py",
+      "line": 87,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "q",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "provider_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "after",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "limit",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 20
+        }
+      ],
+      "return_annotation": "DirectoryRecipientPage",
+      "sdk_python": "communication_recipients",
+      "sdk_typescript": "communications.recipients.list",
+      "sdk_java": "client.communications.recipients",
+      "request_schema": null,
+      "response_schema": "DirectoryRecipientPage",
+      "success_status": 200,
+      "source_sha256": "37c98532e00effcf5272fcdfe77aec12e9b1397770c0a08f5c358ad7a072c1fd",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/invitations/email/preview",
+      "category": "canonical",
+      "operation": "CommunicationsController.preview",
+      "source": "backend/src/koinon/communications/controllers.py",
+      "line": 108,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[EmailInvitationInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "EmailPreview",
+      "sdk_python": "preview_email_invitation",
+      "sdk_typescript": "communications.emailInvitations.preview",
+      "sdk_java": "client.communications.previewInvitation",
+      "request_schema": "EmailInvitationInput",
+      "response_schema": "EmailPreview",
+      "success_status": 200,
+      "source_sha256": "37c98532e00effcf5272fcdfe77aec12e9b1397770c0a08f5c358ad7a072c1fd",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/invitations/email",
+      "category": "canonical",
+      "operation": "CommunicationsController.create",
+      "source": "backend/src/koinon/communications/controllers.py",
+      "line": 114,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[EmailInvitationInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "EmailInvitation",
+      "sdk_python": "create_email_invitation",
+      "sdk_typescript": "communications.emailInvitations.create",
+      "sdk_java": "client.communications.createInvitation",
+      "request_schema": "EmailInvitationInput",
+      "response_schema": "EmailInvitation",
+      "success_status": 201,
+      "source_sha256": "37c98532e00effcf5272fcdfe77aec12e9b1397770c0a08f5c358ad7a072c1fd",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/invitations/email",
+      "category": "canonical",
+      "operation": "CommunicationsController.page",
+      "source": "backend/src/koinon/communications/controllers.py",
+      "line": 122,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "status",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "pending"
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "EmailInvitationPage",
+      "sdk_python": "email_invitations",
+      "sdk_typescript": "communications.emailInvitations.list",
+      "sdk_java": "client.communications.invitations",
+      "request_schema": null,
+      "response_schema": "EmailInvitationPage",
+      "success_status": 200,
+      "source_sha256": "37c98532e00effcf5272fcdfe77aec12e9b1397770c0a08f5c358ad7a072c1fd",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/tenants/{tenant_id}/invitations/email/{invitation_id}",
+      "category": "canonical",
+      "operation": "CommunicationsController.revoke",
+      "source": "backend/src/koinon/communications/controllers.py",
+      "line": 141,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "invitation_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "None",
+      "sdk_python": "revoke_email_invitation",
+      "sdk_typescript": "communications.emailInvitations.revoke",
+      "sdk_java": "client.communications.revokeInvitation",
+      "request_schema": null,
+      "response_schema": "void",
+      "success_status": 204,
+      "source_sha256": "37c98532e00effcf5272fcdfe77aec12e9b1397770c0a08f5c358ad7a072c1fd",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/invitations/email/{invitation_id}/resend",
+      "category": "canonical",
+      "operation": "CommunicationsController.resend",
+      "source": "backend/src/koinon/communications/controllers.py",
+      "line": 145,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "invitation_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "EmailInvitation",
+      "sdk_python": "resend_email_invitation",
+      "sdk_typescript": "communications.emailInvitations.resend",
+      "sdk_java": "client.communications.resendInvitation",
+      "request_schema": null,
+      "response_schema": "EmailInvitation",
+      "success_status": 200,
+      "source_sha256": "37c98532e00effcf5272fcdfe77aec12e9b1397770c0a08f5c358ad7a072c1fd",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/invitations/email/{invitation_id}",
+      "category": "canonical",
+      "operation": "CommunicationsController.inspect",
+      "source": "backend/src/koinon/communications/controllers.py",
+      "line": 151,
+      "parameters": [
+        {
+          "name": "invitation_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "InvitationReview",
+      "sdk_python": "email_invitation",
+      "sdk_typescript": "communications.emailInvitations.review",
+      "sdk_java": "client.emailInvitations.review",
+      "request_schema": null,
+      "response_schema": "InvitationReview",
+      "success_status": 200,
+      "source_sha256": "37c98532e00effcf5272fcdfe77aec12e9b1397770c0a08f5c358ad7a072c1fd",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/invitations/email/{invitation_id}/accept",
+      "category": "canonical",
+      "operation": "CommunicationsController.accept",
+      "source": "backend/src/koinon/communications/controllers.py",
+      "line": 157,
+      "parameters": [
+        {
+          "name": "invitation_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "accept_email_invitation",
+      "sdk_typescript": "communications.emailInvitations.accept",
+      "sdk_java": "client.emailInvitations.accept",
+      "request_schema": null,
+      "response_schema": "Membership",
+      "success_status": 200,
+      "source_sha256": "37c98532e00effcf5272fcdfe77aec12e9b1397770c0a08f5c358ad7a072c1fd",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/invitations/email/{invitation_id}/decline",
+      "category": "canonical",
+      "operation": "CommunicationsController.decline",
+      "source": "backend/src/koinon/communications/controllers.py",
+      "line": 165,
+      "parameters": [
+        {
+          "name": "invitation_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "InvitationReview",
+      "sdk_python": "decline_email_invitation",
+      "sdk_typescript": "communications.emailInvitations.decline",
+      "sdk_java": "client.emailInvitations.decline",
+      "request_schema": null,
+      "response_schema": "InvitationReview",
+      "success_status": 200,
+      "source_sha256": "37c98532e00effcf5272fcdfe77aec12e9b1397770c0a08f5c358ad7a072c1fd",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/communications/capabilities",
+      "category": "canonical",
+      "operation": "CommunicationsController.capabilities",
+      "source": "backend/src/koinon/communications/controllers.py",
+      "line": 171,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "CommunicationCapabilities",
+      "sdk_python": "communications_capabilities",
+      "sdk_typescript": "communications.administration.capabilities",
+      "sdk_java": "client.communications.capabilities",
+      "request_schema": null,
+      "response_schema": "CommunicationCapabilities",
+      "success_status": 200,
+      "source_sha256": "37c98532e00effcf5272fcdfe77aec12e9b1397770c0a08f5c358ad7a072c1fd",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/communications/policy",
+      "category": "canonical",
+      "operation": "CommunicationsController.policy",
+      "source": "backend/src/koinon/communications/controllers.py",
+      "line": 175,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "CommunicationPolicy",
+      "sdk_python": "communications_policy",
+      "sdk_typescript": "communications.administration.policy",
+      "sdk_java": "client.communications.policy",
+      "request_schema": null,
+      "response_schema": "CommunicationPolicy",
+      "success_status": 200,
+      "source_sha256": "37c98532e00effcf5272fcdfe77aec12e9b1397770c0a08f5c358ad7a072c1fd",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/tenants/{tenant_id}/communications/policy",
+      "category": "canonical",
+      "operation": "CommunicationsController.policy_update",
+      "source": "backend/src/koinon/communications/controllers.py",
+      "line": 179,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[CommunicationPolicyInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "CommunicationPolicy",
+      "sdk_python": "update_communications_policy",
+      "sdk_typescript": "communications.administration.updatePolicy",
+      "sdk_java": "client.communications.updatePolicy",
+      "request_schema": "CommunicationPolicyInput",
+      "response_schema": "CommunicationPolicy",
+      "success_status": 200,
+      "source_sha256": "37c98532e00effcf5272fcdfe77aec12e9b1397770c0a08f5c358ad7a072c1fd",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/communications/deliveries",
+      "category": "canonical",
+      "operation": "CommunicationsController.deliveries",
+      "source": "backend/src/koinon/communications/controllers.py",
+      "line": 187,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "workspace_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "status",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "kind",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "channel",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "email"
+        },
+        {
+          "name": "created_from",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "created_to",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "DeliveryPage",
+      "sdk_python": "communication_deliveries",
+      "sdk_typescript": "communications.administration.deliveries",
+      "sdk_java": "client.communications.deliveries",
+      "request_schema": null,
+      "response_schema": "DeliveryPage",
+      "success_status": 200,
+      "source_sha256": "37c98532e00effcf5272fcdfe77aec12e9b1397770c0a08f5c358ad7a072c1fd",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/communications/deliveries/{delivery_id}",
+      "category": "canonical",
+      "operation": "CommunicationsController.delivery",
+      "source": "backend/src/koinon/communications/controllers.py",
+      "line": 214,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "delivery_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "DeliveryRecord",
+      "sdk_python": "communication_delivery",
+      "sdk_typescript": "communications.administration.delivery",
+      "sdk_java": "client.communications.delivery",
+      "request_schema": null,
+      "response_schema": "DeliveryRecord",
+      "success_status": 200,
+      "source_sha256": "37c98532e00effcf5272fcdfe77aec12e9b1397770c0a08f5c358ad7a072c1fd",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/communications/deliveries/{delivery_id}/retry",
+      "category": "canonical",
+      "operation": "CommunicationsController.retry",
+      "source": "backend/src/koinon/communications/controllers.py",
+      "line": 222,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "delivery_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "DeliveryRecord",
+      "sdk_python": "retry_communication_delivery",
+      "sdk_typescript": "communications.administration.retry",
+      "sdk_java": "client.communications.retryDelivery",
+      "request_schema": null,
+      "response_schema": "DeliveryRecord",
+      "success_status": 200,
+      "source_sha256": "37c98532e00effcf5272fcdfe77aec12e9b1397770c0a08f5c358ad7a072c1fd",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/notifications",
+      "category": "canonical",
+      "operation": "NotificationController.page",
+      "source": "backend/src/koinon/communications/controllers.py",
+      "line": 237,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "kind",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "read",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": false,
+          "default": "all"
+        },
+        {
+          "name": "page",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "page_size",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "OwnNotificationPage",
+      "sdk_python": "notifications",
+      "sdk_typescript": "communications.notifications.list",
+      "sdk_java": "client.notifications.list",
+      "request_schema": null,
+      "response_schema": "OwnNotificationPage",
+      "success_status": 200,
+      "source_sha256": "37c98532e00effcf5272fcdfe77aec12e9b1397770c0a08f5c358ad7a072c1fd",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/notifications/unread-count",
+      "category": "canonical",
+      "operation": "NotificationController.unread_count",
+      "source": "backend/src/koinon/communications/controllers.py",
+      "line": 256,
+      "parameters": [],
+      "return_annotation": "NotificationUnreadCount",
+      "sdk_python": "notification_unread_count",
+      "sdk_typescript": "communications.notifications.unreadCount",
+      "sdk_java": "client.notifications.unreadCount",
+      "request_schema": null,
+      "response_schema": "NotificationUnreadCount",
+      "success_status": 200,
+      "source_sha256": "37c98532e00effcf5272fcdfe77aec12e9b1397770c0a08f5c358ad7a072c1fd",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/notifications/{notification_id}/read",
+      "category": "canonical",
+      "operation": "NotificationController.read",
+      "source": "backend/src/koinon/communications/controllers.py",
+      "line": 262,
+      "parameters": [
+        {
+          "name": "notification_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "OwnNotification",
+      "sdk_python": "read_notification",
+      "sdk_typescript": "communications.notifications.markRead",
+      "sdk_java": "client.notifications.markRead",
+      "request_schema": null,
+      "response_schema": "OwnNotification",
+      "success_status": 200,
+      "source_sha256": "37c98532e00effcf5272fcdfe77aec12e9b1397770c0a08f5c358ad7a072c1fd",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/notifications/preferences",
+      "category": "canonical",
+      "operation": "NotificationController.preferences",
+      "source": "backend/src/koinon/communications/controllers.py",
+      "line": 268,
+      "parameters": [],
+      "return_annotation": "NotificationPreferences",
+      "sdk_python": "notification_preferences",
+      "sdk_typescript": "communications.notifications.preferences",
+      "sdk_java": "client.notifications.preferences",
+      "request_schema": null,
+      "response_schema": "NotificationPreferences",
+      "success_status": 200,
+      "source_sha256": "37c98532e00effcf5272fcdfe77aec12e9b1397770c0a08f5c358ad7a072c1fd",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/notifications/preferences",
+      "category": "canonical",
+      "operation": "NotificationController.preferences_update",
+      "source": "backend/src/koinon/communications/controllers.py",
+      "line": 274,
+      "parameters": [
+        {
+          "name": "body",
+          "annotation": "Valid[Body[NotificationPreferencesInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "NotificationPreferences",
+      "sdk_python": "update_notification_preferences",
+      "sdk_typescript": "communications.notifications.updatePreferences",
+      "sdk_java": "client.notifications.updatePreferences",
+      "request_schema": "NotificationPreferencesInput",
+      "response_schema": "NotificationPreferences",
+      "success_status": 200,
+      "source_sha256": "37c98532e00effcf5272fcdfe77aec12e9b1397770c0a08f5c358ad7a072c1fd",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/notifications/preferences/preview",
+      "category": "canonical",
+      "operation": "NotificationController.preferences_preview",
+      "source": "backend/src/koinon/communications/controllers.py",
+      "line": 282,
+      "parameters": [
+        {
+          "name": "body",
+          "annotation": "Valid[Body[NotificationPreferencesInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "DigestSchedulePreview",
+      "sdk_python": "preview_notification_schedule",
+      "sdk_typescript": "communications.notifications.previewPreferences",
+      "sdk_java": "client.notifications.previewSchedule",
+      "request_schema": "NotificationPreferencesInput",
+      "response_schema": "DigestSchedulePreview",
+      "success_status": 200,
+      "source_sha256": "37c98532e00effcf5272fcdfe77aec12e9b1397770c0a08f5c358ad7a072c1fd",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/notifications/preferences/email-preview",
+      "category": "canonical",
+      "operation": "NotificationController.email_preview",
+      "source": "backend/src/koinon/communications/controllers.py",
+      "line": 290,
+      "parameters": [
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ActivityEmailPreviewInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "EmailPreview",
+      "sdk_python": "preview_activity_email",
+      "sdk_typescript": "communications.notifications.previewEmail",
+      "sdk_java": "client.notifications.previewEmail",
+      "request_schema": "ActivityEmailPreviewInput",
+      "response_schema": "EmailPreview",
+      "success_status": 200,
+      "source_sha256": "37c98532e00effcf5272fcdfe77aec12e9b1397770c0a08f5c358ad7a072c1fd",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/tenants/{tenant_id}/identity/providers",
       "category": "canonical",
       "operation": "CorporateIdentityController.list",
@@ -3895,7 +4802,7 @@
       "category": "canonical",
       "operation": "FileBatchController.capabilities",
       "source": "backend/src/koinon/knowledge/bulk/controllers.py",
-      "line": 46,
+      "line": 50,
       "parameters": [
         {
           "name": "tenant_id",
@@ -3917,7 +4824,7 @@
       "request_schema": null,
       "response_schema": "FileBatchCapabilities",
       "success_status": 200,
-      "source_sha256": "4e89486a2f18d28080c9a93446853cb737399c761bdbcf3fcaa995e22be851d1",
+      "source_sha256": "54f5459584a35c2a907fee35d64ab4f9683bff0773d688010e2efdb87ad96be6",
       "encoding": "application/json",
       "headers": []
     },
@@ -3927,7 +4834,7 @@
       "category": "canonical",
       "operation": "FileBatchController.create",
       "source": "backend/src/koinon/knowledge/bulk/controllers.py",
-      "line": 52,
+      "line": 56,
       "parameters": [
         {
           "name": "tenant_id",
@@ -3949,7 +4856,7 @@
       "request_schema": "FileBatchCreate",
       "response_schema": "FileBatchView",
       "success_status": 201,
-      "source_sha256": "4e89486a2f18d28080c9a93446853cb737399c761bdbcf3fcaa995e22be851d1",
+      "source_sha256": "54f5459584a35c2a907fee35d64ab4f9683bff0773d688010e2efdb87ad96be6",
       "encoding": "application/json",
       "headers": [
         "Idempotency-Key (required; caller-supplied stable operation key)"
@@ -3961,7 +4868,7 @@
       "category": "canonical",
       "operation": "FileBatchController.list",
       "source": "backend/src/koinon/knowledge/bulk/controllers.py",
-      "line": 60,
+      "line": 64,
       "parameters": [
         {
           "name": "tenant_id",
@@ -3991,7 +4898,7 @@
       "request_schema": null,
       "response_schema": "FileBatchPage",
       "success_status": 200,
-      "source_sha256": "4e89486a2f18d28080c9a93446853cb737399c761bdbcf3fcaa995e22be851d1",
+      "source_sha256": "54f5459584a35c2a907fee35d64ab4f9683bff0773d688010e2efdb87ad96be6",
       "encoding": "application/json",
       "headers": []
     },
@@ -4001,7 +4908,7 @@
       "category": "canonical",
       "operation": "FileBatchController.get",
       "source": "backend/src/koinon/knowledge/bulk/controllers.py",
-      "line": 72,
+      "line": 76,
       "parameters": [
         {
           "name": "tenant_id",
@@ -4023,7 +4930,7 @@
       "request_schema": null,
       "response_schema": "FileBatchView",
       "success_status": 200,
-      "source_sha256": "4e89486a2f18d28080c9a93446853cb737399c761bdbcf3fcaa995e22be851d1",
+      "source_sha256": "54f5459584a35c2a907fee35d64ab4f9683bff0773d688010e2efdb87ad96be6",
       "encoding": "application/json",
       "headers": []
     },
@@ -4033,7 +4940,7 @@
       "category": "canonical",
       "operation": "FileBatchController.items",
       "source": "backend/src/koinon/knowledge/bulk/controllers.py",
-      "line": 76,
+      "line": 80,
       "parameters": [
         {
           "name": "tenant_id",
@@ -4069,7 +4976,7 @@
       "request_schema": null,
       "response_schema": "FileItemPage",
       "success_status": 200,
-      "source_sha256": "4e89486a2f18d28080c9a93446853cb737399c761bdbcf3fcaa995e22be851d1",
+      "source_sha256": "54f5459584a35c2a907fee35d64ab4f9683bff0773d688010e2efdb87ad96be6",
       "encoding": "application/json",
       "headers": []
     },
@@ -4079,7 +4986,7 @@
       "category": "canonical",
       "operation": "FileBatchController.content",
       "source": "backend/src/koinon/knowledge/bulk/controllers.py",
-      "line": 89,
+      "line": 93,
       "parameters": [
         {
           "name": "tenant_id",
@@ -4107,7 +5014,7 @@
       "request_schema": "BulkFileUpload",
       "response_schema": "StagedFileReceipt",
       "success_status": 200,
-      "source_sha256": "4e89486a2f18d28080c9a93446853cb737399c761bdbcf3fcaa995e22be851d1",
+      "source_sha256": "54f5459584a35c2a907fee35d64ab4f9683bff0773d688010e2efdb87ad96be6",
       "encoding": "application/octet-stream",
       "headers": [
         "Idempotency-Key (required; caller-supplied stable operation key)"
@@ -4119,7 +5026,7 @@
       "category": "canonical",
       "operation": "FileBatchController.receipt",
       "source": "backend/src/koinon/knowledge/bulk/controllers.py",
-      "line": 123,
+      "line": 132,
       "parameters": [
         {
           "name": "tenant_id",
@@ -4147,7 +5054,7 @@
       "request_schema": null,
       "response_schema": "StagedFileReceipt",
       "success_status": 200,
-      "source_sha256": "4e89486a2f18d28080c9a93446853cb737399c761bdbcf3fcaa995e22be851d1",
+      "source_sha256": "54f5459584a35c2a907fee35d64ab4f9683bff0773d688010e2efdb87ad96be6",
       "encoding": "application/json",
       "headers": []
     },
@@ -4157,7 +5064,7 @@
       "category": "canonical",
       "operation": "FileBatchController.submit",
       "source": "backend/src/koinon/knowledge/bulk/controllers.py",
-      "line": 129,
+      "line": 138,
       "parameters": [
         {
           "name": "tenant_id",
@@ -4185,7 +5092,7 @@
       "request_schema": "BulkAction",
       "response_schema": "FileBatchView",
       "success_status": 202,
-      "source_sha256": "4e89486a2f18d28080c9a93446853cb737399c761bdbcf3fcaa995e22be851d1",
+      "source_sha256": "54f5459584a35c2a907fee35d64ab4f9683bff0773d688010e2efdb87ad96be6",
       "encoding": "application/json",
       "headers": [
         "Idempotency-Key (required; caller-supplied stable operation key)"
@@ -4197,7 +5104,7 @@
       "category": "canonical",
       "operation": "FileBatchController.cancel",
       "source": "backend/src/koinon/knowledge/bulk/controllers.py",
-      "line": 137,
+      "line": 146,
       "parameters": [
         {
           "name": "tenant_id",
@@ -4225,7 +5132,7 @@
       "request_schema": "BulkAction",
       "response_schema": "FileBatchView",
       "success_status": 200,
-      "source_sha256": "4e89486a2f18d28080c9a93446853cb737399c761bdbcf3fcaa995e22be851d1",
+      "source_sha256": "54f5459584a35c2a907fee35d64ab4f9683bff0773d688010e2efdb87ad96be6",
       "encoding": "application/json",
       "headers": [
         "Idempotency-Key (required; caller-supplied stable operation key)"
@@ -4237,7 +5144,7 @@
       "category": "canonical",
       "operation": "FileBatchController.reconcile",
       "source": "backend/src/koinon/knowledge/bulk/controllers.py",
-      "line": 145,
+      "line": 154,
       "parameters": [
         {
           "name": "tenant_id",
@@ -4271,7 +5178,7 @@
       "request_schema": "BulkAction",
       "response_schema": "FileBatchView",
       "success_status": 200,
-      "source_sha256": "4e89486a2f18d28080c9a93446853cb737399c761bdbcf3fcaa995e22be851d1",
+      "source_sha256": "54f5459584a35c2a907fee35d64ab4f9683bff0773d688010e2efdb87ad96be6",
       "encoding": "application/json",
       "headers": [
         "Idempotency-Key (required; caller-supplied stable operation key)"
@@ -4283,7 +5190,7 @@
       "category": "canonical",
       "operation": "FileBatchController.recover_original",
       "source": "backend/src/koinon/knowledge/bulk/controllers.py",
-      "line": 158,
+      "line": 167,
       "parameters": [
         {
           "name": "tenant_id",
@@ -4317,7 +5224,7 @@
       "request_schema": "BulkAction",
       "response_schema": "FileBatchView",
       "success_status": 200,
-      "source_sha256": "4e89486a2f18d28080c9a93446853cb737399c761bdbcf3fcaa995e22be851d1",
+      "source_sha256": "54f5459584a35c2a907fee35d64ab4f9683bff0773d688010e2efdb87ad96be6",
       "encoding": "application/json",
       "headers": [
         "Idempotency-Key (required; caller-supplied stable operation key)"
@@ -4843,7 +5750,7 @@
       "category": "canonical",
       "operation": "KnowledgeController.upload",
       "source": "backend/src/koinon/knowledge/controllers.py",
-      "line": 32,
+      "line": 33,
       "parameters": [
         {
           "name": "tenant_id",
@@ -4859,7 +5766,7 @@
       "request_schema": "SourceUpload",
       "response_schema": "UploadResponse",
       "success_status": 201,
-      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
+      "source_sha256": "d4e95cff899792374da72d0588f29aabd63efe0c9be58dff2d274576093057ff",
       "encoding": "multipart/form-data",
       "headers": []
     },
@@ -4869,7 +5776,7 @@
       "category": "canonical",
       "operation": "KnowledgeController.search",
       "source": "backend/src/koinon/knowledge/controllers.py",
-      "line": 81,
+      "line": 82,
       "parameters": [
         {
           "name": "tenant_id",
@@ -4891,7 +5798,7 @@
       "request_schema": "SearchRequest",
       "response_schema": "SearchResponse",
       "success_status": 200,
-      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
+      "source_sha256": "d4e95cff899792374da72d0588f29aabd63efe0c9be58dff2d274576093057ff",
       "encoding": "application/json",
       "headers": []
     },
@@ -4901,7 +5808,7 @@
       "category": "canonical",
       "operation": "KnowledgeController.query",
       "source": "backend/src/koinon/knowledge/controllers.py",
-      "line": 87,
+      "line": 88,
       "parameters": [
         {
           "name": "tenant_id",
@@ -4923,7 +5830,7 @@
       "request_schema": "QueryRequest",
       "response_schema": "QueryResponse",
       "success_status": 200,
-      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
+      "source_sha256": "d4e95cff899792374da72d0588f29aabd63efe0c9be58dff2d274576093057ff",
       "encoding": "application/json",
       "headers": []
     },
@@ -4933,7 +5840,7 @@
       "category": "canonical",
       "operation": "KnowledgeController.schema",
       "source": "backend/src/koinon/knowledge/controllers.py",
-      "line": 95,
+      "line": 96,
       "parameters": [
         {
           "name": "tenant_id",
@@ -4955,7 +5862,7 @@
       "request_schema": null,
       "response_schema": "DatasetSchema",
       "success_status": 200,
-      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
+      "source_sha256": "d4e95cff899792374da72d0588f29aabd63efe0c9be58dff2d274576093057ff",
       "encoding": "application/json",
       "headers": []
     },
@@ -4965,7 +5872,7 @@
       "category": "canonical",
       "operation": "KnowledgeController.lineage",
       "source": "backend/src/koinon/knowledge/controllers.py",
-      "line": 99,
+      "line": 100,
       "parameters": [
         {
           "name": "tenant_id",
@@ -4988,7 +5895,7 @@
       "request_schema": null,
       "response_schema": "Lineage",
       "success_status": 200,
-      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
+      "source_sha256": "d4e95cff899792374da72d0588f29aabd63efe0c9be58dff2d274576093057ff",
       "encoding": "application/json",
       "headers": []
     },
@@ -4998,7 +5905,7 @@
       "category": "canonical",
       "operation": "KnowledgeController.document_chunks",
       "source": "backend/src/koinon/knowledge/controllers.py",
-      "line": 105,
+      "line": 106,
       "parameters": [
         {
           "name": "tenant_id",
@@ -5055,7 +5962,7 @@
       "request_schema": null,
       "response_schema": "DocumentChunks",
       "success_status": 200,
-      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
+      "source_sha256": "d4e95cff899792374da72d0588f29aabd63efe0c9be58dff2d274576093057ff",
       "encoding": "application/json",
       "headers": []
     },
@@ -5065,7 +5972,7 @@
       "category": "canonical",
       "operation": "KnowledgeController.document_original",
       "source": "backend/src/koinon/knowledge/controllers.py",
-      "line": 128,
+      "line": 129,
       "parameters": [
         {
           "name": "tenant_id",
@@ -5087,7 +5994,7 @@
       "request_schema": null,
       "response_schema": "BinaryDownload",
       "success_status": 200,
-      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
+      "source_sha256": "d4e95cff899792374da72d0588f29aabd63efe0c9be58dff2d274576093057ff",
       "encoding": "binary",
       "headers": []
     },
@@ -5097,7 +6004,7 @@
       "category": "canonical",
       "operation": "ContentController.reingest_document",
       "source": "backend/src/koinon/knowledge/controllers.py",
-      "line": 188,
+      "line": 183,
       "parameters": [
         {
           "name": "tenant_id",
@@ -5125,7 +6032,7 @@
       "request_schema": "DocumentReingestInput",
       "response_schema": "ContentUpdate",
       "success_status": 201,
-      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
+      "source_sha256": "d4e95cff899792374da72d0588f29aabd63efe0c9be58dff2d274576093057ff",
       "encoding": "application/json",
       "headers": [
         "If-Match (unquoted digest/snapshot helper argument; quoted wire header)",
@@ -5139,7 +6046,7 @@
       "category": "canonical",
       "operation": "ContentController.reingest_table",
       "source": "backend/src/koinon/knowledge/controllers.py",
-      "line": 210,
+      "line": 205,
       "parameters": [
         {
           "name": "tenant_id",
@@ -5173,7 +6080,7 @@
       "request_schema": "TableReingestInput",
       "response_schema": "ContentUpdate",
       "success_status": 201,
-      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
+      "source_sha256": "d4e95cff899792374da72d0588f29aabd63efe0c9be58dff2d274576093057ff",
       "encoding": "application/json",
       "headers": [
         "If-Match (unquoted digest/snapshot helper argument; quoted wire header)"
@@ -5185,7 +6092,7 @@
       "category": "canonical",
       "operation": "ContentController.document",
       "source": "backend/src/koinon/knowledge/controllers.py",
-      "line": 227,
+      "line": 222,
       "parameters": [
         {
           "name": "tenant_id",
@@ -5207,7 +6114,7 @@
       "request_schema": "DocumentReplacement",
       "response_schema": "ContentUpdate",
       "success_status": 201,
-      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
+      "source_sha256": "d4e95cff899792374da72d0588f29aabd63efe0c9be58dff2d274576093057ff",
       "encoding": "multipart/form-data",
       "headers": [
         "If-Match (unquoted digest/snapshot helper argument; quoted wire header)",
@@ -5221,7 +6128,7 @@
       "category": "canonical",
       "operation": "ContentController.table",
       "source": "backend/src/koinon/knowledge/controllers.py",
-      "line": 253,
+      "line": 248,
       "parameters": [
         {
           "name": "tenant_id",
@@ -5249,7 +6156,7 @@
       "request_schema": "TableReplacement",
       "response_schema": "ContentUpdate",
       "success_status": 201,
-      "source_sha256": "8e0660909b8fb145525eaf01d91df404108c839e5e70613d5bd48e45a24a6790",
+      "source_sha256": "d4e95cff899792374da72d0588f29aabd63efe0c9be58dff2d274576093057ff",
       "encoding": "multipart/form-data",
       "headers": [
         "If-Match (unquoted digest/snapshot helper argument; quoted wire header)"
@@ -5579,7 +6486,7 @@
       "category": "canonical",
       "operation": "DocumentHistoryController.versions",
       "source": "backend/src/koinon/knowledge/document_history/controllers.py",
-      "line": 28,
+      "line": 30,
       "parameters": [
         {
           "name": "tenant_id",
@@ -5615,7 +6522,7 @@
       "request_schema": null,
       "response_schema": "DocumentVersionPage",
       "success_status": 200,
-      "source_sha256": "383a9d953d2dfb15c6330943bd3ab2e4d0fde956147a89bab3c41f10431db7d2",
+      "source_sha256": "490c6711727b1888c39d377a4b8264f8e4e297bcdb9899b4d6bee8c7cb87a4aa",
       "encoding": "application/json",
       "headers": []
     },
@@ -5625,7 +6532,7 @@
       "category": "canonical",
       "operation": "DocumentHistoryController.version",
       "source": "backend/src/koinon/knowledge/document_history/controllers.py",
-      "line": 45,
+      "line": 47,
       "parameters": [
         {
           "name": "tenant_id",
@@ -5653,7 +6560,7 @@
       "request_schema": null,
       "response_schema": "DocumentVersion",
       "success_status": 200,
-      "source_sha256": "383a9d953d2dfb15c6330943bd3ab2e4d0fde956147a89bab3c41f10431db7d2",
+      "source_sha256": "490c6711727b1888c39d377a4b8264f8e4e297bcdb9899b4d6bee8c7cb87a4aa",
       "encoding": "application/json",
       "headers": []
     },
@@ -5663,7 +6570,7 @@
       "category": "canonical",
       "operation": "DocumentHistoryController.extractions",
       "source": "backend/src/koinon/knowledge/document_history/controllers.py",
-      "line": 60,
+      "line": 62,
       "parameters": [
         {
           "name": "tenant_id",
@@ -5705,7 +6612,7 @@
       "request_schema": null,
       "response_schema": "DocumentExtractionPage",
       "success_status": 200,
-      "source_sha256": "383a9d953d2dfb15c6330943bd3ab2e4d0fde956147a89bab3c41f10431db7d2",
+      "source_sha256": "490c6711727b1888c39d377a4b8264f8e4e297bcdb9899b4d6bee8c7cb87a4aa",
       "encoding": "application/json",
       "headers": []
     },
@@ -5715,7 +6622,7 @@
       "category": "canonical",
       "operation": "DocumentHistoryController.parts",
       "source": "backend/src/koinon/knowledge/document_history/controllers.py",
-      "line": 79,
+      "line": 81,
       "parameters": [
         {
           "name": "tenant_id",
@@ -5770,7 +6677,7 @@
       "request_schema": null,
       "response_schema": "DocumentPartPage",
       "success_status": 200,
-      "source_sha256": "383a9d953d2dfb15c6330943bd3ab2e4d0fde956147a89bab3c41f10431db7d2",
+      "source_sha256": "490c6711727b1888c39d377a4b8264f8e4e297bcdb9899b4d6bee8c7cb87a4aa",
       "encoding": "application/json",
       "headers": []
     },
@@ -5780,7 +6687,7 @@
       "category": "canonical",
       "operation": "DocumentHistoryController.part",
       "source": "backend/src/koinon/knowledge/document_history/controllers.py",
-      "line": 102,
+      "line": 104,
       "parameters": [
         {
           "name": "tenant_id",
@@ -5820,7 +6727,7 @@
       "request_schema": null,
       "response_schema": "DocumentPartContent",
       "success_status": 200,
-      "source_sha256": "383a9d953d2dfb15c6330943bd3ab2e4d0fde956147a89bab3c41f10431db7d2",
+      "source_sha256": "490c6711727b1888c39d377a4b8264f8e4e297bcdb9899b4d6bee8c7cb87a4aa",
       "encoding": "application/json",
       "headers": []
     },
@@ -5830,7 +6737,7 @@
       "category": "canonical",
       "operation": "DocumentHistoryController.original",
       "source": "backend/src/koinon/knowledge/document_history/controllers.py",
-      "line": 121,
+      "line": 123,
       "parameters": [
         {
           "name": "tenant_id",
@@ -5858,7 +6765,7 @@
       "request_schema": null,
       "response_schema": "BinaryDownload",
       "success_status": 200,
-      "source_sha256": "383a9d953d2dfb15c6330943bd3ab2e4d0fde956147a89bab3c41f10431db7d2",
+      "source_sha256": "490c6711727b1888c39d377a4b8264f8e4e297bcdb9899b4d6bee8c7cb87a4aa",
       "encoding": "binary",
       "headers": []
     },

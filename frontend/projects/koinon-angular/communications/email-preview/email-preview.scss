@@ -1,0 +1,143 @@
+/* Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 */
+:host {
+  display: block;
+  min-width: 0;
+}
+section {
+  border: 1px solid var(--ui-line);
+  border-radius: 12px;
+  max-width: 650px;
+  overflow: hidden;
+}
+.preview-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 22px;
+  background: var(--ui-subtle);
+}
+.preview-label h3 {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  font-weight: 500;
+}
+dl {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr);
+  gap: 12px;
+  padding: 20px 22px;
+  margin: 0;
+  border-bottom: 1px solid var(--ui-line);
+  font-size: 12px;
+  line-height: 1.7;
+}
+dt {
+  color: var(--ui-muted);
+}
+dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.email-body {
+  padding: 28px;
+  background: var(--koinon-brand-surface);
+  color: var(--koinon-brand-text);
+  font-family: var(--ffk-font, 'Manrope', sans-serif);
+}
+.email-brand {
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  color: var(--koinon-brand-accent);
+}
+.email-logo {
+  display: block;
+  max-width: 200px;
+  max-height: 48px;
+  object-fit: contain;
+}
+.email-body h3 {
+  font-size: 20px;
+  line-height: 1.5;
+  font-weight: 500;
+  margin: 24px 0 14px;
+}
+p {
+  font-size: 13px;
+  line-height: 1.8;
+  max-width: 68ch;
+  overflow-wrap: anywhere;
+}
+.email-action {
+  display: inline-block;
+  margin: 12px 0;
+  padding: 11px 18px;
+  border-radius: 8px;
+  background: var(--koinon-brand-action);
+  color: var(--koinon-brand-action_text);
+  font-size: 13px;
+  font-weight: 600;
+}
+.email-footer {
+  margin: 24px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--koinon-brand-line);
+  color: var(--koinon-brand-muted);
+  font-size: 11px;
+}
+@media (max-width: 600px) {
+  .email-body {
+    padding: 22px 18px;
+  }
+  .preview-label,
+  dl {
+    padding-inline: 18px;
+  }
+}
+
+.preview-tabs {
+  display: flex;
+  gap: 20px;
+  border-bottom: 1px solid var(--ui-line);
+  margin-bottom: 16px;
+}
+.preview-tabs button {
+  background: transparent;
+  color: var(--ui-muted);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 12px 0;
+  min-height: 44px;
+  font: 500 12px var(--ffk-font);
+  cursor: pointer;
+}
+.preview-tabs button[aria-current] {
+  border-bottom-color: var(--ui-accent);
+  color: var(--ui-text);
+}
+.preview-tabs button:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 3px;
+}
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  border: 1px solid var(--ui-line);
+  border-radius: 8px;
+  padding: 20px;
+  font: 400 13px/1.8 var(--ffk-font);
+}
+
+.preview-tabs {
+  margin-inline: 22px;
+}
+ffk-rendered-email {
+  margin: 0 22px 22px;
+}
+pre {
+  margin: 16px 22px 22px;
+}

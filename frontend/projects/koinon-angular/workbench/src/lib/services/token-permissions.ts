@@ -15,6 +15,7 @@ const resourceScopes = new Set([
   'shares:read',
   'shares:write',
   'evidence:read',
+  'activity:read',
 ]);
 export function tokenScopeGroup(id: string): TokenScopeGroup {
   if (id === 'profile:read' || id === 'profile:write') return 'profile';

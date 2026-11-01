@@ -13,7 +13,8 @@ public enum McpOAuthScope {
     KNOWLEDGE_SEARCH("knowledge:search"),
     QUERY_EXECUTE("query:execute"),
     CHAT_USE("chat:use"),
-    EVIDENCE_READ("evidence:read");
+    EVIDENCE_READ("evidence:read"),
+    ACTIVITY_READ("activity:read");
     private final String value;
     McpOAuthScope(String value){this.value=value;}
     @JsonValue public String value(){return value;}

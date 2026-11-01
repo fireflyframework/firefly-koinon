@@ -2,12 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 """Durable raw admission and exact, scoped immutable document reads."""
 
+import json
+import tempfile
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from hashlib import sha256
+from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from koinon_storage.files import StoredObjectReference
 from pyfly.container import service
 from pyfly.kernel import (
     ConflictException,
@@ -23,6 +27,7 @@ from flycanon.core.services.sources.lineage.dtos import (
     Admission,
     DocumentScope,
     LineagePage,
+    OriginalFileReceipt,
     VerifiedOriginal,
 )
 from flycanon.core.services.sources.lineage.ports import LineagePersistence, LineageQuery, LineageRecord
@@ -68,6 +73,7 @@ class DocumentLineage:
         source_id: str | None = None,
         expected_source_version_id: str | None = None,
         expected_extraction_id: str | None = None,
+        original_reference: StoredObjectReference | None = None,
     ) -> Admission:
         for attempt in range(2):
             try:
@@ -81,6 +87,7 @@ class DocumentLineage:
                     source_id=source_id,
                     expected_source_version_id=expected_source_version_id,
                     expected_extraction_id=expected_extraction_id,
+                    original_reference=original_reference,
                 )
             except DataIntegrityException as error:
                 if attempt:
@@ -111,6 +118,7 @@ class DocumentLineage:
         source_id: str | None = None,
         expected_source_version_id: str | None = None,
         expected_extraction_id: str | None = None,
+        original_reference: StoredObjectReference | None = None,
     ) -> Admission:
         if (
             not all((scope.tenant_id, scope.workspace_id, scope.actor, logical_key, operation_id))
@@ -119,7 +127,8 @@ class DocumentLineage:
             raise InvalidRequestException(
                 "A scoped logical source and operation are required", code="DOCUMENT_ADMISSION_REQUIRED"
             )
-        digest = sha256(content).hexdigest()
+        digest = original_reference.sha256 if original_reference is not None else sha256(content).hexdigest()
+        content_size = original_reference.size_bytes if original_reference is not None else len(content)
         async with self.repository.write() as session:
             previous = await session.first(
                 LineageQuery("version", scope, equal={"operation_id": operation_id})
@@ -136,7 +145,7 @@ class DocumentLineage:
                 if (
                     previous["logical_key"] != logical_key
                     or artifact["sha256"] != digest
-                    or artifact["bytes"] != len(content)
+                    or artifact["bytes"] != content_size
                     or previous["filename"] != filename
                     or previous["media_type"] != media_type
                     or (source_id is not None and previous["source_id"] != source_id)
@@ -178,7 +187,7 @@ class DocumentLineage:
                             if completed
                             else "DOCUMENT_VERSION_CONFLICT",
                         )
-                await self._verified(artifact, len(content))
+                await self._verified(artifact, content_size, read_content=False)
                 return self._admission(previous, artifact)
             head = await session.first(
                 LineageQuery("head", scope, lock="update", equal={"logical_key": logical_key})
@@ -220,19 +229,30 @@ class DocumentLineage:
                     )
                 await session.insert("head", dict(**identity(scope, identifier), logical_key=logical_key))
             artifact_id, version_id = str(uuid4()), str(uuid4())
-            key = f"koinon/{scope.tenant_id}/{scope.workspace_id}/document-lineage/{identifier}/{artifact_id}"
+            key = (
+                original_reference.key
+                if original_reference is not None
+                else (
+                    f"koinon/{scope.tenant_id}/{scope.workspace_id}/document-lineage/"
+                    f"{identifier}/{artifact_id}"
+                )
+            )
             artifact = {
                 "id": artifact_id,
                 **identity(scope, identifier),
                 "role": "raw",
                 "sha256": digest,
-                "bytes": len(content),
+                "bytes": content_size,
                 "media_type": media_type,
                 "object_key": key,
+                "object_reference_json": original_reference.to_dict()
+                if original_reference is not None
+                else None,
             }
             try:
-                await self.store.put(key, content, media_type)
-                await self._verified(artifact, len(content))
+                if original_reference is None:
+                    await self.store.put(key, content, media_type)
+                await self._verified(artifact, content_size, read_content=False)
             except Exception as error:
                 raise ServiceUnavailableException(
                     "Durable original storage is required before processing",
@@ -279,7 +299,22 @@ class DocumentLineage:
     def _admission(version, artifact):
         return to_admission(version, artifact)
 
-    async def _verified(self, artifact, max_bytes):
+    async def _verified(self, artifact, max_bytes, *, read_content=True):
+        captured = artifact.get("object_reference_json")
+        if captured is not None:
+            reference = StoredObjectReference.from_dict(captured)
+            if (reference.key, reference.size_bytes, reference.sha256) != (
+                artifact["object_key"],
+                artifact["bytes"],
+                artifact["sha256"],
+            ):
+                raise ServiceUnavailableException(
+                    "Document original receipt differs", code="DOCUMENT_ORIGINAL_UNAVAILABLE"
+                )
+            with tempfile.TemporaryDirectory(prefix="koinon-original-") as directory:
+                path = Path(directory) / "original"
+                await self.store.download_file(reference, path, max_bytes=max_bytes)
+                return path.read_bytes() if read_content else None
         try:
             data = await self.store.get_bounded(artifact["object_key"], max_bytes)
         except FileNotFoundError as error:
@@ -292,9 +327,11 @@ class DocumentLineage:
             )
         return data
 
-    async def original(
-        self, scope: DocumentScope, source_id: str, version_id: str, *, max_bytes: int
-    ) -> VerifiedOriginal:
+    async def verify_original(self, scope, source_id, version_id, *, max_bytes):
+        _, artifact = await self._original_record(scope, source_id, version_id)
+        await self._verified(artifact, max_bytes, read_content=False)
+
+    async def _original_record(self, scope, source_id, version_id):
         async with self.repository.read() as session:
             version = await session.first(
                 LineageQuery("version", scope, source_id=source_id, equal={"id": version_id})
@@ -306,7 +343,72 @@ class DocumentLineage:
             artifact = await session.one(
                 LineageQuery("artifact", scope, source_id=source_id, equal={"id": version["artifact_id"]})
             )
+        return version, artifact
+
+    @staticmethod
+    def _original_file_receipt(version, artifact):
+        anchor = sha256(
+            json.dumps(
+                {
+                    "version": version["id"],
+                    "key": artifact["object_key"],
+                    "sha256": artifact["sha256"],
+                    "bytes": artifact["bytes"],
+                    "reference": artifact.get("object_reference_json"),
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode()
+        ).hexdigest()
+        return OriginalFileReceipt(
+            version["id"],
+            artifact["sha256"],
+            artifact["bytes"],
+            version["filename"],
+            version["media_type"],
+            anchor,
+        )
+
+    async def original_receipt(self, scope, source_id, version_id):
+        version, artifact = await self._original_record(scope, source_id, version_id)
+        return self._original_file_receipt(version, artifact)
+
+    async def copy_original(self, scope, source_id, version_id, path, *, max_bytes):
+        version, artifact = await self._original_record(scope, source_id, version_id)
+        receipt = self._original_file_receipt(version, artifact)
+        if artifact["bytes"] > max_bytes:
+            raise ValueError("Original exceeds its verified file download limit")
+        captured = artifact.get("object_reference_json")
+        if captured is not None:
+            reference = StoredObjectReference.from_dict(captured)
+            if (reference.key, reference.size_bytes, reference.sha256) != (
+                artifact["object_key"],
+                artifact["bytes"],
+                artifact["sha256"],
+            ):
+                raise ServiceUnavailableException(
+                    "Original receipt differs", code="DOCUMENT_ORIGINAL_UNAVAILABLE"
+                )
+            await self.store.download_file(reference, path, max_bytes=max_bytes)
+        else:
+            if artifact["bytes"] > 32 * 1024**2:
+                raise ServiceUnavailableException(
+                    "Large original requires a pinned file receipt", code="DOCUMENT_ORIGINAL_UNAVAILABLE"
+                )
+            data = await self._verified(artifact, min(max_bytes, 32 * 1024**2))
+            if not isinstance(data, bytes):
+                raise RuntimeError("Legacy original did not produce verified bytes")
+            with Path(path).open("xb") as target:
+                target.write(data)
+        return receipt
+
+    async def original(
+        self, scope: DocumentScope, source_id: str, version_id: str, *, max_bytes: int
+    ) -> VerifiedOriginal:
+        version, artifact = await self._original_record(scope, source_id, version_id)
         data = await self._verified(artifact, max_bytes)
+        if not isinstance(data, bytes):
+            raise RuntimeError("Original byte read did not produce verified content")
         return VerifiedOriginal(
             version_id,
             artifact["sha256"],

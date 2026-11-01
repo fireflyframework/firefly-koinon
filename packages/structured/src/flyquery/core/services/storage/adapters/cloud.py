@@ -44,6 +44,10 @@ class CloudObjectStore:
             kms_key_uri=kms_key_uri,
         )
 
+    async def create_file(self, key: str, path: str, content_type: str) -> ObjectMeta:
+        reference = await self.native.create_file(key, path, content_type)
+        return ObjectMeta(key, reference.size_bytes, content_type, reference.version, datetime.now(tz=UTC))
+
     async def get(self, key):
         async def chunks():
             content = await self.native.get(key)

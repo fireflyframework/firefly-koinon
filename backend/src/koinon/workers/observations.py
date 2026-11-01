@@ -4,7 +4,7 @@
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import Literal
+from typing import Literal, cast
 
 import sqlalchemy as sa
 from pyfly.container import Container, service
@@ -15,13 +15,25 @@ from koinon.assistants.entities import ChatRun
 from koinon.corporate_identity.entities import CorporateProvider
 from koinon.corporate_profiles.entities import CorporateProfileSnapshot
 from koinon.jobs.entities import Job
+from koinon.knowledge.bulk.entities import BulkBatch, BulkItem
+from koinon.knowledge.bulk.settings import BulkSettings
+from koinon.knowledge.bulk_queries.entities import QueryBatch, QueryBatchItem
 from koinon.knowledge.indexes.entities import KnowledgeIndex
 from koinon.operations.settings import OperationalSettings
 from koinon.organization_people.entities import OrganizationProfileMappingRecord
 from koinon.workers.admission import WorkAdmissionSettings
 
 QueueName = Literal[
-    "conversation", "index", "attachment", "profile", "document_ingest", "structured_ingest", "callback"
+    "conversation",
+    "index",
+    "attachment",
+    "profile",
+    "document_ingest",
+    "structured_ingest",
+    "callback",
+    "communications",
+    "bulk_intake",
+    "bulk_query",
 ]
 _MAX_ROWS = 100000
 
@@ -116,6 +128,50 @@ async def measure_queue(
     )
 
 
+@dataclass(frozen=True)
+class QueueSpec:
+    name: QueueName
+    datasource: str
+    table: object
+    ready: object
+    active: object
+    retry: object
+    created: object
+    capacity: int
+
+
+def bulk_queue_specifications(now, *, capacity=8):
+    due = sa.or_(
+        sa.and_(Job.status == "queued", Job.available_at <= now),
+        sa.and_(Job.status == "running", Job.lease_until < now),
+    )
+    result = []
+    for name, kind, item, batch in (
+        ("bulk_intake", "knowledge.bulk.intake", BulkItem, BulkBatch),
+        ("bulk_query", "knowledge.bulk.query", QueryBatchItem, QueryBatch),
+    ):
+        source = Job.__table__.outerjoin(item, item.job_id == Job.id).outerjoin(
+            batch, batch.id == item.batch_id
+        )
+        ready = sa.and_(
+            Job.kind == kind, due, batch.cancelled.is_(False), item.status.in_(("queued", "running"))
+        )
+        active = sa.and_(Job.kind == kind, Job.status == "running", Job.lease_until > now)
+        result.append(
+            QueueSpec(
+                cast(QueueName, name),
+                "primary",
+                source,
+                ready,
+                active,
+                Job.attempts > 0,
+                Job.created_at,
+                capacity,
+            )
+        )
+    return tuple(result)
+
+
 @service(name="operations.worker_backlog")
 class WorkerBacklog:
     def __init__(
@@ -151,86 +207,7 @@ class WorkerBacklog:
                 )
             )
 
-        ready = sa.or_(
-            sa.and_(ChatRun.status == "queued", ChatRun.available_at <= now),
-            sa.and_(ChatRun.status == "running", ChatRun.lease_until <= now),
-        )
-        active = sa.and_(ChatRun.status == "running", ChatRun.lease_until > now)
-        await observe(
-            "conversation",
-            "primary",
-            ChatRun,
-            sa.and_(ready, ChatRun.attempts < 2),
-            active,
-            ChatRun.attempts > 0,
-            ChatRun.created_at,
-            self.settings.worker_concurrency,
-        )
-        ready = sa.and_(
-            sa.or_(
-                sa.and_(Job.status == "queued", Job.available_at <= now),
-                sa.and_(Job.status == "running", Job.lease_until <= now),
-            ),
-            Job.attempts < Job.max_attempts,
-        )
-        active = sa.and_(Job.status == "running", Job.lease_until > now)
-        indexes = Job.__table__.join(KnowledgeIndex, KnowledgeIndex.job_id == Job.id)
-        relevant = sa.and_(
-            Job.kind == "knowledge.index", KnowledgeIndex.status.in_(("queued", "building", "awaiting_index"))
-        )
-        await observe(
-            "index",
-            "primary",
-            indexes,
-            sa.and_(ready, relevant),
-            sa.and_(active, relevant),
-            Job.attempts > 0,
-            Job.created_at,
-            1,
-        )
-        relevant = Job.kind.in_(
-            ("chat.attachment.extract", "chat.attachment.expire", "chat.attachment.purge")
-        )
-        await observe(
-            "attachment",
-            "primary",
-            Job,
-            sa.and_(ready, relevant),
-            sa.and_(active, relevant),
-            Job.attempts > 0,
-            Job.created_at,
-            1,
-        )
-        profile = CorporateProfileSnapshot
-        mapping = OrganizationProfileMappingRecord
-        # EXISTS avoids counting one profile twice when it has several enabled mappings.
-        policy = sa.exists(
-            sa.select(mapping.tenant_id).where(
-                mapping.tenant_id == profile.tenant_id,
-                mapping.provider_id == profile.provider_id,
-                mapping.enabled.is_(True),
-                mapping.profile_sync_json.is_not(None),
-            )
-        )
-        provider = sa.exists(
-            sa.select(CorporateProvider.id).where(
-                CorporateProvider.id == profile.provider_id,
-                CorporateProvider.tenant_id == profile.tenant_id,
-                CorporateProvider.status == "active",
-            )
-        )
-        base = sa.and_(provider, policy, profile.external_subject.is_not(None), profile.status != "conflict")
-        ready = sa.and_(
-            base,
-            profile.next_due_at <= now,
-            sa.or_(profile.lease_until.is_(None), profile.lease_until <= now),
-        )
-        active = sa.and_(base, profile.status == "running", profile.lease_until > now)
-        await observe(
-            "profile", "primary", profile, ready, active, profile.lease_generation > 0, profile.next_due_at, 2
-        )
         from flycanon.config import CanonSettings
-        from flycanon.models.entities.ingest_job import IngestJobRow
         from flyquery.config import FlyquerySettings
 
         canon = self.container.resolve(CanonSettings) if self.container.contains_type(CanonSettings) else None
@@ -239,60 +216,201 @@ class WorkerBacklog:
             if self.container.contains_type(FlyquerySettings)
             else None
         )
-        doc = IngestJobRow
-        cutoff = now - timedelta(seconds=canon.ingest_timeout_s if canon else 600)
-        valid = sa.and_(doc.kind == "ingest", doc.attempts <= (canon.ingest_max_attempts if canon else 3))
-        ready = sa.and_(
-            valid, sa.or_(doc.status == "queued", sa.and_(doc.status == "running", doc.started_at <= cutoff))
+        bulk = (
+            self.container.resolve(BulkSettings)
+            if self.container.contains_type(BulkSettings)
+            else BulkSettings()
         )
-        active = sa.and_(doc.kind == "ingest", doc.status == "running", doc.started_at > cutoff)
-        await observe(
-            "document_ingest", "canon_admin", doc, ready, active, doc.attempts > 0, doc.created_at, 1
-        )
-        jobs = sa.table(
-            "flyquery_ingest_jobs",
-            sa.column("status", sa.String),
-            sa.column("attempts", sa.Integer),
-            sa.column("started_at", sa.DateTime(timezone=True)),
-            sa.column("created_at", sa.DateTime(timezone=True)),
-        )
-        cutoff = now - timedelta(seconds=structured.processing_lease_s if structured else 1800)
-        ready = sa.and_(
-            jobs.c.attempts < (structured.ingest_max_attempts if structured else 3),
-            sa.or_(
-                jobs.c.status == "PENDING", sa.and_(jobs.c.status == "RUNNING", jobs.c.started_at <= cutoff)
-            ),
-        )
-        active = sa.and_(jobs.c.status == "RUNNING", jobs.c.started_at > cutoff)
-        await observe(
-            "structured_ingest",
-            "structured_admin",
-            jobs,
-            ready,
-            active,
-            jobs.c.attempts > 0,
-            jobs.c.created_at,
-            1,
-        )
-        from flyquery.core.services.callbacks.callback_repository import _OUTBOX
-
-        callback = _OUTBOX.c
-        ready = sa.and_(callback.status == "PENDING", callback.next_attempt_at <= now)
-        active = sa.and_(
-            callback.status == "PENDING",
-            callback.next_attempt_at > now,
-            callback.last_attempt_at.is_not(None),
-            callback.last_status_code.is_(None),
-            callback.last_error.is_(None),
-        )
-        await observe(
-            "callback",
-            "structured_admin",
-            _OUTBOX,
-            ready,
-            active,
-            callback.attempts > 0,
-            callback.created_at,
-            1,
-        )
+        for spec in queue_specifications(now, self.settings, canon=canon, structured=structured, bulk=bulk):
+            await observe(
+                spec.name,
+                spec.datasource,
+                spec.table,
+                spec.ready,
+                spec.active,
+                spec.retry,
+                spec.created,
+                spec.capacity,
+            )
         return WorkerObservation(now, tuple(rows), self.admission.worker_capacity)
+
+
+def queue_specifications(now, settings, *, canon=None, structured=None, bulk=None, schema=None):
+    if schema not in (None, "public"):
+        raise ValueError("Queue observations use the native public schema")
+    rows = []
+
+    def append(name, datasource, table, ready, active, retry, created, capacity):
+        rows.append(QueueSpec(name, datasource, table, ready, active, retry, created, capacity))
+
+    ready = sa.or_(
+        sa.and_(ChatRun.status == "queued", ChatRun.available_at <= now),
+        sa.and_(ChatRun.status == "running", ChatRun.lease_until <= now),
+    )
+    active = sa.and_(ChatRun.status == "running", ChatRun.lease_until > now)
+    append(
+        "conversation",
+        "primary",
+        ChatRun,
+        sa.and_(ready, ChatRun.attempts < 2),
+        active,
+        ChatRun.attempts > 0,
+        ChatRun.created_at,
+        settings.worker_concurrency,
+    )
+    ready = sa.and_(
+        sa.or_(
+            sa.and_(Job.status == "queued", Job.available_at <= now),
+            sa.and_(Job.status == "running", Job.lease_until <= now),
+        ),
+        Job.attempts < Job.max_attempts,
+    )
+    active = sa.and_(Job.status == "running", Job.lease_until > now)
+    indexes = Job.__table__.join(KnowledgeIndex, KnowledgeIndex.job_id == Job.id)
+    relevant = sa.and_(
+        Job.kind == "knowledge.index", KnowledgeIndex.status.in_(("queued", "building", "awaiting_index"))
+    )
+    append(
+        "index",
+        "primary",
+        indexes,
+        sa.and_(ready, relevant),
+        sa.and_(active, relevant),
+        Job.attempts > 0,
+        Job.created_at,
+        1,
+    )
+    relevant = Job.kind.in_(("chat.attachment.extract", "chat.attachment.expire", "chat.attachment.purge"))
+    append(
+        "attachment",
+        "primary",
+        Job,
+        sa.and_(ready, relevant),
+        sa.and_(active, relevant),
+        Job.attempts > 0,
+        Job.created_at,
+        1,
+    )
+    profile = CorporateProfileSnapshot
+    mapping = OrganizationProfileMappingRecord
+    # EXISTS avoids counting one profile twice when it has several enabled mappings.
+    policy = sa.exists(
+        sa.select(mapping.tenant_id).where(
+            mapping.tenant_id == profile.tenant_id,
+            mapping.provider_id == profile.provider_id,
+            mapping.enabled.is_(True),
+            mapping.profile_sync_json.is_not(None),
+        )
+    )
+    provider = sa.exists(
+        sa.select(CorporateProvider.id).where(
+            CorporateProvider.id == profile.provider_id,
+            CorporateProvider.tenant_id == profile.tenant_id,
+            CorporateProvider.status == "active",
+        )
+    )
+    base = sa.and_(provider, policy, profile.external_subject.is_not(None), profile.status != "conflict")
+    ready = sa.and_(
+        base,
+        profile.next_due_at <= now,
+        sa.or_(profile.lease_until.is_(None), profile.lease_until <= now),
+    )
+    active = sa.and_(base, profile.status == "running", profile.lease_until > now)
+    append("profile", "primary", profile, ready, active, profile.lease_generation > 0, profile.next_due_at, 2)
+    from flycanon.models.entities.ingest_job import IngestJobRow
+
+    doc = IngestJobRow
+    cutoff = now - timedelta(seconds=canon.ingest_timeout_s if canon else 600)
+    valid = sa.and_(doc.kind == "ingest", doc.attempts <= (canon.ingest_max_attempts if canon else 3))
+    ready = sa.and_(
+        valid, sa.or_(doc.status == "queued", sa.and_(doc.status == "running", doc.started_at <= cutoff))
+    )
+    active = sa.and_(doc.kind == "ingest", doc.status == "running", doc.started_at > cutoff)
+    append("document_ingest", "canon_admin", doc, ready, active, doc.attempts > 0, doc.created_at, 1)
+    jobs = sa.table(
+        "flyquery_ingest_jobs",
+        sa.column("status", sa.String),
+        sa.column("attempts", sa.Integer),
+        sa.column("started_at", sa.DateTime(timezone=True)),
+        sa.column("created_at", sa.DateTime(timezone=True)),
+        schema=schema,
+    )
+    cutoff = now - timedelta(seconds=structured.processing_lease_s if structured else 1800)
+    ready = sa.and_(
+        jobs.c.attempts < (structured.ingest_max_attempts if structured else 3),
+        sa.or_(jobs.c.status == "PENDING", sa.and_(jobs.c.status == "RUNNING", jobs.c.started_at <= cutoff)),
+    )
+    active = sa.and_(jobs.c.status == "RUNNING", jobs.c.started_at > cutoff)
+    append(
+        "structured_ingest",
+        "structured_admin",
+        jobs,
+        ready,
+        active,
+        jobs.c.attempts > 0,
+        jobs.c.created_at,
+        1,
+    )
+    from flyquery.core.services.callbacks.callback_repository import _OUTBOX
+
+    callback_table = (
+        sa.table(_OUTBOX.name, *(sa.column(column.name, column.type) for column in _OUTBOX.c), schema=schema)
+        if schema
+        else _OUTBOX
+    )
+    callback = callback_table.c
+    ready = sa.and_(callback.status == "PENDING", callback.next_attempt_at <= now)
+    active = sa.and_(
+        callback.status == "PENDING",
+        callback.next_attempt_at > now,
+        callback.last_attempt_at.is_not(None),
+        callback.last_status_code.is_(None),
+        callback.last_error.is_(None),
+    )
+    append(
+        "callback",
+        "structured_admin",
+        callback_table,
+        ready,
+        active,
+        callback.attempts > 0,
+        callback.created_at,
+        1,
+    )
+    communications = communications_source(now)
+    append(
+        "communications",
+        "primary",
+        communications,
+        communications.c.ready,
+        communications.c.active,
+        communications.c.retry,
+        communications.c.created_at,
+        1,
+    )
+    rows.extend(bulk_queue_specifications(now, capacity=bulk.max_workers_global if bulk else 8))
+    return tuple(rows)
+
+
+def communications_source(now):
+    from koinon.communications.entities import DigestSubscriptionRecord, OutboxRecord
+
+    event, subscription = OutboxRecord, DigestSubscriptionRecord
+    ready = sa.or_(
+        sa.and_(event.status.in_(("queued", "deferred")), event.next_attempt_at <= now),
+        sa.and_(event.status.in_(("preparing", "sending")), event.lease_until <= now),
+    )
+    active = sa.and_(event.status.in_(("preparing", "sending")), event.lease_until > now)
+    deliveries = sa.select(
+        ready.label("ready"),
+        active.label("active"),
+        (event.attempt_count > 0).label("retry"),
+        event.created_at.label("created_at"),
+    )
+    launches = sa.select(
+        sa.and_(subscription.enabled.is_(True), subscription.next_due_at <= now).label("ready"),
+        sa.literal(False).label("active"),
+        sa.literal(False).label("retry"),
+        subscription.next_due_at.label("created_at"),
+    )
+    return sa.union_all(deliveries, launches).subquery()

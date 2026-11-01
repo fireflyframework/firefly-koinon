@@ -53,9 +53,50 @@ Follow [migrations](migrations.md) in order: provision roles, apply the three mi
 
 Start the migrated API with its runtime credentials and persistent storage. Serve the management build and backend routes through the reviewed HTTPS proxy. Use the [management proxy instructions](production.md#serve-the-management-application); login, callback, `/auth`, API, MCP and discovery routes must reach the backend. Confirm `/health` for liveness and `/ready` for the real database check.
 
-The API and sign-in screen must be available **before** creating the first application tenant. A successful identity-provider login does not grant organization membership. Start the complete background process with `python -m koinon.worker` before testing generated chat answers or scheduled work. Set `KOINON_PROCESS_ROLE=worker` for that process and `api` for the HTTP process. API readiness alone does not consume queues or run maintenance. See [backend operation](production.md#operate-the-backend) for worker templates and connection budgets.
+The API and sign-in screen must be available for the first interactive login. A successful identity-provider login alone does not grant organization membership. Establish that membership through one of the explicit initialization modes below. Start the complete background process with `python -m koinon.worker` before testing generated chat answers or scheduled work. Set `KOINON_PROCESS_ROLE=worker` for that process and `api` for the HTTP process. API readiness alone does not consume queues or run maintenance. See [backend operation](production.md#operate-the-backend) for worker templates and connection budgets.
 
-## 4. Sign in, verify the subject, then bootstrap
+## 4. Establish the first administrators
+
+Choose one initialization mode for a **new** organization. Both use the native primary database and record an audit event. Neither repairs or replaces an existing organization.
+
+- **Verified subject:** sign in first and copy the exact canonical subject from the application. This mode supports the configured identity provider.
+- **Pending direct-Entra identities:** an operator seeds reviewed immutable directory object IDs before their first login. The application learns each canonical subject only from that person's verified interactive OIDC ID token.
+
+### Pending direct-Entra identities
+
+Use this mode only when the native sign-in client connects directly to the Entra tenant. The configured issuer must be exactly `https://login.microsoftonline.com/<tenant UUID>/v2.0`, with the reviewed server-side browser client ID. Brokered connections and other providers use the verified-subject mode below. Do not infer `sub` from an object ID, email address or another application's token.
+
+After migrations and role provisioning, prepare a private JSON file with the exact configured issuer/client and the operator-verified tenant/object UUIDs. Each grant explicitly requests `admin` and expires within the next seven days according to the database clock. The file supports 1–100 unique identities and rejects additional fields. These fictional UUIDs and date are syntax examples; replace them with reviewed values and a current expiry:
+
+```json
+{
+  "issuer": "https://login.microsoftonline.com/11111111-1111-4111-8111-111111111111/v2.0",
+  "client_id": "reviewed-native-browser-client-id",
+  "entra_tenant_id": "11111111-1111-4111-8111-111111111111",
+  "grants": [
+    {
+      "object_id": "22222222-2222-4222-8222-222222222222",
+      "role": "admin",
+      "expires_at": "2026-11-02T12:00:00Z"
+    }
+  ]
+}
+```
+
+Protect this file with mode 0600. Run the CLI from the deployed release with an explicitly reviewed **operator** environment. It contains the normal application configuration, but its primary datasource uses an operator credential authorized to insert the new organization, audit and pending grants. Keep that credential outside API/worker environments; the normal runtime role can select grants and update only their three activation columns. It cannot seed, rewrite identities or expiry, delete, or truncate grants.
+
+```sh
+backend/.venv/bin/python deploy/run.py --env-file /private/bootstrap-operator.env -- \
+  backend/.venv/bin/python deploy/bootstrap.py \
+  --tenant-id initial-organization --name 'Your organization' \
+  --identity-grants-file /private/initial-administrators.json
+```
+
+The operator command creates the organization with pending grants and **no membership yet**. Each listed person then signs in through the normal public sign-in screen. Only the strict native interactive OIDC callback can activate a matching grant: the ID token must verify signature, nonce, issuer and browser audience, and its signed `tid`/`oid` must match the seed. API JWTs, PATs, userinfo, request headers and email addresses cannot activate it. Activation atomically creates the organization-wide administrator membership, audit and configured welcome admission, and consumes the grant. No email is sent by this command.
+
+Consumption is permanent. Removing or revoking the membership, restarting, changing branding or moving the public domain never restores it. Pending expired grants do not activate; conflicting existing memberships require authorized review. A serializable conflict may require a new normal login attempt. There is no runtime reseed or recovery endpoint. Preserve consumed rows during backup/restore and use the authorized membership workflow for subsequent changes. Issuer/client migrations require a separate reviewed identity migration.
+
+### Verified subject after sign-in
 
 Sign in as the person who will administer the new organization. In that authenticated browser session, open `GET /auth/me` on the same public origin. Require `authenticated: true` and copy the complete `subject` returned by the server. This is the verified issuer and `sub` joined by `|`. Do not substitute an email address, display name, directory object identifier or a subject inferred from another application.
 

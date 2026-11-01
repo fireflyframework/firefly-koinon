@@ -1358,6 +1358,7 @@ dependencies = [
     { name = "odfpy" },
     { name = "openpyxl" },
     { name = "pillow" },
+    { name = "psutil" },
     { name = "psycopg", extra = ["binary"] },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -1431,12 +1432,13 @@ requires-dist = [
     { name = "odfpy", specifier = ">=1.4.1" },
     { name = "openpyxl", specifier = ">=3.1" },
     { name = "pillow", specifier = ">=11.0" },
+    { name = "psutil", specifier = ">=6,<9" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
     { name = "pydantic", specifier = ">=2.10.0" },
     { name = "pydantic-settings", specifier = ">=2.7.0" },
-    { name = "pyfly", extras = ["agentic-vectorstores-chroma"], marker = "extra == 'chroma'", git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=0f7971cd98f1379a53935202f72b79979ff9b791" },
-    { name = "pyfly", extras = ["agentic-vectorstores-qdrant"], marker = "extra == 'qdrant'", git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=0f7971cd98f1379a53935202f72b79979ff9b791" },
-    { name = "pyfly", extras = ["fastapi", "observability", "security", "data-relational", "postgresql", "eda", "redis", "client", "scheduling", "cli", "agentic", "agentic-security", "agentic-script-execution", "agentic-openai-embeddings", "agentic-binary", "agentic-vectorstores-pgvector"], git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=0f7971cd98f1379a53935202f72b79979ff9b791" },
+    { name = "pyfly", extras = ["agentic-vectorstores-chroma"], marker = "extra == 'chroma'", git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=19c6c7f5b67fc2597d230353279c72a6ee983086" },
+    { name = "pyfly", extras = ["agentic-vectorstores-qdrant"], marker = "extra == 'qdrant'", git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=19c6c7f5b67fc2597d230353279c72a6ee983086" },
+    { name = "pyfly", extras = ["fastapi", "observability", "security", "data-relational", "postgresql", "eda", "redis", "client", "scheduling", "cli", "agentic", "agentic-security", "agentic-script-execution", "agentic-openai-embeddings", "agentic-binary", "agentic-vectorstores-pgvector"], git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=19c6c7f5b67fc2597d230353279c72a6ee983086" },
     { name = "pymupdf", specifier = ">=1.24" },
     { name = "pypdf", specifier = ">=4.3.0" },
     { name = "pyright", marker = "extra == 'dev'", specifier = ">=1.1" },
@@ -3806,8 +3808,8 @@ wheels = [
 
 [[package]]
 name = "pyfly"
-version = "26.10.27"
-source = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=0f7971cd98f1379a53935202f72b79979ff9b791#0f7971cd98f1379a53935202f72b79979ff9b791" }
+version = "26.10.28"
+source = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=19c6c7f5b67fc2597d230353279c72a6ee983086#19c6c7f5b67fc2597d230353279c72a6ee983086" }
 dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },

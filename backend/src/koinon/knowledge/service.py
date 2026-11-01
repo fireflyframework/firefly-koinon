@@ -34,6 +34,12 @@ class KnowledgeSettings:
     max_search_workspaces: int = 32
     max_lineage_nodes: int = 1000
 
+    def __post_init__(self):
+        if type(self.max_upload_bytes) is not int or not 1 <= self.max_upload_bytes <= 32 * 1024**2:
+            raise ValueError(
+                "Synchronous uploads support at most 32 MiB; use queued Library intake for larger originals"
+            )
+
 
 @service(name="knowledge.facade")
 class KnowledgeFacade:

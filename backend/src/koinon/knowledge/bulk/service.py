@@ -10,8 +10,10 @@ from collections.abc import Sequence
 from contextlib import suppress
 from dataclasses import dataclass, field, replace
 from datetime import timedelta
+from pathlib import Path
 from uuid import uuid4
 
+from koinon_storage.files import source_file
 from pyfly.container import Provider, service
 from pyfly.data.relational.sqlalchemy import Isolation, Propagation, transactional
 from pyfly.data.transaction import current_unit_of_work
@@ -127,6 +129,8 @@ class FileBatches:
             self.storage.configured()
         except ServiceUnavailableException:
             configured = False
+        if self.storage.effective_file_limit() < 1:
+            configured = False
         backend = self.settings.storage_backend
         return FileBatchCapabilities(
             configured=configured,
@@ -142,7 +146,7 @@ class FileBatches:
             ),
             modes=["document", "dataset"],
             max_files=self.settings.max_files,
-            max_file_bytes=self.settings.max_file_bytes,
+            max_file_bytes=self.storage.effective_file_limit(),
             max_batch_bytes=self.settings.max_batch_bytes,
             max_active_batches_per_subject=self.settings.max_active_batches_per_subject,
         )
@@ -223,7 +227,7 @@ class FileBatches:
         if (
             len(request.items) > self.settings.max_files
             or total > self.settings.max_batch_bytes
-            or any(item.size_bytes > self.settings.max_file_bytes for item in request.items)
+            or any(item.size_bytes > self.storage.effective_file_limit() for item in request.items)
         ):
             raise PayloadTooLargeException(
                 "Bulk manifest exceeds configured bounds", code="BULK_MANIFEST_LIMIT"
@@ -455,7 +459,7 @@ class FileBatches:
         global_quota = await self.records.quota("global:uploads")
         quota = await self.records.quota("tenant:" + tenant)
         item = await self._item_for_write(subject, tenant, row, item_id)
-        if item.size_bytes > self.settings.max_file_bytes:
+        if item.size_bytes > self.storage.effective_file_limit():
             raise PayloadTooLargeException("Original exceeds the current byte limit", code="BULK_FILE_LIMIT")
         if content is not None and (
             not isinstance(content, bytes)
@@ -524,7 +528,7 @@ class FileBatches:
 
     @transactional(propagation=Propagation.REQUIRES_NEW)
     async def _finish_upload(
-        self, subject: str, tenant: str, batch: str, item_id: str, ticket: UploadTicket
+        self, subject: str, tenant: str, batch: str, item_id: str, ticket: UploadTicket, object_reference=None
     ) -> StagedFileReceipt:
         row = await self._scope(subject, tenant, batch, write=True)
         global_quota = await self.records.quota("global:uploads")
@@ -542,6 +546,16 @@ class FileBatches:
             raise ConflictException("Upload identity changed", code="BULK_UPLOAD_CONFLICT")
         state = await self.records.upload_state(upload.id, lock=True)
         self._require_writer(state, ticket, await self.records.clock())
+        if object_reference is not None:
+            if (object_reference.key, object_reference.size_bytes, object_reference.sha256) != (
+                upload.object_key,
+                item.size_bytes,
+                item.sha256,
+            ):
+                raise ConflictException(
+                    "Pinned original differs from manifest", code="BULK_ORIGINAL_INTEGRITY"
+                )
+            upload.object_reference_json = object_reference.to_dict()
         if upload.permit_held:
             global_quota.active_uploads -= 1
             quota.active_uploads -= 1
@@ -726,7 +740,7 @@ class FileBatches:
         batch: str,
         item_id: str,
         ticket: UploadTicket,
-        content: bytes | None,
+        content: bytes | Path | None,
         received_bytes: int,
         received_sha256: str,
     ) -> StagedFileReceipt:
@@ -738,21 +752,37 @@ class FileBatches:
         try:
             if received_bytes != ticket.size_bytes or received_sha256 != ticket.sha256:
                 raise ConflictException("Bytes differ from admitted manifest", code="BULK_CONTENT_MISMATCH")
+            reference = None
             if ticket.write:
-                if (
-                    not isinstance(content, bytes)
-                    or len(content) != ticket.size_bytes
-                    or hashlib.sha256(content).hexdigest() != ticket.sha256
+                if isinstance(content, Path):
+                    with source_file(content, self.settings.max_file_bytes) as (_, size, actual_digest):
+                        if (size, actual_digest) != (ticket.size_bytes, ticket.sha256):
+                            raise ConflictException(
+                                "Original differs from manifest", code="BULK_CONTENT_MISMATCH"
+                            )
+
+                    def operation():
+                        return self.storage.put_file(ticket.object_key, content, ticket.sha256)
+                elif (
+                    isinstance(content, bytes)
+                    and len(content) == ticket.size_bytes
+                    and hashlib.sha256(content).hexdigest() == ticket.sha256
                 ):
+
+                    def operation():
+                        return self.storage.put(ticket.object_key, content, ticket.sha256)
+                else:
                     raise ConflictException(
-                        "Original bytes differ from stream receipt", code="BULK_CONTENT_MISMATCH"
+                        "Original differs from stream receipt", code="BULK_CONTENT_MISMATCH"
                     )
                 await self._writer_check(subject, tenant, batch, item_id, ticket)
-                task = asyncio.create_task(self.storage.put(ticket.object_key, content, ticket.sha256))
-                await asyncio.shield(task)
+                task = asyncio.create_task(operation())
+                reference = await asyncio.shield(task)
             else:
                 return await self.receipt(subject, tenant, batch, item_id)
-            return await self._finish_upload(subject, tenant, batch, item_id, ticket)
+            return await self._finish_upload(
+                subject, tenant, batch, item_id, ticket, object_reference=reference
+            )
         except BaseException:
             if task is not None:
                 while not task.done():
@@ -909,6 +939,7 @@ class FileBatches:
         key: str,
         ticket: RecoveryTicket,
         verified: bool,
+        object_reference=None,
     ) -> FileBatchView:
         row = await self._scope(subject, tenant, batch, write=True)
         global_io = await self.records.quota("global:recoveries")
@@ -953,6 +984,8 @@ class FileBatches:
             and item.winning_upload_id is None
         ):
             item.winning_upload_id, item.status, upload.status = upload.id, "staged", "verified"
+            if object_reference is not None:
+                upload.object_reference_json = object_reference.to_dict()
         state.operation = "closed"
         global_io.active_uploads -= 1
         tenant_io.active_uploads -= 1
@@ -1009,17 +1042,28 @@ class FileBatches:
         if ticket is None:
             return await self.get(subject, tenant, batch)
         try:
+            reference = None
             try:
-                await self.storage.read(
-                    ticket.upload.object_key,
-                    ticket.upload.size_bytes,
-                    ticket.upload.sha256,
-                    storage_identity=ticket.upload.storage_identity,
-                )
+                if ticket.upload.size_bytes > 32 * 1024**2:
+                    reference = await self.storage.verify_file(
+                        ticket.upload.object_key,
+                        ticket.upload.size_bytes,
+                        ticket.upload.sha256,
+                        storage_identity=ticket.upload.storage_identity,
+                    )
+                else:
+                    await self.storage.read(
+                        ticket.upload.object_key,
+                        ticket.upload.size_bytes,
+                        ticket.upload.sha256,
+                        storage_identity=ticket.upload.storage_identity,
+                    )
                 verified = True
             except FileNotFoundError:
                 verified = False
-            return await self._recover_original(subject, tenant, batch, item_id, body, key, ticket, verified)
+            return await self._recover_original(
+                subject, tenant, batch, item_id, body, key, ticket, verified, object_reference=reference
+            )
         except BaseException:
             await self._abort_recovery(tenant, ticket)
             raise
@@ -1034,7 +1078,7 @@ class FileBatches:
     )
     async def _receipt(
         self, subject: str, tenant: str, batch: str, item_id: str
-    ) -> tuple[StagedFileReceipt, str]:
+    ) -> tuple[StagedFileReceipt, BulkUpload]:
         await self._scope(subject, tenant, batch)
         item = await self.records.item(batch, item_id)
         upload = (
@@ -1055,13 +1099,30 @@ class FileBatches:
             item_id=item.id,
             sha256=item.sha256,
             size_bytes=item.size_bytes,
-        ), upload.object_key
+        ), upload
 
     async def receipt(self, subject: str, tenant: str, batch: str, item_id: str) -> StagedFileReceipt:
-        result, key = await self._receipt(subject, tenant, batch, item_id)
-        await self.storage.read(
-            key, result.size_bytes, result.sha256, storage_identity=self.storage.identity()
-        )
+        result, upload = await self._receipt(subject, tenant, batch, item_id)
+        if upload.object_reference_json is not None:
+            import tempfile
+
+            from koinon.knowledge.bulk.queue import BulkOriginal
+
+            with tempfile.TemporaryDirectory(prefix="koinon-receipt-") as directory:
+                await self.storage.read_file(
+                    BulkOriginal(
+                        upload.object_key,
+                        result.size_bytes,
+                        result.sha256,
+                        self.storage.identity(),
+                        upload.object_reference_json,
+                    ),
+                    Path(directory) / "original",
+                )
+        else:
+            await self.storage.read(
+                upload.object_key, result.size_bytes, result.sha256, storage_identity=self.storage.identity()
+            )
         await self._output_guard(subject, tenant, batch)
         return result
 

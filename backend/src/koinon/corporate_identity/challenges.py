@@ -20,8 +20,14 @@ from koinon.corporate_identity.service import CorporateIdentityService
 from koinon.security.authority import primary_authority
 
 
-def policy(provider):
+def policy(provider, oidc=None):
     settings = provider.settings_json
+    if settings.get("identity_mode") == "direct" and (
+        provider.kind != "entra" or oidc is None or settings.get("client_id") != oidc.client_id
+    ):
+        raise SecurityException(
+            "Direct Entra requires the current native client binding", code="IDENTITY_PROVIDER_MISMATCH"
+        )
     return IdentityPolicy(
         provider.id,
         provider.kind,
@@ -29,6 +35,9 @@ def policy(provider):
         provider.broker_alias,
         str(settings.get("tenant_id", "")),
         tuple(settings.get("hosted_domains", ())),
+        settings.get("identity_mode", "brokered"),
+        oidc.client_id if oidc is not None else None,
+        oidc.api_audience if oidc is not None else None,
     )
 
 
@@ -131,7 +140,7 @@ class CorporateLoginChallenges:
     async def complete(self, identifier: str, context: SecurityContext):
         row, provider = await self._pending(identifier, lock=True)
         claims = context.attributes
-        identity = verified_identity(policy(provider), claims)
+        identity = verified_identity(policy(provider, self.identities.oidc), claims)
         auth_time = claims.get("auth_time")
         now = datetime.now(UTC)
         if row.started_at is None:

@@ -1,5 +1,5 @@
 {
-  "definition_count": 367,
+  "definition_count": 409,
   "excluded_definitions": [
     "AttachmentUpload",
     "AvatarUpload",
@@ -12,6 +12,218 @@
     "TableReplacement"
   ],
   "fixtures": {
+    "ActivityCoverage": {
+      "observed_since": "2026-10-27T12:34:56Z",
+      "complete_window": false,
+      "missing_observations": 1,
+      "reasons": [
+        "reasons-value"
+      ]
+    },
+    "ActivityEmailPreviewInput": {
+      "tenant_id": "tenant_id-value",
+      "preferences": {
+        "expected_revision": 1,
+        "rules": [
+          {
+            "kind": "invitation",
+            "inbox": false,
+            "email": false
+          }
+        ],
+        "digest": "off",
+        "schedule": {
+          "local_time": "local_time-value",
+          "weekday": 1,
+          "day_of_month": 1
+        },
+        "admin_summaries": false,
+        "notification_locale": "notification_locale-value"
+      },
+      "window": {
+        "start_at": "2026-10-27T12:34:56Z",
+        "end_at": "2026-10-27T12:34:56Z",
+        "time_zone": "time_zone-value"
+      }
+    },
+    "ActivitySummary": {
+      "tenant_id": "tenant_id-value",
+      "audience": "personal",
+      "window": {
+        "start_at": "2026-10-27T12:34:56Z",
+        "end_at": "2026-10-27T12:34:56Z",
+        "time_zone": "time_zone-value"
+      },
+      "coverage": {
+        "observed_since": "2026-10-27T12:34:56Z",
+        "complete_window": false,
+        "missing_observations": 1,
+        "reasons": [
+          "reasons-value"
+        ]
+      },
+      "knowledge": {
+        "created": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "updated": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "consulted": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        }
+      },
+      "top_projects": [
+        {
+          "project_id": "project_id-value",
+          "workspace_id": "workspace_id-value",
+          "name": "name-value",
+          "knowledge": {
+            "created": {
+              "value": 1,
+              "status": "observed",
+              "reason": "reason-value"
+            },
+            "updated": {
+              "value": 1,
+              "status": "observed",
+              "reason": "reason-value"
+            },
+            "consulted": {
+              "value": 1,
+              "status": "observed",
+              "reason": "reason-value"
+            }
+          }
+        }
+      ],
+      "daily_activity": [
+        {
+          "local_date": "local_date-value",
+          "knowledge": {
+            "created": {
+              "value": 1,
+              "status": "observed",
+              "reason": "reason-value"
+            },
+            "updated": {
+              "value": 1,
+              "status": "observed",
+              "reason": "reason-value"
+            },
+            "consulted": {
+              "value": 1,
+              "status": "observed",
+              "reason": "reason-value"
+            }
+          },
+          "mcp_tool_calls": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          }
+        }
+      ],
+      "mcp": {
+        "requests": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "tool_calls": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "succeeded": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "failed": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "rejected": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "average_duration_ms": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "p95_duration_ms": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "tool_cancelled": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "request_succeeded": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "request_failed": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "request_rejected": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "request_cancelled": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        }
+      },
+      "models": {
+        "input_tokens": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "output_tokens": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "embedding_tokens": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "cost": {
+          "amount": 0.25,
+          "currency": "currency-value",
+          "status": "observed",
+          "source": "source-value",
+          "reason": "reason-value"
+        },
+        "external_client_consumption": "not_observed"
+      }
+    },
+    "ActivityValue": {},
+    "ActivityWindow": {
+      "start_at": "2026-10-27T12:34:56Z",
+      "end_at": "2026-10-27T12:34:56Z",
+      "time_zone": "time_zone-value"
+    },
     "AddKnowledge": {
       "expected_revision": 1,
       "action": "add",
@@ -19,6 +231,14 @@
       "workspace_id": "workspace_id-value",
       "project_id": "project_id-value",
       "parent_id": "parent_id-value"
+    },
+    "AdministrativeSummarySchedule": {
+      "cadence": "daily",
+      "schedule": {
+        "local_time": "local_time-value",
+        "weekday": 1,
+        "day_of_month": 1
+      }
     },
     "AgentConfiguration": {
       "model_settings": {
@@ -1327,6 +1547,113 @@
         "reason": "reason-value"
       }
     },
+    "CommunicationCapabilities": {
+      "state": "disabled",
+      "provider_label": "provider_label-value",
+      "sender_name": "sender_name-value",
+      "sender_address": "sender_address-value",
+      "reply_to": "reply_to-value",
+      "sender_options": [
+        {
+          "id": "id-value",
+          "display_name": "display_name-value",
+          "address": "address-value"
+        }
+      ],
+      "public_address_configured": false,
+      "public_url": "public_url-value",
+      "acceptance_base": "acceptance_base-value",
+      "issues": [
+        {
+          "code": "code-value",
+          "explanation": "explanation-value"
+        }
+      ],
+      "effective_locale": "effective_locale-value",
+      "locale_origin": "user"
+    },
+    "CommunicationIssue": {
+      "code": "code-value",
+      "explanation": "explanation-value"
+    },
+    "CommunicationPolicy": {
+      "revision": 1,
+      "sender_id": "sender_id-value",
+      "rules": [
+        {
+          "kind": "invitation",
+          "required": false,
+          "inbox": false,
+          "email": false,
+          "email_available": false
+        }
+      ],
+      "digest_enabled": false,
+      "can_update": false,
+      "allowed_digests": [
+        "off"
+      ],
+      "default_digest": "off",
+      "default_schedule": {
+        "local_time": "local_time-value",
+        "weekday": 1,
+        "day_of_month": 1
+      },
+      "admin_summaries": [
+        {
+          "cadence": "daily",
+          "schedule": {
+            "local_time": "local_time-value",
+            "weekday": 1,
+            "day_of_month": 1
+          }
+        }
+      ],
+      "default_locale": "default_locale-value"
+    },
+    "CommunicationPolicyInput": {
+      "expected_revision": 1,
+      "sender_id": "sender_id-value",
+      "rules": [
+        {
+          "kind": "invitation",
+          "inbox": false,
+          "email": false
+        }
+      ],
+      "digest_enabled": false,
+      "allowed_digests": [
+        "off"
+      ],
+      "default_digest": "off",
+      "default_schedule": {
+        "local_time": "local_time-value",
+        "weekday": 1,
+        "day_of_month": 1
+      },
+      "admin_summaries": [
+        {
+          "cadence": "daily",
+          "schedule": {
+            "local_time": "local_time-value",
+            "weekday": 1,
+            "day_of_month": 1
+          }
+        }
+      ],
+      "default_locale": "default_locale-value"
+    },
+    "CommunicationUsageSummary": {
+      "scope": "own",
+      "window_start": "2026-10-27T12:34:56Z",
+      "window_end": "2026-10-27T12:34:56Z",
+      "time_zone": "time_zone-value",
+      "assistant_runs": 1,
+      "completed_runs": 1,
+      "failed_runs": 1,
+      "mcp_requests": 1,
+      "mcp_request_status": "available"
+    },
     "Configuration": {
       "framework_providers": [
         {
@@ -1992,6 +2319,31 @@
         "picture": "picture-value"
       }
     },
+    "DailyActivity": {
+      "local_date": "local_date-value",
+      "knowledge": {
+        "created": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "updated": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "consulted": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        }
+      },
+      "mcp_tool_calls": {
+        "value": 1,
+        "status": "observed",
+        "reason": "reason-value"
+      }
+    },
     "DatasetFileAppendResult": {
       "dataset_id": "dataset_id-value",
       "file_version_id": "file_version_id-value",
@@ -2024,6 +2376,48 @@
     },
     "Deleted": {
       "deleted": false
+    },
+    "DeliveryPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "kind": "invitation",
+          "channel": "email",
+          "invitation_id": "invitation_id-value",
+          "membership_id": "membership_id-value",
+          "recipient_display": "recipient_display-value",
+          "scope_name": "scope_name-value",
+          "status": "queued",
+          "created_at": "2026-10-27T12:34:56Z",
+          "last_attempt_at": "2026-10-27T12:34:56Z",
+          "next_attempt_at": "2026-10-27T12:34:56Z",
+          "attempt_count": 1,
+          "failure_code": "failure_code-value",
+          "safe_explanation": "safe_explanation-value",
+          "can_retry": false
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "DeliveryRecord": {
+      "id": "id-value",
+      "kind": "invitation",
+      "channel": "email",
+      "invitation_id": "invitation_id-value",
+      "membership_id": "membership_id-value",
+      "recipient_display": "recipient_display-value",
+      "scope_name": "scope_name-value",
+      "status": "queued",
+      "created_at": "2026-10-27T12:34:56Z",
+      "last_attempt_at": "2026-10-27T12:34:56Z",
+      "next_attempt_at": "2026-10-27T12:34:56Z",
+      "attempt_count": 1,
+      "failure_code": "failure_code-value",
+      "safe_explanation": "safe_explanation-value",
+      "can_retry": false
     },
     "DeploymentConfiguration": {
       "ownership": "deployment",
@@ -2161,6 +2555,50 @@
       "id": "documents",
       "backend": "backend-value",
       "store_originals": false
+    },
+    "DigestSchedule": {
+      "local_time": "local_time-value",
+      "weekday": 1,
+      "day_of_month": 1
+    },
+    "DigestSchedulePreview": {
+      "digest": "off",
+      "schedule": {
+        "local_time": "local_time-value",
+        "weekday": 1,
+        "day_of_month": 1
+      },
+      "time_zone": "time_zone-value",
+      "next_run_at": "2026-10-27T12:34:56Z",
+      "next_run_local": "next_run_local-value",
+      "window_start": "2026-10-27T12:34:56Z",
+      "window_end": "2026-10-27T12:34:56Z",
+      "dst_policy": "first_valid_minute_earlier_fold",
+      "effective_locale": "effective_locale-value",
+      "locale_origin": "user"
+    },
+    "DirectoryRecipient": {
+      "recipient_ref": "recipient_ref-value",
+      "display_name": "display_name-value",
+      "email": "email-value",
+      "provider_label": "provider_label-value",
+      "delivery_address_status": "verified_directory",
+      "eligibility": "eligible",
+      "eligibility_reason": "eligibility_reason-value"
+    },
+    "DirectoryRecipientPage": {
+      "items": [
+        {
+          "recipient_ref": "recipient_ref-value",
+          "display_name": "display_name-value",
+          "email": "email-value",
+          "provider_label": "provider_label-value",
+          "delivery_address_status": "verified_directory",
+          "eligibility": "eligible",
+          "eligibility_reason": "eligibility_reason-value"
+        }
+      ],
+      "next_cursor": "next_cursor-value"
     },
     "DocumentChunk": {
       "id": "id-value",
@@ -2479,6 +2917,321 @@
       "qualified": false,
       "reason": "reason-value"
     },
+    "EmailInvitation": {
+      "action_reasons": {
+        "example": "closed"
+      },
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "workspace_id": "workspace_id-value",
+      "organization_name": "organization_name-value",
+      "workspace_name": "workspace_name-value",
+      "role": "viewer",
+      "recipient_display_name": "recipient_display_name-value",
+      "recipient_email": "recipient_email-value",
+      "provider_label": "provider_label-value",
+      "created_at": "2026-10-27T12:34:56Z",
+      "expires_at": "2026-10-27T12:34:56Z",
+      "status": "pending",
+      "accepted_at": "2026-10-27T12:34:56Z",
+      "declined_at": "2026-10-27T12:34:56Z",
+      "revoked_at": "2026-10-27T12:34:56Z",
+      "delivery": {
+        "id": "id-value",
+        "status": "queued",
+        "queued_at": "2026-10-27T12:34:56Z",
+        "last_attempt_at": "2026-10-27T12:34:56Z",
+        "next_attempt_at": "2026-10-27T12:34:56Z",
+        "next_resend_at": "2026-10-27T12:34:56Z",
+        "failure_code": "failure_code-value"
+      },
+      "allowed_actions": [
+        "revoke"
+      ]
+    },
+    "EmailInvitationInput": {
+      "recipient_ref": "recipient_ref-value",
+      "role": "viewer",
+      "workspace_id": "workspace_id-value",
+      "expires_in_hours": 1,
+      "message": "message-value"
+    },
+    "EmailInvitationPage": {
+      "items": [
+        {
+          "action_reasons": {
+            "example": "closed"
+          },
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "workspace_id": "workspace_id-value",
+          "organization_name": "organization_name-value",
+          "workspace_name": "workspace_name-value",
+          "role": "viewer",
+          "recipient_display_name": "recipient_display_name-value",
+          "recipient_email": "recipient_email-value",
+          "provider_label": "provider_label-value",
+          "created_at": "2026-10-27T12:34:56Z",
+          "expires_at": "2026-10-27T12:34:56Z",
+          "status": "pending",
+          "accepted_at": "2026-10-27T12:34:56Z",
+          "declined_at": "2026-10-27T12:34:56Z",
+          "revoked_at": "2026-10-27T12:34:56Z",
+          "delivery": {
+            "id": "id-value",
+            "status": "queued",
+            "queued_at": "2026-10-27T12:34:56Z",
+            "last_attempt_at": "2026-10-27T12:34:56Z",
+            "next_attempt_at": "2026-10-27T12:34:56Z",
+            "next_resend_at": "2026-10-27T12:34:56Z",
+            "failure_code": "failure_code-value"
+          },
+          "allowed_actions": [
+            "revoke"
+          ]
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "EmailPreview": {
+      "subject": "subject-value",
+      "sender_name": "sender_name-value",
+      "recipient_display_name": "recipient_display_name-value",
+      "recipient_email": "recipient_email-value",
+      "heading": "heading-value",
+      "paragraphs": [
+        "paragraphs-value"
+      ],
+      "action_label": "action_label-value",
+      "footer": "footer-value",
+      "product_name": "product_name-value",
+      "accent_color": "accent_color-value",
+      "branding": {
+        "product_name": "product_name-value",
+        "assistant_name": "assistant_name-value",
+        "logo_light": "logo_light-value",
+        "logo_dark": "logo_dark-value",
+        "symbol": "symbol-value",
+        "favicon": "favicon-value",
+        "palette": {
+          "light": {
+            "surface": "surface-value",
+            "canvas": "canvas-value",
+            "text": "text-value",
+            "muted": "muted-value",
+            "line": "line-value",
+            "action": "action-value",
+            "action_text": "action_text-value",
+            "accent": "accent-value"
+          },
+          "dark": {
+            "surface": "surface-value",
+            "canvas": "canvas-value",
+            "text": "text-value",
+            "muted": "muted-value",
+            "line": "line-value",
+            "action": "action-value",
+            "action_text": "action_text-value",
+            "accent": "accent-value"
+          }
+        },
+        "font_family": "Manrope"
+      },
+      "rendered_html": "rendered_html-value",
+      "rendered_text": "rendered_text-value",
+      "usage_summary": {
+        "scope": "own",
+        "window_start": "2026-10-27T12:34:56Z",
+        "window_end": "2026-10-27T12:34:56Z",
+        "time_zone": "time_zone-value",
+        "assistant_runs": 1,
+        "completed_runs": 1,
+        "failed_runs": 1,
+        "mcp_requests": 1,
+        "mcp_request_status": "available"
+      },
+      "activity_summary": {
+        "tenant_id": "tenant_id-value",
+        "audience": "personal",
+        "window": {
+          "start_at": "2026-10-27T12:34:56Z",
+          "end_at": "2026-10-27T12:34:56Z",
+          "time_zone": "time_zone-value"
+        },
+        "coverage": {
+          "observed_since": "2026-10-27T12:34:56Z",
+          "complete_window": false,
+          "missing_observations": 1,
+          "reasons": [
+            "reasons-value"
+          ]
+        },
+        "knowledge": {
+          "created": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "updated": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "consulted": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          }
+        },
+        "top_projects": [
+          {
+            "project_id": "project_id-value",
+            "workspace_id": "workspace_id-value",
+            "name": "name-value",
+            "knowledge": {
+              "created": {
+                "value": 1,
+                "status": "observed",
+                "reason": "reason-value"
+              },
+              "updated": {
+                "value": 1,
+                "status": "observed",
+                "reason": "reason-value"
+              },
+              "consulted": {
+                "value": 1,
+                "status": "observed",
+                "reason": "reason-value"
+              }
+            }
+          }
+        ],
+        "daily_activity": [
+          {
+            "local_date": "local_date-value",
+            "knowledge": {
+              "created": {
+                "value": 1,
+                "status": "observed",
+                "reason": "reason-value"
+              },
+              "updated": {
+                "value": 1,
+                "status": "observed",
+                "reason": "reason-value"
+              },
+              "consulted": {
+                "value": 1,
+                "status": "observed",
+                "reason": "reason-value"
+              }
+            },
+            "mcp_tool_calls": {
+              "value": 1,
+              "status": "observed",
+              "reason": "reason-value"
+            }
+          }
+        ],
+        "mcp": {
+          "requests": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "tool_calls": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "succeeded": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "failed": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "rejected": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "average_duration_ms": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "p95_duration_ms": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "tool_cancelled": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "request_succeeded": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "request_failed": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "request_rejected": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "request_cancelled": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          }
+        },
+        "models": {
+          "input_tokens": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "output_tokens": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "embedding_tokens": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "cost": {
+            "amount": 0.25,
+            "currency": "currency-value",
+            "status": "observed",
+            "source": "source-value",
+            "reason": "reason-value"
+          },
+          "external_client_consumption": "not_observed"
+        }
+      },
+      "organization_name": "organization_name-value",
+      "workspace_name": "workspace_name-value",
+      "effective_locale": "effective_locale-value",
+      "locale_origin": "user",
+      "powered_by": "Powered by koinon",
+      "copyright": "copyright-value"
+    },
     "EntraCredential": {
       "kind": "entra",
       "secret": "secret-value",
@@ -2489,7 +3242,8 @@
       "tenant_id": "tenant_id-value",
       "client_id": "client_id-value",
       "directory_client_id": "directory_client_id-value",
-      "membership_mode": "direct"
+      "membership_mode": "direct",
+      "identity_mode": "brokered"
     },
     "EvidenceManifest": {
       "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -3102,6 +3856,9 @@
       "writer_fence": "primary_database_generation_lease",
       "worker": "external_native_worker",
       "automatic_unknown_replay": false,
+      "synchronous_max_file_bytes": 1,
+      "large_file_transport": "queued_file_spool",
+      "quota_semantics": "lifetime_admission_bytes",
       "max_files": 1,
       "max_file_bytes": 1,
       "max_batch_bytes": 1,
@@ -3718,6 +4475,15 @@
       },
       "token": "token-value"
     },
+    "InvitationDelivery": {
+      "id": "id-value",
+      "status": "queued",
+      "queued_at": "2026-10-27T12:34:56Z",
+      "last_attempt_at": "2026-10-27T12:34:56Z",
+      "next_attempt_at": "2026-10-27T12:34:56Z",
+      "next_resend_at": "2026-10-27T12:34:56Z",
+      "failure_code": "failure_code-value"
+    },
     "InvitationInput": {
       "role": "viewer",
       "workspace_id": "workspace_id-value",
@@ -3732,6 +4498,22 @@
       "workspace_name": "workspace_name-value",
       "role": "viewer",
       "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "InvitationReview": {
+      "action_reasons": {
+        "example": "closed"
+      },
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "organization_name": "organization_name-value",
+      "workspace_id": "workspace_id-value",
+      "workspace_name": "workspace_name-value",
+      "role": "viewer",
+      "expires_at": "2026-10-27T12:34:56Z",
+      "status": "pending",
+      "can_accept": false,
+      "can_decline": false,
+      "binding": "directory_identity"
     },
     "InvitationToken": {
       "token": "token-value"
@@ -3773,6 +4555,23 @@
       "client_id": "client_id-value",
       "directory_client_id": "directory_client_id-value",
       "membership_mode": "direct"
+    },
+    "KnowledgeActivityCounts": {
+      "created": {
+        "value": 1,
+        "status": "observed",
+        "reason": "reason-value"
+      },
+      "updated": {
+        "value": 1,
+        "status": "observed",
+        "reason": "reason-value"
+      },
+      "consulted": {
+        "value": 1,
+        "status": "observed",
+        "reason": "reason-value"
+      }
     },
     "KnowledgeCancellation": {
       "expected_revision": 1
@@ -4195,6 +4994,68 @@
       "label": "label-value",
       "kind": "kind-value"
     },
+    "McpActivityCounts": {
+      "requests": {
+        "value": 1,
+        "status": "observed",
+        "reason": "reason-value"
+      },
+      "tool_calls": {
+        "value": 1,
+        "status": "observed",
+        "reason": "reason-value"
+      },
+      "succeeded": {
+        "value": 1,
+        "status": "observed",
+        "reason": "reason-value"
+      },
+      "failed": {
+        "value": 1,
+        "status": "observed",
+        "reason": "reason-value"
+      },
+      "rejected": {
+        "value": 1,
+        "status": "observed",
+        "reason": "reason-value"
+      },
+      "average_duration_ms": {
+        "value": 1,
+        "status": "observed",
+        "reason": "reason-value"
+      },
+      "p95_duration_ms": {
+        "value": 1,
+        "status": "observed",
+        "reason": "reason-value"
+      },
+      "tool_cancelled": {
+        "value": 1,
+        "status": "observed",
+        "reason": "reason-value"
+      },
+      "request_succeeded": {
+        "value": 1,
+        "status": "observed",
+        "reason": "reason-value"
+      },
+      "request_failed": {
+        "value": 1,
+        "status": "observed",
+        "reason": "reason-value"
+      },
+      "request_rejected": {
+        "value": 1,
+        "status": "observed",
+        "reason": "reason-value"
+      },
+      "request_cancelled": {
+        "value": 1,
+        "status": "observed",
+        "reason": "reason-value"
+      }
+    },
     "McpConnectionDescriptor": {
       "enabled": false,
       "local_only": false,
@@ -4496,6 +5357,31 @@
         "names-value"
       ]
     },
+    "ModelActivityCounts": {
+      "input_tokens": {
+        "value": 1,
+        "status": "observed",
+        "reason": "reason-value"
+      },
+      "output_tokens": {
+        "value": 1,
+        "status": "observed",
+        "reason": "reason-value"
+      },
+      "embedding_tokens": {
+        "value": 1,
+        "status": "observed",
+        "reason": "reason-value"
+      },
+      "cost": {
+        "amount": 0.25,
+        "currency": "currency-value",
+        "status": "observed",
+        "source": "source-value",
+        "reason": "reason-value"
+      },
+      "external_client_consumption": "not_observed"
+    },
     "ModelCapability": {
       "image_input": {
         "supported": false,
@@ -4735,6 +5621,93 @@
       "table_id": "table_id-value",
       "table_name": "table_name-value",
       "snapshot_id": "snapshot_id-value"
+    },
+    "NotificationDetails": {
+      "label": "label-value",
+      "scopes": [
+        "scopes-value"
+      ],
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "NotificationPreferenceRule": {
+      "kind": "invitation",
+      "required": false,
+      "inbox": false,
+      "email": false,
+      "email_available": false
+    },
+    "NotificationPreferenceRuleInput": {
+      "kind": "invitation",
+      "inbox": false,
+      "email": false
+    },
+    "NotificationPreferences": {
+      "admin_summaries_available": false,
+      "admin_summaries_enabled": false,
+      "revision": 1,
+      "rules": [
+        {
+          "kind": "invitation",
+          "required": false,
+          "inbox": false,
+          "email": false,
+          "email_available": false
+        }
+      ],
+      "digest": "off",
+      "allowed_digests": [
+        "off"
+      ],
+      "locale": "locale-value",
+      "time_zone": "time_zone-value",
+      "schedule": {
+        "local_time": "local_time-value",
+        "weekday": 1,
+        "day_of_month": 1
+      },
+      "next_run_at": "2026-10-27T12:34:56Z",
+      "next_run_local": "next_run_local-value",
+      "admin_summaries": false,
+      "notification_locale": "notification_locale-value",
+      "effective_locale": "effective_locale-value",
+      "locale_origin": "user"
+    },
+    "NotificationPreferencesInput": {
+      "expected_revision": 1,
+      "rules": [
+        {
+          "kind": "invitation",
+          "inbox": false,
+          "email": false
+        }
+      ],
+      "digest": "off",
+      "schedule": {
+        "local_time": "local_time-value",
+        "weekday": 1,
+        "day_of_month": 1
+      },
+      "admin_summaries": false,
+      "notification_locale": "notification_locale-value"
+    },
+    "NotificationTarget": {
+      "kind": "invitation",
+      "id": "id-value"
+    },
+    "NotificationUnreadCount": {
+      "unread": 1
+    },
+    "ObservedCost": {
+      "amount": 0.25,
+      "currency": "currency-value",
+      "status": "observed",
+      "source": "source-value",
+      "reason": "reason-value"
+    },
+    "ObservedCount": {
+      "value": 1,
+      "status": "observed",
+      "reason": "reason-value"
     },
     "OpenUIArtifact": {
       "id": "id-value",
@@ -5385,6 +6358,68 @@
       "kind": "division"
     },
     "Output": {},
+    "OwnNotification": {
+      "workspace_name": "workspace_name-value",
+      "actor_name": "actor_name-value",
+      "details": {
+        "label": "label-value",
+        "scopes": [
+          "scopes-value"
+        ],
+        "expires_at": "2026-10-27T12:34:56Z"
+      },
+      "id": "id-value",
+      "kind": "invitation",
+      "title": "title-value",
+      "body": "body-value",
+      "created_at": "2026-10-27T12:34:56Z",
+      "read_at": "2026-10-27T12:34:56Z",
+      "tenant_id": "tenant_id-value",
+      "organization_name": "organization_name-value",
+      "target": {
+        "kind": "invitation",
+        "id": "id-value"
+      },
+      "effective_locale": "effective_locale-value",
+      "locale_origin": "user",
+      "powered_by": "Powered by koinon",
+      "copyright": "copyright-value"
+    },
+    "OwnNotificationPage": {
+      "items": [
+        {
+          "workspace_name": "workspace_name-value",
+          "actor_name": "actor_name-value",
+          "details": {
+            "label": "label-value",
+            "scopes": [
+              "scopes-value"
+            ],
+            "expires_at": "2026-10-27T12:34:56Z"
+          },
+          "id": "id-value",
+          "kind": "invitation",
+          "title": "title-value",
+          "body": "body-value",
+          "created_at": "2026-10-27T12:34:56Z",
+          "read_at": "2026-10-27T12:34:56Z",
+          "tenant_id": "tenant_id-value",
+          "organization_name": "organization_name-value",
+          "target": {
+            "kind": "invitation",
+            "id": "id-value"
+          },
+          "effective_locale": "effective_locale-value",
+          "locale_origin": "user",
+          "powered_by": "Powered by koinon",
+          "copyright": "copyright-value"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
     "Page": {
       "summaries": {
         "example": {
@@ -6354,6 +7389,28 @@
       "time_zone": "time_zone-value",
       "response_language": "response_language-value"
     },
+    "ProjectActivity": {
+      "project_id": "project_id-value",
+      "workspace_id": "workspace_id-value",
+      "name": "name-value",
+      "knowledge": {
+        "created": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "updated": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "consulted": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        }
+      }
+    },
     "PromotedCatalogEntry": {
       "id": "id-value",
       "tenant_id": "tenant_id-value",
@@ -6750,6 +7807,22 @@
       "query_id": "query_id-value",
       "format": "parquet",
       "csv_mode": "spreadsheet_safe"
+    },
+    "RecipientProvider": {
+      "id": "id-value",
+      "display_name": "display_name-value"
+    },
+    "RecipientProviderPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "display_name": "display_name-value"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
     },
     "ReplaceDocument": {
       "expected_source_version_id": "expected_source_version_id-value",
@@ -7969,6 +9042,11 @@
           "message": "message-value"
         }
       ]
+    },
+    "VerifiedSenderOption": {
+      "id": "id-value",
+      "display_name": "display_name-value",
+      "address": "address-value"
     },
     "KnowledgeCommitOutcome": {
       "status": "committed",

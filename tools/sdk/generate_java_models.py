@@ -61,7 +61,7 @@ names = {
         "ObservationStatus": ["passed", "failed", "unknown"],
         "KnowledgeDomain": ["documents", "structured"],
         "KnowledgeAnswerMode": ["rag", "rlm"],
-        "McpOAuthScope": ["catalog:read", "catalog:write", "ingest:write", "knowledge:search", "query:execute", "chat:use", "evidence:read"],
+        "McpOAuthScope": ["catalog:read", "catalog:write", "ingest:write", "knowledge:search", "query:execute", "chat:use", "evidence:read", "activity:read"],
         "McpRegisteredClientClientAuth": ["public", "confidential"],
         "KnowledgeSettingsOrigin": ["deployment", "organization"],
         "ConnectionMode": ["provider", "current_agent"],
@@ -127,6 +127,8 @@ def find_unions(value):
 find_unions(defs)
 
 def java_type(s, owner="", field=""):
+    if owner == "ObservedCost" and field == "amount":
+        return "BigDecimal"
     union = union_name(s)
     if union:
         return union

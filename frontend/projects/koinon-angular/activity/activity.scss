@@ -1,0 +1,157 @@
+/* Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 */
+:host {
+  display: block;
+  min-width: 0;
+  color: var(--ui-text);
+  font-family: var(--ffk-font, 'Manrope', sans-serif);
+}
+.activity-summary {
+  margin: 28px 0 40px;
+}
+header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+h2 {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+h3 {
+  font-size: 14px;
+  font-weight: 550;
+  margin: 0 0 12px;
+}
+p,
+small {
+  font-size: 12px;
+  color: var(--ui-muted);
+  line-height: 1.8;
+}
+p {
+  max-width: 76ch;
+}
+small {
+  display: block;
+}
+.coverage {
+  padding: 12px 16px;
+  border-left: 2px solid var(--ui-accent);
+  background: var(--ui-surface-alt);
+}
+.knowledge-counts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin: 28px 0 36px;
+}
+.knowledge-counts article {
+  border-top: 1px solid var(--ui-line);
+  padding-top: 18px;
+}
+.knowledge-counts strong {
+  display: block;
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  overflow-wrap: anywhere;
+}
+.projects {
+  margin: 32px 0;
+}
+.projects ol {
+  padding: 0;
+  list-style: none;
+  max-width: 780px;
+}
+.projects li {
+  padding: 14px 0;
+}
+.projects li > div:first-child {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  font-size: 13px;
+}
+.projects li strong {
+  font-weight: 500;
+}
+.project-track {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--ui-line);
+  margin: 12px 0 8px;
+  overflow: hidden;
+}
+.project-bar {
+  display: block;
+  height: 100%;
+  background: var(--ui-accent);
+}
+dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px 32px;
+  margin: 22px 0 32px;
+}
+dt {
+  font-size: 12px;
+  color: var(--ui-muted);
+  line-height: 1.6;
+}
+dd {
+  margin: 7px 0 0;
+  font-size: 17px;
+}
+details {
+  border-top: 1px solid var(--ui-line);
+  padding: 20px 0;
+}
+summary {
+  font-size: 13px;
+  cursor: pointer;
+  min-height: 24px;
+}
+.mcp {
+  margin-top: 32px;
+}
+.table-scroll {
+  overflow-x: auto;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12px;
+}
+th,
+td {
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid var(--ui-line);
+}
+th {
+  font-weight: 500;
+}
+summary:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 4px;
+}
+@media (max-width: 600px) {
+  .knowledge-counts {
+    gap: 14px;
+  }
+  .knowledge-counts strong {
+    font-size: 23px;
+  }
+  dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .projects li > div:first-child {
+    display: grid;
+    gap: 5px;
+  }
+}

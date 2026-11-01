@@ -29,7 +29,7 @@ class FileManifestItem(Input):
     client_item_id: Identifier
     filename: str = Field(strict=True, min_length=1, max_length=255)
     mode: Literal["document", "dataset"]
-    size_bytes: int = Field(strict=True, ge=1, le=32 * 1024 * 1024)
+    size_bytes: int = Field(strict=True, ge=1, le=128 * 1024 * 1024)
     sha256: Digest
 
     @field_validator("filename")
@@ -54,8 +54,8 @@ class FileBatchCreate(Input):
     def unique_and_bounded(self):
         if len({item.client_item_id for item in self.items}) != len(self.items):
             raise ValueError("Client item IDs must be unique within a batch")
-        if sum(item.size_bytes for item in self.items) > 256 * 1024 * 1024:
-            raise ValueError("Batch content exceeds256MiB")
+        if sum(item.size_bytes for item in self.items) > 512 * 1024 * 1024:
+            raise ValueError("Batch content exceeds512MiB")
         return self
 
 
@@ -80,6 +80,9 @@ class FileBatchCapabilities(Output):
     writer_fence: Literal["primary_database_generation_lease"] = "primary_database_generation_lease"
     worker: Literal["external_native_worker"] = "external_native_worker"
     automatic_unknown_replay: Literal[False] = False
+    synchronous_max_file_bytes: int = 32 * 1024 * 1024
+    large_file_transport: Literal["queued_file_spool"] = "queued_file_spool"
+    quota_semantics: Literal["lifetime_admission_bytes"] = "lifetime_admission_bytes"
     max_files: int
     max_file_bytes: int
     max_batch_bytes: int

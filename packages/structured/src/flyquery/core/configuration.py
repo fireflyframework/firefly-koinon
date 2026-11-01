@@ -79,6 +79,22 @@ class FlyqueryConfiguration:
             if value is not None:
                 overrides[field] = value
         settings = FlyquerySettings(**overrides)
+        if config is not None and config.get("koinon.knowledge.ingestion") is not None:
+            from koinon_storage.profile import LibraryIngestionProfile
+
+            profile = LibraryIngestionProfile.from_config(config)
+            configured = settings.model_dump()
+            configured.update(
+                {
+                    "max_file_mb": (profile.raw_max_bytes + 1024**2 - 1) // 1024**2,
+                    "max_file_bytes": profile.raw_max_bytes,
+                    "ingest_decompressed_max_bytes": profile.expanded_max_bytes,
+                    "ingest_scratch_max_bytes": profile.scratch_max_bytes,
+                    "ingest_reader_rss_max_bytes": profile.child_rss_max_bytes,
+                    "ingest_reader_timeout_seconds": profile.wall_seconds,
+                }
+            )
+            settings = FlyquerySettings(**configured)
         settings._require_model_bindings = (
             bool(config.get("koinon.knowledge.require_connections", False)) if config else False
         )

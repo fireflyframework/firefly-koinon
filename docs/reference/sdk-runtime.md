@@ -117,6 +117,18 @@ Numbered helpers reject an invalid first page or an inconsistent returned page n
 
 See the pagination examples in the language guides. Retained glossary lists use their own offset/limit/has-more contract; do not substitute a numbered-page assumption.
 
+## Large original uploads
+
+Durable file batches accept raw originals up to 128 MiB, subject to the installation's advertised limit. The [file-batch guide](../guides/bulk-intake.md#upload-a-large-original-without-loading-it-all-into-memory) explains manifest admission, upload receipts and explicit submission together.
+
+| Language | File transport | Ownership |
+| --- | --- | --- |
+| Python | `upload_file_batch_path` | Prepares and verifies a private temporary copy of a regular file, then streams 64 KiB blocks. Preparation runs outside the event loop. The helper drains admitted preparation and closes the copy on success, failure or cancellation. |
+| TypeScript | `fileBatches.upload` with a `Blob` or `File` | Fetch consumes the original blob. The SDK does not create a complete array-buffer copy or Base64 representation. The caller owns its abort signal. |
+| Java 21+ | `fileBatches(tenant).uploadPath` with `BulkFilePath` | Prepares a private verified temporary copy and uses its owned input as the HTTP publisher, so changes to the caller's path cannot change the request. `uploadPathAsync` supplies the asynchronous variant. |
+
+The existing Python bytes and Java `BulkFileUpload` helpers remain available. Java defensively copies those byte arrays; choose the file transport when the original is on disk. Upload helpers send once. An interrupted request requires inspecting its retained staging receipt; cancellation does not establish server rollback.
+
 ## Downloads and file ownership
 
 | Language | Result | Ownership |

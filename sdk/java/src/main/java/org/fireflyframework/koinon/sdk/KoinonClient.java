@@ -102,6 +102,12 @@ public final class KoinonClient implements AutoCloseable {
     return new PeopleApi(transport, tenant);
   }
 
+  public CommunicationsApi communications(String tenant) { return new CommunicationsApi(transport, tenant); }
+  public EmailInvitationsApi emailInvitations() { return new EmailInvitationsApi(transport); }
+  public NotificationsApi notifications() { return new NotificationsApi(transport); }
+
+  public ActivityApi activity(String tenant) { return new ActivityApi(transport, tenant); }
+
   public AuditApi audit(String tenant) {
     return new AuditApi(transport, tenant);
   }

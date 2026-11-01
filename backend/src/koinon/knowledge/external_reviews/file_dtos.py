@@ -8,7 +8,7 @@ from pydantic import AwareDatetime, Field, JsonValue, field_validator, model_val
 from koinon.knowledge.curated.dtos import Frozen, Identifier, KnowledgeDestination, Sha256
 
 CHUNK_BYTES = 65536
-MAX_FILE_BYTES = 32 * 1024 * 1024
+MAX_FILE_BYTES = 128 * 1024 * 1024
 
 
 class ExternalFileReviewInput(Frozen):
@@ -35,7 +35,7 @@ class ExternalFileReviewInput(Frozen):
 
 
 class ExternalFileChunkInput(Frozen):
-    index: int = Field(ge=0, le=511, strict=True)
+    index: int = Field(ge=0, le=2047, strict=True)
     data_base64: str = Field(min_length=4, max_length=87384)
     sha256: Sha256
 
@@ -117,8 +117,8 @@ class ExternalFileCleanupInput(Frozen):
 class ExternalFileCleanupReview(Frozen):
     id: Identifier
     status: Literal["purging", "purged"]
-    processed_objects: int = Field(ge=0, le=513)
-    total_objects: int = Field(ge=1, le=513)
+    processed_objects: int = Field(ge=0, le=2049)
+    total_objects: int = Field(ge=1, le=2049)
 
 
 class ExternalFileCleanupResult(Frozen):

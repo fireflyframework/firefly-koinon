@@ -28,6 +28,7 @@ from koinon.knowledge.external_reviews.file_dtos import (
     ExternalFileReviewInput,
     ExternalFileReviewView,
 )
+from koinon.knowledge.external_reviews.file_queue import ExternalFileQueue
 from koinon.knowledge.external_reviews.file_storage import ExternalReviewFileStorage
 from koinon.knowledge.external_reviews.repositories import ExternalFileReviewRepository
 from koinon.knowledge.external_reviews.service import ExternalKnowledgeReviews, fingerprint, key
@@ -46,11 +47,13 @@ class ExternalFileReviews:
         knowledge: Provider[KnowledgeFacade | None],
         settings: ExternalReviewSettings,
         cleanup: ExternalFileCleanup,
+        queue: ExternalFileQueue | None = None,
     ):
         self.rows, self.reviews, self.authority = rows, reviews, authority
         self.storage, self.knowledge = storage, knowledge
         self.settings = settings
         self.cleaner = cleanup
+        self.queue = queue
 
     def facade(self) -> KnowledgeFacade:
         value = self.knowledge.get()
@@ -59,6 +62,17 @@ class ExternalFileReviews:
                 "Configure canonical knowledge ingestion", code="EXTERNAL_INTAKE_UNAVAILABLE"
             )
         return value
+
+    def capacity(self) -> int:
+        self.settings.validate()
+        _, storage_limit = self.storage.configured()
+        intake_limit = self.facade().settings.max_upload_bytes
+        if self.queue is not None and self.storage.file_transport():
+            intake_limit = max(intake_limit, self.queue.capacity())
+        return min(
+            MAX_FILE_BYTES, self.settings.max_file_bytes, intake_limit, storage_limit,
+            self.storage.scratch.capacity_bytes // 2,
+        )
 
     async def load(
         self, subject: str, tenant_id: str, identifier: str, *, lock=False
@@ -137,11 +151,7 @@ class ExternalFileReviews:
         grant = await self.reviews.grant(subject, tenant_id)
         self.settings.validate()
         await self.authority.catalog.tenant_repository.find_by_id(tenant_id, lock=LockMode.PESSIMISTIC_WRITE)
-        facade = self.facade()
-        _, storage_limit = self.storage.configured()
-        if request.size_bytes > min(
-            MAX_FILE_BYTES, self.settings.max_file_bytes, facade.settings.max_upload_bytes, storage_limit
-        ):
+        if request.size_bytes > self.capacity():
             raise InvalidRequestException(
                 "The file exceeds its configured upload bound", code="EXTERNAL_FILE_TOO_LARGE"
             )
@@ -253,19 +263,16 @@ class ExternalFileReviews:
         count = (request.size_bytes + CHUNK_BYTES - 1) // CHUNK_BYTES
         if set(row.chunks_json) != {str(index) for index in range(count)}:
             raise ConflictException("Upload every expected file chunk", code="EXTERNAL_FILE_INCOMPLETE")
-        content = bytearray()
-        for index in range(count):
-            chunk = row.chunks_json[str(index)]
-            content.extend(await self.storage.read(row, f"chunks/{index}", chunk["size"], chunk["sha256"]))
-            if len(content) > request.size_bytes:
-                raise ConflictException("File size changed", code="EXTERNAL_FILE_DIGEST_MISMATCH")
-        if len(content) != request.size_bytes or hashlib.sha256(content).hexdigest() != request.sha256:
+        try:
+            async with self.storage.spool(request.size_bytes):
+                reference = await self.storage.seal_file(row, request.size_bytes, request.sha256)
+        except ValueError:
             raise ConflictException(
                 "File digest differs from the reviewed manifest", code="EXTERNAL_FILE_DIGEST_MISMATCH"
-            )
-        await self.storage.put(row, "original", bytes(content), request.sha256)
+            ) from None
         self.fresh(row, {"uploading", "preview"})
         row.blob_key, row.status = self.storage.key(row, "original"), "preview"
+        row.blob_reference_json = reference.to_dict() if reference else None
         await self.rows.save(row)
         return await self.view(subject, tenant_id, row)
 
@@ -445,6 +452,13 @@ class ExternalFileReviews:
             request = ExternalFileReviewInput.model_validate(row.request_json)
             destination = await self.authorize(subject, tenant_id, row)
             try:
+                if request.size_bytes > self.facade().settings.max_upload_bytes:
+                    if self.queue is None:
+                        raise ServiceUnavailableException(
+                            "Configure queued file ingestion", code="EXTERNAL_INTAKE_UNAVAILABLE"
+                        )
+                    await self.queue.enqueue(self, subject, tenant_id, identifier)
+                    return await self.get(subject, tenant_id, identifier)
                 content = await self.storage.read(row, "original", request.size_bytes, request.sha256)
                 row = await self.load(subject, tenant_id, identifier)
                 destination = await self.authorize(subject, tenant_id, row)

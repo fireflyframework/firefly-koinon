@@ -32,10 +32,16 @@ def test_additive_bulk_migration_metadata_and_immutable_receipts_preserve_retain
         for entity in [BulkBatch, BulkItem, BulkUpload, BulkQuota]:
             table = entity.__table__
             columns = {c["name"]: c for c in actual.get_columns(table.name)}
-            expected = set(table.columns.keys()) - ({"reservation_json"} if entity is BulkItem else set())
+            expected = set(table.columns.keys()) - (
+                {"reservation_json"}
+                if entity is BulkItem
+                else {"object_reference_json"}
+                if entity is BulkUpload
+                else set()
+            )
             assert set(columns) == expected
             for column in table.columns:
-                if column.name == "reservation_json":
+                if column.name in {"reservation_json", "object_reference_json"}:
                     continue  # Added by the separately tested additive 0026 migration.
                 assert columns[column.name]["nullable"] == column.nullable
                 assert str(columns[column.name]["type"]) == str(

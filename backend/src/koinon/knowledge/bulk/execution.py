@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 """One leased item; completed native work is reconciled without model/provider replay."""
 
+import tempfile
+from pathlib import Path
+
 from pyfly.container import Provider, service
 from pyfly.kernel import ConflictException, ServiceUnavailableException
 from pyfly.security.context import SecurityContext
@@ -42,14 +45,21 @@ class BulkExecutor:
                     receipt = await native.finalize_prepared(lease)
                 else:
                     original = await self.queue.original(lease)
-                    content = await self.storage.read(
-                        original.object_key,
-                        original.size_bytes,
-                        original.sha256,
-                        storage_identity=original.storage_identity,
-                    )
-                    await self.queue.check(lease)
-                    receipt = await native.execute(lease, content)
+                    if original.object_reference_json is not None:
+                        with tempfile.TemporaryDirectory(prefix="koinon-bulk-") as directory:
+                            path = Path(directory) / "original"
+                            await self.storage.read_file(original, path)
+                            await self.queue.check(lease)
+                            receipt = await native.execute_file(lease, path)
+                    else:
+                        content = await self.storage.read(
+                            original.object_key,
+                            original.size_bytes,
+                            original.sha256,
+                            storage_identity=original.storage_identity,
+                        )
+                        await self.queue.check(lease)
+                        receipt = await native.execute(lease, content)
                 if receipt.sha256 != lease.sha256 or receipt.size_bytes != lease.size_bytes:
                     raise ConflictException(
                         "Native receipt differs from admitted bytes", code="BULK_NATIVE_RECEIPT_CONFLICT"

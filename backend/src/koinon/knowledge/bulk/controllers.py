@@ -1,7 +1,9 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
 import asyncio
+import tempfile
 from hashlib import sha256
+from pathlib import Path
 
 from pyfly.container import rest_controller
 from pyfly.kernel import PayloadTooLargeException
@@ -28,6 +30,7 @@ from koinon.knowledge.bulk.dtos import (
 )
 from koinon.knowledge.bulk.service import FileBatches, key_digest
 from koinon.security.identity import identity_from_request
+from koinon.storage.scratch import ScratchAdmission
 
 
 def action_key(request: Request) -> str:
@@ -39,8 +42,9 @@ def action_key(request: Request) -> str:
 @rest_controller(name="knowledge.bulk.controller")
 @request_mapping("/api/v1/tenants/{tenant_id}")
 class FileBatchController:
-    def __init__(self, files: FileBatches):
+    def __init__(self, files: FileBatches, scratch: ScratchAdmission):
         self.files = files
+        self.scratch = scratch
 
     @get_mapping("/source-batch-capabilities")
     async def capabilities(
@@ -92,29 +96,34 @@ class FileBatchController:
         subject = identity_from_request(request).subject
         ticket = await self.files.reserve_stream(subject, tenant_id, batch_id, item_id, action_key(request))
         try:
-            received = 0
-            digest = sha256()
-            buffer = bytearray() if ticket.write else None
-            async with asyncio.timeout(60):
-                async for part in request.stream():
-                    received += len(part)
-                    if received > ticket.size_bytes:
-                        raise PayloadTooLargeException(
-                            "Body exceeds its admitted original size", code="BULK_CONTENT_LIMIT"
-                        )
-                    digest.update(part)
-                    if buffer is not None:
-                        buffer.extend(part)
-            return await self.files.finish_stream(
-                subject,
-                tenant_id,
-                batch_id,
-                item_id,
-                ticket,
-                bytes(buffer) if buffer is not None else None,
-                received,
-                digest.hexdigest(),
-            )
+            with (
+                self.scratch.reserve(2 * ticket.size_bytes),
+                tempfile.TemporaryDirectory(prefix="koinon-upload-") as directory,
+            ):
+                path = Path(directory) / "original"
+                received = 0
+                digest = sha256()
+                with path.open("xb") as spool:
+                    async with asyncio.timeout(120):
+                        async for part in request.stream():
+                            received += len(part)
+                            if received > ticket.size_bytes:
+                                raise PayloadTooLargeException(
+                                    "Body exceeds its admitted original size", code="BULK_CONTENT_LIMIT"
+                                )
+                            digest.update(part)
+                            if ticket.write:
+                                spool.write(part)
+                return await self.files.finish_stream(
+                    subject,
+                    tenant_id,
+                    batch_id,
+                    item_id,
+                    ticket,
+                    path if ticket.write else None,
+                    received,
+                    digest.hexdigest(),
+                )
         except BaseException:
             await self.files.abort_stream(tenant_id, ticket)
             raise

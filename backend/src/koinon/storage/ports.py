@@ -3,7 +3,9 @@
 import hashlib
 import hmac
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Protocol, runtime_checkable
+
+from koinon_storage.files import StoredObjectReference
 
 
 class BlobIntegrityError(OSError):
@@ -26,6 +28,13 @@ class BlobStore(Protocol):
     async def get_bounded(self, key: str, max_bytes: int) -> bytes: ...
     async def delete(self, key: str) -> None: ...
     async def purge_staging(self, key: str) -> None: ...
+
+
+@runtime_checkable
+class FileBlobStore(BlobStore, Protocol):
+    async def create_file(self, key: str, path, content_type: str | None = None) -> StoredObjectReference: ...
+    async def capture_file(self, key: str, size: int, digest: str) -> StoredObjectReference: ...
+    async def download_file(self, reference: StoredObjectReference, path, *, max_bytes: int) -> None: ...
 
 
 def validate_key(key: str) -> str:

@@ -1,5 +1,17 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
+from koinon_sdk.activity import (
+    ActivityCoverage,
+    ActivitySummary,
+    ActivityWindow,
+    DailyActivity,
+    KnowledgeActivityCounts,
+    McpActivityCounts,
+    ModelActivityCounts,
+    ObservedCost,
+    ObservedCount,
+    ProjectActivity,
+)
 from koinon_sdk.answer_audit import (
     AnswerAudit,
     GenerationReceipt,
@@ -61,6 +73,17 @@ from koinon_sdk.bulk_queries import (
 from koinon_sdk.client import (
     ApiError,
     KoinonClient,
+)
+from koinon_sdk.communications import (
+    ActivityEmailPreviewInput,
+    CommunicationPolicy,
+    CommunicationPolicyInput,
+    DigestSchedule,
+    EmailInvitation,
+    EmailInvitationInput,
+    EmailPreview,
+    NotificationPreferences,
+    NotificationPreferencesInput,
 )
 from koinon_sdk.connection_filters import (
     AttachmentChunkFilter,
@@ -825,4 +848,29 @@ __all__ += [
     "QueryBatchResult",
     "QueryBatchView",
     "QueryManifestItem",
+]
+
+__all__ += [
+    "ActivitySummary",
+    "ActivityWindow",
+    "ObservedCount",
+    "ObservedCost",
+    "KnowledgeActivityCounts",
+    "McpActivityCounts",
+    "ModelActivityCounts",
+    "ProjectActivity",
+    "DailyActivity",
+    "ActivityCoverage",
+]
+
+__all__ += [
+    "EmailInvitationInput",
+    "EmailInvitation",
+    "EmailPreview",
+    "NotificationPreferences",
+    "NotificationPreferencesInput",
+    "CommunicationPolicy",
+    "CommunicationPolicyInput",
+    "ActivityEmailPreviewInput",
+    "DigestSchedule",
 ]

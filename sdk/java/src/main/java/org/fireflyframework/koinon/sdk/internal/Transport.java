@@ -32,6 +32,7 @@ import org.fireflyframework.koinon.sdk.BinaryResponse;
 import org.fireflyframework.koinon.sdk.EventStream;
 import org.fireflyframework.koinon.sdk.FileDownload;
 import org.fireflyframework.koinon.sdk.RequestOptions;
+import org.fireflyframework.koinon.sdk.model.BulkFilePath;
 
 /** Implementation detail shared by the typed resource groups. */
 public final class Transport implements AutoCloseable {
@@ -169,6 +170,29 @@ public final class Transport implements AutoCloseable {
       RequestOptions options,
       JavaType type) {
     return Blocking.await(bytesAsync(method, path, body, mediaType, options, type));
+  }
+
+  public <T> T file(
+      String method, String path, BulkFilePath original, RequestOptions options, JavaType type) {
+    return Blocking.await(fileAsync(method, path, original, options, type));
+  }
+
+  public <T> CompletableFuture<T> fileAsync(
+      String method, String path, BulkFilePath original, RequestOptions options, JavaType type) {
+    var snapshot = original.snapshot();
+    try {
+      CompletableFuture<T> result = typed(
+          request(method, path, snapshot.publisher(), options, "application/octet-stream", "application/json"),
+          options, type);
+      result.whenComplete((value, error) -> snapshot.close());
+      return result;
+    } catch (IOException error) {
+      snapshot.close();
+      return CompletableFuture.failedFuture(error);
+    } catch (RuntimeException error) {
+      snapshot.close();
+      throw error;
+    }
   }
 
   public <T> CompletableFuture<T> bytesAsync(

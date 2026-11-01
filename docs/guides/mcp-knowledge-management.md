@@ -36,7 +36,9 @@ If access, the destination, content revision or supporting sources change, obtai
 
 Ask the assistant to call `koinon_prepare_file_upload` with the authorized collection/corpus ID and `mode="document"` or `mode="dataset"`. The embedded component opens a local file picker. Selecting a file does not immediately add it to the organization's searchable repository.
 
-The component calculates its real size and SHA-256, stages the manifest, transfers 64 KiB chunks with per-chunk hashes and seals the complete file. The server enforces its configured private-storage and canonical-ingestion limits; the advertised maximum is their minimum, capped at 32 MiB. No arbitrary remote download URL is accepted.
+The component calculates the file's size and SHA-256, stages its manifest and transfers 64 KiB chunks with individual hashes. The server assembles those chunks in a private temporary directory and verifies the complete digest before offering approval. With file-based private storage and configured durable bulk ingestion, the maximum can reach 128 MiB. The advertised limit also respects smaller installation and storage limits. A byte-only storage backend retains the synchronous ceiling of 32 MiB. The file picker accepts local files; it does not fetch arbitrary remote URLs.
+
+The sealed original remains in the configured object store. Its saved reference identifies the storage route, exact provider version, byte count and SHA-256. Changing the storage location or replacing the object cannot silently supply different evidence. The temporary directory is disposable and is removed after processing or cancellation; it is never the authoritative copy.
 
 The review shows the filename, declared media type, byte size and SHA-256. Review these details together with the destination and mode. Approve explicitly to submit it to the normal ingestion path. Cancel to leave repository knowledge unchanged. The component's upload state is separate from ingestion state:
 
@@ -49,6 +51,8 @@ The review shows the filename, declared media type, byte size and SHA-256. Revie
 | `cancelled` | The staged upload was cancelled before ingestion |
 
 A recorded source identity and protected review marker allow status reconciliation without uploading the file again. Unknown outcomes never trigger automatic ingestion replay. A committed source does not imply that extraction, indexing or every downstream process has finished.
+
+Files above the installation's synchronous limit enter the durable file-batch queue after approval. That batch owns the same canonical source recorded in the review. Its worker rechecks the originating credential, destination and processing authority before publication. Refresh the review to reconcile a completed source; keep its original approval key if a request times out. Do not submit a second source to compensate for an outcome that is still unknown.
 
 ![Verify the selected file before importing it](../assets/screenshots/mcp-file-review.png)
 
@@ -72,7 +76,9 @@ For multiple MCP replicas, the operator must provide legacy session affinity. If
 
 ## Operator limits and retained data
 
-Configure bounded staging limits through `koinon.external_reviews`: `max_active_files` defaults to 8 per owner within an organization, `max_staged_bytes` to 128 MiB, `max_file_bytes` to 32 MiB and `ttl_seconds` to 900. Credential expiry can shorten a review's lifetime. These quotas span the owner's credentials. Cancelled or expired uploads keep consuming staged capacity until their private objects are purged; unresolved ingestion is retained for reconciliation.
+Configure staging limits through `koinon.external_reviews`: `max_active_files` defaults to 8 per owner within an organization, `max_staged_bytes` to 512 MiB, `max_file_bytes` to 128 MiB and `ttl_seconds` to 900. A configured maximum does not override a smaller storage or ingestion limit. Credential expiry can shorten a review's lifetime. These quotas span the owner's credentials. Cancelled or expired uploads keep consuming staged capacity until their private objects are purged; unresolved ingestion is retained for reconciliation.
+
+Each API process admits one file-assembly or approved-original transfer at a time. This is separate from the bulk uploader's own admission and the shared heavy-worker budget. Size the temporary volume for these operations together, including streamed verification copies, as described in the [Library ingestion profile](../reference/library-file-ingestion.md). Multiple replicas share durable objects and database records; they do not share temporary directories or in-memory permits.
 
 Administrators with `settings:write` and the relevant resource access can explicitly clean up selected expired or cancelled uploads using `POST /api/v1/tenants/{tenant_id}/external-file-reviews/cleanup`. Each call selects at most 25 review IDs and processes at most 64 owned objects with a durable cursor. It does not purge committed, uncertain or already admitted ingestion. This maintenance API is available in all three typed SDKs and is not an MCP tool. There is no automatic cleanup scheduler.
 

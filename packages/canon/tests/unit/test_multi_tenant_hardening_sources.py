@@ -1,4 +1,5 @@
 # Copyright 2024-2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -343,7 +344,9 @@ class TestIngestTopicPayloadsCarryScope:
 # ---------------------------------------------------------------------
 
 
-def _async_service(settings: CanonSettings) -> tuple[AsyncIngestService, MagicMock, MagicMock]:
+def _async_service(
+    settings: CanonSettings, object_store=None
+) -> tuple[AsyncIngestService, MagicMock, MagicMock]:
     repository = MagicMock()
     publisher = MagicMock()
     publisher.publish = AsyncMock(return_value=None)
@@ -355,6 +358,7 @@ def _async_service(settings: CanonSettings) -> tuple[AsyncIngestService, MagicMo
         audit=audit,
         event_publisher=publisher,
         settings=settings,
+        object_store=object_store,
     )
     return service, repository, publisher
 
@@ -374,8 +378,10 @@ def _job(callback_url: str | None) -> IngestJobRow:
 
 class TestAsyncIngestScopeAndWebhook:
     @pytest.mark.asyncio
-    async def test_requested_event_carries_scope(self) -> None:
-        service, repository, publisher = _async_service(CanonSettings())
+    async def test_requested_event_carries_scope(self, tmp_path) -> None:
+        from flycanon.core.services.storage.local_fs import LocalFsObjectStore
+
+        service, repository, publisher = _async_service(CanonSettings(), LocalFsObjectStore(str(tmp_path)))
         stored = _job(None)
         stored.status = "queued"
         repository.add = AsyncMock(return_value=stored)

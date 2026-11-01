@@ -10,7 +10,7 @@
       <ffk-icon name="table" /><span>{{ target.datasetName }}</span>
     </p>
     @if (state.detailOpen()) {
-      <ffk-button class="back" variant="quiet" icon="chevron-left" (click)="state.back()">{{
+      <ffk-button class="back" variant="back" icon="chevron-left" (click)="state.back()">{{
         'All versions' | ffkText
       }}</ffk-button>
     } @else {

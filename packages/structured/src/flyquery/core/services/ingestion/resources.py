@@ -28,6 +28,12 @@ class IngestionResourcePolicy:
     decompressed_max_bytes: int = 5 * 1024 * 1024 * 1024
     native_connections: int = 32
     scratch_root: str | None = None
+    reader_rss_max_bytes: int = 768 * 1024**2
+    reader_timeout_seconds: int = 120
+    excel_max_cells: int = 2_000_000
+    excel_max_rows: int = 1_000_000
+    excel_max_columns: int = 4096
+    shared_strings_max_bytes: int = 32 * 1024**2
 
     def __post_init__(self):
         if not isinstance(self.memory_limit, str) or not re.fullmatch(
@@ -40,6 +46,12 @@ class IngestionResourcePolicy:
         if int(match[1]) * units[match[2]] > 64 * 1024**3:
             raise ValueError("Ingestion memory cannot exceed 64 GiB per native connection")
         for value, maximum in (
+            (self.reader_rss_max_bytes, 8 * 1024**3),
+            (self.reader_timeout_seconds, 120),
+            (self.excel_max_cells, 16_000_000),
+            (self.excel_max_rows, 1_048_576),
+            (self.excel_max_columns, 16_384),
+            (self.shared_strings_max_bytes, 256 * 1024**2),
             (self.threads, 64),
             (self.native_connections, 32),
             (self.scratch_max_bytes, 64 * 1024**3),
@@ -65,6 +77,12 @@ class IngestionResourcePolicy:
                     "decompressed_max_bytes",
                     "native_connections",
                     "scratch_root",
+                    "reader_rss_max_bytes",
+                    "reader_timeout_seconds",
+                    "excel_max_cells",
+                    "excel_max_rows",
+                    "excel_max_columns",
+                    "shared_strings_max_bytes",
                 )
             },
             memory_limit=getattr(settings, "ingest_duckdb_memory_limit", defaults.memory_limit),
@@ -72,31 +90,103 @@ class IngestionResourcePolicy:
         )
 
 
+def directory_files(root: Path):
+    count = 0
+    for path in root.rglob("*"):
+        if path.is_symlink():
+            raise IngestionResourceLimitError("Owned scratch contains an unexpected symbolic link")
+        try:
+            if path.is_file():
+                count += 1
+                if count > 4096:
+                    raise IngestionResourceLimitError("Owned scratch exceeds its file-count budget")
+                yield path.resolve(), path.stat().st_size
+        except FileNotFoundError:
+            continue
+
+
+def directory_bytes(root: Path) -> int:
+    return sum(size for _, size in directory_files(root))
+
+
+@dataclass
+class _ChildBudget:
+    scope: Any
+    token: object
+    maximum: int
+    reserved: int
+
+    def publish(self, source: Path, destination: Path, size: int) -> None:
+        if size > self.reserved or size < 0:
+            raise IngestionResourceLimitError("Parser output exceeds its reserved scratch budget")
+        with self.scope.lock:
+            self.scope.check()
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            source.chmod(0o600)
+            source.replace(destination)
+            self.scope.reservations[self.token] = self.reserved - size
+            self.scope.paths[destination.resolve()] = size
+            self.scope.check()
+
+
 class _Scope:
     def __init__(self, policy: IngestionResourcePolicy):
         self.policy = policy
         self.paths: dict[Path, int] = {}
+        self.pending: set[Path] = set()
+        self.directories: set[Path] = set()
+        self.reservations: dict[object, int] = {}
         self.lock = threading.RLock()
 
     def usage(self) -> int:
         with self.lock:
-            total = 0
+            values = {}
             for path, reserved in self.paths.items():
                 try:
                     size = path.stat().st_size
+                    self.pending.discard(path)
                 except FileNotFoundError:
-                    continue
-                total += max(reserved, size)
-            return total
+                    if path not in self.pending:
+                        continue
+                    size = 0
+                values[path] = max(reserved, size)
+            for directory in self.directories:
+                for path, size in directory_files(directory):
+                    values[path] = max(values.get(path, 0), size)
+            return sum(values.values()) + sum(self.reservations.values())
 
     def account(self, path: str | Path, reserved: int | None = None) -> None:
-        target = Path(path)
+        target = Path(path).resolve()
         with self.lock:
             old = self.paths.get(target, 0)
             self.paths[target] = old if reserved is None else reserved
+            if reserved is not None and not target.exists():
+                self.pending.add(target)
             if self.usage() > self.policy.scratch_max_bytes:
                 self.paths[target] = old
                 raise IngestionResourceLimitError("Ingestion scratch exceeds its configured byte budget")
+
+    def owned_directory(self, root: str | Path) -> None:
+        with self.lock:
+            self.directories.add(Path(root).resolve())
+            self.check()
+
+    @contextmanager
+    def child_budget(self, source: str | Path):
+        source = Path(source).resolve()
+        token = object()
+        with self.lock:
+            self.account(source)
+            remaining = self.policy.scratch_max_bytes - self.usage()
+            if remaining <= 0:
+                raise IngestionResourceLimitError("Ingestion scratch has no remaining parser capacity")
+            self.reservations[token] = remaining
+            allocation = _ChildBudget(self, token, remaining + source.stat().st_size, remaining)
+        try:
+            yield allocation
+        finally:
+            with self.lock:
+                self.reservations.pop(token, None)
 
     def check(self) -> None:
         with self.lock:
@@ -271,6 +361,7 @@ def connect():
         if remaining < policy.native_connections:
             raise IngestionResourceLimitError("Ingestion scratch capacity is full")
         directory = tempfile.TemporaryDirectory(prefix="flyquery-ingest-", dir=policy.scratch_root)
+        scope.owned_directory(directory.name)
         native = duckdb.connect(
             config={
                 "memory_limit": policy.memory_limit,

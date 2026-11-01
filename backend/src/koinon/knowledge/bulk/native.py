@@ -134,7 +134,13 @@ class NativeBulkIntake(BulkIntakePort):
                     ),
                 )
 
-    async def execute(self, lease: BulkLease, content: bytes) -> NativeCommit:
+    async def execute_file(self, lease: BulkLease, path) -> NativeCommit:
+        if lease.mode == "dataset":
+            # Dataset parsing is independently resource-fenced by its native reader.
+            return await self.execute(lease, path.read_bytes())
+        return await self.execute(lease, None, content_file=path)
+
+    async def execute(self, lease: BulkLease, content: bytes | None, *, content_file=None) -> NativeCommit:
         if lease.mode == "dataset":
             return await self.facade().domains._resolve(DatasetBulkNative).execute(lease, content)
         if lease.mode != "document":
@@ -156,6 +162,7 @@ class NativeBulkIntake(BulkIntakePort):
             source_catalog_id=lease.source_id,
             filename=lease.filename,
             content=content,
+            content_file=content_file,
             publication_guard=lambda: self.queue.publication(lease),
             validate_processing=processing,
             validate_publication=publication,

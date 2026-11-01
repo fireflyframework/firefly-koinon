@@ -138,7 +138,7 @@ def test_browser_id_token_signature_nonce_audience():
     registration = SimpleNamespace(client_id="browser", issuer_uri=ISSUER)
     good = token(aud="browser", nonce="expected")
     context = handler._validate_id_token(registration, good, "expected")
-    assert context.attributes == {"iss": ISSUER, "sub": "user-1"}
+    assert context.attributes == {"iss": ISSUER, "sub": "user-1", "aud": "browser"}
     assert handler._validate_id_token(registration, good, "wrong") is None
     assert handler._validate_id_token(registration, good, None) is None
     assert handler._validate_id_token(registration, token(aud="wrong", nonce="expected"), "expected") is None

@@ -2,7 +2,7 @@
 import { DOCUMENT } from '@angular/common';
 import { Injectable, OnDestroy, inject, signal } from '@angular/core';
 import type { PrimaryDestination } from '@fireflyframework/koinon-angular/workbench';
-type AccountSection = 'profile' | 'tokens' | 'applications';
+type AccountSection = 'profile' | 'tokens' | 'applications' | 'notifications' | 'notification-preferences';
 const pendingKey = 'koinon.pending-account-navigation';
 interface PendingNavigation {
   view: PrimaryDestination;
@@ -18,7 +18,7 @@ export class AccountNavigation implements OnDestroy {
   private readonly restore = () => {
     const pathname = this.window?.location.pathname ?? '';
     const path = pathname.startsWith(this.base) ? pathname.slice(this.base.length) : '';
-    const section = /^account\/(profile|tokens|applications)\/?$/.exec(path)?.[1];
+    const section = /^account\/(profile|tokens|applications|notifications|notification-preferences)\/?$/.exec(path)?.[1];
     this.section.set((section as AccountSection) || null);
     this.view.set(
       ['chat', 'activity', 'settings'].includes(path) ? (path as PrimaryDestination) : 'library',
@@ -59,7 +59,7 @@ export class AccountNavigation implements OnDestroy {
       ['library', 'chat', 'activity', 'settings'].includes(value.view) &&
       (value.accountSection === null ||
         (typeof value.accountSection === 'string' &&
-          ['profile', 'tokens', 'applications'].includes(value.accountSection)))
+          ['profile', 'tokens', 'applications', 'notifications', 'notification-preferences'].includes(value.accountSection)))
     );
   }
   private consumePending() {

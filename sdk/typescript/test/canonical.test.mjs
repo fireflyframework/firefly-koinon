@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {FetchTransport,KoinonClient} from '../dist/index.js';
+import {createCommunicationsApi} from '../dist/communications.js';
 
 test('canonical content and knowledge assignment helpers preserve preconditions and explicit null',async()=>{
  const seen=[];
@@ -36,7 +37,17 @@ test('canonical operation map resolves helpers and precision strings are unchang
  const contract=JSON.parse(await readFile(new URL('../../contract/operations.json',import.meta.url),'utf8'));
  const client=new KoinonClient({transport:{request:async()=>({}),stream:async function*(){}}});
  assert.equal(contract.canonical_operation_count,contract.operations.length);
- for(const operation of contract.operations){let value=client;for(const part of operation.sdk_typescript.split('.'))value=value[part];assert.equal(typeof value,'function',operation.operation);}
+ const communications=createCommunicationsApi({request:async()=>({})});
+ for(const operation of contract.operations){
+  const path=operation.sdk_typescript.split('.');
+  let value=client;
+  if(operation.sdk_typescript_factory!==undefined){
+   assert.equal(operation.sdk_typescript_factory,'createCommunicationsApi');
+   assert.equal(operation.sdk_typescript_module,'@fireflyframework/koinon-sdk/communications');
+   assert.equal(path.shift(),'communications');value=communications;
+  }
+  for(const part of path)value=value[part];assert.equal(typeof value,'function',operation.operation);
+ }
  const seen=[];
  const transport=new FetchTransport({baseUrl:'https://example.test/api/v1',accessToken:()=> 'fresh',fetch:async(url,init)=>{
   seen.push({url,init});return new Response(JSON.stringify({query_id:'q',execution_status:'OK',preview:[{positive:'9007199254740993',negative:'-9007199254740993',decimal:'-0.1234567890123456789',safe:9007199254740991,flag:false,nested:[null,'18446744073709551615']}]}),{headers:{'Content-Type':'application/json'}});

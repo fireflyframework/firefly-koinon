@@ -41,8 +41,8 @@ class AttachmentStorageProfile:
             raise ValueError("Private attachment storage backend must be local, s3, azure or gcs")
         if type(self.request_timeout_seconds) is not int or not 1 <= self.request_timeout_seconds <= 60:
             raise ValueError("Private storage request timeout must be an integer from 1 to 60 seconds")
-        if type(self.max_object_bytes) is not int or not 1 <= self.max_object_bytes <= 64 * 1024 * 1024:
-            raise ValueError("Private object byte limit must be from 1 byte to 64 MiB")
+        if type(self.max_object_bytes) is not int or not 1 <= self.max_object_bytes <= 256 * 1024 * 1024:
+            raise ValueError("Private object byte limit must be from 1 byte to 256 MiB")
         for value in (self.root or "", self.s3_bucket, self.s3_prefix, self.s3_region, self.s3_kms_key_id):
             if not isinstance(value, str) or any(char in value for char in ("\0", "\r", "\n")):
                 raise ValueError("Private storage values must be plain configuration strings")

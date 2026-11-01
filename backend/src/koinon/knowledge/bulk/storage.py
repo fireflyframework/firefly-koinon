@@ -11,6 +11,7 @@ from contextlib import suppress
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from koinon_storage.files import StoredObjectReference
 from pyfly.container import component
 from pyfly.context.lifecycle import pre_destroy
 from pyfly.kernel import ConflictException, RateLimitException, ServiceUnavailableException
@@ -18,7 +19,8 @@ from pyfly.kernel import ConflictException, RateLimitException, ServiceUnavailab
 from koinon.knowledge.bulk.settings import BulkSettings
 from koinon.storage.cloud import CloudBlobStore
 from koinon.storage.local import LocalBlobStore
-from koinon.storage.ports import BlobStore, admit
+from koinon.storage.ports import BlobStore, FileBlobStore, admit
+from koinon.storage.scratch import ScratchAdmission
 from koinon.storage.settings import AttachmentStorageProfile
 
 
@@ -40,8 +42,9 @@ class _CreateOnlyLocal(LocalBlobStore):
 
 @component(name="knowledge.bulk.storage")
 class BulkStorage:
-    def __init__(self, settings: BulkSettings):
+    def __init__(self, settings: BulkSettings, scratch: ScratchAdmission):
         self.settings = settings
+        self.scratch = scratch
         self._store: BlobStore | None = None
         self._identity: str | None = None
         self._active = 0
@@ -49,6 +52,9 @@ class BulkStorage:
         self._closing = False
         self._idle = asyncio.Event()
         self._idle.set()
+
+    def effective_file_limit(self) -> int:
+        return min(self.settings.max_file_bytes, self.scratch.capacity_bytes // 2)
 
     def configured(self) -> BlobStore:
         self.settings.validate()
@@ -143,6 +149,60 @@ class BulkStorage:
         await self._bounded(
             lambda: admit(store, key, content, sha256=digest, max_bytes=self.settings.max_file_bytes)
         )
+
+    async def put_file(self, key, path, digest):
+        store = self.configured()
+        if not isinstance(store, FileBlobStore):
+            raise ServiceUnavailableException(
+                "Pinned file storage is unavailable", code="BULK_FILE_STORAGE_REQUIRED"
+            )
+        reference = await self._bounded(lambda: store.create_file(key, path))
+        if reference.sha256 != digest:
+            raise ConflictException("Original differs from admitted digest", code="BULK_ORIGINAL_INTEGRITY")
+        return reference
+
+    async def verify_file(self, key, size, digest, *, storage_identity):
+        if storage_identity != self.identity():
+            raise ConflictException("Retained staging profile differs", code="BULK_STORAGE_CHANGED")
+        store = self.configured()
+        if not isinstance(store, FileBlobStore):
+            raise ServiceUnavailableException(
+                "Pinned file storage is unavailable", code="BULK_FILE_STORAGE_REQUIRED"
+            )
+        return await self._bounded(lambda: store.capture_file(key, size, digest))
+
+    async def read_file(self, original, path):
+        store = self.configured()
+        if original.storage_identity != self.identity():
+            raise ConflictException("Retained staging profile differs", code="BULK_STORAGE_CHANGED")
+        if original.object_reference_json is None:
+            if original.size_bytes > 32 * 1024**2:
+                raise ConflictException(
+                    "Large original requires a pinned file receipt", code="BULK_ORIGINAL_INTEGRITY"
+                )
+            content = await self.read(
+                original.object_key,
+                original.size_bytes,
+                original.sha256,
+                storage_identity=original.storage_identity,
+            )
+            Path(path).write_bytes(content)
+            return None
+        if not isinstance(store, FileBlobStore):
+            raise ServiceUnavailableException(
+                "Pinned file storage is unavailable", code="BULK_FILE_STORAGE_REQUIRED"
+            )
+        reference = StoredObjectReference.from_dict(original.object_reference_json)
+        if (reference.key, reference.size_bytes, reference.sha256) != (
+            original.object_key,
+            original.size_bytes,
+            original.sha256,
+        ):
+            raise ConflictException("Original receipt differs", code="BULK_ORIGINAL_INTEGRITY")
+        await self._bounded(
+            lambda: store.download_file(reference, path, max_bytes=self.settings.max_file_bytes)
+        )
+        return reference
 
     async def read(self, key: str, size: int, digest: str, *, storage_identity: str | None = None) -> bytes:
         store = self.configured()

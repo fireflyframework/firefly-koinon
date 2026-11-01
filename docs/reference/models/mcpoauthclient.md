@@ -48,8 +48,8 @@ Required means the key must be present. Nullable means its value may be `null`; 
 ### scopes
 
 - Minimum items: `1`
-- Maximum items: `7`
-- Each item: Allowed values: `"catalog:read"`, `"catalog:write"`, `"ingest:write"`, `"knowledge:search"`, `"query:execute"`, `"chat:use"`, `"evidence:read"`
+- Maximum items: `8`
+- Each item: Allowed values: `"catalog:read"`, `"catalog:write"`, `"ingest:write"`, `"knowledge:search"`, `"query:execute"`, `"chat:use"`, `"evidence:read"`, `"activity:read"`
 
 ### client_type
 
@@ -98,11 +98,12 @@ This is a schema definition, not an example request. It preserves all declared k
               "knowledge:search",
               "query:execute",
               "chat:use",
-              "evidence:read"
+              "evidence:read",
+              "activity:read"
             ],
             "type": "string"
           },
-          "maxItems": 7,
+          "maxItems": 8,
           "minItems": 1,
           "title": "Scopes",
           "type": "array"

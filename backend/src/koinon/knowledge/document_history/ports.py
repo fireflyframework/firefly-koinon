@@ -5,7 +5,7 @@
 from datetime import datetime
 from typing import Literal, Protocol, TypedDict, Unpack
 
-from flycanon.core.services.sources.lineage.dtos import VerifiedOriginal
+from flycanon.core.services.sources.lineage.dtos import OriginalFileReceipt, VerifiedOriginal
 
 
 class DocumentReadScope(TypedDict):
@@ -116,3 +116,16 @@ class DocumentHistoryPort(Protocol):
     async def original(
         self, *, source_version_id: str, max_bytes: int, **scope: Unpack[DocumentReadScope]
     ) -> VerifiedOriginal: ...
+
+    async def original_identity(
+        self, *, source_version_id: str | None = None, **scope: Unpack[DocumentReadScope]
+    ) -> OriginalFileReceipt: ...
+
+    async def original_file(
+        self,
+        *,
+        path,
+        max_bytes: int,
+        source_version_id: str | None = None,
+        **scope: Unpack[DocumentReadScope],
+    ) -> OriginalFileReceipt: ...

@@ -30,6 +30,10 @@ PERMISSIONS = {
     "query:execute": ("Query datasets", "Run read-only queries and view their results and sources."),
     "chat:use": ("Use knowledge agents", "Ask configured agents questions and inspect your answer audits."),
     "evidence:read": ("Inspect answer sources", "Read the evidence recorded for an answer."),
+    "activity:read": (
+        "Read your activity summary",
+        "View recorded knowledge and MCP activity within this connection’s access.",
+    ),
 }
 
 

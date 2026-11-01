@@ -13,7 +13,7 @@ Type: `string`.
 ## Model constraints
 
 - Content encoding: `"binary"`
-- Exact admitted original bytes, 1..33554432 bytes; raw application/octet-stream, never JSON/base64/multipart.
+- Exact admitted original bytes, 1..134217728 bytes; raw application/octet-stream, never JSON/base64/multipart.
 
 ## Exact JSON Schema
 
@@ -25,6 +25,6 @@ This is a schema definition, not an example request. It preserves all declared k
     {
       "type": "string",
       "contentEncoding": "binary",
-      "description": "Exact admitted original bytes, 1..33554432 bytes; raw application/octet-stream, never JSON/base64/multipart."
+      "description": "Exact admitted original bytes, 1..134217728 bytes; raw application/octet-stream, never JSON/base64/multipart."
     }
     ```

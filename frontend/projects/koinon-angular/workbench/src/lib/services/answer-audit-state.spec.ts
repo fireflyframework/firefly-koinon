@@ -136,6 +136,7 @@ it('discards activity and source responses after a same-subject context object r
       : Promise.resolve({ revision: 'a'.repeat(64), sources: [], complete: false } as T),
   );
   const pending = state.open('thread', message);
+  await vi.waitFor(()=>expect(finish).toBeTypeOf('function'));
   facade.context.set({ ...facade.context() });
   finish({ items: [], page: 1, page_size: 25, total: 0, pages: 0 });
   await pending;
@@ -170,6 +171,7 @@ it('drops a deferred tool result after a same-subject credential context refresh
   await state.open('thread', message);
   state.selectResult(state.activity()!.items[0]);
   const pending = state.resolve('run', 'result');
+  await vi.waitFor(()=>expect(finish).toBeTypeOf('function'));
   const rejected = expect(pending).rejects.toMatchObject({ name: 'AbortError' });
   facade.context.set({ ...facade.context() });
   finish({
@@ -238,6 +240,7 @@ it('discards a pending owner receipt after a same-subject context refresh', asyn
     false,
   );
   const pending = state.open('thread', message);
+  await vi.waitFor(()=>expect(finish).toBeTypeOf('function'));
   facade.context.set({ ...facade.context() });
   finish(emptyAudit);
   await pending;

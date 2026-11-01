@@ -44,7 +44,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 ### size_bytes
 
 - Minimum: `1`
-- Maximum: `33554432`
+- Maximum: `134217728`
 
 ### sha256
 
@@ -82,7 +82,7 @@ This is a schema definition, not an example request. It preserves all declared k
           "type": "string"
         },
         "size_bytes": {
-          "maximum": 33554432,
+          "maximum": 134217728,
           "minimum": 1,
           "title": "Size Bytes",
           "type": "integer"

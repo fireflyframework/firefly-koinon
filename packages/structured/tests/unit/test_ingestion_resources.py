@@ -88,6 +88,7 @@ async def test_csv_and_xlsx_native_connections_apply_policy_without_losing_rows(
     import openpyxl
     import pyarrow as arrow
     import pyarrow.parquet as parquet
+
     from flyquery.core.services.ingestion.reader import TableExtractionRules
     from flyquery.core.services.ingestion.readers.csv_reader import CsvReader
     from flyquery.core.services.ingestion.readers.excel_reader import ExcelReader
@@ -125,6 +126,10 @@ async def test_csv_and_xlsx_native_connections_apply_policy_without_losing_rows(
                 str(source), tables[0], str(target), workspace_locale="en-US", type_infer_sample_rows=32
             )
             assert result.n_rows_actual == 2
+            if isinstance(reader, ExcelReader):
+                decisions = dict(result.coordinates.parser_decisions)
+                assert decisions["duckdb_memory_limit"] == "64.0 MiB"
+                assert decisions["duckdb_threads"] == 1
             assert parquet.read_table(target).to_pylist() == [
                 {"name": "North", "amount": 47},
                 {"name": "South", "amount": 99},
@@ -157,7 +162,7 @@ async def test_csv_and_xlsx_native_connections_apply_policy_without_losing_rows(
             100,
         ) == {"manager": "person"}
         assert sample._read_parquet_column(str(organization), "person", 2) == ["person-0", "person-1"]
-    assert len(observed) == 9
+    assert len(observed) == 8  # Excel owns its ninth native connection in the bounded child.
     assert all(row == ("64.0 MiB", 1) for row in observed)
 
 
@@ -200,7 +205,7 @@ async def test_nested_stages_share_one_scratch_budget_and_never_reset_it(tmp_pat
         with pytest.raises(IngestionResourceLimitError):
             await next_stage(settings=settings(tmp_path))
     assert (tmp_path / "first.bin").read_bytes() == b"a" * 600
-    assert (tmp_path / "second.bin").stat().st_size == 0
+    assert not (tmp_path / "second.bin").exists()
 
 
 def test_profile_cannot_hide_native_resource_exhaustion_as_missing_statistics(tmp_path):

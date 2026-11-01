@@ -19,16 +19,17 @@ import {
   type MemberInput,
   type QueryResponse,
   type RequestOptions,
+  type KoinonTransport,
   type SearchResponse,
 } from '@fireflyframework/koinon-sdk';
-import { KOINON_TENANT_RESOLVER, KOINON_TRANSPORT } from './client-provider';
+import { KOINON_TENANT_RESOLVER } from './client-provider';
 import type {FolderPageState} from './models';
 import { KoinonClientContext } from './services/client-context';
 
 @Injectable()
 export class KoinonFacade {
   private readonly clientContext=inject(KoinonClientContext);
-  private readonly transport = inject(KOINON_TRANSPORT, { optional: true });
+  private get transport(){return this.clientContext.getTransport();}
   private readonly tenantResolver = inject(KOINON_TENANT_RESOLVER, { optional: true });
   private revision = 0;
   private initialization = 0;
@@ -75,9 +76,9 @@ export class KoinonFacade {
   readonly canQuery = computed(() => this.permissions().has('query:execute'));
   readonly canManageMembers = computed(() => this.permissions().has('members:write'));
   readonly canAudit = computed(() => this.permissions().has('audit:read'));
-  readonly advancedAvailable = !!this.transport;
-  bindClient(client: KoinonClient): void {
-    this.clientContext.bind(client);
+  get advancedAvailable(){return !!this.transport;}
+  bindClient(client: KoinonClient,transport?:KoinonTransport|null): void {
+    this.clientContext.bind(client,transport);
     ++this.initialization;
     ++this.revision;
     this.context.set(null);

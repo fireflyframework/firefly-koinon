@@ -67,6 +67,7 @@ class IngestionService:
         content: bytes | str,
         tenant_id: str,
         workspace_id: str,
+        loaded_document=None,
     ) -> IngestionResult:
         bytes_content = content.encode("utf-8") if isinstance(content, str) else content
 
@@ -79,7 +80,11 @@ class IngestionService:
         if loader is None:
             raise UnsupportedSourceKind(kind.value)
 
-        document = loader.load(bytes_content, filename=source.filename)
+        document = (
+            loaded_document
+            if loaded_document is not None
+            else loader.load(bytes_content, filename=source.filename)
+        )
         if not document.sections:
             raise EmptySource()
 

@@ -1,5 +1,387 @@
 [
   {
+    "operation": "ActivityController.personal",
+    "group": "ActivityApi",
+    "group_scoped": true,
+    "method": "personal",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/activity/personal",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ActivityWindow",
+    "response": "ActivitySummary",
+    "body": {
+      "tenant_id": "tenant_id-value",
+      "audience": "personal",
+      "window": {
+        "start_at": "2026-10-27T12:34:56Z",
+        "end_at": "2026-10-27T12:34:56Z",
+        "time_zone": "time_zone-value"
+      },
+      "coverage": {
+        "observed_since": "2026-10-27T12:34:56Z",
+        "complete_window": false,
+        "missing_observations": 1,
+        "reasons": [
+          "reasons-value"
+        ]
+      },
+      "knowledge": {
+        "created": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "updated": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "consulted": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        }
+      },
+      "top_projects": [
+        {
+          "project_id": "project_id-value",
+          "workspace_id": "workspace_id-value",
+          "name": "name-value",
+          "knowledge": {
+            "created": {
+              "value": 1,
+              "status": "observed",
+              "reason": "reason-value"
+            },
+            "updated": {
+              "value": 1,
+              "status": "observed",
+              "reason": "reason-value"
+            },
+            "consulted": {
+              "value": 1,
+              "status": "observed",
+              "reason": "reason-value"
+            }
+          }
+        }
+      ],
+      "daily_activity": [
+        {
+          "local_date": "local_date-value",
+          "knowledge": {
+            "created": {
+              "value": 1,
+              "status": "observed",
+              "reason": "reason-value"
+            },
+            "updated": {
+              "value": 1,
+              "status": "observed",
+              "reason": "reason-value"
+            },
+            "consulted": {
+              "value": 1,
+              "status": "observed",
+              "reason": "reason-value"
+            }
+          },
+          "mcp_tool_calls": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          }
+        }
+      ],
+      "mcp": {
+        "requests": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "tool_calls": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "succeeded": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "failed": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "rejected": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "average_duration_ms": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "p95_duration_ms": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "tool_cancelled": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "request_succeeded": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "request_failed": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "request_rejected": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "request_cancelled": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        }
+      },
+      "models": {
+        "input_tokens": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "output_tokens": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "embedding_tokens": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "cost": {
+          "amount": 0.25,
+          "currency": "currency-value",
+          "status": "observed",
+          "source": "source-value",
+          "reason": "reason-value"
+        },
+        "external_client_consumption": "not_observed"
+      }
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "ActivityController.administrative",
+    "group": "ActivityApi",
+    "group_scoped": true,
+    "method": "administrative",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/activity/administration",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ActivityWindow",
+    "response": "ActivitySummary",
+    "body": {
+      "tenant_id": "tenant_id-value",
+      "audience": "personal",
+      "window": {
+        "start_at": "2026-10-27T12:34:56Z",
+        "end_at": "2026-10-27T12:34:56Z",
+        "time_zone": "time_zone-value"
+      },
+      "coverage": {
+        "observed_since": "2026-10-27T12:34:56Z",
+        "complete_window": false,
+        "missing_observations": 1,
+        "reasons": [
+          "reasons-value"
+        ]
+      },
+      "knowledge": {
+        "created": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "updated": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "consulted": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        }
+      },
+      "top_projects": [
+        {
+          "project_id": "project_id-value",
+          "workspace_id": "workspace_id-value",
+          "name": "name-value",
+          "knowledge": {
+            "created": {
+              "value": 1,
+              "status": "observed",
+              "reason": "reason-value"
+            },
+            "updated": {
+              "value": 1,
+              "status": "observed",
+              "reason": "reason-value"
+            },
+            "consulted": {
+              "value": 1,
+              "status": "observed",
+              "reason": "reason-value"
+            }
+          }
+        }
+      ],
+      "daily_activity": [
+        {
+          "local_date": "local_date-value",
+          "knowledge": {
+            "created": {
+              "value": 1,
+              "status": "observed",
+              "reason": "reason-value"
+            },
+            "updated": {
+              "value": 1,
+              "status": "observed",
+              "reason": "reason-value"
+            },
+            "consulted": {
+              "value": 1,
+              "status": "observed",
+              "reason": "reason-value"
+            }
+          },
+          "mcp_tool_calls": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          }
+        }
+      ],
+      "mcp": {
+        "requests": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "tool_calls": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "succeeded": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "failed": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "rejected": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "average_duration_ms": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "p95_duration_ms": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "tool_cancelled": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "request_succeeded": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "request_failed": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "request_rejected": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "request_cancelled": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        }
+      },
+      "models": {
+        "input_tokens": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "output_tokens": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "embedding_tokens": {
+          "value": 1,
+          "status": "observed",
+          "reason": "reason-value"
+        },
+        "cost": {
+          "amount": 0.25,
+          "currency": "currency-value",
+          "status": "observed",
+          "source": "source-value",
+          "reason": "reason-value"
+        },
+        "external_client_consumption": "not_observed"
+      }
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
     "operation": "AuditController.audit",
     "group": "AuditApi",
     "group_scoped": true,
@@ -3325,6 +3707,1426 @@
     "idempotency": false
   },
   {
+    "operation": "CommunicationsController.providers",
+    "group": "CommunicationsApi",
+    "group_scoped": true,
+    "method": "recipientProviders",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/communications/recipient-providers",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {
+      "workspace_id": "workspace_id value",
+      "page": 2,
+      "page_size": 2
+    },
+    "filter": "RecipientProviderFilter",
+    "request": null,
+    "response": "RecipientProviderPage",
+    "body": {
+      "items": [
+        {
+          "id": "id-value",
+          "display_name": "display_name-value"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "CommunicationsController.recipients_search",
+    "group": "CommunicationsApi",
+    "group_scoped": true,
+    "method": "recipients",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/communications/recipients",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {
+      "q": "q value",
+      "provider_id": "provider_id value",
+      "workspace_id": "workspace_id value",
+      "after": "after value",
+      "limit": 2
+    },
+    "filter": "RecipientFilter",
+    "request": null,
+    "response": "DirectoryRecipientPage",
+    "body": {
+      "items": [
+        {
+          "recipient_ref": "recipient_ref-value",
+          "display_name": "display_name-value",
+          "email": "email-value",
+          "provider_label": "provider_label-value",
+          "delivery_address_status": "verified_directory",
+          "eligibility": "eligible",
+          "eligibility_reason": "eligibility_reason-value"
+        }
+      ],
+      "next_cursor": "next_cursor-value"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "CommunicationsController.preview",
+    "group": "CommunicationsApi",
+    "group_scoped": true,
+    "method": "previewInvitation",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/invitations/email/preview",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "EmailInvitationInput",
+    "response": "EmailPreview",
+    "body": {
+      "subject": "subject-value",
+      "sender_name": "sender_name-value",
+      "recipient_display_name": "recipient_display_name-value",
+      "recipient_email": "recipient_email-value",
+      "heading": "heading-value",
+      "paragraphs": [
+        "paragraphs-value"
+      ],
+      "action_label": "action_label-value",
+      "footer": "footer-value",
+      "product_name": "product_name-value",
+      "accent_color": "accent_color-value",
+      "branding": {
+        "product_name": "product_name-value",
+        "assistant_name": "assistant_name-value",
+        "logo_light": "logo_light-value",
+        "logo_dark": "logo_dark-value",
+        "symbol": "symbol-value",
+        "favicon": "favicon-value",
+        "palette": {
+          "light": {
+            "surface": "surface-value",
+            "canvas": "canvas-value",
+            "text": "text-value",
+            "muted": "muted-value",
+            "line": "line-value",
+            "action": "action-value",
+            "action_text": "action_text-value",
+            "accent": "accent-value"
+          },
+          "dark": {
+            "surface": "surface-value",
+            "canvas": "canvas-value",
+            "text": "text-value",
+            "muted": "muted-value",
+            "line": "line-value",
+            "action": "action-value",
+            "action_text": "action_text-value",
+            "accent": "accent-value"
+          }
+        },
+        "font_family": "Manrope"
+      },
+      "rendered_html": "rendered_html-value",
+      "rendered_text": "rendered_text-value",
+      "usage_summary": {
+        "scope": "own",
+        "window_start": "2026-10-27T12:34:56Z",
+        "window_end": "2026-10-27T12:34:56Z",
+        "time_zone": "time_zone-value",
+        "assistant_runs": 1,
+        "completed_runs": 1,
+        "failed_runs": 1,
+        "mcp_requests": 1,
+        "mcp_request_status": "available"
+      },
+      "activity_summary": {
+        "tenant_id": "tenant_id-value",
+        "audience": "personal",
+        "window": {
+          "start_at": "2026-10-27T12:34:56Z",
+          "end_at": "2026-10-27T12:34:56Z",
+          "time_zone": "time_zone-value"
+        },
+        "coverage": {
+          "observed_since": "2026-10-27T12:34:56Z",
+          "complete_window": false,
+          "missing_observations": 1,
+          "reasons": [
+            "reasons-value"
+          ]
+        },
+        "knowledge": {
+          "created": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "updated": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "consulted": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          }
+        },
+        "top_projects": [
+          {
+            "project_id": "project_id-value",
+            "workspace_id": "workspace_id-value",
+            "name": "name-value",
+            "knowledge": {
+              "created": {
+                "value": 1,
+                "status": "observed",
+                "reason": "reason-value"
+              },
+              "updated": {
+                "value": 1,
+                "status": "observed",
+                "reason": "reason-value"
+              },
+              "consulted": {
+                "value": 1,
+                "status": "observed",
+                "reason": "reason-value"
+              }
+            }
+          }
+        ],
+        "daily_activity": [
+          {
+            "local_date": "local_date-value",
+            "knowledge": {
+              "created": {
+                "value": 1,
+                "status": "observed",
+                "reason": "reason-value"
+              },
+              "updated": {
+                "value": 1,
+                "status": "observed",
+                "reason": "reason-value"
+              },
+              "consulted": {
+                "value": 1,
+                "status": "observed",
+                "reason": "reason-value"
+              }
+            },
+            "mcp_tool_calls": {
+              "value": 1,
+              "status": "observed",
+              "reason": "reason-value"
+            }
+          }
+        ],
+        "mcp": {
+          "requests": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "tool_calls": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "succeeded": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "failed": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "rejected": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "average_duration_ms": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "p95_duration_ms": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "tool_cancelled": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "request_succeeded": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "request_failed": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "request_rejected": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "request_cancelled": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          }
+        },
+        "models": {
+          "input_tokens": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "output_tokens": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "embedding_tokens": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "cost": {
+            "amount": 0.25,
+            "currency": "currency-value",
+            "status": "observed",
+            "source": "source-value",
+            "reason": "reason-value"
+          },
+          "external_client_consumption": "not_observed"
+        }
+      },
+      "organization_name": "organization_name-value",
+      "workspace_name": "workspace_name-value",
+      "effective_locale": "effective_locale-value",
+      "locale_origin": "user",
+      "powered_by": "Powered by koinon",
+      "copyright": "copyright-value"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "CommunicationsController.create",
+    "group": "CommunicationsApi",
+    "group_scoped": true,
+    "method": "createInvitation",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/invitations/email",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "EmailInvitationInput",
+    "response": "EmailInvitation",
+    "body": {
+      "action_reasons": {
+        "example": "closed"
+      },
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "workspace_id": "workspace_id-value",
+      "organization_name": "organization_name-value",
+      "workspace_name": "workspace_name-value",
+      "role": "viewer",
+      "recipient_display_name": "recipient_display_name-value",
+      "recipient_email": "recipient_email-value",
+      "provider_label": "provider_label-value",
+      "created_at": "2026-10-27T12:34:56Z",
+      "expires_at": "2026-10-27T12:34:56Z",
+      "status": "pending",
+      "accepted_at": "2026-10-27T12:34:56Z",
+      "declined_at": "2026-10-27T12:34:56Z",
+      "revoked_at": "2026-10-27T12:34:56Z",
+      "delivery": {
+        "id": "id-value",
+        "status": "queued",
+        "queued_at": "2026-10-27T12:34:56Z",
+        "last_attempt_at": "2026-10-27T12:34:56Z",
+        "next_attempt_at": "2026-10-27T12:34:56Z",
+        "next_resend_at": "2026-10-27T12:34:56Z",
+        "failure_code": "failure_code-value"
+      },
+      "allowed_actions": [
+        "revoke"
+      ]
+    },
+    "status": 201,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": true
+  },
+  {
+    "operation": "CommunicationsController.page",
+    "group": "CommunicationsApi",
+    "group_scoped": true,
+    "method": "invitations",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/invitations/email",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {
+      "workspace_id": "workspace_id value",
+      "status": "status value",
+      "page": 2,
+      "page_size": 2
+    },
+    "filter": "EmailInvitationFilter",
+    "request": null,
+    "response": "EmailInvitationPage",
+    "body": {
+      "items": [
+        {
+          "action_reasons": {
+            "example": "closed"
+          },
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "workspace_id": "workspace_id-value",
+          "organization_name": "organization_name-value",
+          "workspace_name": "workspace_name-value",
+          "role": "viewer",
+          "recipient_display_name": "recipient_display_name-value",
+          "recipient_email": "recipient_email-value",
+          "provider_label": "provider_label-value",
+          "created_at": "2026-10-27T12:34:56Z",
+          "expires_at": "2026-10-27T12:34:56Z",
+          "status": "pending",
+          "accepted_at": "2026-10-27T12:34:56Z",
+          "declined_at": "2026-10-27T12:34:56Z",
+          "revoked_at": "2026-10-27T12:34:56Z",
+          "delivery": {
+            "id": "id-value",
+            "status": "queued",
+            "queued_at": "2026-10-27T12:34:56Z",
+            "last_attempt_at": "2026-10-27T12:34:56Z",
+            "next_attempt_at": "2026-10-27T12:34:56Z",
+            "next_resend_at": "2026-10-27T12:34:56Z",
+            "failure_code": "failure_code-value"
+          },
+          "allowed_actions": [
+            "revoke"
+          ]
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "CommunicationsController.revoke",
+    "group": "CommunicationsApi",
+    "group_scoped": true,
+    "method": "revokeInvitation",
+    "http": "DELETE",
+    "path": "/api/v1/tenants/tenant value/invitations/email/invitation_id value",
+    "ids": {
+      "tenant_id": "tenant value",
+      "invitation_id": "invitation_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "void",
+    "body": null,
+    "status": 204,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "CommunicationsController.resend",
+    "group": "CommunicationsApi",
+    "group_scoped": true,
+    "method": "resendInvitation",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/invitations/email/invitation_id value/resend",
+    "ids": {
+      "tenant_id": "tenant value",
+      "invitation_id": "invitation_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "EmailInvitation",
+    "body": {
+      "action_reasons": {
+        "example": "closed"
+      },
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "workspace_id": "workspace_id-value",
+      "organization_name": "organization_name-value",
+      "workspace_name": "workspace_name-value",
+      "role": "viewer",
+      "recipient_display_name": "recipient_display_name-value",
+      "recipient_email": "recipient_email-value",
+      "provider_label": "provider_label-value",
+      "created_at": "2026-10-27T12:34:56Z",
+      "expires_at": "2026-10-27T12:34:56Z",
+      "status": "pending",
+      "accepted_at": "2026-10-27T12:34:56Z",
+      "declined_at": "2026-10-27T12:34:56Z",
+      "revoked_at": "2026-10-27T12:34:56Z",
+      "delivery": {
+        "id": "id-value",
+        "status": "queued",
+        "queued_at": "2026-10-27T12:34:56Z",
+        "last_attempt_at": "2026-10-27T12:34:56Z",
+        "next_attempt_at": "2026-10-27T12:34:56Z",
+        "next_resend_at": "2026-10-27T12:34:56Z",
+        "failure_code": "failure_code-value"
+      },
+      "allowed_actions": [
+        "revoke"
+      ]
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "CommunicationsController.inspect",
+    "group": "EmailInvitationsApi",
+    "group_scoped": false,
+    "method": "review",
+    "http": "GET",
+    "path": "/api/v1/invitations/email/invitation_id value",
+    "ids": {
+      "invitation_id": "invitation_id value",
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "InvitationReview",
+    "body": {
+      "action_reasons": {
+        "example": "closed"
+      },
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "organization_name": "organization_name-value",
+      "workspace_id": "workspace_id-value",
+      "workspace_name": "workspace_name-value",
+      "role": "viewer",
+      "expires_at": "2026-10-27T12:34:56Z",
+      "status": "pending",
+      "can_accept": false,
+      "can_decline": false,
+      "binding": "directory_identity"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "CommunicationsController.accept",
+    "group": "EmailInvitationsApi",
+    "group_scoped": false,
+    "method": "accept",
+    "http": "POST",
+    "path": "/api/v1/invitations/email/invitation_id value/accept",
+    "ids": {
+      "invitation_id": "invitation_id value",
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "Membership",
+    "body": {
+      "managed": false,
+      "origin": "manual",
+      "source_id": "source_id-value",
+      "source_name": "source_name-value",
+      "expires_at": "2026-10-27T12:34:56Z",
+      "id": "id-value",
+      "subject": "subject-value",
+      "tenant_id": "tenant_id-value",
+      "workspace_id": "workspace_id-value",
+      "role": "viewer",
+      "active": false
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "CommunicationsController.decline",
+    "group": "EmailInvitationsApi",
+    "group_scoped": false,
+    "method": "decline",
+    "http": "POST",
+    "path": "/api/v1/invitations/email/invitation_id value/decline",
+    "ids": {
+      "invitation_id": "invitation_id value",
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "InvitationReview",
+    "body": {
+      "action_reasons": {
+        "example": "closed"
+      },
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "organization_name": "organization_name-value",
+      "workspace_id": "workspace_id-value",
+      "workspace_name": "workspace_name-value",
+      "role": "viewer",
+      "expires_at": "2026-10-27T12:34:56Z",
+      "status": "pending",
+      "can_accept": false,
+      "can_decline": false,
+      "binding": "directory_identity"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "CommunicationsController.capabilities",
+    "group": "CommunicationsApi",
+    "group_scoped": true,
+    "method": "capabilities",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/communications/capabilities",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "CommunicationCapabilities",
+    "body": {
+      "state": "disabled",
+      "provider_label": "provider_label-value",
+      "sender_name": "sender_name-value",
+      "sender_address": "sender_address-value",
+      "reply_to": "reply_to-value",
+      "sender_options": [
+        {
+          "id": "id-value",
+          "display_name": "display_name-value",
+          "address": "address-value"
+        }
+      ],
+      "public_address_configured": false,
+      "public_url": "public_url-value",
+      "acceptance_base": "acceptance_base-value",
+      "issues": [
+        {
+          "code": "code-value",
+          "explanation": "explanation-value"
+        }
+      ],
+      "effective_locale": "effective_locale-value",
+      "locale_origin": "user"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "CommunicationsController.policy",
+    "group": "CommunicationsApi",
+    "group_scoped": true,
+    "method": "policy",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/communications/policy",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "CommunicationPolicy",
+    "body": {
+      "revision": 1,
+      "sender_id": "sender_id-value",
+      "rules": [
+        {
+          "kind": "invitation",
+          "required": false,
+          "inbox": false,
+          "email": false,
+          "email_available": false
+        }
+      ],
+      "digest_enabled": false,
+      "can_update": false,
+      "allowed_digests": [
+        "off"
+      ],
+      "default_digest": "off",
+      "default_schedule": {
+        "local_time": "local_time-value",
+        "weekday": 1,
+        "day_of_month": 1
+      },
+      "admin_summaries": [
+        {
+          "cadence": "daily",
+          "schedule": {
+            "local_time": "local_time-value",
+            "weekday": 1,
+            "day_of_month": 1
+          }
+        }
+      ],
+      "default_locale": "default_locale-value"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "CommunicationsController.policy_update",
+    "group": "CommunicationsApi",
+    "group_scoped": true,
+    "method": "updatePolicy",
+    "http": "PATCH",
+    "path": "/api/v1/tenants/tenant value/communications/policy",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "CommunicationPolicyInput",
+    "response": "CommunicationPolicy",
+    "body": {
+      "revision": 1,
+      "sender_id": "sender_id-value",
+      "rules": [
+        {
+          "kind": "invitation",
+          "required": false,
+          "inbox": false,
+          "email": false,
+          "email_available": false
+        }
+      ],
+      "digest_enabled": false,
+      "can_update": false,
+      "allowed_digests": [
+        "off"
+      ],
+      "default_digest": "off",
+      "default_schedule": {
+        "local_time": "local_time-value",
+        "weekday": 1,
+        "day_of_month": 1
+      },
+      "admin_summaries": [
+        {
+          "cadence": "daily",
+          "schedule": {
+            "local_time": "local_time-value",
+            "weekday": 1,
+            "day_of_month": 1
+          }
+        }
+      ],
+      "default_locale": "default_locale-value"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "CommunicationsController.deliveries",
+    "group": "CommunicationsApi",
+    "group_scoped": true,
+    "method": "deliveries",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/communications/deliveries",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {
+      "workspace_id": "workspace_id value",
+      "status": "status value",
+      "kind": "kind value",
+      "channel": "channel value",
+      "created_from": "created_from value",
+      "created_to": "created_to value",
+      "page": 2,
+      "page_size": 2
+    },
+    "filter": "CommunicationDeliveryFilter",
+    "request": null,
+    "response": "DeliveryPage",
+    "body": {
+      "items": [
+        {
+          "id": "id-value",
+          "kind": "invitation",
+          "channel": "email",
+          "invitation_id": "invitation_id-value",
+          "membership_id": "membership_id-value",
+          "recipient_display": "recipient_display-value",
+          "scope_name": "scope_name-value",
+          "status": "queued",
+          "created_at": "2026-10-27T12:34:56Z",
+          "last_attempt_at": "2026-10-27T12:34:56Z",
+          "next_attempt_at": "2026-10-27T12:34:56Z",
+          "attempt_count": 1,
+          "failure_code": "failure_code-value",
+          "safe_explanation": "safe_explanation-value",
+          "can_retry": false
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "CommunicationsController.delivery",
+    "group": "CommunicationsApi",
+    "group_scoped": true,
+    "method": "delivery",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/communications/deliveries/delivery_id value",
+    "ids": {
+      "tenant_id": "tenant value",
+      "delivery_id": "delivery_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "DeliveryRecord",
+    "body": {
+      "id": "id-value",
+      "kind": "invitation",
+      "channel": "email",
+      "invitation_id": "invitation_id-value",
+      "membership_id": "membership_id-value",
+      "recipient_display": "recipient_display-value",
+      "scope_name": "scope_name-value",
+      "status": "queued",
+      "created_at": "2026-10-27T12:34:56Z",
+      "last_attempt_at": "2026-10-27T12:34:56Z",
+      "next_attempt_at": "2026-10-27T12:34:56Z",
+      "attempt_count": 1,
+      "failure_code": "failure_code-value",
+      "safe_explanation": "safe_explanation-value",
+      "can_retry": false
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "CommunicationsController.retry",
+    "group": "CommunicationsApi",
+    "group_scoped": true,
+    "method": "retryDelivery",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/communications/deliveries/delivery_id value/retry",
+    "ids": {
+      "tenant_id": "tenant value",
+      "delivery_id": "delivery_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "DeliveryRecord",
+    "body": {
+      "id": "id-value",
+      "kind": "invitation",
+      "channel": "email",
+      "invitation_id": "invitation_id-value",
+      "membership_id": "membership_id-value",
+      "recipient_display": "recipient_display-value",
+      "scope_name": "scope_name-value",
+      "status": "queued",
+      "created_at": "2026-10-27T12:34:56Z",
+      "last_attempt_at": "2026-10-27T12:34:56Z",
+      "next_attempt_at": "2026-10-27T12:34:56Z",
+      "attempt_count": 1,
+      "failure_code": "failure_code-value",
+      "safe_explanation": "safe_explanation-value",
+      "can_retry": false
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "NotificationController.page",
+    "group": "NotificationsApi",
+    "group_scoped": false,
+    "method": "list",
+    "http": "GET",
+    "path": "/api/v1/notifications",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {
+      "tenant_id": "tenant_id value",
+      "kind": "kind value",
+      "read": "read value",
+      "page": 2,
+      "page_size": 2
+    },
+    "filter": "NotificationFilter",
+    "request": null,
+    "response": "OwnNotificationPage",
+    "body": {
+      "items": [
+        {
+          "workspace_name": "workspace_name-value",
+          "actor_name": "actor_name-value",
+          "details": {
+            "label": "label-value",
+            "scopes": [
+              "scopes-value"
+            ],
+            "expires_at": "2026-10-27T12:34:56Z"
+          },
+          "id": "id-value",
+          "kind": "invitation",
+          "title": "title-value",
+          "body": "body-value",
+          "created_at": "2026-10-27T12:34:56Z",
+          "read_at": "2026-10-27T12:34:56Z",
+          "tenant_id": "tenant_id-value",
+          "organization_name": "organization_name-value",
+          "target": {
+            "kind": "invitation",
+            "id": "id-value"
+          },
+          "effective_locale": "effective_locale-value",
+          "locale_origin": "user",
+          "powered_by": "Powered by koinon",
+          "copyright": "copyright-value"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "NotificationController.unread_count",
+    "group": "NotificationsApi",
+    "group_scoped": false,
+    "method": "unreadCount",
+    "http": "GET",
+    "path": "/api/v1/notifications/unread-count",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "NotificationUnreadCount",
+    "body": {
+      "unread": 1
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "NotificationController.read",
+    "group": "NotificationsApi",
+    "group_scoped": false,
+    "method": "markRead",
+    "http": "POST",
+    "path": "/api/v1/notifications/notification_id value/read",
+    "ids": {
+      "notification_id": "notification_id value",
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "OwnNotification",
+    "body": {
+      "workspace_name": "workspace_name-value",
+      "actor_name": "actor_name-value",
+      "details": {
+        "label": "label-value",
+        "scopes": [
+          "scopes-value"
+        ],
+        "expires_at": "2026-10-27T12:34:56Z"
+      },
+      "id": "id-value",
+      "kind": "invitation",
+      "title": "title-value",
+      "body": "body-value",
+      "created_at": "2026-10-27T12:34:56Z",
+      "read_at": "2026-10-27T12:34:56Z",
+      "tenant_id": "tenant_id-value",
+      "organization_name": "organization_name-value",
+      "target": {
+        "kind": "invitation",
+        "id": "id-value"
+      },
+      "effective_locale": "effective_locale-value",
+      "locale_origin": "user",
+      "powered_by": "Powered by koinon",
+      "copyright": "copyright-value"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "NotificationController.preferences",
+    "group": "NotificationsApi",
+    "group_scoped": false,
+    "method": "preferences",
+    "http": "GET",
+    "path": "/api/v1/notifications/preferences",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "NotificationPreferences",
+    "body": {
+      "admin_summaries_available": false,
+      "admin_summaries_enabled": false,
+      "revision": 1,
+      "rules": [
+        {
+          "kind": "invitation",
+          "required": false,
+          "inbox": false,
+          "email": false,
+          "email_available": false
+        }
+      ],
+      "digest": "off",
+      "allowed_digests": [
+        "off"
+      ],
+      "locale": "locale-value",
+      "time_zone": "time_zone-value",
+      "schedule": {
+        "local_time": "local_time-value",
+        "weekday": 1,
+        "day_of_month": 1
+      },
+      "next_run_at": "2026-10-27T12:34:56Z",
+      "next_run_local": "next_run_local-value",
+      "admin_summaries": false,
+      "notification_locale": "notification_locale-value",
+      "effective_locale": "effective_locale-value",
+      "locale_origin": "user"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "NotificationController.preferences_update",
+    "group": "NotificationsApi",
+    "group_scoped": false,
+    "method": "updatePreferences",
+    "http": "PATCH",
+    "path": "/api/v1/notifications/preferences",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "NotificationPreferencesInput",
+    "response": "NotificationPreferences",
+    "body": {
+      "admin_summaries_available": false,
+      "admin_summaries_enabled": false,
+      "revision": 1,
+      "rules": [
+        {
+          "kind": "invitation",
+          "required": false,
+          "inbox": false,
+          "email": false,
+          "email_available": false
+        }
+      ],
+      "digest": "off",
+      "allowed_digests": [
+        "off"
+      ],
+      "locale": "locale-value",
+      "time_zone": "time_zone-value",
+      "schedule": {
+        "local_time": "local_time-value",
+        "weekday": 1,
+        "day_of_month": 1
+      },
+      "next_run_at": "2026-10-27T12:34:56Z",
+      "next_run_local": "next_run_local-value",
+      "admin_summaries": false,
+      "notification_locale": "notification_locale-value",
+      "effective_locale": "effective_locale-value",
+      "locale_origin": "user"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "NotificationController.preferences_preview",
+    "group": "NotificationsApi",
+    "group_scoped": false,
+    "method": "previewSchedule",
+    "http": "POST",
+    "path": "/api/v1/notifications/preferences/preview",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "NotificationPreferencesInput",
+    "response": "DigestSchedulePreview",
+    "body": {
+      "digest": "off",
+      "schedule": {
+        "local_time": "local_time-value",
+        "weekday": 1,
+        "day_of_month": 1
+      },
+      "time_zone": "time_zone-value",
+      "next_run_at": "2026-10-27T12:34:56Z",
+      "next_run_local": "next_run_local-value",
+      "window_start": "2026-10-27T12:34:56Z",
+      "window_end": "2026-10-27T12:34:56Z",
+      "dst_policy": "first_valid_minute_earlier_fold",
+      "effective_locale": "effective_locale-value",
+      "locale_origin": "user"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "NotificationController.email_preview",
+    "group": "NotificationsApi",
+    "group_scoped": false,
+    "method": "previewEmail",
+    "http": "POST",
+    "path": "/api/v1/notifications/preferences/email-preview",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ActivityEmailPreviewInput",
+    "response": "EmailPreview",
+    "body": {
+      "subject": "subject-value",
+      "sender_name": "sender_name-value",
+      "recipient_display_name": "recipient_display_name-value",
+      "recipient_email": "recipient_email-value",
+      "heading": "heading-value",
+      "paragraphs": [
+        "paragraphs-value"
+      ],
+      "action_label": "action_label-value",
+      "footer": "footer-value",
+      "product_name": "product_name-value",
+      "accent_color": "accent_color-value",
+      "branding": {
+        "product_name": "product_name-value",
+        "assistant_name": "assistant_name-value",
+        "logo_light": "logo_light-value",
+        "logo_dark": "logo_dark-value",
+        "symbol": "symbol-value",
+        "favicon": "favicon-value",
+        "palette": {
+          "light": {
+            "surface": "surface-value",
+            "canvas": "canvas-value",
+            "text": "text-value",
+            "muted": "muted-value",
+            "line": "line-value",
+            "action": "action-value",
+            "action_text": "action_text-value",
+            "accent": "accent-value"
+          },
+          "dark": {
+            "surface": "surface-value",
+            "canvas": "canvas-value",
+            "text": "text-value",
+            "muted": "muted-value",
+            "line": "line-value",
+            "action": "action-value",
+            "action_text": "action_text-value",
+            "accent": "accent-value"
+          }
+        },
+        "font_family": "Manrope"
+      },
+      "rendered_html": "rendered_html-value",
+      "rendered_text": "rendered_text-value",
+      "usage_summary": {
+        "scope": "own",
+        "window_start": "2026-10-27T12:34:56Z",
+        "window_end": "2026-10-27T12:34:56Z",
+        "time_zone": "time_zone-value",
+        "assistant_runs": 1,
+        "completed_runs": 1,
+        "failed_runs": 1,
+        "mcp_requests": 1,
+        "mcp_request_status": "available"
+      },
+      "activity_summary": {
+        "tenant_id": "tenant_id-value",
+        "audience": "personal",
+        "window": {
+          "start_at": "2026-10-27T12:34:56Z",
+          "end_at": "2026-10-27T12:34:56Z",
+          "time_zone": "time_zone-value"
+        },
+        "coverage": {
+          "observed_since": "2026-10-27T12:34:56Z",
+          "complete_window": false,
+          "missing_observations": 1,
+          "reasons": [
+            "reasons-value"
+          ]
+        },
+        "knowledge": {
+          "created": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "updated": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "consulted": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          }
+        },
+        "top_projects": [
+          {
+            "project_id": "project_id-value",
+            "workspace_id": "workspace_id-value",
+            "name": "name-value",
+            "knowledge": {
+              "created": {
+                "value": 1,
+                "status": "observed",
+                "reason": "reason-value"
+              },
+              "updated": {
+                "value": 1,
+                "status": "observed",
+                "reason": "reason-value"
+              },
+              "consulted": {
+                "value": 1,
+                "status": "observed",
+                "reason": "reason-value"
+              }
+            }
+          }
+        ],
+        "daily_activity": [
+          {
+            "local_date": "local_date-value",
+            "knowledge": {
+              "created": {
+                "value": 1,
+                "status": "observed",
+                "reason": "reason-value"
+              },
+              "updated": {
+                "value": 1,
+                "status": "observed",
+                "reason": "reason-value"
+              },
+              "consulted": {
+                "value": 1,
+                "status": "observed",
+                "reason": "reason-value"
+              }
+            },
+            "mcp_tool_calls": {
+              "value": 1,
+              "status": "observed",
+              "reason": "reason-value"
+            }
+          }
+        ],
+        "mcp": {
+          "requests": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "tool_calls": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "succeeded": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "failed": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "rejected": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "average_duration_ms": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "p95_duration_ms": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "tool_cancelled": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "request_succeeded": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "request_failed": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "request_rejected": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "request_cancelled": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          }
+        },
+        "models": {
+          "input_tokens": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "output_tokens": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "embedding_tokens": {
+            "value": 1,
+            "status": "observed",
+            "reason": "reason-value"
+          },
+          "cost": {
+            "amount": 0.25,
+            "currency": "currency-value",
+            "status": "observed",
+            "source": "source-value",
+            "reason": "reason-value"
+          },
+          "external_client_consumption": "not_observed"
+        }
+      },
+      "organization_name": "organization_name-value",
+      "workspace_name": "workspace_name-value",
+      "effective_locale": "effective_locale-value",
+      "locale_origin": "user",
+      "powered_by": "Powered by koinon",
+      "copyright": "copyright-value"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
     "operation": "CorporateIdentityController.list",
     "group": "IdentityApi",
     "group_scoped": true,
@@ -4987,6 +6789,9 @@
       "writer_fence": "primary_database_generation_lease",
       "worker": "external_native_worker",
       "automatic_unknown_replay": false,
+      "synchronous_max_file_bytes": 1,
+      "large_file_transport": "queued_file_spool",
+      "quota_semantics": "lifetime_admission_bytes",
       "max_files": 1,
       "max_file_bytes": 1,
       "max_batch_bytes": 1,

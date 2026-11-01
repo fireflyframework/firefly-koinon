@@ -283,15 +283,22 @@ async def test_file_boundaries_cancel_incomplete_upload_and_deny_changed_credent
     from datetime import UTC, datetime, timedelta
 
     from pydantic import ValidationError
-    from pyfly.kernel import ConflictException
+    from pyfly.kernel import ConflictException, InvalidRequestException
 
     from koinon.catalog.errors import AccessDenied
 
     service, destination, _, _ = files
     with security():
-        with pytest.raises(ValidationError):
+        with pytest.raises(InvalidRequestException):
             await service.stage(
                 "issuer|owner", "north", {**manifest(destination), "size_bytes": 33554433}, "large"
+            )
+        with pytest.raises(ValidationError):
+            await service.stage(
+                "issuer|owner",
+                "north",
+                {**manifest(destination), "size_bytes": 128 * 1024**2 + 1},
+                "too-large",
             )
         view = await service.stage("issuer|owner", "north", manifest(destination), "file-stage")
         challenge = await service.challenge("issuer|owner", "north", view.id)

@@ -33,6 +33,7 @@ import type {
   Invitation,
   InvitationFilter,
 } from '@fireflyframework/koinon-sdk';
+import {KoinonEmailInvitations} from '@fireflyframework/koinon-angular/communications/invitations';
 import { KoinonPeopleService } from './people-service';
 export const ACCESS_ROLES = [
   { id: 'viewer', label: 'Viewer', description: 'Read knowledge, search and use chat.' },
@@ -52,6 +53,7 @@ export const ACCESS_ROLES = [
 @Component({
   selector: 'ffk-people-access',
   imports: [
+    KoinonEmailInvitations,
     FormsModule,
     KoinonButton,
     KoinonTextPipe,
@@ -67,6 +69,9 @@ export const ACCESS_ROLES = [
 })
 export class KoinonPeopleAccess implements OnInit, OnDestroy {
   @Input() invitationBaseUrl = '';
+  readonly emailMode=signal<'list'|'compose'|null>(null);
+  openEmail(mode:'list'|'compose',event?:Event){this.openerName=(event?.target instanceof HTMLElement?event.target.closest('button')?.textContent:'')?.trim()??'';this.emailMode.set(mode);}
+  closeEmail(){this.emailMode.set(null);this.close();}
   readonly service = inject(KoinonPeopleService);
   readonly facade = inject(KoinonFacade);
   private readonly clients = inject(KoinonClientContext);
@@ -119,6 +124,7 @@ export class KoinonPeopleAccess implements OnInit, OnDestroy {
       if (key !== this.context) {
         this.context = key;
         this.editor.set(null);
+        this.emailMode.set(null);
         this.removing.set(null);
         this.revoking.set(null);
         this.selected.set(null);

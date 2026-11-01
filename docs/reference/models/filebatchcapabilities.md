@@ -23,6 +23,9 @@ Required means the key must be present. Nullable means its value may be `null`; 
 | `writer_fence` | `string` | No | `"primary_database_generation_lease"` |
 | `worker` | `string` | No | `"external_native_worker"` |
 | `automatic_unknown_replay` | `boolean` | No | `false` |
+| `synchronous_max_file_bytes` | `integer` | No | `33554432` |
+| `large_file_transport` | `string` | No | `"queued_file_spool"` |
+| `quota_semantics` | `string` | No | `"lifetime_admission_bytes"` |
 | `max_files` | `integer` | Yes | Not specified |
 | `max_file_bytes` | `integer` | Yes | Not specified |
 | `max_batch_bytes` | `integer` | Yes | Not specified |
@@ -61,6 +64,14 @@ Required means the key must be present. Nullable means its value may be `null`; 
 ### automatic_unknown_replay
 
 - Exact value: `false`
+
+### large_file_transport
+
+- Exact value: `"queued_file_spool"`
+
+### quota_semantics
+
+- Exact value: `"lifetime_admission_bytes"`
 
 
 ## Exact JSON Schema
@@ -130,6 +141,23 @@ This is a schema definition, not an example request. It preserves all declared k
           "default": false,
           "title": "Automatic Unknown Replay",
           "type": "boolean"
+        },
+        "synchronous_max_file_bytes": {
+          "default": 33554432,
+          "title": "Synchronous Max File Bytes",
+          "type": "integer"
+        },
+        "large_file_transport": {
+          "const": "queued_file_spool",
+          "default": "queued_file_spool",
+          "title": "Large File Transport",
+          "type": "string"
+        },
+        "quota_semantics": {
+          "const": "lifetime_admission_bytes",
+          "default": "lifetime_admission_bytes",
+          "title": "Quota Semantics",
+          "type": "string"
         },
         "max_files": {
           "title": "Max Files",

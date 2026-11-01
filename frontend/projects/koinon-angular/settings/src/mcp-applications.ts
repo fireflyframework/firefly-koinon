@@ -145,6 +145,11 @@ export class KoinonMcpApplications {
       help: 'Inspect sources and the execution audit.',
     },
     {
+      id: 'activity:read',
+      label: 'Read activity summaries',
+      help: 'View recorded knowledge and MCP activity within this connection’s access.',
+    },
+    {
       id: 'catalog:write',
       label: 'Maintain knowledge',
       help: 'Propose changes for human review in a compatible chat application.',

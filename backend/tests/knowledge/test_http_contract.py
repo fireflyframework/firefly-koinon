@@ -159,7 +159,24 @@ def test_document_chunks_and_original_http_are_scoped_and_safe_attachments(clien
         }
     )
     monkeypatch.setattr(domains, "document_chunks", chunks)
-    monkeypatch.setattr(domains, "document_original", original)
+    from hashlib import sha256
+
+    from flycanon.core.services.sources.lineage.dtos import OriginalFileReceipt
+
+    from koinon.knowledge.document_history.native import NativeDocumentHistory
+
+    history = client.native_app.state.context.get_bean(NativeDocumentHistory)
+    receipt = OriginalFileReceipt(
+        None, sha256(b"Facts").hexdigest(), 5, 'facts"\r\n.html', "application/octet-stream", "a" * 64
+    )
+
+    async def copy_original(**scope):
+        await original(**scope)
+        scope["path"].write_bytes(b"Facts")
+        return receipt
+
+    monkeypatch.setattr(history, "original_file", copy_original)
+    monkeypatch.setattr(history, "original_identity", AsyncMock(return_value=receipt))
     url = f"/api/v1/tenants/north/documents/{identifier}"
     assert client.get(url + "/chunks").status_code == 401
     response = client.get(url + "/chunks?limit=1&page=1&q=Facts", headers=bearer("viewer"))

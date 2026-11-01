@@ -1,0 +1,167 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+@if (readiness() && readiness()?.state !== 'ready') {
+  <p class="readiness" role="status">
+    {{
+      'Email is not ready. Check Communications settings. Access management and in-app notifications remain available.'
+        | ffkText
+    }}
+  </p>
+}
+@if (mode() === 'compose') {
+  <ffk-invitation-composer
+    [contextKey]="contextKey()"
+    [brandBase]="brandBase"
+    [recipients]="recipients()"
+    [roles]="roles"
+    [scopes]="scopes()"
+    [allowOrganization]="organizationAdmin()"
+    [organizationName]="organizationName()"
+    [preview]="preview()"
+    [result]="queued()"
+    [busy]="session.pending()"
+    [deliveryAvailable]="readiness()?.state === 'ready'"
+    [searching]="session.pending()"
+    [error]="session.error()"
+    (searchRequested)="search($event)"
+    (previewRequested)="makePreview($event)"
+    (submitted)="send($event)"
+    (closed)="queued() ? list() : closed.emit()"
+  >
+    <div ffkInvitationDirectory class="provider-choice">
+      <label
+        >{{ 'Identity directory' | ffkText
+        }}<select
+          [ngModel]="providerId()"
+          (ngModelChange)="providerChanged($event)"
+          [disabled]="session.pending()"
+        >
+          <option value="">{{ 'Choose a connected directory' | ffkText }}</option>
+          @for (provider of providers()?.items || []; track provider.id) {
+            <option [value]="provider.id">{{ provider.display_name }}</option>
+          }
+        </select></label
+      >
+      @if (providers(); as page) {
+        @if ((page.pages || 0) > 1) {
+          <ffk-pagination [page]="page" (pageChanged)="loadProviders($event)" />
+        }
+        @if (!page.items.length) {
+          <p>
+            {{
+              'No eligible identity directory is configured. Ask an administrator to connect a directory before sending email invitations.'
+                | ffkText
+            }}
+          </p>
+        }
+      }
+    </div>
+  </ffk-invitation-composer>
+} @else {
+  <ffk-button variant="back" icon="chevron-left" (click)="closed.emit()">{{
+    'Back to people' | ffkText
+  }}</ffk-button>
+  <header>
+    <div>
+      <h2>{{ 'Email invitations' | ffkText }}</h2>
+      <p>
+        {{
+          'Recipient-bound invitations to existing organization accounts. No bearer link is created.'
+            | ffkText
+        }}
+      </p>
+    </div>
+    <ffk-button variant="primary" (click)="compose()">{{ 'Invite person' | ffkText }}</ffk-button>
+  </header>
+  @if (session.error()) {
+    <p role="alert">{{ session.error() | ffkText }}</p>
+  }
+  <label class="status"
+    >{{ 'Invitation status' | ffkText
+    }}<select [(ngModel)]="status" (ngModelChange)="load()" [disabled]="session.pending()">
+      @for (value of ['pending', 'accepted', 'declined', 'revoked', 'expired']; track value) {
+        <option [value]="value">{{ value | ffkText }}</option>
+      }
+    </select></label
+  >
+  @if (invitations(); as page) {
+    <div class="table" tabindex="0" role="region" [attr.aria-label]="'Email invitations' | ffkText">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ 'Person' | ffkText }}</th>
+            <th>{{ 'Access' | ffkText }}</th>
+            <th>{{ 'Status' | ffkText }}</th>
+            <th>{{ 'Expires' | ffkText }}</th>
+            <th>
+              <span class="visually-hidden">{{ 'Actions' | ffkText }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (invitation of page.items; track invitation.id) {
+            <tr>
+              <td>
+                <strong>{{ invitation.recipient_display_name }}</strong
+                ><small>{{ invitation.recipient_email }}</small>
+              </td>
+              <td>
+                {{ invitation.workspace_name || invitation.organization_name
+                }}<small>{{ invitation.role | ffkText }}</small>
+              </td>
+              <td>
+                {{ invitation.status | ffkText
+                }}<small>{{
+                  (invitation.delivery.status === 'sent'
+                    ? 'Accepted by email service'
+                    : invitation.delivery.status
+                  ) | ffkText
+                }}</small>
+              </td>
+              <td>{{ invitation.expires_at | ffkDate: undefined : 'datetime' }}</td>
+              <td>
+                @if (invitation.action_reasons?.resend) {
+                  <p class="action-reason">
+                    {{ actionReason(invitation.action_reasons?.resend) | ffkText }}
+                  </p>
+                }
+                @for (action of invitation.allowed_actions; track action) {
+                  @if (confirming()?.id === invitation.id && confirming()?.action === action) {
+                    <p>
+                      {{
+                        (action === 'revoke'
+                          ? 'Revoke this pending invitation?'
+                          : 'Queue this invitation for email delivery again?'
+                        ) | ffkText
+                      }}
+                    </p>
+                    <ffk-button [disabled]="session.pending()" (click)="confirming.set(null)">{{
+                      'Cancel' | ffkText
+                    }}</ffk-button
+                    ><ffk-button
+                      variant="primary"
+                      [disabled]="session.pending()"
+                      (click)="act(invitation, action)"
+                      >{{ 'Confirm' | ffkText }}</ffk-button
+                    >
+                  } @else {
+                    <ffk-button
+                      variant="quiet"
+                      [disabled]="session.pending()"
+                      (click)="confirming.set({ id: invitation.id, action: action })"
+                      >{{ (action === 'revoke' ? 'Revoke' : 'Resend') | ffkText }}</ffk-button
+                    >
+                  }
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5">{{ 'No invitations match this status.' | ffkText }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <ffk-pagination [page]="page" (pageChanged)="load($event)" />
+  }
+}

@@ -1,4 +1,5 @@
 # Copyright 2024-2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,7 +39,7 @@ from pydantic import BaseModel, Field
 from pyfly.container import rest_controller
 from pyfly.cqrs import DefaultCommandBus, DefaultQueryBus
 from pyfly.cqrs.exceptions import CommandProcessingException
-from pyfly.kernel import ResourceNotFoundException
+from pyfly.kernel import PayloadTooLargeException, ResourceNotFoundException
 from pyfly.observability.correlation import get_correlation_id
 from pyfly.web import (
     Body,
@@ -246,6 +247,23 @@ class SourcesController:
         except UrlFetchError as exc:
             raise CallbackUrlNotAllowed(str(exc)) from exc
 
+    def _decode_inline(self, value: str) -> bytes:
+        limit = getattr(self._url_fetcher, "max_bytes", 32 * 1024**2)
+        if type(limit) is not int or limit < 1:
+            limit = 32 * 1024**2
+        if len(value) > ((limit + 2) // 3) * 4:
+            raise PayloadTooLargeException(
+                "Inline source exceeds its synchronous byte limit; use queued file intake",
+                code="BINARY_TOO_LARGE",
+            )
+        content = base64.b64decode(value, validate=True)
+        if len(content) > limit:
+            raise PayloadTooLargeException(
+                "Inline source exceeds its synchronous byte limit; use queued file intake",
+                code="BINARY_TOO_LARGE",
+            )
+        return content
+
     async def _resolve_payload_content(
         self,
         payload: SubmitSourceJsonPayload,
@@ -265,10 +283,12 @@ class SourcesController:
         if payload.content_base64:
             try:
                 return (
-                    base64.b64decode(payload.content_base64),
+                    self._decode_inline(payload.content_base64),
                     payload.content_type,
                     payload.filename,
                 )
+            except PayloadTooLargeException:
+                raise
             except Exception as exc:
                 raise ValueError(f"content_base64 is not valid base64: {exc}") from exc
 
@@ -363,7 +383,7 @@ class SourcesController:
                         "content_base64 is required; URL-fetched sources "
                         "are not yet supported in the bulk endpoint"
                     )
-                content = base64.b64decode(entry.content_base64)
+                content = self._decode_inline(entry.content_base64)
                 source = await self._commands.send(
                     SubmitSourceCommand(
                         content=content,
@@ -436,7 +456,9 @@ class SourcesController:
         if not payload.content_base64:
             raise ValueError("content_base64 is required; URL-fetched re-ingestion is on the roadmap")
         try:
-            content = base64.b64decode(payload.content_base64)
+            content = self._decode_inline(payload.content_base64)
+        except PayloadTooLargeException:
+            raise
         except Exception as exc:
             raise ValueError(f"content_base64 is not valid base64: {exc}") from exc
         return await self._commands.send(

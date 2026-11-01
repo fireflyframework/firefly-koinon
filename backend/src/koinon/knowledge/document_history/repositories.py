@@ -2,7 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 """Scoped immutable ledger reads, separate from mutable source projections."""
 
+import json
 from contextlib import contextmanager
+from hashlib import sha256
+from pathlib import Path
 
 from flycanon.core.services.sources.lineage.dtos import DocumentScope
 from flycanon.core.services.sources.lineage.service import conditions
@@ -189,3 +192,57 @@ class DocumentHistoryRepository:
         with self._scope(**scope) as (lineage, native, source):
             await lineage.require_schema()
             return await lineage.original(native, source, source_version_id, max_bytes=max_bytes)
+
+    async def original_identity(self, *, source_version_id=None, **scope):
+        with self._scope(**scope) as (lineage, native, source):
+            await lineage.require_schema()
+            if source_version_id is None:
+                head = await lineage.head(native, source)
+                source_version_id = head["version_id"] if head is not None else None
+            if source_version_id is not None:
+                return await lineage.original_receipt(native, source, source_version_id)
+            return (await self._legacy_original(lineage, native, source))[1]
+
+    @staticmethod
+    async def _legacy_original(lineage, native, source_id):
+        from flycanon.core.services.sources.lineage.dtos import OriginalFileReceipt
+
+        row = await lineage.sources.get(
+            source_id, tenant_id=native.tenant_id, workspace_id=native.workspace_id
+        )
+        if row is None or not row.object_store_key or (row.metadata_json or {}).get("_source_lineage"):
+            raise ResourceNotFoundException("No verified original is available", code="ORIGINAL_NOT_FOUND")
+        info = (row.metadata_json or {}).get("_persisted_original") or {
+            "bytes": row.content_bytes,
+            "sha256": row.content_sha256,
+        }
+        anchor = sha256(
+            json.dumps(
+                [row.id, row.object_store_key, info, row.filename], sort_keys=True, separators=(",", ":")
+            ).encode()
+        ).hexdigest()
+        return row, OriginalFileReceipt(
+            None, info["sha256"], info["bytes"], row.filename, "application/octet-stream", anchor
+        )
+
+    async def original_file(self, *, path, max_bytes, source_version_id=None, **scope):
+        with self._scope(**scope) as (lineage, native, source):
+            await lineage.require_schema()
+            if source_version_id is None:
+                head = await lineage.head(native, source)
+                source_version_id = head["version_id"] if head is not None else None
+            if source_version_id is not None:
+                return await lineage.copy_original(
+                    native, source, source_version_id, path, max_bytes=max_bytes
+                )
+            row, receipt = await self._legacy_original(lineage, native, source)
+            if type(receipt.bytes) is not int or not 1 <= receipt.bytes <= min(max_bytes, 32 * 1024**2):
+                raise PayloadTooLargeException(
+                    "Legacy original exceeds its bounded download path", code="ORIGINAL_TOO_LARGE"
+                )
+            content = await lineage.store.get_bounded(row.object_store_key, receipt.bytes)
+            if len(content) != receipt.bytes or sha256(content).hexdigest() != receipt.sha256:
+                raise ResourceNotFoundException("Original integrity failed", code="ORIGINAL_NOT_FOUND")
+            with Path(path).open("xb") as target:
+                target.write(content)
+            return receipt

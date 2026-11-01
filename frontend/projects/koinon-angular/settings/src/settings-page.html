@@ -283,7 +283,7 @@
           }
         </div>
         @if (step() === 2 && !providerRecord()) {
-          <ffk-button variant="quiet" icon="chevron-left" (click)="backProvider()">{{
+          <ffk-button variant="back" icon="chevron-left" (click)="backProvider()">{{
             'Back' | ffkText
           }}</ffk-button>
         } @else {
@@ -671,6 +671,9 @@
       @defer (when section() === 'structure') {
         <ffk-organization-structure />
       }
+    }
+    @if (!editor() && section() === 'communications') {
+      @defer(when section() === 'communications'){<ffk-communications-settings/>}
     }
     @if (!editor() && section() === 'access') {
       <ffk-people-access [invitationBaseUrl]="actions?.invitationBaseUrl?.() ?? ''" />

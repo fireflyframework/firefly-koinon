@@ -25,7 +25,10 @@
       <header>
         <h1 id="account-page-title" tabindex="-1">{{ title() | ffkText }}</h1>
       </header>
-      <ffk-account-panel [initialTab]="section" [pageMode]="true" />
+      @if(section === 'notifications' || section === 'notification-preferences'){
+      @if(communications();as component){<ng-container *ngComponentOutlet="component;inputs:{mode:section,actions:communicationActions}"/>}@else if(communicationsError()){<p role="alert">{{communicationsError()|ffkText}}</p>}
+
+      }@else{<ffk-account-panel [initialTab]="section" [pageMode]="true" />}
     </div>
   </div>
 </section>

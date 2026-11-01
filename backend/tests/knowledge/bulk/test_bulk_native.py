@@ -38,11 +38,15 @@ async def bulk(tmp_path, request):
                         }
                     },
                 },
-                "koinon": {"knowledge": {"bulk": {"storage_root": str(tmp_path / "private")}}},
+                "koinon": {
+                    "knowledge": {
+                        "bulk": {"storage_root": str(tmp_path / "private"), "max_local_storage_operations": 8}
+                    }
+                },
             }
         )
     )
-    for package in ["koinon.catalog", "koinon.jobs", "koinon.knowledge.bulk"]:
+    for package in ["koinon.catalog", "koinon.jobs", "koinon.storage", "koinon.knowledge.bulk"]:
         scan_package(package, context.container)
     from koinon.assistants.repositories import ProviderRepository
     from koinon.knowledge.connections.repositories import KnowledgeConnectionRepository
@@ -144,7 +148,7 @@ async def test_create_and_stage_replay_survive_new_service_instance_without_dupl
     bulk.service = FileBatches(
         previous.catalog,
         previous.records,
-        BulkStorage(previous.settings),
+        BulkStorage(previous.settings, previous.storage.scratch),
         previous.settings,
         previous.jobs,
         previous.authority,

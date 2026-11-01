@@ -294,6 +294,20 @@ wheels = [
 ]
 
 [[package]]
+name = "azure-communication-email"
+version = "1.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "azure-core" },
+    { name = "isodate" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/97/de/f71191ead5e778a7d8939744977a049f796f6fb6549847c667fad373605e/azure_communication_email-1.1.0.tar.gz", hash = "sha256:6a4af8281024327c3ab18a4996919069a99a69aad3a19c40f7852a6682493327", size = 55546, upload-time = "2025-10-17T20:30:23.349Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/97/fe/9bd1028853c4b351c756ba4acc39ef5b5914a3452ebe2df0b8ddd6051114/azure_communication_email-1.1.0-py3-none-any.whl", hash = "sha256:9212153f21cf7e68734c32ebfe8702b43398bd01df2dddb0ca52cd5a8bbd5024", size = 64170, upload-time = "2025-10-17T20:30:24.829Z" },
+]
+
+[[package]]
 name = "azure-core"
 version = "1.41.0"
 source = { registry = "https://pypi.org/simple" }
@@ -304,6 +318,11 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/a6/f3/b416179e408990df5db0d516283022dde0f5d0111d98c1a848e41853e81c/azure_core-1.41.0.tar.gz", hash = "sha256:f46ff5dfcd230f25cf1c19e8a34b8dc08a337b2503e268bb600a16c00db8ad5a", size = 381042, upload-time = "2026-05-07T23:30:54.302Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5b/db/325c6d7312d2200251c52323878281045aaffcb5586612296484e4280eaa/azure_core-1.41.0-py3-none-any.whl", hash = "sha256:522b4011e8180b1a3dcd2024396a4e7fe9ac37fb8597db47163d230b5efe892d", size = 220920, upload-time = "2026-05-07T23:30:56.357Z" },
+]
+
+[package.optional-dependencies]
+aio = [
+    { name = "aiohttp" },
 ]
 
 [[package]]
@@ -990,6 +1009,7 @@ dependencies = [
     { name = "httpx" },
     { name = "mcp" },
     { name = "pillow" },
+    { name = "psutil" },
     { name = "psycopg", extra = ["binary"] },
     { name = "pyarrow" },
     { name = "pyfly", extra = ["agentic", "agentic-script-execution", "client", "data-relational", "fastapi", "mcp", "observability", "postgresql", "security", "templates"] },
@@ -1006,6 +1026,9 @@ dev = [
     { name = "pytest-asyncio" },
     { name = "pytest-timeout" },
     { name = "ruff" },
+]
+notifications-azure = [
+    { name = "pyfly", extra = ["notifications-azure"] },
 ]
 storage-azure = [
     { name = "firefly-koinon-storage", extra = ["azure"] },
@@ -1034,9 +1057,11 @@ requires-dist = [
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28" },
     { name = "mcp", specifier = ">=2.3,<3" },
     { name = "pillow", specifier = ">=13,<14" },
+    { name = "psutil", specifier = ">=6,<9" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
     { name = "pyarrow", specifier = ">=17" },
-    { name = "pyfly", extras = ["fastapi", "security", "data-relational", "postgresql", "agentic", "agentic-script-execution", "templates", "observability", "client", "mcp"], git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=0f7971cd98f1379a53935202f72b79979ff9b791" },
+    { name = "pyfly", extras = ["fastapi", "security", "data-relational", "postgresql", "agentic", "agentic-script-execution", "templates", "observability", "client", "mcp"], git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=19c6c7f5b67fc2597d230353279c72a6ee983086" },
+    { name = "pyfly", extras = ["notifications-azure"], marker = "extra == 'notifications-azure'", git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=19c6c7f5b67fc2597d230353279c72a6ee983086" },
     { name = "pyright", marker = "extra == 'dev'", specifier = ">=1.1" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24" },
@@ -1045,7 +1070,7 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.8" },
     { name = "sqlglot", specifier = ">=26" },
 ]
-provides-extras = ["storage-azure", "storage-gcs", "storage-s3", "dev"]
+provides-extras = ["notifications-azure", "storage-azure", "storage-gcs", "storage-s3", "dev"]
 
 [[package]]
 name = "firefly-koinon-documents"
@@ -1063,6 +1088,7 @@ dependencies = [
     { name = "odfpy" },
     { name = "openpyxl" },
     { name = "pillow" },
+    { name = "psutil" },
     { name = "psycopg", extra = ["binary"] },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -1099,12 +1125,13 @@ requires-dist = [
     { name = "odfpy", specifier = ">=1.4.1" },
     { name = "openpyxl", specifier = ">=3.1" },
     { name = "pillow", specifier = ">=11.0" },
+    { name = "psutil", specifier = ">=6,<9" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
     { name = "pydantic", specifier = ">=2.10.0" },
     { name = "pydantic-settings", specifier = ">=2.7.0" },
-    { name = "pyfly", extras = ["agentic-vectorstores-chroma"], marker = "extra == 'chroma'", git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=0f7971cd98f1379a53935202f72b79979ff9b791" },
-    { name = "pyfly", extras = ["agentic-vectorstores-qdrant"], marker = "extra == 'qdrant'", git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=0f7971cd98f1379a53935202f72b79979ff9b791" },
-    { name = "pyfly", extras = ["fastapi", "observability", "security", "data-relational", "postgresql", "eda", "redis", "client", "scheduling", "cli", "agentic", "agentic-security", "agentic-script-execution", "agentic-openai-embeddings", "agentic-binary", "agentic-vectorstores-pgvector"], git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=0f7971cd98f1379a53935202f72b79979ff9b791" },
+    { name = "pyfly", extras = ["agentic-vectorstores-chroma"], marker = "extra == 'chroma'", git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=19c6c7f5b67fc2597d230353279c72a6ee983086" },
+    { name = "pyfly", extras = ["agentic-vectorstores-qdrant"], marker = "extra == 'qdrant'", git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=19c6c7f5b67fc2597d230353279c72a6ee983086" },
+    { name = "pyfly", extras = ["fastapi", "observability", "security", "data-relational", "postgresql", "eda", "redis", "client", "scheduling", "cli", "agentic", "agentic-security", "agentic-script-execution", "agentic-openai-embeddings", "agentic-binary", "agentic-vectorstores-pgvector"], git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=19c6c7f5b67fc2597d230353279c72a6ee983086" },
     { name = "pymupdf", specifier = ">=1.24" },
     { name = "pypdf", specifier = ">=4.3.0" },
     { name = "pyright", marker = "extra == 'dev'", specifier = ">=1.1" },
@@ -1168,6 +1195,7 @@ dependencies = [
     { name = "httpx" },
     { name = "jinja2" },
     { name = "pgvector" },
+    { name = "psutil" },
     { name = "psycopg", extra = ["binary"] },
     { name = "pyarrow" },
     { name = "pydantic" },
@@ -1211,11 +1239,12 @@ requires-dist = [
     { name = "pgvector", specifier = ">=0.3.6" },
     { name = "presidio-analyzer", marker = "extra == 'presidio'", specifier = ">=2.2" },
     { name = "presidio-anonymizer", marker = "extra == 'presidio'", specifier = ">=2.2" },
+    { name = "psutil", specifier = ">=6,<9" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
     { name = "pyarrow", specifier = ">=17.0" },
     { name = "pydantic", specifier = ">=2.10.0" },
     { name = "pydantic-settings", specifier = ">=2.7.0" },
-    { name = "pyfly", extras = ["fastapi", "observability", "security", "data-relational", "postgresql", "eda", "redis", "client", "scheduling", "cli", "agentic"], git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=0f7971cd98f1379a53935202f72b79979ff9b791" },
+    { name = "pyfly", extras = ["fastapi", "observability", "security", "data-relational", "postgresql", "eda", "redis", "client", "scheduling", "cli", "agentic"], git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=19c6c7f5b67fc2597d230353279c72a6ee983086" },
     { name = "pyright", marker = "extra == 'dev'", specifier = ">=1.1" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24" },
@@ -3042,8 +3071,8 @@ wheels = [
 
 [[package]]
 name = "pyfly"
-version = "26.10.27"
-source = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=0f7971cd98f1379a53935202f72b79979ff9b791#0f7971cd98f1379a53935202f72b79979ff9b791" }
+version = "26.10.28"
+source = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=19c6c7f5b67fc2597d230353279c72a6ee983086#19c6c7f5b67fc2597d230353279c72a6ee983086" }
 dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
@@ -3166,6 +3195,12 @@ fastapi = [
 mcp = [
     { name = "mcp" },
     { name = "starlette" },
+]
+notifications-azure = [
+    { name = "azure-communication-email" },
+    { name = "azure-core", extra = ["aio"] },
+    { name = "azure-identity" },
+    { name = "jinja2" },
 ]
 observability = [
     { name = "opentelemetry-api" },

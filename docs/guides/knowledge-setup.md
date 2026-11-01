@@ -13,7 +13,7 @@ For a new production installation, use [First start in production](../operations
 
 ## 2. Establish people and access
 
-After signing in to the running installation, obtain the verified canonical subject from `GET /auth/me` and create the first organization administrator through the [audited bootstrap procedure](../operations/first-start.md#4-sign-in-verify-the-subject-then-bootstrap). An identity-provider login alone does not grant product membership. Open **Access** to invite people or assign the smallest useful organization/workspace role. Configure supported corporate group mappings separately from manual grants.
+After signing in to the running installation, obtain the verified canonical subject from `GET /auth/me` and create the first organization administrator through the [audited bootstrap procedure](../operations/first-start.md#4-establish-the-first-administrators). An identity-provider login alone does not grant product membership. Open **Access** to invite people or assign the smallest useful organization/workspace role. Configure supported corporate group mappings separately from manual grants.
 
 Use **People** and **Organization structure** for positions, departments, teams and managers. These values do not grant permissions. Choose directory visibility explicitly, and let each person manage their own avatar and preferences. The [people guide](people-and-organization.md) covers the complete flow and SDK operations.
 

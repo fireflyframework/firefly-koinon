@@ -39,6 +39,6 @@ Changing configuration does not copy files or rewrite historical snapshot URIs. 
 
 ## Bulk work remains separate
 
-Canonical Library upload currently accepts one file per request, with a default limit of 32 MiB. Cloud multipart transfers do not create a durable bulk-ingestion contract. Bound multi-file queues, preserve each accepted receipt and reconcile uncertain outcomes before retrying. See [bulk and transport limits](storage-behavior.md#bulk-work-remains-separate) and the [Python](../guides/python-knowledge.md), [TypeScript](../guides/typescript-knowledge.md) or [Java](../guides/java-knowledge.md) workflow.
+Use [durable source batches](../guides/bulk-intake.md) for queued originals up to 128 MiB each and 512 MiB per batch. The synchronous upload endpoint remains at most 32 MiB. A cloud adapter alone does not supply the native admission, lease, authorization or immutable publication contract. The [Library file profile](../reference/library-file-ingestion.md) records raw/expanded/object/parser bounds and the lifetime quota policy. Preserve every accepted receipt and reconcile unknown outcomes explicitly.
 
 Copyright 2026 Firefly Software Foundation. Licensed under Apache-2.0. Made with <3.

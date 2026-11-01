@@ -85,7 +85,7 @@ Continue with [first start](first-start.md), which orders the remaining work:
 
 1. Provision the database roles, apply all migration histories, grant privileges and run checks.
 2. Start the API through `python -m koinon.serve` and route its browser sign-in through the public HTTPS origin.
-3. Sign in, obtain the verified canonical subject from `/auth/me`, then bootstrap one new organization and its administrator.
+3. Choose a reviewed initialization mode: bootstrap from the exact signed-in `/auth/me` subject, or seed pending direct-Entra identity grants and let verified first sign-in bind the canonical subjects. Both create only a new organization.
 4. Start the complete worker with `python -m koinon.worker` and complete [guided organization setup](../guides/knowledge-setup.md).
 5. Upload a small fictional source, inspect its cited answer and audit evidence, then verify backup and restore.
 

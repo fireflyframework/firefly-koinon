@@ -33,6 +33,7 @@ def native_upload_slice(monkeypatch, request):
     import koinon.app
     from koinon.knowledge.adapters import NativeDomains
     from koinon.knowledge.controllers import KnowledgeController
+    from koinon.knowledge.document_history.downloads import OriginalDownloads
     from koinon.knowledge.repositories import DomainBindingRepository
     from koinon.knowledge.service import KnowledgeFacade, KnowledgeSettings
     from koinon.web.projection import register_controller
@@ -45,6 +46,10 @@ def native_upload_slice(monkeypatch, request):
         context.register_bean(DomainBindingRepository)
         context.container.register_instance(NativeDomains, SimpleNamespace())
         context.container.register_instance(KnowledgeSettings, KnowledgeSettings())
+        context.container.register_instance(
+            OriginalDownloads,
+            SimpleNamespace(open=AsyncMock(side_effect=AssertionError("Uploads must not invoke downloads"))),
+        )
         context.register_bean(KnowledgeFacade)
         register_controller(context, KnowledgeController)
         return app

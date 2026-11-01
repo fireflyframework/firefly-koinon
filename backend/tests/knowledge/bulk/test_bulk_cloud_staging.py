@@ -7,10 +7,12 @@ from hashlib import sha256
 from pathlib import Path
 
 import pytest
+from pyfly.core import Config
 from pyfly.kernel import ConflictException
 
 from koinon.knowledge.bulk.settings import BulkSettings
 from koinon.knowledge.bulk.storage import BulkStorage
+from koinon.storage.scratch import ScratchAdmission
 
 
 @pytest.mark.parametrize("backend", ["azure", "gcs"])
@@ -29,7 +31,10 @@ async def test_two_independent_bulk_stores_read_same_immutable_object_without_sh
         gcs_prefix="retained",
         storage_request_timeout_seconds=3,
     )
-    first, second = BulkStorage(settings), BulkStorage(settings)
+    first, second = (
+        BulkStorage(settings, ScratchAdmission(Config({}))),
+        BulkStorage(settings, ScratchAdmission(Config({}))),
+    )
     first.configured().native._client = client
     second.configured().native._client = client
     await first.put("bulk/attempt.blob", b"original", sha256(b"original").hexdigest())
@@ -50,7 +55,7 @@ async def test_two_independent_bulk_stores_read_same_immutable_object_without_sh
 async def test_local_attempt_is_create_only_and_cannot_replace_retained_bytes(tmp_path):
     root = tmp_path / "private"
     root.mkdir(mode=0o700)
-    storage = BulkStorage(BulkSettings(storage_root=str(root)))
+    storage = BulkStorage(BulkSettings(storage_root=str(root)), ScratchAdmission(Config({})))
     await storage.put("bulk/attempt.blob", b"original", sha256(b"original").hexdigest())
     with pytest.raises(OSError):
         await storage.put("bulk/attempt.blob", b"changed!", sha256(b"changed!").hexdigest())

@@ -218,4 +218,8 @@ export const ORGANIZATION_SPANISH: Readonly<Record<string, string>> = {
     'Elige un intervalo de entre 5 minutos y 24 horas.',
   'view-users or equivalent fine-grained user-view permission':
     'view-users o un permiso equivalente para consultar usuarios',
+  Communications:'Comunicaciones',
+  'Create legacy invitation link':'Crear enlace de invitación heredado',
+  'Legacy invitation links':'Enlaces de invitación heredados',
+  'Email invitations':'Invitaciones por correo',
 };

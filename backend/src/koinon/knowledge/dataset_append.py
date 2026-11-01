@@ -181,6 +181,9 @@ class DatasetFiles:
             key: value for key, value in dataset.metadata_json.items() if key != "_koinon_intake"
         }
         await self.knowledge.catalog.catalog_repository.save(dataset)
+        await self.knowledge.catalog._audit(
+            subject, tenant, "knowledge.content_updated", dataset_id, {"file_version_id": version.id}
+        )
         return receipt
 
     @transactional

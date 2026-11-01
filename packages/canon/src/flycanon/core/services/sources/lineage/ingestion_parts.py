@@ -78,12 +78,14 @@ async def read_exact_ingestion_chunk_parts(
     for row in rows:
         for prefix in ("raw", "normalized"):
             artifact = {
-                key: row[f"{prefix}_{key}"] for key in ("id", "sha256", "bytes", "object_key", "media_type")
+                key: row[f"{prefix}_{key}"]
+                for key in ("id", "sha256", "bytes", "object_key", "media_type", "object_reference_json")
             }
-            if artifact["bytes"] > reader.max_bytes:
+            limit = reader.max_raw_bytes if prefix == "raw" else reader.max_bytes
+            if artifact["bytes"] > limit:
                 _unavailable("The retained ingestion input exceeds the verified read limit")
             if artifact["id"] not in verified:
-                await lineage._verified(artifact, reader.max_bytes)
+                await lineage._verified(artifact, limit, read_content=False)
                 verified.add(artifact["id"])
     found = {
         row["id"]: WholeDocumentPart(

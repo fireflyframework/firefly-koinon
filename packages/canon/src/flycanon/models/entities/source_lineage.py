@@ -47,6 +47,7 @@ source_artifacts = immutable(
     Column("bytes", Integer, nullable=False),
     Column("media_type", String(128)),
     Column("object_key", String(1024), nullable=False),
+    Column("object_reference_json", JSON),
 )
 source_versions = immutable(
     "canon_source_versions",

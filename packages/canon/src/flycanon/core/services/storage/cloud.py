@@ -14,6 +14,12 @@ class CloudObjectStore(ObjectStore):
     async def put(self, key, data, content_type=None):
         await self.native.put(key, data, content_type)
 
+    async def create_file(self, key, path, content_type=None):
+        return await self.native.create_file(key, path, content_type)
+
+    async def download_file(self, reference, path, *, max_bytes):
+        await self.native.download_file(reference, path, max_bytes=max_bytes)
+
     async def get(self, key):
         return await self.get_bounded(key, self.native.profile.max_object_bytes)
 

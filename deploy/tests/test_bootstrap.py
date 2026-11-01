@@ -4,6 +4,7 @@ import importlib.util
 from pathlib import Path
 
 import pytest
+
 from koinon.app import create_application
 from koinon.catalog.repositories import AuditRepository, MembershipRepository
 
@@ -73,3 +74,25 @@ async def test_native_bootstrap_refuses_existing_tenant_and_noncanonical_subject
         assert len(audits) == 1 and audits[0].action == "tenant.bootstrap"
     finally:
         await context.stop()
+
+
+def test_operator_modes_are_explicit_and_mutually_exclusive(tmp_path):
+    base = ["--tenant-id", "new-org", "--name", "New organization"]
+    with pytest.raises(SystemExit):
+        module.arguments(base)
+    with pytest.raises(SystemExit):
+        module.arguments(
+            [*base, "--subject", "issuer|sub", "--identity-grants-file", "grants.json"]
+        )
+    assert (
+        module.arguments([*base, "--subject", "issuer|sub"]).identity_grants_file
+        is None
+    )
+    assert (
+        module.arguments([*base, "--identity-grants-file", "grants.json"]).subject
+        is None
+    )
+    oversized = tmp_path / "oversized.json"
+    oversized.write_bytes(b" " * 65537)
+    with pytest.raises(ValueError, match="64 KiB"):
+        module.load_identity_grants(oversized)

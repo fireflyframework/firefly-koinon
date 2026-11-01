@@ -283,7 +283,18 @@ def test_complete_backlog_observation_executes_every_queue_on_its_named_datasour
             async with registry.get(name).engine.begin() as connection:
                 await connection.run_sync(metadata.create_all)
         result = await context.get_bean(WorkerBacklog).snapshot()
-        assert len(result.queues) == 7
+        assert {row.queue for row in result.queues} == {
+            "conversation",
+            "index",
+            "attachment",
+            "profile",
+            "document_ingest",
+            "structured_ingest",
+            "callback",
+            "communications",
+            "bulk_intake",
+            "bulk_query",
+        }
         assert all(row.available and row.ready == row.active == row.demand == 0 for row in result.queues)
         assert all(1 <= row.capacity <= 100 for row in result.queues)
         return result

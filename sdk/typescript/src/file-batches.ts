@@ -19,7 +19,7 @@ export function createFileBatchesApi(transport:KoinonTransport){return {
  get:(tenantId:string,batchId:string,options:RequestOptions={})=>transport.request<G.FileBatchView>('GET',batch(tenantId,batchId),options),
  items:(tenantId:string,batchId:string,filter:FileBatchPageFilter={},options:RequestOptions={})=>transport.request<G.FileItemPage>('GET',`${batch(tenantId,batchId)}/items`,{...options,query:{...filter}}),
  upload:(tenantId:string,batchId:string,itemId:string,content:Blob,key:string,options:RequestOptions={})=>{
-  if(content.size<1||content.size>33554432)throw new Error('Original content must be1..33554432bytes');
+  if(content.size<1||content.size>134217728)throw new Error('Choose a nonempty original of at most 128 MiB');
   const request=keyed(options,key);const headers={...request.headers};
   for(const name of Object.keys(headers))if(name.toLowerCase()==='content-type')delete headers[name];
   return transport.request<G.StagedFileReceipt>('PUT',`${item(tenantId,batchId,itemId)}/content`,{...request,body:content,headers:{...headers,'Content-Type':'application/octet-stream'}});
