@@ -290,9 +290,13 @@ class NativeInstallationIndexes:
             coverage = await reader.adapter.coverage(row)
             if coverage["chunk_count"] or coverage["vector_count"]:
                 raise InstallationError("INSTALLATION_INDEX_NOT_EMPTY")
-            if row.domain == "documents" and not await reader.adapter.provision_document(row):
-                raise InstallationError("INSTALLATION_ANN_PROVISION_REQUIRED")
-            await reader.adapter.set_state(row, "ready")
+            if row.domain == "documents":
+                if not await reader.adapter.transition_initial(row, "building", actor=ACTOR):
+                    raise InstallationError("INSTALLATION_MANUAL_CHANGE")
+                if not await reader.adapter.provision_document(row):
+                    raise InstallationError("INSTALLATION_ANN_PROVISION_REQUIRED")
+            if not await reader.adapter.transition_initial(row, "ready", actor=ACTOR):
+                raise InstallationError("INSTALLATION_MANUAL_CHANGE")
         actual = await reader.adapter.get_native(
             tenant_id=row.tenant_id,
             native_workspace_id=row.native_workspace_id,
@@ -303,6 +307,8 @@ class NativeInstallationIndexes:
         )
         if actual is None or not actual["indexed"] or actual["chunk_count"] or actual["vector_count"]:
             raise InstallationError("INSTALLATION_ANN_UNQUALIFIED")
+        if actual.get("status") != "ready":
+            raise InstallationError("INSTALLATION_MANUAL_CHANGE")
         row.status, row.indexed, row.qualification = "ready", True, actual["qualification"]
         row.revision += 1
         await reader.records.save(row)
