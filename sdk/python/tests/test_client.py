@@ -200,3 +200,29 @@ async def test_catalog_filters_preserve_typed_summaries_and_unknown_counts():
     assert page.summaries["asset-1"].format == "pdf"
     assert page.summaries["asset-1"].row_count is None
     assert page.summaries["asset-1"].size_bytes == 12
+
+
+async def test_folder_move_sends_exact_observed_preconditions_and_preserves_protection():
+    import json
+
+    from koinon_sdk import CatalogMove
+
+    def handle(request):
+        assert request.method == "POST"
+        assert request.url.raw_path == b"/api/v1/tenants/north%2Fdivision/catalog/folder%2Fone/move"
+        body = json.loads(request.content)
+        assert body == {
+            "parent_id": "destination", "expected_parent_id": "original",
+            "expected_updated_at": "2026-11-01T08:00:00Z",
+        }
+        return httpx.Response(200, json={**ENTRY, "system_managed": False})
+
+    async with KoinonClient(
+        "https://knowledge.test/api/v1", token_provider=lambda: "editor",
+        transport=httpx.MockTransport(handle),
+    ) as client:
+        moved = await client.move("north/division", "folder/one", CatalogMove(
+            parent_id="destination", expected_parent_id="original",
+            expected_updated_at="2026-11-01T08:00:00Z",
+        ))
+    assert moved.system_managed is False

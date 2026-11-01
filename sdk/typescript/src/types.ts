@@ -4,11 +4,12 @@ import type {AttachmentCapabilities,AttachmentHistorySummary,CatalogProposal,Pro
 export type Json = null | boolean | number | string | Json[] | {[key:string]:Json};
 export type ResourceKind = 'workspace'|'project'|'collection'|'corpus'|'source'|'document'|'dataset'|'chunk'|'table'|'index_version'|'query_session';
 export interface CatalogEntry {
- created_by?:string; updated_by?:string; id:string; tenant_id:string; kind:ResourceKind; name:string; description:string; status:string;
+ system_managed?:boolean; created_by?:string; updated_by?:string; id:string; tenant_id:string; kind:ResourceKind; name:string; description:string; status:string;
  parent_id:string|null; workspace_id:string|null; project_id:string|null; metadata:Record<string,Json>;
  created_at:string; updated_at?:string;
 }
 export interface EntryCreate {kind:ResourceKind;name:string;description?:string;parent_id?:string|null;metadata?:Record<string,Json>}
+export interface CatalogMove {parent_id:string;expected_parent_id:string;expected_updated_at:string}
 export interface EntryUpdate {name?:string;description?:string;metadata?:Record<string,Json>}
 export interface CatalogFilter {page?:number;page_size?:number;q?:string;status?:string;sort?:'name'|'kind'|'created_at'|'updated_at';format?:string;tag?:string;order?:'asc'|'desc';view?:'raw'|'library';include_archived?:boolean;kind?:ResourceKind;parent_id?:string;project_id?:string;workspace_id?:string;[key:string]:string|number|boolean|undefined}
 export interface Membership {managed?:boolean;origin?:'manual'|'corporate';source_id?:string|null;source_name?:string|null;expires_at?:string|null;id:string;subject:string;tenant_id:string;workspace_id:string|null;role:'viewer'|'analyst'|'editor'|'operator'|'admin';active:boolean}

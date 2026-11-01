@@ -198,3 +198,25 @@ async def confirm_reviewed_intent(
 The example's body must be an actual user statement; do not relabel imported or model-generated content as user-authored evidence. Use the matching conversation or external-review origin instead. Updates and publishing must carry the intended target and its expected version. `knowledge_items`, `knowledge_item` and `knowledge_version` read serving and historical versions. A draft preserves the published serving version. A `pending` commit is unresolved; retain its operation identity and reconcile it. Never automatically confirm a model suggestion, infer human consent, or invent a curated delete/share/export/derive capability. See [reviewed external changes](mcp-knowledge-management.md) and the [generated API reference](../reference/sdk-api.md).
 
 When a conversation-origin intent reports `remembered_context_present`, show the remembered-context explanation alongside the exact intent preview and obtain a separate decision. Only an explicit approval permits `include_remembered_context=true` on `KnowledgeConfirmation` (Java: `withIncludeRememberedContext(true)`). The examples above leave that consent disabled. Evidence marked `basis: remembered_context` remains attributed to its recorded historical source rather than being presented as new retrieval. See [conversation memory](conversation-memory.md#share-or-publish-an-answer-that-used-memory) for the complete behavior.
+
+## Move an organizational folder
+
+Read the folder immediately before asking the person to confirm its destination. The returned parent and timestamp are the preconditions for that decision. The helper below performs one requested move; it does not retry conflicts or choose another space. Use the client and authentication from the quickstart.
+
+```python
+from datetime import datetime
+from koinon_sdk import CatalogEntry, CatalogMove, KoinonClient
+
+async def move_folder(
+    client: KoinonClient, tenant: str, folder: CatalogEntry, destination_id: str,
+) -> CatalogEntry:
+    if folder.parent_id is None or folder.updated_at is None:
+        raise ValueError("Read the folder's current location and update timestamp first")
+    return await client.move(tenant, folder.id, CatalogMove(
+        parent_id=destination_id,
+        expected_parent_id=folder.parent_id,
+        expected_updated_at=datetime.fromisoformat(folder.updated_at.replace("Z", "+00:00")),
+    ))
+```
+
+`system_managed` identifies retained installation defaults. The server rejects their removal or movement regardless of the SDK. Ordinary collection and corpus folders can move inside their current project and space. A stale decision returns `CATALOG_CHANGED`; a different knowledge boundary returns `KNOWLEDGE_TRANSFER_REQUIRED`. Refresh and obtain a new decision rather than retrying automatically. See [Library hierarchy and permissions](library.md#spaces-projects-and-folders).

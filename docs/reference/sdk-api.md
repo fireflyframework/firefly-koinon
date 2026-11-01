@@ -2,7 +2,7 @@
 
 Python, Java and TypeScript expose the same canonical headless API. The table records concrete SDK methods; it does not count browser-only authentication or retained domain routes outside this contract.
 
-This canonical contract contains 237 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
+This canonical contract contains 238 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
 
 [Download the operation manifest](sdk-contract.json) and [complete wire schemas](sdk-schemas.json). The maintained generator checks source mappings and schemas without starting the backend.
 
@@ -22,6 +22,7 @@ TypeScript communications methods use the separately loaded `createCommunication
 | [`POST /api/v1/tenants/{tenant_id}/catalog/{entry_id}/archive`](api/catalog.md#catalogcontroller-catalog-archive) | `archive` | `catalog.archive` | `client.catalog.archive` | `CatalogEntry` |
 | [`POST /api/v1/tenants/{tenant_id}/catalog/{entry_id}/restore`](api/catalog.md#catalogcontroller-catalog-restore) | `restore` | `catalog.restore` | `client.catalog.restore` | `CatalogEntry` |
 | [`DELETE /api/v1/tenants/{tenant_id}/catalog/{entry_id}`](api/catalog.md#catalogcontroller-catalog-delete) | `delete` | `catalog.delete` | `client.catalog.delete` | `void` |
+| [`POST /api/v1/tenants/{tenant_id}/catalog/{entry_id}/move`](api/catalog.md#cataloghierarchycontroller-move) | `move` | `catalog.move` | `client.catalog.move` | `CatalogEntry` |
 | [`GET /api/v1/context`](api/platform.md#contextcontroller-context) | `context` | `context` | `client.platform.context` | `ContextResponse` |
 | [`GET /api/v1/tenants/{tenant_id}/jobs`](api/platform.md#jobcontroller-list) | `jobs` | `jobs.list` | `client.jobs.list` | `Page[Job]` |
 | [`GET /api/v1/tenants/{tenant_id}/jobs/{job_id}`](api/platform.md#jobcontroller-get) | `job` | `jobs.get` | `client.jobs.get` | `Job` |

@@ -20,6 +20,7 @@ public record CatalogEntry(
     @JsonProperty("project_id") String projectId,
     @JsonProperty("description") String description,
     @JsonProperty("status") String status,
+    @JsonProperty("system_managed") Boolean systemManaged,
     @JsonProperty("metadata") JsonNode metadata,
     @JsonProperty("created_at") Instant createdAt,
     @JsonProperty("updated_at") Instant updatedAt

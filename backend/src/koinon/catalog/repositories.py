@@ -143,6 +143,44 @@ class MembershipRepository(Repository[Membership, str]):
 class CatalogRepository(Repository[CatalogEntry, str]):
     """Scoped catalog entries shared by both domains."""
 
+    async def subtree_facts(self, tenant_id: str, root: CatalogEntry) -> dict:
+        node = aliased(CatalogEntry)
+        branch = (
+            select(CatalogEntry.id, literal(0).label("depth"))
+            .where(CatalogEntry.tenant_id == tenant_id, CatalogEntry.id == root.id)
+            .cte("moving_subtree", recursive=True)
+        )
+        branch = branch.union_all(
+            select(node.id, branch.c.depth + 1)
+            .join(branch, node.parent_id == branch.c.id)
+            .where(node.tenant_id == tenant_id, branch.c.depth < 16)
+        )
+        entry = CatalogEntry
+        statement = (
+            select(
+                func.max(branch.c.depth).label("max_depth"),
+                func.max(case((entry.kind.in_(["collection", "corpus"]), branch.c.depth), else_=0)).label(
+                    "folder_depth"
+                ),
+                func.max(case((entry.status == "pending", 1), else_=0)).label("pending"),
+                func.max(
+                    case(
+                        (
+                            or_(
+                                entry.workspace_id.is_distinct_from(root.workspace_id),
+                                entry.project_id.is_distinct_from(root.project_id),
+                            ),
+                            1,
+                        ),
+                        else_=0,
+                    )
+                ).label("invalid_scope"),
+            )
+            .select_from(branch)
+            .join(entry, entry.id == branch.c.id)
+        )
+        return dict((await self._require_session().execute(statement)).mappings().one())
+
     async def scope_kind(self, tenant_id: str, entry_id: str) -> str | None:
         return await self._require_session().scalar(
             select(CatalogEntry.kind).where(CatalogEntry.tenant_id == tenant_id, CatalogEntry.id == entry_id)
@@ -318,7 +356,10 @@ class CatalogRepository(Repository[CatalogEntry, str]):
                     or_(
                         and_(entry.parent_id.in_(source_ids), entry.kind.in_(["document", "dataset"])),
                         and_(entry.parent_id == parent.id, entry.kind == "source", ~has_assets),
-                        and_(entry.parent_id == parent.id, entry.kind == "knowledge_item"),
+                        and_(
+                            entry.parent_id == parent.id,
+                            entry.kind.in_(["knowledge_item", "collection", "corpus"]),
+                        ),
                     )
                 )
             else:
