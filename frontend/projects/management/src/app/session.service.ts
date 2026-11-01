@@ -3,12 +3,22 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AccountNavigation } from './account-navigation';
+import type { KoinonWorkbench } from '@fireflyframework/koinon-angular/workbench';
+import type { SessionMonitor } from './session-monitor';
 @Injectable({ providedIn: 'root' })
 export class SessionService {
   private readonly http = inject(HttpClient);
   private readonly navigation = inject(AccountNavigation);
   readonly error = signal('');
+  renewalHandler?: () => boolean;
+  private runtime?: Promise<SessionMonitor>;
+  monitor(workbench: KoinonWorkbench): Promise<SessionMonitor> {
+    return (this.runtime ??= import('./session-monitor').then(
+      ({ SessionMonitor }) => new SessionMonitor(this.http, workbench, this),
+    ));
+  }
   signIn(): void {
+    if (this.renewalHandler?.()) return;
     this.navigation.retainForSignIn();
     window.location.assign('/oauth2/authorization/koinon');
   }
@@ -39,6 +49,7 @@ export class SessionService {
       );
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 401) {
+        void this.runtime?.then((monitor) => monitor.stop());
         this.navigation.clearPending();
         return true;
       }

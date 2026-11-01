@@ -3,7 +3,7 @@ import {KoinonTextPipe} from './foundations/i18n';
 import {CdkTrapFocus} from '@angular/cdk/a11y';
 import type {OverlayRef} from '@angular/cdk/overlay';
 import type {createDialogOverlay} from './services/dialog-overlay';
-import {NgComponentOutlet} from '@angular/common';
+import {NgComponentOutlet,NgTemplateOutlet} from '@angular/common';
 import {KoinonAccountPage} from './organisms/account-page';
 import {KoinonWorkbenchDialogs} from './organisms/workbench-dialogs';
 import {ChangeDetectionStrategy,Component,HostListener,Input,Output,EventEmitter,OnInit,OnChanges,OnDestroy,PendingTasks,ViewChild,TemplateRef,ViewContainerRef,ElementRef,ViewEncapsulation,booleanAttribute,computed,effect,inject,signal,type SimpleChanges,type Type,Injector,afterNextRender} from '@angular/core';
@@ -30,7 +30,7 @@ import {KoinonIcon} from './atoms/icon';
 import {KoinonSkeleton} from './atoms/skeleton';
 import type {KoinonScope} from './models';
 type Dialog='move'|'sign-out'|'account'|'archived'|'tree'|'add'|'create'|'edit'|'upload'|'archive'|'query'|'lineage'|'citation';
-@Component({selector:'ffk-workbench',imports:[KoinonSignIn,KoinonAccountPage,CdkTrapFocus,KoinonTableLineagePanel,KoinonTextPipe,KoinonCommandPalette,NgComponentOutlet,KoinonWorkbenchDialogs,KoinonShell,KoinonLibraryTemplate,KoinonInspector,KoinonButton,KoinonIcon,KoinonSkeleton],providers:[KoinonBranding,KoinonTableLineage,KoinonFontLoader,KoinonI18n,KoinonAccount,KoinonClientContext,KoinonFacade,KoinonAssistant],templateUrl:'./workbench.html',styleUrl:'./workbench.scss',host:{'[class.koinon-dark]':"theme==='dark'",'[attr.lang]':'i18n.preferences().locale'},encapsulation:ViewEncapsulation.ShadowDom,changeDetection:ChangeDetectionStrategy.OnPush})
+@Component({selector:'ffk-workbench',imports:[NgTemplateOutlet,KoinonSignIn,KoinonAccountPage,CdkTrapFocus,KoinonTableLineagePanel,KoinonTextPipe,KoinonCommandPalette,NgComponentOutlet,KoinonWorkbenchDialogs,KoinonShell,KoinonLibraryTemplate,KoinonInspector,KoinonButton,KoinonIcon,KoinonSkeleton],providers:[KoinonBranding,KoinonTableLineage,KoinonFontLoader,KoinonI18n,KoinonAccount,KoinonClientContext,KoinonFacade,KoinonAssistant],templateUrl:'./workbench.html',styleUrl:'./workbench.scss',host:{'[class.koinon-dark]':"theme==='dark'",'[attr.lang]':'i18n.preferences().locale'},encapsulation:ViewEncapsulation.ShadowDom,changeDetection:ChangeDetectionStrategy.OnPush})
 export class KoinonWorkbench implements OnInit,OnChanges,OnDestroy{
  readonly sharedConversationComponent=signal<Type<unknown>|null>(null);
  readonly sharedConversationError=signal('');
@@ -76,6 +76,7 @@ export class KoinonWorkbench implements OnInit,OnChanges,OnDestroy{
  }
  async openCommandResource(entry:CatalogEntry){if(entry.tenant_id===this.f.tenantId())await this.openChatResource(entry.id);}
  async commandSearch(query:string){await this.navigate('library');this.searchText.set(query);await this.search(query);}
+ @Input()sessionNotice:TemplateRef<unknown>|null=null;
  @Input()client?:KoinonClient;@Input()transport?:KoinonTransport|null;@Input()tenantId='';@Input()workspaceId='';@Input()projectId='';@Input()resourceId='';@Input()theme:'light'|'dark'='light';@Input({transform:booleanAttribute})showNavigation=true;@Input({transform:booleanAttribute})navigationCollapsed=false;@Input()accountSection:'profile'|'tokens'|'applications'|'notifications'|'notification-preferences'|null=null;@Output()accountSectionChange=new EventEmitter<'profile'|'tokens'|'applications'|'notifications'|'notification-preferences'|null>();@Input()view:PrimaryDestination='library';@Output()viewChange=new EventEmitter<PrimaryDestination>();@Output()navigationCollapsedChange=new EventEmitter<boolean>();@Input()branding:BrandingValues|null=null;@Output()brandingChange=new EventEmitter<BrandingValues>();@Input()brandBase='/assets/brand';@Input()managementBaseUrl='';@Input()invitationToken='';@Input()sharedConversationId='';@Output()sharedConversationDismissed=new EventEmitter<void>();
  @Output()invitationAccepted=new EventEmitter<Membership>();@Output()invitationDismissed=new EventEmitter<void>();
  readonly invitationComponent=signal<Type<unknown>|null>(null);readonly invitationError=signal('');private readonly invitationLoader=inject(KOINON_INVITATION_LOADER,{optional:true});readonly invitationActions={accepted:(membership:Membership)=>{void this.acceptInvitation(membership);},dismissed:()=>this.dismissInvitation()};

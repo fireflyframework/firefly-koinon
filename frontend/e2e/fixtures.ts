@@ -102,6 +102,11 @@ export async function mockService(
   const observations: { path: string; body: unknown }[] = [];
   const previousStatus = new Map<string, string>();
   const writes: { path: string; method: string; body: unknown; csrf?: string }[] = [];
+  await page.route('**/auth/me', route => route.fulfill({
+    status: options.authenticated === false ? 401 : 200,
+    contentType: 'application/json',
+    body: JSON.stringify({subject:context.subject,authenticated:options.authenticated!==false,authentication_method:'oidc-session',expires_at:null,authenticated_at:null,server_time:new Date().toISOString()}),
+  }));
   await page
     .context()
     .addCookies([

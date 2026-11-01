@@ -3,6 +3,7 @@ import { Component, inject, signal } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { KoinonFontLoader, KoinonWorkbench } from '@fireflyframework/koinon-angular/workbench';
 import { SessionService } from './session.service';
+import { SessionNotice } from './session-notice';
 import type { BrandingValues } from '@fireflyframework/koinon-sdk';
 import { PendingInvitation } from './pending-invitation';
 import { PendingShare } from './pending-share';
@@ -11,12 +12,19 @@ import { OrganizationSelection } from './organization-selection';
 import {readNavigationPreference,saveNavigationPreference} from './navigation-preference';
 @Component({
   selector: 'app-root',
-  imports: [KoinonWorkbench],
+  imports: [KoinonWorkbench, SessionNotice],
   providers: [KoinonFontLoader],
   template: `@if (session.error()) {
       <div class="session-error" role="alert">{{ session.error() }}</div>
     }
+    <ng-template #sessionNotice>
+      @defer (on idle) {
+        <app-session-notice [workbench]="workbench" />
+      }
+    </ng-template>
     <ffk-workbench
+      #workbench
+      [sessionNotice]="sessionNotice"
       [managementBaseUrl]="managementBaseUrl"
       (brandingChange)="applyIdentity($event)"
       [navigationCollapsed]="navigationCollapsed()"

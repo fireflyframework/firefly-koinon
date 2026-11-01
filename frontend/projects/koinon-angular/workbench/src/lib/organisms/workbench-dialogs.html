@@ -132,6 +132,7 @@
       }
     </div>
   }
+  <ng-container *ngTemplateOutlet="w.sessionNotice"/>
   @if (w.dialog() === 'sign-out') {
     <p>{{ 'You can sign in again to continue. Your saved knowledge and conversations will stay.' | ffkText }}</p>
     <div class="dialog-actions">

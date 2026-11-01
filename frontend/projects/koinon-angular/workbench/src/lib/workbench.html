@@ -2,6 +2,7 @@
 @if(f.initializing()){
  <section class="boot" [attr.aria-label]="'Loading your knowledge'|ffkText">@if(brandLogo()){<img [src]="brandLogo()" [alt]="brand.value().product_name"/>}@else{<strong class="custom-brand-name">{{brand.value().product_name}}</strong>}<ffk-skeleton width="180px" height="10px" label="Connecting your workspace"/></section>
 }@else if(f.authRequired()){
+ <ng-container *ngTemplateOutlet="sessionNotice"/>
  @defer (on immediate) {
  <ffk-sign-in [productName]="brand.value().product_name" [logo]="brandLogo()" [symbol]="brandSymbol()" [customBrand]="brand.customized()" [brandBase]="brandBase" [theme]="theme" [sessionEnded]="!!f.context()" (authenticationRequired)="authenticationRequired.emit()" (themeChanged)="themeChange.emit($event)"/>
  } @placeholder {<section class="boot" [attr.aria-label]="'Loading your knowledge'|ffkText">@if(brandLogo()){<img [src]="brandLogo()" [alt]="brand.value().product_name"/>}@else{<strong class="custom-brand-name">{{brand.value().product_name}}</strong>}<ffk-skeleton width="180px" height="10px" label="Connecting your workspace"/></section>} @error {<section class="connection-error"><p role="alert">{{'This panel could not be opened. Refresh this page and try again.'|ffkText}}</p><ffk-button variant="primary" (click)="authenticationRequired.emit()">{{'Sign in'|ffkText}}</ffk-button></section>}
@@ -16,6 +17,7 @@
 }@else{
 <ffk-shell [customBrand]="brand.customized()" [personalAccount]="!!accountScreen()" [avatarUrl]="account.effectiveAvatar()" (accountRequested)="openAccount($event)" [destination]="destination()" [theme]="theme" [showNavigation]="showNavigation" [brandBase]="brandBase" [productName]="brand.value().product_name" [brandLogo]="brandLogo()" [organizations]="f.context()?.tenants||[]" [tenantId]="f.tenantId()" [displayName]="displayName()" [roleLabel]="roleLabel()" [canConfigure]="canConfigure()" [search]="searchText()" (destinationChanged)="navigate($event)" (organizationChanged)="changeTenant($event)" (searchChanged)="searchText.set($event)" (searchSubmitted)="search($event)" (themeChanged)="themeChange.emit($event)" (commandsRequested)="openCommands()" (signOut)="showDialog('sign-out')">
  <div ffkHeaderNotifications><ng-container *ngComponentOutlet="notificationComponent();inputs:{actions:notificationActions}"/></div>
+ <ng-container *ngTemplateOutlet="dialog()?null:sessionNotice"/>
  @if(f.pending()){<div class="workbench-status-line" role="status" aria-label="Working"></div>}
  @if(f.error()){<div class="workbench-error" role="alert"><ffk-icon name="alert"/><span>{{f.error()}}</span><ffk-button variant="quiet" icon="close" label="Dismiss error" (click)="f.error.set('')"/></div>}
  @if(f.notice()){<p class="workbench-notice" role="status">{{f.notice()}}</p>}
