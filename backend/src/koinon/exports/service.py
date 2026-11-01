@@ -186,6 +186,7 @@ class KnowledgeExports:
             creator_permission="exports:write",
         )
         if isinstance(snapshot, ConversationSnapshot):
+            await self.reviews.output_check(subject, tenant_id, snapshot)
             await self.reviews.memory_check(
                 subject,
                 tenant_id,

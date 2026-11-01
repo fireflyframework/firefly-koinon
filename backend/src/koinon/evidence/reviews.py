@@ -21,7 +21,12 @@ from koinon.catalog.service import CatalogService
 from koinon.evidence.access import EvidenceAccess
 from koinon.evidence.dtos import ConversationIdentity, ConversationSnapshot, SourceReference
 from koinon.evidence.entities import EvidenceReview
-from koinon.evidence.ports import ConversationSnapshotPort, SourceResolverPort, StoredResultPort
+from koinon.evidence.ports import (
+    ConversationOutputPort,
+    ConversationSnapshotPort,
+    SourceResolverPort,
+    StoredResultPort,
+)
 from koinon.evidence.repositories import EvidenceReviewRepository
 from koinon.evidence.settings import EvidenceSettings
 from koinon.exports.dtos import MessageSelection, QueryResultExportInput
@@ -48,11 +53,29 @@ class EvidenceReviews:
         results: Provider[StoredResultPort | None],
         branding: Provider[OrganizationBrandingService | None],
         memory: Provider[MemoryEgress | None] | None = None,
+        outputs: Provider[ConversationOutputPort | None] | None = None,
     ):
         self.reviews, self.access, self.catalog, self.settings = reviews, access, catalog, settings
         self.snapshots, self.sources, self.results = snapshots, sources, results
         self.branding = branding
         self.memory = memory
+        self.outputs = outputs
+
+    async def output_check(self, subject, tenant_id, snapshot):
+        if not any(message.role == "assistant" for message in snapshot.messages):
+            return
+        port = self.outputs.get() if self.outputs else None
+        if port is None:
+            raise ServiceUnavailableException(
+                "Regenerate this answer before transferring it", code="CONVERSATION_OUTPUT_UNAVAILABLE"
+            )
+        await port.authorize_output(
+            subject,
+            tenant_id,
+            snapshot.thread_id,
+            [message.id for message in snapshot.messages],
+            snapshot=snapshot,
+        )
 
     async def memory_check(
         self,
