@@ -17,7 +17,7 @@ import { KoinonI18n } from '../foundations/i18n';
 import { KoinonButton } from '../atoms/button';
 import { KoinonSkeleton } from '../atoms/skeleton';
 import { KoinonInspectorContent } from './inspector-content';
-import { friendlyStatus, friendlyKind, resourceIcon } from '../services/library-tree';
+import { friendlyStatus, friendlyKind, resourceIcon, isSystemManaged } from '../services/library-tree';
 @Component({
   selector: 'ffk-inspector',
   imports: [KoinonTextPipe, KoinonButton, KoinonSkeleton, KoinonInspectorContent],
@@ -57,7 +57,9 @@ export class KoinonInspector {
   @Output() lineageRequested = new EventEmitter<void>();
   @Output() tableHistoryRequested = new EventEmitter<{ id: string; name: string }>();
   @Output() editRequested = new EventEmitter<void>();
+  @Output() moveRequested = new EventEmitter<void>();
   @Output() archiveRequested = new EventEmitter<void>();
+  systemManaged() { return isSystemManaged(this.entry); }
   readonly status = friendlyStatus;
   readonly kind = friendlyKind;
   readonly icon = resourceIcon;

@@ -37,8 +37,17 @@
   gap: 24px;
   padding: 24px 0 28px;
 }
-.compact-add {
-  display: none;
+.library-add {
+  flex-shrink: 0;
+}
+.library-heading .library-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 0 0 auto;
+  max-width: 70%;
 }
 .library-heading > div {
   min-width: 0;
@@ -234,12 +243,8 @@ button:focus-visible {
     flex: 1;
   }
   .library-heading p.generic-description,
-  .desktop-add {
+  .add-knowledge-label {
     display: none;
-  }
-  .compact-add {
-    display: inline-flex;
-    flex-shrink: 0;
   }
   .library-heading h1 {
     font-size: 22px;

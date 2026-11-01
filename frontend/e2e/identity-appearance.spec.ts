@@ -4,7 +4,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { mockService } from './fixtures';
+import { openAdministration,  mockService } from './fixtures';
 const defaults = {
   product_name: 'koinon',
   assistant_name: 'koinon',
@@ -59,10 +59,10 @@ async function setup(page: Page) {
       json: { tenant_id: tenant, schema_version: 1, revision, origin, branding },
     });
   });
-  await page.goto('/');
+  await page.goto('/library');
   if ((page.viewportSize()?.width ?? 1440) < 1100)
     await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await openAdministration(page, 'Settings');
   if ((page.viewportSize()?.width ?? 1440) < 700)
     await page.getByLabel('Settings section', { exact: true }).selectOption('identity');
   else await page.getByRole('button', { name: 'Identity & appearance', exact: true }).click();
@@ -107,7 +107,7 @@ test('previews, saves and resets organization identity with exact revision', asy
   await page.getByRole('textbox', { name: 'Primary button', exact: true }).fill('#2563eb');
   await page.getByRole('textbox', { name: 'Button text', exact: true }).fill('#ffffff');
   await page.getByRole('textbox', { name: 'Links & focus', exact: true }).fill('#1d4ed8');
-  await expect(page.locator('ffk-shell .brand')).toHaveAccessibleName('koinon, Library');
+  await expect(page.locator('ffk-shell .brand')).toHaveAccessibleName('koinon, Chat');
   await screenshot(page, 'koinon-identity-refined-palette.png');
   await page.getByRole('button', { name: 'Save changes', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Identity saved.');
@@ -116,7 +116,7 @@ test('previews, saves and resets organization identity with exact revision', asy
     branding: { product_name: 'Northstar Knowledge' },
   });
   await expect(page.locator('ffk-shell .brand')).toHaveAccessibleName(
-    'Northstar Knowledge, Library',
+    'Northstar Knowledge, Chat',
   );
   await expect(page).toHaveTitle('Northstar Knowledge');
   await page.getByRole('tab', { name: 'Identity', exact: true }).click();
@@ -190,7 +190,7 @@ test('uses installation identity before sign-in without requesting organization 
     requests.push(route.request().url());
     return route.fulfill({ status: 401, json: { detail: 'Sign in required' } });
   });
-  await page.goto('/');
+  await page.goto('/library');
   await expect(
     page.getByRole('heading', { name: 'Welcome to Northstar Knowledge', exact: true }),
   ).toBeVisible();

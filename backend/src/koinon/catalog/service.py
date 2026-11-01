@@ -15,6 +15,7 @@ from pyfly.data.relational.sqlalchemy import LockMode, transactional
 from pyfly.data.transaction import current_unit_of_work
 from pyfly.kernel import ConflictException, InvalidRequestException
 
+from koinon.catalog.ancestry import MAX_ANCESTRY, MAX_FOLDER_ANCESTRY, validated_ancestry
 from koinon.catalog.entities import INTERNAL_METADATA_KEYS, AuditEvent, CatalogEntry, Membership
 from koinon.catalog.errors import AccessDenied, InvalidHierarchy
 from koinon.catalog.ports import ManagedMembershipReader, MembershipEventRecorder, MembershipRecord
@@ -63,8 +64,8 @@ ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
 PARENTS: dict[str, frozenset[str | None]] = {
     "workspace": frozenset({None}),
     "project": frozenset({"workspace"}),
-    "collection": frozenset({"project"}),
-    "corpus": frozenset({"project"}),
+    "collection": frozenset({"project", "collection", "corpus"}),
+    "corpus": frozenset({"project", "collection", "corpus"}),
     "source": frozenset({"collection", "corpus"}),
     "document": frozenset({"source"}),
     "dataset": frozenset({"source"}),
@@ -325,6 +326,7 @@ class CatalogService:
         metadata: dict | None = None,
         description: str = "",
     ) -> CatalogEntry:
+        await self._lock_tenant(tenant_id)
         self.require_knowledge_review(kind)
         if kind not in PARENTS or not name.strip() or len(name.strip()) > 255:
             raise InvalidHierarchy(
@@ -335,11 +337,61 @@ class CatalogService:
             await self.restriction.resource(subject, parent, write=True)
         workspace_id = parent.workspace_id if parent else None
         await self.authorize(subject, tenant_id, "catalog:write", workspace_id)
+        return await self._write_create(
+            subject,
+            tenant_id,
+            kind=kind,
+            name=name,
+            parent_id=parent_id,
+            metadata=metadata,
+            description=description,
+        )
+
+    async def _write_create(
+        self,
+        actor: str,
+        tenant_id: str,
+        *,
+        kind: str,
+        name: str,
+        parent_id: str | None = None,
+        metadata: dict | None = None,
+        description: str = "",
+        create_id: str | None = None,
+        installation_run_id: str | None = None,
+        system_key: str | None = None,
+    ) -> CatalogEntry:
+        """Shared domain write; callers admit public authority or the installation ledger first."""
+        self.require_knowledge_review(kind)
+        if kind not in PARENTS or not name.strip() or len(name.strip()) > 255:
+            raise InvalidHierarchy(
+                "Choose a valid kind and a name from 1 to 255 characters", code="INVALID_RESOURCE"
+            )
+        if system_key is not None and (
+            kind not in {"workspace", "project", "collection", "corpus"}
+            or not installation_run_id
+            or not system_key.strip()
+            or len(system_key) > 64
+        ):
+            raise InvalidHierarchy(
+                "System identity requires an installed folder", code="INVALID_SYSTEM_SPACE"
+            )
+        parent = await self._scoped_entry(tenant_id, parent_id) if parent_id is not None else None
+        workspace_id = parent.workspace_id if parent else None
         if (parent.kind if parent else None) not in PARENTS[kind]:
             raise InvalidHierarchy("This resource requires a compatible parent", code="INVALID_PARENT")
+        if parent is not None:
+
+            async def read(identifier: str) -> CatalogEntry:
+                return await self._scoped_entry(tenant_id, identifier)
+
+            chain = await validated_ancestry(parent, read, PARENTS)
+            limit = MAX_FOLDER_ANCESTRY if kind in {"collection", "corpus"} else MAX_ANCESTRY
+            if len(chain) >= limit:
+                raise InvalidHierarchy("Choose a shallower folder", code="INVALID_ANCESTRY")
         if metadata and INTERNAL_METADATA_KEYS.intersection(metadata):
             raise InvalidHierarchy("Reserved catalog metadata", code="RESERVED_METADATA")
-        identifier = str(uuid4())
+        identifier = create_id or str(uuid4())
         entry = CatalogEntry(
             id=identifier,
             tenant_id=tenant_id,
@@ -350,11 +402,13 @@ class CatalogService:
             project_id=identifier if kind == "project" else (parent.project_id if parent else None),
             description=description,
             metadata_json=metadata or {},
-            created_by=subject,
-            updated_by=subject,
+            system_key=system_key,
+            installation_run_id=installation_run_id,
+            created_by=actor,
+            updated_by=actor,
         )
         saved = await self.catalog_repository.save(entry)
-        await self._audit(subject, tenant_id, "catalog.created", entry.id, {"kind": kind})
+        await self._audit(actor, tenant_id, "catalog.created", entry.id, {"kind": kind})
         return saved
 
     async def context(self, subject: str) -> dict:
@@ -414,6 +468,10 @@ class CatalogService:
         if self.restriction:
             await self.restriction.resource(subject, entry, write=True)
         self.require_knowledge_review(entry.kind)
+        if entry.system_key is not None and changes.get("status") in {"archived", "disabled"}:
+            raise ConflictException(
+                "System knowledge spaces must remain available", code="SYSTEM_SPACE_PROTECTED"
+            )
         if set(changes) - {"name", "description", "status", "metadata"}:
             raise InvalidHierarchy("Resource scope and ancestry are immutable", code="IMMUTABLE_SCOPE")
         if "name" in changes:
@@ -451,6 +509,10 @@ class CatalogService:
         if self.restriction:
             await self.restriction.resource(subject, entry, write=True)
         self.require_knowledge_review(entry.kind)
+        if entry.system_key is not None:
+            raise ConflictException(
+                "System knowledge spaces cannot be deleted", code="SYSTEM_SPACE_PROTECTED"
+            )
         if entry.metadata_json.get("_koinon_intake") or entry.metadata_json.get("_koinon_external_review"):
             raise ConflictException(
                 "Retained intake receipts cannot be deleted", code="INTAKE_RECEIPT_IMMUTABLE"
@@ -698,6 +760,10 @@ class CatalogService:
         if self.restriction:
             await self.restriction.resource(subject, entry, write=True)
         self.require_knowledge_review(entry.kind)
+        if entry.system_key is not None:
+            raise ConflictException(
+                "System knowledge spaces cannot be archived", code="SYSTEM_SPACE_PROTECTED"
+            )
         if entry.status != "archived":
             entry.metadata_json = {
                 **entry.metadata_json,

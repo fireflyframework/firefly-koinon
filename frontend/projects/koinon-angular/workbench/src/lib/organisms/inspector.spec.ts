@@ -33,3 +33,19 @@ it('keeps source attribution and table lineage actions intact after deferred ren
   action.click();
   expect(emitted).toEqual([{ id: 'table1', name: 'Sales' }]);
 });
+
+it.each([true, false, undefined])('preserves editing but protects system roots from archive (%s)', async (systemManaged) => {
+  const fixture = TestBed.createComponent(KoinonInspector);
+  fixture.componentRef.setInput('entry', {
+    id:'root', tenant_id:'north',kind:'workspace',name:'Team knowledge',status:'ready',
+    description:'Shared evidence',created_at:'2026-11-01T00:00:00Z',metadata:{},system_managed:systemManaged,
+  });
+  fixture.componentRef.setInput('canEdit', true);
+  fixture.detectChanges();
+  for (const block of await fixture.getDeferBlocks()) await block.render(DeferBlockState.Complete);
+  fixture.detectChanges();
+  const buttons = [...fixture.nativeElement.querySelectorAll('button')] as HTMLButtonElement[];
+  expect(buttons.some(button => button.textContent?.trim() === 'Edit details')).toBe(true);
+  expect(buttons.some(button => button.textContent?.trim() === 'Archive')).toBe(systemManaged !== true);
+  expect(fixture.nativeElement.textContent.includes('System space')).toBe(systemManaged === true);
+});

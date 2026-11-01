@@ -2,7 +2,7 @@
      SPDX-License-Identifier: Apache-2.0 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.fireflyframework</groupId><artifactId>koinon-sdk</artifactId><version>26.10.2</version>
+  <groupId>org.fireflyframework</groupId><artifactId>koinon-sdk</artifactId><version>26.11.1</version>
   <name>firefly koinon Java SDK</name><description>Typed headless client for the koinon knowledge API.</description>
   <url>https://github.com/fireflyframework/firefly-koinon</url>
   <organization><name>Firefly Software Foundation</name><url>https://fireflyframework.org</url></organization>

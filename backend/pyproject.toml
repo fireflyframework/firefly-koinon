@@ -2,16 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 [project]
 name = "firefly-koinon"
-version = "26.10.2"
+version = "26.11.1"
 description = "Tenant-scoped structured and unstructured knowledge management on native pyfly."
 requires-python = ">=3.13,<3.14"
 license = "Apache-2.0"
 authors = [{ name = "Firefly Software Foundation" }]
 dependencies = [
-    "firefly-koinon-storage==26.10.2",
-  "firefly-koinon-documents==26.10.2",
-  "firefly-koinon-structured[file-readers]==26.10.2",
-  "pyfly[cache,fastapi,security,data-relational,postgresql,agentic,agentic-script-execution,templates,observability,client,mcp]>=26.10.31,<26.11",
+    "firefly-koinon-storage==26.11.1",
+  "firefly-koinon-documents==26.11.1",
+  "firefly-koinon-structured[file-readers]==26.11.1",
+  "pyfly[cache,fastapi,security,data-relational,postgresql,agentic,agentic-script-execution,templates,observability,client,mcp]>=26.10.32,<26.11",
   "asyncpg>=0.30",
   "aiosqlite>=0.22",
   "alembic>=1.14",
@@ -27,9 +27,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-notifications-azure = ["pyfly[notifications-azure]>=26.10.31,<26.11"]
-storage-azure = ["firefly-koinon-storage[azure]==26.10.2"]
-storage-gcs = ["firefly-koinon-storage[gcs]==26.10.2"]
+notifications-azure = ["pyfly[notifications-azure]>=26.10.32,<26.11"]
+storage-azure = ["firefly-koinon-storage[azure]==26.11.1"]
+storage-gcs = ["firefly-koinon-storage[gcs]==26.11.1"]
 storage-s3 = ["boto3>=1.43.116,<2"]
 dev = ["pytest>=8", "pytest-asyncio>=0.24", "pytest-timeout>=2.3", "httpx>=0.28", "ruff>=0.8", "pyright>=1.1", "asgi-lifespan>=2.1"]
 
@@ -37,7 +37,7 @@ dev = ["pytest>=8", "pytest-asyncio>=0.24", "pytest-timeout>=2.3", "httpx>=0.28"
 firefly-koinon-storage = { path = "../packages/storage", editable = true }
 firefly-koinon-documents = { path = "../packages/canon", editable = true }
 firefly-koinon-structured = { path = "../packages/structured", editable = true }
-pyfly = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git", rev = "bd0eb79f66fc2d9b839acb594048a07d2f92354a" }
+pyfly = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git", rev = "ff94967f2bd70f48f1a099bb805923a51eb291df" }
 
 [build-system]
 requires = ["hatchling"]

@@ -4,7 +4,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { mockService } from './fixtures';
+import { openAdministration,  mockService } from './fixtures';
 const output = resolve(__dirname, '../../../../outputs/documentation-tour');
 async function capture(page: Page, name: string) {
   await mkdir(output, { recursive: true });
@@ -33,7 +33,7 @@ test('captures the library, upload, settings and profile walkthrough', async ({ 
   await page.setViewportSize({ width: 1440, height: 1050 });
   await mockService(page);
   await page.route('**/bff/api/v1/branding/defaults', (route) => route.fulfill({ json: {} }));
-  await page.goto('/');
+  await page.goto('/library');
   await expect(
     page.getByRole('button', { name: 'Research operations', exact: true }),
   ).toBeVisible();
@@ -59,7 +59,7 @@ test('captures the library, upload, settings and profile walkthrough', async ({ 
   });
   await capture(page, 'upload-review');
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await openAdministration(page, 'Settings');
   await expect(page.getByRole('heading', { name: 'Providers', exact: true })).toBeVisible();
   await capture(page, 'organization-settings');
   await page.getByRole('button', { name: 'Account menu', exact: true }).click();
@@ -102,7 +102,7 @@ test('captures writable and organization token setup without creating secrets', 
         : { items: [], total: 0, page: 1, page_size: 25, pages: 0 },
     });
   });
-  await page.goto('/');
+  await page.goto('/library');
   await page.getByRole('button', { name: 'Research operations', exact: true }).click();
   await page.getByRole('button', { name: 'Account menu', exact: true }).click();
   await page.getByRole('menuitem', { name: 'API tokens', exact: true }).click();

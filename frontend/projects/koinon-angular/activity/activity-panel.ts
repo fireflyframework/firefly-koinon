@@ -11,7 +11,9 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
+  KoinonBadge,
   KoinonButton,
+  KoinonIcon,
   KoinonClientContext,
   KoinonFacade,
   KoinonI18n,
@@ -33,48 +35,133 @@ import { KoinonActivitySummary } from './activity-summary';
   selector: 'ffk-activity-panel',
   imports: [
     FormsModule,
+    KoinonBadge,
     KoinonButton,
+    KoinonIcon,
     KoinonSkeleton,
     KoinonTextPipe,
     KoinonActivityWindow,
     KoinonActivitySummary,
   ],
   template: `<section aria-label="Activity summary">
-    <form (ngSubmit)="load()">
-      <ffk-activity-window
-        [timeZone]="i18n.preferences().time_zone"
-        [disabled]="pending()"
-        (windowChanged)="window = $event"
-      />
-      <div class="actions">
-        @if (canAdmin()) {
-          <label
-            >{{ 'Summary audience' | ffkText
-            }}<select name="activity-audience" [(ngModel)]="audience" [disabled]="pending()">
-              <option value="personal">{{ 'Personal activity' | ffkText }}</option>
-              <option value="administrative">{{ 'Administrator activity' | ffkText }}</option>
-            </select></label
-          >
-        }
-        <ffk-button type="submit" variant="primary" [loading]="pending()">{{
-          'View summary' | ffkText
-        }}</ffk-button>
+      <form (ngSubmit)="load()">
+        <ffk-activity-window
+          [timeZone]="i18n.preferences().time_zone"
+          [disabled]="pending()"
+          (windowChanged)="window = $event"
+        />
+        <div class="actions">
+          @if (canAdmin()) {
+            <label
+              >{{ 'Summary audience' | ffkText
+              }}<select name="activity-audience" [(ngModel)]="audience" [disabled]="pending()">
+                <option value="personal">{{ 'Personal activity' | ffkText }}</option>
+                <option value="administrative">{{ 'Administrator activity' | ffkText }}</option>
+              </select></label
+            >
+          }
+          <ffk-button type="submit" variant="primary" [loading]="pending()">{{
+            'View summary' | ffkText
+          }}</ffk-button>
+        </div>
+      </form>
+      @if (error()) {
+        <p role="alert">{{ error() | ffkText }}</p>
+      }
+      @if (summary(); as current) {
+        <ffk-activity-summary [value]="current" />
+      } @else if (pending()) {
+        <ffk-skeleton width="70%" height="3px" [label]="'Loading activity' | ffkText" />
+      }
+    </section>
+    @if (facade.tenantPermissions().has('jobs:manage')) {
+      <h2>{{ 'Processing jobs' | ffkText }}</h2>
+      <div class="workbench-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>{{ 'Knowledge' | ffkText }}</th>
+              <th>{{ 'Activity' | ffkText }}</th>
+              <th>{{ 'Status' | ffkText }}</th>
+              <th>{{ 'Progress' | ffkText }}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (job of facade.jobs(); track job.id) {
+              <tr>
+                <td>{{ jobResourceName(job.resource_id) }}</td>
+                <td>{{ job.kind.replaceAll('_', ' ') }}</td>
+                <td>
+                  <ffk-badge [tone]="job.status === 'failed' ? 'attention' : 'neutral'">{{
+                    job.status
+                  }}</ffk-badge>
+                  @if (job.error) {
+                    <p class="job-error">{{ job.error }}</p>
+                  }
+                </td>
+                <td>
+                  @if (job.progress !== null && job.progress !== undefined) {
+                    {{ job.progress }}%
+                  }
+                </td>
+                <td>
+                  @if (['pending', 'queued', 'running'].includes(job.status.toLowerCase())) {
+                    <ffk-button variant="quiet" (click)="facade.cancelJob(job.id)">{{
+                      'Cancel' | ffkText
+                    }}</ffk-button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5">
+                  <div class="workbench-empty">
+                    <ffk-icon name="history" />
+                    <h2>You’re up to date</h2>
+                    <p>Uploads and processing activity will appear here.</p>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
       </div>
-    </form>
-    @if (error()) {
-      <p role="alert">{{ error() | ffkText }}</p>
-    }
-    @if (summary(); as current) {
-      <ffk-activity-summary [value]="current" />
-    } @else if (pending()) {
-      <ffk-skeleton width="70%" height="3px" [label]="'Loading activity' | ffkText" />
-    }
-  </section>`,
+    }`,
   styles: [
     `
       :host {
         display: block;
         margin: 24px 0 36px;
+      }
+      .workbench-table-wrap {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      th,
+      td {
+        padding: 16px 12px;
+        text-align: left;
+        border-bottom: 1px solid var(--ui-line);
+      }
+      th {
+        color: var(--ui-muted);
+        font-weight: 500;
+      }
+      .job-error {
+        margin-top: 8px;
+        color: var(--ui-muted);
+        max-width: 40ch;
+        overflow-wrap: anywhere;
+      }
+      .workbench-empty {
+        padding: 32px;
+        text-align: center;
+        color: var(--ui-muted);
       }
       .actions {
         display: flex;
@@ -156,6 +243,13 @@ export class KoinonActivityPanel {
       });
     });
     inject(DestroyRef).onDestroy(() => this.request?.abort());
+  }
+  jobResourceName(id: string) {
+    return (
+      [...(this.facade.context()?.workspaces ?? []), ...this.facade.entries()].find(
+        (entry) => entry.id === id,
+      )?.name || 'Knowledge processing'
+    );
   }
   async load() {
     const key = this.key();

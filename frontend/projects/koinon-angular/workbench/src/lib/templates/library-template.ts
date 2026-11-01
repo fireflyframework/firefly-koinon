@@ -40,20 +40,19 @@ import { friendlyStatus } from '../services/library-tree';
         <p [class.generic-description]="descriptionIsGeneric">{{ description }}</p>
       </div>
       @if (canAdd) {
+        <div class="library-actions">
+        @if (createLabel) {
+          <ffk-button [variant]="items.length ? 'neutral' : 'primary'" [compact]="items.length > 0" icon="folder" (click)="createRequested.emit()">{{ createLabel | ffkText }}</ffk-button>
+        }
         <ffk-button
-          class="desktop-add"
-          variant="primary"
-          icon="plus"
-          (click)="addRequested.emit()"
-          >{{ 'Add knowledge' | ffkText }}</ffk-button
-        >
-        <ffk-button
-          class="compact-add"
-          variant="primary"
+          class="library-add"
+          [variant]="createLabel && !items.length ? 'neutral' : 'primary'"
           icon="plus"
           label="Add knowledge"
           (click)="addRequested.emit()"
-        />
+          ><span class="add-knowledge-label">{{ 'Add knowledge' | ffkText }}</span></ffk-button
+        >
+        </div>
       }
     </header>
     <div class="collection-surface">
@@ -240,6 +239,7 @@ export class KoinonLibraryTemplate {
   @Input() selectedId = '';
   @Input() loading = false;
   @Input() canAdd = false;
+  @Input() createLabel = '';
   @Input() browseAvailable = false;
   @Input() serverControls = false;
   @Input() pageInfo: Page<CatalogEntry> | null = null;
@@ -278,6 +278,7 @@ export class KoinonLibraryTemplate {
   @Output() opened = new EventEmitter<CatalogEntry>();
   @Output() selected = new EventEmitter<CatalogEntry>();
   @Output() addRequested = new EventEmitter<void>();
+  @Output() createRequested = new EventEmitter<void>();
   @Output() browseRequested = new EventEmitter<void>();
   @Output() archivedRequested = new EventEmitter<void>();
   @Output() filterChanged = new EventEmitter<CatalogFilter>();

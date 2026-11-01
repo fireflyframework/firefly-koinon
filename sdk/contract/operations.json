@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "api_prefix": "/api/v1",
   "status": "Canonical API contract; development snapshot",
-  "canonical_operation_count": 237,
+  "canonical_operation_count": 238,
   "qualified_compatibility_operations": [
     {
       "operation": "GlossaryController.list_terms",
@@ -744,6 +744,44 @@
       "response_schema": "void",
       "success_status": 204,
       "source_sha256": "29864125b13ef7adf1c909abc56391a6121b82a9875c8c0d1414104a214e0310",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/catalog/{entry_id}/move",
+      "category": "canonical",
+      "operation": "CatalogHierarchyController.move",
+      "source": "backend/src/koinon/api/controllers/catalog_hierarchy.py",
+      "line": 20,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "entry_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[CatalogMove]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "move",
+      "sdk_typescript": "catalog.move",
+      "sdk_java": "client.catalog.move",
+      "request_schema": "CatalogMove",
+      "response_schema": "CatalogEntry",
+      "success_status": 200,
+      "source_sha256": "a19f6fe88a53dc833e16dc24b90ba65fc90043fdaa940166655cd78491040dfd",
       "encoding": "application/json",
       "headers": []
     },

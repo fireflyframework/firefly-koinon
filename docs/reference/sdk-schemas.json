@@ -2369,6 +2369,11 @@
           "title": "Status",
           "type": "string"
         },
+        "system_managed": {
+          "default": false,
+          "title": "System Managed",
+          "type": "boolean"
+        },
         "metadata": {
           "additionalProperties": {
             "$ref": "#/$defs/JsonValue"
@@ -2402,6 +2407,35 @@
         "created_at"
       ],
       "title": "CatalogEntry",
+      "type": "object"
+    },
+    "CatalogMove": {
+      "additionalProperties": false,
+      "properties": {
+        "parent_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Parent Id",
+          "type": "string"
+        },
+        "expected_parent_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Expected Parent Id",
+          "type": "string"
+        },
+        "expected_updated_at": {
+          "format": "date-time",
+          "title": "Expected Updated At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "parent_id",
+        "expected_parent_id",
+        "expected_updated_at"
+      ],
+      "title": "CatalogMove",
       "type": "object"
     },
     "CatalogProposal": {
@@ -25814,6 +25848,9 @@
     },
     "CatalogEntry": {
       "$ref": "#/$defs/CatalogEntry"
+    },
+    "CatalogMove": {
+      "$ref": "#/$defs/CatalogMove"
     },
     "Membership": {
       "$ref": "#/$defs/Membership"

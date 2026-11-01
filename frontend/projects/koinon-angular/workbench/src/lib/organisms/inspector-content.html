@@ -30,6 +30,9 @@
   <div class="resource-mark"><ffk-icon [name]="view.icon(entry.kind)" /></div>
   <span class="eyebrow">{{ view.kind(entry.kind) | ffkText }}</span>
   <h2>{{ entry.name }}</h2>
+  @if (view.systemManaged()) {
+    <p>{{ (entry.kind === 'workspace' ? 'System space' : 'System folder') | ffkText }}</p>
+  }
   <p class="description">{{ entry.description || 'No description yet.' }}</p>
   <ffk-badge [tone]="entry.status === 'failed' ? 'attention' : 'neutral'">{{
     view.status(entry.status) | ffkText
@@ -90,9 +93,15 @@
       <ffk-button variant="quiet" (click)="view.editRequested.emit()">{{
         'Edit details' | ffkText
       }}</ffk-button
-      ><ffk-button variant="quiet" (click)="view.archiveRequested.emit()">{{
-        'Archive' | ffkText
-      }}</ffk-button>
+      >
+      @if (!view.systemManaged() && (entry.kind === 'collection' || entry.kind === 'corpus')) {
+        <ffk-button variant="quiet" (click)="view.moveRequested.emit()">{{ 'Move Library folder' | ffkText }}</ffk-button>
+      }
+      @if (!view.systemManaged()) {
+        <ffk-button variant="quiet" (click)="view.archiveRequested.emit()">{{
+          'Archive' | ffkText
+        }}</ffk-button>
+      }
     }
   </section>
   <details>

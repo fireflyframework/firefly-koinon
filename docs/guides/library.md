@@ -4,6 +4,29 @@ The library is the main place to find organizational knowledge. A space contains
 
 The interface is under active integrated qualification. Use the [qualification record](../operations/qualification.md) to distinguish validated behavior from work still in progress.
 
+## Spaces, projects and folders
+
+A **space** is a knowledge boundary. Its documents and datasets keep that space's identity in both native knowledge engines, and every operation checks the caller's current access. A folder name or a tag does not grant access. Create separate spaces when teams or clients need different permissions; do not rely on sibling folders for confidentiality.
+
+Inside a space, Library projects and nested folders organize content. They inherit the space's permissions. A Library project is different from a chat project, which groups conversations and can enable the owner's shared conversation memory. Moving a Library folder does not move a conversation or publish conversation memory.
+
+The installation can provide system spaces and system folders. **System space** or **System folder** identifies these retained defaults. Their names and descriptions can be maintained with the appropriate permission, but their system identity cannot be removed. They cannot be deleted, archived or moved, even through an administrator's API token. Creating a subfolder beneath a system folder does not make the new folder a system folder.
+
+Choose the current destination, then create the next project or folder. Nested collection and corpus folders can contain further folders, documents and datasets. Nesting is bounded so the complete path can always be checked; a rejected depth limit requires a shallower destination. Ordinary empty folders can be deleted. Archive retains ordinary content and hides it until restored.
+
+<figure>
+  <img src="../../assets/screenshots/library-create-folder.png" alt="Create a Library folder with its name, description and current destination" width="1440" height="1000" loading="lazy">
+  <figcaption>Compiled interface with controlled example data. Create a folder and Add knowledge remain separate actions.</figcaption>
+</figure>
+
+### Move a folder safely
+
+Select an ordinary organizational folder and its destination inside the same Library project and space. A move retains the folder and asset IDs, native source bindings, historical versions and previously recorded response evidence. The audit event records the old and new parent. New reads use the current path and current permissions.
+
+The request includes the parent and update timestamp you last observed. If another person changed the folder, reload it and review the destination rather than repeating the old request. Moves reject cycles, archived destinations, excessive nesting and pending processing. Tokens restricted to individual assets cannot move a whole folder; the caller needs current write access to the knowledge space.
+
+A move between spaces or Library projects returns `KNOWLEDGE_TRANSFER_REQUIRED`. This operation deliberately does not rewrite native scopes, indexes or source provenance. Cross-boundary transfer needs its own reviewed migration; it is not implemented by changing a parent identifier.
+
 ## Find and open
 
 Choose the organization and space you have access to. Browse folders with the list, breadcrumb or knowledge tree. Search narrows the current context; clear the search to return to the folder. Opening an item and inspecting its details are separate actions, so a details drawer does not interrupt browsing.

@@ -496,7 +496,7 @@
     "ui/initialize",
     {
       protocolVersion: "2026-01-26",
-      appInfo: { name: byId("product-name").textContent + " review", version: "26.10.2" },
+      appInfo: { name: byId("product-name").textContent + " review", version: "26.11.1" },
       appCapabilities: {},
     },
     4500,

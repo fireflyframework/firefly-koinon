@@ -288,3 +288,28 @@ Search requires `knowledge:search`; SQL requires `query:execute`, the current au
 Generation can invoke configured models. Read [Knowledge runtime](../concepts/knowledge-runtime.md) before choosing RAG/RLM or embedding behavior, and [Conversations and reviewed actions](java-conversations.md) for durable answers and their audit.
 
 Use [durable bulk intake](bulk-intake.md) for saved document/dataset manifests, bounded originals, native per-file outcomes and explicit cancellation/reconciliation. `client.fileBatches(tenant)` includes synchronous and asynchronous typed operations; a single-file upload loop remains a separate caller-owned workflow.
+
+## Move an organizational folder
+
+Use the Java 21+ client from setup. Read the folder before asking the person to confirm a destination; retain the exact observed parent and update timestamp. The synchronous helper below sends one decision. `moveAsync` accepts the same typed input and request options.
+
+```java
+import org.fireflyframework.koinon.sdk.KoinonClient;
+import org.fireflyframework.koinon.sdk.model.CatalogEntry;
+import org.fireflyframework.koinon.sdk.model.CatalogMove;
+
+public final class FolderOperations {
+    private FolderOperations() {}
+
+    public static CatalogEntry move(
+            KoinonClient client, String tenant, CatalogEntry folder, String destinationId) {
+        if (folder.parentId() == null || folder.updatedAt() == null) {
+            throw new IllegalArgumentException("Read the current folder location and timestamp first");
+        }
+        return client.catalog(tenant).move(folder.id(), new CatalogMove(
+                destinationId, folder.parentId(), folder.updatedAt()));
+    }
+}
+```
+
+`Boolean.TRUE.equals(folder.systemManaged())` identifies retained installation defaults. The server protects these even when a host does not inspect the flag. An ordinary collection or corpus folder can move inside its existing project and space. Reload and request a new decision after `CATALOG_CHANGED`; do not retry a stale move. A different boundary returns `KNOWLEDGE_TRANSFER_REQUIRED`, because a native knowledge transfer is a separate operation. See [Library hierarchy and permissions](library.md#spaces-projects-and-folders).

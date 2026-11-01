@@ -3,7 +3,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { mockService } from './fixtures';
+import { openAdministration, mockService } from './fixtures';
 async function setup(
   page: Page,
   options: {
@@ -141,6 +141,10 @@ async function setup(
   return { writes, submittedAgents };
 }
 async function navigate(page: Page, label: string) {
+  if (label === 'Settings' || label === 'Configuración') {
+    await openAdministration(page, label);
+    return;
+  }
   const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
   if ((page.viewportSize()?.width ?? 1440) < 700) {
     await expect(menu).toBeVisible();
@@ -149,7 +153,7 @@ async function navigate(page: Page, label: string) {
   await page.getByRole('button', { name: label, exact: true }).click();
 }
 async function openAgents(page: Page, spanish = false) {
-  await page.goto('/');
+  await page.goto('/library');
   await navigate(page, spanish ? 'Configuración' : 'Settings');
   await expect(page.locator('ffk-settings-page')).toBeVisible();
   const mobile = page.getByRole('combobox', {
@@ -262,7 +266,7 @@ for (const [label, settings] of [
     page,
   }) => {
     const service = await setup(page, settings);
-    await page.goto('/');
+    await page.goto('/library');
     await navigate(page, 'Chat');
     await expect(
       page.getByRole('heading', { name: 'koinon is unavailable right now.', exact: true }),

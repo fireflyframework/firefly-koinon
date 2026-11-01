@@ -1,6 +1,7 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 import type { CatalogEntry, ResourceKind } from '@fireflyframework/koinon-sdk';
 export const FOLDER_KINDS: ResourceKind[] = ['workspace','project','collection','corpus'];
+export const isSystemManaged = (entry: CatalogEntry): boolean => entry.system_managed === true;
 export const isFolder = (entry: CatalogEntry): boolean => FOLDER_KINDS.includes(entry.kind);
 export function childrenOf(entries: CatalogEntry[], parentId: string): CatalogEntry[] {
  const sources=new Set(entries.filter(x=>x.kind==='source'&&x.parent_id===parentId).map(x=>x.id));
@@ -17,7 +18,7 @@ export function folderTrail(entries: CatalogEntry[], parentId: string): CatalogE
  return trail;
 }
 export function nextFolderKind(parent:CatalogEntry|undefined):ResourceKind|null{
- return !parent?'workspace':parent.kind==='workspace'?'project':parent.kind==='project'?'collection':null;
+ return !parent?'workspace':parent.kind==='workspace'?'project':['project','collection','corpus'].includes(parent.kind)?'collection':null;
 }
 export function friendlyKind(kind:ResourceKind):string{
  return ({workspace:'Space',project:'Project',collection:'Folder',corpus:'Folder',document:'Document',dataset:'Dataset',source:'Source',chunk:'Passage',table:'Table',index_version:'Index',query_session:'Conversation'})[kind];

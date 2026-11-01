@@ -6,6 +6,10 @@ Start with the knowledge shared with you. Library organizes the organization's s
 
 ## Find your way around
 
+Chat opens after sign-in. Library is the second navigation item. Organization administrators open Settings and Activity from their avatar menu; those pages are unavailable to other roles. Your personal account and notification preferences remain in the avatar menu.
+
+Chat projects group your private conversations and offer explicit conversation-memory choices. Library folders organize shared organizational knowledge and do not grant access to personal conversations.
+
 The [visual walkthrough](interface-tour.md) follows the interface from sign-in through an answer and its sources. For your name, photo, language and personal API tokens, read [your profile](../operations/profiles-and-tokens.md).
 
 ## Work with the library

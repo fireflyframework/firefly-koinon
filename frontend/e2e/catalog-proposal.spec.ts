@@ -90,7 +90,7 @@ async function proposalFixture(page: Page, conflict = false) {
     }
     return route.fallback();
   });
-  await page.goto('/');
+  await page.goto('/library');
   await page.getByRole('button', { name: 'Chat', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Review suggested changes', exact: true }),

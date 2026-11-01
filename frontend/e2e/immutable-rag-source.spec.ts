@@ -159,7 +159,7 @@ async function open(page: Page, spanish: boolean, mismatch = false) {
       });
     return route.fallback();
   });
-  await page.goto('/');
+  await page.goto('/library');
   if ((page.viewportSize()?.width ?? 1440) < 1100)
     await page
       .getByRole('button', { name: spanish ? 'Abrir navegación' : 'Open navigation', exact: true })

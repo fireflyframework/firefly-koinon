@@ -217,6 +217,7 @@ CatalogController.catalog_get|get|catalog.get|-|CatalogEntry
 CatalogController.catalog_patch|update|catalog.update|CatalogUpdate|CatalogEntry
 CatalogController.catalog_archive|archive|catalog.archive|-|CatalogEntry
 CatalogController.catalog_restore|restore|catalog.restore|-|CatalogEntry
+CatalogHierarchyController.move|move|catalog.move|CatalogMove|CatalogEntry
 CatalogController.catalog_delete|delete|catalog.delete|-|void
 ContextController.context|context|context|-|ContextResponse
 JobController.list|jobs|jobs.list|-|Page[Job]

@@ -5,8 +5,10 @@
 from datetime import UTC, datetime
 
 from pyfly.data.relational.sqlalchemy import Base, UtcDateTime
-from sqlalchemy import JSON, ForeignKey, Index, String, UniqueConstraint
+from sqlalchemy import DDL, JSON, CheckConstraint, ForeignKey, Index, String, UniqueConstraint, event
 from sqlalchemy.orm import Mapped, mapped_column
+
+from koinon.catalog.system_guards import system_space_guards
 
 INTERNAL_METADATA_KEYS = frozenset({"_koinon_lifecycle", "_koinon_intake", "_koinon_external_review"})
 
@@ -20,7 +22,18 @@ class Tenant(Base):
 
 class CatalogEntry(Base):
     __tablename__ = "lattice_catalog"
-    __table_args__ = (Index("ix_lattice_scope_kind", "tenant_id", "workspace_id", "kind"),)
+    __table_args__ = (
+        Index("ix_lattice_scope_kind", "tenant_id", "workspace_id", "kind"),
+        UniqueConstraint("tenant_id", "system_key", name="uq_catalog_system_key"),
+        CheckConstraint(
+            "system_key IS NULL OR (installation_run_id IS NOT NULL AND ("
+            "(kind='workspace' AND parent_id IS NULL AND workspace_id=id AND project_id IS NULL) OR "
+            "(kind='project' AND parent_id IS NOT NULL AND workspace_id IS NOT NULL AND project_id=id) OR "
+            "(kind IN ('collection','corpus') AND parent_id IS NOT NULL "
+            "AND workspace_id IS NOT NULL AND project_id IS NOT NULL)))",
+            name="ck_catalog_system_folder",
+        ),
+    )
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("lattice_tenants.id"), index=True)
     workspace_id: Mapped[str | None] = mapped_column(String(64), index=True)
@@ -35,6 +48,8 @@ class CatalogEntry(Base):
     updated_by: Mapped[str] = mapped_column(String(512), default="")
     created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=lambda: datetime.now(UTC))
     updated_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=lambda: datetime.now(UTC))
+    system_key: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    installation_run_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
 class Membership(Base):
@@ -60,3 +75,8 @@ class AuditEvent(Base):
     resource_id: Mapped[str | None] = mapped_column(String(64))
     details: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=lambda: datetime.now(UTC))
+
+
+for dialect in ("sqlite", "postgresql"):
+    for statement in system_space_guards(dialect):
+        event.listen(CatalogEntry.__table__, "after_create", DDL(statement).execute_if(dialect=dialect))

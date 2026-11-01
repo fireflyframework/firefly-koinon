@@ -49,7 +49,7 @@ test('New conversation opens a clean draft from Library even when history exists
       });
     return route.fallback();
   });
-  await page.goto('/');
+  await page.goto('/library');
   await page.getByRole('button', { name: 'Search and commands', exact: true }).click();
   await page.getByRole('option', { name: 'New conversation', exact: true }).click();
   const editor = page.getByRole('textbox', { name: 'Message koinon', exact: true });
@@ -83,7 +83,7 @@ test('palette searches scoped server results and opens a resource with keyboard 
       },
     });
   });
-  await page.goto('/');
+  await page.goto('/library');
   await page.getByRole('button', { name: 'Search and commands', exact: true }).focus();
   await page.keyboard.press('Control+k');
   const dialog = page.getByRole('dialog', { name: 'Search and navigate', exact: true });
@@ -113,7 +113,7 @@ for (const width of [320, 390]) {
   }) => {
     await page.setViewportSize({ width, height: 800 });
     await mockService(page, { organizationAgent: 'guide' });
-    await page.goto('/');
+    await page.goto('/library');
     const trigger = page.getByRole('button', { name: 'Search and commands', exact: true });
     await trigger.click();
     const dialog = page.getByRole('dialog', { name: 'Search and navigate', exact: true });

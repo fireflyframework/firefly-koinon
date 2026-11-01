@@ -18,7 +18,7 @@ import { KoinonI18n } from '../foundations/i18n';
 import { KoinonIcon } from '../atoms/icon';
 import { KoinonBadge } from '../atoms/badge';
 import { KoinonSkeleton } from '../atoms/skeleton';
-import { friendlyStatus, friendlyKind, isFolder, resourceIcon } from '../services/library-tree';
+import { friendlyStatus, friendlyKind, isFolder, isSystemManaged, resourceIcon } from '../services/library-tree';
 @Component({
   selector: 'ffk-resource-list',
   imports: [KoinonTextPipe, KoinonDatePipe, KoinonIcon, KoinonBadge, KoinonSkeleton],
@@ -111,6 +111,7 @@ export class KoinonResourceList {
   @Input() emptyDescription = 'Add files here to make them available to your team.';
   @Output() opened = new EventEmitter<CatalogEntry>();
   @Output() selected = new EventEmitter<CatalogEntry>();
+  readonly isSystemManaged = isSystemManaged;
   readonly status = friendlyStatus;
   readonly kind = friendlyKind;
   readonly icon = resourceIcon;

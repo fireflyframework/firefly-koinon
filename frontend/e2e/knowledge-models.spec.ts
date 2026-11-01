@@ -3,7 +3,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type { KnowledgeConnection, KnowledgeRole } from '@fireflyframework/koinon-sdk';
-import { mockService, context as contextFixture, entry, setDarkAppearance } from './fixtures';
+import { openAdministration,  mockService, context as contextFixture, entry, setDarkAppearance } from './fixtures';
 const roles: KnowledgeRole[] = [
   {
     id: 'documents.answer',
@@ -163,14 +163,12 @@ async function fixture(page: Page, spanish = false) {
   };
 }
 async function open(page: Page, mobile = false, spanish = false) {
-  await page.goto('/');
+  await page.goto('/library');
   if (mobile)
     await page
       .getByRole('button', { name: spanish ? 'Abrir navegación' : 'Open navigation', exact: true })
       .click();
-  await page
-    .getByRole('button', { name: spanish ? 'Configuración' : 'Settings', exact: true })
-    .click();
+  await openAdministration(page, spanish ? 'Configuración' : 'Settings');
   if (mobile)
     await page
       .getByRole('combobox', {
@@ -385,8 +383,8 @@ test('Spanish Settings translates provider setup and empty-state instructions', 
   page,
 }) => {
   await fixture(page, true);
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Configuración', exact: true }).click();
+  await page.goto('/library');
+  await openAdministration(page, 'Configuración');
   await expect(page.getByText('No hay proveedores de modelos', { exact: true })).toBeVisible();
   await expect(
     page.getByText('Conecta un proveedor y comprueba que sus modelos están disponibles.', {

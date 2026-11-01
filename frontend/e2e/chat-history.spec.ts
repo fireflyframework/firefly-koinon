@@ -69,7 +69,7 @@ test('history requests server pages and filters, preserves the selected scope, a
     if (path.endsWith('/runs')) ++modelRequests;
     return route.fallback();
   });
-  await page.goto('/');
+  await page.goto('/library');
   await page.getByRole('button', { name: 'Chat', exact: true }).click();
   const history = page.locator('.conversation-list');
   await expect(page.getByRole('heading', { name: 'Conversation 1', exact: true })).toBeVisible();

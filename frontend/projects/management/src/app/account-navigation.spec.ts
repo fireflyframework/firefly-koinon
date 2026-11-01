@@ -74,7 +74,7 @@ function environment(
 it('opens an account deep link without rewriting unrelated address state', () => {
   const { service, entries } = environment();
   expect(service.section()).toBe('applications');
-  expect(service.view()).toBe('library');
+  expect(service.view()).toBe('chat');
   expect(entries).toEqual([]);
 });
 it('records section navigation within the deployment base and preserves query/fragment', () => {
@@ -87,7 +87,7 @@ it('records section navigation within the deployment base and preserves query/fr
   expect(entries).toHaveLength(1);
   service.navigate('library');
   expect(service.section()).toBe(null);
-  expect(window.location.pathname).toBe('/app/');
+  expect(window.location.pathname).toBe('/app/library');
 });
 it('restores account sections on browser back and forward without adding history', () => {
   const { service, pop, entries } = environment();
@@ -110,7 +110,7 @@ it('retains only public route enums for sign-in and restores a root return with 
   const first = environment();
   first.service.retainForSignIn();
   const saved = first.values.get('koinon.pending-account-navigation')!;
-  expect(JSON.parse(saved)).toEqual({ view: 'library', accountSection: 'applications' });
+  expect(JSON.parse(saved)).toEqual({ view: 'chat', accountSection: 'applications' });
   first.service.ngOnDestroy();
   TestBed.resetTestingModule();
   const returned = environment('/app/?retained=one#panel=two', saved);
@@ -149,7 +149,7 @@ for (const saved of [
   it('ignores unknown or authority-bearing stored navigation: ' + saved, () => {
     const { service, replacements, values } = environment('/app/', saved);
     expect(service.section()).toBe(null);
-    expect(service.view()).toBe('library');
+    expect(service.view()).toBe('chat');
     expect(replacements).toEqual([]);
     expect(values.size).toBe(0);
   });
@@ -164,4 +164,15 @@ it('clears pending navigation and remains usable when tab storage is denied', ()
   expect(() => denied.service.retainForSignIn()).not.toThrow();
   expect(() => denied.service.clearPending()).not.toThrow();
   expect(denied.service.section()).toBe('applications');
+});
+
+it('uses Chat at the root and keeps Library as an explicit secondary route', () => {
+  const { service, window, pop } = environment('/app/');
+  expect(service.view()).toBe('chat');
+  service.navigate('library');
+  expect(window.location.pathname).toBe('/app/library');
+  service.navigate('chat');
+  expect(window.location.pathname).toBe('/app/');
+  pop('/app/library');
+  expect(service.view()).toBe('library');
 });

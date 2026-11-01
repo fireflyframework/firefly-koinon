@@ -105,7 +105,7 @@ async function setup(page: Page, count = 4) {
   };
 }
 async function open(page: Page, originWidth?: number) {
-  await page.goto('/');
+  await page.goto('/library');
   await page.getByRole('button', { name: 'Account menu', exact: true }).click();
   if (originWidth) await capture(page, `account-menu-${originWidth}`);
   await page.getByRole('menuitem', { name: 'Authorized applications', exact: true }).click();
@@ -268,7 +268,7 @@ for (const width of [1440, 390, 320])
   test(`authorized applications dark layout ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
     await setup(page);
-    await page.goto('/');
+    await page.goto('/library');
     await page.getByRole('button', { name: 'Account menu', exact: true }).click();
     await page.getByRole('menuitem', { name: 'Use dark theme', exact: true }).click();
     await expect(page.locator('ffk-workbench')).toHaveClass(/koinon-dark/);
@@ -380,7 +380,7 @@ for (const width of [1440, 390, 320])
       .getByRole('navigation', { name: 'Breadcrumb', exact: true })
       .getByRole('button', { name: 'Library', exact: true })
       .click();
-    await expect(page).toHaveURL('/');
+    await expect(page).toHaveURL('/library');
     await expect(page.getByRole('heading', { name: 'Library', exact: true })).toBeVisible();
   });
 
@@ -457,14 +457,14 @@ test('account URLs restore on back and forward without duplicate history or lost
     page.getByRole('heading', { name: 'Authorized applications', exact: true }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Chat', exact: true }).first().click();
-  await expect(page).toHaveURL('/chat?retained=one#panel=two');
+  await expect(page).toHaveURL('/?retained=one#panel=two');
   await page.goBack();
   await expect(page).toHaveURL('/account/applications?retained=one#panel=two');
   await expect(
     page.getByRole('heading', { name: 'Authorized applications', exact: true }),
   ).toBeVisible();
   await page.goForward();
-  await expect(page).toHaveURL('/chat?retained=one#panel=two');
+  await expect(page).toHaveURL('/?retained=one#panel=two');
   await expect(
     page.getByRole('heading', { name: 'Authorized applications', exact: true }),
   ).toHaveCount(0);
@@ -681,7 +681,7 @@ test('sign-in returns to the public account route for the current identity witho
   const saved = await page.evaluate(
     () => (window as Window & { __savedPublicNavigation: string }).__savedPublicNavigation,
   );
-  expect(JSON.parse(saved)).toEqual({ view: 'library', accountSection: 'applications' });
+  expect(JSON.parse(saved)).toEqual({ view: 'chat', accountSection: 'applications' });
   expect(
     await page.evaluate(() => sessionStorage.getItem('koinon.pending-account-navigation')),
   ).toBe(null);

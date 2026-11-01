@@ -23,7 +23,7 @@ test('session expiry destroys private account page before showing sign-in', asyn
           }),
         }),
   );
-  await page.goto('/');
+  await page.goto('/library');
   await page.getByRole('button', { name: 'Account menu', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Your account', exact: true }).click();
   await page.getByRole('textbox', { name: 'Display name', exact: true }).fill('Updated reviewer');

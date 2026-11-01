@@ -159,6 +159,9 @@ class KnowledgeConnectionService:
             ) from error
         await self.connections.lock_tenant(tenant_id)
         await self.authority(subject, tenant_id, data.workspace_id)
+        return await self._write_connection(subject, tenant_id, data, connection_id)
+
+    async def _write_connection(self, subject, tenant_id, data: ConnectionInput, connection_id=None):
         role = ROLES.get(data.role)
         if role is None or role.domain != data.domain:
             raise InvalidRequestException(

@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "plan_key": "initial-knowledge",
+  "tenant_id": "example",
+  "providers": [
+    {
+      "key": "chat",
+      "name": "Organization chat",
+      "kind": "openai",
+      "api": "chat",
+      "base_url": "https://chat.example.test/openai/v1",
+      "model_ids": [
+        "gpt-4o-mini"
+      ],
+      "secret_env": "INSTALL_CHAT_KEY"
+    },
+    {
+      "key": "embedding",
+      "name": "Organization embeddings",
+      "kind": "openai",
+      "api": "chat",
+      "base_url": "https://embeddings.example.test/openai/v1",
+      "model_ids": [
+        "text-embedding-3-small"
+      ],
+      "secret_env": "INSTALL_EMBEDDING_KEY"
+    }
+  ],
+  "catalog": [
+    {
+      "key": "company",
+      "kind": "workspace",
+      "name": "Company knowledge"
+    },
+    {
+      "key": "company-general",
+      "kind": "project",
+      "name": "General",
+      "parent_key": "company"
+    },
+    {
+      "key": "company-documents",
+      "kind": "collection",
+      "name": "Documents",
+      "parent_key": "company-general"
+    },
+    {
+      "key": "company-tables",
+      "kind": "corpus",
+      "name": "Tables",
+      "parent_key": "company-general"
+    }
+  ],
+  "connections": [
+    {
+      "key": "documents-answer",
+      "role": "documents.answer",
+      "provider_key": "chat",
+      "model_id": "gpt-4o-mini"
+    },
+    {
+      "key": "documents-consolidation",
+      "role": "documents.consolidation",
+      "provider_key": "chat",
+      "model_id": "gpt-4o-mini"
+    },
+    {
+      "key": "documents-rlm",
+      "role": "documents.rlm",
+      "provider_key": "chat",
+      "model_id": "gpt-4o-mini"
+    },
+    {
+      "key": "structured-grounding",
+      "role": "structured.grounding",
+      "provider_key": "chat",
+      "model_id": "gpt-4o-mini"
+    },
+    {
+      "key": "structured-generation",
+      "role": "structured.generation",
+      "provider_key": "chat",
+      "model_id": "gpt-4o-mini"
+    },
+    {
+      "key": "structured-critic",
+      "role": "structured.critic",
+      "provider_key": "chat",
+      "model_id": "gpt-4o-mini"
+    },
+    {
+      "key": "structured-explainer",
+      "role": "structured.explainer",
+      "provider_key": "chat",
+      "model_id": "gpt-4o-mini"
+    },
+    {
+      "key": "structured-describe",
+      "role": "structured.describe",
+      "provider_key": "chat",
+      "model_id": "gpt-4o-mini"
+    },
+    {
+      "key": "structured-relation_proposal",
+      "role": "structured.relation_proposal",
+      "provider_key": "chat",
+      "model_id": "gpt-4o-mini"
+    },
+    {
+      "key": "structured-rename_detection",
+      "role": "structured.rename_detection",
+      "provider_key": "chat",
+      "model_id": "gpt-4o-mini"
+    }
+  ],
+  "indexes": [
+    {
+      "key": "company-documents",
+      "workspace_key": "company",
+      "domain": "documents",
+      "provider_key": "embedding",
+      "model_id": "text-embedding-3-small",
+      "dimensions": 1536
+    },
+    {
+      "key": "company-structured",
+      "workspace_key": "company",
+      "domain": "structured",
+      "provider_key": "embedding",
+      "model_id": "text-embedding-3-small",
+      "dimensions": 1536
+    }
+  ],
+  "agent": {
+    "key": "knowledge-guide",
+    "name": "Knowledge guide",
+    "provider_key": "chat",
+    "model_id": "gpt-4o-mini",
+    "tools": [
+      "search_knowledge",
+      "inspect_schema",
+      "query_dataset"
+    ],
+    "set_default_if_empty": true
+  }
+}
