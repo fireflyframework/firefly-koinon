@@ -1,0 +1,20 @@
+{
+  "name": "koinon",
+  "version": "26.11.4",
+  "description": "Use authorized knowledge and organize its catalog through a separately connected koinon account.",
+  "author": {
+    "name": "Firefly Software Foundation",
+    "url": "https://github.com/fireflyframework"
+  },
+  "homepage": "https://fireflyframework.github.io/firefly-koinon/",
+  "repository": "https://github.com/fireflyframework/firefly-koinon",
+  "license": "Apache-2.0",
+  "keywords": [
+    "knowledge",
+    "evidence",
+    "catalog"
+  ],
+  "displayName": "firefly koinon",
+  "skills": "./skills/",
+  "icon": "./assets/icon.png"
+}

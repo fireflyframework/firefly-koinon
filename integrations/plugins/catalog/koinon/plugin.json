@@ -1,0 +1,36 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "koinon",
+  "version": "26.11.4",
+  "description": "Use authorized knowledge and organize its catalog through a separately connected koinon account.",
+  "author": {
+    "name": "Firefly Software Foundation",
+    "url": "https://github.com/fireflyframework"
+  },
+  "homepage": "https://fireflyframework.github.io/firefly-koinon/",
+  "repository": "https://github.com/fireflyframework/firefly-koinon",
+  "license": "Apache-2.0",
+  "keywords": [
+    "knowledge",
+    "evidence",
+    "catalog"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "firefly koinon",
+        "shortDescription": "Work with authorized knowledge",
+        "longDescription": "Use authorized knowledge and organize its catalog through a separately connected koinon account.",
+        "developerName": "Firefly Software Foundation",
+        "category": "Productivity",
+        "capabilities": [
+          "Read",
+          "Write"
+        ],
+        "brandColor": "#ffb34a",
+        "composerIcon": "./assets/icon.png",
+        "logo": "./assets/icon.png"
+      }
+    }
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "Copyright 2026 Firefly Software Foundation. SPDX-License-Identifier: Apache-2.0. Bounded local subset of documented host presentation fields; not an upstream schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "displayName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "shortDescription": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "longDescription": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "developerName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "category": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "composerIcon": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "logo": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "brandColor": {
+      "type": "string",
+      "pattern": "^#[0-9a-fA-F]{6}$"
+    },
+    "capabilities": {
+      "type": "array",
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "Read",
+          "Write"
+        ]
+      }
+    }
+  }
+}

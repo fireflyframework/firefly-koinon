@@ -1,0 +1,17 @@
+{
+  "plugin.schema.json": {
+    "url": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+    "sha256": "0a4aad95ce337878ad38802ebf0daa3fde76abe3f65400c86bcbb1ec0b3ab883",
+    "bytes": 1805
+  },
+  "mcp.schema.json": {
+    "url": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+    "sha256": "6539175bfcdf43085855183e86da40ea94b166547a72b47ae9a0a390516d3acb",
+    "bytes": 3408
+  },
+  "LICENSE.md": {
+    "url": "https://raw.githubusercontent.com/agentplugins/agent-plugins-spec/main/LICENSE.md",
+    "sha256": "c614e83c1e0d6b1a53feb0d279fbfcfc2cc048ba34c19b751315d7dbb481c7a5",
+    "bytes": 754
+  }
+}

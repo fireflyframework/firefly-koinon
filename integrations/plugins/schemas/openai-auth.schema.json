@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "Copyright 2026 Firefly Software Foundation. SPDX-License-Identifier: Apache-2.0. Local strict contract for documented OpenAI provided-client fields; not an upstream schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "type",
+    "client",
+    "defaultScopes"
+  ],
+  "properties": {
+    "type": {
+      "const": "oauth"
+    },
+    "client": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "clientId",
+        "tokenEndpointAuthMethod"
+      ],
+      "properties": {
+        "mode": {
+          "const": "provided"
+        },
+        "clientId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "tokenEndpointAuthMethod": {
+          "const": "none"
+        }
+      }
+    },
+    "defaultScopes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

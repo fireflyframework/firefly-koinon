@@ -29,3 +29,5 @@ Read the [integration data flow and privacy notes](privacy.md) before connecting
 ## Reviewed knowledge management
 
 A compatible host can render the remote server's embedded review for text creation/updates and file uploads. The bridge forwards tool results and resources; the host must preserve MCP Apps private metadata and app-only visibility. Installation alone does not establish that capability. A PAT needs the exact write and supporting-evidence scopes, intersected with the current user's role and resource bounds. See [managing knowledge inside an MCP conversation](../guides/mcp-knowledge-management.md) and the dedicated [Claude](../guides/connect-claude.md) and [ChatGPT](../guides/connect-chatgpt.md) connection guides.
+
+The [plugin marketplace and profile guide](plugins.md) explains GitHub distribution, canonical skills and deployment-specific OAuth metadata. Packages do not replace account authorization or supported human review.

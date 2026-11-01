@@ -133,3 +133,5 @@ For the desktop PAT bridge, revoke the token under **API tokens** and remove or 
 | Upload or knowledge-update tools are absent | Check the deployed server version, permitted write scopes and MCP Apps support; leave the repository unchanged when in-chat review is unavailable |
 
 Protocol, scope, revocation and native API tests use owned local fixtures. A completed Claude sign-in, real deployment call and accepted client screenshot are separate checks. This guide does not claim that those external steps have passed. Client navigation was checked against the linked official documentation on October 30, 2026; workspace policy and client versions may differ.
+
+The [plugin marketplace and profile guide](../integrations/plugins.md) explains GitHub distribution, canonical skills and deployment-specific OAuth metadata. Packages do not replace account authorization or supported human review.
