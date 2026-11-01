@@ -686,8 +686,10 @@
       "tenant_id": "tenant value",
       "entry_id": "entry_id value"
     },
-    "query": {},
-    "filter": null,
+    "query": {
+      "expected_updated_at": "expected_updated_at value"
+    },
+    "filter": "CatalogLifecycleFilter",
     "request": null,
     "response": "CatalogEntry",
     "body": {
@@ -728,8 +730,10 @@
       "tenant_id": "tenant value",
       "entry_id": "entry_id value"
     },
-    "query": {},
-    "filter": null,
+    "query": {
+      "expected_updated_at": "expected_updated_at value"
+    },
+    "filter": "CatalogLifecycleFilter",
     "request": null,
     "response": "CatalogEntry",
     "body": {

@@ -2654,6 +2654,26 @@
       "title": "CatalogMove",
       "type": "object"
     },
+    "CatalogPrecondition": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_updated_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Updated At"
+        }
+      },
+      "title": "CatalogPrecondition",
+      "type": "object"
+    },
     "CatalogProposal": {
       "additionalProperties": true,
       "properties": {
@@ -2974,6 +2994,19 @@
           ],
           "default": null,
           "title": "Metadata"
+        },
+        "expected_updated_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Updated At"
         }
       },
       "title": "CatalogUpdate",
@@ -27081,6 +27114,9 @@
     },
     "CatalogCreate": {
       "$ref": "#/$defs/CatalogCreate"
+    },
+    "CatalogPrecondition": {
+      "$ref": "#/$defs/CatalogPrecondition"
     },
     "CatalogUpdate": {
       "$ref": "#/$defs/CatalogUpdate"

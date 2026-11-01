@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import inspect
 from collections.abc import Awaitable, Callable
+from datetime import datetime
 from types import TracebackType
 from typing import Any, Literal, Self, Unpack, cast
 from urllib.parse import quote
@@ -47,6 +48,7 @@ from koinon_sdk.contracts import (
     AuthorizedApplicationFilter,
     BinaryDownload,
     CatalogFilter,
+    CatalogPrecondition,
     ContentUpdate,
     Deleted,
     FolderCreate,
@@ -611,6 +613,7 @@ class KoinonClient(BulkClientMixin, QueryBatchClientMixin, CommunicationsClientM
         name: str | None = None,
         description: str | None = None,
         metadata: dict[str, JsonValue] | None = None,
+        expected_updated_at: datetime | None = None,
     ) -> CatalogEntry:
         fields = {
             key: value
@@ -621,6 +624,11 @@ class KoinonClient(BulkClientMixin, QueryBatchClientMixin, CommunicationsClientM
             }.items()
             if value is not None
         }
+        fields.update(
+            CatalogPrecondition(expected_updated_at=expected_updated_at).model_dump(
+                mode="json", exclude_none=True
+            )
+        )
         return CatalogEntry.model_validate(
             await self._request(
                 "PATCH", self._tenant(tenant_id) + "/catalog/" + quote(entry_id, safe=""), json=fields
@@ -636,17 +644,29 @@ class KoinonClient(BulkClientMixin, QueryBatchClientMixin, CommunicationsClientM
             )
         )
 
-    async def archive(self, tenant_id: str, entry_id: str) -> CatalogEntry:
+    async def archive(
+        self, tenant_id: str, entry_id: str, *, expected_updated_at: datetime | None = None
+    ) -> CatalogEntry:
         return CatalogEntry.model_validate(
             await self._request(
-                "POST", self._tenant(tenant_id) + "/catalog/" + quote(entry_id, safe="") + "/archive"
+                "POST",
+                self._tenant(tenant_id) + "/catalog/" + quote(entry_id, safe="") + "/archive",
+                params=CatalogPrecondition(expected_updated_at=expected_updated_at).model_dump(
+                    mode="json", exclude_none=True
+                ),
             )
         )
 
-    async def restore(self, tenant_id: str, entry_id: str) -> CatalogEntry:
+    async def restore(
+        self, tenant_id: str, entry_id: str, *, expected_updated_at: datetime | None = None
+    ) -> CatalogEntry:
         return CatalogEntry.model_validate(
             await self._request(
-                "POST", self._tenant(tenant_id) + "/catalog/" + quote(entry_id, safe="") + "/restore"
+                "POST",
+                self._tenant(tenant_id) + "/catalog/" + quote(entry_id, safe="") + "/restore",
+                params=CatalogPrecondition(expected_updated_at=expected_updated_at).model_dump(
+                    mode="json", exclude_none=True
+                ),
             )
         )
 

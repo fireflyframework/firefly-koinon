@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 Role = Literal["viewer", "analyst", "editor", "operator", "admin"]
 
@@ -20,8 +20,12 @@ class CatalogCreate(BaseModel):
     metadata: dict = Field(default_factory=dict)
 
 
-class CatalogPatch(BaseModel):
+class CatalogPrecondition(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    expected_updated_at: AwareDatetime | None = None
+
+
+class CatalogPatch(CatalogPrecondition):
     name: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=4000)
     metadata: dict | None = None

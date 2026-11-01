@@ -98,7 +98,7 @@ Ask ChatGPT for the exact proposed change:
 
 The implementation uses [MCP Apps](https://developers.openai.com/plugins/build/app-quickstart). A private nonce is delivered only to the component, outside model-visible content, and approval/cancellation actions are app-only. Account-linking consent is separate from the decision to save a particular proposal. The external assistant's prose remains an unverified external proposal, including when exact repository-source ancestry is available.
 
-Read [the complete workflow and limits](mcp-knowledge-management.md), including unchanged-source checks, retries and incomplete ingestion. If the host cannot show the review, leave the repository unchanged and explain the limitation in the conversation. No automatic browser approval redirect or autonomous confirmation tool is provided. Actual ChatGPT rendering and deployed account-linking must be tested separately from local SDK/protocol checks.
+Read [the complete workflow and limits](mcp-knowledge-management.md), including unchanged-source checks, retries and incomplete ingestion. If the host cannot show the review, leave the proposed content/file publication unapplied and explain the limitation. Supported user-requested catalog organization remains separate; see [external-agent management](external-agent-management.md). No automatic browser approval redirect or autonomous confirmation tool is provided. Actual ChatGPT rendering and deployed account-linking must be tested separately from local SDK/protocol checks.
 
 ## Disconnect and expiry
 

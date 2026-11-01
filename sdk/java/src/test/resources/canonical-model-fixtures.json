@@ -1,5 +1,5 @@
 {
-  "definition_count": 429,
+  "definition_count": 430,
   "excluded_definitions": [
     "AttachmentUpload",
     "AvatarUpload",
@@ -1365,6 +1365,9 @@
       "expected_parent_id": "expected_parent_id-value",
       "expected_updated_at": "2026-10-27T12:34:56Z"
     },
+    "CatalogPrecondition": {
+      "expected_updated_at": "2026-10-27T12:34:56Z"
+    },
     "CatalogProposal": {
       "id": "id-value",
       "run_id": "run_id-value",
@@ -1416,7 +1419,8 @@
           "decimal": "12345678901234567890.12345678901234567890",
           "integer": "9007199254740993"
         }
-      }
+      },
+      "expected_updated_at": "2026-10-27T12:34:56Z"
     },
     "ChatEventData": {
       "proposal_update": {

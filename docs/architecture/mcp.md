@@ -21,7 +21,13 @@ PATs are reauthenticated for every request and canonical operation. MCP OAuth cr
 | Tool | Canonical operation | Result |
 | --- | --- | --- |
 | `koinon_context` | `GET /api/v1/context` | Authorized organizations, workspaces and memberships |
-| `koinon_list` | Tenant catalog | Filtered, paginated catalog |
+| `koinon_list` | Tenant catalog | Filtered, paginated catalog including status, tags and archived entries |
+| `koinon_availability` | Exact asset availability observation | Current authorized read/search/query state |
+| `koinon_create_folder` | Catalog create for organizational kinds | One user-requested folder; no automatic retry |
+| `koinon_update_catalog` | Catalog patch | Name, description or public metadata with exact timestamp |
+| `koinon_move_folder` | Catalog hierarchy move | Same-project folder move with exact parent and timestamp |
+| `koinon_archive_catalog` | Catalog archive | Recoverable archive with exact timestamp |
+| `koinon_restore_catalog` | Catalog restore | Restore with exact timestamp |
 | `koinon_search` | Tenant search | Original source and retrieval metadata; answer generation disabled |
 | `koinon_fetch` | Catalog entry, document chunks or curated version | Original source/version identity |
 | `koinon_dataset_schema` | Dataset schema | Governed table and source identity |
@@ -72,11 +78,13 @@ The server also checks that the authenticated OAuth client's current configured 
 
 Official SDK tests verify discovery metadata, scope-upgrade error results, a newly consented grant succeeding, and the absence of relink prompts for foreign workspaces, denied roles or unsupported client scopes. This follows the [official OpenAI authentication contract](https://developers.openai.com/plugins/build/auth) and its [documented metadata fields](https://developers.openai.com/plugins/reference). Hosted linking UI acceptance still requires client testing.
 
+Read [external-agent management](../guides/external-agent-management.md) for the organizational/content distinction, timestamp preconditions, unknown results and current tool gaps.
+
 ## Embedded review boundary
 
 The static resource `ui://koinon/knowledge-review` uses `text/html;profile=mcp-app`. Model-visible stage/prepare tools link to that resource. Decision, status and transfer tools declare `ui.visibility=["app"]`. Tool results carry public proposal content in `structuredContent`; `_meta["koinon/knowledgeReview"]` carries the component-only nonce and optional authorized presentation palette. Branding changes neither tool identity nor permissions.
 
-The host must declare the `io.modelcontextprotocol/ui` extension with the exact `text/html;profile=mcp-app` MIME type and implement its private-metadata and tool-visibility boundary. The server checks this before staging, preparing uploads, issuing a private challenge or applying any app decision. Missing or incompatible capabilities return an actionable error before those operations run. There is no browser approval redirect or model-visible autonomous confirmation endpoint. Account linking may still use the normal OAuth sign-in flow; it is separate from approving repository changes. A host without the review capability can read supported knowledge but cannot complete a change. Protocol/component fixtures do not prove an actual host follows this boundary.
+The host must declare the `io.modelcontextprotocol/ui` extension with the exact `text/html;profile=mcp-app` MIME type and implement its private-metadata and tool-visibility boundary. The server checks this before staging, preparing uploads, issuing a private challenge or applying any app decision. Missing or incompatible capabilities return an actionable error before those operations run. There is no browser approval redirect or model-visible autonomous confirmation endpoint. Account linking may still use the normal OAuth sign-in flow; it is separate from approving repository changes. A host without the review capability can read supported knowledge and perform permitted user-requested catalog organization, but cannot publish or replace generated knowledge content or complete the reviewed file workflow. Protocol/component fixtures do not prove an actual host follows this boundary.
 
 `GET /api/v1/mcp/connection` exposes the trusted deployment URL, permitted server capabilities and configured public OAuth client ID/name/scopes/authentication type. It never returns a client secret or hash and does not grant the current user additional permissions. See the [Claude](../guides/connect-claude.md) and [ChatGPT](../guides/connect-chatgpt.md) guides.
 

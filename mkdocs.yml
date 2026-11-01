@@ -115,6 +115,8 @@ nav:
       - AI clients and MCP:
           - Connect Claude: guides/connect-claude.md
           - Connect ChatGPT: guides/connect-chatgpt.md
+          - Connect Grok: guides/connect-grok.md
+          - External-agent management: guides/external-agent-management.md
           - In-chat knowledge management: guides/mcp-knowledge-management.md
           - Desktop MCP extension: integrations/desktop.md
           - Integration data flow and privacy: integrations/privacy.md

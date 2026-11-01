@@ -460,14 +460,36 @@ class CatalogService:
             )
         )
 
+    @staticmethod
+    def _check_expected_update(entry: CatalogEntry, expected_updated_at: datetime | None) -> None:
+        if expected_updated_at is None:
+            return
+        if expected_updated_at.tzinfo is None or expected_updated_at.utcoffset() is None:
+            raise InvalidRequestException(
+                "The expected catalog timestamp requires a timezone", code="INVALID_CATALOG_PRECONDITION"
+            )
+        if entry.updated_at != expected_updated_at:
+            raise ConflictException(
+                "This catalog entry changed. Refresh it before continuing", code="CATALOG_CHANGED"
+            )
+
     @transactional
-    async def update(self, subject: str, tenant_id: str, entry_id: str, changes: dict) -> CatalogEntry:
+    async def update(
+        self,
+        subject: str,
+        tenant_id: str,
+        entry_id: str,
+        changes: dict,
+        *,
+        expected_updated_at: datetime | None = None,
+    ) -> CatalogEntry:
         await self._lock_tenant(tenant_id)
         entry = await self._scoped_entry(tenant_id, entry_id, lock=True)
         await self.authorize(subject, tenant_id, "catalog:write", entry.workspace_id)
         if self.restriction:
             await self.restriction.resource(subject, entry, write=True)
         self.require_knowledge_review(entry.kind)
+        self._check_expected_update(entry, expected_updated_at)
         if entry.system_key is not None and changes.get("status") in {"archived", "disabled"}:
             raise ConflictException(
                 "System knowledge spaces must remain available", code="SYSTEM_SPACE_PROTECTED"
@@ -753,7 +775,14 @@ class CatalogService:
         )
 
     @transactional
-    async def archive(self, subject: str, tenant_id: str, entry_id: str) -> CatalogEntry:
+    async def archive(
+        self,
+        subject: str,
+        tenant_id: str,
+        entry_id: str,
+        *,
+        expected_updated_at: datetime | None = None,
+    ) -> CatalogEntry:
         await self._lock_tenant(tenant_id)
         entry = await self._scoped_entry(tenant_id, entry_id, lock=True)
         await self.authorize(subject, tenant_id, "catalog:write", entry.workspace_id)
@@ -764,6 +793,7 @@ class CatalogService:
             raise ConflictException(
                 "System knowledge spaces cannot be archived", code="SYSTEM_SPACE_PROTECTED"
             )
+        self._check_expected_update(entry, expected_updated_at)
         if entry.status != "archived":
             entry.metadata_json = {
                 **entry.metadata_json,
@@ -775,13 +805,21 @@ class CatalogService:
         return entry
 
     @transactional
-    async def restore(self, subject: str, tenant_id: str, entry_id: str) -> CatalogEntry:
+    async def restore(
+        self,
+        subject: str,
+        tenant_id: str,
+        entry_id: str,
+        *,
+        expected_updated_at: datetime | None = None,
+    ) -> CatalogEntry:
         await self._lock_tenant(tenant_id)
         entry = await self._scoped_entry(tenant_id, entry_id, lock=True)
         await self.authorize(subject, tenant_id, "catalog:write", entry.workspace_id)
         if self.restriction:
             await self.restriction.resource(subject, entry, write=True)
         self.require_knowledge_review(entry.kind)
+        self._check_expected_update(entry, expected_updated_at)
         if entry.status != "archived":
             raise ConflictException("This knowledge is not archived", code="RESOURCE_NOT_ARCHIVED")
         metadata = dict(entry.metadata_json)

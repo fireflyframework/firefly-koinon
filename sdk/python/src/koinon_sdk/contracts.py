@@ -5,7 +5,7 @@
 from dataclasses import dataclass
 from typing import Literal, TypedDict
 
-from pydantic import Field, JsonValue
+from pydantic import AwareDatetime, Field, JsonValue
 
 from koinon_sdk._base import DocumentRevisionPreconditions as DocumentRevisionPreconditions
 from koinon_sdk.models import CatalogEntry, InputModel, KnowledgeScope, ModelParameters, ResponseModel
@@ -113,10 +113,15 @@ class CatalogCreate(InputModel):
     metadata: dict[str, JsonValue] = Field(default_factory=dict)
 
 
+class CatalogPrecondition(InputModel):
+    expected_updated_at: AwareDatetime | None = None
+
+
 class CatalogUpdate(InputModel):
     name: str | None = None
     description: str | None = None
     metadata: dict[str, JsonValue] | None = None
+    expected_updated_at: AwareDatetime | None = None
 
 
 class SearchRequest(InputModel):

@@ -37,6 +37,7 @@ import type {IndexPlanInput,IndexCreateInput,IndexActivateInput,IndexRevisionInp
 import type {IndexFilter,IndexScope,IdentityFilter,IdentityGroupFilter,IdentityMappingFilter} from './types.js';
 import type {GlossaryPage,GlossaryTermCreate,GlossaryTermUpdate,GlossaryTermRead,CatalogProposal,ProposalConfirmation,ProposalRevision,ExportReviewRequest,ExportReview,ExportCreate,Export,ExportPage,ShareReviewInput,ShareReview,ShareCreate,Share,SharePage,SharedConversation,MessageSelection,EvidenceManifest} from './generated.js';
 import type {ExportFilter,ShareFilter,AgentFilter} from './types.js';
+import type {CatalogLifecycleOptions} from './types.js';
 export * from './types.js';
 export * from './generated.js';
 export * from './transport.js';
@@ -232,10 +233,10 @@ export class KoinonClient {
    create:(tenantId:string,entry:EntryCreate,options:RequestOptions={})=>transport.request<CatalogEntry>('POST',`${tenant(tenantId)}/catalog`,{...options,body:entry}),
    get:(tenantId:string,entryId:string,options:RequestOptions={})=>transport.request<CatalogEntry>('GET',`${tenant(tenantId)}/catalog/${id(entryId)}`,options),
    update:(tenantId:string,entryId:string,entry:EntryUpdate,options:RequestOptions={})=>transport.request<CatalogEntry>('PATCH',`${tenant(tenantId)}/catalog/${id(entryId)}`,{...options,body:entry}),
-   restore:(tenantId:string,entryId:string,options:RequestOptions={})=>transport.request<CatalogEntry>('POST',`${tenant(tenantId)}/catalog/${id(entryId)}/restore`,options),
+   restore:(tenantId:string,entryId:string,options:RequestOptions&CatalogLifecycleOptions={})=>{const {expected_updated_at,...request}=options;return transport.request<CatalogEntry>('POST',`${tenant(tenantId)}/catalog/${id(entryId)}/restore`,{...request,query:{...request.query,...(expected_updated_at===undefined?{}:{expected_updated_at})}});},
    delete:(tenantId:string,entryId:string,options:RequestOptions={})=>transport.request<void>('DELETE',`${tenant(tenantId)}/catalog/${id(entryId)}`,options),
    move:(tenantId:string,entryId:string,input:CatalogMove,options:RequestOptions={})=>transport.request<CatalogEntry>('POST',`${tenant(tenantId)}/catalog/${id(entryId)}/move`,{...options,body:input}),
-   archive:(tenantId:string,entryId:string,options:RequestOptions={})=>transport.request<CatalogEntry>('POST',`${tenant(tenantId)}/catalog/${id(entryId)}/archive`,options),
+   archive:(tenantId:string,entryId:string,options:RequestOptions&CatalogLifecycleOptions={})=>{const {expected_updated_at,...request}=options;return transport.request<CatalogEntry>('POST',`${tenant(tenantId)}/catalog/${id(entryId)}/archive`,{...request,query:{...request.query,...(expected_updated_at===undefined?{}:{expected_updated_at})}});},
   };
   this.sources={uploadFile:(tenantId:string,input:SourceUploadInput,options:RequestOptions={})=>{const body=multipart(input.file,input.filename);for(const key of ['workspace_id','project_id','parent_id','mode'] as const)body.set(key,input[key]);return transport.request<UploadResponse>('POST',`${tenant(tenantId)}/sources/upload`,{...options,body});},upload:(tenantId:string,form:FormData,options:RequestOptions={})=>transport.request<UploadResponse>('POST',`${tenant(tenantId)}/sources/upload`,{...options,body:form})};
   const versionPath=(tenantId:string,documentId:string,versionId?:string)=>`${tenant(tenantId)}/documents/${id(documentId)}/versions${versionId===undefined?'':'/'+id(versionId)}`;
