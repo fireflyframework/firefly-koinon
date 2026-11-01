@@ -1,3 +1,5 @@
+<!-- Copyright 2026 Firefly Software Foundation -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Desktop MCP extension
 
 The firefly koinon 26.11.4 desktop extension connects a compatible MCP desktop host to an operator-managed koinon MCP endpoint. The bridge uses the official TypeScript MCP SDK and forwards remote tools, resources, and prompts. The server remains responsible for schemas, permissions, and knowledge access.
@@ -27,5 +29,7 @@ The bridge initializes locally and contacts the configured endpoint only when th
 Read the [integration data flow and privacy notes](privacy.md) before connecting sensitive knowledge. For build instructions, packaging checks, and dependency provenance, see `integrations/mcp-desktop/README.md` in the repository.
 
 ## Reviewed knowledge management
+
+A host without MCP Apps can still retrieve evidence and perform supported user-requested catalog organization, such as renaming, tagging or moving an ordinary folder. Those operations require the corresponding current scopes, role and resource access. They do not authorize content publication. Follow the [catalog operation walkthrough](../guides/external-agent-management.md) for exact timestamps, metadata replacement and recovery from an uncertain response.
 
 A compatible host can render the remote server's embedded review for text creation/updates and file uploads. The bridge forwards tool results and resources; the host must preserve MCP Apps private metadata and app-only visibility. Installation alone does not establish that capability. A PAT needs the exact write and supporting-evidence scopes, intersected with the current user's role and resource bounds. See [managing knowledge inside an MCP conversation](../guides/mcp-knowledge-management.md) and the dedicated [Claude](../guides/connect-claude.md) and [ChatGPT](../guides/connect-chatgpt.md) connection guides.

@@ -63,6 +63,8 @@ When linking the account or invoking a tool that requires it, follow the sign-in
 
 The initial authorization can be limited to `catalog:read`. Search requires `knowledge:search`, queries require `query:execute`, and an existing-answer audit requires `chat:use`, in addition to catalog access. Reviewed text and file changes additionally require `catalog:write` and `ingest:write`. The tool metadata declares these requirements. A verified scope-only denial can ask the host to relink with the relevant scopes. Current role, organization, workspace and asset restrictions still apply; a scope upgrade cannot override them.
 
+Ordinary folder, tag and metadata changes require `catalog:write` in addition to catalog access; they do not require content-publication approval. Your personal activity summary needs `activity:read`. Organization-wide platform health uses a separate administrator PAT with `audit:read` and is unavailable to workspace-bound OAuth connections. Follow the [operation and permission walkthrough](external-agent-management.md) before requesting broader scopes.
+
 The tool schemas may appear in discovery even when a particular operation is unavailable to your grant. Permission checks run at invocation. See [MCP authentication](../operations/mcp-authentication.md) for operator registration and [Authorized applications](authorized-applications.md) for owner controls.
 
 ## Retrieve and verify knowledge
