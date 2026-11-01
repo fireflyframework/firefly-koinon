@@ -1,5 +1,6 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 export const ACTIVITY_SPANISH: Readonly<Record<string, string>> = {
+  'Review the knowledge you create, update and consult.': 'Revisa el conocimiento que creas, actualizas y consultas.',
   'Your knowledge activity': 'Tu actividad de conocimiento',
   'Organization knowledge activity': 'Actividad de conocimiento de la organización',
   'Observed window': 'Periodo observado',

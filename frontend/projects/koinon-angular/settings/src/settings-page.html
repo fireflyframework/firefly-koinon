@@ -1,6 +1,7 @@
 <!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
-<div class="settings-grid">
-  <nav class="settings-navigation" [attr.aria-label]="'Settings sections' | ffkText">
+<div class="settings-grid" [class.navigation-collapsed]="navigationCollapsed()">
+  <button class="settings-boundary" type="button" [attr.aria-label]="(navigationCollapsed() ? 'Show settings navigation' : 'Hide settings navigation') | ffkText" [attr.title]="(navigationCollapsed() ? 'Show settings navigation' : 'Hide settings navigation') | ffkText" [attr.aria-expanded]="!navigationCollapsed()" aria-controls="settings-navigation" (click)="toggleNavigation()"><ffk-icon [name]="navigationCollapsed() ? 'chevron' : 'chevron-left'"/></button>
+  <nav id="settings-navigation" class="settings-navigation" [attr.aria-label]="'Settings sections' | ffkText">
     <header>
       <h1>{{ 'Settings' | ffkText }}</h1>
       <p>{{ f.tenant()?.name }}</p>
@@ -48,6 +49,7 @@
     [attr.aria-busy]="c.pending() || f.pending()"
     [attr.aria-label]="'Settings content' | ffkText"
   >
+    @if(navigationCollapsed()){<h1 class="sr-only collapsed-heading">{{'Settings'|ffkText}}</h1>}
     @if (c.pending()) {
       <div class="settings-loading"><ffk-skeleton width="58%" height="3px" label="Working" /></div>
     }

@@ -23,12 +23,12 @@ import { friendlyStatus } from '../services/library-tree';
       <ffk-breadcrumb [items]="trail" (folderSelected)="folderSelected.emit($event)" />
       <div class="location-actions">
         @if (canAdd) {
-          <ffk-button variant="quiet" icon="history" (click)="archivedRequested.emit()">{{
+          <ffk-button variant="neutral" icon="history" (click)="archivedRequested.emit()">{{
             'Archived' | ffkText
           }}</ffk-button>
         }
         @if (browseAvailable) {
-          <ffk-button variant="quiet" icon="lineage" (click)="browseRequested.emit()">{{
+          <ffk-button variant="neutral" icon="lineage" (click)="browseRequested.emit()">{{
             'Browse folders' | ffkText
           }}</ffk-button>
         }
@@ -42,7 +42,7 @@ import { friendlyStatus } from '../services/library-tree';
       @if (canAdd) {
         <div class="library-actions">
         @if (createLabel) {
-          <ffk-button [variant]="items.length ? 'neutral' : 'primary'" [compact]="items.length > 0" icon="folder" (click)="createRequested.emit()">{{ createLabel | ffkText }}</ffk-button>
+          <ffk-button [variant]="items.length ? 'neutral' : 'primary'" icon="folder" [label]="createLabel" (click)="createRequested.emit()"><span class="create-folder-label">{{ createLabel | ffkText }}</span></ffk-button>
         }
         <ffk-button
           class="library-add"

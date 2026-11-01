@@ -7,6 +7,8 @@ import {
   effect,
   inject,
   signal,
+  input,
+  booleanAttribute,
   untracked,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -43,7 +45,7 @@ import { KoinonActivitySummary } from './activity-summary';
     KoinonActivityWindow,
     KoinonActivitySummary,
   ],
-  template: `<section aria-label="Activity summary">
+  template: `<header class="page-heading"><div><h1>{{ (personalOnly() ? 'My activity' : 'Activity') | ffkText }}</h1><p>{{(personalOnly() ? 'Review the knowledge you create, update and consult.' : 'Review knowledge use and follow file processing.') | ffkText}}</p></div>@if(!personalOnly()){<ffk-button variant="quiet" icon="refresh" (click)="facade.loadJobs()">{{'Refresh'|ffkText}}</ffk-button>}</header><section aria-label="Activity summary">
       <form (ngSubmit)="load()">
         <ffk-activity-window
           [timeZone]="i18n.preferences().time_zone"
@@ -74,7 +76,7 @@ import { KoinonActivitySummary } from './activity-summary';
         <ffk-skeleton width="70%" height="3px" [label]="'Loading activity' | ffkText" />
       }
     </section>
-    @if (facade.tenantPermissions().has('jobs:manage')) {
+    @if (!personalOnly() && facade.tenantPermissions().has('jobs:manage')) {
       <h2>{{ 'Processing jobs' | ffkText }}</h2>
       <div class="workbench-table-wrap">
         <table>
@@ -132,7 +134,7 @@ import { KoinonActivitySummary } from './activity-summary';
     `
       :host {
         display: block;
-        margin: 24px 0 36px;
+        margin: 0 0 36px;
       }
       .workbench-table-wrap {
         overflow-x: auto;
@@ -194,6 +196,7 @@ import { KoinonActivitySummary } from './activity-summary';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KoinonActivityPanel {
+  readonly personalOnly = input(false, {transform:booleanAttribute});
   readonly facade = inject(KoinonFacade);
   readonly clients = inject(KoinonClientContext);
   readonly i18n = inject(KoinonI18n);
@@ -210,7 +213,7 @@ export class KoinonActivityPanel {
       this.identity = context;
       ++this.epoch;
     }
-    return `${this.epoch}:${this.clients.revision()}:${this.facade.tenantId()}:${this.facade.workspaceId()}`;
+    return `${this.personalOnly()}:${this.epoch}:${this.clients.revision()}:${this.facade.tenantId()}:${this.facade.workspaceId()}`;
   });
   private readonly result = signal<{ key: string; value: ActivitySummary } | null>(null);
   readonly summary = computed(() =>
@@ -218,7 +221,7 @@ export class KoinonActivityPanel {
   );
   readonly canAdmin = computed(
     () =>
-      !!this.facade
+      !this.personalOnly() && !!this.facade
         .context()
         ?.memberships.some(
           (grant) =>
@@ -273,7 +276,8 @@ export class KoinonActivityPanel {
       this.error.set('Choose a valid past reporting window of at most 366 days.');
       return;
     }
-    if (this.audience === 'administrative' && !this.canAdmin()) {
+    const audience = this.personalOnly() ? 'personal' : this.audience;
+    if (audience === 'administrative' && !this.canAdmin()) {
       this.error.set('Your current account cannot view this activity.');
       return;
     }
@@ -284,9 +288,10 @@ export class KoinonActivityPanel {
       !controller.signal.aborted && this.request === controller && this.key() === key;
     try {
       const api = this.clients.get().activity;
-      const result = await (this.audience === 'administrative'
+      const result = await (audience === 'administrative'
         ? api.administrative(this.facade.tenantId(), window, { signal: controller.signal })
         : api.personal(this.facade.tenantId(), window, { signal: controller.signal }));
+      if (result.tenant_id !== this.facade.tenantId() || (this.personalOnly() && result.audience !== 'personal')) throw new Error('Activity scope mismatch');
       if (current()) this.result.set({ key, value: result });
     } catch (error) {
       if (current()) {

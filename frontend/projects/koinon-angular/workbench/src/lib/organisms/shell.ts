@@ -17,16 +17,17 @@ import {
 } from '@angular/core';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { KoinonAccountMenu } from './account-menu';
+import { KoinonPoweredBy } from '../atoms/powered-by';
 import { KoinonIcon } from '../atoms/icon';
 import { KoinonSearchField } from '../molecules/search-field';
-export type PrimaryDestination = 'library' | 'chat' | 'activity' | 'settings';
+export type PrimaryDestination = 'library' | 'chat' | 'my-activity' | 'activity' | 'settings';
 export interface OrganizationOption {
   id: string;
   name: string;
 }
 @Component({
   selector: 'ffk-shell',
-  imports: [KoinonTextPipe, CdkTrapFocus, KoinonAccountMenu, KoinonIcon, KoinonSearchField],
+  imports: [KoinonPoweredBy, KoinonTextPipe, CdkTrapFocus, KoinonAccountMenu, KoinonIcon, KoinonSearchField],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -38,6 +39,7 @@ export class KoinonShell implements AfterViewInit, OnDestroy {
   @Input() showNavigation = true;
   @Input() productName = 'koinon';
   @Input() brandLogo?: string;
+  @Input() customBrand = false;
   logo() {
     const family =
       this.brandBase +
@@ -145,6 +147,7 @@ export class KoinonShell implements AfterViewInit, OnDestroy {
   readonly destinations: { id: PrimaryDestination; label: string; icon: string }[] = [
     { id: 'chat', label: 'Chat', icon: 'chat' },
     { id: 'library', label: 'Library', icon: 'folder' },
+    { id: 'my-activity', label: 'My activity', icon: 'history' },
   ];
   go(destination: PrimaryDestination, event?: Event) {
     event?.preventDefault();

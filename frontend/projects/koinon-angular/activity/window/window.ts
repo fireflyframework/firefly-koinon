@@ -99,7 +99,7 @@ export function activityWindow(
       }
       @media (max-width: 600px) {
         label > span {
-          min-height: 2.8em;
+          min-height: 3em;
         }
       }
       input:focus-visible {
