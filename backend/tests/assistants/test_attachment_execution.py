@@ -1,6 +1,7 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
 from datetime import timedelta
+from hashlib import sha256
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -10,7 +11,7 @@ from pyfly.kernel import InvalidRequestException
 from test_service import assistants as assistants
 
 from koinon.assistants.lifecycle import timestamp
-from koinon.knowledge.attachments.ports import AttachmentContent, AttachmentRef
+from koinon.knowledge.attachments.ports import AttachmentContent, AttachmentRef, PrivateTextUnit
 
 
 def ref():
@@ -35,7 +36,18 @@ async def test_private_text_budget_measures_exact_prompt_and_keeps_reference_met
     item = ref()
     access = SimpleNamespace(
         content_for_model=AsyncMock(
-            return_value=(AttachmentContent(item, text="Verified private text", complete=True),)
+            return_value=(
+                AttachmentContent(
+                    item,
+                    text="Verified private text",
+                    complete=True,
+                    text_units=(
+                        PrivateTextUnit(
+                            "complete", "Verified private text", sha256(b"Verified private text").hexdigest()
+                        ),
+                    ),
+                ),
+            )
         )
     )
     seen = []
@@ -114,14 +126,11 @@ def test_native_prompt_identifies_product_without_forcing_response_prefix():
 
 
 @pytest.mark.parametrize(
-    ("model_text", "visible_text"),
-    [
-        ("The private selected notes say twelve.", "The private selected notes say twelve."),
-        ("Attachment file: Notes.md says twelve.", "Notes.md says twelve."),
-    ],
+    ("model_text", "grounded"),
+    [("Notes say twelve.", True), ("UNSUPPORTED_TRAINING_FACT", False)],
 )
 async def test_selected_private_text_grounds_native_run_and_never_enters_later_unselected_history(
-    assistants, monkeypatch, model_text, visible_text
+    assistants, monkeypatch, model_text, grounded
 ):
     from dataclasses import replace
 
@@ -145,8 +154,6 @@ async def test_selected_private_text_grounds_native_run_and_never_enters_later_u
     provider, agent = await configured(service)
     await service.validate_provider("issuer|admin", "north", provider["id"])
     agent = await service.save_agent("issuer|admin", "north", {"tools": []}, agent["id"])
-    model = TestModel(call_tools=[], custom_output_text=model_text)
-    monkeypatch.setattr(ModelFactory, "build_with_secret", lambda self, spec, secret: model)
     thread = await service.create_thread("issuer|viewer", "north", {})
     item = replace(ref(), thread_id=thread["id"])
     access = SimpleNamespace(
@@ -155,10 +162,41 @@ async def test_selected_private_text_grounds_native_run_and_never_enters_later_u
         for_run=AsyncMock(return_value=(item,)),
         authorize_evidence=AsyncMock(),
         content_for_model=AsyncMock(
-            return_value=(AttachmentContent(item, text="Notes say twelve.", complete=True),)
+            return_value=(
+                AttachmentContent(
+                    item,
+                    text="Notes say twelve.",
+                    complete=True,
+                    text_units=(
+                        PrivateTextUnit(
+                            "complete", "Notes say twelve.", sha256(b"Notes say twelve.").hexdigest()
+                        ),
+                    ),
+                ),
+            )
         ),
         summaries_for_message=AsyncMock(return_value=()),
     )
+    from koinon.assistants.attachment_input import prepare_attachment_input
+
+    selected = await prepare_attachment_input(
+        access,
+        subject=item.subject,
+        tenant_id=item.tenant_id,
+        thread_id=item.thread_id,
+        refs=(item,),
+        question="What do my notes say?",
+        fits_text=AsyncMock(return_value=True),
+        input_modalities=["text"],
+    )
+    model = TestModel(
+        call_tools=[],
+        custom_output_args={
+            "outcome": "answer",
+            "quotes": [{"fact_id": selected.facts[0].id, "quote": model_text}],
+        },
+    )
+    monkeypatch.setattr(ModelFactory, "build_with_secret", lambda self, spec, secret: model)
     service.attachments = access
     accepted = await service.submit(
         "issuer|viewer",
@@ -178,10 +216,11 @@ async def test_selected_private_text_grounds_native_run_and_never_enters_later_u
     stored = await context.get_bean(ChatRunRepository).find_by_id(accepted["run_id"])
     assert stored.status == "completed", stored.error_code
     answer = (await service.messages("issuer|viewer", "north", thread["id"]))[-1]
-    assert answer["text"] == visible_text
-    assert answer["answer_policy"]["outcome"] == "grounded"
+    assert ("Notes say twelve." in answer["text"]) is grounded
+    assert "UNSUPPORTED_TRAINING_FACT" not in answer["text"]
+    assert answer["answer_policy"]["outcome"] == ("grounded" if grounded else "refused")
     results = await service.results.find_all(run_id=run.id)
-    assert [row.kind for row in results if row.kind != "generation"] == ["attachment"]
+    assert [row.kind for row in results if row.kind not in {"generation", "answer_release"}] == ["attachment"]
     assert "Notes say twelve" not in str(results[0].payload)
     from koinon.assistants.audit import AnswerAudits
     from koinon.knowledge.attachments.dtos import AttachmentHistorySummary

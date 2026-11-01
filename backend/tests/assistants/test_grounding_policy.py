@@ -45,7 +45,7 @@ async def test_unrelated_model_answer_never_reaches_durable_text_or_stream(assis
     provider, agent = await configured(service)
     await service.validate_provider("issuer|admin", "north", provider["id"])
     model = TestModel(
-        call_tools=[], custom_output_text="Invented unrelated answer that must never be published."
+        call_tools=[], custom_output_args={"outcome": "insufficient_evidence", "quotes": [], "values": []}
     )
     monkeypatch.setattr(ModelFactory, "build_with_secret", lambda self, spec, secret: model)
     thread = await service.create_thread("issuer|viewer", "north", {})

@@ -32,6 +32,7 @@ SOURCES = {
     "coordinates": "backend/src/koinon/knowledge/provenance/coordinate_dtos.py",
     "curated": "backend/src/koinon/knowledge/curated/dtos.py",
     "provenance": "backend/src/koinon/knowledge/provenance/dtos.py",
+    "answer_release": "backend/src/koinon/answers/receipts.py",
     "answer_audit": "backend/src/koinon/assistants/audit_dtos.py",
     "indexes": "backend/src/koinon/knowledge/indexes/dtos.py",
     "identity": "backend/src/koinon/corporate_identity/dtos.py",
@@ -214,6 +215,7 @@ def render(source):
     available["koinon_sdk.organization_knowledge"] = ["OrganizationKnowledgeSnapshot"]
     available["koinon_sdk.organization_chat"] = ["OrganizationMemoryPolicy"]
     available["koinon_sdk.memory"] = ["MemoryReceipt"]
+    available["koinon_sdk.answer_release"] = ["AnswerRelease"]
     available["koinon_sdk.models"] = ["ClarificationFrame", "UsageSummary"]
     available["koinon_sdk.corporate_profiles"] = [
         "CorporatePresentationSummary", "CorporateProfileFieldCapability", "CorporateProfileSyncPolicy"

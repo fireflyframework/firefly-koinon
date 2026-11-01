@@ -302,7 +302,8 @@ async def test_admitted_rlm_policy_executes_native_codeact_and_returns_exact_imm
         result = await NativeKnowledgeEvidence(canonical, SimpleNamespace()).search(
             "owner", "tenant", question="What is the recorded scalar?", answer=True
         )
-        assert result.complete and result.data["answer"] == "42"
+        assert result.complete and "Recorded scalar: 42" in result.data["answer"]
+        assert result.data["answer"].startswith("Source excerpts")
         assert len(result.sources) == 1 and len(connection_calls) == len(budget_calls) == 1
         assert len(model_calls) == (2 if typed_terminal else 1)
         assert pre_searches == []

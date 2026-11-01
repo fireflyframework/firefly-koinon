@@ -160,9 +160,14 @@ class AssistantService:
         items = []
         activities = await self.events.activity_previews([row[1] for row in visible if row[1]])
         attachments = self._attachment_access()
+        from koinon.answers.receipts import verified_release
+
         for message, run_id, sequence in reversed(visible):
+            release = None
             if run_id:
                 await self.authorize_results(subject, tenant_id, run_id, require_memory=False)
+                run = await self.runs.find_by_id(run_id)
+                release = verified_release(message, await self.active_results(run))
             summaries = (
                 await attachments.summaries_for_message(subject, tenant_id, thread_id, message.id)
                 if attachments is not None
@@ -170,7 +175,7 @@ class AssistantService:
             )
             items.append(
                 {
-                    **message_dto(message),
+                    **message_dto(message, release_verified=release is not None),
                     **(
                         {
                             "run_id": run_id,
@@ -335,7 +340,7 @@ class AssistantService:
         return event
 
     async def run_events(self, subject: str, tenant_id: str, run_id: str, after=0) -> list[dict]:
-        await self.owned_run(subject, tenant_id, run_id)
+        run = await self.owned_run(subject, tenant_id, run_id)
         try:
             cursor = int(after)
         except (TypeError, ValueError) as exc:
@@ -351,11 +356,44 @@ class AssistantService:
                 await memory.authorize(
                     subject, tenant_id, run_id, captures=(MemoryOutputCapture(run_id, "reset", reset or 0),)
                 )
-        return [
-            {"id": str(event.sequence), "type": event.type, "data": event.data}
-            for event in sorted(rows, key=lambda event: event.sequence)
-            if event.sequence > cursor
-        ]
+        from koinon.answers.receipts import legacy_notice, message_language, verified_release
+
+        message = await self.message_repository.find_by_id(run.message_id)
+        release = verified_release(message, await self.active_results(run))
+        result = []
+        legacy_shown = False
+        for event in sorted(rows, key=lambda event: event.sequence):
+            if event.sequence <= cursor:
+                continue
+            data = event.data
+            if event.type in {"message_delta", "citation", "openui_delta", "message_metadata"}:
+                if release is None:
+                    if event.type != "message_delta" or not message.text or legacy_shown:
+                        continue
+                    data = {"text": legacy_notice(message_language(message))}
+                    legacy_shown = True
+                elif event.type == "message_delta":
+                    if event.sequence != release.publication_sequence or data != {"text": message.text}:
+                        continue
+                elif event.type == "message_metadata":
+                    if event.sequence != release.publication_sequence - 1 or data != {
+                        "answer_policy": message.answer_policy
+                    }:
+                        continue
+                elif event.type == "citation":
+                    if (
+                        event.sequence <= release.publication_sequence
+                        or data.get("citation") not in message.citations
+                    ):
+                        continue
+                elif event.type == "openui_delta":
+                    if (
+                        event.sequence <= release.publication_sequence
+                        or data.get("artifact") not in message.artifacts
+                    ):
+                        continue
+            result.append({"id": str(event.sequence), "type": event.type, "data": data})
+        return result
 
     @transactional
     async def cancel(self, subject: str, tenant_id: str, run_id: str) -> dict:
@@ -591,4 +629,16 @@ class AssistantService:
                 result_id,
                 memory_digest({"kind": rows[0].kind, "payload": rows[0].payload}),
             )
-        return {"id": rows[0].id, "run_id": run_id, "kind": rows[0].kind, "data": rows[0].payload["data"]}
+        from koinon.answers.projections import released_result_data
+        from koinon.answers.receipts import verified_release
+
+        message = await self.message_repository.find_by_id(run.message_id)
+        release = verified_release(message, await self.active_results(run))
+        if release is not None and result_id not in {pin.id for pin in release.result_pins}:
+            release = None
+        return {
+            "id": rows[0].id,
+            "run_id": run_id,
+            "kind": rows[0].kind,
+            "data": released_result_data(rows[0], release),
+        }

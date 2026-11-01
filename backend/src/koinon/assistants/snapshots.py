@@ -18,7 +18,7 @@ from koinon.assistants.memory.projections import MemoryOutputCapture
 from koinon.assistants.service import AssistantService
 from koinon.catalog.errors import AccessDenied
 from koinon.evidence.dtos import ConversationMessage, ConversationSnapshot, Presentation, SourceReference
-from koinon.evidence.ports import ConversationSnapshotPort
+from koinon.evidence.ports import ConversationOutputPort, ConversationSnapshotPort
 from koinon.tokens.repositories import PersonalTokenRepository
 
 
@@ -29,7 +29,7 @@ def digest(value) -> str:
 
 
 @service(name="assistants.snapshots")
-class ConversationSnapshots(ConversationSnapshotPort):
+class ConversationSnapshots(ConversationSnapshotPort, ConversationOutputPort):
     def __init__(
         self,
         assistants: AssistantService,
@@ -38,6 +38,73 @@ class ConversationSnapshots(ConversationSnapshotPort):
     ):
         self.assistants, self.tokens = assistants, tokens
         self.egress = egress
+
+    @transactional(read_only=True, read_from_primary=True)
+    async def authorize_output(
+        self,
+        subject: str,
+        tenant_id: str,
+        thread_id: str,
+        message_ids: list[str],
+        *,
+        snapshot: ConversationSnapshot | None = None,
+    ) -> None:
+        issuer, _, sub = subject.partition("|")
+        # The caller separately checks the transfer reader. This port checks the recorded owner
+        # and originating run tokens without treating the recipient's token as the owner's token.
+        with SecurityContextHolder.using(
+            SecurityContext(user_id=sub, attributes={"iss": issuer, "sub": sub})
+        ):
+            await self._authorize_output_owner(subject, tenant_id, thread_id, message_ids, snapshot=snapshot)
+
+    async def _authorize_output_owner(self, subject, tenant_id, thread_id, message_ids, *, snapshot):
+        from koinon.answers.receipts import legacy_notice, verified_release
+
+        if not 1 <= len(message_ids) <= 200 or len(set(message_ids)) != len(message_ids):
+            raise AccessDenied("Conversation output is unavailable", code="EVIDENCE_RELEASE_REQUIRED")
+        await self.assistants.thread(subject, tenant_id, thread_id)
+        if snapshot is not None and (
+            snapshot.thread_id != thread_id
+            or snapshot.tenant_id != tenant_id
+            or snapshot.owner_subject != subject
+            or {message.id for message in snapshot.messages} != set(message_ids)
+        ):
+            raise AccessDenied("Conversation output changed", code="EVIDENCE_RELEASE_REQUIRED")
+        rows = await self.assistants.message_repository.snapshot_messages(thread_id, message_ids)
+        if {message.id for message, _ in rows} != set(message_ids):
+            raise AccessDenied("Conversation output is unavailable", code="EVIDENCE_RELEASE_REQUIRED")
+        saved = {message.id: message for message in snapshot.messages} if snapshot else {}
+        for message, run in rows:
+            selected = saved.get(message.id)
+            if selected is not None and selected.role != message.role:
+                raise AccessDenied("Conversation output changed", code="EVIDENCE_RELEASE_REQUIRED")
+            if message.role == "user":
+                if selected is not None and selected.text != message.text:
+                    raise AccessDenied("Conversation output changed", code="EVIDENCE_RELEASE_REQUIRED")
+                continue
+            if message.role != "assistant" or run is None:
+                raise AccessDenied("Conversation output is unavailable", code="EVIDENCE_RELEASE_REQUIRED")
+            await self._origin(subject, tenant_id, run)
+            release = verified_release(message, await self.assistants.active_results(run))
+            masked = (
+                selected is not None
+                and selected.text in {legacy_notice("en"), legacy_notice("es")}
+                and not selected.source_ids
+                and not selected.result_ids
+            )
+            if release is None:
+                if masked:
+                    continue
+                raise AccessDenied(
+                    "Generate this response again from verifiable sources before using it",
+                    code="EVIDENCE_RELEASE_REQUIRED",
+                )
+            if selected is not None and (
+                selected.text != message.text
+                or set(selected.result_ids) != {pin.id for pin in release.result_pins}
+                or set(selected.source_ids) != {source.id for source in release.source_refs}
+            ):
+                raise AccessDenied("Conversation output changed", code="EVIDENCE_RELEASE_REQUIRED")
 
     async def _origin(self, subject, tenant_id, run):
         await self.assistants.validate_scope(subject, tenant_id, run.scope)
@@ -70,11 +137,18 @@ class ConversationSnapshots(ConversationSnapshotPort):
             await self.assistants.authorize_results(subject, tenant_id, run.id)
 
     async def _sources(self, subject, tenant_id, run, message):
+        from koinon.answers.receipts import verified_release
+
         references, result_ids, complete = {}, [], True
+        release = verified_release(message, await self.assistants.active_results(run))
+        selected_ids = {pin.id for pin in release.result_pins} if release else None
+        selected_sources = {source.id for source in release.source_refs} if release else None
         identifiers = tuple(
             artifact["id"]
             for artifact in message.artifacts or []
-            if artifact.get("kind") == "openui" and artifact.get("id")
+            if artifact.get("kind") == "openui"
+            and artifact.get("id")
+            and (selected_ids is None or artifact["id"] in selected_ids)
         )
         if len(identifiers) > 100:
             raise InvalidRequestException("Select fewer evidence-bearing messages", code="SNAPSHOT_TOO_LARGE")
@@ -86,6 +160,8 @@ class ConversationSnapshots(ConversationSnapshotPort):
         available = {row.id: row for row in rows}
         for artifact in message.artifacts or []:
             identifier = artifact.get("id")
+            if selected_ids is not None and identifier not in selected_ids:
+                continue
             if artifact.get("kind") != "openui" or not identifier:
                 complete = False
                 continue
@@ -117,6 +193,8 @@ class ConversationSnapshots(ConversationSnapshotPort):
                         "Source provenance exceeds the recorded scope", code="EVIDENCE_UNAVAILABLE"
                     )
                 for value in values:
+                    if selected_sources is not None and value.id not in selected_sources:
+                        continue
                     await self.assistants.catalog.get(subject, tenant_id, value.asset_id)
                     if value.used_revision is None:
                         complete = False
@@ -195,6 +273,15 @@ class ConversationSnapshots(ConversationSnapshotPort):
                 if run is not None
                 else ((), (), message.role == "user")
             )
+            from koinon.answers.receipts import legacy_notice, message_language, verified_release
+
+            released = (
+                message.role != "assistant"
+                or run is not None
+                and verified_release(message, await self.assistants.active_results(run)) is not None
+            )
+            if not released:
+                refs, results, qualified = (), (), False
             sources.update({value.id: value for value in refs})
             if run is not None and message.role == "assistant":
                 selections.setdefault(run.id, set()).update(results)
@@ -203,7 +290,7 @@ class ConversationSnapshots(ConversationSnapshotPort):
             material = {
                 "id": message.id,
                 "role": message.role,
-                "text": message.text,
+                "text": message.text if released else legacy_notice(message_language(message)),
                 "status": message.status,
                 "private_derived": private,
                 "source_ids": tuple(value.id for value in refs),

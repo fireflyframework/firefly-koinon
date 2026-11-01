@@ -90,6 +90,8 @@ nav:
           - Register applications: guides/register-applications.md
       - Knowledge behavior:
           - Organization defaults: operations/organization-knowledge.md
+          - Knowledge-only responses: reference/knowledge-only-responses.md
+          - Curated RLM evidence: reference/curated-rlm-evidence.md
   - Integrate:
       - Overview: guides/integrations.md
       - Integration essentials:

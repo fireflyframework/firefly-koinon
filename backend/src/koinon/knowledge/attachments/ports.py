@@ -36,6 +36,14 @@ class AttachmentBudget:
 
 
 @dataclass(frozen=True, slots=True)
+class PrivateTextUnit:
+    id: str
+    text: str
+    sha256: str
+    page: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class AttachmentContent:
     ref: AttachmentRef
     text: str | None = None
@@ -45,6 +53,7 @@ class AttachmentContent:
     chunk_ids: tuple[str, ...] = ()
     total_chunks: int = 0
     warnings: tuple[str, ...] = ()
+    text_units: tuple[PrivateTextUnit, ...] = ()
 
 
 class ChatAttachmentAccess(ABC):

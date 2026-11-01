@@ -16,7 +16,12 @@ from koinon.knowledge.attachments.authority import AttachmentAuthority
 from koinon.knowledge.attachments.data import AttachmentData
 from koinon.knowledge.attachments.entities import ChatAttachmentLink, timestamp
 from koinon.knowledge.attachments.mappers import from_snapshot, history_summary, reference, snapshot
-from koinon.knowledge.attachments.ports import AttachmentBudget, AttachmentContent, ChatAttachmentAccess
+from koinon.knowledge.attachments.ports import (
+    AttachmentBudget,
+    AttachmentContent,
+    ChatAttachmentAccess,
+    PrivateTextUnit,
+)
 from koinon.knowledge.attachments.repositories import (
     AttachmentChunkRepository,
     AttachmentLinkRepository,
@@ -148,6 +153,9 @@ class AttachmentService(ChatAttachmentAccess):
                             complete=True,
                             total_chunks=row.chunk_count,
                             warnings=tuple(row.warnings),
+                            text_units=(
+                                PrivateTextUnit("complete", content, sha256(content.encode()).hexdigest()),
+                            ),
                         )
                     )
                     continue
@@ -162,6 +170,7 @@ class AttachmentService(ChatAttachmentAccess):
                 )
             excerpt = header + "Selected excerpts; the complete file has not been read:\n"
             chosen = []
+            units = []
             for chunk in chunks:
                 if sha256(chunk.text.encode()).hexdigest() != chunk.sha256:
                     raise ConflictException(
@@ -172,6 +181,7 @@ class AttachmentService(ChatAttachmentAccess):
                 )
                 if await fits(candidate):
                     excerpt, chosen = candidate, [*chosen, chunk.id]
+                    units.append(PrivateTextUnit(chunk.id, chunk.text, chunk.sha256, chunk.page))
             if not chosen:
                 raise InvalidRequestException(
                     "No complete excerpt fits the remaining context; narrow the question or expand context",
@@ -185,6 +195,7 @@ class AttachmentService(ChatAttachmentAccess):
                     chunk_ids=tuple(chosen),
                     total_chunks=row.chunk_count,
                     warnings=(*row.warnings, "EXCERPTS_ONLY"),
+                    text_units=tuple(units),
                 )
             )
         await self._matching(subject, tenant_id, thread_id, refs)

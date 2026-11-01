@@ -4,6 +4,7 @@ from typing import Literal, Self
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
+from koinon.answers.receipts import AnswerRelease
 from koinon.assistants.memory.dtos import MemoryReceipt
 from koinon.evidence.dtos import SourceReference
 from koinon.evidence.rlm_scope import RlmResourceIdentifier, require_rlm_scope
@@ -205,6 +206,7 @@ class AnswerAudit(AuditValue):
     run_id: str
     provenance_status: Literal["recorded", "not_recorded"]
     source_provenance_complete: bool | None = None
+    output_release: AnswerRelease | None = None
     knowledge_settings_snapshot: OrganizationKnowledgeSnapshot | None = None
     memory: MemoryReceipt | None = None
     generations: list[GenerationReceipt] = Field(default_factory=list, max_length=100)
