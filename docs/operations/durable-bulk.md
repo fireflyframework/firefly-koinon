@@ -102,6 +102,42 @@ query execution. Object storage does not remove parser memory or local scratch.
 
 ## Retention and rollout
 
+### Recover an original affected by the pinned-receipt migration
+
+An upload can finish writing its private object while PostgreSQL rejects the
+transaction that records its pinned reference. Installations through native
+revision `koinon_0039_answer_release` can encounter this with the error
+`Immutable bulk identity or receipt`. The Library upload panel then reports
+**Upload outcome not confirmed**. This does not establish that the original is
+missing, and it does not mean document extraction has started.
+
+The additive migration `koinon_0040_bulk_pinned` allows the first validated object
+reference to be recorded. It checks the registered object key and the admitted
+size and digest, then protects that reference from replacement or removal. It
+preserves existing upload identities, receipts, counters and writer fences.
+
+To recover an affected upload:
+
+1. Deploy the verified release containing the migration and run the normal scoped
+   migration procedure. Confirm the primary database reports
+   `koinon_0040_bulk_pinned` or a later reviewed revision before continuing.
+2. Inspect the original batch and item under their existing identifiers. Keep the
+   original manifest, upload key and storage profile. Do not upload the file again,
+   reset its status or create a replacement batch.
+3. Use **Reconcile retained original** in the upload panel. Headless clients use
+   the original-recovery operation with the current batch revision and a stable
+   recovery key, as described in the [bulk intake guide](../guides/bulk-intake.md).
+   The service verifies the retained bytes and current access before recording
+   the receipt. A missing or mismatched original remains unresolved.
+4. Read the resulting receipt and batch state. Only after staging is confirmed,
+   review and submit the existing batch for ingestion. A staging receipt alone
+   does not prove extraction, embeddings or searchable knowledge are ready.
+
+If recovery has an uncertain outcome, inspect the existing operation before any
+further action. Do not disable the database guards or repeat unknown ingestion.
+
+### Preserve retained work during deployment
+
 Apply the additive primary/structured migrations and narrow role grants before
 activation. Stop old descriptor-lock bulk executors before enabling the database
 fence; they do not understand its tokens. Verified legacy local originals remain
