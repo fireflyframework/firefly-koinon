@@ -2,7 +2,7 @@
 import {registerKoinonSpanish} from '../foundations/i18n';
 import {PANEL_SPANISH} from '../foundations/panel-spanish.generated';
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
-import { JsonPipe } from '@angular/common';
+import { JsonPipe, NgTemplateOutlet } from '@angular/common';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import type { KoinonWorkbench } from '../koinon-angular';
 import { KoinonTextPipe } from '../foundations/i18n';
@@ -23,7 +23,7 @@ registerKoinonSpanish(PANEL_SPANISH);
 @Component({
   selector: 'ffk-workbench-dialogs',
   imports: [
-    JsonPipe,
+    JsonPipe, NgTemplateOutlet,
     CdkTrapFocus,
     KoinonTextPipe,
     KoinonAccountPanel,
