@@ -198,7 +198,9 @@ async def test_required_selector_runs_on_an_authorized_worker_and_merges_actual_
     owner = current_thread()
     with required(observer):
         result = await answer(instance)
-    assert result.answer == "second" and selector.thread is not owner
+    assert result.answer == "Source excerpts\n\nSource excerpt 1:\n> second"
+    assert [hit.content for hit in result.citations] == ["second"]
+    assert selector.thread is not owner
     stage = [row for row in observer.records if row[0] == "rlm.selector"]
     assert len(stage) == 1 and stage[0][2] is selector.thread
     assert cost.calls[0]["input_tokens"] == 9 and cost.calls[0]["output_tokens"] == 4
@@ -314,7 +316,9 @@ async def test_required_selector_uses_actual_native_client_sdk_wire_and_ledger(m
     try:
         with required(observer, model, output_mode):
             result = await answer(instance)
-        assert result.answer == "second" and len(observed) == 1
+        assert result.answer == "Source excerpts\n\nSource excerpt 1:\n> second"
+        assert [hit.content for hit in result.citations] == ["second"]
+        assert len(observed) == 1
         wire = observed[0]
         assert wire["max_tokens"] == 64 and "max_completion_tokens" not in wire
         assert not wire.get("tools") and "tool_choice" not in wire
