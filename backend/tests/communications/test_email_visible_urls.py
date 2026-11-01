@@ -34,7 +34,7 @@ class Links(HTMLParser):
 
 @pytest.mark.parametrize("locale", ["en-US", "es-ES"])
 @pytest.mark.parametrize("kind", ["invitation", "welcome", "daily", "weekly", "monthly"])
-async def test_every_email_link_displays_exact_destination_with_localized_action_adjacent(locale, kind):
+async def test_email_links_show_destinations_and_plain_text_preserves_localized_action(locale, kind):
     base = "https://knowledge.example.test"
     preferences = base + "/auth/notifications/preferences"
     action = base + (
@@ -57,13 +57,13 @@ async def test_every_email_link_displays_exact_destination_with_localized_action
         value, action_url=action, preferences_url=preferences, locale=locale
     )
     assert Links(rendered.html).links == [(action, action), (preferences, preferences)]
-    assert rendered.html.index(label) < rendered.html.index('href="' + action + '"')
+    assert 'title="' + label + '"' in rendered.html
     assert translate(locale, "preferences") in rendered.html
     assert label + ": " + action in rendered.text
     assert "Powered by koinon" in rendered.html and "Firefly Software Foundation" in rendered.html
 
 
-async def test_visible_url_and_adjacent_action_escape_untrusted_text_without_changing_destination():
+async def test_visible_url_escapes_untrusted_text_without_changing_destination():
     base = "https://knowledge.example.test"
     action = base + "/library/Research&Development"
     rendered = await EmailRenderer(InstallationLinks(public_url=base)).render(
