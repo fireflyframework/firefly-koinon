@@ -136,7 +136,7 @@ export class KoinonFacade {
     }
     this.pending.set(true);
     try {
-      const result = await this.api().catalog.list(id,this.libraryFilter());
+      const result = await this.api().catalog.list(id,this.libraryQuery());
       if (revision === this.revision) this.acceptLibraryPage(result);
     } catch (error) {
       if (revision === this.revision) this.error.set(this.message(error));
@@ -152,6 +152,11 @@ export class KoinonFacade {
     this.clearResults();
     await this.loadLibrary({page:1,q:"",kind:undefined,status:undefined,tag:undefined,format:undefined});
   }
+  private libraryQuery():CatalogFilter {
+    const filter=this.libraryFilter();
+    const home=!this.parentId()&&!this.workspaceId()&&!this.projectId();
+    return {...filter,kind:home?'workspace':filter.kind,parent_id:this.parentId()||undefined,workspace_id:this.workspaceId()||undefined};
+  }
   async refresh(): Promise<void> {
     const revision = ++this.revision;
     this.pending.set(true);
@@ -159,7 +164,7 @@ export class KoinonFacade {
     try {
       const page = await this.api().catalog.list(
         this.tenantId(),
-        {...this.libraryFilter(),parent_id:this.parentId()||undefined,workspace_id:this.workspaceId()||undefined},
+        this.libraryQuery(),
       );
       if (revision === this.revision) this.acceptLibraryPage(page);
     } catch (error) {
@@ -243,10 +248,10 @@ export class KoinonFacade {
       this.capabilitiesError.set(this.message(error));
     }
   }
-  async upload(form: FormData): Promise<boolean> {
+  async upload(form: FormData, options: RequestOptions = {}): Promise<boolean> {
     const scope=this.scopeStamp();
     const done=await this.action(
-      () => this.api().sources.upload(this.tenantId(), form),
+      () => this.api().sources.upload(this.tenantId(), form, options),
       (response) => {
         const added = [response.source, ...response.assets];
         this.entries.update((rows) => [

@@ -1,0 +1,164 @@
+/* Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 */
+:host {
+  display: block;
+}
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+label {
+  display: block;
+  color: var(--ui-muted);
+  font-size: 14px;
+}
+select {
+  box-sizing: border-box;
+  min-height: 44px;
+  width: 100%;
+  border: 1px solid var(--ui-line);
+  border-radius: 8px;
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  padding: 8px 12px;
+  font: inherit;
+}
+select:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 2px;
+}
+.upload-location {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.upload-location > div {
+  flex: 1;
+  min-width: 0;
+}
+.upload-location strong {
+  display: block;
+  margin-top: 8px;
+  overflow-wrap: anywhere;
+}
+.upload-folder-picker {
+  border: 1px solid var(--ui-line);
+  border-radius: 8px;
+  padding: 10px;
+  max-height: 280px;
+  overflow: auto;
+}
+.drop-zone {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  border: 1px dashed var(--ui-line);
+  border-radius: 10px;
+  padding: 24px 16px;
+  background: var(--ui-subtle);
+  text-align: center;
+}
+.drop-zone > ffk-icon {
+  color: var(--ui-muted);
+  font-size: 26px;
+}
+.drop-zone > span {
+  color: var(--ui-muted);
+  font-size: 14px;
+}
+.drop-zone input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.drop-zone:focus-within {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 3px;
+}
+.upload-preview > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--ui-line);
+}
+.upload-preview span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.upload-preview small {
+  color: var(--ui-muted);
+  white-space: nowrap;
+}
+.upload-progress {
+  display: grid;
+  gap: 6px;
+  overflow-wrap: anywhere;
+}
+.field-help,
+.reference {
+  color: var(--ui-muted);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.retained {
+  display: grid;
+  gap: 16px;
+}
+.retained h3 {
+  font-size: 18px;
+  margin: 0;
+}
+.retained p {
+  margin: 0;
+  line-height: 1.6;
+}
+.record {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--ui-line);
+}
+.record > div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.record span {
+  color: var(--ui-muted);
+  font-size: 14px;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+@media (max-width: 600px) {
+  .drop-zone {
+    padding: 20px 12px;
+  }
+  .upload-preview small {
+    width: 100%;
+    margin-inline-start: 28px;
+  }
+}
+
+.destination-label {
+  display: block;
+  color: var(--ui-muted);
+  font-size: 14px;
+}

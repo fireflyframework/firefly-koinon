@@ -368,3 +368,41 @@ it('clears collection filters when changing workspace while retaining sort and p
     format: undefined,
   });
 });
+
+it('requests only server-paginated spaces at the Library home on bootstrap, refresh and tenant changes', async () => {
+  const queries: RequestOptions[] = [];
+  const facade = setup(async (_method, path, options) => {
+    if (path === '/context') return context;
+    queries.push(options || {});
+    return { items: [entry('workspace')], total: 1, page: 1, page_size: 25, pages: 1 };
+  });
+  await facade.bootstrap();
+  expect(queries[0]?.query).toMatchObject({ view: 'library', kind: 'workspace', page: 1 });
+  expect(facade.libraryPage().total).toBe(1);
+  await facade.refresh();
+  expect(queries.at(-1)?.query?.['kind']).toBe('workspace');
+  await facade.selectTenant('tenant-two');
+  expect(queries.at(-1)?.query?.['kind']).toBe('workspace');
+});
+it('preserves child-folder kind filters and keeps global knowledge search separate', async () => {
+  const calls: { path: string; options: RequestOptions }[] = [];
+  const facade = setup(async (_method, path, options) => {
+    if (path === '/context') return context;
+    calls.push({ path, options: options || {} });
+    return path.endsWith('/search') ? { sources: [], answer: null } : { items: [] };
+  });
+  await facade.bootstrap();
+  facade.workspaceId.set('workspace');
+  facade.projectId.set('project');
+  facade.parentId.set('folder');
+  await facade.loadLibrary({ kind: 'document', page: 2 });
+  expect(calls.at(-1)?.options.query).toMatchObject({
+    kind: 'document',
+    parent_id: 'folder',
+    workspace_id: 'workspace',
+    page: 2,
+  });
+  await facade.search('operating policy', false);
+  expect(calls.at(-1)?.path).toContain('/search');
+  expect(calls.at(-1)?.options.body).not.toHaveProperty('kind');
+});
