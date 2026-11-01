@@ -79,9 +79,22 @@ async def test_knowledge_confirmation_rejects_a_changed_ingestion_head_while_his
         async def document_revision(self, **arguments):
             return head
 
+    validated_outputs = []
+
     class Snapshots:
         async def snapshot(self, *args):
             return snapshot
+
+        async def authorize_output(self, subject, tenant_id, thread_id, message_ids, *, snapshot=None):
+            assert (subject, tenant_id, thread_id, message_ids) == (
+                "issuer|owner",
+                "north",
+                "thread",
+                ["answer"],
+            )
+            assert snapshot.messages[0].text == text
+            assert snapshot.sources == (reference,)
+            validated_outputs.append(snapshot.messages[0].id)
 
     class Sources:
         async def resolve(self, subject, tenant_id, sources):
@@ -93,7 +106,9 @@ async def test_knowledge_confirmation_rejects_a_changed_ingestion_head_while_his
 
         resolve_for_write = resolve
 
-    service.authority.snapshots = SimpleNamespace(get=lambda: Snapshots())
+    selected = Snapshots()
+    service.authority.snapshots = SimpleNamespace(get=lambda: selected)
+    service.authority.outputs = SimpleNamespace(get=lambda: selected)
     service.authority.sources = SimpleNamespace(get=lambda: Sources())
     preview = await service.preview(
         "issuer|owner",
@@ -121,6 +136,7 @@ async def test_knowledge_confirmation_rejects_a_changed_ingestion_head_while_his
             "explicit",
         )
     assert failure.value.code == "KNOWLEDGE_SOURCE_CHANGED"
+    assert validated_outputs == ["answer"]
     await service.authority.evidence("issuer|owner", "north", preview.evidence, exact=False)
 
 

@@ -22,7 +22,7 @@ timeout fired. Now: the failure is logged + emitted as a single
 ``event: error`` frame, then the stream closes cleanly.
 
 The shape of the error frame is fixed (``{"code": "stream_error",
-"message": <stringified exc>}``) so consuming agents can branch on it
+"message": <fixed safe message>}``) so consuming agents can branch on it
 without parsing the human-readable detail.
 
 These error paths run in RAG mode (``dispatcher.is_rag`` is ``True``),
@@ -136,7 +136,8 @@ async def test_user_mid_stream_exception_emits_error_frame() -> None:
     assert len(events) == 1, f"expected one error frame, got {events}"
     assert events[0]["event"] == "error"
     assert events[0]["data"]["code"] == "stream_error"
-    assert "retrieval boom" in events[0]["data"]["message"]
+    assert events[0]["data"]["message"] == "The answer could not be completed."
+    assert "retrieval boom" not in b"".join(frames).decode()
 
 
 @pytest.mark.asyncio
@@ -165,7 +166,8 @@ async def test_user_answer_phase_failure_emits_error_frame() -> None:
     assert len(events) == 1
     assert events[0]["event"] == "error"
     assert events[0]["data"]["code"] == "stream_error"
-    assert "answer boom" in events[0]["data"]["message"]
+    assert events[0]["data"]["message"] == "The answer could not be completed."
+    assert "answer boom" not in b"".join(frames).decode()
 
 
 # ---------------------------------------------------------------------
@@ -266,4 +268,5 @@ async def test_agent_mid_stream_exception_emits_error_frame() -> None:
     assert len(events) == 1, f"expected one error frame, got {events}"
     assert events[0]["event"] == "error"
     assert events[0]["data"]["code"] == "stream_error"
-    assert "retrieval boom" in events[0]["data"]["message"]
+    assert events[0]["data"]["message"] == "The answer could not be completed."
+    assert "retrieval boom" not in b"".join(frames).decode()

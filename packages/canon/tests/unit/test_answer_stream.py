@@ -192,7 +192,7 @@ async def test_rag_emits_hit_per_citation_then_final() -> None:
 
 
 @pytest.mark.asyncio
-async def test_failing_answer_emits_single_error_frame() -> None:
+async def test_failing_answer_emits_single_error_frame(caplog) -> None:
     answer_service = AsyncMock()
     retrieval = _Retrieval(hits=[])
     answer_service._retrieval = retrieval
@@ -210,4 +210,7 @@ async def test_failing_answer_emits_single_error_frame() -> None:
     assert len(events) == 1, f"expected one error frame, got {events}"
     assert events[0]["event"] == "error"
     assert events[0]["data"]["code"] == "stream_error"
-    assert "answer boom" in events[0]["data"]["message"]
+    assert events[0]["data"]["message"] == "The answer could not be completed."
+    assert "answer boom" not in b"".join(frames).decode()
+    assert "answer boom" not in caplog.text
+    assert "RuntimeError" in caplog.text

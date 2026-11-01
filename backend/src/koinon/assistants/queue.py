@@ -1,5 +1,6 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
+from contextlib import suppress
 from datetime import timedelta
 
 from pyfly.container import service
@@ -178,18 +179,22 @@ class AssistantQueue:
                 raise InvalidRequestException("Tool result is outside this answer", code="EVIDENCE_DENIED")
         return await self.assistants.record_event(run, "tool_activity", {"tool_activity": value})
 
-    @transactional
     async def provenance_failure(self, run_id, worker_id, code):
-        from koinon.assistants.grounding import refusal_message
+        run = await self.assistants.runs.find_by_id(run_id)
+        from koinon.answers.dtos import EvidenceAnswerPlan
+        from koinon.catalog.errors import AccessDenied
 
-        run = await self.locked(run_id, worker_id)
         message = await self.assistants.message_repository.find_by_id(run.message_id)
         preferences = message.presentation or {}
         language = preferences.get("response_language", "auto")
-        text = refusal_message(preferences.get("locale", "en-US") if language == "auto" else language, code)
-        await self.policy(run_id, worker_id, {"outcome": "refused", "code": code, "reason": text})
-        if not message.text:
-            await self.append(run_id, worker_id, "message_delta", {"text": text})
+        with suppress(AccessDenied):
+            await self.release_answer(
+                run_id,
+                worker_id,
+                EvidenceAnswerPlan(outcome="insufficient_evidence"),
+                preferences.get("locale", "en-US") if language == "auto" else language,
+                refusal_code=code,
+            )
         await self.finish(run_id, worker_id, code=code)
 
     @transactional
@@ -569,6 +574,24 @@ class AssistantQueue:
             payload["generation_id"] = generation_id
         if capture is not None:
             payload.update(await self.native_receipts(run, assets, capture, result_id, generation_id))
+            from koinon.answers.facts import fact_value
+            from koinon.knowledge.answer_evidence import answer_facts
+
+            items = []
+            for fact in answer_facts(capture, result_id):
+                candidate = [*items, fact_value(fact)]
+                sidecar = {"version": 1, "items": candidate}
+                if (
+                    len(
+                        json.dumps(
+                            {**payload, "answer_facts": sidecar}, ensure_ascii=False, allow_nan=False
+                        ).encode()
+                    )
+                    > 524288
+                ):
+                    break
+                items = candidate
+            payload["answer_facts"] = {"version": 1, "items": items}
         if len(json.dumps(payload, ensure_ascii=False, allow_nan=False).encode()) > 524288:
             raise InvalidRequestException("Evidence exceeds the supported size", code="EVIDENCE_TOO_LARGE")
         await self.check_audit_budget(run, payload)
@@ -633,3 +656,177 @@ class AssistantQueue:
         message.answer_policy = policy
         await self.assistants.message_repository.save(message)
         await self.assistants.record_event(run, "message_metadata", {"answer_policy": policy})
+
+    @transactional
+    async def fact_pool(self, run_id: str, worker_id: str):
+        from koinon.answers.facts import recorded_facts
+
+        run = await self.locked(run_id, worker_id)
+        return tuple(
+            fact
+            for row in await self.assistants.active_results(run)
+            if row.kind in {"search", "query"}
+            for fact in recorded_facts(row.payload.get("answer_facts"))
+            if fact.result_id == row.id
+        )
+
+    @transactional
+    async def release_answer(
+        self, run_id, worker_id, plan, language, *, private_facts=(), refusal_code="NO_MATCHING_EVIDENCE"
+    ):
+        from koinon.answers.receipts import AnswerRelease, ResultPin, digest, text_digest
+        from koinon.answers.rendering import render_answer
+        from koinon.assistants.entities import ToolResult
+        from koinon.assistants.lifecycle import identifier
+
+        run = await self.locked(run_id, worker_id)
+        thread = await self.assistants.threads.find_by_id(run.thread_id)
+        agent = await self.assistants.scoped(self.assistants.agents, run.tenant_id, run.agent_id)
+        provider = await self.assistants.scoped(self.assistants.providers, run.tenant_id, agent.provider_id)
+        if (
+            not agent.enabled
+            or not provider.enabled
+            or agent.revision != run.agent_revision
+            or provider.revision != run.provider_revision
+        ):
+            raise ConflictException(
+                "Agent configuration changed. Start the answer again.", code="CONFIGURATION_CHANGED"
+            )
+        await self.assistants.validate_scope(thread.subject, run.tenant_id, run.scope, agent.scope)
+        await self.assistants.authorize_results(thread.subject, run.tenant_id, run.id)
+        rows = await self.assistants.active_results(run)
+        if any(row.kind == "answer_release" for row in rows):
+            raise ConflictException(
+                "This answer already has an immutable release", code="ANSWER_ALREADY_RELEASED"
+            )
+        from koinon.answers.private import verified_private_facts
+
+        access = self.assistants._attachment_access()
+        refs = await access.for_run(thread.subject, run.tenant_id, thread.id, run.id) if access else ()
+        private = verified_private_facts(private_facts, rows, refs)
+        facts = (*await self.fact_pool(run_id, worker_id), *private)
+        rendered = render_answer(
+            plan, facts, language, private_fact_ids=frozenset(fact.id for fact in private)
+        )
+        if plan.outcome == "insufficient_evidence" and refusal_code != "NO_MATCHING_EVIDENCE":
+            from dataclasses import replace
+
+            from koinon.assistants.grounding import refusal_message
+
+            allowed_codes = {
+                "KNOWLEDGE_ONLY",
+                "FACTUAL_EVIDENCE_REQUIRED",
+                "EVIDENCE_PROVENANCE_REQUIRED",
+                "EVIDENCE_UNAVAILABLE",
+                "EVIDENCE_BUDGET_EXCEEDED",
+                "RLM_DOCUMENT_VIEWS_REQUIRED",
+                "KNOWLEDGE_RLM_UNQUALIFIED",
+                "KNOWLEDGE_SETTINGS_SNAPSHOT_REQUIRED",
+                "KNOWLEDGE_SETTINGS_SNAPSHOT_INVALID",
+            }
+            if refusal_code not in allowed_codes:
+                raise ValueError("Unsupported server refusal policy")
+            rendered = replace(rendered, text=refusal_message(language, refusal_code))
+        generations = [row for row in rows if row.kind == "generation"]
+        generation_id = (
+            max(generations, key=lambda row: (row.payload["generation"]["start_sequence"], row.created_at)).id
+            if generations
+            else None
+        )
+        if plan.outcome == "answer" and generation_id is None:
+            raise InvalidRequestException(
+                "A factual answer needs its current generation binding", code="ANSWER_GENERATION_REQUIRED"
+            )
+        message = await self.assistants.message_repository.find_by_id(run.message_id)
+        if message.text:
+            raise ConflictException("Unreleased draft text cannot be promoted", code="ANSWER_DRAFT_PRESENT")
+        policy = {
+            "outcome": "grounded" if plan.outcome == "answer" else "refused",
+            "code": "VERIFIED_EVIDENCE_V1" if plan.outcome == "answer" else refusal_code,
+        }
+        selected = {fact.result_id for fact in facts if fact.id in rendered.fact_ids}
+        proposals = {
+            row.id for row in rows if row.kind == "proposal" and row.payload.get("attempt") == run.attempts
+        }
+        if proposals and (
+            rendered.fact_ids
+            or refusal_code in {"NO_MATCHING_EVIDENCE", "KNOWLEDGE_ONLY", "FACTUAL_EVIDENCE_REQUIRED"}
+        ):
+            from dataclasses import replace
+
+            notice = (
+                "Se propuso un cambio de conocimiento. Revisa su estado a continuación."
+                if language.lower().startswith("es")
+                else "A knowledge change was proposed. Review its status below."
+            )
+            rendered = replace(
+                rendered, text=rendered.text + "\n\n" + notice if rendered.fact_ids else notice
+            )
+            if not rendered.fact_ids and refusal_code in {
+                "NO_MATCHING_EVIDENCE",
+                "KNOWLEDGE_ONLY",
+                "FACTUAL_EVIDENCE_REQUIRED",
+            }:
+                policy = {"outcome": "review_required", "code": "REVIEW_REQUIRED"}
+        if policy["outcome"] != "grounded":
+            policy["reason"] = rendered.text
+        artifacts = [value for value in message.artifacts if value.get("id") in selected | proposals]
+        receipt = AnswerRelease(
+            run_id=run.id,
+            message_id=message.id,
+            tenant_id=run.tenant_id,
+            generation_id=generation_id,
+            publication_sequence=run.sequence + 2,
+            outcome="grounded"
+            if policy["outcome"] == "grounded"
+            else "review_required"
+            if policy["outcome"] == "review_required"
+            else "refused",
+            text_sha256=text_digest(rendered.text),
+            citations_sha256=digest(list(rendered.citations)),
+            artifacts_sha256=digest(artifacts),
+            policy_sha256=digest(policy),
+            fact_ids=rendered.fact_ids,
+            result_pins=tuple(
+                ResultPin(id=row.id, sha256=digest({"kind": row.kind, "payload": row.payload}))
+                for row in rows
+                if row.id in selected
+            ),
+            source_refs=rendered.source_refs,
+            created_at=timestamp(),
+        )
+        data = receipt.model_dump(mode="json")
+        from koinon.answers.contexts import context_hash
+
+        reset_sequence = await self.assistants.events.latest_reset(run.id) or 0
+        seal = digest(data)
+        payload = {
+            "release": data,
+            "seal_sha256": seal,
+            "reset_sequence": reset_sequence,
+            "context_sha256": context_hash(seal, reset_sequence),
+            "origin_token_id": run.access_token_id,
+            "generation_id": generation_id,
+        }
+        import json
+
+        if len(json.dumps(payload, ensure_ascii=False, allow_nan=False).encode()) > 524288:
+            raise ValueError("The selected answer receipt exceeds the publication bound")
+        await self.check_audit_budget(run, payload)
+        await self.assistants.results.save(
+            ToolResult(id=identifier(), run_id=run.id, kind="answer_release", payload=payload)
+        )
+        message.text, message.citations, message.answer_policy = (
+            rendered.text,
+            list(rendered.citations),
+            policy,
+        )
+        message.artifacts = artifacts
+        await self.assistants.message_repository.save(message)
+        await self.assistants.record_event(run, "message_metadata", {"answer_policy": policy})
+        await self.assistants.record_event(run, "message_delta", {"text": rendered.text})
+        for citation in rendered.citations:
+            await self.assistants.record_event(run, "citation", {"citation": citation})
+        for artifact in message.artifacts:
+            await self.assistants.record_event(run, "openui_delta", {"artifact": artifact})
+        return receipt

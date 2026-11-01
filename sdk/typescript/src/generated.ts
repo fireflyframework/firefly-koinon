@@ -49,6 +49,7 @@ export interface AnswerAudit {
  "run_id": string;
  "provenance_status": "recorded" | "not_recorded";
  "source_provenance_complete"?: boolean | null;
+ "output_release"?: AnswerRelease | null;
  "knowledge_settings_snapshot"?: OrganizationKnowledgeSnapshot | null;
  "memory"?: MemoryReceipt | null;
  "generations"?: Array<GenerationReceipt>;
@@ -57,6 +58,24 @@ export interface AnswerAudit {
  "native_reads"?: Array<NativeReadReceipt>;
  "sql_attempts"?: Array<SqlAttemptReceipt>;
  "rlm_tools"?: Array<RlmToolReceipt> | null;
+}
+export interface AnswerRelease {
+ "version"?: 1;
+ "policy_version"?: "knowledge-only-v1";
+ "run_id": string;
+ "message_id": string;
+ "tenant_id": string;
+ "generation_id"?: string | null;
+ "publication_sequence": number;
+ "outcome": "grounded" | "refused" | "review_required";
+ "text_sha256": string;
+ "citations_sha256": string;
+ "artifacts_sha256": string;
+ "policy_sha256": string;
+ "fact_ids"?: Array<string>;
+ "result_pins"?: Array<ResultPin>;
+ "source_refs"?: Array<SourceReference>;
+ "created_at": string;
 }
 export interface AssetAvailability {
  "phase"?: "unknown" | "queued" | "processing" | "indexing" | "complete" | "failed" | "cancelled" | "reconciliation_required";
@@ -1912,6 +1931,10 @@ export interface ReplaceTable {
 export interface ResultColumn {
  "name": string;
  "data_type": string;
+}
+export interface ResultPin {
+ "id": string;
+ "sha256": string;
 }
 export interface RlmToolReceipt {
  "result_id": string;

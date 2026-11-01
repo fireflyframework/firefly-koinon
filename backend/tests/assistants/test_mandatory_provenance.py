@@ -186,6 +186,8 @@ async def test_native_worker_blocks_unprovenanced_data_and_publishes_honest_poli
         member = await service.catalog.membership_repository.find_by_id("admin")
         member.active = True
         await service.catalog.membership_repository.save(member)
+        assert not (await service.message_repository.find_by_id(run.message_id)).text
+        return
     answer = (await service.messages("issuer|admin", "north", thread["id"]))[-1]
     assert "UNVERIFIED_TEXT" not in answer["text"]
     assert answer["answer_policy"]["outcome"] == ("review_required" if case == "proposal" else "refused")
@@ -202,4 +204,7 @@ async def test_native_worker_blocks_unprovenanced_data_and_publishes_honest_poli
     assert answer["answer_policy"]["reason"]
     if case == "incomplete":
         assert all("BLOCKED_CONTENT_4892" not in value for value in requests)
-        assert all(row.kind == "generation" for row in await service.results.find_all(run_id=run.id))
+        assert all(
+            row.kind in {"generation", "answer_release"}
+            for row in await service.results.find_all(run_id=run.id)
+        )

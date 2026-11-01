@@ -22,6 +22,7 @@ from koinon_sdk.answer_audit import (
     RlmToolReceipt,
     SqlAttemptReceipt,
 )
+from koinon_sdk.answer_release import AnswerRelease, ResultPin
 from koinon_sdk.attachments import (
     AddKnowledge,
     AttachmentCapabilities,
@@ -524,6 +525,8 @@ __all__ = [
     "NativeReadOrigin",
     "NativeTableSnapshot",
     "AnswerAudit",
+    "AnswerRelease",
+    "ResultPin",
     "GenerationReceipt",
     "NativeReadReceipt",
     "SqlAttemptReceipt",

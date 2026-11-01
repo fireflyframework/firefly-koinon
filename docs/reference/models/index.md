@@ -3,7 +3,7 @@
 
 # Wire models
 
-The canonical schema contains 430 definitions and 421 named model aliases. Supporting definitions are included so every schema reference can be followed. Language-specific generated names can differ from wire names; consult the SDK imports in the workflow guides.
+The canonical schema contains 432 definitions and 421 named model aliases. Supporting definitions are included so every schema reference can be followed. Language-specific generated names can differ from wire names; consult the SDK imports in the workflow guides.
 
 Each page lists field presence, nullability, defaults and validation constraints. The downloadable [complete schema](../sdk-schemas.json) remains the machine-readable contract.
 
@@ -24,6 +24,7 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`AgenticCapability`](agenticcapability.md)
 - [`AnswerAudit`](answeraudit.md)
 - [`AnswerPolicy`](answerpolicy.md)
+- [`AnswerRelease`](answerrelease.md)
 - [`AssetAvailability`](assetavailability.md)
 - [`AttachmentCapabilities`](attachmentcapabilities.md)
 - [`AttachmentEvidence`](attachmentevidence.md)
@@ -437,6 +438,7 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`ReplaceDocument`](replacedocument.md)
 - [`ReplaceTable`](replacetable.md)
 - [`ResultColumn`](resultcolumn.md)
+- [`ResultPin`](resultpin.md)
 - [`RlmToolReceipt`](rlmtoolreceipt.md)
 - [`RoleObservation`](roleobservation.md)
 - [`RunInput`](runinput.md)

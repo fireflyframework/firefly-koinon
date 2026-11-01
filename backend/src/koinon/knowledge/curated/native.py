@@ -132,6 +132,7 @@ class NativeCuratedKnowledge(NativeKnowledgeCommitPort):
             )
 
         async def validate():
+            await self.authority.output_check(row.subject, row.tenant_id, row.request_json)
             current = await self.authority.destination(row.subject, row.tenant_id, preview.destination.id)
             if current != preview.destination:
                 raise ConflictException(

@@ -90,6 +90,8 @@ nav:
           - Register applications: guides/register-applications.md
       - Knowledge behavior:
           - Organization defaults: operations/organization-knowledge.md
+          - Knowledge-only responses: reference/knowledge-only-responses.md
+          - Curated RLM evidence: reference/curated-rlm-evidence.md
   - Integrate:
       - Overview: guides/integrations.md
       - Integration essentials:
@@ -146,7 +148,8 @@ nav:
           - Migrations: operations/migrations.md
           - Backup and restore: operations/backup-restore.md
       - Release evidence:
-          - Release notes: releases/26.11.3.md
+          - Release notes: releases/26.11.4.md
+          - Version 26.11.3: releases/26.11.3.md
           - Version 26.11.2: releases/26.11.2.md
           - Version 26.11.1: releases/26.11.1.md
           - Version 26.10.2: releases/26.10.2.md

@@ -2,12 +2,15 @@
 # SPDX-License-Identifier: Apache-2.0
 """Translate authorized immutable file references into native user content."""
 
+import json
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
+from hashlib import sha256
 
 from pyfly.agentic.types import BinaryContent, UserContent
 from pyfly.kernel import InvalidRequestException
 
+from koinon.knowledge.answer_evidence import AnswerFact
 from koinon.knowledge.attachments.ports import AttachmentBudget, AttachmentRef, ChatAttachmentAccess
 
 IMAGE_MEDIA_TYPES = frozenset({"image/jpeg", "image/png", "image/webp", "image/gif"})
@@ -34,6 +37,7 @@ class AttachmentInput:
     prompt: str | Sequence[UserContent]
     text: str
     evidence: dict
+    facts: tuple[AnswerFact, ...] = ()
 
 
 async def prepare_attachment_input(
@@ -66,9 +70,37 @@ async def prepare_attachment_input(
         raise InvalidRequestException(
             "Private attachment selection changed", code="ATTACHMENT_REFERENCE_CHANGED"
         )
-    text = with_private_text(
-        question, "\n\n".join(private_file_text(row.ref, row.text) for row in content if row.text)
+    facts, indices = [], {}
+    for row in content:
+        records = []
+        for unit in row.text_units:
+            if sha256(unit.text.encode()).hexdigest() != unit.sha256:
+                raise InvalidRequestException(
+                    "Private extracted text integrity changed", code="ATTACHMENT_DIGEST_MISMATCH"
+                )
+            binding = json.dumps(
+                [row.ref.id, row.ref.sha256, row.ref.revision, unit.id, unit.sha256, unit.page],
+                separators=(",", ":"),
+            )
+            lineage = sha256(binding.encode()).hexdigest()
+            fact_id = sha256(("private:" + lineage).encode()).hexdigest()
+            facts.append(
+                AnswerFact(fact_id, "", "quote", row.ref.filename, (), text=unit.text, lineage_sha256=lineage)
+            )
+            records.append(
+                {
+                    "id": fact_id,
+                    "lineage_sha256": lineage,
+                    "text_sha256": unit.sha256,
+                    "unit_id": unit.id,
+                    "page": unit.page,
+                }
+            )
+        indices[row.ref.id] = records
+    source_text = "\n\n".join(
+        "File: " + fact.label + "\nVerified fact ID: " + fact.id + "\n" + fact.text for fact in facts
     )
+    text = with_private_text(question, source_text)
     if not await fits_text(text):
         raise InvalidRequestException(
             "Private attachment text exceeds the remaining context", code="ATTACHMENT_CONTEXT_BUDGET_EXCEEDED"
@@ -92,6 +124,7 @@ async def prepare_attachment_input(
     return AttachmentInput(
         prompt=prompt,
         text=text,
+        facts=tuple(facts),
         evidence={
             "attachments": [
                 {
@@ -104,6 +137,7 @@ async def prepare_attachment_input(
                     "chunk_ids": list(row.chunk_ids),
                     "total_chunks": row.total_chunks,
                     "warnings": list(row.warnings),
+                    "text_units": indices[row.ref.id],
                 }
                 for row in content
             ]

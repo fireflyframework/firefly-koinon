@@ -166,8 +166,8 @@ async def stream_answer_sse(
         # to leave the SSE socket open with no terminal frame so the
         # client hung until idle timeout. Emit one well-formed ``error``
         # frame, log the cause, then close cleanly.
-        logger.exception("answer stream failed mid-stream: %s", exc)
+        logger.error("answer stream failed mid-stream (%s)", type(exc).__name__)
         yield _sse_frame(
             "error",
-            {"code": "stream_error", "message": str(exc)},
+            {"code": "stream_error", "message": "The answer could not be completed."},
         )

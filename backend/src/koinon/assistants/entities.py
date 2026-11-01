@@ -3,9 +3,23 @@
 from datetime import UTC, datetime
 
 from pyfly.data.relational.sqlalchemy import Base, UtcDateTime
-from sqlalchemy import JSON, ForeignKey, Index, LargeBinary, String, Text, UniqueConstraint
+from sqlalchemy import (
+    DDL,
+    JSON,
+    ForeignKey,
+    Index,
+    LargeBinary,
+    String,
+    Text,
+    UniqueConstraint,
+    case,
+    event,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.sql.expression import Grouping
 
+from koinon.answers.guards import release_guards
 from koinon.assistants.history.entities import ChatFolder
 
 
@@ -130,3 +144,26 @@ class ToolResult(Base):
     kind: Mapped[str] = mapped_column(String(32))
     payload: Mapped[dict] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=now)
+
+
+Index(
+    "uq_koinon_answer_release_generation",
+    ToolResult.run_id,
+    func.coalesce(ToolResult.payload["generation_id"].as_string(), ""),
+    Grouping(
+        case(
+            (
+                ToolResult.payload["generation_id"].as_string().is_(None),
+                func.coalesce(ToolResult.payload["reset_sequence"].as_integer(), 0),
+            ),
+            else_=0,
+        )
+    ),
+    unique=True,
+    sqlite_where=ToolResult.kind == "answer_release",
+    postgresql_where=ToolResult.kind == "answer_release",
+)
+
+for dialect in ("sqlite", "postgresql"):
+    for statement in release_guards(dialect)[1:]:
+        event.listen(ToolResult.__table__, "after_create", DDL(statement).execute_if(dialect=dialect))

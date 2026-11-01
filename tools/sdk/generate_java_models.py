@@ -258,11 +258,21 @@ for name, definition in defs.items():
     accessors = []
     added_memory_fields = {
         "FolderCreate": "memory_enabled", "FolderPatch": "memory_enabled", "ChatFolder": "memory_enabled",
-        "OrganizationChatSettings": "memory", "OrganizationChatSettingsInput": "memory", "AnswerAudit": "memory",
+        "OrganizationChatSettings": "memory", "OrganizationChatSettingsInput": "memory",
         "ShareCreate": "include_remembered_context", "ShareReview": "remembered_context_present",
         "KnowledgeIntentInput": "include_remembered_context", "KnowledgeIntent": "remembered_context_present",
         "KnowledgeConfirmation": "include_remembered_context", "DocumentEvidence": "basis", "StructuredEvidence": "basis",
     }
+    if name == "AnswerAudit":
+        for omitted in ({"output_release"}, {"output_release", "memory"}):
+            previous = [field for field in fields if field[0] not in omitted]
+            body += (
+                "    public AnswerAudit("
+                + ", ".join(kind + " " + key for _, key, kind, _, _ in previous)
+                + "){this("
+                + ",".join("null" if wire in omitted else key for wire, key, _, _, _ in fields)
+                + ");}\n"
+            )
     if name in added_memory_fields:
         added = added_memory_fields[name]
         previous = [field for field in fields if field[0] != added]

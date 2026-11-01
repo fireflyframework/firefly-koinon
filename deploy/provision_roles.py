@@ -19,6 +19,44 @@ ROLES = (
 
 
 def grant_table(connection, table, role, *, document_control=False):
+    if table == "koinon_operator_delivery_contacts":
+        from koinon.communications.contact_guards import (
+            BINDING_COLUMNS,
+            IMMUTABLE_COLUMNS,
+            OBSERVATION_COLUMNS,
+        )
+
+        connection.execute(
+            sql.SQL("REVOKE ALL ON TABLE public.{} FROM {}").format(
+                sql.Identifier(table), sql.Identifier(role)
+            )
+        )
+        columns = sql.SQL(", ").join(
+            sql.Identifier(name)
+            for name in (
+                *IMMUTABLE_COLUMNS,
+                *OBSERVATION_COLUMNS,
+                *BINDING_COLUMNS,
+                "revision",
+            )
+        )
+        for privilege in ("INSERT", "UPDATE"):
+            connection.execute(
+                sql.SQL("REVOKE {} ({}) ON TABLE public.{} FROM {}").format(
+                    sql.SQL(privilege),
+                    columns,
+                    sql.Identifier(table),
+                    sql.Identifier(role),
+                )
+            )
+        connection.execute(
+            sql.SQL("GRANT SELECT, UPDATE ({}) ON TABLE public.{} TO {}").format(
+                sql.SQL(", ").join(sql.Identifier(name) for name in BINDING_COLUMNS),
+                sql.Identifier(table),
+                sql.Identifier(role),
+            )
+        )
+        return
     if table == "koinon_installation_runs":
         connection.execute(
             sql.SQL("REVOKE ALL ON TABLE public.{} FROM {}").format(
@@ -242,13 +280,171 @@ def grant_sequence(connection, name, role):
     )
 
 
-def provision(*, grants=False, check=False):
+CONTACT_OPERATOR_READ_TABLES = (
+    "lattice_tenants",
+    "lattice_memberships",
+    "koinon_identity_providers",
+    "koinon_identity_mappings",
+    "koinon_identity_grants",
+    "koinon_bootstrap_identity_grants",
+    "koinon_communication_policies",
+)
+CONTACT_OPERATOR_APPEND_TABLES = ("lattice_audit", "koinon_communication_outbox")
+
+
+def _contact_operator_role(connection, role):
+    flags = connection.execute(
+        "SELECT rolsuper,rolbypassrls,rolcreaterole,rolcreatedb,rolreplication,rolinherit "
+        "FROM pg_roles WHERE rolname=%s",
+        (role,),
+    ).fetchone()
+    memberships = connection.execute(
+        "SELECT 1 FROM pg_auth_members m JOIN pg_roles r ON r.oid=m.member "
+        "WHERE r.rolname=%s LIMIT 1",
+        (role,),
+    ).fetchone()
+    creates = connection.execute(
+        "SELECT has_schema_privilege(%s,'public','CREATE'),"
+        "has_database_privilege(%s,current_database(),'CREATE')",
+        (role, role),
+    ).fetchone()
+    if flags != (False,) * 6 or memberships is not None or creates != (False, False):
+        raise ValueError(
+            "Contact operator requires a distinct NOINHERIT role without elevated flags, parents or DDL"
+        )
+
+
+def check_contact_operator(connection, role, *, dependencies=True):
+    from koinon.communications.contact_guards import (
+        OBSERVATION_COLUMNS,
+    )
+
+    _contact_operator_role(connection, role)
+    allowed_updates = {
+        "koinon_operator_delivery_contacts": {*OBSERVATION_COLUMNS, "revision"},
+        "lattice_tenants": {"id"},
+    }
+    append = {"koinon_operator_delivery_contacts", *CONTACT_OPERATOR_APPEND_TABLES}
+    required = [
+        "koinon_operator_delivery_contacts",
+        *(
+            CONTACT_OPERATOR_READ_TABLES + CONTACT_OPERATOR_APPEND_TABLES
+            if dependencies
+            else ()
+        ),
+    ]
+    for table in required:
+        result = connection.execute(
+            "SELECT has_table_privilege(%s,%s,'SELECT'),has_table_privilege(%s,%s,'INSERT'),"
+            "has_table_privilege(%s,%s,'DELETE'),has_table_privilege(%s,%s,'TRUNCATE')",
+            (role, "public." + table) * 4,
+        ).fetchone()
+        if result != (True, table in append, False, False):
+            raise RuntimeError("Contact operator table privileges require review")
+        columns = connection.execute(
+            "SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name=%s",
+            (table,),
+        ).fetchall()
+        for (name,) in columns:
+            permitted = name in allowed_updates.get(table, set())
+            actual = connection.execute(
+                "SELECT has_column_privilege(%s,%s,%s,'UPDATE')",
+                (role, "public." + table, name),
+            ).fetchone()[0]
+            if actual != permitted:
+                raise RuntimeError("Contact operator column privileges require review")
+    if dependencies:
+        tables = connection.execute(
+            "SELECT tablename FROM pg_tables WHERE schemaname='public'"
+        ).fetchall()
+        for (table,) in tables:
+            if table in required or not table.startswith(
+                ("lattice_", "koinon_", "pyfly_", "firefly_", "canon_", "flyquery_")
+            ):
+                continue
+            privileges = connection.execute(
+                "SELECT has_table_privilege(%s,%s,'INSERT'),has_any_column_privilege(%s,%s,'UPDATE'),"
+                "has_table_privilege(%s,%s,'DELETE'),has_table_privilege(%s,%s,'TRUNCATE')",
+                (role, "public." + table) * 4,
+            ).fetchone()
+            if any(privileges):
+                raise RuntimeError(
+                    "Contact operator has unrelated runtime mutation privileges"
+                )
+
+
+def grant_contact_operator(connection, role, *, dependencies=True):
+    from koinon.communications.contact_guards import (
+        BINDING_COLUMNS,
+        IMMUTABLE_COLUMNS,
+        OBSERVATION_COLUMNS,
+    )
+
+    _contact_operator_role(connection, role)
+    table, target = (
+        sql.Identifier("koinon_operator_delivery_contacts"),
+        sql.Identifier(role),
+    )
+    connection.execute(
+        sql.SQL("REVOKE ALL ON TABLE public.{} FROM {}").format(table, target)
+    )
+    columns = sql.SQL(", ").join(
+        sql.Identifier(name)
+        for name in (
+            *IMMUTABLE_COLUMNS,
+            *OBSERVATION_COLUMNS,
+            *BINDING_COLUMNS,
+            "revision",
+        )
+    )
+    for privilege in ("INSERT", "UPDATE"):
+        connection.execute(
+            sql.SQL("REVOKE {} ({}) ON TABLE public.{} FROM {}").format(
+                sql.SQL(privilege), columns, table, target
+            )
+        )
+    permitted = sql.SQL(", ").join(
+        sql.Identifier(name) for name in (*OBSERVATION_COLUMNS, "revision")
+    )
+    connection.execute(
+        sql.SQL("GRANT SELECT, INSERT, UPDATE ({}) ON TABLE public.{} TO {}").format(
+            permitted, table, target
+        )
+    )
+    if dependencies:
+        for name in CONTACT_OPERATOR_READ_TABLES + CONTACT_OPERATOR_APPEND_TABLES:
+            connection.execute(
+                sql.SQL("GRANT SELECT ON TABLE public.{} TO {}").format(
+                    sql.Identifier(name), target
+                )
+            )
+        connection.execute(
+            sql.SQL("GRANT UPDATE (id) ON TABLE public.lattice_tenants TO {}").format(
+                target
+            )
+        )
+        for name in CONTACT_OPERATOR_APPEND_TABLES:
+            connection.execute(
+                sql.SQL("GRANT INSERT ON TABLE public.{} TO {}").format(
+                    sql.Identifier(name), target
+                )
+            )
+    check_contact_operator(connection, role, dependencies=dependencies)
+
+
+def provision(*, grants=False, check=False, contacts_operator_role=None):
     admin = make_url(os.environ["KOINON_MIGRATION_DATABASE_URL"])
     urls = [
         (make_url(os.environ[key]), bypass, prefixes) for key, bypass, prefixes in ROLES
     ]
     if len({url.username for url, _, _ in urls}) != len(urls):
         raise ValueError("Each runtime/control datasource requires a distinct role")
+    if contacts_operator_role and contacts_operator_role in {
+        url.username for url, _, _ in urls
+    }:
+        raise ValueError(
+            "The contact operator must be distinct from every runtime/control role"
+        )
     for url, _, _ in urls:
         if not url.username or not url.password or url.username == admin.username:
             raise ValueError(
@@ -321,6 +517,13 @@ def provision(*, grants=False, check=False):
                     }:
                         grant_sequence(connection, name, url.username)
             print(f"{url.username}: configured privilege boundary verified")
+        if contacts_operator_role:
+            if check:
+                check_contact_operator(connection, contacts_operator_role)
+            elif grants:
+                grant_contact_operator(connection, contacts_operator_role)
+            else:
+                raise ValueError("Use --grant or --check with --contacts-operator-role")
 
 
 if __name__ == "__main__":
@@ -331,5 +534,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--check", action="store_true", help="Read privileges without changes"
     )
+    parser.add_argument(
+        "--contacts-operator-role",
+        help="Existing distinct operator role for reviewed delivery contact changes",
+    )
     args = parser.parse_args()
-    provision(grants=args.grant, check=args.check)
+    provision(
+        grants=args.grant,
+        check=args.check,
+        contacts_operator_role=args.contacts_operator_role,
+    )

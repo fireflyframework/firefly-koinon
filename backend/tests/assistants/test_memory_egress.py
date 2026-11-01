@@ -96,6 +96,13 @@ async def test_saved_export_rechecks_memory_after_creation(assistants):
     service, history, queue, memory, folder, source, old, target, run, generation = await memory_pair(
         assistants, origin_token_id="export-memory-origin"
     )
+    from koinon.answers.dtos import EvidenceAnswerPlan
+    from koinon.evidence.ports import ConversationOutputPort
+
+    await queue.release_answer(
+        run.id, "pair-worker", EvidenceAnswerPlan(outcome="insufficient_evidence"), "en"
+    )
+    released_text = (await service.message_repository.find_by_id(run.message_id)).text
     await queue.finish(run.id, "pair-worker")
     egress = assistants[1].get_bean(MemoryEgress)
     bindings = await egress.bind("issuer|admin", "north", ((run.id, ()),))
@@ -110,7 +117,7 @@ async def test_saved_export_rechecks_memory_after_creation(assistants):
             ConversationMessage(
                 id=run.message_id,
                 role="assistant",
-                text="Remembered private answer",
+                text=released_text,
                 status="completed",
                 revision="b" * 64,
             ),
@@ -146,6 +153,7 @@ async def test_saved_export_rechecks_memory_after_creation(assistants):
     reviews.reviews = SimpleNamespace(find_by_id=AsyncMock(return_value=review))
     reviews.access = SimpleNamespace(check=AsyncMock())
     reviews.memory = SimpleNamespace(get=lambda: egress)
+    reviews.outputs = SimpleNamespace(get=lambda: assistants[1].get_bean(ConversationOutputPort))
     saved = []
 
     async def save(row):
@@ -168,9 +176,7 @@ async def test_saved_export_rechecks_memory_after_creation(assistants):
     created = await exports.create(
         "issuer|admin", "north", ExportCreate(review_id=review.id, expected_revision=review.revision)
     )
-    assert (
-        b"Remembered private answer" in (await exports.download("issuer|admin", "north", created.id)).content
-    )
+    assert released_text.encode() in (await exports.download("issuer|admin", "north", created.id)).content
     async with engine.begin() as connection:
         await connection.execute(
             update(ExportRecord).where(ExportRecord.id == created.id).values(cancelled_at=timestamp())

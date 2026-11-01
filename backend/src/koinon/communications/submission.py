@@ -21,6 +21,7 @@ from koinon.communications.delivery import EmailDispatcher
 from koinon.communications.digest import DigestScheduler
 from koinon.communications.invitations import EmailInvitationService
 from koinon.communications.mappers import invitation_status
+from koinon.communications.operator_contacts import OperatorContacts, PreparedOperatorContact
 from koinon.communications.outbox import CommunicationOutbox
 from koinon.communications.readiness import EmailReadiness
 from koinon.communications.recipients import RecipientService, recipient_unavailable
@@ -60,6 +61,7 @@ class EmailSubmission:
         digests: DigestScheduler,
         summaries: ActivitySummaryReader | None = None,
         bootstrap_contacts: BootstrapContacts | None = None,
+        operator_contacts: OperatorContacts | None = None,
     ):
         self.state, self.outbox, self.invitations, self.invitation_service = (
             state,
@@ -77,6 +79,7 @@ class EmailSubmission:
         )
         self.identities, self.digests, self.summaries = identities, digests, summaries
         self.bootstrap_contacts = bootstrap_contacts
+        self.operator_contacts = operator_contacts
 
     async def _notice_allowed(self, event):
         if event.kind in {"security", "access_removed"}:
@@ -117,6 +120,10 @@ class EmailSubmission:
             )
         if not await self._notice_allowed(event):
             return None
+        if self.operator_contacts is not None:
+            prepared = await self.operator_contacts.prepare(event)
+            if prepared is not None:
+                return event, None, None, prepared
         bindings = await self.identities.find_all(tenant_id=event.tenant_id, subject=event.owner_subject)
         if len(bindings) != 1:
             raise recipient_unavailable()
@@ -152,12 +159,23 @@ class EmailSubmission:
     @transactional
     async def _begin(self, ticket, prepared, expected_owner):
         bootstrap = isinstance(prepared, PreparedBootstrapContact)
+        operator = isinstance(prepared, PreparedOperatorContact)
         await self.invitation_service.catalog._lock_tenant(
-            prepared.tenant_id if bootstrap else prepared.provider.tenant_id
+            prepared.tenant_id if bootstrap or operator else prepared.provider.tenant_id
         )
         event = await self.outbox.find_by_id(ticket.id, lock=LockMode.PESSIMISTIC_WRITE)
         if event is None or event.owner_subject != expected_owner:
             return False
+        if operator:
+            if (
+                self.operator_contacts is None
+                or not await self.operator_contacts.validate(event, prepared)
+                or not await self._notice_allowed(event)
+            ):
+                return False
+            policy = await self.policies.find_by_id(event.tenant_id)
+            self.readiness.require_ready(sender_id=policy.sender_id if policy else None)
+            return await self.state.begin_send(ticket)
         if bootstrap:
             if self.bootstrap_contacts is None or not await self.bootstrap_contacts.validate(event, prepared):
                 return False
@@ -201,7 +219,9 @@ class EmailSubmission:
                 return
             event, invitation, provider, external = target
             prepared = (
-                await self.bootstrap_contacts.prepare(event)
+                external
+                if isinstance(external, PreparedOperatorContact)
+                else await self.bootstrap_contacts.prepare(event)
                 if provider is None and self.bootstrap_contacts
                 else await self.recipients.observe(provider, external)
             )
@@ -213,6 +233,7 @@ class EmailSubmission:
             sender = await self._sender(event.tenant_id)
             summary = await self._summary(event) if event.kind == "digest" else None
             summary_hash = sha256(summary.model_dump_json().encode()).hexdigest() if summary else None
+            payload: dict
             if ticket.payload_ciphertext:
                 payload = self.cipher.open(event.tenant_id, "delivery", ticket.payload_ciphertext)
                 if sha256(_encoded(payload)).hexdigest() != ticket.payload_hash:

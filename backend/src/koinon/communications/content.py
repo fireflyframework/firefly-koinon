@@ -182,8 +182,11 @@ class CommunicationContent:
         workspace = values.get("workspace_name")
         scope = workspace or organization
         kind = event.kind
+        diagnostic = kind == "security" and values.get("subtype") == "delivery_diagnostic"
         title = (
-            "security_title"
+            "diagnostic_title"
+            if diagnostic
+            else "security_title"
             if kind == "security"
             else "welcome_heading"
             if kind == "welcome"
@@ -215,7 +218,9 @@ class CommunicationContent:
                 ("Permisos: " if locale.startswith("es") else "Scopes: ") + ", ".join(values["scopes"])
             )
         footer_key = (
-            "security_footer"
+            "diagnostic_footer"
+            if diagnostic
+            else "security_footer"
             if kind == "security"
             else "welcome_footer"
             if kind == "welcome"
