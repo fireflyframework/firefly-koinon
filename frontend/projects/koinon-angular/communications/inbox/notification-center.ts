@@ -29,6 +29,7 @@ import type {
   NotificationTarget,
 } from '@fireflyframework/koinon-angular/communications';
 import { KoinonNotificationInbox } from './notification-inbox';
+import { KoinonNotificationRefresh } from '@fireflyframework/koinon-angular/communications';
 import { KoinonNotificationPreferences } from '@fireflyframework/koinon-angular/communications/preferences';
 @Component({
   selector: 'ffk-notification-center',
@@ -68,9 +69,11 @@ import { KoinonNotificationPreferences } from '@fireflyframework/koinon-angular/
       }
     } @else {
       <ffk-notification-inbox
+        [showHeading]="false"
         [page]="page()"
         [loading]="session.pending()"
         [error]="session.error()"
+        [readPending]="readPending()"
         (filterChanged)="load($event)"
         (readRequested)="markRead($event)"
         (targetRequested)="openTarget($event)"
@@ -81,6 +84,8 @@ import { KoinonNotificationPreferences } from '@fireflyframework/koinon-angular/
 })
 export class KoinonNotificationCenter implements OnChanges {
   readonly session = inject(KoinonCommunicationsSession);
+  private readonly updates = inject(KoinonNotificationRefresh);
+  readonly readPending = this.session.state<string | null>(null);
   @Input() actions?: {
     modeChanged: (mode: 'notifications' | 'notification-preferences') => void;
     signOut: () => void;
@@ -153,7 +158,9 @@ export class KoinonNotificationCenter implements OnChanges {
   }
   async markRead(id: string) {
     if (this.session.pending()) return;
-    await this.session.run(
+    const key = this.session.key();
+    this.readPending.set(id);
+    const result = await this.session.run(
       'read',
       (signal) => this.session.api!.notifications.markRead(id, { signal }),
       (value) =>
@@ -168,6 +175,12 @@ export class KoinonNotificationCenter implements OnChanges {
             : null,
         ),
     );
+    if (this.session.key() !== key) return;
+    this.readPending.set(null);
+    if (result) {
+      this.updates.invalidate();
+      if (this.filter.read === 'unread') await this.load({ ...this.filter, page: 1 });
+    }
   }
   async loadPreferences() {
     await this.session.run(

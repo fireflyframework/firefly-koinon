@@ -38,6 +38,7 @@ registerKoinonSpanish(NOTIFICATION_SPANISH);
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KoinonNotificationInbox {
+  @Input() showHeading = true;
   @Input() page: NotificationPage | null = null;
   @Input() loading = false;
   @Input() readPending: string | null = null;
@@ -60,6 +61,10 @@ export class KoinonNotificationInbox {
   ];
   applyFilters() {
     this.changePage(1);
+  }
+  changeRead(read: NotificationFilter['read']) {
+    this.read = read;
+    this.applyFilters();
   }
   changePage(page: number) {
     if (!this.loading)

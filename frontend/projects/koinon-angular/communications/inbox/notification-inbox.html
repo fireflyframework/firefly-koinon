@@ -1,31 +1,55 @@
 <!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
-<section aria-labelledby="notifications-title">
+<section
+  [attr.aria-labelledby]="showHeading ? 'notifications-title' : null"
+  [attr.aria-label]="showHeading ? null : ('Your notifications' | ffkText)"
+>
   <header class="heading">
     <div>
-      <h2 id="notifications-title">{{ 'Your notifications' | ffkText }}</h2>
-      <p>{{ 'Invitations and updates about your access to shared knowledge.' | ffkText }}</p>
+      @if (showHeading) {
+        <h2 id="notifications-title">{{ 'Your notifications' | ffkText }}</h2>
+      }
+      <p>
+        {{ 'Your invitations, access changes, security notices and activity summaries.' | ffkText }}
+      </p>
     </div>
     <ffk-button variant="quiet" icon="settings" (click)="preferencesRequested.emit()">{{
       'Notification preferences' | ffkText
     }}</ffk-button>
   </header>
-  <form class="filters" (ngSubmit)="applyFilters()">
+  <div class="filters">
+    <div class="read-filters" role="group" [attr.aria-label]="'Show' | ffkText">
+      <button
+        type="button"
+        [attr.aria-pressed]="read === 'all'"
+        [disabled]="loading"
+        (click)="changeRead('all')"
+      >
+        {{ 'All notifications' | ffkText }}
+      </button>
+      <button
+        type="button"
+        [attr.aria-pressed]="read === 'unread'"
+        [disabled]="loading"
+        (click)="changeRead('unread')"
+      >
+        {{ 'Unread' | ffkText }}
+      </button>
+    </div>
     <label
-      >{{ 'Show' | ffkText
-      }}<select name="read-state" [(ngModel)]="read" [disabled]="loading">
-        <option value="all">{{ 'All notifications' | ffkText }}</option>
-        <option value="unread">{{ 'Unread only' | ffkText }}</option>
-      </select></label
-    ><label
       >{{ 'Type' | ffkText
-      }}<select name="event-kind" [(ngModel)]="kind" [disabled]="loading">
+      }}<select
+        name="event-kind"
+        [(ngModel)]="kind"
+        (ngModelChange)="applyFilters()"
+        [disabled]="loading"
+      >
         <option value="">{{ 'All types' | ffkText }}</option>
         @for (item of kinds; track item.id) {
           <option [value]="item.id">{{ item.label | ffkText }}</option>
         }
       </select></label
-    ><ffk-button type="submit" [disabled]="loading">{{ 'Apply filters' | ffkText }}</ffk-button>
-  </form>
+    >
+  </div>
   @if (error) {
     <p class="error" role="alert">{{ error | ffkText }}</p>
     <ffk-button (click)="applyFilters()">{{ 'Try again' | ffkText }}</ffk-button>
@@ -43,9 +67,11 @@
                 [name]="
                   notice.kind === 'invitation'
                     ? 'users'
-                    : notice.kind === 'digest'
-                      ? 'file'
-                      : 'shield'
+                    : notice.kind === 'welcome'
+                      ? 'mail'
+                      : notice.kind === 'digest'
+                        ? 'file'
+                        : 'shield'
                 "
               />
             </div>
@@ -74,6 +100,7 @@
                 @if (!notice.read_at) {
                   <ffk-button
                     variant="quiet"
+                    icon="check"
                     [compact]="true"
                     [loading]="readPending === notice.id"
                     [disabled]="!!readPending"
@@ -99,7 +126,7 @@
               {{
                 (read === 'unread'
                   ? 'There are no unread notifications for these filters.'
-                  : 'When someone invites you or changes your access, you can review it here.'
+                  : 'Review account updates and activity summaries here, even when email is unavailable.'
                 ) | ffkText
               }}
             </p>

@@ -1,5 +1,9 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 export const NOTIFICATION_SPANISH: Readonly<Record<string, string>> = {
+  'Your invitations, access changes, security notices and activity summaries.':
+    'Tus invitaciones, cambios de acceso, avisos de seguridad y resúmenes de actividad.',
+  'Review account updates and activity summaries here, even when email is unavailable.':
+    'Consulta aquí las novedades de tu cuenta y los resúmenes de actividad, aunque el correo no esté disponible.',
   Show: 'Mostrar',
   'Your notifications': 'Tus notificaciones',
   'Invitations and updates about your access to shared knowledge.':
