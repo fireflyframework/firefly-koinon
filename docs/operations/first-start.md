@@ -116,6 +116,12 @@ Reopen or reload the management application and select the new organization. If 
 
 ## 5. Complete guided organization configuration
 
+Corporate directory synchronization is optional. Native Entra sign-in and the pending administrator grants above require the verified OIDC identity, not Microsoft Graph application permission. Start with local organization/workspace roles, knowledge, chat and MCP while no corporate directory connection is active. Directory group grants, profile/position refresh and recipient-bound email invitations are separate features; configure their directory credential and consent later. An unavailable directory must not become an invented email/subject identity or a deployment-wide requirement.
+
+Leave a new connection in **Draft**, or do not create one yet. When ready, configure and test the real directory connection with the current organization administrator, review group-to-role mappings and profile sources, then activate it through the existing validation flow. Saving the form does not grant Graph consent or activate synchronization. Directory-dependent actions remain unavailable until their prerequisites pass. See [corporate profile synchronization](../guides/corporate-profile-sync.md).
+
+For an already active managed-access policy, directory failure or provider disablement does not turn its managed grants into local memberships. Expired or invalid managed grants stop authorizing access; independently assigned local memberships retain their own authority. Do not disable freshness checks to make a directory-dependent account work during an outage.
+
 Continue with [Configure your corporate brain](../guides/knowledge-setup.md). Review **Access**, **Identity & appearance**, **Providers**, **Knowledge models**, **Knowledge behavior** and **Agents** in that order. Confirm the active organization before saving. Installation branding controls the signed-out experience; organization overrides apply after authentication.
 
 Validate the actual provider endpoint, protocol and chosen model. Assign an explicit compatible document embedding model, dimensions and space as well as the answer and chat roles. Begin with RAG for the first document exercise. Discovery or a saved model assignment does not establish that streaming, tools or RLM work. Confirm storage observations and an actual write/read under deployment credentials; a configured bucket alone is insufficient.

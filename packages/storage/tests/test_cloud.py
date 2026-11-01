@@ -5,6 +5,7 @@
 from types import SimpleNamespace
 
 import pytest
+
 from koinon_storage.cloud import CloudProfile, CloudStore, ObjectCollisionError, ObjectTooLargeError
 
 

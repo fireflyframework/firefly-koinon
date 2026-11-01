@@ -26,13 +26,7 @@ export interface OrganizationOption {
 }
 @Component({
   selector: 'ffk-shell',
-  imports: [
-    KoinonTextPipe,
-    CdkTrapFocus,
-    KoinonAccountMenu,
-    KoinonIcon,
-    KoinonSearchField,
-  ],
+  imports: [KoinonTextPipe, CdkTrapFocus, KoinonAccountMenu, KoinonIcon, KoinonSearchField],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -44,7 +38,17 @@ export class KoinonShell implements AfterViewInit, OnDestroy {
   @Input() showNavigation = true;
   @Input() productName = 'koinon';
   @Input() brandLogo?: string;
-  logo(){return this.brandLogo ?? (this.brandBase+'/logos/firefly-koinon-lockup-'+(this.theme==='dark'?'reversed':'color')+'.svg');}
+  logo() {
+    const family =
+      this.brandBase +
+      '/logos/firefly-koinon-lockup-' +
+      (this.theme === 'dark' ? 'reversed' : 'color') +
+      '.svg';
+    const logo = this.brandLogo ?? family;
+    return this.compact() && logo === family
+      ? family.replace('firefly-koinon-lockup-', 'koinon-wordmark-')
+      : logo;
+  }
   @Input() brandBase = '/assets/brand';
   @Input() organizations: OrganizationOption[] = [];
   @Input() tenantId = '';
