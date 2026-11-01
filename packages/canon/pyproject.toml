@@ -4,7 +4,7 @@
 name = "firefly-koinon-documents"
 # CalVer YY.MM.PP -- bumped per release. Note that PEP 440 normalises
 # ``26.05.04`` -> ``26.5.4`` in the built wheel filename.
-version = "26.10.2"
+version = "26.11.1"
 description = "Document knowledge services for firefly koinon: file intake, immutable source versions, retrieval and provenance on native pyfly."
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
@@ -17,11 +17,11 @@ authors = [
 ]
 
 dependencies = [
-    "firefly-koinon-storage==26.10.2",
+    "firefly-koinon-storage==26.11.1",
     # Firefly Framework runtime (DI, CQRS, EDA, web, observability, resilience,
     # actuator, data-relational, security). Pulled in with the extras we use
     # so a fresh ``uv sync`` is enough to boot the full stack.
-    "pyfly[cache,fastapi,observability,security,data-relational,postgresql,eda,redis,client,scheduling,cli,agentic,agentic-security,agentic-script-execution,agentic-openai-embeddings,agentic-binary,agentic-vectorstores-pgvector]>=26.10.31,<26.11",
+    "pyfly[cache,fastapi,observability,security,data-relational,postgresql,eda,redis,client,scheduling,cli,agentic,agentic-security,agentic-script-execution,agentic-openai-embeddings,agentic-binary,agentic-vectorstores-pgvector]>=26.10.32,<26.11",
 
     # GenAI metaframework -- FireflyAgent over pydantic-ai, the binary
     # normalisation stack (``[binary]`` -> ``content.binary``) and the
@@ -97,8 +97,8 @@ dependencies = [
 flycanon = "flycanon.cli:main"
 
 [project.optional-dependencies]
-storage-azure = ["firefly-koinon-storage[azure]==26.10.2"]
-storage-gcs = ["firefly-koinon-storage[gcs]==26.10.2"]
+storage-azure = ["firefly-koinon-storage[azure]==26.11.1"]
+storage-gcs = ["firefly-koinon-storage[gcs]==26.11.1"]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
@@ -158,7 +158,7 @@ build-backend = "hatchling.build"
 [tool.uv.sources]
 firefly-koinon-storage = { path = "../storage", editable = true }
 # Pin the immutable commit associated with the official framework release tag.
-pyfly = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git", rev = "bd0eb79f66fc2d9b839acb594048a07d2f92354a" }
+pyfly = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git", rev = "ff94967f2bd70f48f1a099bb805923a51eb291df" }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/flycanon"]

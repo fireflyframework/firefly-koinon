@@ -106,7 +106,7 @@ This requires a Claude host that implements [MCP Apps](https://modelcontextproto
 
 ## Install the desktop extension instead
 
-Obtain the branded `firefly-koinon` 26.10.2 MCPB and its checksum from a trusted distribution. Verify the archive before installation and confirm that your desktop host supports the extension format and required MCP capabilities.
+Obtain the branded `firefly-koinon` 26.11.1 MCPB and its checksum from a trusted distribution. Verify the archive before installation and confirm that your desktop host supports the extension format and required MCP capabilities.
 
 In Claude Desktop, open the extension manager, choose its advanced installation option and select the `.mcpb`. Review **firefly koinon**, then enter **MCP endpoint** and **Personal access token**. Enable the extension. Anthropic documents this local installation flow and protected sensitive configuration in its [desktop MCP guide](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop).
 
