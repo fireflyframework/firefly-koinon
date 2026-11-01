@@ -833,47 +833,7 @@
           <p>{{ 'No deployment model connections were returned.' | ffkText }}</p>
         }
       </details>
-      @if (c.configuration()?.framework_providers?.length) {
-        <details class="connection-section">
-          <summary>{{ 'Framework provider support' | ffkText }}</summary>
-          <p>{{ 'Only providers exposed by this deployment can be configured here.' | ffkText }}</p>
-          <div
-            class="table-wrap"
-            tabindex="0"
-            [attr.aria-label]="'Framework provider support' | ffkText"
-          >
-            <table>
-              <thead>
-                <tr>
-                  <th>{{ 'Provider' | ffkText }}</th>
-                  <th>{{ 'Availability' | ffkText }}</th>
-                  <th>{{ 'Details' | ffkText }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (provider of c.configuration()?.framework_providers || []; track provider.id) {
-                  <tr>
-                    <td>{{ provider.id }}</td>
-                    <td>
-                      {{
-                        (provider.exposed
-                          ? 'Configurable here'
-                          : provider.native_supported
-                            ? 'Deployment setup required'
-                            : 'Not available'
-                        ) | ffkText
-                      }}
-                    </td>
-                    <td>
-                      {{ provider.reason }}<code>{{ provider.model_class }}</code>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        </details>
-      }
+
     }
   </section>
 </div>

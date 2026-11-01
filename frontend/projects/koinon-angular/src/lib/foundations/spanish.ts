@@ -660,7 +660,6 @@ export const SPANISH: Readonly<Record<string, string>> = {
     'Estas conexiones dan servicio a las herramientas de conocimiento y las gestiona el administrador de la instalación. Los proveedores de conversación no las sustituyen.',
   'No deployment model connections were returned.':
     'No se han devuelto conexiones de modelos del despliegue.',
-  'Framework provider support': 'Compatibilidad de proveedores del framework',
   'Only providers exposed by this deployment can be configured here.':
     'Aquí sólo puedes configurar los proveedores habilitados en esta instalación.',
   Provider: 'Proveedor',
