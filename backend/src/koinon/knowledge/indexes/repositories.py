@@ -2,13 +2,47 @@
 # SPDX-License-Identifier: Apache-2.0
 from pyfly.container import repository
 from pyfly.data.relational.sqlalchemy import Repository
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 
+from koinon.catalog.entities import CatalogEntry
+from koinon.knowledge.entities import DomainBinding
 from koinon.knowledge.indexes.entities import KnowledgeIndex
 
 
 @repository(name="knowledge.index_repository")
 class KnowledgeIndexRepository(Repository[KnowledgeIndex, str]):
+    async def find_initial_workspace_effects(self, tenant_id, workspace_id, run_id, index_id) -> bool:
+        catalog = (
+            select(CatalogEntry.id)
+            .where(
+                CatalogEntry.tenant_id == tenant_id,
+                CatalogEntry.workspace_id == workspace_id,
+                or_(
+                    CatalogEntry.installation_run_id.is_distinct_from(run_id),
+                    CatalogEntry.system_key.is_(None),
+                ),
+            )
+            .exists()
+        )
+        bindings = (
+            select(DomainBinding.id)
+            .where(
+                DomainBinding.tenant_id == tenant_id,
+                DomainBinding.workspace_id == workspace_id,
+            )
+            .exists()
+        )
+        indexes = (
+            select(KnowledgeIndex.id)
+            .where(
+                KnowledgeIndex.tenant_id == tenant_id,
+                KnowledgeIndex.workspace_id == workspace_id,
+                KnowledgeIndex.id != index_id,
+            )
+            .exists()
+        )
+        return bool(await self._require_session().scalar(select(or_(catalog, bindings, indexes))))
+
     async def page(
         self,
         tenant_id,

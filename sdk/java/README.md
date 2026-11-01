@@ -19,7 +19,7 @@ From this directory, the equivalent commands are `mvn verify` and `mvn install`.
 <dependency>
   <groupId>org.fireflyframework</groupId>
   <artifactId>koinon-sdk</artifactId>
-  <version>26.11.1</version>
+  <version>26.11.2</version>
 </dependency>
 ```
 

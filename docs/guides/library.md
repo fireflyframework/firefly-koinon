@@ -2,8 +2,6 @@
 
 The library is the main place to find organizational knowledge. A space contains team folders; folders contain documents and datasets. Technical records such as chunks, tables, snapshots and index versions belong in an item's details rather than the main navigation.
 
-The interface is under active integrated qualification. Use the [qualification record](../operations/qualification.md) to distinguish validated behavior from work still in progress.
-
 ## Spaces, projects and folders
 
 A **space** is a knowledge boundary. Its documents and datasets keep that space's identity in both native knowledge engines, and every operation checks the caller's current access. A folder name or a tag does not grant access. Create separate spaces when teams or clients need different permissions; do not rely on sibling folders for confidentiality.
