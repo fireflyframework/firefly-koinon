@@ -142,7 +142,10 @@ async function setup(
 }
 async function navigate(page: Page, label: string) {
   const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
-  if (await menu.isVisible()) await menu.click();
+  if ((page.viewportSize()?.width ?? 1440) < 700) {
+    await expect(menu).toBeVisible();
+    await menu.click();
+  }
   await page.getByRole('button', { name: label, exact: true }).click();
 }
 async function openAgents(page: Page, spanish = false) {
