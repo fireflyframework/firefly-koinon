@@ -1,7 +1,7 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 import { test, expect } from '@playwright/test';
-import { mockService } from './fixtures';
+import { context, mockService } from './fixtures';
 import { mkdir } from 'node:fs/promises';
 const output = process.env['KOINON_BRAND_SCREENSHOTS'];
 for (const custom of [false, true])
@@ -11,7 +11,13 @@ for (const custom of [false, true])
     }) => {
       await page.setViewportSize({ width, height: 960 });
       await mockService(page);
+      await page.route('**/bff/api/v1/context', (route) =>
+        route.fulfill({ json: { ...context, tenants: [context.tenants[0]] } }),
+      );
       await page.route('**/chat/{threads,folders}*', (route) =>
+        route.fulfill({ json: { items: [], page: 1, page_size: 25, total: 0, pages: 0 } }),
+      );
+      await page.route('**/bff/api/v1/tenants/*/agents*', (route) =>
         route.fulfill({ json: { items: [], page: 1, page_size: 25, total: 0, pages: 0 } }),
       );
       const logo = await page.evaluate(() => {
@@ -36,8 +42,11 @@ for (const custom of [false, true])
         }),
       );
       await page.goto('/chat');
+      await expect(page.getByRole('combobox', { name: 'Organization', exact: true })).toHaveCount(0);
       const header = page.locator('ffk-shell .topbar'),
         brand = header.locator('.brand');
+      const actions = (await header.locator('.header-actions').boundingBox())!;
+      expect(Math.abs(actions.x + actions.width - (width - (width > 1100 ? 32 : 16)))).toBeLessThanOrEqual(1);
       await expect(brand).toHaveAccessibleName(`${branding.product_name}, Chat`);
       await expect(page.locator('ffk-shell footer ffk-powered-by')).toHaveCount(custom ? 1 : 0);
       if (custom) {
@@ -55,6 +64,7 @@ for (const custom of [false, true])
         const nav = (await header
           .getByRole('navigation', { name: 'Main navigation', exact: true })
           .boundingBox())!;
+        expect(Math.abs(nav.y + nav.height / 2 - actions.y - actions.height / 2)).toBeLessThanOrEqual(1);
         expect(Math.abs(logo.x - group.x)).toBeLessThanOrEqual(1);
         const art = (await brand.locator('img').boundingBox())!;
         expect(nav.x - art.x - art.width).toBeGreaterThanOrEqual(24);
@@ -75,7 +85,7 @@ for (const custom of [false, true])
       await page.reload();
       const login = page.locator('.sign-in');
       await expect(login.getByRole('button', { name: 'Sign in', exact: true })).toBeVisible();
-      await expect(login.locator('header ffk-powered-by')).toHaveCount(custom ? 1 : 0);
+      await expect(login.locator('header ffk-powered-by')).toHaveCount(0);
       await expect(login.locator('footer ffk-powered-by')).toHaveCount(custom ? 1 : 0);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
         true,
@@ -89,7 +99,7 @@ for (const custom of [false, true])
         login.getByRole('button', { name: 'Use light theme', exact: true }),
       ).toBeVisible();
       if (custom)
-        await expect(login.locator('header ffk-powered-by img')).toHaveAttribute(
+        await expect(login.locator('footer ffk-powered-by img')).toHaveAttribute(
           'src',
           /koinon-wordmark-reversed.svg$/,
         );

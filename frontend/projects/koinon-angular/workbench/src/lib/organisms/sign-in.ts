@@ -21,10 +21,6 @@ import { KoinonPoweredBy } from '../atoms/powered-by';
 })
 export class KoinonSignIn {
   readonly sceneAvailable = signal(true);
-  symbolImage() {
-    const canonical = this.brandBase + '/logos/koinon-symbol-color.svg';
-    return this.theme === 'dark' && this.symbol === canonical ? this.brandBase + '/logos/koinon-symbol-reversed.svg' : this.symbol;
-  }
   @Input() productName = 'koinon';
   @Input() logo = '';
   @Input() symbol = '';

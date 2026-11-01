@@ -2,6 +2,27 @@
 import { TestBed } from '@angular/core/testing';
 import { KoinonShell } from './shell';
 
+it('shows organization switching only when the account can choose another organization', async () => {
+  const fixture = TestBed.createComponent(KoinonShell);
+  fixture.componentRef.setInput('organizations', [{ id: 'north', name: 'North' }]);
+  fixture.componentRef.setInput('tenantId', 'north');
+  await fixture.whenStable();
+  const root = fixture.nativeElement as HTMLElement;
+  expect(root.querySelector('select')).toBeNull();
+  fixture.componentInstance.toggleNavigation();
+  await fixture.whenStable();
+  expect(root.querySelector('select')).toBeNull();
+  fixture.componentRef.setInput('organizations', [
+    { id: 'north', name: 'North' },
+    { id: 'south', name: 'South' },
+  ]);
+  await fixture.whenStable();
+  expect(root.querySelectorAll('select').length).toBe(2);
+  fixture.componentRef.setInput('organizations', [{ id: 'north', name: 'North' }]);
+  await fixture.whenStable();
+  expect(root.querySelector('select')).toBeNull();
+});
+
 it('renders the selected organization in both selectors when the authorized list first appears', async () => {
   const fixture = TestBed.createComponent(KoinonShell);
   fixture.componentRef.setInput('organizations', [
@@ -46,7 +67,9 @@ it('retains Foundation attribution and adds the canonical product credit only fo
   fixture.componentRef.setInput('theme', 'dark');
   fixture.componentRef.setInput('brandBase', '/embedded/brand');
   await fixture.whenStable();
-  expect(root.querySelector('ffk-powered-by img')?.getAttribute('src')).toBe('/embedded/brand/logos/koinon-wordmark-reversed.svg');
+  expect(root.querySelector('ffk-powered-by img')?.getAttribute('src')).toBe(
+    '/embedded/brand/logos/koinon-wordmark-reversed.svg',
+  );
   fixture.componentRef.setInput('customBrand', false);
   await fixture.whenStable();
   expect(root.querySelector('ffk-powered-by')).toBeNull();
