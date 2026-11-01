@@ -34,6 +34,7 @@ const variables = [
     Object.entries(values).map(([key, value]) => `  --ffk-${theme}-${key}: var(--koinon-brand-${theme}-${key === 'actionText' ? 'action_text' : key}, ${value});`),
   ),
   `  --ffk-sidebar: ${tokens.layout.sidebar}px;`,
+  `  --ffk-sidebar-inset: ${tokens.layout.sidebarInset}px;`,
   `  --ffk-reading-max: ${tokens.layout.readingMax}px;`,
   `  --ffk-content-max: ${tokens.layout.contentMax}px;`,
   `  --ffk-gutter: ${tokens.layout.gutterDesktop}px;`,

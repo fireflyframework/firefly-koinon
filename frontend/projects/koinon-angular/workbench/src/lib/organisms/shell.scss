@@ -50,9 +50,9 @@
 .topbar {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: var(--ffk-gutter, 32px);
   padding: 16px var(--shell-gutter);
-  padding-inline-start: 20px;
+  padding-inline-start: var(--ffk-sidebar-inset, 20px);
   min-height: 76px;
   border-bottom: 1px solid var(--ui-line);
   min-width: 0;
@@ -63,7 +63,7 @@
   display: flex;
   align-items: center;
   min-width: 128px;
-  flex: 0 0 204px;
+  flex: 0 0 calc(var(--ffk-sidebar, 248px) - var(--ffk-sidebar-inset, 20px));
   padding-inline-end: 24px;
 }
 .brand img {
@@ -237,7 +237,7 @@
 }
 .content.settings-workspace {
   overflow: hidden;
-  padding-bottom: 0;
+  padding: 0;
 }
 .content.chat-workspace {
   display: flex;

@@ -8,6 +8,8 @@ The screenshots show the built interface with **controlled example data**. Names
 
 Sign in through your organization's identity provider. The organization selector in the top navigation determines which organization's library, conversations and settings you are viewing. Choosing an organization does not grant access to it.
 
+On desktop, the chevron at the edge of the conversation or Settings sidebar hides navigation to make room for your work. Use it again to restore the sidebar. The standalone application remembers that collapsed or expanded preference on this browser; it also applies when you switch between Chat and Settings. On smaller screens, use the navigation drawer and the Settings section selector instead.
+
 koinon presents the product as your corporate brain: a place to find organizational knowledge, ask questions and inspect its sources. The sign-in page uses the installation's configured identity and opens the knowledge available to your account.
 
 [![The desktop sign-in page introduces koinon as your corporate brain](../assets/screenshots/corporate-brain-sign-in-1440.png)](../assets/screenshots/corporate-brain-sign-in-1440.png)

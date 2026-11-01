@@ -300,6 +300,8 @@ export const SPANISH: Readonly<Record<string, string>> = {
   'Filter archived items by name': 'Filtrar archivados por nombre',
   'Made with': 'Hecho con',
   'Powered by': 'Con tecnología de',
+  'Show settings navigation': 'Mostrar navegación de configuración',
+  'Hide settings navigation': 'Ocultar navegación de configuración',
   love: 'amor',
   'What would you like to understand?': '¿Qué quieres entender?',
   'Ask a question about this dataset': 'Haz una pregunta sobre estos datos',

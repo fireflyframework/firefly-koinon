@@ -1,5 +1,6 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
+@use '../../../../workbench/src/lib/foundations/navigation-rail' as rail;
 :host {
   display: flex;
   flex-direction: column;
@@ -500,28 +501,8 @@ select:focus-visible {
   width: min(100%, var(--ffk-reading-max, 760px));
 }
 .history-boundary {
-  position: absolute;
-  z-index: 4;
+  @include rail.toggle;
   top: 20px;
-  left: calc(var(--ffk-sidebar, 248px) - 14px);
-  width: 28px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 1px solid var(--ui-line);
-  border-radius: 8px;
-  background: var(--ui-surface);
-  color: var(--ui-muted);
-  cursor: pointer;
-}
-.history-boundary:hover {
-  color: var(--ui-text);
-  background: var(--ui-subtle);
-}
-.history-boundary:focus-visible {
-  outline: 2px solid var(--ui-focus, var(--ui-accent));
-  outline-offset: 3px;
 }
 .history-collapsed .history-boundary {
   left: 8px;

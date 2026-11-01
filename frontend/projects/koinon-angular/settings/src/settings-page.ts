@@ -94,7 +94,12 @@ export class KoinonSettingsPage implements OnInit {
     addKnowledge?: () => void;
     resource?: (id: string) => void;
     invitationBaseUrl?: () => string;
+    navigationCollapsed?: () => boolean;
+    toggleNavigation?: () => void;
   };
+  private readonly collapsed = signal(false);
+  navigationCollapsed() { return this.actions?.navigationCollapsed?.() ?? this.collapsed(); }
+  toggleNavigation() { if(this.actions?.toggleNavigation) this.actions.toggleNavigation(); else this.collapsed.update(value=>!value); }
   readonly c = inject(KoinonConfiguration);
   readonly f = inject(KoinonFacade);
   private readonly i18n = inject(KoinonI18n);

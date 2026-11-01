@@ -8,6 +8,7 @@ import { PendingInvitation } from './pending-invitation';
 import { PendingShare } from './pending-share';
 import { AccountNavigation } from './account-navigation';
 import { OrganizationSelection } from './organization-selection';
+import {readNavigationPreference,saveNavigationPreference} from './navigation-preference';
 @Component({
   selector: 'app-root',
   imports: [KoinonWorkbench],
@@ -18,6 +19,8 @@ import { OrganizationSelection } from './organization-selection';
     <ffk-workbench
       [managementBaseUrl]="managementBaseUrl"
       (brandingChange)="applyIdentity($event)"
+      [navigationCollapsed]="navigationCollapsed()"
+      (navigationCollapsedChange)="setNavigationCollapsed($event)"
       [view]="navigation.view()"
       (viewChange)="navigation.navigate($event)"
       [accountSection]="navigation.section()"
@@ -76,6 +79,8 @@ export class App {
   readonly organization = inject(OrganizationSelection);
   readonly entryTenant = this.share.tenantId();
   readonly theme = signal<'light' | 'dark'>(this.initialTheme());
+  readonly navigationCollapsed = signal(readNavigationPreference(this.document.defaultView));
+  setNavigationCollapsed(value:boolean) {this.navigationCollapsed.set(value);saveNavigationPreference(this.document.defaultView,value);}
   private initialTheme(): 'light' | 'dark' {
     const saved = localStorage.getItem('koinon-theme');
     return saved === 'light' || saved === 'dark'
