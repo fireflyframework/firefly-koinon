@@ -25,6 +25,17 @@
   </section>
 </div>
 
+## Set up a working organization
+
+Installation and organization configuration are separate tasks. An operator prepares the services and protected storage; an administrator chooses access, models and organization policy. Use this sequence to connect those tasks:
+
+1. [Establish the installation and its first administrators](operations/first-start.md). Verify the migrated databases, identity, persistent objects, staging and worker roles before importing real material.
+2. [Configure the organization](guides/knowledge-setup.md). Follow the actual Settings pages for people, appearance, providers, knowledge behavior and the central chat agent.
+3. [Complete a small acceptance exercise](guides/knowledge-setup.md#complete-the-first-acceptance-exercise). Import a fictional document and dataset, ask questions with known answers, check source evidence and repeat with a restricted reader.
+4. [Inspect health and diagnose failures](operations/platform-health.md#diagnose-a-problem-in-order). Distinguish saved configuration, current observations and successful operations, then keep a tested [recovery procedure](operations/backup-restore.md).
+
+Already operating an organization? The [administration guide](guides/administration.md#find-a-setting) maps each setting to its task and explains permissions, revisions and common failures.
+
 ## Connect your tools
 
 <div class="doc-connection-paths" markdown="0">

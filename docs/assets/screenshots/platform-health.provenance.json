@@ -1,0 +1,16 @@
+{
+  "copyright": "Copyright 2026 Firefly Software Foundation",
+  "license": "Apache-2.0",
+  "product_commit": "60c79d6f1af6de65260d3c88b3d49c5324c4feb9",
+  "capture": "Compiled management application with controlled API fixtures; no live organization or cloud-provider data.",
+  "journey": "frontend/e2e/platform-health.spec.ts",
+  "viewport_widths": [
+    1440,
+    390
+  ],
+  "notes": "Counts, timestamps and observation intervals are illustrative fixture values rather than operational measurements.",
+  "files": {
+    "platform-health-1440.png": "b0b76b14cb8e7e26bffe1b819a2b77de6856523575468145d57336cf228c3932",
+    "platform-health-390.png": "9c6c7fc4b59ad6a530da914074da24ab4c17adbf6cf886a1a73137875b6dc839"
+  }
+}
