@@ -314,6 +314,27 @@ class NativeIndexAdapter:
             )
         return {"items": items, "total": total}
 
+    async def workspace_exists(self, *, tenant_id, workspace_id, domain, actor) -> bool:
+        if domain not in {"documents", "structured"}:
+            raise ValueError("Select one knowledge domain")
+        native = "canon" if domain == "documents" else "structured"
+        control = self.datasources.get(native + "_admin")
+        table = "public.canon_workspaces" if domain == "documents" else "public.flyquery_workspaces"
+        with native_scope(native, tenant_id, workspace_id, actor):
+            async with infrastructure_unit(control, read_only=True) as session:
+                found = await session.scalar(
+                    text(
+                        "SELECT EXISTS(SELECT 1 FROM " + table + " WHERE tenant_id=:tenant AND id=:workspace)"
+                    ),
+                    {
+                        "tenant": tenant_id,
+                        "workspace": workspace_id if domain == "documents" else UUID(workspace_id),
+                    },
+                )
+                if type(found) is not bool:
+                    raise RuntimeError("Native workspace observation is unavailable")
+                return found
+
     async def overview(self, *, tenant_id, workspace_id, domain, actor):
         native = "canon" if domain == "documents" else "structured"
         with native_scope(native, tenant_id, workspace_id, actor):
