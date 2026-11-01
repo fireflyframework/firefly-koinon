@@ -451,6 +451,45 @@ class NativeIndexAdapter:
                 )
             return record.embedding_fingerprint
 
+    async def transition_initial(self, record, status, *, actor) -> bool:
+        if record.domain not in {"documents", "structured"} or status not in {"building", "ready"}:
+            raise ValueError("Only initial knowledge build states may be projected")
+        documents = record.domain == "documents"
+        table = "public.canon_embedding_sets" if documents else "public.flyquery_embedding_sets"
+        with native_scope(
+            "canon" if documents else "structured", record.tenant_id, record.native_workspace_id, actor
+        ):
+            async with infrastructure_unit(self.source(record.domain)) as session:
+                transitioned = await session.scalar(
+                    text(f"""
+                    UPDATE {table}
+                    SET status=CASE WHEN status='ready' THEN status ELSE :status END,
+                        ready_at=CASE WHEN :status='ready' THEN COALESCE(ready_at,now()) ELSE ready_at END
+                    WHERE id=:id AND tenant_id=:tenant AND workspace_id=:workspace
+                      AND provider=:provider AND model=:model AND dimensions=:dimensions
+                      AND config_fingerprint=:fingerprint AND created_by=:actor
+                      AND activated_at IS NULL AND retired_at IS NULL
+                      AND (status IN ('building','ready')
+                        OR (status='queued' AND (:status='building' OR :structured_ready)))
+                    RETURNING status
+                    """),
+                    {
+                        "status": status,
+                        "actor": actor,
+                        "structured_ready": not documents and status == "ready",
+                        "id": record.native_id,
+                        "tenant": record.tenant_id,
+                        "workspace": record.native_workspace_id
+                        if documents
+                        else UUID(record.native_workspace_id),
+                        "provider": record.provider_kind,
+                        "model": record.model_id,
+                        "dimensions": record.dimensions,
+                        "fingerprint": record.cursor.get("native_config_fingerprint"),
+                    },
+                )
+                return transitioned is not None
+
     async def provision_document(self, record):
         try:
             control = self.datasources.get("canon_admin")
