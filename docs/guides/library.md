@@ -14,6 +14,11 @@ The installation can provide system spaces and system folders. **System space** 
 
 Choose the current destination, then create the next project or folder. Nested collection and corpus folders can contain further folders, documents and datasets. Nesting is bounded so the complete path can always be checked; a rejected depth limit requires a shallower destination. Ordinary empty folders can be deleted. Archive retains ordinary content and hides it until restored.
 
+<figure>
+  <img src="../assets/screenshots/library-create-folder.png" alt="Create a Library folder with its name, description and current destination" width="1440" height="1000" loading="lazy">
+  <figcaption>Compiled interface with controlled example data. Create a folder and Add knowledge remain separate actions.</figcaption>
+</figure>
+
 ### Move a folder safely
 
 Select an ordinary organizational folder and its destination inside the same Library project and space. A move retains the folder and asset IDs, native source bindings, historical versions and previously recorded response evidence. The audit event records the old and new parent. New reads use the current path and current permissions.

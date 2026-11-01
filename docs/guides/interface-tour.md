@@ -37,7 +37,7 @@ Choose how the files will be used:
 - **Documents to read and search** uses the document ingestion capabilities enabled by the operator.
 - **Data to explore with queries** uses structured dataset ingestion. CSV is one supported case; the actual accepted formats, including spreadsheet support, depend on the connected ingestion service.
 
-Drag files into the drop area or select them from your computer. Review the file list and upload it. A successful upload and a ready knowledge resource are separate states: follow **Activity** while extraction, indexing or dataset publication finishes. Failed files need review; the interface must not imply that an incomplete file is searchable.
+Drag files into the drop area or select them from your computer. Review the file list and upload it. A successful upload and a ready knowledge resource are separate states. Follow the source processing status; organization administrators can also open **Activity** from their avatar menu to inspect processing details. Failed files need review; the interface must not imply that an incomplete file is searchable.
 
 [![Reviewing a dataset upload and its destination before sending it](../assets/screenshots/upload-review.png)](../assets/screenshots/upload-review.png)
 
@@ -45,7 +45,11 @@ Multiple file selection is not a guarantee of an atomic server batch. Current ca
 
 ## 4. Configure the services your organization uses
 
-An organization administrator or appropriately authorized operator opens **Settings**. The sections separate organization access, knowledge/AI configuration and operational controls.
+An organization administrator opens their avatar menu and chooses **Settings**. Operators can use the APIs permitted by their current role; the administration pages are reserved for organization administrators. The sections separate organization access, knowledge/AI configuration and operational controls.
+
+[![Organization administrator opening Settings and Activity from their account menu](../assets/screenshots/account-admin-menu.png)](../assets/screenshots/account-admin-menu.png)
+
+The example uses controlled data. Other roles keep their personal account and integration actions without administrator navigation.
 
 [![Organization settings and the initial model-provider configuration](../assets/screenshots/organization-settings.png)](../assets/screenshots/organization-settings.png)
 
@@ -76,7 +80,7 @@ The live preview switches between **Chat**, **Navigation** and **Sign-in**. Sign
 
 ## 6. Ask a question, then inspect its evidence
 
-Open **Chat**. Use **New** to start a conversation; folders organize related conversations. The current knowledge scope determines what the conversation can consult. The **+** menu adds supported private attachments; drag and drop is also available. Wait for attachment processing to finish before sending.
+Chat opens after sign-in. Use **New** to start a conversation; chat projects group related private conversations. These groups are separate from the shared folders in Library. The current knowledge scope determines what the conversation can consult. The **+** menu adds supported private attachments; drag and drop is also available. Wait for attachment processing to finish before sending.
 
 A private chat attachment is not automatically published to the organization library. Knowledge changes and newly derived conclusions require the explicit review and authorization flow described in [Agents and chat](agents.md).
 
@@ -87,6 +91,15 @@ After an answer, open **Audit**. Check the cited source and its recorded revisio
 [![The execution audit sidebar with a recorded tool and highlighted SQL](../assets/screenshots/answer-audit.png)](../assets/screenshots/answer-audit.png)
 
 The detailed [chat guide](agents.md) explains SSE, conversation memory, file capabilities and RLM tool receipts. [Exports and sharing](exports-sharing.md) explains reviewing selected messages, retaining their evidence and sharing under the recipient's current permissions.
+
+## Confirm sign-out
+
+Open your avatar menu and choose **Sign out**. The confirmation dialog lets you cancel before the session changes. Confirming signs you out; saved knowledge and conversations remain. If the identity provider's redirect fails, koinon checks whether the application session has already ended before showing an error.
+
+<figure>
+  <img src="../assets/screenshots/sign-out-confirmation-mobile.png" alt="Mobile koinon sign-out confirmation with Cancel and Sign out actions" width="390" height="1000" loading="lazy">
+  <figcaption>Controlled example data in the compiled interface. The confirmation stays within the mobile viewport.</figcaption>
+</figure>
 
 ## 7. Set your own profile and integration access
 
