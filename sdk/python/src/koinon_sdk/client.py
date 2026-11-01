@@ -149,6 +149,7 @@ from koinon_sdk.models import (
     AuditEvent,
     Capabilities,
     CatalogEntry,
+    CatalogMove,
     ChatFolder,
     ChatMessage,
     ChatRun,
@@ -616,6 +617,14 @@ class KoinonClient(BulkClientMixin, QueryBatchClientMixin, CommunicationsClientM
         return CatalogEntry.model_validate(
             await self._request(
                 "PATCH", self._tenant(tenant_id) + "/catalog/" + quote(entry_id, safe=""), json=fields
+            )
+        )
+
+    async def move(self, tenant_id: str, entry_id: str, input: CatalogMove) -> CatalogEntry:
+        return CatalogEntry.model_validate(
+            await self._request(
+                "POST", self._tenant(tenant_id) + "/catalog/" + quote(entry_id, safe="") + "/move",
+                json=input.model_dump(mode="json"),
             )
         )
 

@@ -9,6 +9,7 @@
   "CatalogController.catalog_archive": "client.catalog.archive",
   "CatalogController.catalog_restore": "client.catalog.restore",
   "CatalogController.catalog_delete": "client.catalog.delete",
+  "CatalogHierarchyController.move": "client.catalog.move",
   "ContextController.context": "client.platform.context",
   "JobController.list": "client.jobs.list",
   "JobController.get": "client.jobs.get",

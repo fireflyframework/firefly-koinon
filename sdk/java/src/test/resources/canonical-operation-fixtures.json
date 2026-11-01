@@ -532,6 +532,7 @@
           "project_id": "project_id-value",
           "description": "description-value",
           "status": "status-value",
+          "system_managed": false,
           "metadata": {
             "example": {
               "decimal": "12345678901234567890.12345678901234567890",
@@ -575,6 +576,7 @@
       "project_id": "project_id-value",
       "description": "description-value",
       "status": "status-value",
+      "system_managed": false,
       "metadata": {
         "example": {
           "decimal": "12345678901234567890.12345678901234567890",
@@ -616,6 +618,7 @@
       "project_id": "project_id-value",
       "description": "description-value",
       "status": "status-value",
+      "system_managed": false,
       "metadata": {
         "example": {
           "decimal": "12345678901234567890.12345678901234567890",
@@ -657,6 +660,7 @@
       "project_id": "project_id-value",
       "description": "description-value",
       "status": "status-value",
+      "system_managed": false,
       "metadata": {
         "example": {
           "decimal": "12345678901234567890.12345678901234567890",
@@ -698,6 +702,7 @@
       "project_id": "project_id-value",
       "description": "description-value",
       "status": "status-value",
+      "system_managed": false,
       "metadata": {
         "example": {
           "decimal": "12345678901234567890.12345678901234567890",
@@ -739,6 +744,7 @@
       "project_id": "project_id-value",
       "description": "description-value",
       "status": "status-value",
+      "system_managed": false,
       "metadata": {
         "example": {
           "decimal": "12345678901234567890.12345678901234567890",
@@ -770,6 +776,48 @@
     "response": "void",
     "body": null,
     "status": 204,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "CatalogHierarchyController.move",
+    "group": "CatalogApi",
+    "group_scoped": true,
+    "method": "move",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/catalog/entry_id value/move",
+    "ids": {
+      "tenant_id": "tenant value",
+      "entry_id": "entry_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "CatalogMove",
+    "response": "CatalogEntry",
+    "body": {
+      "created_by": "created_by-value",
+      "updated_by": "updated_by-value",
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "kind": "kind-value",
+      "name": "name-value",
+      "parent_id": "parent_id-value",
+      "workspace_id": "workspace_id-value",
+      "project_id": "project_id-value",
+      "description": "description-value",
+      "status": "status-value",
+      "system_managed": false,
+      "metadata": {
+        "example": {
+          "decimal": "12345678901234567890.12345678901234567890",
+          "integer": "9007199254740993"
+        }
+      },
+      "created_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z"
+    },
+    "status": 200,
     "encoding": "application/json",
     "precondition": false,
     "idempotency": false
@@ -835,6 +883,7 @@
           "project_id": "project_id-value",
           "description": "description-value",
           "status": "status-value",
+          "system_managed": false,
           "metadata": {
             "example": {
               "decimal": "12345678901234567890.12345678901234567890",
@@ -7877,6 +7926,7 @@
         "project_id": "project_id-value",
         "description": "description-value",
         "status": "status-value",
+        "system_managed": false,
         "metadata": {
           "example": {
             "decimal": "12345678901234567890.12345678901234567890",
@@ -7899,6 +7949,7 @@
           "project_id": "project_id-value",
           "description": "description-value",
           "status": "status-value",
+          "system_managed": false,
           "metadata": {
             "example": {
               "decimal": "12345678901234567890.12345678901234567890",
@@ -8309,6 +8360,7 @@
         "project_id": "project_id-value",
         "description": "description-value",
         "status": "status-value",
+        "system_managed": false,
         "metadata": {
           "example": {
             "decimal": "12345678901234567890.12345678901234567890",
@@ -8330,6 +8382,7 @@
         "project_id": "project_id-value",
         "description": "description-value",
         "status": "status-value",
+        "system_managed": false,
         "metadata": {
           "example": {
             "decimal": "12345678901234567890.12345678901234567890",
@@ -8351,6 +8404,7 @@
         "project_id": "project_id-value",
         "description": "description-value",
         "status": "status-value",
+        "system_managed": false,
         "metadata": {
           "example": {
             "decimal": "12345678901234567890.12345678901234567890",
@@ -8372,6 +8426,7 @@
         "project_id": "project_id-value",
         "description": "description-value",
         "status": "status-value",
+        "system_managed": false,
         "metadata": {
           "example": {
             "decimal": "12345678901234567890.12345678901234567890",
@@ -8427,6 +8482,7 @@
         "project_id": "project_id-value",
         "description": "description-value",
         "status": "status-value",
+        "system_managed": false,
         "metadata": {
           "example": {
             "decimal": "12345678901234567890.12345678901234567890",
@@ -8448,6 +8504,7 @@
         "project_id": "project_id-value",
         "description": "description-value",
         "status": "status-value",
+        "system_managed": false,
         "metadata": {
           "example": {
             "decimal": "12345678901234567890.12345678901234567890",
@@ -8469,6 +8526,7 @@
         "project_id": "project_id-value",
         "description": "description-value",
         "status": "status-value",
+        "system_managed": false,
         "metadata": {
           "example": {
             "decimal": "12345678901234567890.12345678901234567890",
@@ -8490,6 +8548,7 @@
         "project_id": "project_id-value",
         "description": "description-value",
         "status": "status-value",
+        "system_managed": false,
         "metadata": {
           "example": {
             "decimal": "12345678901234567890.12345678901234567890",
@@ -8544,6 +8603,7 @@
         "project_id": "project_id-value",
         "description": "description-value",
         "status": "status-value",
+        "system_managed": false,
         "metadata": {
           "example": {
             "decimal": "12345678901234567890.12345678901234567890",
@@ -8565,6 +8625,7 @@
         "project_id": "project_id-value",
         "description": "description-value",
         "status": "status-value",
+        "system_managed": false,
         "metadata": {
           "example": {
             "decimal": "12345678901234567890.12345678901234567890",
@@ -8586,6 +8647,7 @@
         "project_id": "project_id-value",
         "description": "description-value",
         "status": "status-value",
+        "system_managed": false,
         "metadata": {
           "example": {
             "decimal": "12345678901234567890.12345678901234567890",
@@ -8607,6 +8669,7 @@
         "project_id": "project_id-value",
         "description": "description-value",
         "status": "status-value",
+        "system_managed": false,
         "metadata": {
           "example": {
             "decimal": "12345678901234567890.12345678901234567890",
@@ -8662,6 +8725,7 @@
         "project_id": "project_id-value",
         "description": "description-value",
         "status": "status-value",
+        "system_managed": false,
         "metadata": {
           "example": {
             "decimal": "12345678901234567890.12345678901234567890",
@@ -8683,6 +8747,7 @@
         "project_id": "project_id-value",
         "description": "description-value",
         "status": "status-value",
+        "system_managed": false,
         "metadata": {
           "example": {
             "decimal": "12345678901234567890.12345678901234567890",
@@ -8704,6 +8769,7 @@
         "project_id": "project_id-value",
         "description": "description-value",
         "status": "status-value",
+        "system_managed": false,
         "metadata": {
           "example": {
             "decimal": "12345678901234567890.12345678901234567890",
@@ -8725,6 +8791,7 @@
         "project_id": "project_id-value",
         "description": "description-value",
         "status": "status-value",
+        "system_managed": false,
         "metadata": {
           "example": {
             "decimal": "12345678901234567890.12345678901234567890",

@@ -15,6 +15,7 @@ from pyfly.data.relational.sqlalchemy import LockMode, transactional
 from pyfly.data.transaction import current_unit_of_work
 from pyfly.kernel import ConflictException, InvalidRequestException
 
+from koinon.catalog.ancestry import MAX_ANCESTRY, MAX_FOLDER_ANCESTRY, validated_ancestry
 from koinon.catalog.entities import INTERNAL_METADATA_KEYS, AuditEvent, CatalogEntry, Membership
 from koinon.catalog.errors import AccessDenied, InvalidHierarchy
 from koinon.catalog.ports import ManagedMembershipReader, MembershipEventRecorder, MembershipRecord
@@ -63,8 +64,8 @@ ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
 PARENTS: dict[str, frozenset[str | None]] = {
     "workspace": frozenset({None}),
     "project": frozenset({"workspace"}),
-    "collection": frozenset({"project"}),
-    "corpus": frozenset({"project"}),
+    "collection": frozenset({"project", "collection", "corpus"}),
+    "corpus": frozenset({"project", "collection", "corpus"}),
     "source": frozenset({"collection", "corpus"}),
     "document": frozenset({"source"}),
     "dataset": frozenset({"source"}),
@@ -325,6 +326,7 @@ class CatalogService:
         metadata: dict | None = None,
         description: str = "",
     ) -> CatalogEntry:
+        await self._lock_tenant(tenant_id)
         self.require_knowledge_review(kind)
         if kind not in PARENTS or not name.strip() or len(name.strip()) > 255:
             raise InvalidHierarchy(
@@ -366,19 +368,27 @@ class CatalogService:
                 "Choose a valid kind and a name from 1 to 255 characters", code="INVALID_RESOURCE"
             )
         if system_key is not None and (
-            kind != "workspace"
-            or parent_id is not None
+            kind not in {"workspace", "project", "collection", "corpus"}
             or not installation_run_id
             or not system_key.strip()
             or len(system_key) > 64
         ):
             raise InvalidHierarchy(
-                "System identity requires an installed workspace", code="INVALID_SYSTEM_SPACE"
+                "System identity requires an installed folder", code="INVALID_SYSTEM_SPACE"
             )
         parent = await self._scoped_entry(tenant_id, parent_id) if parent_id is not None else None
         workspace_id = parent.workspace_id if parent else None
         if (parent.kind if parent else None) not in PARENTS[kind]:
             raise InvalidHierarchy("This resource requires a compatible parent", code="INVALID_PARENT")
+        if parent is not None:
+
+            async def read(identifier: str) -> CatalogEntry:
+                return await self._scoped_entry(tenant_id, identifier)
+
+            chain = await validated_ancestry(parent, read, PARENTS)
+            limit = MAX_FOLDER_ANCESTRY if kind in {"collection", "corpus"} else MAX_ANCESTRY
+            if len(chain) >= limit:
+                raise InvalidHierarchy("Choose a shallower folder", code="INVALID_ANCESTRY")
         if metadata and INTERNAL_METADATA_KEYS.intersection(metadata):
             raise InvalidHierarchy("Reserved catalog metadata", code="RESERVED_METADATA")
         identifier = create_id or str(uuid4())

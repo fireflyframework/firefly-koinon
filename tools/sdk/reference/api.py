@@ -14,7 +14,7 @@ AREAS = (
     (
         "catalog",
         "Catalog and proposals",
-        ("CatalogController", "CatalogProposalController"),
+        ("CatalogController", "CatalogHierarchyController", "CatalogProposalController"),
     ),
     (
         "sources",

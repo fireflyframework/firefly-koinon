@@ -24,7 +24,7 @@ import type {DatasetFileAppendResult} from './generated.js';
 import type {TableProvenance,TableSnapshotPage} from './generated.js';
 import type {CoordinateCellRequest,TableCoordinateManifest,TableCoordinateSelection,TableRowRangePage,TableColumnBindingPage,KnowledgeIntentInput,KnowledgeIntent,KnowledgeConfirmation,CommittedKnowledge,PendingKnowledgeCommit,KnowledgeItemView,KnowledgeItemPage} from './generated.js';
 import type {KoinonTransport,RequestOptions,BinaryDownload} from './transport.js';
-import type {AuditFilter,AuditEvent,Capabilities,CatalogEntry,CatalogFilter,ContextResponse,DatasetSchema,EntryCreate,EntryUpdate,Job,Lineage,MemberInput,Membership,Page,QueryRequest,QueryResponse,SearchRequest,SearchResponse,UploadResponse} from './types.js';
+import type {AuditFilter,AuditEvent,Capabilities,CatalogEntry,CatalogMove,CatalogFilter,ContextResponse,DatasetSchema,EntryCreate,EntryUpdate,Job,Lineage,MemberInput,Membership,Page,QueryRequest,QueryResponse,SearchRequest,SearchResponse,UploadResponse} from './types.js';
 import type {AgentConfiguration,AgentInput,ChatThread,ChatMessage,ChatRun,ChatEventData,Configuration,EvidenceResult,KnowledgeScope,ModelProvider,ProviderInput,RunInput,ValidationResult} from './types.js';
 import type {ChatFolder,ThreadCreate,FolderCreate,FolderPatch,ThreadPatch,TitleRequest,TitleSuggestion,FolderFilter,ThreadFilter} from './types.js';
 import type {AttachmentView,AttachmentPage,PrivateChunkPage,AttachmentRevision,AttachmentPromotionInput,AttachmentPromotionView} from './generated.js';
@@ -234,6 +234,7 @@ export class KoinonClient {
    update:(tenantId:string,entryId:string,entry:EntryUpdate,options:RequestOptions={})=>transport.request<CatalogEntry>('PATCH',`${tenant(tenantId)}/catalog/${id(entryId)}`,{...options,body:entry}),
    restore:(tenantId:string,entryId:string,options:RequestOptions={})=>transport.request<CatalogEntry>('POST',`${tenant(tenantId)}/catalog/${id(entryId)}/restore`,options),
    delete:(tenantId:string,entryId:string,options:RequestOptions={})=>transport.request<void>('DELETE',`${tenant(tenantId)}/catalog/${id(entryId)}`,options),
+   move:(tenantId:string,entryId:string,input:CatalogMove,options:RequestOptions={})=>transport.request<CatalogEntry>('POST',`${tenant(tenantId)}/catalog/${id(entryId)}/move`,{...options,body:input}),
    archive:(tenantId:string,entryId:string,options:RequestOptions={})=>transport.request<CatalogEntry>('POST',`${tenant(tenantId)}/catalog/${id(entryId)}/archive`,options),
   };
   this.sources={uploadFile:(tenantId:string,input:SourceUploadInput,options:RequestOptions={})=>{const body=multipart(input.file,input.filename);for(const key of ['workspace_id','project_id','parent_id','mode'] as const)body.set(key,input[key]);return transport.request<UploadResponse>('POST',`${tenant(tenantId)}/sources/upload`,{...options,body});},upload:(tenantId:string,form:FormData,options:RequestOptions={})=>transport.request<UploadResponse>('POST',`${tenant(tenantId)}/sources/upload`,{...options,body:form})};

@@ -18,6 +18,7 @@ from pyfly.web.adapters.starlette.errors import global_exception_handler
 from koinon import __version__
 from koinon.api.controllers.audit import AuditController
 from koinon.api.controllers.catalog import CatalogController
+from koinon.api.controllers.catalog_hierarchy import CatalogHierarchyController
 from koinon.api.controllers.context import ContextController
 from koinon.api.controllers.jobs import JobController
 from koinon.api.controllers.memberships import MembershipController
@@ -143,6 +144,7 @@ def create_application(config: dict, *, role: ProcessRole = "api"):
         ContextController,
         McpConnectionController,
         CatalogController,
+        CatalogHierarchyController,
         MembershipController,
         AuditController,
         JobController,

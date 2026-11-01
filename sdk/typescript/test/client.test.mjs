@@ -107,3 +107,18 @@ test('catalog filters and recorded summaries survive the transport',async()=>{
   assert.deepEqual(page.summaries.entry.tags,['pdf','reviewed']);
  });
 });
+test('folder moves keep observed parent and timestamp preconditions on the authenticated wire',async()=>{
+ const input={parent_id:'destination',expected_parent_id:'original',expected_updated_at:'2026-11-01T08:00:00Z'};
+ await server((req,res)=>{
+  assert.equal(req.url,'/bff/api/v1/tenants/north%2Fdivision/catalog/folder%2Fone/move');
+  assert.equal(req.method,'POST');assert.equal(req.headers.authorization,'Bearer editor');
+  let raw='';req.on('data',part=>raw+=part);req.on('end',()=>{
+   assert.deepEqual(JSON.parse(raw),input);
+   res.setHeader('Content-Type','application/json');res.end(JSON.stringify({id:'folder/one',system_managed:false}));
+  });
+ },async baseUrl=>{
+  const client=new KoinonClient({transport:new FetchTransport({baseUrl,accessToken:()=> 'editor'})});
+  const moved=await client.catalog.move('north/division','folder/one',input);
+  assert.equal(moved.system_managed,false);
+ });
+});

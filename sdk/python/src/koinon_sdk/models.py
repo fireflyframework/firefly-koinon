@@ -30,9 +30,16 @@ class CatalogEntry(ResponseModel):
     project_id: str | None = None
     description: str = ""
     status: str
+    system_managed: bool = False
     metadata: dict[str, JsonValue] = Field(default_factory=dict)
     created_at: str
     updated_at: str | None = None
+
+
+class CatalogMove(InputModel):
+    parent_id: str = Field(min_length=1, max_length=64)
+    expected_parent_id: str = Field(min_length=1, max_length=64)
+    expected_updated_at: AwareDatetime
 
 
 class Membership(ResponseModel):
