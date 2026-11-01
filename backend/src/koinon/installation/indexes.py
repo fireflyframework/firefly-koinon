@@ -33,11 +33,18 @@ class NativeInstallationIndexes:
         row = await reader.records.find_by_id(identifier, lock=LockMode.PESSIMISTIC_WRITE)
         if row is None or row.tenant_id != permit.tenant_id or row.created_by != ACTOR:
             raise InstallationError("INSTALLATION_INDEX_CHANGED")
-        expected = next(
-            run.checkpoints[key + ":" + value.key]
-            for key in ("index-active", "index-ready", "index-created", "index-intent")
+        expected_key = next(
+            key + ":" + value.key
+            for key in (
+                "index-active",
+                "index-ready",
+                "index-created",
+                "index-intent-reconciled",
+                "index-intent",
+            )
             if key + ":" + value.key in run.checkpoints
         )
+        expected = run.checkpoints[expected_key]
         if row.revision != expected["revision"] or row.status != expected["row_status"]:
             raise InstallationError("INSTALLATION_MANUAL_CHANGE")
         if (
@@ -63,12 +70,21 @@ class NativeInstallationIndexes:
             != row.embedding_fingerprint
         ):
             raise InstallationError("INSTALLATION_MANUAL_CHANGE")
+        if expected_key == "index-intent-reconciled:" + value.key:
+            from koinon.installation.intent_recovery import validate_reconciled
+
+            validate_reconciled(permit, value, run, row, provider)
         return run, reader, row, provider
 
     @transactional(read_from_primary=True)
     async def intent(self, permit: InstallationPermit, value: IndexInstallation):
         run = await self.admissions.require(permit)
         if "index-intent:" + value.key in run.checkpoints:
+            if (
+                run.checkpoints["index-intent:" + value.key].get("revision") is None
+                and "index-intent-reconciled:" + value.key not in run.checkpoints
+            ):
+                await self.reconcile_intent(permit, value, run)
             return (await self.owned(permit, value))[2].id
         reader = self.reader.get()
         await reader.facade.catalog._lock_tenant(permit.tenant_id)
@@ -129,7 +145,7 @@ class NativeInstallationIndexes:
             created_by=ACTOR,
             updated_by=ACTOR,
         )
-        await reader.records.save(row)
+        row = await reader.records.save(row)
         await reader.facade.catalog._audit(
             ACTOR, permit.tenant_id, "installation.index.intent", identifier, {"run_id": permit.run_id}
         )
@@ -145,6 +161,72 @@ class NativeInstallationIndexes:
             },
         )
         return identifier
+
+    async def reconcile_intent(self, permit, value, run):
+        from koinon.installation.intent_recovery import legacy_intent, pristine_descriptor
+        from koinon.installation.writes import fingerprint
+
+        workspace, provider_id, native, identifier, original = legacy_intent(permit, value, run)
+        reader = self.reader.get()
+        await reader.facade.catalog._lock_tenant(permit.tenant_id)
+        row = await reader.records.find_by_id(identifier, lock=LockMode.PESSIMISTIC_WRITE)
+        provider = await reader.planner.provider(permit.tenant_id, provider_id, value.model_id)
+        descriptor = pristine_descriptor(permit, value, run, row, provider, workspace, native, identifier)
+        if await reader.records.find_initial_workspace_effects(
+            permit.tenant_id, workspace, permit.run_id, identifier
+        ):
+            raise InstallationError("INSTALLATION_MANUAL_CHANGE")
+        if await reader.connections.selected(
+            permit.tenant_id, workspace, value.domain, value.domain + ".embedding"
+        ):
+            raise InstallationError("INSTALLATION_MANUAL_CHANGE")
+        if await reader.adapter.workspace_exists(
+            tenant_id=permit.tenant_id, workspace_id=workspace, domain=value.domain, actor=ACTOR
+        ):
+            raise InstallationError("INSTALLATION_MANUAL_CHANGE")
+        overview = await reader.adapter.overview(
+            tenant_id=permit.tenant_id, workspace_id=workspace, domain=value.domain, actor=ACTOR
+        )
+        targets = await reader.adapter.discover(
+            tenant_id=permit.tenant_id,
+            native_workspace_id=workspace,
+            catalog_workspace_id=workspace,
+            domain=value.domain,
+            actor=ACTOR,
+            limit=1,
+            offset=0,
+        )
+        if (
+            overview["chunk_count"]
+            or overview["active_native_id"] is not None
+            or targets["total"]
+            or targets["items"]
+        ):
+            raise InstallationError("INSTALLATION_MANUAL_CHANGE")
+        receipt = {
+            "status": "done",
+            "resource_id": identifier,
+            "dimensions": value.dimensions,
+            "revision": 1,
+            "row_status": "queued",
+            "generation": permit.generation,
+            "source_checkpoint_sha256": fingerprint(original),
+            "descriptor_sha256": descriptor,
+            "reason": "repository_defaults_26_11_1",
+        }
+        await reader.facade.catalog._audit(
+            ACTOR,
+            permit.tenant_id,
+            "installation.index.intent_reconciled",
+            identifier,
+            {
+                "run_id": permit.run_id,
+                "generation": permit.generation,
+                "source_checkpoint_sha256": receipt["source_checkpoint_sha256"],
+                "descriptor_sha256": descriptor,
+            },
+        )
+        await self.admissions.checkpoint(permit, "index-intent-reconciled:" + value.key, receipt)
 
     async def empty(self, reader, row):
         overview = await reader.adapter.overview(
