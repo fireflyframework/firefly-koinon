@@ -642,6 +642,17 @@
           "default": null,
           "title": "Source Provenance Complete"
         },
+        "output_release": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AnswerRelease"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "knowledge_settings_snapshot": {
           "anyOf": [
             {
@@ -770,6 +781,133 @@
         "outcome"
       ],
       "title": "AnswerPolicy",
+      "type": "object"
+    },
+    "AnswerRelease": {
+      "additionalProperties": true,
+      "properties": {
+        "version": {
+          "const": 1,
+          "default": 1,
+          "title": "Version",
+          "type": "integer"
+        },
+        "policy_version": {
+          "const": "knowledge-only-v1",
+          "default": "knowledge-only-v1",
+          "title": "Policy Version",
+          "type": "string"
+        },
+        "run_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Run Id",
+          "type": "string"
+        },
+        "message_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Message Id",
+          "type": "string"
+        },
+        "tenant_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "generation_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Generation Id"
+        },
+        "publication_sequence": {
+          "minimum": 1,
+          "title": "Publication Sequence",
+          "type": "integer"
+        },
+        "outcome": {
+          "enum": [
+            "grounded",
+            "refused",
+            "review_required"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "text_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Text Sha256",
+          "type": "string"
+        },
+        "citations_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Citations Sha256",
+          "type": "string"
+        },
+        "artifacts_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Artifacts Sha256",
+          "type": "string"
+        },
+        "policy_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Policy Sha256",
+          "type": "string"
+        },
+        "fact_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 80,
+          "title": "Fact Ids",
+          "type": "array"
+        },
+        "result_pins": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ResultPin"
+          },
+          "maxItems": 100,
+          "title": "Result Pins",
+          "type": "array"
+        },
+        "source_refs": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SourceReference"
+          },
+          "maxItems": 500,
+          "title": "Source Refs",
+          "type": "array"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "message_id",
+        "tenant_id",
+        "publication_sequence",
+        "outcome",
+        "text_sha256",
+        "citations_sha256",
+        "artifacts_sha256",
+        "policy_sha256",
+        "created_at"
+      ],
+      "title": "AnswerRelease",
       "type": "object"
     },
     "AssetAvailability": {
@@ -22754,6 +22892,28 @@
         "data_type"
       ],
       "title": "ResultColumn",
+      "type": "object"
+    },
+    "ResultPin": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "sha256"
+      ],
+      "title": "ResultPin",
       "type": "object"
     },
     "RlmToolReceipt": {
