@@ -1,0 +1,25 @@
+{
+  "copyright": "2026 Firefly Software Foundation",
+  "license": "Apache-2.0",
+  "work": "Original isometric knowledge library illustration commissioned for koinon",
+  "source": "design/source/knowledge-library.png",
+  "source_sha256": "8ced1bdba779b73c03d447ab6c3c86ff3da54946c2a67c4ec1633d005c9c5407",
+  "source_bytes": 1612354,
+  "source_dimensions": [
+    1536,
+    1024
+  ],
+  "transformation": "Lossless PNG-to-WebP encoding, alpha retained, metadata excluded; the 768px variant is a proportional resize without cropping.",
+  "outputs": [
+    {
+      "path": "brand/illustrations/knowledge-library.webp",
+      "sha256": "bcd8b154b20dbc50df79b2b7f8f5ddc122f623b045217e8934680f4d66848c65",
+      "bytes": 673646
+    },
+    {
+      "path": "brand/illustrations/knowledge-library-768.webp",
+      "sha256": "86ee33787fdeff700558b384ab866594062c6b58866f04193ae28f11993395bf",
+      "bytes": 198398
+    }
+  ]
+}

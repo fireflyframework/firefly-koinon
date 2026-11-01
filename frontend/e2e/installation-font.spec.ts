@@ -1,6 +1,6 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 import { test, expect, type Page, type Locator } from '@playwright/test';
-import { readFile } from 'node:fs/promises';
+import { readFile, mkdir } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { mockService } from './fixtures';
 async function installation(page: Page) {
@@ -93,4 +93,8 @@ test('successful logout returns to the installation-branded sign-in screen', asy
     page.getByRole('heading', { name: 'Welcome to Northstar Knowledge' }),
     received,
   );
+  await expect(page.locator('.auth-scene')).toBeVisible();
+  await expect.poll(()=>page.locator('.auth-scene').evaluate((image:HTMLImageElement)=>image.naturalWidth)).toBeGreaterThan(0);
+  const output=process.env['KOINON_AUTH_SCREENSHOTS'];if(output){await mkdir(output,{recursive:true});await page.screenshot({path:output+'/auth-library-signed-out.png',fullPage:true});}
+
 });

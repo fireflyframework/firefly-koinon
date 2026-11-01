@@ -50,6 +50,8 @@ The standalone sign-in, account and logout notices use the selected bundled font
 
 **Use deployment defaults** previews the installation identity. Save to restore inheritance. Resetting preserves the revision counter, so an older open editor cannot overwrite a newer change. A conflict requires reloading before another save.
 
+The sign-in screen and ended sessions share a decorative, self-hosted knowledge-library illustration. Embedded applications serve `illustrations/knowledge-library.webp` and its `knowledge-library-768.webp` mobile variant alongside the other assets beneath `brandBase`. The existing brand-copy pipeline includes both files. Authentication remains available if an illustration cannot be loaded.
+
 ## Images and colors
 
 Upload PNG, JPEG or WebP images, up to 256 KiB each, with neither dimension exceeding 2048 pixels. Animated images, SVG, remote image URLs and executable formats are rejected. The server decodes and rewrites accepted images as metadata-free PNGs and checks the normalized size too. Deployment configuration uses the same validated `data:image/...;base64,...` representation. Small identity assets are stored with the revisioned identity record; this does not change knowledge-file object storage or its retention policy.
