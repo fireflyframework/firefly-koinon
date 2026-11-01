@@ -26,9 +26,12 @@ class CatalogEntry(Base):
         Index("ix_lattice_scope_kind", "tenant_id", "workspace_id", "kind"),
         UniqueConstraint("tenant_id", "system_key", name="uq_catalog_system_key"),
         CheckConstraint(
-            "system_key IS NULL OR (kind='workspace' AND parent_id IS NULL "
-            "AND workspace_id=id AND project_id IS NULL AND installation_run_id IS NOT NULL)",
-            name="ck_catalog_system_workspace",
+            "system_key IS NULL OR (installation_run_id IS NOT NULL AND ("
+            "(kind='workspace' AND parent_id IS NULL AND workspace_id=id AND project_id IS NULL) OR "
+            "(kind='project' AND parent_id IS NOT NULL AND workspace_id IS NOT NULL AND project_id=id) OR "
+            "(kind IN ('collection','corpus') AND parent_id IS NOT NULL "
+            "AND workspace_id IS NOT NULL AND project_id IS NOT NULL)))",
+            name="ck_catalog_system_folder",
         ),
     )
     id: Mapped[str] = mapped_column(String(64), primary_key=True)

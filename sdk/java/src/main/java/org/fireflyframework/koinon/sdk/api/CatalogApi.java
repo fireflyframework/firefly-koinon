@@ -40,4 +40,8 @@ public Void delete(String entryId,RequestOptions options){Objects.requireNonNull
 public Void delete(String entryId){return delete(entryId,RequestOptions.defaults());}
 public CompletableFuture<Void> deleteAsync(String entryId,RequestOptions options){Objects.requireNonNull(options);return transport.jsonAsync("DELETE",prefix+"/catalog/"+Transport.id(entryId),null,options,transport.type(Void.class));}
 public CompletableFuture<Void> deleteAsync(String entryId){return deleteAsync(entryId,RequestOptions.defaults());}
+public CatalogEntry move(String entryId,CatalogMove input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.json("POST",prefix+"/catalog/"+Transport.id(entryId)+"/move",input,options,transport.type(CatalogEntry.class));}
+public CatalogEntry move(String entryId,CatalogMove input){return move(entryId,input,RequestOptions.defaults());}
+public CompletableFuture<CatalogEntry> moveAsync(String entryId,CatalogMove input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.jsonAsync("POST",prefix+"/catalog/"+Transport.id(entryId)+"/move",input,options,transport.type(CatalogEntry.class));}
+public CompletableFuture<CatalogEntry> moveAsync(String entryId,CatalogMove input){return moveAsync(entryId,input,RequestOptions.defaults());}
 }

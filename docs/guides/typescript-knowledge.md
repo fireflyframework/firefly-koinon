@@ -186,3 +186,26 @@ export async function confirmReviewedIntent(
 The example's body must be an actual user statement. Do not relabel imported/model-generated content as user-authored evidence; use its matching conversation or external-review origin. Updates and publishing carry the target and its expected version. `knowledgeItems.list/get/version` read serving and historical versions; drafts preserve the published serving version. A `pending` result is unresolved: retain its operation identity and reconcile it. Do not infer consent from a model suggestion or invent curated delete/share/export/derive helpers. External MCP reviews have their own receipt and component-only approval rules. See the [generated reference](../reference/sdk-api.md) and [MCP review guide](mcp-knowledge-management.md).
 
 When a conversation-origin intent reports `remembered_context_present`, show the remembered-context explanation alongside the exact intent preview and obtain a separate decision. Only an explicit approval permits `include_remembered_context=true` on `KnowledgeConfirmation` (Java: `withIncludeRememberedContext(true)`). The examples above leave that consent disabled. Evidence marked `basis: remembered_context` remains attributed to its recorded historical source rather than being presented as new retrieval. See [conversation memory](conversation-memory.md#share-or-publish-an-answer-that-used-memory) for the complete behavior.
+
+## Move an organizational folder
+
+Read the folder immediately before asking the person to confirm its destination. Retain the exact parent and timestamp returned by the server. This helper sends one requested move and leaves conflicts visible to the caller.
+
+```typescript
+import {KoinonClient, type CatalogEntry} from '@fireflyframework/koinon-sdk';
+
+export function moveFolder(
+  client: KoinonClient, tenant: string, folder: CatalogEntry, destinationId: string,
+): Promise<CatalogEntry> {
+  if (folder.parent_id === null || !folder.updated_at) {
+    throw new Error('Read the current folder location and update timestamp first');
+  }
+  return client.catalog.move(tenant, folder.id, {
+    parent_id: destinationId,
+    expected_parent_id: folder.parent_id,
+    expected_updated_at: folder.updated_at,
+  });
+}
+```
+
+`system_managed` identifies retained installation defaults; it is an output, never an editable metadata flag. The backend protects those folders even if a host omits the interface check. Ordinary collection and corpus folders move only inside the same project and space. Handle `CATALOG_CHANGED` by reloading and reviewing a new decision. `KNOWLEDGE_TRANSFER_REQUIRED` means the request crosses a boundary that this move operation cannot change. See [Library hierarchy and permissions](library.md#spaces-projects-and-folders).

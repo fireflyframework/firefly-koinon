@@ -486,3 +486,182 @@ async def test_ordinary_user_workspaces_remain_deletable_and_cannot_claim_system
         fields = {"kind": "workspace", "name": "Forged"} if model is CatalogCreate else {}
         with pytest.raises(ValidationError):
             model.model_validate({**fields, "system_key": "organization"})
+
+
+async def test_nested_folder_move_preserves_native_scope_and_records_old_and_new_location(catalog):
+    from koinon.catalog.hierarchy_service import CatalogHierarchyService
+
+    service, session, _ = catalog
+    workspace = await service.create("issuer|alice", "north", kind="workspace", name="Space")
+    project = await service.create(
+        "issuer|alice", "north", kind="project", name="Team", parent_id=workspace.id
+    )
+    origin = await service.create(
+        "issuer|alice", "north", kind="collection", name="Origin", parent_id=project.id
+    )
+    destination = await service.create(
+        "issuer|alice", "north", kind="collection", name="Destination", parent_id=project.id
+    )
+    child = await service.create("issuer|alice", "north", kind="corpus", name="Nested", parent_id=origin.id)
+    original_time = child.updated_at
+    moved = await CatalogHierarchyService(service).move(
+        "issuer|alice",
+        "north",
+        child.id,
+        parent_id=destination.id,
+        expected_parent_id=origin.id,
+        expected_updated_at=original_time,
+    )
+    assert (moved.parent_id, moved.workspace_id, moved.project_id) == (
+        destination.id,
+        workspace.id,
+        project.id,
+    )
+    events = await service.audit_repository.find_all(tenant_id="north", action="catalog.moved")
+    assert len(events) == 1
+    assert events[0].details == {"from_parent_id": origin.id, "to_parent_id": destination.id}
+    await session.commit()
+    page = await service.page("issuer|reader", "north", parent_id=destination.id, view="library")
+    assert [row.id for row in page["items"]] == [child.id]
+
+
+async def test_folder_moves_reject_cycles_stale_state_cross_space_and_read_only_users(catalog):
+    from pyfly.kernel import ConflictException
+
+    from koinon.catalog.errors import AccessDenied, InvalidHierarchy
+    from koinon.catalog.hierarchy_service import CatalogHierarchyService
+
+    service, _, _ = catalog
+    root = await service.create("issuer|alice", "north", kind="workspace", name="Space")
+    project = await service.create("issuer|alice", "north", kind="project", name="Team", parent_id=root.id)
+    origin = await service.create(
+        "issuer|alice", "north", kind="collection", name="Origin", parent_id=project.id
+    )
+    child = await service.create(
+        "issuer|alice", "north", kind="collection", name="Child", parent_id=origin.id
+    )
+    hierarchy = CatalogHierarchyService(service)
+    with pytest.raises(InvalidHierarchy, match="cycle"):
+        await hierarchy.move(
+            "issuer|alice",
+            "north",
+            origin.id,
+            parent_id=child.id,
+            expected_parent_id=project.id,
+            expected_updated_at=origin.updated_at,
+        )
+    with pytest.raises(ConflictException):
+        await hierarchy.move(
+            "issuer|alice",
+            "north",
+            child.id,
+            parent_id=project.id,
+            expected_parent_id="stale",
+            expected_updated_at=child.updated_at,
+        )
+    with pytest.raises(AccessDenied):
+        await hierarchy.move(
+            "issuer|reader",
+            "north",
+            child.id,
+            parent_id=project.id,
+            expected_parent_id=origin.id,
+            expected_updated_at=child.updated_at,
+        )
+    other = await service.create("issuer|alice", "north", kind="workspace", name="Other")
+    other_project = await service.create(
+        "issuer|alice", "north", kind="project", name="Other team", parent_id=other.id
+    )
+    with pytest.raises(InvalidHierarchy, match="transfer"):
+        await hierarchy.move(
+            "issuer|alice",
+            "north",
+            child.id,
+            parent_id=other_project.id,
+            expected_parent_id=origin.id,
+            expected_updated_at=child.updated_at,
+        )
+    assert child.parent_id == origin.id
+
+
+async def test_nested_folder_creation_and_moves_enforce_depth_and_processing_limits(catalog):
+    from pyfly.kernel import ConflictException
+
+    from koinon.catalog.errors import InvalidHierarchy
+    from koinon.catalog.hierarchy_service import CatalogHierarchyService
+
+    service, _, _ = catalog
+    root = await service.create("issuer|alice", "north", kind="workspace", name="Space")
+    project = await service.create("issuer|alice", "north", kind="project", name="Team", parent_id=root.id)
+    parent = project
+    for depth in range(10):
+        parent = await service.create(
+            "issuer|alice", "north", kind="collection", name=f"Level {depth}", parent_id=parent.id
+        )
+    with pytest.raises(InvalidHierarchy, match="shallower"):
+        await service.create("issuer|alice", "north", kind="collection", name="Too deep", parent_id=parent.id)
+    source = await service.create(
+        "issuer|alice", "north", kind="source", name="Original", parent_id=parent.id
+    )
+    asset = await service.create(
+        "issuer|alice", "north", kind="document", name="Document", parent_id=source.id
+    )
+    await service.create("issuer|alice", "north", kind="chunk", name="Passage", parent_id=asset.id)
+    await service.update("issuer|alice", "north", source.id, {"status": "pending"})
+    with pytest.raises(ConflictException, match="processing"):
+        await CatalogHierarchyService(service).move(
+            "issuer|alice",
+            "north",
+            parent.id,
+            parent_id=project.id,
+            expected_parent_id=parent.parent_id,
+            expected_updated_at=parent.updated_at,
+        )
+
+
+async def test_archived_parent_does_not_accept_new_nested_content(catalog):
+    from koinon.catalog.errors import InvalidHierarchy
+
+    service, _, _ = catalog
+    root = await service.create("issuer|alice", "north", kind="workspace", name="Space")
+    project = await service.create("issuer|alice", "north", kind="project", name="Team", parent_id=root.id)
+    await service.archive("issuer|alice", "north", project.id)
+    with pytest.raises(InvalidHierarchy, match="active"):
+        await service.create("issuer|alice", "north", kind="collection", name="Hidden", parent_id=project.id)
+
+
+async def test_installed_child_folders_are_protected_without_creating_new_knowledge_boundaries(catalog):
+    from pyfly.kernel import ConflictException
+
+    from koinon.catalog.hierarchy_service import CatalogHierarchyService
+
+    service, _, _ = catalog
+    parent = None
+    for kind in ("workspace", "project", "collection"):
+        entry = await service._write_create(
+            "system:installation",
+            "north",
+            kind=kind,
+            name=kind,
+            parent_id=parent,
+            installation_run_id="run",
+            system_key=f"default-{kind}",
+        )
+        parent = entry.id
+    for operation in (service.delete, service.archive):
+        with pytest.raises(ConflictException):
+            await operation("issuer|alice", "north", entry.id)
+    with pytest.raises(ConflictException):
+        await CatalogHierarchyService(service).move(
+            "issuer|alice",
+            "north",
+            entry.id,
+            parent_id=entry.project_id,
+            expected_parent_id=entry.parent_id,
+            expected_updated_at=entry.updated_at,
+        )
+    child = await service.create(
+        "issuer|alice", "north", kind="collection", name="User folder", parent_id=entry.id
+    )
+    assert (child.workspace_id, child.project_id) == (entry.workspace_id, entry.project_id)
+    await service.delete("issuer|alice", "north", child.id)

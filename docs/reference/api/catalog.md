@@ -16,6 +16,7 @@ Use the linked wire models for field constraints. Operation metadata does not en
 - [Catalog archive](#catalogcontroller-catalog-archive) (POST)
 - [Catalog restore](#catalogcontroller-catalog-restore) (POST)
 - [Catalog delete](#catalogcontroller-catalog-delete) (DELETE)
+- [Move](#cataloghierarchycontroller-move) (POST)
 - [Get](#catalogproposalcontroller-get) (GET)
 - [Confirm](#catalogproposalcontroller-confirm) (POST)
 - [Cancel](#catalogproposalcontroller-cancel) (POST)
@@ -318,6 +319,49 @@ These are the declared path, query and body arguments. Multipart and binary inpu
 | Request schema | No request schema declared |
 | Response schema | No response body |
 | Success status | `204` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: CatalogHierarchyController.move -->
+<a id="cataloghierarchycontroller-move"></a>
+## Move
+
+```http
+POST /api/v1/tenants/{tenant_id}/catalog/{entry_id}/move
+```
+
+Contract operation: `CatalogHierarchyController.move`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `move` |
+| TypeScript | `catalog.move` |
+| Java | `client.catalog.move` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `entry_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[CatalogMove]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`CatalogMove`](../models/catalogmove.md) |
+| Response schema | [`CatalogEntry`](../models/catalogentry.md) |
+| Success status | `200` |
 | Declared encoding | `application/json` |
 
 Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.

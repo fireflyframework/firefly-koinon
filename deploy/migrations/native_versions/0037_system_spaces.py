@@ -48,14 +48,24 @@ def system_space_guards(dialect: str) -> tuple[str, ...]:
 
 
 def upgrade():
-    op.add_column("lattice_catalog", sa.Column("system_key", sa.String(64), nullable=True))
-    op.add_column("lattice_catalog", sa.Column("installation_run_id", sa.String(64), nullable=True))
+    op.add_column(
+        "lattice_catalog", sa.Column("system_key", sa.String(64), nullable=True)
+    )
+    op.add_column(
+        "lattice_catalog",
+        sa.Column("installation_run_id", sa.String(64), nullable=True),
+    )
     with op.batch_alter_table("lattice_catalog") as batch:
-        batch.create_unique_constraint("uq_catalog_system_key", ["tenant_id", "system_key"])
+        batch.create_unique_constraint(
+            "uq_catalog_system_key", ["tenant_id", "system_key"]
+        )
         batch.create_check_constraint(
-            "ck_catalog_system_workspace",
-            "system_key IS NULL OR (kind='workspace' AND parent_id IS NULL "
-            "AND workspace_id=id AND project_id IS NULL AND installation_run_id IS NOT NULL)",
+            "ck_catalog_system_folder",
+            "system_key IS NULL OR (installation_run_id IS NOT NULL AND ("
+            "(kind='workspace' AND parent_id IS NULL AND workspace_id=id AND project_id IS NULL) OR "
+            "(kind='project' AND parent_id IS NOT NULL AND workspace_id IS NOT NULL AND project_id=id) OR "
+            "(kind IN ('collection','corpus') AND parent_id IS NOT NULL "
+            "AND workspace_id IS NOT NULL AND project_id IS NOT NULL)))",
         )
     for statement in system_space_guards(op.get_bind().dialect.name):
         op.execute(sa.text(statement))

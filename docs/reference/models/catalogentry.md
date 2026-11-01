@@ -26,6 +26,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 | `project_id` | `string` or `null` | No | `null` |
 | `description` | `string` | No | `""` |
 | `status` | `string` | Yes | Not specified |
+| `system_managed` | `boolean` | No | `false` |
 | `metadata` | Map of string keys to [`JsonValue`](jsonvalue.md) | No | Not specified |
 | `created_at` | `string` | Yes | Not specified |
 | `updated_at` | `string` or `null` | No | `null` |
@@ -135,6 +136,11 @@ This is a schema definition, not an example request. It preserves all declared k
         "status": {
           "title": "Status",
           "type": "string"
+        },
+        "system_managed": {
+          "default": false,
+          "title": "System Managed",
+          "type": "boolean"
         },
         "metadata": {
           "additionalProperties": {
