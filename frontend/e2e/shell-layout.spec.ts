@@ -15,7 +15,7 @@ test('primary navigation shares the header and knowledge search appears only in 
     header.getByRole('searchbox', { name: 'Search your knowledge', exact: true }),
   ).toBeVisible();
   const headerBox = (await header.boundingBox())!;
-  expect((await nav.getByRole('button').allTextContents()).map(text => text.trim())).toEqual(['Chat', 'Library']);
+  expect((await nav.getByRole('button').allTextContents()).map(text => text.trim())).toEqual(['Chat', 'Library', 'My activity']);
   for (const name of ['Chat', 'Library']) {
     const box = (await nav.getByRole('button', { name, exact: true }).boundingBox())!;
     expect(box.y).toBeGreaterThanOrEqual(headerBox.y);

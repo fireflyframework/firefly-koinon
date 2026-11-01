@@ -1,0 +1,20 @@
+// Copyright 2026 Firefly Software Foundation
+// SPDX-License-Identifier: Apache-2.0
+@mixin toggle {
+  position: absolute;
+  z-index: 4;
+  left: calc(var(--ffk-sidebar, 248px) - 14px);
+  width: 28px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--ui-line);
+  border-radius: 8px;
+  background: var(--ui-surface);
+  color: var(--ui-muted);
+  cursor: pointer;
+  &:hover {color: var(--ui-text);background: var(--ui-subtle);}
+  &:focus-visible {outline: 2px solid var(--ui-focus, var(--ui-accent));outline-offset: 3px;}
+  @media (pointer: coarse) {width: 44px;height: 44px;left: calc(var(--ffk-sidebar, 248px) - 22px);}
+}

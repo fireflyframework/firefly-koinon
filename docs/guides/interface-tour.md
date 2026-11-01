@@ -8,6 +8,8 @@ The screenshots show the built interface with **controlled example data**. Names
 
 Sign in through your organization's identity provider. The organization selector in the top navigation determines which organization's library, conversations and settings you are viewing. Choosing an organization does not grant access to it.
 
+On desktop, the chevron at the edge of the conversation or Settings sidebar hides navigation to make room for your work. Use it again to restore the sidebar. The standalone application remembers that collapsed or expanded preference on this browser; it also applies when you switch between Chat and Settings. On smaller screens, use the navigation drawer and the Settings section selector instead.
+
 koinon presents the product as your corporate brain: a place to find organizational knowledge, ask questions and inspect its sources. The sign-in page uses the installation's configured identity and opens the knowledge available to your account.
 
 [![The desktop sign-in page introduces koinon as your corporate brain](../assets/screenshots/corporate-brain-sign-in-1440.png)](../assets/screenshots/corporate-brain-sign-in-1440.png)
@@ -91,6 +93,12 @@ After an answer, open **Audit**. Check the cited source and its recorded revisio
 [![The execution audit sidebar with a recorded tool and highlighted SQL](../assets/screenshots/answer-audit.png)](../assets/screenshots/answer-audit.png)
 
 The detailed [chat guide](agents.md) explains SSE, conversation memory, file capabilities and RLM tool receipts. [Exports and sharing](exports-sharing.md) explains reviewing selected messages, retaining their evidence and sharing under the recipient's current permissions.
+
+## Review your own activity
+
+Choose **My activity** in the top navigation, or open it from the navigation drawer on a small screen. Select a past reporting window and choose **View summary** to review the knowledge you created, updated and consulted, your main projects, MCP activity and recorded model usage. Counts distinguish observed, partial and unavailable information.
+
+This view follows the signed-in user and the currently authorized organization. Changing organization clears the old summary before loading the new one. Administrator accounts use the same personal view here; organization-wide reports and processing jobs remain under **Activity** in the administrator’s avatar menu.
 
 ## Confirm sign-out
 

@@ -20,7 +20,7 @@ import { KoinonAccountMenu } from './account-menu';
 import { KoinonPoweredBy } from '../atoms/powered-by';
 import { KoinonIcon } from '../atoms/icon';
 import { KoinonSearchField } from '../molecules/search-field';
-export type PrimaryDestination = 'library' | 'chat' | 'activity' | 'settings';
+export type PrimaryDestination = 'library' | 'chat' | 'my-activity' | 'activity' | 'settings';
 export interface OrganizationOption {
   id: string;
   name: string;
@@ -147,6 +147,7 @@ export class KoinonShell implements AfterViewInit, OnDestroy {
   readonly destinations: { id: PrimaryDestination; label: string; icon: string }[] = [
     { id: 'chat', label: 'Chat', icon: 'chat' },
     { id: 'library', label: 'Library', icon: 'folder' },
+    { id: 'my-activity', label: 'My activity', icon: 'history' },
   ];
   go(destination: PrimaryDestination, event?: Event) {
     event?.preventDefault();

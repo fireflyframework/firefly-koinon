@@ -37,8 +37,8 @@
  }
  </div>@if(f.selected();as entry){<ffk-inspector [entry]="entry" [actors]="f.libraryPage().actors||{}" [parentName]="parentName(entry)" [canEdit]="f.canWrite()" [schema]="f.schema()" (closed)="closeInspector()" (explored)="explore()" (lineageRequested)="lineage()" (tableHistoryRequested)="openTableHistory($event)" (editRequested)="openEdit()" (archiveRequested)="showDialog('archive')" (moveRequested)="showDialog('move')"/>}</div>
  }
- @else if(destination()==='activity'&&canConfigure()){
- <header class="page-heading"><div><h1>{{'Activity'|ffkText}}</h1><p>{{'Review knowledge use and follow file processing.'|ffkText}}</p></div><ffk-button variant="quiet" icon="refresh" (click)="f.loadJobs()">{{'Refresh'|ffkText}}</ffk-button></header><ng-container *ngComponentOutlet="activityComponent()"/>
+ @else if(destination()==='my-activity'||(destination()==='activity'&&canConfigure())){
+ @if(activityComponent()){<ng-container *ngComponentOutlet="activityComponent();inputs:{personalOnly:destination()==='my-activity'}"/>}@else if(hasActivityLoader){<ffk-skeleton width="60%" height="14px" label="Opening panel"/>}@else{<p role="status">{{'Activity is not enabled in this view'|ffkText}}</p>}
  }
  @else if(destination()==='chat'){
  @if(chatComponent()){<ng-container [ngComponentOutlet]="chatComponent()" [ngComponentOutletInputs]="{actions:chatActions}"/>}@else if(hasChatLoader){<ffk-skeleton width="60%" height="14px" label="Opening chat"/>}@else{<div class="workbench-empty"><h2>Chat is not enabled in this view</h2><p>The host application can enable the optional Chat feature.</p></div>}
