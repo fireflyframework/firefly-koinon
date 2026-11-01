@@ -60,6 +60,7 @@ async def guarded_database(bulk):
             for path, method in (
                 (migrations / "0024_bulk_intake.py", "_postgres_guards"),
                 (next(migrations.glob("*_bulk_staging.py")), "install_guards"),
+                (migrations / "0040_bulk_pinned_receipts.py", "upgrade"),
             ):
                 spec = importlib.util.spec_from_file_location("owned_guards", path)
                 migration = importlib.util.module_from_spec(spec)
