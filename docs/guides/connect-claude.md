@@ -67,6 +67,8 @@ Sign in with the existing organization identity provider. On koinon's connection
 
 A browsing connection needs `catalog:read`. Document search additionally needs `knowledge:search`; dataset queries need `query:execute`; inspecting your existing answer audits uses `chat:use`. Staging and approving text or file changes additionally require `catalog:write` and `ingest:write`. The operator must permit these scopes for the registered client, and your current role must also permit them. See [MCP authentication](../operations/mcp-authentication.md) for the exact deployment contract.
 
+For user-requested folder, tag and metadata organization, use `catalog:read` and `catalog:write` with the current resource permissions. Your personal activity summary additionally needs `activity:read`. The organization-wide health tools require a separate unbounded administrator PAT with `audit:read`; they are not exposed to workspace-bound OAuth. The [operation walkthrough](external-agent-management.md) explains these boundaries and the current timestamp checks.
+
 OAuth permission to access a space is not permission to publish a conclusion. No account-linking choice authorizes an assistant to invent evidence or approve knowledge changes on your behalf.
 
 ## Verify retrieval in a conversation

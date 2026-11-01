@@ -1,3 +1,5 @@
+<!-- Copyright 2026 Firefly Software Foundation -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # firefly koinon desktop extension
 
 Connect an MCP desktop host to your operator's firefly koinon MCP endpoint with the 26.11.4 desktop extension. The bridge uses the official TypeScript MCP SDK and forwards remote tools, resources, and prompts; the server owns tool schemas and permission checks.
@@ -31,7 +33,7 @@ Tool results pass to the host assistant and its configured model provider. Revie
 
 The bridge forwards the MCP Apps HTML capability only when the desktop host advertises `io.modelcontextprotocol/ui` with the `text/html;profile=mcp-app` MIME type. It preserves app-only tool visibility, review resources, and private result metadata. A review nonce stays in `_meta`; the bridge does not copy it into visible content or structured results. The host remains responsible for displaying the app and keeping private metadata out of model context, as defined by the [MCP Apps specification](https://github.com/modelcontextprotocol/ext-apps/blob/main/specification/2026-01-26/apps.mdx).
 
-A host without that capability can use the server's supported read tools. It cannot approve a knowledge change through this bridge. There is no automatic approval or browser-review fallback. Local protocol tests cover capability forwarding; acceptance in a particular desktop application requires a separate host test.
+A host without that capability can use supported reads and the dedicated user-requested catalog organization tools, subject to current scopes and resource permissions. It cannot approve generated content or file publication through this bridge. Renaming or moving a folder does not publish knowledge content. There is no automatic approval or browser-review fallback. See the [operation walkthrough](../../docs/guides/external-agent-management.md) for timestamp preconditions and unknown outcomes. Local protocol tests cover capability forwarding; acceptance in a particular desktop application requires a separate host test.
 
 ## Build and verify
 
