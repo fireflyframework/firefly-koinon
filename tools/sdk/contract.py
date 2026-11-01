@@ -16,7 +16,7 @@ from compatibility import qualified_glossary
 
 root = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(root / "sdk/python/src"))
-from koinon_sdk import activity, communications, availability
+from koinon_sdk import activity, communications, availability, platform_health
 from koinon_sdk import contracts, models, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance
 from koinon_sdk.client import KoinonClient
 from koinon_sdk import coordinates, curated, dataset_files, authorized_applications, organization_chat
@@ -26,6 +26,8 @@ from koinon_sdk import mcp_applications, document_history
 from koinon_sdk import organization_people, corporate_profiles, memory, bulk, bulk_queries
 
 rows = """
+PlatformController.health|platform_health|platformHealth.health|-|PlatformHealth
+PlatformController.system_information|system_information|platformHealth.systemInformation|-|SystemInformation
 KnowledgeAvailabilityController.processing|knowledge_processing|availability.processing|ProcessingRequest|ProcessingResponse
 KnowledgeAvailabilityController.observe|knowledge_availability|availability.observe|AvailabilityRequest|AvailabilityResponse
 CommunicationsController.providers|communication_providers|communications.recipients.providers|-|RecipientProviderPage
@@ -416,6 +418,9 @@ for op in inventory["operations"]:
         success_status=status,
         source_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
     )
+    if ts.startswith("platformHealth."):
+        op["sdk_typescript_factory"] = "createPlatformHealthApi"
+        op["sdk_typescript_module"] = "@fireflyframework/koinon-sdk/platform-health"
     if ts.startswith("availability."):
         op["sdk_typescript_factory"] = "createAvailabilityApi"
         op["sdk_typescript_module"] = "@fireflyframework/koinon-sdk/availability"
@@ -477,7 +482,7 @@ assert not mapping, mapping
 assert not unmapped, "Canonical API operations awaiting typed SDK mapping: " + ", ".join(unmapped)
 
 classes = {}
-for module in (availability, communications, activity, models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files, authorized_applications, organization_chat, organization_knowledge, organization_branding, mcp, external_reviews, external_file_reviews, mcp_applications, document_history, organization_people, corporate_profiles, memory, bulk, bulk_queries):
+for module in (platform_health, availability, communications, activity, models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files, authorized_applications, organization_chat, organization_knowledge, organization_branding, mcp, external_reviews, external_file_reviews, mcp_applications, document_history, organization_people, corporate_profiles, memory, bulk, bulk_queries):
     classes.update(
         {
             name: value

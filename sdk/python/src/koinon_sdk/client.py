@@ -220,6 +220,7 @@ from koinon_sdk.organization_people import (
     OrganizationUnitPage,
     OrganizationUnitPatch,
 )
+from koinon_sdk.platform_health import PlatformHealth, SystemInformation
 from koinon_sdk.proposals import CatalogProposal, ProposalConfirmation, ProposalRevision
 from koinon_sdk.provenance import TableProvenance, TableSnapshotPage
 from koinon_sdk.query_batch_client import QueryBatchClientMixin
@@ -2426,4 +2427,14 @@ class KoinonClient(BulkClientMixin, QueryBatchClientMixin, CommunicationsClientM
                 self._tenant(tenant_id) + "/activity/administration",
                 json=value.model_dump(mode="json"),
             )
+        )
+
+    async def platform_health(self, tenant_id: str) -> PlatformHealth:
+        return PlatformHealth.model_validate(
+            await self._request("GET", self._tenant(tenant_id) + "/platform/health")
+        )
+
+    async def system_information(self, tenant_id: str) -> SystemInformation:
+        return SystemInformation.model_validate(
+            await self._request("GET", self._tenant(tenant_id) + "/platform/system-information")
         )

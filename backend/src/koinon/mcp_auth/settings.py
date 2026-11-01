@@ -23,6 +23,9 @@ MCP_SCOPES = frozenset(
 )
 
 
+MCP_RESOURCE_SCOPES = MCP_SCOPES | {"audit:read"}
+
+
 @component(name="mcp.oauth.settings")
 @config_properties(prefix="koinon.mcp.oauth")
 @dataclass

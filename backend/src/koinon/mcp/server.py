@@ -58,6 +58,8 @@ TOOL_SCOPES = {
     "koinon_search": ("catalog:read", "knowledge:search"),
     "koinon_query": ("catalog:read", "query:execute"),
     "koinon_answer_audit": ("catalog:read", "chat:use"),
+    "koinon_platform_health": ("catalog:read", "audit:read"),
+    "koinon_system_information": ("catalog:read", "audit:read"),
 }
 
 
@@ -275,6 +277,7 @@ def create_mcp_server(
     activity_recorder: RecorderResolver | None = None,
     activity_metrics: MetricsResolver | None = None,
     application_context: ApplicationContext | None = None,
+    platform_authorization=None,
 ) -> MCPServer:
     server = MCPServer(
         name=installation_branding.product_name
@@ -536,4 +539,8 @@ def create_mcp_server(
         private_review=private_file_review,
         prepare_file=prepare_file,
     )
+    from koinon.mcp.platform_tools import install_platform_visibility, register_platform_tools
+
+    register_platform_tools(server, api)
+    install_platform_visibility(server, platform_authorization)
     return server

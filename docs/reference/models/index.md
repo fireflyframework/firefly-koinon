@@ -3,11 +3,11 @@
 
 # Wire models
 
-The canonical schema contains 419 definitions and 410 named model aliases. Supporting definitions are included so every schema reference can be followed. Language-specific generated names can differ from wire names; consult the SDK imports in the workflow guides.
+The canonical schema contains 429 definitions and 420 named model aliases. Supporting definitions are included so every schema reference can be followed. Language-specific generated names can differ from wire names; consult the SDK imports in the workflow guides.
 
 Each page lists field presence, nullability, defaults and validation constraints. The downloadable [complete schema](../sdk-schemas.json) remains the machine-readable contract.
 
-[A](#a) [B](#b) [C](#c) [D](#d) [E](#e) [F](#f) [G](#g) [I](#i) [J](#j) [K](#k) [L](#l) [M](#m) [N](#n) [O](#o) [P](#p) [Q](#q) [R](#r) [S](#s) [T](#t) [U](#u) [V](#v)
+[A](#a) [B](#b) [C](#c) [D](#d) [E](#e) [F](#f) [G](#g) [H](#h) [I](#i) [J](#j) [K](#k) [L](#l) [M](#m) [N](#n) [O](#o) [P](#p) [Q](#q) [R](#r) [S](#s) [T](#t) [U](#u) [V](#v)
 
 ## A
 
@@ -209,6 +209,12 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`GoogleCredential`](googlecredential.md)
 - [`GoogleWorkspaceSettings`](googleworkspacesettings.md)
 
+## H
+
+- [`HealthComponent`](healthcomponent.md)
+- [`HealthCounts`](healthcounts.md)
+- [`HealthSummary`](healthsummary.md)
+
 ## I
 
 - [`IdentityActivation`](identityactivation.md)
@@ -384,6 +390,8 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`PendingKnowledgeCommit`](pendingknowledgecommit.md)
 - [`Person`](person.md)
 - [`PersonalToken`](personaltoken.md)
+- [`PlatformHealth`](platformhealth.md)
+- [`PlatformValue`](platformvalue.md)
 - [`PoolUsage`](poolusage.md)
 - [`Presentation`](presentation.md)
 - [`PrivateChunkPage`](privatechunkpage.md)
@@ -455,6 +463,11 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`StructuredKnowledgeBounds`](structuredknowledgebounds.md)
 - [`StructuredKnowledgeCapabilities`](structuredknowledgecapabilities.md)
 - [`StructuredKnowledgeSettings`](structuredknowledgesettings.md)
+- [`SystemArtifact`](systemartifact.md)
+- [`SystemCapabilities`](systemcapabilities.md)
+- [`SystemComponentVersion`](systemcomponentversion.md)
+- [`SystemInformation`](systeminformation.md)
+- [`SystemLimit`](systemlimit.md)
 
 ## T
 

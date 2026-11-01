@@ -83,6 +83,7 @@ AREAS = (
         "platform",
         "Platform configuration and operations",
         (
+            "PlatformController",
             "ContextController",
             "CapabilitiesController",
             "OrganizationBrandingController",

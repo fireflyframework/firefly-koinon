@@ -501,6 +501,76 @@
   "GoogleCredentialKind": [
     "google_workspace"
   ],
+  "HealthComponentId": [
+    "database-primary",
+    "database-documents",
+    "database-documents-control",
+    "database-structured",
+    "database-structured-control",
+    "storage-documents",
+    "storage-structured",
+    "indexes-documents",
+    "indexes-structured",
+    "ingestion-documents",
+    "ingestion-structured",
+    "model-configuration",
+    "communications",
+    "workers"
+  ],
+  "HealthComponentStatus": [
+    "passed",
+    "failed",
+    "unknown",
+    "disabled"
+  ],
+  "HealthComponentBasis": [
+    "observed",
+    "configuration",
+    "none"
+  ],
+  "HealthComponentFreshness": [
+    "current",
+    "stale",
+    "unknown"
+  ],
+  "HealthComponentReason": [
+    "DATABASE_OK",
+    "DATABASE_UNAVAILABLE",
+    "RUNTIME_ROLE_UNVERIFIED",
+    "RUNTIME_ROLE_UNSAFE",
+    "MODULE_DISABLED",
+    "STORAGE_NOT_PROBED",
+    "INDEXES_VERIFIED",
+    "INDEXES_INCOMPLETE",
+    "INDEXES_NOT_PROBED",
+    "NO_INDEXES",
+    "INGESTION_STATE_OBSERVED",
+    "INGESTION_FAILURES",
+    "MODEL_CONFIGURATION_PRESENT",
+    "MODEL_CONFIGURATION_INCOMPLETE",
+    "PROVIDER_NOT_PROBED",
+    "COMMUNICATIONS_DISABLED",
+    "COMMUNICATIONS_CONFIGURED",
+    "COMMUNICATIONS_INCOMPLETE",
+    "WORKER_LIVENESS_UNKNOWN",
+    "OBSERVATION_UNAVAILABLE",
+    "OBSERVATION_BOUNDED",
+    "OBSERVATION_STALE"
+  ],
+  "HealthComponentRemediation": [
+    "none",
+    "retry_read",
+    "review_configuration",
+    "review_indexes",
+    "review_ingestion",
+    "review_communications",
+    "review_worker"
+  ],
+  "HealthComponentCoverage": [
+    "complete",
+    "partial",
+    "unavailable"
+  ],
   "IdentityCheckStatus": [
     "unconfigured",
     "unknown",
@@ -868,6 +938,66 @@
   ],
   "StructuredEvidenceKind": [
     "structured_snapshot"
+  ],
+  "SystemArtifactComponent": [
+    "backend",
+    "documents",
+    "structured",
+    "storage",
+    "python-sdk",
+    "framework"
+  ],
+  "SystemArtifactKind": [
+    "license",
+    "notice",
+    "sbom"
+  ],
+  "SystemArtifactContentType": [
+    "text/plain",
+    "application/json"
+  ],
+  "SystemComponentVersionDistribution": [
+    "firefly-koinon",
+    "firefly-koinon-documents",
+    "firefly-koinon-structured",
+    "firefly-koinon-storage",
+    "firefly-koinon-sdk",
+    "pyfly"
+  ],
+  "SystemInformationProduct": [
+    "koinon"
+  ],
+  "SystemInformationServingRole": [
+    "api",
+    "worker",
+    "unknown"
+  ],
+  "SystemInformationLicenseExpression": [
+    "Apache-2.0"
+  ],
+  "SystemInformationCopyright": [
+    "Copyright 2026 Firefly Software Foundation"
+  ],
+  "SystemLimitId": [
+    "api_capacity",
+    "worker_capacity",
+    "worker_concurrency",
+    "max_index_workspaces",
+    "mcp_max_concurrency",
+    "mcp_max_request_bytes",
+    "mcp_max_response_bytes",
+    "ingestion_raw_max_bytes",
+    "ingestion_scratch_max_bytes",
+    "ingestion_child_rss_max_bytes"
+  ],
+  "SystemLimitUnit": [
+    "operations",
+    "bytes",
+    "workspaces"
+  ],
+  "SystemLimitScope": [
+    "process",
+    "file"
   ],
   "TableCoordinateManifestStatus": [
     "complete",
