@@ -25,7 +25,7 @@ export class AccountNavigation implements OnDestroy {
       )?.[1];
     this.section.set((section as AccountSection) || null);
     this.view.set(
-      ['library', 'chat', 'activity', 'settings'].includes(path)
+      ['library', 'chat', 'my-activity', 'activity', 'settings'].includes(path)
         ? (path as PrimaryDestination)
         : 'chat',
     );
@@ -62,7 +62,7 @@ export class AccountNavigation implements OnDestroy {
       'view' in value &&
       'accountSection' in value &&
       typeof value.view === 'string' &&
-      ['library', 'chat', 'activity', 'settings'].includes(value.view) &&
+      ['library', 'chat', 'my-activity', 'activity', 'settings'].includes(value.view) &&
       (value.accountSection === null ||
         (typeof value.accountSection === 'string' &&
           [

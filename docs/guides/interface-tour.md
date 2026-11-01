@@ -94,6 +94,12 @@ After an answer, open **Audit**. Check the cited source and its recorded revisio
 
 The detailed [chat guide](agents.md) explains SSE, conversation memory, file capabilities and RLM tool receipts. [Exports and sharing](exports-sharing.md) explains reviewing selected messages, retaining their evidence and sharing under the recipient's current permissions.
 
+## Review your own activity
+
+Choose **My activity** in the top navigation, or open it from the navigation drawer on a small screen. Select a past reporting window and choose **View summary** to review the knowledge you created, updated and consulted, your main projects, MCP activity and recorded model usage. Counts distinguish observed, partial and unavailable information.
+
+This view follows the signed-in user and the currently authorized organization. Changing organization clears the old summary before loading the new one. Administrator accounts use the same personal view here; organization-wide reports and processing jobs remain under **Activity** in the administrator’s avatar menu.
+
 ## Confirm sign-out
 
 Open your avatar menu and choose **Sign out**. The confirmation dialog lets you cancel before the session changes. Confirming signs you out; saved knowledge and conversations remain. If the identity provider's redirect fails, koinon checks whether the application session has already ended before showing an error.

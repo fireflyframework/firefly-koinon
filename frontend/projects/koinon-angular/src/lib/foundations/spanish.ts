@@ -300,6 +300,8 @@ export const SPANISH: Readonly<Record<string, string>> = {
   'Filter archived items by name': 'Filtrar archivados por nombre',
   'Made with': 'Hecho con',
   'Powered by': 'Con tecnología de',
+  'My activity': 'Mi actividad',
+  'Activity is not enabled in this view': 'La actividad no está habilitada en esta vista',
   'Show settings navigation': 'Mostrar navegación de configuración',
   'Hide settings navigation': 'Ocultar navegación de configuración',
   love: 'amor',

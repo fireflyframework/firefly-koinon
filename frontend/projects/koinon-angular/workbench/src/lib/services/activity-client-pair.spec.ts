@@ -176,3 +176,46 @@ it('offers the organization audience only for a current organization administrat
   facade.tenantPermissions.set(new Set(['audit:read']));
   expect(fixture.componentInstance.canAdmin()).toBe(false);
 });
+
+it('locks a personal view to the owner audience even for administrators with job permissions', async () => {
+  const paths:string[]=[];
+  const transport:KoinonTransport={request:async<T>(_method:HttpMethod,path:string)=>{paths.push(path);return summary(3) as T;},stream:async function*(){yield*[];}};
+  const {fixture,facade}=setup(transport);
+  facade.tenantPermissions.set(new Set(['jobs:manage','audit:read','activity:read']));
+  facade.context.set({subject:'Alice',memberships:[{id:'admin',tenant_id:'same',subject:'Alice',role:'admin',active:true,workspace_id:null}]});
+  fixture.componentRef.setInput('personalOnly',true);
+  fixture.detectChanges();await fixture.whenStable();
+  expect(fixture.componentInstance.canAdmin()).toBe(false);
+  expect(fixture.nativeElement.querySelector('select[name=activity-audience]')).toBeNull();
+  expect(fixture.nativeElement.textContent).not.toContain('Processing jobs');
+  fixture.componentInstance.audience='administrative';await fixture.componentInstance.load();
+  expect(paths.length).toBeGreaterThan(0);expect(paths.every(path=>path.endsWith('/activity/personal'))).toBe(true);
+});
+
+it('aborts the administrative response when switching to a personal-only view', async () => {
+  let finish:((value:ActivitySummary)=>void)|undefined,signal:AbortSignal|undefined;
+  const transport:KoinonTransport={request:async<T>(_method:HttpMethod,path:string,options?:RequestOptions)=>{
+    if(path.endsWith('/administration')){signal=options?.signal;return await new Promise<T>(resolve=>finish=value=>resolve(value as T));}return summary(2) as T;
+  },stream:async function*(){yield*[];}};
+  const {fixture,facade}=setup(transport);
+  facade.tenantPermissions.set(new Set(['audit:read','activity:read']));
+  facade.context.set({subject:'Alice',memberships:[{id:'admin',tenant_id:'same',subject:'Alice',role:'admin',active:true,workspace_id:null}]});
+  fixture.detectChanges();await fixture.whenStable();fixture.componentInstance.audience='administrative';const pending=fixture.componentInstance.load();
+  await vi.waitFor(()=>expect(finish).toBeTypeOf('function'));
+  fixture.componentRef.setInput('personalOnly',true);fixture.detectChanges();await fixture.whenStable();
+  expect(signal?.aborted).toBe(true);finish!({...summary(99),audience:'organization_administrators'});await pending;
+  expect(fixture.componentInstance.summary()?.knowledge.created.value).toBe(2);
+});
+
+it('invalidates personal summaries immediately when workspace access or tenant selection changes', async () => {
+  const transport:KoinonTransport={request:async<T>(_method:HttpMethod,path:string)=>({...summary(2),tenant_id:path.split('/')[2]}) as T,stream:async function*(){yield*[];}};
+  const {fixture,facade}=setup(transport);fixture.componentRef.setInput('personalOnly',true);fixture.detectChanges();await fixture.whenStable();
+  expect(fixture.componentInstance.summary()?.tenant_id).toBe('same');facade.workspaceId.set('new-scope');expect(fixture.componentInstance.summary()).toBeNull();fixture.detectChanges();await fixture.whenStable();
+  facade.tenantId.set('second');expect(fixture.componentInstance.summary()).toBeNull();fixture.detectChanges();await fixture.whenStable();expect(fixture.componentInstance.summary()?.tenant_id).toBe('second');
+});
+
+for(const mismatch of ['tenant','audience'] as const) it(`rejects a personal summary with a mismatched ${mismatch}`,async()=>{
+  const transport:KoinonTransport={request:async<T>()=>({...summary(3),...(mismatch==='tenant'?{tenant_id:'other'}:{audience:'organization_administrators' as const})}) as T,stream:async function*(){yield*[];}};
+  const {fixture}=setup(transport);fixture.componentRef.setInput('personalOnly',true);fixture.detectChanges();await fixture.whenStable();
+  expect(fixture.componentInstance.summary()).toBeNull();expect(fixture.componentInstance.error()).toBe('Activity could not be loaded. Try again.');
+});
