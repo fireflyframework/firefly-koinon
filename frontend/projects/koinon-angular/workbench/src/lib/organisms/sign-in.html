@@ -19,7 +19,26 @@
     />
   </header>
   <main>
-    <div class="welcome-copy">
+    <div class="welcome-copy" [class.scene-unavailable]="!sceneAvailable()">
+      @if (sceneAvailable()) {
+        <img
+          class="auth-scene"
+          [src]="brandBase + '/illustrations/knowledge-library.webp'"
+          [srcset]="
+            brandBase +
+            '/illustrations/knowledge-library-768.webp 768w, ' +
+            brandBase +
+            '/illustrations/knowledge-library.webp 1536w'
+          "
+          sizes="(max-width: 700px) calc(100vw - 32px), (max-width: 1100px) 55vw, 800px"
+          width="1536"
+          height="1024"
+          alt=""
+          aria-hidden="true"
+          decoding="async"
+          (error)="sceneAvailable.set(false)"
+        />
+      }
       <h1>{{ 'Your corporate brain' | ffkText }}</h1>
       <p>
         {{
@@ -30,7 +49,7 @@
     </div>
     <div class="login-panel">
       @if (symbol) {
-        <img [src]="symbol" alt="" />
+        <img [src]="symbolImage()" alt="" />
       }
       <h2>{{ ('Welcome to {product}' | ffkText).replace('{product}', productName) }}</h2>
       <p>{{ 'Sign in with your organization account.' | ffkText }}</p>
