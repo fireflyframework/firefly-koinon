@@ -49,6 +49,9 @@
     "brand/exports/repository-banner.png",
     "brand/index.html",
     "brand/exports/identity-preview.png",
-    "brand/source/koinon-o-master.svg"
+    "brand/source/koinon-o-master.svg",
+    "brand/illustrations/knowledge-library.webp",
+    "brand/illustrations/knowledge-library-768.webp",
+    "brand/illustrations/knowledge-library-provenance.json"
   ]
 }
