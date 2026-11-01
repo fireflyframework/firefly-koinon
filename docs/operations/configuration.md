@@ -12,6 +12,52 @@ Local storage observations use the settings already bound to the document and st
 
 Vector observations use only the tenant's persisted workspace bindings under the native document tenant context, with explicit tenant/workspace predicates. They check the vector extension, embedding-set completion and physical valid/ready HNSW indexes. An empty binding, missing index, interrupted embedding set or exceeded verification limit cannot produce ready. Index creation belongs to privileged migrations or reviewed control operations, never runtime DDL.
 
+## PostgreSQL TLS by driver
+
+Choose the driver before preparing connection options. PyFly passes `connect-args` to that driver without translating TLS fields. A different database role can use the same driver; elevated credentials do not require switching drivers.
+
+### Runtime profiles using asyncpg
+
+1. Use `postgresql+asyncpg://` in each of the five runtime URLs. Keep each role's credentials in the protected environment or secret manager.
+2. Mount the reviewed CA bundle read-only in the process or container. For the boolean TLS configuration below, set `SSL_CERT_FILE` to that readable PEM bundle before starting Python. This affects Python's default TLS trust, so the bundle must also contain any roots required by other default-context clients in that process.
+3. Enable strict TLS in the native profile:
+
+```yaml
+pyfly:
+  data:
+    relational:
+      url: ${KOINON_DATABASE_URL}
+      connect-args:
+        ssl: true
+      datasources:
+        canon:
+          url: ${KOINON_CANON_DATABASE_URL}
+        canon_admin:
+          url: ${KOINON_CANON_ADMIN_DATABASE_URL}
+        structured:
+          url: ${KOINON_STRUCTURED_DATABASE_URL}
+        structured_admin:
+          url: ${KOINON_STRUCTURED_ADMIN_DATABASE_URL}
+```
+
+For asyncpg, `ssl: true` creates Python's default SSL context with certificate and hostname verification enabled. Named datasources inherit these connect arguments when they use the same driver. A named override must preserve the intended verification policy. Do not disable hostname checks to make a database IP address work; use the certificate's DNS name.
+
+An alternative is an SQLAlchemy/asyncpg URL with `?ssl=verify-full` and a readable `PGSSLROOTCERT` PEM path. This is a separate CA-loading path: `PGSSLROOTCERT` supplies asyncpg's named SSL mode, while the boolean `ssl: true` path uses Python's default trust configuration. Choose one approach and verify the actual effective connection settings. See the [asyncpg connection reference](https://magicstack.github.io/asyncpg/current/api/index.html#asyncpg.connection.connect).
+
+### Migration and backup profiles using psycopg and libpq
+
+The separate migration command uses psycopg. Configure its operator-only `KOINON_MIGRATION_DATABASE_URL` with `sslmode=verify-full` and `sslrootcert`, for example this URL structure with placeholders:
+
+```text
+postgresql+psycopg://ROLE:PASSWORD@DATABASE_HOST:5432/DATABASE?sslmode=verify-full&sslrootcert=/etc/koinon/certs/database-ca.pem
+```
+
+Replace and URL-encode the credential components in a protected file; do not print the completed URL. The CA file must exist inside the migration container. Backup tooling reads the same libpq TLS fields. Neither accepts asyncpg's `ssl` keyword. The [PostgreSQL connection parameters](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-PARAMKEYWORDS) define these fields; [migration instructions](migrations.md) keep the operator credential separate from runtime processes.
+
+### Bootstrap with an application context
+
+Bootstrap and other operator commands that construct Koinon's application context use its runtime datasource configuration. Prepare a separate protected operator environment with the necessary primary role, but retain the runtime driver and matching TLS options. For the asyncpg profile above, keep `KOINON_DATABASE_URL` as `postgresql+asyncpg://...`; do not replace it with `KOINON_MIGRATION_DATABASE_URL`. A psycopg URL combined with the inherited asyncpg `ssl: true` field fails before it can connect. Preserve the four named datasource profiles and their role boundaries as well.
+
 ## Bounded settings
 
 | Alias | Default | Accepted range |

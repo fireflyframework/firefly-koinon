@@ -33,7 +33,7 @@ Keep PostgreSQL on the reviewed private network and verify its DNS resolution an
 | `KOINON_STRUCTURED_DATABASE_URL` | Structured runtime |
 | `KOINON_STRUCTURED_ADMIN_DATABASE_URL` | Scoped structured provisioning |
 
-Apply the approved TLS mode and trusted CA to **every** URL; configuring primary alone does not configure the other four. For SQLAlchemy/asyncpg URLs, the driver parameter is `ssl`, such as `?ssl=verify-full`, with the trusted CA available to the service through `PGSSLROOTCERT`. Verify the certificate hostname against the database DNS name. Migration and backup tooling have their own connection requirements: the backup wrapper accepts libpq `sslmode`/`sslrootcert` options and rejects unsupported ones. Do not copy query parameters between drivers blindly. [Operator configuration](configuration.md) explains independent pools and timeouts.
+Apply the approved TLS mode and trusted CA to **all five datasources**. Use the database DNS name covered by its certificate. The connection options depend on the driver: runtime `postgresql+asyncpg` profiles accept `connect-args.ssl: true`, while psycopg migration tooling uses `sslmode=verify-full` and `sslrootcert`. These options are not interchangeable. Follow the [driver-specific TLS steps](configuration.md#postgresql-tls-by-driver) before starting either process; that guide also explains CA loading and independent connection pools.
 
 The [shared cache](postgresql-cache.md) also uses the registered primary PostgreSQL datasource. Keep `pyfly.cache.enabled: true`, `pyfly.cache.provider: postgres` and `pyfly.cache.postgres.datasource: primary`. Apply native migration 34 and the current runtime grants before starting the application. Replay responses, corpus pages and shared rolling limits use separate namespaces and retain their state across replica replacement.
 
@@ -86,6 +86,8 @@ After migrations and role provisioning, prepare a private JSON file with the exa
 ```
 
 Protect this file with mode 0600. Run the CLI from the deployed release with an explicitly reviewed **operator** environment. It contains the normal application configuration, but its primary datasource uses an operator credential authorized to insert the new organization, audit and pending grants. Keep that credential outside API/worker environments; the normal runtime role can select grants and update only their three activation columns. It cannot seed, rewrite identities or expiry, delete, or truncate grants.
+
+Bootstrap creates the normal application context. Preserve its runtime database driver and TLS profile when substituting the authorized operator credential. In an asyncpg installation, the operator primary URL must still use `postgresql+asyncpg`; do not copy the psycopg migration URL into it. Keep the other four datasource roles and profiles explicit.
 
 ```sh
 backend/.venv/bin/python deploy/run.py --env-file /private/bootstrap-operator.env -- \
