@@ -39,6 +39,17 @@ def effective_locale(*, user=None, organization=None, installation=None) -> tupl
 
 _COPY = {
     "en": {
+        "security_delivery_diagnostic_subject": "{product}: email delivery diagnostic for {scope}",
+        "security_delivery_diagnostic": (
+            "Your deployment operator requested this new email delivery diagnostic "
+            "for your approved account. "
+            "No credentials or private content are included."
+        ),
+        "diagnostic_title": "Email delivery diagnostic",
+        "diagnostic_footer": (
+            "This diagnostic was requested by your deployment operator. "
+            "Receiving it does not change your access or retry a previous message."
+        ),
         "security_token_created_subject": "{product}: API token created in {scope}",
         "security_token_revoked_subject": "{product}: API token revoked in {scope}",
         "security_application_granted_subject": "{product}: application connected in {scope}",
@@ -152,6 +163,16 @@ _COPY = {
         "save": "Save preferences",
     },
     "es": {
+        "security_delivery_diagnostic_subject": "{product}: diagnóstico de entrega de correo para {scope}",
+        "security_delivery_diagnostic": (
+            "El operador de tu instalación ha solicitado este nuevo diagnóstico de entrega de correo "
+            "para tu cuenta aprobada. No incluye credenciales ni contenido privado."
+        ),
+        "diagnostic_title": "Diagnóstico de entrega de correo",
+        "diagnostic_footer": (
+            "El operador de tu instalación ha solicitado este diagnóstico. "
+            "Recibirlo no cambia tus permisos ni reintenta un mensaje anterior."
+        ),
         "security_token_created_subject": "{product}: token de API creado en {scope}",
         "security_token_revoked_subject": "{product}: token de API revocado en {scope}",
         "security_application_granted_subject": "{product}: aplicación conectada en {scope}",
@@ -305,6 +326,7 @@ def subject_line(locale, *, product, kind, scope, cadence="weekly", subtype=None
     key = "invite_subject" if kind == "invitation" else kind + "_subject"
     if kind == "security" and subtype is not None:
         allowed = {
+            "delivery_diagnostic",
             "token_created",
             "token_revoked",
             "application_granted",
