@@ -11,7 +11,7 @@ Connect Claude to your organization's koinon repository to find document passage
 | Remote HTTPS MCP | An operator-hosted endpoint reachable by Claude's service | OAuth sign-in and consent; review under **Authorized applications** |
 | Branded desktop MCPB | Claude Desktop reaching the configured koinon endpoint from your computer | A scoped personal API token; review and revoke under **API tokens** |
 
-The server supports retrieval, governed dataset queries and reviewed knowledge creation, updates and file uploads. Knowledge changes use an embedded MCP Apps review: you inspect the exact content and destination, then explicitly approve or cancel. A host that cannot display this review can still retrieve knowledge, but cannot complete a change. See [knowledge management inside an MCP conversation](mcp-knowledge-management.md).
+The server supports retrieval, governed dataset queries and reviewed knowledge creation, updates and file uploads. Knowledge changes use an embedded MCP Apps review: you inspect the exact content and destination, then explicitly approve or cancel. A host that cannot display this review can retrieve knowledge and perform permitted user-requested catalog organization, but cannot complete content/file publication. See [external-agent management](external-agent-management.md) for the dedicated folder, metadata, archive and restore tools. See [knowledge management inside an MCP conversation](mcp-knowledge-management.md).
 
 ## Connect the remote endpoint
 

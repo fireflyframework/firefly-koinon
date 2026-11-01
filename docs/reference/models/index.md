@@ -3,7 +3,7 @@
 
 # Wire models
 
-The canonical schema contains 429 definitions and 420 named model aliases. Supporting definitions are included so every schema reference can be followed. Language-specific generated names can differ from wire names; consult the SDK imports in the workflow guides.
+The canonical schema contains 430 definitions and 421 named model aliases. Supporting definitions are included so every schema reference can be followed. Language-specific generated names can differ from wire names; consult the SDK imports in the workflow guides.
 
 Each page lists field presence, nullability, defaults and validation constraints. The downloadable [complete schema](../sdk-schemas.json) remains the machine-readable contract.
 
@@ -72,6 +72,7 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`CatalogCreate`](catalogcreate.md)
 - [`CatalogEntry`](catalogentry.md)
 - [`CatalogMove`](catalogmove.md)
+- [`CatalogPrecondition`](catalogprecondition.md)
 - [`CatalogProposal`](catalogproposal.md)
 - [`CatalogProposalBefore`](catalogproposalbefore.md)
 - [`CatalogProposalPatch`](catalogproposalpatch.md)

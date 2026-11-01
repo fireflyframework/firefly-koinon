@@ -14,7 +14,7 @@ from pyfly.web import (
 )
 from starlette.requests import Request
 
-from koinon.catalog.dtos import CatalogCreate, CatalogPatch
+from koinon.catalog.dtos import CatalogCreate, CatalogPatch, CatalogPrecondition
 from koinon.catalog.mappers import entry_dto
 from koinon.catalog.service import CatalogService
 from koinon.profiles.service import ProfileService
@@ -101,24 +101,45 @@ class CatalogController:
             identity_from_request(request).subject,
             tenant_id,
             entry_id,
-            body.model_dump(exclude_unset=True, exclude_none=True),
+            body.model_dump(exclude_unset=True, exclude_none=True, exclude={"expected_updated_at"}),
+            expected_updated_at=body.expected_updated_at,
         )
         return entry_dto(entry)
 
     @post_mapping("/tenants/{tenant_id}/catalog/{entry_id}/archive")
     async def catalog_archive(
-        self, tenant_id: PathVar[str], entry_id: PathVar[str], request: Request
+        self,
+        tenant_id: PathVar[str],
+        entry_id: PathVar[str],
+        request: Request,
+        expected_updated_at: QueryParam[str | None] = None,
     ) -> dict:
+        precondition = CatalogPrecondition.model_validate({"expected_updated_at": expected_updated_at})
         return entry_dto(
-            await self.catalog.archive(identity_from_request(request).subject, tenant_id, entry_id)
+            await self.catalog.archive(
+                identity_from_request(request).subject,
+                tenant_id,
+                entry_id,
+                expected_updated_at=precondition.expected_updated_at,
+            )
         )
 
     @post_mapping("/tenants/{tenant_id}/catalog/{entry_id}/restore")
     async def catalog_restore(
-        self, tenant_id: PathVar[str], entry_id: PathVar[str], request: Request
+        self,
+        tenant_id: PathVar[str],
+        entry_id: PathVar[str],
+        request: Request,
+        expected_updated_at: QueryParam[str | None] = None,
     ) -> dict:
+        precondition = CatalogPrecondition.model_validate({"expected_updated_at": expected_updated_at})
         return entry_dto(
-            await self.catalog.restore(identity_from_request(request).subject, tenant_id, entry_id)
+            await self.catalog.restore(
+                identity_from_request(request).subject,
+                tenant_id,
+                entry_id,
+                expected_updated_at=precondition.expected_updated_at,
+            )
         )
 
     @delete_mapping("/tenants/{tenant_id}/catalog/{entry_id}", status_code=204)

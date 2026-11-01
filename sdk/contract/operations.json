@@ -545,7 +545,7 @@
       "request_schema": null,
       "response_schema": "Page[CatalogEntry]",
       "success_status": 200,
-      "source_sha256": "29864125b13ef7adf1c909abc56391a6121b82a9875c8c0d1414104a214e0310",
+      "source_sha256": "05ca78aafa47348ca8ddc3e3c252bc49e087f27c369344b996cf7c9fcdbf95c4",
       "encoding": "application/json",
       "headers": []
     },
@@ -577,7 +577,7 @@
       "request_schema": "CatalogCreate",
       "response_schema": "CatalogEntry",
       "success_status": 201,
-      "source_sha256": "29864125b13ef7adf1c909abc56391a6121b82a9875c8c0d1414104a214e0310",
+      "source_sha256": "05ca78aafa47348ca8ddc3e3c252bc49e087f27c369344b996cf7c9fcdbf95c4",
       "encoding": "application/json",
       "headers": []
     },
@@ -609,7 +609,7 @@
       "request_schema": null,
       "response_schema": "CatalogEntry",
       "success_status": 200,
-      "source_sha256": "29864125b13ef7adf1c909abc56391a6121b82a9875c8c0d1414104a214e0310",
+      "source_sha256": "05ca78aafa47348ca8ddc3e3c252bc49e087f27c369344b996cf7c9fcdbf95c4",
       "encoding": "application/json",
       "headers": []
     },
@@ -647,7 +647,7 @@
       "request_schema": "CatalogUpdate",
       "response_schema": "CatalogEntry",
       "success_status": 200,
-      "source_sha256": "29864125b13ef7adf1c909abc56391a6121b82a9875c8c0d1414104a214e0310",
+      "source_sha256": "05ca78aafa47348ca8ddc3e3c252bc49e087f27c369344b996cf7c9fcdbf95c4",
       "encoding": "application/json",
       "headers": []
     },
@@ -657,7 +657,7 @@
       "category": "canonical",
       "operation": "CatalogController.catalog_archive",
       "source": "backend/src/koinon/api/controllers/catalog.py",
-      "line": 109,
+      "line": 110,
       "parameters": [
         {
           "name": "tenant_id",
@@ -670,6 +670,13 @@
           "annotation": "PathVar[str]",
           "location": "path",
           "required": true
+        },
+        {
+          "name": "expected_updated_at",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
         }
       ],
       "return_annotation": "dict",
@@ -679,7 +686,7 @@
       "request_schema": null,
       "response_schema": "CatalogEntry",
       "success_status": 200,
-      "source_sha256": "29864125b13ef7adf1c909abc56391a6121b82a9875c8c0d1414104a214e0310",
+      "source_sha256": "05ca78aafa47348ca8ddc3e3c252bc49e087f27c369344b996cf7c9fcdbf95c4",
       "encoding": "application/json",
       "headers": []
     },
@@ -689,7 +696,7 @@
       "category": "canonical",
       "operation": "CatalogController.catalog_restore",
       "source": "backend/src/koinon/api/controllers/catalog.py",
-      "line": 117,
+      "line": 128,
       "parameters": [
         {
           "name": "tenant_id",
@@ -702,6 +709,13 @@
           "annotation": "PathVar[str]",
           "location": "path",
           "required": true
+        },
+        {
+          "name": "expected_updated_at",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
         }
       ],
       "return_annotation": "dict",
@@ -711,7 +725,7 @@
       "request_schema": null,
       "response_schema": "CatalogEntry",
       "success_status": 200,
-      "source_sha256": "29864125b13ef7adf1c909abc56391a6121b82a9875c8c0d1414104a214e0310",
+      "source_sha256": "05ca78aafa47348ca8ddc3e3c252bc49e087f27c369344b996cf7c9fcdbf95c4",
       "encoding": "application/json",
       "headers": []
     },
@@ -721,7 +735,7 @@
       "category": "canonical",
       "operation": "CatalogController.catalog_delete",
       "source": "backend/src/koinon/api/controllers/catalog.py",
-      "line": 125,
+      "line": 146,
       "parameters": [
         {
           "name": "tenant_id",
@@ -743,7 +757,7 @@
       "request_schema": null,
       "response_schema": "void",
       "success_status": 204,
-      "source_sha256": "29864125b13ef7adf1c909abc56391a6121b82a9875c8c0d1414104a214e0310",
+      "source_sha256": "05ca78aafa47348ca8ddc3e3c252bc49e087f27c369344b996cf7c9fcdbf95c4",
       "encoding": "application/json",
       "headers": []
     },

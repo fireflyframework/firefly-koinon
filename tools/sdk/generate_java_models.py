@@ -295,8 +295,8 @@ for name, definition in defs.items():
             "    public AttachmentObservation(Boolean available, String reason) {\n"
             "        this(available, reason, false);\n    }\n"
         )
-    if name in {"ConversationSnapshot", "ExportReview", "ShareReview", "SharedConversation"}:
-        assert fields[-1][0] == "identity"
+    if name in {"CatalogUpdate", "ConversationSnapshot", "ExportReview", "ShareReview", "SharedConversation"}:
+        assert fields[-1][0] == ("expected_updated_at" if name == "CatalogUpdate" else "identity")
         previous = fields[:-1]
         body += (
             "    public " + name + "("

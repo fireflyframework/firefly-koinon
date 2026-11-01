@@ -114,6 +114,7 @@ from koinon_sdk.contracts import (
     BinaryDownload,
     CatalogCreate,
     CatalogFilter,
+    CatalogPrecondition,
     CatalogUpdate,
     ContentEffects,
     ContentUpdate,
@@ -923,3 +924,5 @@ __all__ += [
     "SystemLimit",
     "SystemArtifact",
 ]
+
+__all__ += ["CatalogPrecondition"]

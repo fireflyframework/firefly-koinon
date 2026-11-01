@@ -10,7 +10,8 @@ export interface CatalogEntry {
 }
 export interface EntryCreate {kind:ResourceKind;name:string;description?:string;parent_id?:string|null;metadata?:Record<string,Json>}
 export interface CatalogMove {parent_id:string;expected_parent_id:string;expected_updated_at:string}
-export interface EntryUpdate {name?:string;description?:string;metadata?:Record<string,Json>}
+export interface CatalogLifecycleOptions {expected_updated_at?:string}
+export interface EntryUpdate {expected_updated_at?:string|null;name?:string;description?:string;metadata?:Record<string,Json>}
 export interface CatalogFilter {page?:number;page_size?:number;q?:string;status?:string;sort?:'name'|'kind'|'created_at'|'updated_at';format?:string;tag?:string;order?:'asc'|'desc';view?:'raw'|'library';include_archived?:boolean;kind?:ResourceKind;parent_id?:string;project_id?:string;workspace_id?:string;[key:string]:string|number|boolean|undefined}
 export interface Membership {managed?:boolean;origin?:'manual'|'corporate';source_id?:string|null;source_name?:string|null;expires_at?:string|null;id:string;subject:string;tenant_id:string;workspace_id:string|null;role:'viewer'|'analyst'|'editor'|'operator'|'admin';active:boolean}
 export interface AuditFilter {q?:string;action?:string;subject?:string;from_date?:string;through_date?:string;time_zone?:string;page?:number;page_size?:number;sort?:'created_at'|'action';order?:'asc'|'desc';[key:string]:string|number|undefined}

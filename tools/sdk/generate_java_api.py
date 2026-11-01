@@ -212,6 +212,8 @@ def upper(s):
 
 
 filters = {
+    "CatalogController.catalog_archive": "CatalogLifecycleFilter",
+    "CatalogController.catalog_restore": "CatalogLifecycleFilter",
     "CommunicationsController.providers":"RecipientProviderFilter",
     "CommunicationsController.recipients_search":"RecipientFilter",
     "CommunicationsController.page":"EmailInvitationFilter",
@@ -577,6 +579,15 @@ for group, operations in groups.items():
                 + ",".join([n for _, n in params[:-1]] + ["RequestOptions.defaults()"])
                 + ");}\n"
             )
+            if op["operation"] in {"CatalogController.catalog_archive", "CatalogController.catalog_restore"}:
+                old_params = [(t, n) for t, n in params if n != "filter"]
+                body += (
+                    "public " + ret + " " + method + suffix + "("
+                    + ",".join(t + " " + n for t, n in old_params)
+                    + "){return " + method + suffix + "("
+                    + ",".join(n if n != "filter" else filtername + ".empty()" for _, n in params)
+                    + ");}\n"
+                )
             if queries and not any(p.get("required") for p in queries):
                 reduced = [(t, n) for t, n in params if n not in ["filter", "options"]]
                 body += (

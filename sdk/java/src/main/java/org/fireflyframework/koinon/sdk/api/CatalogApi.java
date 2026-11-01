@@ -28,14 +28,22 @@ public CatalogEntry update(String entryId,CatalogUpdate input,RequestOptions opt
 public CatalogEntry update(String entryId,CatalogUpdate input){return update(entryId,input,RequestOptions.defaults());}
 public CompletableFuture<CatalogEntry> updateAsync(String entryId,CatalogUpdate input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.jsonAsync("PATCH",prefix+"/catalog/"+Transport.id(entryId),input,options,transport.type(CatalogEntry.class));}
 public CompletableFuture<CatalogEntry> updateAsync(String entryId,CatalogUpdate input){return updateAsync(entryId,input,RequestOptions.defaults());}
-public CatalogEntry archive(String entryId,RequestOptions options){Objects.requireNonNull(options);return transport.json("POST",prefix+"/catalog/"+Transport.id(entryId)+"/archive",null,options,transport.type(CatalogEntry.class));}
-public CatalogEntry archive(String entryId){return archive(entryId,RequestOptions.defaults());}
-public CompletableFuture<CatalogEntry> archiveAsync(String entryId,RequestOptions options){Objects.requireNonNull(options);return transport.jsonAsync("POST",prefix+"/catalog/"+Transport.id(entryId)+"/archive",null,options,transport.type(CatalogEntry.class));}
-public CompletableFuture<CatalogEntry> archiveAsync(String entryId){return archiveAsync(entryId,RequestOptions.defaults());}
-public CatalogEntry restore(String entryId,RequestOptions options){Objects.requireNonNull(options);return transport.json("POST",prefix+"/catalog/"+Transport.id(entryId)+"/restore",null,options,transport.type(CatalogEntry.class));}
-public CatalogEntry restore(String entryId){return restore(entryId,RequestOptions.defaults());}
-public CompletableFuture<CatalogEntry> restoreAsync(String entryId,RequestOptions options){Objects.requireNonNull(options);return transport.jsonAsync("POST",prefix+"/catalog/"+Transport.id(entryId)+"/restore",null,options,transport.type(CatalogEntry.class));}
-public CompletableFuture<CatalogEntry> restoreAsync(String entryId){return restoreAsync(entryId,RequestOptions.defaults());}
+public CatalogEntry archive(String entryId,CatalogLifecycleFilter filter,RequestOptions options){Objects.requireNonNull(options);options=Objects.requireNonNull(filter).applyTo(options);return transport.json("POST",prefix+"/catalog/"+Transport.id(entryId)+"/archive",null,options,transport.type(CatalogEntry.class));}
+public CatalogEntry archive(String entryId,CatalogLifecycleFilter filter){return archive(entryId,filter,RequestOptions.defaults());}
+public CatalogEntry archive(String entryId,RequestOptions options){return archive(entryId,CatalogLifecycleFilter.empty(),options);}
+public CatalogEntry archive(String entryId){return archive(entryId,CatalogLifecycleFilter.empty(),RequestOptions.defaults());}
+public CompletableFuture<CatalogEntry> archiveAsync(String entryId,CatalogLifecycleFilter filter,RequestOptions options){Objects.requireNonNull(options);options=Objects.requireNonNull(filter).applyTo(options);return transport.jsonAsync("POST",prefix+"/catalog/"+Transport.id(entryId)+"/archive",null,options,transport.type(CatalogEntry.class));}
+public CompletableFuture<CatalogEntry> archiveAsync(String entryId,CatalogLifecycleFilter filter){return archiveAsync(entryId,filter,RequestOptions.defaults());}
+public CompletableFuture<CatalogEntry> archiveAsync(String entryId,RequestOptions options){return archiveAsync(entryId,CatalogLifecycleFilter.empty(),options);}
+public CompletableFuture<CatalogEntry> archiveAsync(String entryId){return archiveAsync(entryId,CatalogLifecycleFilter.empty(),RequestOptions.defaults());}
+public CatalogEntry restore(String entryId,CatalogLifecycleFilter filter,RequestOptions options){Objects.requireNonNull(options);options=Objects.requireNonNull(filter).applyTo(options);return transport.json("POST",prefix+"/catalog/"+Transport.id(entryId)+"/restore",null,options,transport.type(CatalogEntry.class));}
+public CatalogEntry restore(String entryId,CatalogLifecycleFilter filter){return restore(entryId,filter,RequestOptions.defaults());}
+public CatalogEntry restore(String entryId,RequestOptions options){return restore(entryId,CatalogLifecycleFilter.empty(),options);}
+public CatalogEntry restore(String entryId){return restore(entryId,CatalogLifecycleFilter.empty(),RequestOptions.defaults());}
+public CompletableFuture<CatalogEntry> restoreAsync(String entryId,CatalogLifecycleFilter filter,RequestOptions options){Objects.requireNonNull(options);options=Objects.requireNonNull(filter).applyTo(options);return transport.jsonAsync("POST",prefix+"/catalog/"+Transport.id(entryId)+"/restore",null,options,transport.type(CatalogEntry.class));}
+public CompletableFuture<CatalogEntry> restoreAsync(String entryId,CatalogLifecycleFilter filter){return restoreAsync(entryId,filter,RequestOptions.defaults());}
+public CompletableFuture<CatalogEntry> restoreAsync(String entryId,RequestOptions options){return restoreAsync(entryId,CatalogLifecycleFilter.empty(),options);}
+public CompletableFuture<CatalogEntry> restoreAsync(String entryId){return restoreAsync(entryId,CatalogLifecycleFilter.empty(),RequestOptions.defaults());}
 public Void delete(String entryId,RequestOptions options){Objects.requireNonNull(options);return transport.json("DELETE",prefix+"/catalog/"+Transport.id(entryId),null,options,transport.type(Void.class));}
 public Void delete(String entryId){return delete(entryId,RequestOptions.defaults());}
 public CompletableFuture<Void> deleteAsync(String entryId,RequestOptions options){Objects.requireNonNull(options);return transport.jsonAsync("DELETE",prefix+"/catalog/"+Transport.id(entryId),null,options,transport.type(Void.class));}

@@ -227,6 +227,7 @@ These are the declared path, query and body arguments. Multipart and binary inpu
 | --- | --- | --- | --- | --- |
 | `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
 | `entry_id` | path | `PathVar[str]` | Yes | Not specified |
+| `expected_updated_at` | query | <code>QueryParam&#91;str &#124; None&#93;</code> | No | `null` |
 
 ### Request and response
 
@@ -269,6 +270,7 @@ These are the declared path, query and body arguments. Multipart and binary inpu
 | --- | --- | --- | --- | --- |
 | `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
 | `entry_id` | path | `PathVar[str]` | Yes | Not specified |
+| `expected_updated_at` | query | <code>QueryParam&#91;str &#124; None&#93;</code> | No | `null` |
 
 ### Request and response
 

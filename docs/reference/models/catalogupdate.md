@@ -18,6 +18,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 | `name` | `string` or `null` | No | `null` |
 | `description` | `string` or `null` | No | `null` |
 | `metadata` | Map of string keys to [`JsonValue`](jsonvalue.md) or `null` | No | `null` |
+| `expected_updated_at` | `string` or `null` | No | `null` |
 
 ## Model constraints
 
@@ -28,6 +29,10 @@ Required means the key must be present. Nullable means its value may be `null`; 
 ### metadata
 
 - anyOf branch 1 (Map of string keys to [`JsonValue`](jsonvalue.md)): Additional properties: [`JsonValue`](jsonvalue.md)
+
+### expected_updated_at
+
+- anyOf branch 1 (`string`): Format: `"date-time"`
 
 
 ## Exact JSON Schema
@@ -78,6 +83,19 @@ This is a schema definition, not an example request. It preserves all declared k
           ],
           "default": null,
           "title": "Metadata"
+        },
+        "expected_updated_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Updated At"
         }
       },
       "title": "CatalogUpdate",

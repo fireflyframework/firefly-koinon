@@ -166,7 +166,7 @@ final class CanonicalApiTest {
                           && m.getParameterCount() > 0
                           && m.getParameterTypes()[m.getParameterCount() - 1]
                               == RequestOptions.class)
-              .findFirst()
+              .max(java.util.Comparator.comparingInt(Method::getParameterCount))
               .orElseThrow();
       Object[] args = arguments(method, op, models, file);
       Object result;
