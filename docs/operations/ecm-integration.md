@@ -29,8 +29,10 @@ Remote edits/deletions and permission revocations need an explicitly governed in
 
 ## Keep bulk and recovery boundaries explicit
 
-Canonical upload is one file per request, with a configured default limit of 32 MiB. It is not a durable atomic bulk import. Bound a caller-owned queue, process one admitted item at a time, persist each accepted receipt and stop on ambiguous outcomes. Existing dataset append and selected lifecycle operations have explicit idempotency keys; a plain source upload does not acquire idempotency merely because the integration has an external object ID.
+The direct canonical upload accepts one file per request, with a configured maximum of 32 MiB. A caller-owned loop around that endpoint is not a durable atomic bulk import. Persist each accepted receipt and stop on ambiguous outcomes; a plain source upload does not acquire idempotency merely because the integration has an external object ID.
 
-The retained structured package's bulk handlers and multipart byte transport do not establish canonical batch authorization, distributed backpressure, restart recovery or an unlimited upload contract. ECM chunk transfer, cloud multipart sessions and server knowledge ingestion are different layers. Qualify throughput, partial failures, cancellation and replay policy separately using owned test data and real deployment identities before claiming production synchronization or large-scale ingestion.
+For queued files and restart reconciliation, use the canonical [durable file-batch workflow](../guides/bulk-intake.md). It admits exact manifests and raw originals up to 128 MiB per file and 512 MiB per batch, subject to effective lower bounds and retained quotas. The installation must configure [independent staging and consumers](durable-bulk.md). Preserve the batch, item, original-byte and source-version receipts in the ECM integration ledger. Explicitly keyed admission, upload and submission do not make all files a single atomic import.
+
+The retained structured package's inline bulk handlers and multipart transport are different from that governed batch API. ECM chunk transfer, cloud multipart sessions and server knowledge ingestion are also different layers. None supplies an automatic ECM permission mirror or remote-change crawler. Qualify throughput, partial failures, cancellation and replay policy separately using owned test data and real deployment identities before claiming production synchronization or large-scale ingestion.
 
 Copyright 2026 Firefly Software Foundation. Licensed under Apache-2.0. Made with <3.

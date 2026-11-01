@@ -10,6 +10,8 @@ firefly koinon runs as a headless API. Forge and other applications can use REST
 | Install released packages | [Install koinon](installation.md) |
 | Evaluate or develop locally | [Local environment](local-deployment.md) |
 | Configure the first organization | [First start in production](first-start.md), then [guided setup](../guides/knowledge-setup.md) |
+| Prepare queued file imports | [Storage configuration](storage-configuration.md), [independent staging](durable-bulk.md) and [ingestion resources](ingestion-resources.md) |
+| Diagnose a current deployment | [Platform health](platform-health.md#diagnose-a-problem-in-order), then the affected operation's recorded outcome |
 | Upgrade or recover retained data | [Migrations](migrations.md) and [backup and restore](backup-restore.md) |
 
 Deploy HTTP and background execution as separate [process roles](workers.md), with durable SQL queues and shared storage across replicas.

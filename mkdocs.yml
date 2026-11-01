@@ -136,11 +136,14 @@ nav:
           - Shared PostgreSQL cache: operations/postgresql-cache.md
           - Configuration and observations: operations/configuration.md
           - Platform health: operations/platform-health.md
+          - Build and activate indexes: operations/knowledge-indexes.md
           - Activity summaries: operations/activity-summaries.md
           - MCP authentication: operations/mcp-authentication.md
       - Storage and ECM:
           - Overview: operations/storage.md
           - Configure providers: operations/storage-configuration.md
+          - Queued staging and bulk intake: operations/durable-bulk.md
+          - Ingestion resource limits: operations/ingestion-resources.md
           - Durability and limits: operations/storage-behavior.md
           - Migration and recovery: operations/storage-migration.md
           - Connect an ECM: operations/ecm-integration.md
