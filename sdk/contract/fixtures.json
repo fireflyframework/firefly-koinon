@@ -587,6 +587,32 @@
       "code": "code-value",
       "reason": "reason-value"
     },
+    "AssetAvailability": {
+      "phase": "unknown",
+      "read": {
+        "state": "ready",
+        "reason": "reason-value"
+      },
+      "search": {
+        "state": "ready",
+        "reason": "reason-value"
+      },
+      "query": {
+        "state": "ready",
+        "reason": "reason-value"
+      },
+      "revision": {
+        "source_version_id": "source_version_id-value",
+        "extraction_id": "extraction_id-value",
+        "snapshot_id": "snapshot_id-value",
+        "active_index_id": "active_index_id-value"
+      },
+      "latest_attempt": {
+        "id": "id-value",
+        "operation": "operation-value",
+        "state": "unknown"
+      }
+    },
     "AttachmentCapabilities": {
       "storage": {
         "available": false,
@@ -950,6 +976,58 @@
       "expires_at": "2026-10-27T12:34:56Z",
       "last_used_at": "2026-10-27T12:34:56Z",
       "revoked_at": "2026-10-27T12:34:56Z"
+    },
+    "AvailabilityAttempt": {
+      "id": "id-value",
+      "operation": "operation-value",
+      "state": "unknown"
+    },
+    "AvailabilityCapability": {
+      "state": "ready",
+      "reason": "reason-value"
+    },
+    "AvailabilityRequest": {
+      "asset_ids": [
+        "asset_ids-value"
+      ],
+      "workspace_id": "workspace_id-value"
+    },
+    "AvailabilityResponse": {
+      "observed_at": "2026-10-27T12:34:56Z",
+      "items": {
+        "example": {
+          "phase": "unknown",
+          "read": {
+            "state": "ready",
+            "reason": "reason-value"
+          },
+          "search": {
+            "state": "ready",
+            "reason": "reason-value"
+          },
+          "query": {
+            "state": "ready",
+            "reason": "reason-value"
+          },
+          "revision": {
+            "source_version_id": "source_version_id-value",
+            "extraction_id": "extraction_id-value",
+            "snapshot_id": "snapshot_id-value",
+            "active_index_id": "active_index_id-value"
+          },
+          "latest_attempt": {
+            "id": "id-value",
+            "operation": "operation-value",
+            "state": "unknown"
+          }
+        }
+      }
+    },
+    "AvailabilityRevision": {
+      "source_version_id": "source_version_id-value",
+      "extraction_id": "extraction_id-value",
+      "snapshot_id": "snapshot_id-value",
+      "active_index_id": "active_index_id-value"
     },
     "BatchQueryOutcome": {
       "query_id": "query_id-value",
@@ -7382,6 +7460,83 @@
       "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "used_revision": 1,
       "availability": "available"
+    },
+    "ProcessingActivity": {
+      "id": "id-value",
+      "resource_id": "resource_id-value",
+      "operation": "operation-value",
+      "state": "unknown",
+      "updated_at": "2026-10-27T12:34:56Z",
+      "availability": {
+        "phase": "unknown",
+        "read": {
+          "state": "ready",
+          "reason": "reason-value"
+        },
+        "search": {
+          "state": "ready",
+          "reason": "reason-value"
+        },
+        "query": {
+          "state": "ready",
+          "reason": "reason-value"
+        },
+        "revision": {
+          "source_version_id": "source_version_id-value",
+          "extraction_id": "extraction_id-value",
+          "snapshot_id": "snapshot_id-value",
+          "active_index_id": "active_index_id-value"
+        },
+        "latest_attempt": {
+          "id": "id-value",
+          "operation": "operation-value",
+          "state": "unknown"
+        }
+      }
+    },
+    "ProcessingRequest": {
+      "page": 1,
+      "page_size": 1,
+      "workspace_id": "workspace_id-value"
+    },
+    "ProcessingResponse": {
+      "observed_at": "2026-10-27T12:34:56Z",
+      "items": [
+        {
+          "id": "id-value",
+          "resource_id": "resource_id-value",
+          "operation": "operation-value",
+          "state": "unknown",
+          "updated_at": "2026-10-27T12:34:56Z",
+          "availability": {
+            "phase": "unknown",
+            "read": {
+              "state": "ready",
+              "reason": "reason-value"
+            },
+            "search": {
+              "state": "ready",
+              "reason": "reason-value"
+            },
+            "query": {
+              "state": "ready",
+              "reason": "reason-value"
+            },
+            "revision": {
+              "source_version_id": "source_version_id-value",
+              "extraction_id": "extraction_id-value",
+              "snapshot_id": "snapshot_id-value",
+              "active_index_id": "active_index_id-value"
+            },
+            "latest_attempt": {
+              "id": "id-value",
+              "operation": "operation-value",
+              "state": "unknown"
+            }
+          }
+        }
+      ],
+      "next_page": 1
     },
     "ProfileUpdate": {
       "display_name": "display_name-value",

@@ -30,6 +30,7 @@ import {
   activityWindow,
   defaultActivityDates,
 } from '@fireflyframework/koinon-angular/activity/window';
+import { KoinonProcessingHistory } from './processing-history';
 import { KoinonActivitySummary } from './activity-summary';
 @Component({
   selector: 'ffk-activity-panel',
@@ -42,6 +43,7 @@ import { KoinonActivitySummary } from './activity-summary';
     KoinonTextPipe,
     KoinonActivityWindow,
     KoinonActivitySummary,
+    KoinonProcessingHistory,
   ],
   template: `<section aria-label="Activity summary">
       <form (ngSubmit)="load()">
@@ -75,6 +77,7 @@ import { KoinonActivitySummary } from './activity-summary';
       }
     </section>
     @if (facade.tenantPermissions().has('jobs:manage')) {
+      <ffk-processing-history />
       <h2>{{ 'Processing jobs' | ffkText }}</h2>
       <div class="workbench-table-wrap">
         <table>
@@ -106,7 +109,10 @@ import { KoinonActivitySummary } from './activity-summary';
                   }
                 </td>
                 <td>
-                  @if (['pending', 'queued', 'running'].includes(job.status.toLowerCase())) {
+                  @if (
+                    !['knowledge.bulk.intake', 'knowledge.bulk.query'].includes(job.kind) &&
+                    ['pending', 'queued', 'running'].includes(job.status.toLowerCase())
+                  ) {
                     <ffk-button variant="quiet" (click)="facade.cancelJob(job.id)">{{
                       'Cancel' | ffkText
                     }}</ffk-button>

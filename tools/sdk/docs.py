@@ -46,6 +46,8 @@ def render(contract: dict) -> str:
             "from `@fireflyframework/koinon-sdk/communications`. Pass the same `KoinonTransport` "
             "used to construct `KoinonClient`; the `communications.*` names below refer to the returned API. "
             "This keeps email and notification management out of applications that only use knowledge or chat. "
+            "Availability observations similarly use `createAvailabilityApi` from "
+            "`@fireflyframework/koinon-sdk/availability`; `availability.*` refers to its returned API. "
             "Python exposes those methods on `KoinonClient`; Java exposes the corresponding typed API groups."
         ),
         "",

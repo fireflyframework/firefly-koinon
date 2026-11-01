@@ -10,6 +10,7 @@ from uuid import UUID
 import httpx
 from pydantic import BaseModel, JsonValue, SecretStr, TypeAdapter
 
+from koinon_sdk.availability import AvailabilityRequest, AvailabilityResponse, ProcessingRequest, ProcessingResponse
 from koinon_sdk.activity import ActivitySummary, ActivityWindow
 from koinon_sdk.answer_audit import AnswerAudit
 from koinon_sdk.attachments import (
@@ -1069,6 +1070,22 @@ class KoinonClient(BulkClientMixin, QueryBatchClientMixin, CommunicationsClientM
                 + "/snapshots",
                 params={"page": page, "page_size": page_size},
             )
+        )
+
+    async def knowledge_availability(
+        self, tenant_id: str, body: AvailabilityRequest
+    ) -> AvailabilityResponse:
+        return AvailabilityResponse.model_validate(
+            await self._request("POST", self._tenant(tenant_id) + "/catalog/availability",
+                                json=body.model_dump(mode="json", exclude_none=True))
+        )
+
+    async def knowledge_processing(
+        self, tenant_id: str, body: ProcessingRequest
+    ) -> ProcessingResponse:
+        return ProcessingResponse.model_validate(
+            await self._request("POST", self._tenant(tenant_id) + "/knowledge-processing",
+                                json=body.model_dump(mode="json", exclude_none=True))
         )
 
     def _document_version_path(

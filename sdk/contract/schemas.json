@@ -772,6 +772,51 @@
       "title": "AnswerPolicy",
       "type": "object"
     },
+    "AssetAvailability": {
+      "additionalProperties": true,
+      "properties": {
+        "phase": {
+          "default": "unknown",
+          "enum": [
+            "unknown",
+            "queued",
+            "processing",
+            "indexing",
+            "complete",
+            "failed",
+            "cancelled",
+            "reconciliation_required"
+          ],
+          "title": "Phase",
+          "type": "string"
+        },
+        "read": {
+          "$ref": "#/$defs/AvailabilityCapability"
+        },
+        "search": {
+          "$ref": "#/$defs/AvailabilityCapability"
+        },
+        "query": {
+          "$ref": "#/$defs/AvailabilityCapability"
+        },
+        "revision": {
+          "$ref": "#/$defs/AvailabilityRevision"
+        },
+        "latest_attempt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AvailabilityAttempt"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "AssetAvailability",
+      "type": "object"
+    },
     "AttachmentCapabilities": {
       "additionalProperties": true,
       "properties": {
@@ -1652,6 +1697,177 @@
         "revoked_at"
       ],
       "title": "AuthorizedApplication",
+      "type": "object"
+    },
+    "AvailabilityAttempt": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "operation": {
+          "title": "Operation",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "unknown",
+            "queued",
+            "processing",
+            "indexing",
+            "complete",
+            "failed",
+            "cancelled",
+            "reconciliation_required"
+          ],
+          "title": "State",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "operation",
+        "state"
+      ],
+      "title": "AvailabilityAttempt",
+      "type": "object"
+    },
+    "AvailabilityCapability": {
+      "additionalProperties": true,
+      "properties": {
+        "state": {
+          "default": "unknown",
+          "enum": [
+            "ready",
+            "pending",
+            "unavailable",
+            "unknown",
+            "not_applicable"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "reason": {
+          "default": "NOT_OBSERVED",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "title": "AvailabilityCapability",
+      "type": "object"
+    },
+    "AvailabilityRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "asset_ids": {
+          "items": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "title": "Asset Ids",
+          "type": "array"
+        },
+        "workspace_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workspace Id"
+        }
+      },
+      "required": [
+        "asset_ids"
+      ],
+      "title": "AvailabilityRequest",
+      "type": "object"
+    },
+    "AvailabilityResponse": {
+      "additionalProperties": true,
+      "properties": {
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "items": {
+          "additionalProperties": {
+            "$ref": "#/$defs/AssetAvailability"
+          },
+          "title": "Items",
+          "type": "object"
+        }
+      },
+      "required": [
+        "observed_at",
+        "items"
+      ],
+      "title": "AvailabilityResponse",
+      "type": "object"
+    },
+    "AvailabilityRevision": {
+      "additionalProperties": true,
+      "properties": {
+        "source_version_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Version Id"
+        },
+        "extraction_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Extraction Id"
+        },
+        "snapshot_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Snapshot Id"
+        },
+        "active_index_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Active Index Id"
+        }
+      },
+      "title": "AvailabilityRevision",
       "type": "object"
     },
     "BatchQueryOutcome": {
@@ -20540,6 +20756,125 @@
       "title": "PrivateFileReceipt",
       "type": "object"
     },
+    "ProcessingActivity": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "resource_id": {
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "operation": {
+          "title": "Operation",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "unknown",
+            "queued",
+            "processing",
+            "indexing",
+            "complete",
+            "failed",
+            "cancelled",
+            "reconciliation_required"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        },
+        "availability": {
+          "$ref": "#/$defs/AssetAvailability"
+        }
+      },
+      "required": [
+        "id",
+        "resource_id",
+        "operation",
+        "state",
+        "updated_at",
+        "availability"
+      ],
+      "title": "ProcessingActivity",
+      "type": "object"
+    },
+    "ProcessingRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "page": {
+          "default": 1,
+          "maximum": 100000,
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "default": 25,
+          "maximum": 50,
+          "minimum": 1,
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "workspace_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workspace Id"
+        }
+      },
+      "title": "ProcessingRequest",
+      "type": "object"
+    },
+    "ProcessingResponse": {
+      "additionalProperties": true,
+      "properties": {
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/ProcessingActivity"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "next_page": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Next Page"
+        }
+      },
+      "required": [
+        "observed_at",
+        "items"
+      ],
+      "title": "ProcessingResponse",
+      "type": "object"
+    },
     "ProfileUpdate": {
       "additionalProperties": false,
       "properties": {
@@ -25711,6 +26046,33 @@
     }
   },
   "models": {
+    "AvailabilityRequest": {
+      "$ref": "#/$defs/AvailabilityRequest"
+    },
+    "AvailabilityCapability": {
+      "$ref": "#/$defs/AvailabilityCapability"
+    },
+    "AvailabilityRevision": {
+      "$ref": "#/$defs/AvailabilityRevision"
+    },
+    "AvailabilityAttempt": {
+      "$ref": "#/$defs/AvailabilityAttempt"
+    },
+    "AssetAvailability": {
+      "$ref": "#/$defs/AssetAvailability"
+    },
+    "AvailabilityResponse": {
+      "$ref": "#/$defs/AvailabilityResponse"
+    },
+    "ProcessingRequest": {
+      "$ref": "#/$defs/ProcessingRequest"
+    },
+    "ProcessingActivity": {
+      "$ref": "#/$defs/ProcessingActivity"
+    },
+    "ProcessingResponse": {
+      "$ref": "#/$defs/ProcessingResponse"
+    },
     "Input": {
       "$ref": "#/$defs/Input"
     },

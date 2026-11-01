@@ -6812,6 +6812,114 @@
     "idempotency": true
   },
   {
+    "operation": "KnowledgeAvailabilityController.observe",
+    "group": "CatalogApi",
+    "group_scoped": true,
+    "method": "availability",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/catalog/availability",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "AvailabilityRequest",
+    "response": "AvailabilityResponse",
+    "body": {
+      "observed_at": "2026-10-27T12:34:56Z",
+      "items": {
+        "example": {
+          "phase": "unknown",
+          "read": {
+            "state": "ready",
+            "reason": "reason-value"
+          },
+          "search": {
+            "state": "ready",
+            "reason": "reason-value"
+          },
+          "query": {
+            "state": "ready",
+            "reason": "reason-value"
+          },
+          "revision": {
+            "source_version_id": "source_version_id-value",
+            "extraction_id": "extraction_id-value",
+            "snapshot_id": "snapshot_id-value",
+            "active_index_id": "active_index_id-value"
+          },
+          "latest_attempt": {
+            "id": "id-value",
+            "operation": "operation-value",
+            "state": "unknown"
+          }
+        }
+      }
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "KnowledgeAvailabilityController.processing",
+    "group": "CatalogApi",
+    "group_scoped": true,
+    "method": "processing",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/knowledge-processing",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ProcessingRequest",
+    "response": "ProcessingResponse",
+    "body": {
+      "observed_at": "2026-10-27T12:34:56Z",
+      "items": [
+        {
+          "id": "id-value",
+          "resource_id": "resource_id-value",
+          "operation": "operation-value",
+          "state": "unknown",
+          "updated_at": "2026-10-27T12:34:56Z",
+          "availability": {
+            "phase": "unknown",
+            "read": {
+              "state": "ready",
+              "reason": "reason-value"
+            },
+            "search": {
+              "state": "ready",
+              "reason": "reason-value"
+            },
+            "query": {
+              "state": "ready",
+              "reason": "reason-value"
+            },
+            "revision": {
+              "source_version_id": "source_version_id-value",
+              "extraction_id": "extraction_id-value",
+              "snapshot_id": "snapshot_id-value",
+              "active_index_id": "active_index_id-value"
+            },
+            "latest_attempt": {
+              "id": "id-value",
+              "operation": "operation-value",
+              "state": "unknown"
+            }
+          }
+        }
+      ],
+      "next_page": 1
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
     "operation": "FileBatchController.capabilities",
     "group": "FileBatchesApi",
     "group_scoped": true,

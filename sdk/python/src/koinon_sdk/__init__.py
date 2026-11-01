@@ -876,3 +876,12 @@ __all__ += [
     "ActivityEmailPreviewInput",
     "DigestSchedule",
 ]
+
+from koinon_sdk.availability import (
+    AssetAvailability, AvailabilityAttempt, AvailabilityCapability, AvailabilityRequest,
+    AvailabilityResponse, AvailabilityRevision, ProcessingActivity, ProcessingRequest, ProcessingResponse,
+)
+__all__ += [
+    "AssetAvailability", "AvailabilityAttempt", "AvailabilityCapability", "AvailabilityRequest",
+    "AvailabilityResponse", "AvailabilityRevision", "ProcessingActivity", "ProcessingRequest", "ProcessingResponse",
+]

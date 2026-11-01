@@ -18,10 +18,11 @@ import { KoinonI18n } from '../foundations/i18n';
 import { KoinonIcon } from '../atoms/icon';
 import { KoinonBadge } from '../atoms/badge';
 import { KoinonSkeleton } from '../atoms/skeleton';
+import { KoinonKnowledgeAvailability } from './knowledge-availability';
 import { friendlyStatus, friendlyKind, isFolder, isSystemManaged, resourceIcon } from '../services/library-tree';
 @Component({
   selector: 'ffk-resource-list',
-  imports: [KoinonTextPipe, KoinonDatePipe, KoinonIcon, KoinonBadge, KoinonSkeleton],
+  imports: [KoinonTextPipe, KoinonDatePipe, KoinonIcon, KoinonBadge, KoinonSkeleton, KoinonKnowledgeAvailability],
   templateUrl: './resource-list.html',
   styleUrl: './resource-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -47,6 +47,7 @@ AREAS = (
         (
             "KnowledgeConnectionsController",
             "KnowledgeIndexesController",
+            "KnowledgeAvailabilityController",
             "OrganizationKnowledgeController",
         ),
     ),
