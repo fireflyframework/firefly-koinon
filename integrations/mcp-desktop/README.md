@@ -1,6 +1,6 @@
 # firefly koinon desktop extension
 
-Connect an MCP desktop host to your operator's firefly koinon MCP endpoint with the 26.11.3 desktop extension. The bridge uses the official TypeScript MCP SDK and forwards remote tools, resources, and prompts; the server owns tool schemas and permission checks.
+Connect an MCP desktop host to your operator's firefly koinon MCP endpoint with the 26.11.4 desktop extension. The bridge uses the official TypeScript MCP SDK and forwards remote tools, resources, and prompts; the server owns tool schemas and permission checks.
 
 ## Install
 

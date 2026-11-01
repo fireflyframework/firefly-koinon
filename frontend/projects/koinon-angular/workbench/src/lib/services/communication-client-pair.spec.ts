@@ -60,6 +60,86 @@ function transport(owner: string, calls: string[]): KoinonTransport {
     },
   };
 }
+it('refreshes the shared unread badge and the filtered page after a confirmed read', async () => {
+  let unread = 1;
+  const calls: string[] = [];
+  const base = transport('Alice', calls);
+  const api: KoinonTransport = {
+    ...base,
+    request: async <T>(method: HttpMethod, path: string, options?: RequestOptions) => {
+      if (method === 'POST') {
+        unread = 0;
+        return { id: 'Alice', read_at: '2026-11-01T12:00:00Z' } as T;
+      }
+      if (path.endsWith('/unread-count')) return { unread } as T;
+      if (!unread && path.endsWith('/notifications'))
+        return { items: [], page: 1, page_size: 25, pages: 0, total: 0 } as T;
+      return base.request<T>(method, path, options);
+    },
+  };
+  TestBed.configureTestingModule({
+    providers: [
+      ...provideKoinonClient(new KoinonClient({ transport: api }), api),
+      KoinonClientContext,
+      {
+        provide: KoinonFacade,
+        useValue: {
+          context: signal({ subject: 'Alice' }),
+          tenantId: signal('same'),
+          workspaceId: signal(''),
+          authRequired: signal(false),
+        },
+      },
+    ],
+  });
+  const center = TestBed.createComponent(KoinonNotificationCenter);
+  const bell = TestBed.createComponent(KoinonNotificationCenterTrigger);
+  center.detectChanges();
+  bell.detectChanges();
+  await center.whenStable();
+  await bell.whenStable();
+  await center.componentInstance.load({ page: 1, page_size: 25, read: 'unread', kind: '' });
+  expect(bell.componentInstance.unread()).toBe(1);
+  await center.componentInstance.markRead('Alice');
+  TestBed.tick();
+  await center.whenStable();
+  await bell.whenStable();
+  expect(bell.componentInstance.unread()).toBe(0);
+  expect(center.componentInstance.page()?.items).toEqual([]);
+});
+it('shows an unavailable count when the server fails instead of reporting no unread notifications', async () => {
+  const api: KoinonTransport = {
+    request: async () => {
+      throw new Error('Unavailable');
+    },
+    stream: async function* () {
+      yield* [];
+    },
+  };
+  TestBed.configureTestingModule({
+    providers: [
+      ...provideKoinonClient(new KoinonClient({ transport: api }), api),
+      KoinonClientContext,
+      {
+        provide: KoinonFacade,
+        useValue: {
+          context: signal({ subject: 'Alice' }),
+          tenantId: signal('same'),
+          workspaceId: signal(''),
+          authRequired: signal(false),
+        },
+      },
+    ],
+  });
+  const bell = TestBed.createComponent(KoinonNotificationCenterTrigger);
+  bell.detectChanges();
+  await bell.whenStable();
+  bell.detectChanges();
+  expect(bell.componentInstance.unread()).toBeNull();
+  expect(bell.nativeElement.querySelector('button').getAttribute('aria-label')).toContain(
+    'Unread count unavailable',
+  );
+});
 it('clears own inbox, preferences and unread badge for a client-only switch and resumes only with the explicit matching pair', async () => {
   const aCalls: string[] = [],
     bCalls: string[] = [],

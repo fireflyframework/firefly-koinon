@@ -6,6 +6,8 @@ import json
 
 from conftest import ISSUER, bearer
 
+from koinon.answers.receipts import legacy_notice
+
 
 async def seed(context, *, terminal=True):
     from chat_seed import seed as seed_chat
@@ -13,7 +15,7 @@ async def seed(context, *, terminal=True):
     return await seed_chat(context, issuer=ISSUER, terminal=terminal)
 
 
-def test_sse_replays_only_events_after_cursor_and_retains_security_headers(client):
+def test_legacy_sse_masks_unsealed_text_and_retains_cursors_and_security_headers(client):
     run = client.portal.call(seed, client.native_app.state.context)
     url = f"/api/v1/tenants/north/chat/runs/{run}/events"
     response = client.get(url, headers=bearer())
@@ -22,15 +24,84 @@ def test_sse_replays_only_events_after_cursor_and_retains_security_headers(clien
     assert response.headers["cache-control"] == "no-store"
     assert response.headers["x-accel-buffering"] == "no"
     assert response.headers["x-content-type-options"] == "nosniff"
-    assert response.text.count("id: ") == 3
+    assert response.text.count("id: ") == 2
     first_data = next(
         line.removeprefix("data: ") for line in response.text.splitlines() if line.startswith("data: ")
     )
-    assert json.loads(first_data)["text"] == "Árbol\nSecond line"
+    assert json.loads(first_data)["text"] == legacy_notice("en")
+    assert "Árbol" not in response.text and "Second line" not in response.text
     resumed = client.get(url, headers={**bearer(), "Last-Event-ID": "2"})
     assert "id: 3" in resumed.text and "id: 1" not in resumed.text
     assert "message_delta" not in resumed.text
     assert client.get(url, headers={**bearer(), "Last-Event-ID": "3"}).text == ""
+
+
+def test_sealed_unicode_response_is_released_once_and_last_event_cursor_does_not_drop_it(client):
+    from koinon.answers.dtos import EvidenceAnswerPlan
+    from koinon.assistants.queue import AssistantQueue
+    from koinon.assistants.service import AssistantService
+    from koinon.assistants.settings import AssistantSettings
+
+    context = client.native_app.state.context
+
+    async def publish():
+        context.get_bean(AssistantSettings).allowed_provider_hosts = ["127.0.0.1"]
+        service = context.get_bean(AssistantService)
+        provider = await service.save_provider(
+            f"{ISSUER}|admin",
+            "north",
+            {
+                "name": "Controlled",
+                "kind": "ollama",
+                "base_url": "http://127.0.0.1:11434/v1",
+                "model_ids": ["unused"],
+            },
+        )
+        agent = await service.save_agent(
+            f"{ISSUER}|admin",
+            "north",
+            {"name": "Controlled", "provider_id": provider["id"], "model_id": "unused"},
+        )
+        thread = await service.create_thread(f"{ISSUER}|admin", "north", {})
+        await service.submit(
+            f"{ISSUER}|admin",
+            "north",
+            thread["id"],
+            {"agent_id": agent["id"], "message": "What is known?", "client_request_id": "sealed-unicode"},
+        )
+        queue = context.get_bean(AssistantQueue)
+        run = await queue.claim("sealed-http")
+        receipt = await queue.release_answer(
+            run.id,
+            "sealed-http",
+            EvidenceAnswerPlan(outcome="insufficient_evidence"),
+            "es",
+            refusal_code="KNOWLEDGE_ONLY",
+        )
+        await queue.finish(run.id, "sealed-http")
+        return (
+            run.id,
+            receipt.publication_sequence,
+            (await service.message_repository.find_by_id(run.message_id)).text,
+        )
+
+    run, sequence, text = client.portal.call(publish)
+    assert "organización" in text
+    url = f"/api/v1/tenants/north/chat/runs/{run}/events"
+
+    def deltas(response):
+        return [
+            json.loads(next(line[6:] for line in frame.splitlines() if line.startswith("data: ")))["text"]
+            for frame in response.text.split("\n\n")
+            if "event: message_delta\n" in frame
+        ]
+
+    response = client.get(url, headers=bearer())
+    assert response.status_code == 200 and deltas(response) == [text]
+    resumed_before = client.get(url, headers={**bearer(), "Last-Event-ID": str(sequence - 1)})
+    assert deltas(resumed_before) == [text] and "event: completed" in resumed_before.text
+    resumed_after = client.get(url, headers={**bearer(), "Last-Event-ID": str(sequence)})
+    assert deltas(resumed_after) == [] and "event: completed" in resumed_after.text
 
 
 def test_sse_denies_foreign_owner_scope_and_bad_cursor_before_stream_headers(client):
@@ -166,7 +237,9 @@ def test_buffered_old_attempt_delta_is_dropped_when_a_retry_resets_the_message(c
         await runs.save(run)
         next_event = await anext(response.body_iterator)
         assert "OLD_ATTEMPT_FACT" not in next_event and "message_reset" in next_event
-        assert "FRESH_ATTEMPT" in await anext(response.body_iterator)
+        fresh = await anext(response.body_iterator)
+        assert "id: 4" in fresh and legacy_notice("en") in fresh
+        assert "FRESH_ATTEMPT" not in fresh and "OLD_ATTEMPT_FACT" not in fresh
         await response.body_iterator.aclose()
 
     client.portal.call(verify)

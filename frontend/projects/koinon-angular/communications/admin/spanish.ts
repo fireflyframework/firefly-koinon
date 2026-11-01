@@ -28,8 +28,8 @@ export const COMMUNICATIONS_ADMIN_SPANISH: Readonly<Record<string, string>> = {
   Configured: 'Configurada',
   'Not configured': 'Sin configurar',
   'Before email can be delivered': 'Antes de poder enviar correo',
-  'Recipient eligibility is checked separately against the connected identity directory. A ready sender does not verify a recipient’s identity.':
-    'La elegibilidad de la persona destinataria se comprueba por separado en el directorio de identidad conectado. Un remitente preparado no verifica la identidad de quien recibe el correo.',
+  'Recipients are checked through the connected directory or an explicitly approved delivery contact. A configured sender does not confirm that a message reached the inbox.':
+    'Los destinatarios se verifican mediante el directorio conectado o un contacto de envío aprobado expresamente. Tener el remitente configurado no confirma que un mensaje haya llegado al buzón.',
   'Organization notification policy': 'Política de notificaciones de la organización',
   'Required notices protect people’s awareness of access changes. Personal preferences apply to the optional updates you enable.':
     'Los avisos obligatorios mantienen a las personas informadas de los cambios de acceso. Las preferencias personales se aplican a las novedades opcionales que habilites.',

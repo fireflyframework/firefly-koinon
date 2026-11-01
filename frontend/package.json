@@ -1,6 +1,6 @@
 {
   "name": "firefly-koinon-workspace",
-  "version": "26.11.3",
+  "version": "26.11.4",
   "scripts": {
     "ng": "ng",
     "start": "ng serve management",

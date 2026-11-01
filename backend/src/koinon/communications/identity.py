@@ -3,6 +3,7 @@
 """Only the successful native OIDC login path can bind a canonical subject to directory identity."""
 
 import json
+from contextlib import suppress
 from uuid import uuid4
 
 from pyfly.container import bean, configuration, service
@@ -12,6 +13,7 @@ from sqlalchemy import select
 
 from koinon.catalog.errors import AccessDenied
 from koinon.communications.entities import RecipientIdentityRecord
+from koinon.communications.operator_contacts import OperatorContacts
 from koinon.communications.ports import CommunicationIdentityObserver
 from koinon.communications.recipients import RecipientService, recipient_unavailable
 from koinon.communications.repositories import OutboxRepository, RecipientIdentityRepository
@@ -47,6 +49,7 @@ class CommunicationIdentityBindings:
         welcomes: WelcomeAdmissions,
         outbox: OutboxRepository,
         oidc: OidcSettings,
+        operator_contacts: OperatorContacts | None = None,
     ):
         self.providers, self.identities, self.recipients, self.welcomes, self.outbox, self.oidc = (
             providers,
@@ -56,6 +59,7 @@ class CommunicationIdentityBindings:
             outbox,
             oidc,
         )
+        self.operator_contacts = operator_contacts
 
     @primary_authority()
     async def _observations(self, context):
@@ -92,11 +96,17 @@ class CommunicationIdentityBindings:
     async def observe_login(self, context):
         if not self.welcomes.events.settings.enabled:
             return
+        independent = set()
+        if self.operator_contacts is not None:
+            with suppress(AccessDenied, ServiceUnavailableException, ValueError):
+                independent = await self.operator_contacts.observe_login(context)
         try:
             observations = await self._observations(context)
         except ServiceUnavailableException:
             return
         for identity, provider in observations:
+            if provider.tenant_id in independent:
+                continue
             try:
                 observed = await self.recipients.observe(provider, identity.external_subject)
             except (AccessDenied, ServiceUnavailableException):

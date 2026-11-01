@@ -32,4 +32,4 @@ The [embedding guide](embedding.md) covers Angular components and custom element
 
 ## Understand the architecture
 
-Read [system architecture](../concepts/architecture.md) and [MCP architecture](../architecture/mcp.md) before changing a deployment boundary. Check the [26.11.3 release notes](../releases/26.11.3.md) for package versions and integration requirements.
+Read [system architecture](../concepts/architecture.md) and [MCP architecture](../architecture/mcp.md) before changing a deployment boundary. Check the [26.11.4 release notes](../releases/26.11.4.md) for package versions and integration requirements.

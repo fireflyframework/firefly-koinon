@@ -3,7 +3,7 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/assistants/audit_dtos.py
-SHA256: 1ba1cb9992d9a565a9306ca542c508ef2501c1073cb94f9283a404511be06247
+SHA256: aeac5c81ec320bd7dd3dae054ecd8b0250fbd649b5d8cbcb1a82a9352e0c6066
 
 Source dependency: backend/src/koinon/evidence/rlm_scope.py
 SHA256: 5f018f523275c77d97aef6c6c82ff4015b0b5c46dcda0be2cd51eae09df2f0d4
@@ -17,6 +17,7 @@ from typing import Annotated, Literal, Self
 from pydantic import AwareDatetime, Field, model_validator
 
 from koinon_sdk._base import ResponseModel
+from koinon_sdk.answer_release import AnswerRelease
 from koinon_sdk.evidence import SourceReference
 from koinon_sdk.memory import MemoryReceipt
 from koinon_sdk.organization_knowledge import OrganizationKnowledgeSnapshot
@@ -190,6 +191,7 @@ class AnswerAudit(AuditValue):
     run_id: str
     provenance_status: Literal["recorded", "not_recorded"]
     source_provenance_complete: bool | None = None
+    output_release: AnswerRelease | None = None
     knowledge_settings_snapshot: OrganizationKnowledgeSnapshot | None = None
     memory: MemoryReceipt | None = None
     generations: list[GenerationReceipt] = Field(default_factory=list[GenerationReceipt], max_length=100)

@@ -18,6 +18,18 @@ class CapturedEvidence:
     native_reads: tuple["NativeReadFingerprint", ...] = ()
     sql_attempts: tuple["NativeSqlAttempt", ...] = ()
     rlm_tools: tuple["NativeRlmTool", ...] | None = None
+    query_results: tuple["NativeQueryResult", ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class NativeQueryResult:
+    statement_sha256: str
+    query_id: str
+    snapshot_pins: tuple[tuple[str, str], ...]
+    columns: tuple[str, ...]
+    preview_json: str
+    row_count: int
+    truncated: bool
 
 
 class NativeRlmTool(RlmToolReceipt):

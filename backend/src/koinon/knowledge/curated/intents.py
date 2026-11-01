@@ -31,7 +31,11 @@ from koinon.knowledge.curated.repositories import KnowledgeIntentRepository
 
 def view(row):
     request = KnowledgeIntentInput.model_validate(
-        {key: value for key, value in row.request_json.items() if key != "_memory_context"}
+        {
+            key: value
+            for key, value in row.request_json.items()
+            if key not in {"_memory_context", "_output_context"}
+        }
     )
     return KnowledgeIntent(
         id=row.id,
@@ -93,9 +97,14 @@ class KnowledgeIntents:
         request = KnowledgeIntentInput.model_validate(values)
         destination = await self.authority.destination(subject, tenant_id, request.destination_id)
         recorded_at = datetime.now(UTC)
-        memory_context = {}
+        memory_context, output_context = {}, {}
         evidence, origins = await self.authority.observe(
-            subject, tenant_id, request, recorded_at, memory_capture=memory_context
+            subject,
+            tenant_id,
+            request,
+            recorded_at,
+            memory_capture=memory_context,
+            output_capture=output_context,
         )
         preview_token = current_token_id()
         expires_at = recorded_at + timedelta(hours=24)
@@ -133,6 +142,8 @@ class KnowledgeIntents:
             created_at=recorded_at,
             expires_at=expires_at,
         )
+        if output_context:
+            row.request_json = {**row.request_json, "_output_context": output_context}
         row.authorization_digest = digest(
             {
                 "id": row.id,
@@ -172,6 +183,8 @@ class KnowledgeIntents:
             raise ConflictException(
                 "The destination changed; review a new preview", code="KNOWLEDGE_DESTINATION_CHANGED"
             )
+        if not committed:
+            await self.authority.output_check(subject, tenant_id, row.request_json)
         await self.authority.evidence(subject, tenant_id, preview.evidence, exact=not committed)
         if not committed:
             await self.authority.origins(

@@ -2467,6 +2467,57 @@
       "run_id": "run_id-value",
       "provenance_status": "recorded",
       "source_provenance_complete": false,
+      "output_release": {
+        "version": 1,
+        "policy_version": "knowledge-only-v1",
+        "run_id": "run_id-value",
+        "message_id": "message_id-value",
+        "tenant_id": "tenant_id-value",
+        "generation_id": "generation_id-value",
+        "publication_sequence": 1,
+        "outcome": "grounded",
+        "text_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "citations_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "artifacts_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "fact_ids": [
+          "fact_ids-value"
+        ],
+        "result_pins": [
+          {
+            "id": "id-value",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ],
+        "source_refs": [
+          {
+            "id": "id-value",
+            "asset_id": "asset_id-value",
+            "source_id": "source_id-value",
+            "title": "title-value",
+            "kind": "document",
+            "knowledge_item_id": "knowledge_item_id-value",
+            "knowledge_version_id": "knowledge_version_id-value",
+            "knowledge_version": 1,
+            "source_version_id": "source_version_id-value",
+            "extraction_id": "extraction_id-value",
+            "source_part_id": "source_part_id-value",
+            "source_part_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "recorded_page": 1,
+            "page_basis": "recorded_loader",
+            "used_revision": "used_revision-value",
+            "snapshot_id": "snapshot_id-value",
+            "query_id": "query_id-value",
+            "chunk_id": "chunk_id-value",
+            "page": 1,
+            "section": "section-value",
+            "quote": "quote-value",
+            "current_revision": "current_revision-value",
+            "availability": "available"
+          }
+        ],
+        "created_at": "2026-10-27T12:34:56Z"
+      },
       "knowledge_settings_snapshot": {
         "tenant_id": "tenant_id-value",
         "schema_version": 1,

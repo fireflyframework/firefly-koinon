@@ -80,6 +80,7 @@ async def test_query_tool_does_not_pass_root_thread_id_as_a_native_conversation(
         evidence=AsyncMock(return_value="evidence"),
         tool_activity=AsyncMock(),
         capture_limits=AsyncMock(return_value=None),
+        fact_pool=AsyncMock(return_value=()),
     )
     executor.container = SimpleNamespace(
         resolve=Mock(return_value=knowledge), contains_type=Mock(return_value=True)

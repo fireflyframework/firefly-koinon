@@ -181,7 +181,9 @@ async def test_normal_run_maps_citations(monkeypatch):
 
     resp = await service.answer(_request(), tenant_id="t1", workspace_id="w1")
 
-    assert resp.answer == "Revenue was 5M."
+    assert "Source excerpts" in resp.answer
+    assert resp.citations[0].content in resp.answer
+    assert "Revenue was 5M." not in resp.answer
     assert resp.no_answer is False
     assert resp.model == get_settings().rlm_root_model
     assert len(resp.citations) == 1
@@ -197,7 +199,7 @@ async def test_normal_run_maps_citations(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_unresolved_citation_is_dropped(monkeypatch):
+async def test_unresolved_citation_refuses_the_entire_release(monkeypatch):
     pages = {"acme-10k": ["a", "b"]}
     sources = {
         "acme-10k": SourceMeta(
@@ -223,9 +225,8 @@ async def test_unresolved_citation_is_dropped(monkeypatch):
 
     resp = await service.answer(_request(), tenant_id="t1", workspace_id="w1")
 
-    assert len(resp.citations) == 1
-    assert resp.citations[0].source_id == "src-1"
-    assert resp.citations[0].page == 1  # 0-based 0 clamped to 1-based 1
+    assert resp.no_answer is True and resp.citations == []
+    assert "Answer." not in resp.answer
 
 
 @pytest.mark.asyncio
@@ -296,14 +297,14 @@ async def test_engine_found_answer_is_not_no_answer(monkeypatch):
     builder = FakeCorpusBuilder(_docs(pages, sources))
     service = _service(builder)
 
-    # engine flag False and no marker in the text -> not a no-answer, even with
-    # no citations (a best-effort plain answer)
+    # A model found flag cannot replace current source evidence.
     fake = FakeSession("The figure is 5M.", [], no_answer=False)
     monkeypatch.setattr(svc_mod, "RLMSession", lambda *a, **k: fake)
 
     resp = await service.answer(_request(), tenant_id="t1", workspace_id="w1")
 
-    assert resp.no_answer is False
+    assert resp.no_answer is True and resp.citations == []
+    assert "The figure is 5M." not in resp.answer
 
 
 @pytest.mark.asyncio
@@ -510,13 +511,14 @@ async def test_cost_record_failure_does_not_break_answer(monkeypatch):
     cost = FakeCostService(raises=True)
     service = _service(builder, cost_service=cost)
 
-    fake = FakeSession("Revenue was 5M.", [{"filing": "acme-10k", "page": 1, "content": "x"}])
+    fake = FakeSession("Revenue was 5M.", [{"filing": "acme-10k", "page": 1, "content": "b"}])
     monkeypatch.setattr(svc_mod, "RLMSession", lambda *a, **k: fake)
 
     # a billing-write failure must not propagate
     resp = await service.answer(_request(), tenant_id="t1", workspace_id="w1")
 
-    assert resp.answer == "Revenue was 5M."
+    assert "Source excerpts" in resp.answer and "> b" in resp.answer
+    assert "Revenue was 5M." not in resp.answer
     assert resp.no_answer is False
     assert len(resp.citations) == 1
     # the record() was attempted (and raised, swallowed best-effort)
@@ -687,7 +689,8 @@ async def test_self_consistency_default_is_single_run(monkeypatch):
     resp = await service.answer(_request(), tenant_id="t1", workspace_id="w1")
 
     assert len(created) == 1
-    assert resp.answer == "only run"
+    assert "Source excerpts" in resp.answer and "> a" in resp.answer
+    assert "only run" not in resp.answer
 
 
 @pytest.mark.asyncio
@@ -706,6 +709,8 @@ async def test_self_consistency_runs_n_and_selects_best(monkeypatch):
     }
     builder = FakeCorpusBuilder(_docs(pages, sources))
 
+    selected = []
+
     class _SelectorClient(FakeClient):
         # pick the numbered candidate whose text contains 'BEST' (content-based, so the
         # parallel run order does not matter)
@@ -714,6 +719,7 @@ async def test_self_consistency_runs_n_and_selects_best(monkeypatch):
 
             for m in re.finditer(r"\[(\d+)\]\n(.*?)(?=\n\n\[|\Z)", prompt, re.S):
                 if "BEST" in m.group(2):
+                    selected.append(m.group(2))
                     return m.group(1)
             return "1"
 
@@ -736,5 +742,6 @@ async def test_self_consistency_runs_n_and_selects_best(monkeypatch):
     resp = await service.answer(_request(), tenant_id="t1", workspace_id="w1")
 
     assert len(created) == 3  # ran the engine three times
-    assert resp.answer == "candidate dos BEST"  # selector chose the best of the three
-    assert resp.no_answer is False
+    assert selected == ["candidate dos BEST"]
+    assert "candidate dos BEST" not in resp.answer
+    assert resp.no_answer is True and resp.citations == []

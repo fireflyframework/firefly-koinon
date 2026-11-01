@@ -158,7 +158,7 @@ async def test_model_client_lifecycle_is_closed_after_generation(assistants, mon
     )
     agent, _, submitted, _ = await conversation(service, context)
     await service.validate_provider("issuer|admin", "north", agent["provider_id"])
-    model = TrackedModel(call_tools=[], custom_output_text="Review completed")
+    model = TrackedModel(call_tools=[], custom_output_args={"outcome": "insufficient_evidence"})
     monkeypatch.setattr(ModelFactory, "build_with_secret", lambda self, spec, secret: model)
     await context.get_bean(AssistantExecutor).execute(submitted["run_id"], "review-worker")
     assert (await service.runs.find_by_id(submitted["run_id"])).status == "completed"

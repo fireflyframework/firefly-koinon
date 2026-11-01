@@ -16,7 +16,14 @@ from pyfly.kernel import InvalidRequestException, ServiceUnavailableException
 
 from koinon.corporate_identity.settings import IdentitySettings
 
-Purpose = Literal["recipient", "delivery", "directory_cursor", "bootstrap_contact"]
+Purpose = Literal[
+    "recipient",
+    "delivery",
+    "directory_cursor",
+    "bootstrap_contact",
+    "operator_contact",
+    "operator_contact_binding",
+]
 _MAX_ENVELOPE = 2097152
 
 
@@ -28,7 +35,15 @@ class CommunicationsCipher:
     def _cipher(self, tenant_id: str, purpose: Purpose):
         try:
             if (
-                purpose not in {"recipient", "delivery", "directory_cursor", "bootstrap_contact"}
+                purpose
+                not in {
+                    "recipient",
+                    "delivery",
+                    "directory_cursor",
+                    "bootstrap_contact",
+                    "operator_contact",
+                    "operator_contact_binding",
+                }
                 or not 1 <= len(tenant_id) <= 64
             ):
                 raise ValueError()

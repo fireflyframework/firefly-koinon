@@ -148,8 +148,9 @@ class NativeCaptureBudget:
             or any(len(row.source_ids) > self.limits.ids_per_read for row in prospective_reads)
         ):
             raise NativeCaptureBudgetExceeded()
-        self._bytes(data or {}, sources, prospective_reads, prospective_attempts, prospective_tools,
-                    reserved_tools)
+        self._bytes(
+            data or {}, sources, prospective_reads, prospective_attempts, prospective_tools, reserved_tools
+        )
 
     def envelope(self, capture):
         if (
@@ -160,7 +161,7 @@ class NativeCaptureBudget:
         ):
             raise NativeCaptureBudgetExceeded()
         self._bytes(
-            capture.data,
+            {**capture.data, "_native_query_results": [asdict(row) for row in capture.query_results]},
             [row.model_dump(mode="json") for row in capture.sources],
             capture.native_reads,
             capture.sql_attempts,
@@ -179,8 +180,10 @@ class NativeCaptureBudget:
             "source_manifest": {"version": 1, "complete": False, "sources": sources},
             "native_reads": [wire(row) for row in reads],
             "sql_attempts": [wire(row) for row in attempts],
-            "rlm_tools": [{**row.model_dump(mode="json"), "result_id": "0" * 64,
-                           "generation_id": "0" * 64} for row in tools],
+            "rlm_tools": [
+                {**row.model_dump(mode="json"), "result_id": "0" * 64, "generation_id": "0" * 64}
+                for row in tools
+            ],
         }
         # Queue identities/envelope and not-yet-observed engine identifiers are reserved before entry.
         size = len(json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(", ", ": ")).encode())

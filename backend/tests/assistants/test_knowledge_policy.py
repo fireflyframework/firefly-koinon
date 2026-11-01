@@ -111,8 +111,8 @@ async def test_search_uses_recorded_mode_limit_and_scoped_policy(assistants, mod
     native.search.side_effect = search
     view = await tool.execute(question="Read this source")
     if mode == "rlm":
-        assert view["derived_analysis"]["text"] == "Native final analysis"
-        assert view["derived_analysis"]["result_id"] == view["evidence_id"]
+        assert "derived_analysis" not in view and "Native final analysis" not in str(view)
+        assert isinstance(view["answer_facts"], list)
     assert seen[0][0] == recorded
     assert seen[0][1]["answer"] is (mode == "rlm")
     assert seen[0][1]["limit"] == expected_limit
@@ -235,7 +235,7 @@ async def test_query_tool_borrows_exact_recorded_structured_policy_through_evide
     monkeypatch.setattr(queue, "evidence", persist)
     tool = (await context.get_bean(AssistantExecutor).tools(run.id, "query-worker", ["query_dataset"]))[0]
     view = await tool.execute(dataset_id=parent.id, question="Sum the rows")
-    assert seen == [recorded] and view["preview"] == [{"total": 28}]
+    assert seen == [recorded] and view["answer_facts"] == []
     assert seen[0].structured.generation_candidates != 7
     assert current_snapshot("issuer|admin", "north") is None
 

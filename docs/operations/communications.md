@@ -18,7 +18,9 @@ The email link contains a noncredential invitation UUID. The recipient signs in 
 
 ## Read your inbox
 
-Open the notification bell or **Your account**, **Notifications**. Filter and page through server-owned results, mark a specific notice read, or open an available invitation/workspace action. An access-removal notice remains in your own inbox after the corresponding role is removed. A notice does not grant access to its target; current authorization is checked again when you open it.
+Open the notification bell or **Your account**, **Notifications**. Choose **All notifications** or **Unread**, then select a type if needed. Filters apply immediately and pagination reads results from the server. Mark a specific notice read or open an available invitation/workspace action. A confirmed read refreshes the bell's count; in the unread view it also refreshes the list. If the count cannot be loaded, the bell shows an availability warning instead of suggesting that there are no unread notices.
+
+An access-removal notice remains in your own inbox after the corresponding role is removed. A notice does not grant access to its target; current authorization is checked again when you open it. In-app notices remain usable when email is disabled. Reading a notice does not confirm email delivery.
 
 Required security and access notices remain enabled. They are separate from optional summaries and personal channel preferences. Tokens, approval credentials and private provider errors never appear in notification content.
 

@@ -64,6 +64,9 @@
     "refused",
     "review_required"
   ],
+  "AnswerReleasePolicyVersion": [
+    "knowledge-only-v1"
+  ],
   "AssetAvailabilityPhase": [
     "unknown",
     "queued",

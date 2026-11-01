@@ -47,6 +47,7 @@ from flycanon.config import CanonSettings
 from flycanon.core.agents.model_bindings import current_scope, model_reference
 from flycanon.core.services.billing.cost_service import CostService
 from flycanon.core.services.query import provenance
+from flycanon.core.services.query.answer_release import release_excerpts
 from flycanon.core.services.query.rlm.chat import RlmChatClient
 from flycanon.core.services.query.rlm.citation_mapper import map_citations as _map_citations
 from flycanon.core.services.query.rlm.corpus import CanonCorpusBuilder, Filters
@@ -233,6 +234,9 @@ class RLMAnswerService:
                 "The admitted knowledge connection lifetime has ended",
                 code="KNOWLEDGE_MODEL_SCOPE_CLOSED",
             )
+        answer_text, citations, no_answer = release_excerpts(
+            citations, no_answer=no_answer or len(citations) != len(cites)
+        )
         logger.info(
             "rlm answered question=%s docs=%d citations=%d elapsed_ms=%d",
             request.question[:80],

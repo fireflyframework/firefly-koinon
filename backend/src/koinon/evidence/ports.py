@@ -1,5 +1,6 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
+from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 from typing import Protocol, runtime_checkable
 
@@ -11,6 +12,19 @@ class ConversationSnapshotPort(Protocol):
     async def snapshot(
         self, subject: str, tenant_id: str, thread_id: str, message_ids: list[str]
     ) -> ConversationSnapshot: ...
+
+
+class ConversationOutputPort(ABC):
+    @abstractmethod
+    async def authorize_output(
+        self,
+        subject: str,
+        tenant_id: str,
+        thread_id: str,
+        message_ids: list[str],
+        *,
+        snapshot: ConversationSnapshot | None = None,
+    ) -> None: ...
 
 
 @runtime_checkable

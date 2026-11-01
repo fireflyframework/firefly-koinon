@@ -35,15 +35,24 @@ def thread_dto(thread: ChatThread) -> dict:
     }
 
 
-def message_dto(message: ChatMessage) -> dict:
+def message_dto(message: ChatMessage, *, release_verified: bool = False) -> dict:
+    from koinon.answers.receipts import legacy_notice, message_language
+
+    masked = message.role == "assistant" and not release_verified
     return {
         "id": message.id,
         "role": message.role,
-        "text": message.text,
+        "text": legacy_notice(message_language(message)) if masked and message.text else message.text,
         "status": message.status,
         "presentation": message.presentation,
-        "citations": message.citations,
-        "artifacts": message.artifacts,
-        **({"answer_policy": message.answer_policy} if message.answer_policy else {}),
+        "citations": [] if masked else message.citations,
+        "artifacts": [] if masked else message.artifacts,
+        **(
+            {"answer_policy": {"outcome": "refused", "code": "EVIDENCE_RELEASE_REQUIRED"}}
+            if masked and (message.text or message.answer_policy)
+            else {"answer_policy": message.answer_policy}
+            if message.answer_policy
+            else {}
+        ),
         "created_at": message.created_at.isoformat(),
     }

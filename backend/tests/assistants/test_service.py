@@ -14,6 +14,8 @@ async def assistants(tmp_path: Path):
     from pyfly.context import ApplicationContext
     from pyfly.core import Config
 
+    # Optional bulk models can load during collection; register their native job foreign key.
+    import koinon.jobs.entities  # noqa: F401
     from koinon.assistants.service import AssistantService
     from koinon.catalog.entities import Membership, Tenant
     from koinon.catalog.repositories import MembershipRepository, TenantRepository
@@ -231,9 +233,10 @@ async def test_leased_run_events_replay_and_cancellation_reject_stale_worker(ass
     assert claimed.id == submitted["run_id"]
     assert await queue.claim("worker-b") is None
     await queue.append(claimed.id, "worker-a", "message_delta", {"text": "Observed answer"})
-    assert (await service.messages("issuer|viewer", "north", thread["id"]))[-1]["text"] == "Observed answer"
+    assert (await service.messages("issuer|viewer", "north", thread["id"]))[-1]["text"] != "Observed answer"
     events = await service.run_events("issuer|viewer", "north", claimed.id, after=0)
-    assert events[-1]["data"] == {"text": "Observed answer"}
+    assert "Observed answer" not in str(events)
+    assert (await service.message_repository.find_by_id(claimed.message_id)).text == "Observed answer"
     assert await service.run_events("issuer|viewer", "north", claimed.id, after=events[-1]["id"]) == []
     await service.cancel("issuer|viewer", "north", claimed.id)
     with pytest.raises(ConflictException):
@@ -290,7 +293,9 @@ async def test_native_agent_worker_uses_scoped_tools_and_persists_replayable_evi
     )
     _, agent = await configured(service)
     await service.validate_provider("issuer|admin", "north", agent["provider_id"])
-    model = TestModel(call_tools=["search_knowledge"], custom_output_text="The evidence is available below.")
+    model = TestModel(
+        call_tools=["search_knowledge"], custom_output_args={"outcome": "insufficient_evidence"}
+    )
     monkeypatch.setattr(ModelFactory, "build_with_secret", lambda self, spec, secret: model)
     from koinon.catalog.service import CatalogService
 
@@ -355,13 +360,14 @@ async def test_native_agent_worker_uses_scoped_tools_and_persists_replayable_evi
     await context.get_bean(AssistantExecutor).execute(run.id, "worker-test")
     message = (await service.messages("issuer|viewer", "north", thread["id"]))[-1]
     assert message["status"] == "completed"
-    assert message["text"] == "The evidence is available below."
-    assert message["artifacts"][0]["language"].startswith("root = KnowledgeAnswer(")
+    assert "verifiable evidence" in message["text"]
+    assert message["artifacts"] == []
     assert knowledge.search.await_args.kwargs["asset_ids"] == [document.id]
-    assert message["answer_policy"]["outcome"] == "grounded"
+    assert message["answer_policy"]["outcome"] == "refused"
+    assert any(row.kind == "search" for row in await service.results.find_all(run_id=run.id))
     events = await service.run_events("issuer|viewer", "north", submitted["run_id"])
     assert events[-1]["type"] == "completed"
-    assert any(event["type"] == "openui_delta" for event in events)
+    assert not any(event["type"] == "openui_delta" for event in events)
 
 
 async def test_message_cursor_pages_do_not_duplicate_and_snapshot_carries_event_boundary(assistants):
@@ -389,7 +395,9 @@ async def test_message_cursor_pages_do_not_duplicate_and_snapshot_carries_event_
     cursor, seen = None, []
     for index in (2, 1, 0):
         page = await service.message_page("issuer|viewer", "north", thread["id"], before=cursor, limit=2)
-        assert [item["text"] for item in page["items"]] == [f"Question {index}", f"Answer {index}"]
+        from koinon.answers.receipts import legacy_notice
+
+        assert [item["text"] for item in page["items"]] == [f"Question {index}", legacy_notice("en")]
         assert page["items"][-1]["event_cursor"] == "3"
         seen.extend(item["id"] for item in page["items"])
         cursor = page["next_cursor"]
@@ -442,7 +450,8 @@ async def test_restarted_generation_does_not_reuse_the_previous_attempts_groundi
     claimed = await queue.claim("policy-worker")
     await queue.policy(run["run_id"], "policy-worker", {"outcome": "grounded"})
     assert (await service.messages("issuer|viewer", "north", thread["id"]))[-1]["answer_policy"] == {
-        "outcome": "grounded"
+        "outcome": "refused",
+        "code": "EVIDENCE_RELEASE_REQUIRED",
     }
     if recovery == "retry":
         await queue.finish(run["run_id"], "policy-worker", code="CONTROLLED_FAILURE")

@@ -70,7 +70,13 @@ def map_citations(cites: list[dict], docs: RlmCorpus) -> list[Hit]:
             if reference.recorded_page is not None:
                 metadata["recorded_page"] = str(reference.recorded_page)
         else:
-            page = max(1, int(cite.get("page", 0)) + 1)
+            index = cite.get("page", 0)
+            if type(index) is not int or not isinstance(content, str) or not content.strip():
+                continue
+            pages = docs.pages(key)
+            if not 0 <= index < len(pages) or content not in pages[index]:
+                continue
+            page = index + 1
             chunk_id = f"{meta.source_id}#p{page}"
             metadata = {}
         citations.append(

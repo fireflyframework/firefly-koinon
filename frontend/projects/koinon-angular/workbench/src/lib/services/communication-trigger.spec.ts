@@ -18,6 +18,6 @@ it('does not invent a count while notification state is unavailable', () => {
   fixture.detectChanges();
   expect(fixture.nativeElement.querySelector('.count')).toBeNull();
   expect(fixture.nativeElement.querySelector('button')?.getAttribute('aria-label')).toBe(
-    'Notifications',
+    'Notifications, Checking unread notifications',
   );
 });

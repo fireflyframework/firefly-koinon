@@ -215,9 +215,9 @@ async def test_historical_answer_body_requires_manifest_and_current_source_proof
         second.id, "proof-worker", model_id="controlled", model_class="controlled", api="chat"
     )
     messages = await memory.build(second, generation_id=current_generation)
-    assert ("HISTORICAL_VERIFIED_ANSWER_47" in str(messages)) is verified
+    assert "HISTORICAL_VERIFIED_ANSWER_47" not in str(messages)
     saved = await memory.repository.for_generation(current_generation)
-    assert saved.manifest_json["turns"][0]["answer_included"] is verified
+    assert saved.manifest_json["turns"][0]["answer_included"] is False
 
 
 async def memory_pair(assistants, *, origin_token_id=None):
@@ -1183,7 +1183,9 @@ async def test_as_of_page_body_remains_valid_when_only_new_deltas_append(assista
     monkeypatch.setattr(ChatMemoryRepository, "active_manifests", append_before_memory)
     page = await service.message_page("issuer|admin", "north", target["id"])
     answer = next(item for item in page["items"] if item.get("run_id") == run.id)
-    assert answer["text"] == "First captured chunk"
+    from koinon.answers.receipts import legacy_notice
+
+    assert answer["text"] == legacy_notice("en")
     assert answer["event_cursor"] == str(cursor)
     assert (await service.runs.find_by_id(run.id)).sequence > cursor
 

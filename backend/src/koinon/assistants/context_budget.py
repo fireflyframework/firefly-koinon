@@ -20,7 +20,13 @@ class ConservativeTokenEstimator(TokenEstimator):
 
 
 def history_budget(
-    settings: AssistantSettings, *, system: str, question: str, tools: Sequence[AgentTool], output_tokens: int
+    settings: AssistantSettings,
+    *,
+    system: str,
+    question: str,
+    tools: Sequence[AgentTool],
+    output_tokens: int,
+    output_schema: dict | None = None,
 ) -> int:
     schemas = []
     for tool in tools:
@@ -39,6 +45,7 @@ def history_budget(
         estimator.estimate(system)
         + estimator.estimate(question)
         + estimator.estimate(json.dumps(schemas, ensure_ascii=False))
+        + (estimator.estimate(json.dumps(output_schema, ensure_ascii=False)) if output_schema else 0)
         + output_tokens
         + settings.tool_result_tokens
         + 512

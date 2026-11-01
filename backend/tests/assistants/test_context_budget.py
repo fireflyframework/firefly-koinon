@@ -91,3 +91,30 @@ def test_current_prompt_and_tool_budget_overflow_is_explicit_and_never_truncates
     assert (
         0 <= history_budget(settings, system="System", question="Question", tools=[], output_tokens=64) <= 512
     )
+
+
+def test_typed_output_schema_reserves_context_before_any_history_or_model_input():
+    from koinon.answers.dtos import EvidenceAnswerPlan
+    from koinon.assistants.context_budget import history_budget
+
+    settings = SimpleNamespace(max_context_tokens=4096, max_history_tokens=4096, tool_result_tokens=128)
+    plain = history_budget(settings, system="System", question="Question", tools=[], output_tokens=64)
+    typed = history_budget(
+        settings,
+        system="System",
+        question="Question",
+        tools=[],
+        output_tokens=64,
+        output_schema=EvidenceAnswerPlan.model_json_schema(),
+    )
+    assert 0 <= typed < plain
+    settings.max_context_tokens = plain
+    with pytest.raises(InvalidRequestException):
+        history_budget(
+            settings,
+            system="System",
+            question="Question",
+            tools=[],
+            output_tokens=64,
+            output_schema={"description": "x" * 4096},
+        )

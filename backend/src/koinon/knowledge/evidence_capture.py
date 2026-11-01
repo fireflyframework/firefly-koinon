@@ -156,7 +156,9 @@ def failed_receipt(error, receipt, tenant_id, chain=None, binding=None):
 
 def checked_capture(receipt, *arguments):
     capture = CapturedEvidence(
-        *arguments, rlm_tools=(tuple(receipt.rlm_tools) if receipt.rlm_tools is not None else None)
+        *arguments,
+        rlm_tools=(tuple(receipt.rlm_tools) if receipt.rlm_tools is not None else None),
+        query_results=tuple(receipt.query_results),
     )
     receipt.budget.envelope(capture)
     return capture

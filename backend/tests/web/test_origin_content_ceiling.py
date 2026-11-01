@@ -137,9 +137,14 @@ def test_revoked_origin_token_cannot_replay_through_broader_owner_session(client
             queue = context.get_bean(AssistantQueue)
             claimed = await queue.claim("fresh-review")
             assert claimed.id == run.json()["run_id"]
-            await queue.policy(claimed.id, "fresh-review", {"outcome": "refused", "code": "KNOWLEDGE_ONLY"})
-            await queue.append(
-                claimed.id, "fresh-review", "message_delta", {"text": "Retrieve the sources again."}
+            from koinon.answers.dtos import EvidenceAnswerPlan
+
+            await queue.release_answer(
+                claimed.id,
+                "fresh-review",
+                EvidenceAnswerPlan(outcome="insufficient_evidence"),
+                "en",
+                refusal_code="KNOWLEDGE_ONLY",
             )
             await queue.finish(claimed.id, "fresh-review")
 
@@ -153,6 +158,9 @@ def test_revoked_origin_token_cannot_replay_through_broader_owner_session(client
         replay = client.get(prefix + "runs/" + run.json()["run_id"] + "/events", headers=bearer())
         assert replay.status_code == 200, replay.text
         assert "Owned captured passage" not in replay.text
-        assert "message_reset" in replay.text and "Retrieve the sources again." in replay.text
+        from koinon.assistants.grounding import refusal_message
+
+        assert "message_reset" in replay.text and refusal_message("en", "KNOWLEDGE_ONLY") in replay.text
+        assert audit.json()["output_release"]["generation_id"] is None
         old = client.get(prefix + "runs/" + run.json()["run_id"] + "/results/" + result_id, headers=bearer())
         assert old.status_code == 403, old.text
