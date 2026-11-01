@@ -125,6 +125,7 @@ nav:
           - Reference deployment: concepts/architecture.md
           - Local environment: operations/local-deployment.md
           - First start in production: operations/first-start.md
+          - Initial knowledge provisioning: operations/installation-knowledge.md
           - Initial administrator welcome: reference/bootstrap-welcome.md
           - Production: operations/production.md
           - Worker roles and scaling: operations/workers.md
