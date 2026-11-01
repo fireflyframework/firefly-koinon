@@ -39,6 +39,10 @@ def profile(**changes):
         " https://example.com/mcp",
         "https:///mcp",
         "https://example.com:bad/mcp",
+        "https://example.com",
+        "https://example.com/wrong",
+        "https://example.com/mcp/",
+        "https://example.com/%6dcp",
     ],
 )
 def test_profile_rejects_unsafe_endpoint_without_echoing_secrets(url):

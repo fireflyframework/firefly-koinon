@@ -48,7 +48,7 @@ Obtain the exact HTTPS MCP endpoint and a registered **public** OAuth client ID 
 }
 ```
 
-The URL and client identifier above are placeholders, not a registered service. Profiles reject credentials, client secrets, URL user information, query strings, fragments and unsupported scope names. The default scope is only `catalog:read`. If the user needs organizational writes, the operator may explicitly include `catalog:write`; the user must still authorize the requested scope and possess the required role and space grant. The builder never adds it automatically.
+The URL and client identifier above are placeholders, not a registered service. Profiles require the current native server's exact `/mcp` path, and reject credentials, client secrets, URL user information, query strings, fragments and unsupported scope names. The default scope is only `catalog:read`. If the user needs organizational writes, the operator may explicitly include `catalog:write`; the user must still authorize the requested scope and possess the required role and space grant. The builder never adds it automatically.
 
 Build into a new directory:
 

@@ -30,6 +30,7 @@ def secure_url(value: str) -> str:
             and len(value) <= 2048
             and parsed.scheme == "https"
             and parsed.hostname
+            and parsed.path == "/mcp"
             and not parsed.username
             and not parsed.password
             and not parsed.query
@@ -42,7 +43,7 @@ def secure_url(value: str) -> str:
         valid = False
     if not valid:
         raise ValueError(
-            "Provide one credential-free absolute HTTPS endpoint without query or fragment"
+            "Provide one credential-free absolute HTTPS endpoint at /mcp without query or fragment"
         )
     return value
 
