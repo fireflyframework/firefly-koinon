@@ -5,6 +5,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 spec = importlib.util.spec_from_file_location(
     "bootstrap_knowledge_cli", Path(__file__).parents[1] / "bootstrap_knowledge.py"
 )
@@ -12,6 +14,7 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 
+@pytest.mark.asyncio
 async def test_validate_only_does_not_import_application_or_resolve_credentials(
     tmp_path, capsys, monkeypatch
 ):

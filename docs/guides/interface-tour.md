@@ -97,7 +97,7 @@ The detailed [chat guide](agents.md) explains SSE, conversation memory, file cap
 Open your avatar menu and choose **Sign out**. The confirmation dialog lets you cancel before the session changes. Confirming signs you out; saved knowledge and conversations remain. If the identity provider's redirect fails, koinon checks whether the application session has already ended before showing an error.
 
 <figure>
-  <img src="../assets/screenshots/sign-out-confirmation-mobile.png" alt="Mobile koinon sign-out confirmation with Cancel and Sign out actions" width="390" height="1000" loading="lazy">
+  <img src="../../assets/screenshots/sign-out-confirmation-mobile.png" alt="Mobile koinon sign-out confirmation with Cancel and Sign out actions" width="390" height="1000" loading="lazy">
   <figcaption>Controlled example data in the compiled interface. The confirmation stays within the mobile viewport.</figcaption>
 </figure>
 
