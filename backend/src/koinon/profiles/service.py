@@ -25,7 +25,7 @@ from koinon.corporate_profiles.projector import CorporateProfileProjector
 from koinon.profiles.dtos import PersonOutput
 from koinon.profiles.entities import Profile
 from koinon.profiles.images import sanitize_avatar
-from koinon.profiles.mappers import profile_dto
+from koinon.profiles.mappers import profile_dto, system_author
 from koinon.profiles.repositories import ProfileRepository
 from koinon.security.authority import primary_authority
 
@@ -215,6 +215,9 @@ class ProfileService:
             )
             for subject, value in projected.items():
                 result[subject] = author_view(value)
+        for subject in subjects:
+            if system := system_author(subject):
+                result[subject] = system
         return result
 
     @staticmethod

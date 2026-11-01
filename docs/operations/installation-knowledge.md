@@ -10,6 +10,23 @@ Start from [`installation-plan.json.example`](https://github.com/fireflyframewor
 
 The source example declares one workspace with a project, document collection and table corpus. Each manifest folder receives a unique server-owned `system_key`; these installed folders cannot be deleted, archived, moved or stripped of their system identity. A workspace is an actual knowledge isolation boundary. Nested collections and corpora organize a project within that boundary. Users can create additional ordinary folders through the normal authorized APIs.
 
+### Understand the initial structure
+
+The supplied manifest creates the following structure. These are example names: the installer uses the names and descriptions in your protected manifest, so prepare them in the installation's language before the first run.
+
+| Level | Example name | Purpose |
+| --- | --- | --- |
+| Space | Company knowledge | The shared knowledge boundary for this organization. Create another space for a client or team that needs different access. |
+| Library project | General | A place for knowledge that applies across this space. This does not create a chat project or enable shared chat memory. |
+| Document folder | Documents | A starting destination for documents and their extracted, cited content. |
+| Dataset folder | Tables | A starting destination for structured files and their table snapshots. |
+
+The two initial folders are organizational starting points, not separate security boundaries. Putting confidential information in a sibling folder does not isolate it from people who can access the space. Use space memberships and roles for that purpose. New folders beneath the defaults are ordinary user-managed folders; they do not inherit system protection.
+
+Installed records retain the audit subject `system:installation`. The public author display for that exact subject is **koinon**, including on branded installations. This attribution identifies the software action and does not create a person or grant access. Unknown historical authors remain unknown. Later edits retain the identity of the actual editor.
+
+See [Work with the knowledge library](../guides/library.md) for browsing, folder maintenance, upload states and source history. The initial provisioning command creates and qualifies empty indexes; it does not yet publish an introductory document into those indexes. A successful setup receipt alone therefore does not establish that the assistant can answer questions about the product itself.
+
 Use stable keys, including context in child keys when multiple workspaces contain similarly named folders. Keys are unique across the organization. Keep the same `plan_key`, folder keys and manifest content for retries of the same plan.
 
 ```bash

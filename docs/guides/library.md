@@ -10,6 +10,8 @@ Inside a space, Library projects and nested folders organize content. They inher
 
 The installation can provide system spaces and system folders. **System space** or **System folder** identifies these retained defaults. Their names and descriptions can be maintained with the appropriate permission, but their system identity cannot be removed. They cannot be deleted, archived or moved, even through an administrator's API token. Creating a subfolder beneath a system folder does not make the new folder a system folder.
 
+The supplied installation manifest starts with a **Company knowledge** space, a **General** Library project and two folders, **Documents** and **Tables**. Your administrator can choose localized names before installation. Documents is a useful starting point for reading and search; Tables is a useful starting point for datasets and SQL exploration. These folders organize the same knowledge space. They do not provide separate access controls. The [initial provisioning guide](../operations/installation-knowledge.md#understand-the-initial-structure) explains the complete hierarchy and its protections.
+
 Choose the current destination, then create the next project or folder. Nested collection and corpus folders can contain further folders, documents and datasets. Nesting is bounded so the complete path can always be checked; a rejected depth limit requires a shallower destination. Ordinary empty folders can be deleted. Archive retains ordinary content and hides it until restored.
 
 <figure>
