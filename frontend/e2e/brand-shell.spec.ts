@@ -1,7 +1,7 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 import { test, expect } from '@playwright/test';
-import { mockService } from './fixtures';
+import { context, mockService } from './fixtures';
 import { mkdir } from 'node:fs/promises';
 const output = process.env['KOINON_BRAND_SCREENSHOTS'];
 for (const custom of [false, true])
@@ -11,6 +11,9 @@ for (const custom of [false, true])
     }) => {
       await page.setViewportSize({ width, height: 960 });
       await mockService(page);
+      await page.route('**/bff/api/v1/context', (route) =>
+        route.fulfill({ json: { ...context, tenants: [context.tenants[0]] } }),
+      );
       await page.route('**/chat/{threads,folders}*', (route) =>
         route.fulfill({ json: { items: [], page: 1, page_size: 25, total: 0, pages: 0 } }),
       );
@@ -36,6 +39,7 @@ for (const custom of [false, true])
         }),
       );
       await page.goto('/chat');
+      await expect(page.getByRole('combobox', { name: 'Organization', exact: true })).toHaveCount(0);
       const header = page.locator('ffk-shell .topbar'),
         brand = header.locator('.brand');
       await expect(brand).toHaveAccessibleName(`${branding.product_name}, Chat`);
@@ -75,7 +79,7 @@ for (const custom of [false, true])
       await page.reload();
       const login = page.locator('.sign-in');
       await expect(login.getByRole('button', { name: 'Sign in', exact: true })).toBeVisible();
-      await expect(login.locator('header ffk-powered-by')).toHaveCount(custom ? 1 : 0);
+      await expect(login.locator('header ffk-powered-by')).toHaveCount(0);
       await expect(login.locator('footer ffk-powered-by')).toHaveCount(custom ? 1 : 0);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
         true,
@@ -89,7 +93,7 @@ for (const custom of [false, true])
         login.getByRole('button', { name: 'Use light theme', exact: true }),
       ).toBeVisible();
       if (custom)
-        await expect(login.locator('header ffk-powered-by img')).toHaveAttribute(
+        await expect(login.locator('footer ffk-powered-by img')).toHaveAttribute(
           'src',
           /koinon-wordmark-reversed.svg$/,
         );

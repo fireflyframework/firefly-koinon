@@ -34,6 +34,7 @@
           </button>
         }
       </nav>
+      @if (organizations.length > 1) {
       <div class="header-organization">
         <label class="organization">
           <ffk-icon class="organization-mark" name="users" />
@@ -50,6 +51,7 @@
           ><ffk-icon name="down" />
         </label>
       </div>
+      }
     }
     @if (!personalAccount && destination === 'library') {
       <div class="global-search">
@@ -161,6 +163,7 @@
           <ffk-icon name="close" />
         </button>
       </div>
+      @if (organizations.length > 1) {
       <label class="organization">
         <ffk-icon class="organization-mark" name="users" />
         <span class="eyebrow">{{ 'Organization' | ffkText }}</span
@@ -175,6 +178,7 @@
           }</select
         ><ffk-icon name="down" />
       </label>
+      }
       <nav [attr.aria-label]="'Main navigation' | ffkText">
         @for (item of destinations; track item.id) {
           <button

@@ -14,7 +14,8 @@ it('keeps authentication and theme controls available after the lazy sign-in scr
   await fixture.whenStable();
   const root = fixture.nativeElement as HTMLElement;
   expect(root.querySelector('h2')?.textContent).toBe('Welcome to Northstar');
-  expect(root.querySelectorAll('ffk-powered-by').length).toBe(2);
+  expect(root.querySelector('header ffk-powered-by')).toBeNull();
+  expect(root.querySelectorAll('footer ffk-powered-by').length).toBe(1);
   expect(root.querySelector('[role=status]')?.textContent).toContain('Your session has ended');
   root.querySelector<HTMLButtonElement>('.login-panel button')?.click();
   root.querySelector<HTMLButtonElement>('header button')?.click();
@@ -37,6 +38,14 @@ it('uses scoped self-hosted decorative artwork and keeps sign-in available when 
   expect(root.querySelector<HTMLButtonElement>('.login-panel button')?.disabled).toBe(false);
 });
 
-it('uses the reversed native symbol in dark mode while preserving custom assistant artwork',async()=>{
- const fixture=TestBed.createComponent(KoinonSignIn);fixture.componentRef.setInput('theme','dark');fixture.componentRef.setInput('symbol','/assets/brand/logos/koinon-symbol-color.svg');await fixture.whenStable();const image=()=> (fixture.nativeElement as HTMLElement).querySelector('.login-panel img');expect(image()?.getAttribute('src')).toBe('/assets/brand/logos/koinon-symbol-reversed.svg');fixture.componentRef.setInput('symbol','data:image/png;base64,custom');await fixture.whenStable();expect(image()?.getAttribute('src')).toBe('data:image/png;base64,custom');
+it('keeps assistant avatars out of sign-in for native and custom identities', async () => {
+  const fixture = TestBed.createComponent(KoinonSignIn);
+  fixture.componentRef.setInput('theme', 'dark');
+  fixture.componentRef.setInput('symbol', '/assets/brand/logos/koinon-symbol-color.svg');
+  await fixture.whenStable();
+  const image = () => (fixture.nativeElement as HTMLElement).querySelector('.login-panel img');
+  expect(image()).toBeNull();
+  fixture.componentRef.setInput('symbol', 'data:image/png;base64,custom');
+  await fixture.whenStable();
+  expect(image()).toBeNull();
 });

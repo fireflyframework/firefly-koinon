@@ -67,7 +67,9 @@ for (const width of [1440, 3840, 390])
           .getByRole('button', { name: 'Sign in', exact: true })
           .boundingBox())!;
         expect(button.y + button.height).toBeLessThanOrEqual(page.viewportSize()!.height);
-        await expect(page.locator('ffk-sign-in ffk-powered-by')).toHaveCount(custom ? 2 : 0);
+        await expect(page.locator('ffk-sign-in header ffk-powered-by')).toHaveCount(0);
+        await expect(page.locator('ffk-sign-in footer ffk-powered-by')).toHaveCount(custom ? 1 : 0);
+        await expect(panel.locator('img')).toHaveCount(0);
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
           true,
         );
