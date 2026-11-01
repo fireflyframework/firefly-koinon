@@ -153,8 +153,9 @@ test('fresh context validates a saved organization across reorder, identity chan
   state.current.tenants = [state.current.tenants[0]];
   state.catalogs.length = 0;
   await page.reload();
-  await expect(organization(page)).toHaveValue('tenant-one');
-  expect(state.catalogs).toEqual(['/bff/api/v1/tenants/tenant-one/catalog']);
+  await expect(page.locator('ffk-shell')).toBeVisible();
+  await expect(organization(page)).toHaveCount(0);
+  await expect.poll(() => state.catalogs).toEqual(['/bff/api/v1/tenants/tenant-one/catalog']);
   state.current.tenants = [];
   state.catalogs.length = 0;
   await page.reload();
