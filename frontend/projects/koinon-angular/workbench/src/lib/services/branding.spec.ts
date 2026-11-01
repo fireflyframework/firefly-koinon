@@ -171,3 +171,21 @@ it('clears organization identity when the authenticated subject changes on the s
   await Promise.resolve();
   expect(brand.value().product_name).toBe('Current session');
 });
+
+it('attributes renamed and image-customized identities without duplicating a palette-only native identity', () => {
+  const transport: KoinonTransport = {
+    request: async <T>() => DEFAULT_BRANDING as T,
+    stream: () => { throw new Error('Unexpected stream'); },
+  };
+  TestBed.configureTestingModule({providers:[KoinonBranding,KoinonFacade,...provideKoinonClient(new KoinonClient({transport}),transport)]});
+  const branding=TestBed.inject(KoinonBranding);
+  expect(branding.customized()).toBe(false);
+  branding.setOverride({...DEFAULT_BRANDING,palette:{...DEFAULT_BRANDING.palette}});
+  expect(branding.customized()).toBe(false);
+  branding.setOverride({...DEFAULT_BRANDING,product_name:'Northstar'});
+  expect(branding.customized()).toBe(true);
+  branding.setOverride({...DEFAULT_BRANDING,logo_dark:'data:image/png;base64,aGVsbG8='});
+  expect(branding.customized()).toBe(true);
+  branding.setOverride(null);
+  expect(branding.customized()).toBe(false);
+});

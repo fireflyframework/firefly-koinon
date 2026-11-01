@@ -118,7 +118,7 @@
       <span class="copyright"
         >© 2026 Firefly Software Foundation</span
       ><span class="footer-credit"
-        ><span class="made-with"
+        >@if (customBrand) {<ffk-powered-by [brandBase]="brandBase" [theme]="theme" />}<span class="made-with"
           >{{ 'Made with' | ffkText }}
           <span class="beating-heart" role="img" [attr.aria-label]="'love' | ffkText"
             ><ffk-icon name="heart" /></span></span

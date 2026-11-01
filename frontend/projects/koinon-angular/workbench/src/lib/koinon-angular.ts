@@ -19,6 +19,7 @@ import {KoinonAssistant} from './services/assistant';
 import {KoinonClientContext} from './services/client-context';
 import {folderTrail,isSystemManaged,friendlyKind,isFolder,nextFolderKind} from './services/library-tree';
 import {KoinonCommandPalette,type KoinonCommand} from './organisms/command-palette';
+import {KoinonSignIn} from './organisms/sign-in';
 import {KoinonShell,type PrimaryDestination} from './organisms/shell';
 import {KoinonLibraryTemplate} from './templates/library-template';
 import {KoinonInspector} from './organisms/inspector';
@@ -29,7 +30,7 @@ import {KoinonIcon} from './atoms/icon';
 import {KoinonSkeleton} from './atoms/skeleton';
 import type {KoinonScope} from './models';
 type Dialog='move'|'sign-out'|'account'|'archived'|'tree'|'add'|'create'|'edit'|'upload'|'archive'|'query'|'lineage'|'citation';
-@Component({selector:'ffk-workbench',imports:[KoinonAccountPage,CdkTrapFocus,KoinonTableLineagePanel,KoinonTextPipe,KoinonCommandPalette,NgComponentOutlet,KoinonWorkbenchDialogs,KoinonShell,KoinonLibraryTemplate,KoinonInspector,KoinonButton,KoinonIcon,KoinonSkeleton],providers:[KoinonBranding,KoinonTableLineage,KoinonFontLoader,KoinonI18n,KoinonAccount,KoinonClientContext,KoinonFacade,KoinonAssistant],templateUrl:'./workbench.html',styleUrl:'./workbench.scss',host:{'[class.koinon-dark]':"theme==='dark'",'[attr.lang]':'i18n.preferences().locale'},encapsulation:ViewEncapsulation.ShadowDom,changeDetection:ChangeDetectionStrategy.OnPush})
+@Component({selector:'ffk-workbench',imports:[KoinonSignIn,KoinonAccountPage,CdkTrapFocus,KoinonTableLineagePanel,KoinonTextPipe,KoinonCommandPalette,NgComponentOutlet,KoinonWorkbenchDialogs,KoinonShell,KoinonLibraryTemplate,KoinonInspector,KoinonButton,KoinonIcon,KoinonSkeleton],providers:[KoinonBranding,KoinonTableLineage,KoinonFontLoader,KoinonI18n,KoinonAccount,KoinonClientContext,KoinonFacade,KoinonAssistant],templateUrl:'./workbench.html',styleUrl:'./workbench.scss',host:{'[class.koinon-dark]':"theme==='dark'",'[attr.lang]':'i18n.preferences().locale'},encapsulation:ViewEncapsulation.ShadowDom,changeDetection:ChangeDetectionStrategy.OnPush})
 export class KoinonWorkbench implements OnInit,OnChanges,OnDestroy{
  readonly sharedConversationComponent=signal<Type<unknown>|null>(null);
  readonly sharedConversationError=signal('');

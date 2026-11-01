@@ -23,6 +23,10 @@ export class KoinonBranding {
   readonly value = computed(() =>
     resolveBranding(this.override() ?? this.current()?.branding ?? this.deployment()),
   );
+  readonly customized = computed(() => {
+    const value = this.value();
+    return value.product_name !== DEFAULT_BRANDING.product_name || !!(value.logo_light || value.logo_dark);
+  });
   constructor() {
     effect(() => {
       const f = this.facade,
