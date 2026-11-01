@@ -273,7 +273,34 @@ test('large originals are not sent when queued storage is unavailable', async ({
   await expect(dialog.getByRole('alert')).toContainText(
     'Large files need configured queued storage',
   );
+  await expect(dialog).toContainText('Maximum per file: 32 MiB.');
   expect(state.transferred).toBe(0);
   expect(state.service.writes.some((call) => call.path.endsWith('/sources/upload'))).toBe(false);
   expect(state.calls.some((call) => call.method === 'POST' || call.method === 'PUT')).toBe(false);
+});
+test('observed larger server limits display the same effective bounds enforced by the upload coordinator', async ({
+  page,
+}) => {
+  const state = await fixture(page);
+  await page.route('**/source-batch-capabilities*', (route) =>
+    route.fulfill({
+      json: {
+        configured: true,
+        modes: ['dataset'],
+        max_files: 100,
+        max_file_bytes: 536870912,
+        max_batch_bytes: 1073741824,
+        synchronous_max_file_bytes: 134217728,
+      },
+    }),
+  );
+  const dialog = await open(page);
+  await dialog
+    .getByLabel('Choose files')
+    .setInputFiles({ name: 'policy.txt', mimeType: 'text/plain', buffer: Buffer.from('bounded') });
+  await dialog.getByRole('button', { name: 'Upload 1 file', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toContainText('unavailable processing mode');
+  await expect(dialog).toContainText('Maximum per file: 128 MiB.');
+  await expect(dialog).toContainText('Maximum batch: 512 MiB.');
+  expect(state.transferred).toBe(0);
 });

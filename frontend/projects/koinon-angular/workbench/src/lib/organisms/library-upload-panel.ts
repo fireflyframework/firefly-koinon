@@ -15,6 +15,7 @@ import { DecimalPipe } from '@angular/common';
 import type { FileBatchItemView } from '@fireflyframework/koinon-sdk';
 import type { KoinonWorkbench } from '../koinon-angular';
 import type { LibraryUploadRuntime } from '../services/library-upload';
+import { effectiveUploadLimits } from '../services/library-upload-coordinator';
 import { KoinonButton } from '../atoms/button';
 import { KoinonIcon } from '../atoms/icon';
 import { KoinonBadge } from '../atoms/badge';
@@ -125,6 +126,10 @@ export class KoinonLibraryUploadPanel implements OnInit {
   readonly runtime = signal<LibraryUploadRuntime | null>(null);
   readonly error = signal('');
   readonly view = computed(() => this.runtime()?.coordinator.view());
+  readonly limits = computed(() => {
+    const capabilities = this.view()?.capabilities;
+    return capabilities ? effectiveUploadLimits(capabilities) : null;
+  });
   readonly retained = computed(
     () => !!this.view()?.batch || !!this.view()?.uncertain || this.view()?.stage === 'observed',
   );

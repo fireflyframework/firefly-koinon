@@ -219,7 +219,7 @@
       @if (view()?.message) {
         <p role="alert">{{ view()?.message || '' | ffkText }}</p>
       }
-      @if (view()?.capabilities; as limits) {
+      @if (limits(); as limits) {
         <p class="field-help">
           {{ 'Maximum per file' | ffkText }}: {{ limits.max_file_bytes / 1048576 | number }} MiB.
           {{ 'Maximum batch' | ffkText }}: {{ limits.max_batch_bytes / 1048576 | number }} MiB.
