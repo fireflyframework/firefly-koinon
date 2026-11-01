@@ -68,6 +68,39 @@ jobs:
         working-directory: backend
         run: .venv/bin/python -m pytest -q -c ../packages/storage/pyproject.toml ../packages/storage/tests
 
+  native-installation-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17@sha256:7d0a41464797aeb9862dfdc0bbf1526b82cfd324cdd8036df19e3545f4a9ccb8
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - "127.0.0.1:5439:5432"
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PYTHONPATH: src:../packages/canon/src:../packages/structured/src
+      KOINON_INSTALLATION_ANN_TEST_PG_URL: postgresql://postgres@127.0.0.1:5439/postgres
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - name: Install the locked native installation test environment
+        run: |
+          python -m pip install uv==0.11.19
+          uv sync --project backend --locked --extra dev
+      - name: Verify real indexes, recovery and scope fences
+        working-directory: backend
+        run: .venv/bin/python -m pytest -q tests/installation/test_installation_native_postgres.py
+
   native-units:
     runs-on: ubuntu-latest
     timeout-minutes: 25
