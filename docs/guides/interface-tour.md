@@ -49,7 +49,7 @@ An organization administrator opens their avatar menu and chooses **Settings**. 
 
 [![Organization administrator opening Settings and Activity from their account menu](../assets/screenshots/account-admin-menu.png)](../assets/screenshots/account-admin-menu.png)
 
-The example uses controlled data. Other roles keep their personal account and integration actions without administrator navigation.
+This controlled example shows the administrator menu before chat models have been configured. Choose Settings to complete setup. Other roles keep their personal account and integration actions without administrator navigation.
 
 [![Organization settings and the initial model-provider configuration](../assets/screenshots/organization-settings.png)](../assets/screenshots/organization-settings.png)
 
