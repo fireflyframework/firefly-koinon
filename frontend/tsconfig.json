@@ -15,6 +15,7 @@
       "@fireflyframework/koinon-angular/communications/email-preview": ["./dist/koinon-angular/communications/email-preview"],
       "@fireflyframework/koinon-angular/communications/preferences": ["./dist/koinon-angular/communications/preferences"],
       "@fireflyframework/koinon-angular/communications/runtime": ["./dist/koinon-angular/communications/runtime"],
+      "@fireflyframework/koinon-sdk/platform-health": ["../sdk/typescript/dist/platform-health"],
       "@fireflyframework/koinon-sdk/communications": ["../sdk/typescript/dist/communications"],
       "@fireflyframework/koinon-sdk/availability": ["../sdk/typescript/dist/availability"],
       "@fireflyframework/koinon-sdk": ["../sdk/typescript/dist"],

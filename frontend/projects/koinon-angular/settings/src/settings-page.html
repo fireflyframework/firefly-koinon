@@ -1,7 +1,25 @@
 <!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
 <div class="settings-grid" [class.navigation-collapsed]="navigationCollapsed()">
-  <button class="settings-boundary" type="button" [attr.aria-label]="(navigationCollapsed() ? 'Show settings navigation' : 'Hide settings navigation') | ffkText" [attr.title]="(navigationCollapsed() ? 'Show settings navigation' : 'Hide settings navigation') | ffkText" [attr.aria-expanded]="!navigationCollapsed()" aria-controls="settings-navigation" (click)="toggleNavigation()"><ffk-icon [name]="navigationCollapsed() ? 'chevron' : 'chevron-left'"/></button>
-  <nav id="settings-navigation" class="settings-navigation" [attr.aria-label]="'Settings sections' | ffkText">
+  <button
+    class="settings-boundary"
+    type="button"
+    [attr.aria-label]="
+      (navigationCollapsed() ? 'Show settings navigation' : 'Hide settings navigation') | ffkText
+    "
+    [attr.title]="
+      (navigationCollapsed() ? 'Show settings navigation' : 'Hide settings navigation') | ffkText
+    "
+    [attr.aria-expanded]="!navigationCollapsed()"
+    aria-controls="settings-navigation"
+    (click)="toggleNavigation()"
+  >
+    <ffk-icon [name]="navigationCollapsed() ? 'chevron' : 'chevron-left'" />
+  </button>
+  <nav
+    id="settings-navigation"
+    class="settings-navigation"
+    [attr.aria-label]="'Settings sections' | ffkText"
+  >
     <header>
       <h1>{{ 'Settings' | ffkText }}</h1>
       <p>{{ f.tenant()?.name }}</p>
@@ -46,14 +64,16 @@
   </div>
   <section
     class="settings-content"
-    [attr.aria-busy]="c.pending() || f.pending()"
+    [attr.aria-busy]="section() !== 'health' && (c.pending() || f.pending())"
     [attr.aria-label]="'Settings content' | ffkText"
   >
-    @if(navigationCollapsed()){<h1 class="sr-only collapsed-heading">{{'Settings'|ffkText}}</h1>}
-    @if (c.pending()) {
+    @if (navigationCollapsed()) {
+      <h1 class="sr-only collapsed-heading">{{ 'Settings' | ffkText }}</h1>
+    }
+    @if (c.pending() && section() !== 'health') {
       <div class="settings-loading"><ffk-skeleton width="58%" height="3px" label="Working" /></div>
     }
-    @if (c.error()) {
+    @if (c.error() && section() !== 'health') {
       <div class="error" role="alert">
         <ffk-icon name="alert" /><span>{{ c.error() | ffkText }}</span>
       </div>
@@ -61,10 +81,21 @@
     @if (formError()) {
       <div class="error" role="alert">{{ formError() | ffkText }}</div>
     }
-    @if (c.notice()) {
+    @if (c.notice() && section() !== 'health') {
       <p class="notice" role="status">{{ c.notice() | ffkText }}</p>
     }
     @if (!editor()) {
+      @if (section() === 'health' && tabAllowed({ id: 'health', permission: 'audit:read' })) {
+        @defer (when section() === 'health') {
+          <ffk-platform-health-panel (sectionRequested)="openSection($event)" />
+        } @loading {
+          <ffk-skeleton width="60%" height="12px" [label]="'Opening settings section' | ffkText" />
+        } @error {
+          <p role="alert">
+            {{ 'This section could not be opened. Refresh this page and try again.' | ffkText }}
+          </p>
+        }
+      }
       @if (section() === 'identity') {
         <ffk-identity-appearance />
       }
@@ -675,7 +706,9 @@
       }
     }
     @if (!editor() && section() === 'communications') {
-      @defer(when section() === 'communications'){<ffk-communications-settings/>}
+      @defer (when section() === 'communications') {
+        <ffk-communications-settings />
+      }
     }
     @if (!editor() && section() === 'access') {
       <ffk-people-access [invitationBaseUrl]="actions?.invitationBaseUrl?.() ?? ''" />

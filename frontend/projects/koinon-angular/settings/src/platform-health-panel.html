@@ -1,0 +1,390 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<header class="heading">
+  <div>
+    <h2>{{ 'Platform health' | ffkText }}</h2>
+    <p>
+      {{ 'Review service checks and find the next step when something needs attention.' | ffkText }}
+    </p>
+  </div>
+  @if (state.allowed()) {
+    <ffk-button
+      icon="refresh"
+      label="Refresh observations"
+      [loading]="view() === 'health' ? state.healthPending() : state.informationPending()"
+      (click)="refresh()"
+      >{{ 'Refresh observations' | ffkText }}</ffk-button
+    >
+  }
+</header>
+@if (!state.allowed()) {
+  <p class="access-notice" role="alert">
+    <ffk-icon name="shield" />{{
+      state.accessError() || 'Current organization administrator access is required.' | ffkText
+    }}
+  </p>
+} @else {
+  <div class="views" role="tablist" [attr.aria-label]="'Platform reports' | ffkText">
+    <button
+      id="platform-health-tab"
+      data-view="health"
+      role="tab"
+      aria-controls="platform-report"
+      [attr.aria-selected]="view() === 'health'"
+      [attr.tabindex]="view() === 'health' ? 0 : -1"
+      (click)="view.set('health')"
+      (keydown)="tabKey($event)"
+    >
+      {{ 'Health' | ffkText }}
+    </button>
+    <button
+      id="platform-information-tab"
+      data-view="information"
+      role="tab"
+      aria-controls="platform-report"
+      [attr.aria-selected]="view() === 'information'"
+      [attr.tabindex]="view() === 'information' ? 0 : -1"
+      (click)="view.set('information')"
+      (keydown)="tabKey($event)"
+    >
+      {{ 'System information' | ffkText }}
+    </button>
+  </div>
+  <section
+    id="platform-report"
+    role="tabpanel"
+    [attr.aria-labelledby]="
+      view() === 'health' ? 'platform-health-tab' : 'platform-information-tab'
+    "
+    [attr.aria-busy]="view() === 'health' ? state.healthPending() : state.informationPending()"
+  >
+    @if (view() === 'health') {
+      @if (state.healthError()) {
+        <div class="report-error" role="alert">
+          <ffk-icon name="alert" />
+          <p>{{ state.healthError() | ffkText }}</p>
+          <ffk-button label="Try again" (click)="refresh()">{{ 'Try again' | ffkText }}</ffk-button>
+        </div>
+      }
+      @if (state.healthPending()) {
+        <ffk-skeleton width="72%" height="3px" [label]="'Loading platform health' | ffkText" />
+      }
+      @if (state.health(); as report) {
+        <div class="report-caption">
+          <p>
+            {{
+              'Configuration describes setup. Only current observations can confirm a check passed.'
+                | ffkText
+            }}
+          </p>
+          <time [attr.datetime]="report.checked_at"
+            >{{ 'Report checked' | ffkText }}
+            {{ report.checked_at | ffkDate: undefined : 'datetime' }}</time
+          >
+        </div>
+        <dl class="summary" [attr.aria-label]="'Returned checks' | ffkText">
+          @for (status of statuses; track status) {
+            <div [class.attention]="status === 'failed' && summary()[status] > 0">
+              <dt>{{ statusLabels[status] | ffkText }}</dt>
+              <dd>{{ summary()[status] | ffkValue }}</dd>
+            </div>
+          }
+        </dl>
+        <div class="list-heading">
+          <h3>{{ 'Service checks' | ffkText }}</h3>
+          <label for="health-filter"
+            ><span>{{ 'Show checks' | ffkText }}</span
+            ><select
+              [attr.aria-label]="'Show checks' | ffkText"
+              id="health-filter"
+              [ngModel]="filter()"
+              (ngModelChange)="filter.set($event)"
+            >
+              <option value="all">{{ 'All checks' | ffkText }}</option>
+              @for (status of statuses; track status) {
+                <option [value]="status">{{ statusLabels[status] | ffkText }}</option>
+              }
+            </select></label
+          >
+        </div>
+        <div class="health-layout">
+          <div class="service-list" [attr.aria-label]="'Service checks' | ffkText">
+            @for (component of rows(); track component.id) {
+              <button
+                class="service-row"
+                [class.selected]="selected()?.id === component.id"
+                [attr.aria-pressed]="selected()?.id === component.id"
+                aria-controls="health-detail"
+                (click)="selectedId.set(component.id)"
+              >
+                <span class="service-name"
+                  ><strong>{{
+                    safeLabel(components, component.id, 'Service check') | ffkText
+                  }}</strong
+                  ><small>{{
+                    (component.configured ? 'Configured' : 'Not configured') | ffkText
+                  }}</small></span
+                ><ffk-badge
+                  [tone]="
+                    status(component) === 'failed'
+                      ? 'attention'
+                      : status(component) === 'passed'
+                        ? 'ready'
+                        : 'neutral'
+                  "
+                  >{{ statusLabel(component) | ffkText }}</ffk-badge
+                ><ffk-icon name="chevron" />
+              </button>
+            } @empty {
+              <p class="empty">{{ 'No checks match this filter.' | ffkText }}</p>
+            }
+          </div>
+          @if (selected(); as component) {
+            <section
+              id="health-detail"
+              class="check-detail"
+              [attr.aria-label]="'Check details' | ffkText"
+            >
+              <span class="eyebrow">{{ 'Check details' | ffkText }}</span>
+              <h3>{{ safeLabel(components, component.id, 'Service check') | ffkText }}</h3>
+              <ffk-badge [tone]="status(component) === 'failed' ? 'attention' : 'neutral'">{{
+                statusLabel(component) | ffkText
+              }}</ffk-badge>
+              <p class="reason">
+                {{
+                  safeLabel(reasons, component.reason, 'A current observation is unavailable.')
+                    | ffkText
+                }}
+              </p>
+              <dl class="details">
+                <dt>{{ 'Evidence' | ffkText }}</dt>
+                <dd>
+                  {{
+                    (component.basis === 'observed'
+                      ? 'Observed check'
+                      : component.basis === 'configuration'
+                        ? 'Configuration only'
+                        : 'Not observed'
+                    ) | ffkText
+                  }}
+                </dd>
+                <dt>{{ 'Coverage' | ffkText }}</dt>
+                <dd>
+                  {{
+                    (component.coverage === 'complete'
+                      ? 'Complete checked scope'
+                      : component.coverage === 'partial'
+                        ? 'Partial coverage'
+                        : 'Not observed'
+                    ) | ffkText
+                  }}
+                </dd>
+                <dt>{{ 'Last observed' | ffkText }}</dt>
+                <dd>
+                  @if (component.observed_at) {
+                    <time [attr.datetime]="component.observed_at">{{
+                      component.observed_at | ffkDate: undefined : 'datetime'
+                    }}</time>
+                  } @else {
+                    {{ 'Not reported' | ffkText }}
+                  }
+                </dd>
+                <dt>{{ 'Valid until' | ffkText }}</dt>
+                <dd>
+                  @if (component.expires_at) {
+                    <time [attr.datetime]="component.expires_at">{{
+                      component.expires_at | ffkDate: undefined : 'datetime'
+                    }}</time>
+                  } @else {
+                    {{ 'Not reported' | ffkText }}
+                  }
+                </dd>
+              </dl>
+              @if (component.counts; as counts) {
+                <section class="record-counts">
+                  <h4>{{ 'Observed records' | ffkText }}</h4>
+                  <p>
+                    {{
+                      'These counts describe the returned sample, not organization totals.'
+                        | ffkText
+                    }}
+                  </p>
+                  <dl class="details">
+                    <dt>{{ 'Records checked' | ffkText }}</dt>
+                    <dd>{{ counts.observed_total | ffkValue }}</dd>
+                    <dt>{{ 'Ready' | ffkText }}</dt>
+                    <dd>{{ counts.observed_ready ?? 0 | ffkValue }}</dd>
+                    <dt>{{ 'Pending' | ffkText }}</dt>
+                    <dd>{{ counts.observed_pending ?? 0 | ffkValue }}</dd>
+                    <dt>{{ 'Running' | ffkText }}</dt>
+                    <dd>{{ counts.observed_running ?? 0 | ffkValue }}</dd>
+                    <dt>{{ 'Failed' | ffkText }}</dt>
+                    <dd>{{ counts.observed_failed ?? 0 | ffkValue }}</dd>
+                  </dl>
+                </section>
+              }
+              <section class="next-step">
+                <h4>{{ 'Suggested next step' | ffkText }}</h4>
+                <p>
+                  {{
+                    safeLabel(
+                      remediations,
+                      component.remediation,
+                      'Refresh observations to request the latest available checks.'
+                    ) | ffkText
+                  }}
+                </p>
+                @if (reviewSection(component); as section) {
+                  <ffk-button
+                    label="Review settings"
+                    icon="chevron"
+                    compact
+                    (click)="sectionRequested.emit(section)"
+                    >{{ 'Review settings' | ffkText }}</ffk-button
+                  >
+                }
+              </section>
+            </section>
+          }
+        </div>
+      }
+    } @else {
+      @if (state.informationError()) {
+        <div class="report-error" role="alert">
+          <ffk-icon name="alert" />
+          <p>{{ state.informationError() | ffkText }}</p>
+          <ffk-button label="Try again" (click)="refresh()">{{ 'Try again' | ffkText }}</ffk-button>
+        </div>
+      }
+      @if (state.informationPending()) {
+        <ffk-skeleton width="72%" height="3px" [label]="'Loading system information' | ffkText" />
+      }
+      @if (state.information(); as info) {
+        <div class="report-caption">
+          <p>
+            {{ 'Installed components and configured limits for the responding process.' | ffkText }}
+          </p>
+          <time [attr.datetime]="info.checked_at"
+            >{{ 'Report checked' | ffkText }}
+            {{ info.checked_at | ffkDate: undefined : 'datetime' }}</time
+          >
+        </div>
+        <section class="information-section">
+          <h3>{{ 'Product and build' | ffkText }}</h3>
+          <dl class="information-rows">
+            <dt>{{ 'Product' | ffkText }}</dt>
+            <dd>koinon</dd>
+            <dt>{{ 'Process role' | ffkText }}</dt>
+            <dd>
+              {{
+                (info.serving_role === 'api'
+                  ? 'API process'
+                  : info.serving_role === 'worker'
+                    ? 'Worker process'
+                    : 'Not reported'
+                ) | ffkText
+              }}
+            </dd>
+            <dt>{{ 'Verified build revision' | ffkText }}</dt>
+            <dd>
+              @if (validRevision(info.build_revision); as revision) {
+                <code>{{ revision }}</code>
+              } @else {
+                {{ 'Not reported' | ffkText }}
+              }
+            </dd>
+            <dt>{{ 'License' | ffkText }}</dt>
+            <dd>Apache-2.0</dd>
+          </dl>
+          <p class="attribution">Copyright 2026 Firefly Software Foundation</p>
+        </section>
+        <section class="information-section">
+          <h3>{{ 'Installed components' | ffkText }}</h3>
+          <dl class="information-rows">
+            @for (component of info.components; track component.id) {
+              <dt>{{ safeLabel(systemComponents, component.id, 'Component') | ffkText }}</dt>
+              <dd>
+                {{ version(component.version, component.available) || ('Not reported' | ffkText) }}
+              </dd>
+            }
+          </dl>
+        </section>
+        <section class="information-section">
+          <h3>{{ 'Configured capabilities' | ffkText }}</h3>
+          <p>
+            {{
+              'Enabled settings do not confirm external connectivity or running workers.' | ffkText
+            }}
+          </p>
+          <dl class="information-rows">
+            @for (capability of capabilityLabels; track capability.key) {
+              <dt>{{ capability.label | ffkText }}</dt>
+              <dd>{{ (info.capabilities[capability.key] ? 'Enabled' : 'Disabled') | ffkText }}</dd>
+            }
+          </dl>
+        </section>
+        <section class="information-section">
+          <h3>{{ 'Configured limits' | ffkText }}</h3>
+          <p>
+            {{
+              'These are configured processing bounds, not measured capacity or replica counts.'
+                | ffkText
+            }}
+          </p>
+          <dl class="information-rows">
+            @for (limit of info.limits; track limit.id) {
+              <dt>
+                {{ safeLabel(limitLabels, limit.id, 'Processing limit') | ffkText
+                }}<small>{{
+                  (limit.scope === 'file' ? 'Per file' : 'Per process') | ffkText
+                }}</small>
+              </dt>
+              <dd>
+                {{ limitValue(limit) }}
+                @if (limit.unit === 'workspaces') {
+                  <small>{{ 'knowledge spaces' | ffkText }}</small>
+                }
+              </dd>
+            } @empty {
+              <dt>{{ 'Limits' | ffkText }}</dt>
+              <dd>{{ 'Not reported' | ffkText }}</dd>
+            }
+          </dl>
+        </section>
+        <section class="information-section artifacts">
+          <h3>{{ 'License artifacts' | ffkText }}</h3>
+          <p>
+            {{
+              'Presence and checksums are reported from installed artifacts. Unknown means provenance is not available.'
+                | ffkText
+            }}
+          </p>
+          @for (artifact of info.artifacts; track artifact.component + artifact.kind) {
+            <article>
+              <div>
+                <h4>
+                  {{ safeLabel(systemComponents, artifact.component, 'Component') | ffkText
+                  }}<span>{{
+                    (artifact.kind === 'license'
+                      ? 'License'
+                      : artifact.kind === 'notice'
+                        ? 'Attribution notice'
+                        : 'Software bill of materials'
+                    ) | ffkText
+                  }}</span>
+                </h4>
+                <ffk-badge>{{ artifactStatus(artifact) | ffkText }}</ffk-badge>
+              </div>
+              @if (artifactStatus(artifact) === 'Included') {
+                <p class="checksum">
+                  <span>SHA-256</span><code>{{ artifact.sha256 }}</code>
+                </p>
+              }
+            </article>
+          } @empty {
+            <p>{{ 'No artifact observations were returned.' | ffkText }}</p>
+          }
+        </section>
+      }
+    }
+  </section>
+}
