@@ -1,0 +1,64 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<section class="sign-in">
+  <header>
+    <div class="login-brand">
+      @if (logo) {
+        <img [src]="logo" [alt]="productName" />
+      } @else {
+        <strong class="custom-brand-name">{{ productName }}</strong>
+      }
+      @if (customBrand) {
+        <ffk-powered-by [brandBase]="brandBase" [theme]="theme" />
+      }
+    </div>
+    <ffk-button
+      variant="quiet"
+      [icon]="theme === 'light' ? 'moon' : 'sun'"
+      [label]="theme === 'light' ? 'Use dark theme' : 'Use light theme'"
+      (click)="themeChanged.emit(theme === 'light' ? 'dark' : 'light')"
+    />
+  </header>
+  <main>
+    <div class="welcome-copy">
+      <h1>{{ 'Your corporate brain' | ffkText }}</h1>
+      <p>
+        {{
+          'Find what your organization knows. Ask questions, check the sources and keep knowledge up to date.'
+            | ffkText
+        }}
+      </p>
+    </div>
+    <div class="login-panel">
+      @if (symbol) {
+        <img [src]="symbol" alt="" />
+      }
+      <h2>{{ ('Welcome to {product}' | ffkText).replace('{product}', productName) }}</h2>
+      <p>{{ 'Sign in with your organization account.' | ffkText }}</p>
+      @if (sessionEnded) {
+        <p class="login-message" role="status">
+          {{ 'Your session has ended. Sign in again to continue.' | ffkText }}
+        </p>
+      }
+      <ffk-button
+        data-full-width
+        variant="primary"
+        icon="chevron"
+        (click)="authenticationRequired.emit()"
+        >{{ 'Sign in' | ffkText }}</ffk-button
+      ><small>{{ 'Your organization manages access to its knowledge.' | ffkText }}</small>
+    </div>
+  </main>
+  <footer class="workbench-legal">
+    @if (customBrand) {
+      <ffk-powered-by [brandBase]="brandBase" [theme]="theme" />
+    }
+    <span class="legal-copyright">© 2026 Firefly Software Foundation</span
+    ><span class="legal-credit"
+      >{{ 'Made with' | ffkText }}
+      <span class="beating-heart" role="img" [attr.aria-label]="'love' | ffkText"
+        ><ffk-icon name="heart" /></span></span
+    ><a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener noreferrer"
+      >Apache 2.0</a
+    >
+  </footer>
+</section>
