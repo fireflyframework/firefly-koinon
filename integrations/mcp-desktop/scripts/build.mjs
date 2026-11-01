@@ -58,5 +58,5 @@ for (const input of Object.keys(bundle.metafile.inputs).sort()) {
 const provenance = [...dependencies.values()].sort((a, b) => a.name.localeCompare(b.name));
 await writeFile(join(out, 'DEPENDENCIES.json'), JSON.stringify(provenance.map(({ licenseText, ...metadata }) => metadata), null, 2) + '\n');
 await writeFile(join(out, 'THIRD_PARTY_NOTICES.txt'), provenance.map((entry) => `${entry.name} ${entry.version}\n${entry.license}\n\n${entry.licenseText}`).join('\n\n' + '='.repeat(72) + '\n\n'));
-await writeFile(join(out, 'package.json'), JSON.stringify({ name: '@fireflyframework/koinon-mcp-desktop-bundle', version: '26.11.1', license: 'Apache-2.0', private: true }, null, 2) + '\n');
+await writeFile(join(out, 'package.json'), JSON.stringify({ name: '@fireflyframework/koinon-mcp-desktop-bundle', version: '26.11.2', license: 'Apache-2.0', private: true }, null, 2) + '\n');
 console.log(`Built relocatable bridge with ${provenance.length} bundled dependencies and license notices.`);
