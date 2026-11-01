@@ -6,7 +6,7 @@ Use this guide to find a setting, understand who owns it and check the result of
 
 ## Open the correct organization
 
-1. Sign in and choose the intended organization in the header. A successful identity-provider login does not establish product membership.
+1. Sign in to the intended installation. With one authorized organization, koinon uses it without showing an organization selector. If your account has more than one, use the organization selector to choose the intended organization before continuing. A successful identity-provider login does not establish product membership.
 2. Open your avatar menu and choose **Settings**. The management application's Settings and administrative Activity destinations require organization administrator access. An operator's API permissions do not make these browser destinations available.
 3. Check the organization name in the settings navigation before editing. On a small screen, use **Settings section**. On a larger screen, the boundary chevron hides or restores the navigation without changing the selected page.
 

@@ -15,7 +15,7 @@ Configure how your organization uses koinon: who can access it, how knowledge is
 | Configure original files and durable processing | [Storage providers](../operations/storage-configuration.md), then [durable staging](../operations/durable-bulk.md) | Final objects and staged originals survive process replacement; the relevant consumers are enabled. |
 | Diagnose an unavailable service or index | [Platform health](../operations/platform-health.md) | The observation, coverage and next action are understood without treating unknown as healthy. |
 
-Open Settings from the avatar menu after selecting the organization. The browser administration area requires organization administrator access. Deployment operators use protected installation configuration for infrastructure; scoped API permissions do not automatically open browser administration. See the [role boundaries](administration.md#people-and-access) before assigning authority.
+Open Settings from the avatar menu in the intended installation. An account with one authorized organization enters that organization without a selector. Only accounts with several authorized organizations need to choose one using the organization selector. The browser administration area requires organization administrator access. Deployment operators use protected installation configuration for infrastructure; scoped API permissions do not automatically open browser administration. See the [role boundaries](administration.md#people-and-access) before assigning authority.
 
 ## Set up an organization
 

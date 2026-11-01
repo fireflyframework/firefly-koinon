@@ -118,7 +118,7 @@ backend/.venv/bin/python deploy/run.py --env-file /private/runtime.env -- \
 
 `deploy/run.py` reads a mode-0600 literal `KEY=VALUE` file without shell evaluation. A systemd `EnvironmentFile` uses different quoting rules. The bootstrap validates the configured issuer prefix, creates the tenant and first administrator in one native transaction, and records an audit event. It refuses an existing tenant; use its authorized membership workflow instead of rerunning bootstrap to repair access.
 
-Reopen or reload the management application and select the new organization. If it does not appear, compare the signed-in `/auth/me` subject with the exact bootstrap value before changing any membership.
+Reopen or reload the management application. If this is the account's only authorized organization, koinon uses it without displaying an organization selector. If the account has several authorized organizations, choose the new one using that selector. If the new organization is unavailable, compare the signed-in `/auth/me` subject with the exact bootstrap value before changing any membership.
 
 ## 5. Complete guided organization configuration
 
