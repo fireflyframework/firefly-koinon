@@ -28,6 +28,7 @@ class NativeInstallationIndexes:
     async def owned(self, permit, value):
         run = await self.admissions.require(permit)
         reader = self.reader.get()
+        await reader.facade.catalog._lock_tenant(permit.tenant_id)
         identifier = NativeInstallationWrites.reference(run, "index-intent", value.key)
         row = await reader.records.find_by_id(identifier, lock=LockMode.PESSIMISTIC_WRITE)
         if row is None or row.tenant_id != permit.tenant_id or row.created_by != ACTOR:
@@ -238,7 +239,6 @@ class NativeInstallationIndexes:
     @transactional(read_from_primary=True)
     async def activate(self, permit, value):
         run, reader, row, _ = await self.owned(permit, value)
-        await reader.connections.connections.lock_tenant(permit.tenant_id)
         previous = run.checkpoints.get("index-active:" + value.key)
         selected = await reader.connections.selected(
             permit.tenant_id, row.workspace_id, row.domain, row.domain + ".embedding"

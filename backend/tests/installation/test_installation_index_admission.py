@@ -168,3 +168,93 @@ async def test_manual_revision_change_fails_before_native_mutation(phases):
     with pytest.raises(InstallationError, match="INSTALLATION_MANUAL_CHANGE"):
         await writer.create(permit, value)
     reader.adapter.create.assert_not_called()
+
+
+async def test_provider_update_and_index_activation_serialize_without_deadlock(phases):
+    import asyncio
+    import inspect
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+
+    from koinon.assistants.configuration_service import AssistantConfigurationService
+
+    writer, permit, value, _, reader, row = phases
+    provider = reader.planner.provider.return_value
+    provider.name, provider.api = "Embedding", "chat"
+    provider.model_ids, provider.enabled = [value.model_id], True
+    provider.secret_ciphertext, provider.validated_revision, provider.checks = None, 0, []
+    tenant_lock, provider_lock = asyncio.Lock(), asyncio.Lock()
+    tenant_owned, installer_contending = asyncio.Event(), asyncio.Event()
+    held = {}
+
+    async def acquire(lock):
+        await lock.acquire()
+        held[asyncio.current_task()].append(lock)
+
+    async def lock_tenant(_tenant):
+        if asyncio.current_task().get_name() == "installer":
+            installer_contending.set()
+        await acquire(tenant_lock)
+        if asyncio.current_task().get_name() == "administrator":
+            tenant_owned.set()
+            await installer_contending.wait()
+
+    async def locked_provider(*_args, **_kwargs):
+        await acquire(provider_lock)
+        if asyncio.current_task().get_name() == "installer":
+            installer_contending.set()
+        return provider
+
+    reader.facade.catalog._lock_tenant.side_effect = lock_tenant
+    reader.connections.connections.lock_tenant.side_effect = lock_tenant
+    reader.planner.provider.side_effect = locked_provider
+    repository = SimpleNamespace(
+        find_all=AsyncMock(return_value=[provider]),
+        find_by_id=locked_provider,
+        save=AsyncMock(side_effect=lambda updated: updated),
+    )
+    configuration = AssistantConfigurationService(
+        reader.facade.catalog,
+        repository,
+        Mock(),
+        Mock(),
+        Mock(),
+        Mock(),
+        Mock(),
+        SimpleNamespace(address=lambda _kind, address: address),
+        Mock(),
+    )
+
+    async def administrator():
+        return await inspect.unwrap(AssistantConfigurationService.save_provider)(
+            configuration, "issuer|admin", permit.tenant_id, {"name": "Updated embedding"}, provider.id
+        )
+
+    async def installer():
+        await tenant_owned.wait()
+        with pytest.raises(InstallationError, match="INSTALLATION_MANUAL_CHANGE"):
+            await inspect.unwrap(NativeInstallationIndexes.activate)(writer, permit, value)
+
+    # Model PostgreSQL row locks; SQLite would serialize both writers before either domain method runs.
+    async def transaction(operation):
+        task = asyncio.current_task()
+        held[task] = []
+        try:
+            return await operation()
+        finally:
+            for lock in reversed(held.pop(task)):
+                lock.release()
+
+    tasks = [
+        asyncio.create_task(transaction(administrator), name="administrator"),
+        asyncio.create_task(transaction(installer), name="installer"),
+    ]
+    try:
+        updated, _ = await asyncio.wait_for(asyncio.gather(*tasks), timeout=2)
+    finally:
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+    assert updated["name"] == "Updated embedding"
+    assert updated["revision"] == 2
+    assert row.status == "queued"
