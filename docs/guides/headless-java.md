@@ -42,7 +42,7 @@ Add the locally installed artifact to your application:
 <dependency>
   <groupId>org.fireflyframework</groupId>
   <artifactId>koinon-sdk</artifactId>
-  <version>26.11.2</version>
+  <version>26.11.3</version>
 </dependency>
 ```
 
