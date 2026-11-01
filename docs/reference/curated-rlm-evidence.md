@@ -49,6 +49,52 @@ Each collection defaults to empty where the language model applies defaults; an 
 
 The collections identify the admitted scope of a recorded tool action. They do not replace the exact source/version/part proof in `AnswerAudit.sources` or the actual-use records in `AnswerAudit.native_reads`. Where function-tool traces are recorded, `AnswerAudit.rlm_tools` links actions to request, schema, argument, result and execution hashes. An absent historical trace remains absent.
 
+## Release facts from recorded source units
+
+Successful retrieval or analysis does not establish that a model's written
+conclusion follows from the knowledge. The native RAG and RLM answer services
+therefore return a fixed source-excerpt format containing only exact text from
+the admitted citations. Their response shape is unchanged: `answer`, `citations`
+and `no_answer` retain their existing types. The model may select citations, but
+its draft prose is not released as an answer. An unknown citation, an invented
+passage or an empty selection produces a no-answer response. Legacy RLM excerpts
+must occur literally in the recorded source page; immutable document and curated
+citations retain their exact version and part checks. Authority is checked again
+before the final response. Native answer-stream errors contain a fixed message,
+not exception text that could reproduce a rejected draft.
+
+The chat evidence adapter keeps these source units separate from model-authored
+analysis. It accepts exact canonical extraction quotes with their source pins.
+An image checksum alone does not establish what the image depicts. A legacy
+document quote must match its recorded chunk hash, and a curated quote must
+match its recorded content hash. Incomplete captures cannot supply answer facts.
+
+Structured evidence has an additional boundary: an executed SQL statement and a
+dataset snapshot do not prove the meaning of every returned expression. The
+native executor records an immutable, bounded result preview before any model
+explanation. The returned preview must match that observation. Only the following
+conservative SQL shapes can supply answer values:
+
+| SQL shape | Answer eligibility |
+| --- | --- |
+| A direct column from one pinned table | The actual returned scalar, labeled with its native table and column |
+| A bare `SELECT *` from one pinned table | The actual returned scalar columns |
+| `SUM`, `AVG`, `MIN`, `MAX` or `COUNT` of a direct column, or `COUNT(*)` | An actual returned aggregate, labeled with the calculation and native column |
+| A constant, arithmetic coefficient or another function | No answer fact from that expression |
+| A join, subquery, CTE, window or set operation | No answer facts through this conservative adapter |
+
+SQL aliases cannot rename a native fact into a model assertion. A synthetic
+expression next to a real column does not make the synthetic expression eligible.
+The preview is limited to 50 rows and the existing native capture byte budget;
+an answer cannot claim rows outside that observation. Raw SQL and query SDK
+contracts remain available with their existing provenance. Unsupported answer
+eligibility does not imply that the raw query is invalid.
+
+These checks establish exact source text or recorded scalar lineage. They do not
+provide general semantic entailment for arbitrary analysis. Reading a source,
+completing an RLM run or receiving a model answer cannot by itself establish a
+knowledge fact.
+
 ## Keep publication separate
 
 An RLM answer does not create or publish a knowledge version. A derived conclusion still requires the user's explicit authorization for the exact content, destination and supporting versions. `CURATED_DERIVATION_UNQUALIFIED` remains in force for unsupported derivation paths. Selecting RLM, granting a read scope or completing a model run cannot supply publication consent.
