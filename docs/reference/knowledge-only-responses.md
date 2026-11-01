@@ -38,7 +38,7 @@ When evidence is insufficient, koinon returns a fixed explanation in the configu
 
 The receipt records the run, message and generation, policy version, publication sequence, selected fact identifiers, source references, result hashes, final text hash, citation hash, card hash and policy hash. The original retrieval records remain separate from this declaration of which facts were used in the published response.
 
-Database migration `koinon_0039_answer_release` makes release rows append-only and permits at most one release for each run and generation. A refusal without a generation has the same uniqueness rule. Runtime updates, kind changes, deletes and cascading deletes cannot rewrite or remove a release. A retry appends its own generation while retaining earlier receipts. PostgreSQL also rejects truncation when release receipts exist.
+Database migration `koinon_0039_answer_release` makes release rows append-only and permits at most one release for each run and generation. A refusal without a model generation is unique within its recorded reset context. A genuine retry creates a new context and can record another refusal without inventing a model call. Runtime updates, kind changes, deletes and cascading deletes cannot rewrite or remove a release. A retry appends its own generation while retaining earlier receipts. PostgreSQL also rejects truncation when release receipts exist.
 
 These controls protect normal application operations and runtime database roles. They are not an external signature, a tamper-proof backup or a defense against a database owner changing the schema. Preserve the migration role separation and [backup and restore procedures](../operations/backup-restore.md).
 

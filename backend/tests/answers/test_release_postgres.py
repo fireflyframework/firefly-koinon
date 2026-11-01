@@ -140,6 +140,19 @@ def test_postgres_generation_uniqueness_and_mutable_tool_lifecycles(pg_release):
         )
         runtime.execute(
             "INSERT INTO koinon_chat_tool_results VALUES "
+            "('next-refusal','run','answer_release','{\"generation_id\":null,\"reset_sequence\":7}')"
+        )
+        for payload in (
+            {"generation_id": None, "reset_sequence": 7},
+            {"generation_id": "generation", "reset_sequence": 7},
+        ):
+            with pytest.raises(psycopg.errors.UniqueViolation):
+                runtime.execute(
+                    "INSERT INTO koinon_chat_tool_results VALUES (%s,%s,%s,%s)",
+                    ("context-duplicate", "run", "answer_release", Jsonb(payload)),
+                )
+        runtime.execute(
+            "INSERT INTO koinon_chat_tool_results VALUES "
             "('proposal','run','proposal','{\"status\":\"pending\"}')"
         )
         runtime.execute(
@@ -150,5 +163,5 @@ def test_postgres_generation_uniqueness_and_mutable_tool_lifecycles(pg_release):
             runtime.execute(
                 "SELECT count(*) FROM koinon_chat_tool_results WHERE kind='answer_release'"
             ).fetchone()[0]
-            == 3
+            == 4
         )

@@ -796,9 +796,15 @@ class AssistantQueue:
             created_at=timestamp(),
         )
         data = receipt.model_dump(mode="json")
+        from koinon.answers.contexts import context_hash
+
+        reset_sequence = await self.assistants.events.latest_reset(run.id) or 0
+        seal = digest(data)
         payload = {
             "release": data,
-            "seal_sha256": digest(data),
+            "seal_sha256": seal,
+            "reset_sequence": reset_sequence,
+            "context_sha256": context_hash(seal, reset_sequence),
             "origin_token_id": run.access_token_id,
             "generation_id": generation_id,
         }

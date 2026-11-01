@@ -3,7 +3,19 @@
 from datetime import UTC, datetime
 
 from pyfly.data.relational.sqlalchemy import Base, UtcDateTime
-from sqlalchemy import DDL, JSON, ForeignKey, Index, LargeBinary, String, Text, UniqueConstraint, event, func
+from sqlalchemy import (
+    DDL,
+    JSON,
+    ForeignKey,
+    Index,
+    LargeBinary,
+    String,
+    Text,
+    UniqueConstraint,
+    case,
+    event,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from koinon.answers.guards import release_guards
@@ -137,6 +149,13 @@ Index(
     "uq_koinon_answer_release_generation",
     ToolResult.run_id,
     func.coalesce(ToolResult.payload["generation_id"].as_string(), ""),
+    case(
+        (
+            ToolResult.payload["generation_id"].as_string().is_(None),
+            func.coalesce(ToolResult.payload["reset_sequence"].as_integer(), 0),
+        ),
+        else_=0,
+    ),
     unique=True,
     sqlite_where=ToolResult.kind == "answer_release",
     postgresql_where=ToolResult.kind == "answer_release",

@@ -467,8 +467,15 @@ class AssistantService:
         return await self.events.activity_page(run_id, page=page, page_size=page_size)
 
     async def active_results(self, run, rows=None):
+        from koinon.answers.contexts import current_release_context
+
         rows = list(await self.results.find_all(run_id=run.id)) if rows is None else rows
         reset = await self.events.latest_reset(run.id)
+        rows = [
+            row
+            for row in rows
+            if row.kind != "answer_release" or current_release_context(row.payload, reset or 0)
+        ]
         if reset is None:
             return rows
         message = await self.message_repository.find_by_id(run.message_id)
@@ -491,6 +498,8 @@ class AssistantService:
             row
             for row in rows
             if row.id in ids
+            or row.kind == "answer_release"
+            and row.payload.get("generation_id") is None
             or current is not None
             and (row.id == current.id or row.payload.get("generation_id") == current.id)
         ]

@@ -16,7 +16,9 @@ def release_guards(dialect: str) -> tuple[str, ...]:
     if dialect == "sqlite":
         return (
             "CREATE UNIQUE INDEX uq_koinon_answer_release_generation ON koinon_chat_tool_results "
-            "(run_id, COALESCE(json_extract(payload,'$.generation_id'),'')) WHERE kind='answer_release'",
+            "(run_id, COALESCE(json_extract(payload,'$.generation_id'),''), "
+            "CASE WHEN json_extract(payload,'$.generation_id') IS NULL THEN "
+            "COALESCE(json_extract(payload,'$.reset_sequence'),0) ELSE 0 END) WHERE kind='answer_release'",
             "CREATE TRIGGER koinon_answer_release_update BEFORE UPDATE ON koinon_chat_tool_results "
             "WHEN OLD.kind='answer_release' OR NEW.kind='answer_release' "
             "BEGIN SELECT RAISE(ABORT,'Answer release receipt is immutable'); END",
@@ -26,7 +28,9 @@ def release_guards(dialect: str) -> tuple[str, ...]:
         )
     return (
         "CREATE UNIQUE INDEX uq_koinon_answer_release_generation ON public.koinon_chat_tool_results "
-        "(run_id, (COALESCE(payload::jsonb->>'generation_id',''))) WHERE kind='answer_release'",
+        "(run_id, (COALESCE(payload::jsonb->>'generation_id','')), "
+        "(CASE WHEN payload::jsonb->>'generation_id' IS NULL THEN "
+        "COALESCE((payload::jsonb->>'reset_sequence')::integer,0) ELSE 0 END)) WHERE kind='answer_release'",
         "CREATE FUNCTION public.koinon_answer_release_guard() RETURNS trigger LANGUAGE plpgsql "
         "SECURITY INVOKER SET search_path=pg_catalog AS $$ BEGIN "
         "IF TG_OP='TRUNCATE' THEN "

@@ -226,3 +226,131 @@ async def test_release_rechecks_agent_and_provider_fences_inside_its_native_tran
     assert denied.value.code == "CONFIGURATION_CHANGED"
     assert not (await service.message_repository.find_by_id(run.message_id)).text
     assert not any(row.kind == "answer_release" for row in await service.results.find_all(run_id=run.id))
+
+
+async def refusal_without_generation(assistants):
+    from test_service import configured
+
+    service, context = assistants
+    _, agent = await configured(service)
+    thread = await service.create_thread("issuer|admin", "north", {})
+    await service.submit(
+        "issuer|admin",
+        "north",
+        thread["id"],
+        {"agent_id": agent["id"], "message": "What is known?", "client_request_id": "early-refusal"},
+    )
+    queue = context.get_bean(AssistantQueue)
+    run = await queue.claim("early-worker")
+    await queue.release_answer(
+        run.id, "early-worker", EvidenceAnswerPlan(outcome="insufficient_evidence"), "en"
+    )
+    return service, queue, run
+
+
+async def test_retry_can_publish_a_current_sealed_refusal_before_a_generation_exists(assistants):
+    from koinon.answers.receipts import verified_release
+
+    service, queue, run = await refusal_without_generation(assistants)
+    await queue.finish(run.id, "early-worker", code="CONTROLLED_FAILURE")
+    await service.retry("issuer|admin", "north", run.id)
+    current = await queue.claim("retry-worker")
+    receipt = await queue.release_answer(
+        current.id,
+        "retry-worker",
+        EvidenceAnswerPlan(outcome="insufficient_evidence"),
+        "es",
+        refusal_code="KNOWLEDGE_ONLY",
+    )
+    await queue.finish(current.id, "retry-worker")
+    message = await service.message_repository.find_by_id(current.message_id)
+    active = await service.active_results(current)
+    assert receipt.generation_id is None and verified_release(message, active) == receipt
+    page = await service.messages("issuer|admin", "north", current.thread_id)
+    assert page[-1]["text"] == message.text and "organización" in page[-1]["text"]
+    events = await service.run_events("issuer|admin", "north", current.id)
+    assert [item["data"]["text"] for item in events if item["type"] == "message_delta"] == [message.text]
+    assert (
+        len([row for row in await service.results.find_all(run_id=run.id) if row.kind == "answer_release"])
+        == 2
+    )
+
+
+@pytest.mark.parametrize("transition", ["reset", "generation"])
+async def test_earlier_no_generation_release_never_attests_a_new_output_context(assistants, transition):
+    from koinon.answers.receipts import verified_release
+
+    service, queue, run = await refusal_without_generation(assistants)
+    if transition == "reset":
+        await queue.finish(run.id, "early-worker", code="CONTROLLED_FAILURE")
+        await service.retry("issuer|admin", "north", run.id)
+        run = await queue.claim("retry-worker")
+        assert not any(row.kind == "answer_release" for row in await service.active_results(run))
+        events = await service.run_events("issuer|admin", "north", run.id)
+        assert not any(item["type"] == "message_delta" for item in events)
+    else:
+        await queue.begin_generation(
+            run.id, "early-worker", model_id="controlled", model_class="controlled", api="chat"
+        )
+    message = await service.message_repository.find_by_id(run.message_id)
+    assert verified_release(message, await service.active_results(run)) is None
+    assert (
+        len([row for row in await service.results.find_all(run_id=run.id) if row.kind == "answer_release"])
+        == 1
+    )
+
+
+async def test_same_attempt_cannot_publish_a_second_pre_generation_refusal(assistants):
+    service, queue, run = await refusal_without_generation(assistants)
+    before = (await service.message_repository.find_by_id(run.message_id)).text
+    with pytest.raises(ConflictException) as denied:
+        await queue.release_answer(
+            run.id, "early-worker", EvidenceAnswerPlan(outcome="insufficient_evidence"), "es"
+        )
+    assert denied.value.code == "ANSWER_ALREADY_RELEASED"
+    assert (await service.message_repository.find_by_id(run.message_id)).text == before
+
+
+@pytest.mark.parametrize(
+    "case", ["reset_string", "reset_bool", "sequence_string", "sequence_bool", "context_hash"]
+)
+async def test_malformed_private_context_never_admits_a_release(assistants, case):
+    from copy import deepcopy
+    from types import SimpleNamespace
+
+    service, _, run = await refusal_without_generation(assistants)
+    row = next(row for row in await service.results.find_all(run_id=run.id) if row.kind == "answer_release")
+    payload = deepcopy(row.payload)
+    if case == "reset_string":
+        payload["reset_sequence"] = "0"
+    elif case == "reset_bool":
+        payload["reset_sequence"] = False
+    elif case == "sequence_string":
+        payload["release"]["publication_sequence"] = str(payload["release"]["publication_sequence"])
+    elif case == "sequence_bool":
+        payload["release"]["publication_sequence"] = True
+    else:
+        payload["context_sha256"] = "0" * 64
+    assert await service.active_results(run, [SimpleNamespace(kind=row.kind, payload=payload)]) == []
+
+
+async def test_forged_reset_does_not_relabel_a_pre_reset_seal_as_current(assistants):
+    from copy import deepcopy
+    from types import SimpleNamespace
+
+    from koinon.answers.contexts import context_hash
+
+    service, queue, run = await refusal_without_generation(assistants)
+    row = next(row for row in await service.results.find_all(run_id=run.id) if row.kind == "answer_release")
+    await queue.finish(run.id, "early-worker", code="CONTROLLED_FAILURE")
+    await service.retry("issuer|admin", "north", run.id)
+    current = await queue.claim("retry-worker")
+    reset = await service.events.latest_reset(run.id)
+    payload = deepcopy(row.payload)
+    payload["reset_sequence"] = reset
+    payload["context_sha256"] = context_hash(payload["seal_sha256"], reset)
+    assert payload["release"]["publication_sequence"] < reset
+    assert (
+        await service.active_results(current, [SimpleNamespace(id=row.id, kind=row.kind, payload=payload)])
+        == []
+    )

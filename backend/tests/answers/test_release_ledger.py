@@ -94,3 +94,27 @@ def test_ordinary_proposal_updates_and_cleanup_still_work(ledger):
         connection.execute(delete(table).where(table.c.id == "ordinary"))
     with engine.connect() as connection:
         assert [row.id for row in connection.execute(table.select())] == ["release"]
+
+
+def test_pre_generation_refusals_use_the_real_reset_context_without_reusing_a_model_generation(ledger):
+    engine, table = ledger
+    with engine.begin() as connection:
+        for reset in (0, 7):
+            connection.execute(
+                table.insert().values(
+                    id=f"refusal-{reset}",
+                    run_id="run",
+                    kind="answer_release",
+                    payload={"generation_id": None, "reset_sequence": reset},
+                )
+            )
+    for payload in (
+        {"generation_id": None, "reset_sequence": 7},
+        {"generation_id": "generation", "reset_sequence": 7},
+    ):
+        with pytest.raises(IntegrityError), engine.begin() as connection:
+            connection.execute(
+                table.insert().values(
+                    id="duplicate-context", run_id="run", kind="answer_release", payload=payload
+                )
+            )
