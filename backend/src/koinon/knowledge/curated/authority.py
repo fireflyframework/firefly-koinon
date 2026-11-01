@@ -5,14 +5,21 @@ import json
 from datetime import UTC, datetime
 
 from pyfly.container import Provider, service
-from pyfly.kernel import ConflictException, InvalidRequestException, ServiceUnavailableException
+from pyfly.kernel import (
+    ConflictException,
+    InvalidRequestException,
+    PayloadTooLargeException,
+    ServiceUnavailableException,
+)
 from pyfly.security.context import SecurityContext
 from pyfly.security.context_holder import SecurityContextHolder
 
 from koinon.assistants.memory.egress import MemoryEgress
 from koinon.catalog.errors import AccessDenied
 from koinon.catalog.service import PARENTS, CatalogService
+from koinon.evidence.dtos import ConversationSnapshot
 from koinon.evidence.ports import (
+    ConversationOutputPort,
     ConversationSnapshotPort,
     SourceResolverPort,
     TransitiveSourceResolverPort,
@@ -46,10 +53,38 @@ class CuratedAuthority:
         sources: Provider[SourceResolverPort | None],
         read_receipts: Provider[ExternalReadReceiptPort | None] | None = None,
         memory: Provider[MemoryEgress | None] | None = None,
+        outputs: Provider[ConversationOutputPort | None] | None = None,
     ):
         self.catalog, self.snapshots, self.sources = catalog, snapshots, sources
         self.read_receipts = read_receipts
         self.memory = memory
+        self.outputs = outputs
+
+    async def output_check(self, subject, tenant_id, request):
+        origin = request.get("origin", {})
+        if origin.get("kind") != "conversation":
+            return
+        selected = ConversationOrigin.model_validate(origin)
+        captured = request.get("_output_context")
+        if not isinstance(captured, dict):
+            raise ConflictException(
+                "Review a fresh preview of the selected answer", code="KNOWLEDGE_OUTPUT_REVIEW_REQUIRED"
+            )
+        try:
+            snapshot = ConversationSnapshot.model_validate(captured)
+        except ValueError as error:
+            raise ConflictException(
+                "Review a fresh preview of the selected answer", code="KNOWLEDGE_OUTPUT_REVIEW_REQUIRED"
+            ) from error
+        port = self.outputs.get() if self.outputs else None
+        if port is None:
+            raise ServiceUnavailableException(
+                "Regenerate the selected answer before publishing it",
+                code="CONVERSATION_OUTPUT_UNAVAILABLE",
+            )
+        await port.authorize_output(
+            subject, tenant_id, selected.thread_id, list(selected.message_ids), snapshot=snapshot
+        )
 
     async def destination(self, subject, tenant_id, identifier, *, write=True):
         chain, seen, current = [], set(), identifier
@@ -95,7 +130,9 @@ class CuratedAuthority:
             ),
         )
 
-    async def observe(self, subject, tenant_id, request, recorded_at, *, memory_capture=None):
+    async def observe(
+        self, subject, tenant_id, request, recorded_at, *, memory_capture=None, output_capture=None
+    ):
         context = SecurityContextHolder.get_context()
         token = context.attributes.get("koinon_token_id") if context else None
         origins = {token} if token else set()
@@ -188,6 +225,13 @@ class CuratedAuthority:
                 "Select complete shared evidence or explicitly author your own statement",
                 code="KNOWLEDGE_PROVENANCE_REQUIRED",
             )
+        if output_capture is not None:
+            captured = snapshot.model_dump(mode="json", include=set(ConversationSnapshot.model_fields))
+            if len(json.dumps(captured, ensure_ascii=False).encode()) > 5 * 1024 * 1024:
+                raise PayloadTooLargeException(
+                    "Select fewer messages for this preview", code="SNAPSHOT_TOO_LARGE"
+                )
+            output_capture.update(captured)
         direct_sources = snapshot.sources
         if any(source.kind == "knowledge_version" for source in direct_sources):
             resolver = self.sources.get()

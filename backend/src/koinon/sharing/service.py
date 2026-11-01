@@ -57,6 +57,7 @@ class ConversationShares:
             creator_token_id=review.creator_token_id,
             creator_permission="shares:write",
         )
+        await self.reviews.output_check(row.owner_subject, tenant_id, snapshot)
         await self.reviews.memory_check(
             row.owner_subject,
             tenant_id,
@@ -174,6 +175,7 @@ class ConversationShares:
             creator_permission="shares:write",
             release=("share", row.id),
         )
+        await self.reviews.output_check(row.owner_subject, tenant_id, snapshot)
         return SharedConversation(
             share=self._dto(row, review),
             messages=snapshot.messages,
