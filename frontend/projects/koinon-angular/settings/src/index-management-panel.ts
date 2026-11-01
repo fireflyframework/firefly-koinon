@@ -3,6 +3,9 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
   PendingTasks,
   computed,
   effect,
@@ -58,6 +61,8 @@ export class KoinonIndexManagementPanel implements OnDestroy {
   private readonly f = inject(KoinonFacade);
   private readonly clients = inject(KoinonClientContext);
   private readonly tasks = inject(PendingTasks);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
   readonly workspace = signal(this.f.workspaceId());
   readonly domain = signal<IndexDomain>('documents');
   readonly filter = signal('');
@@ -182,7 +187,7 @@ export class KoinonIndexManagementPanel implements OnDestroy {
         this.replayReview.set(false);
         this.providerId.set('');
         this.modelId.set('');
-        if (this.scope().read) void this.tasks.run(() => this.state.load(1, this.filter()));
+        if (this.scope().read) void this.track(() => this.state.load(1, this.filter()));
       });
     });
     effect(() => {
@@ -259,9 +264,23 @@ export class KoinonIndexManagementPanel implements OnDestroy {
         )
       : [];
   }
+  private async track(work: () => Promise<void>) {
+    const done = this.tasks.add();
+    try {
+      await work();
+    } finally {
+      done();
+    }
+  }
+  private focusHeading(id: string) {
+    afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>(`#${id}`)?.focus(), {
+      injector: this.injector,
+    });
+  }
   startPlan() {
     this.state.closeReview();
     this.editing.set(true);
+    this.focusHeading('index-plan-title');
   }
   providerChanged(value: string) {
     this.providerId.set(value);
@@ -270,7 +289,7 @@ export class KoinonIndexManagementPanel implements OnDestroy {
   }
   async prepare() {
     if (!this.providerId() || !this.modelId()) return;
-    await this.tasks.run(() =>
+    await this.track(() =>
       this.state.plan({
         workspace_id: this.workspace(),
         domain: this.domain(),
@@ -278,38 +297,44 @@ export class KoinonIndexManagementPanel implements OnDestroy {
         model_id: this.modelId(),
       }),
     );
+    if (this.state.view().plan) this.focusHeading('index-plan-title');
+  }
+  changeModel() {
+    this.state.closeReview();
+    this.focusHeading('index-plan-title');
   }
   async build() {
-    await this.tasks.run(() => this.state.build());
+    await this.track(() => this.state.build());
     if (!this.state.view().plan) this.editing.set(false);
   }
   async refresh() {
-    await this.tasks.run(() => this.state.load(this.state.view().page, this.filter()));
+    await this.track(() => this.state.load(this.state.view().page, this.filter()));
   }
   async changeFilter(value: string) {
     this.filter.set(value);
-    await this.tasks.run(() => this.state.load(1, value));
+    await this.track(() => this.state.load(1, value));
   }
   async select(id: string) {
     this.editing.set(false);
-    await this.tasks.run(() => this.state.select(id));
+    await this.track(() => this.state.select(id));
   }
   async review(action: IndexActionName) {
     this.editing.set(false);
-    await this.tasks.run(() => this.state.reviewAction(action));
+    await this.track(() => this.state.reviewAction(action));
+    if (this.state.view().review) this.focusHeading('index-action-title');
   }
   async confirm() {
-    await this.tasks.run(() => this.state.confirmAction());
+    await this.track(() => this.state.confirmAction());
   }
   async inspect() {
-    await this.tasks.run(() => this.state.inspectSaved());
+    await this.track(() => this.state.inspectSaved());
   }
   async repeat() {
     this.replayReview.set(false);
-    await this.tasks.run(() => this.state.repeatSaved());
+    await this.track(() => this.state.repeatSaved());
   }
   async changePage(page: number) {
-    await this.tasks.run(() => this.state.load(page, this.filter()));
+    await this.track(() => this.state.load(page, this.filter()));
   }
   ngOnDestroy() {
     clearTimeout(this.expiry);

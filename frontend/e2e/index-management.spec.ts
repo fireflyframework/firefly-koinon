@@ -280,6 +280,9 @@ async function open(page: Page, width: number) {
 }
 async function plan(page: Page, panel: ReturnType<Page['locator']>) {
   await panel.getByRole('button', { name: 'Plan a new index', exact: true }).click();
+  await expect(
+    panel.getByRole('heading', { name: 'Plan an index for this space', exact: true }),
+  ).toBeFocused();
   await panel.getByLabel('Embedding provider', { exact: true }).selectOption('embedding-provider');
   await panel.getByLabel('Embedding model', { exact: true }).selectOption('embedding-v2');
   await expect(panel).toContainText('may incur provider usage');
@@ -287,6 +290,9 @@ async function plan(page: Page, panel: ReturnType<Page['locator']>) {
     .getByRole('button', { name: 'Check embeddings and prepare plan', exact: true })
     .click();
   await expect(panel.locator('.plan-review')).toContainText('1,536');
+  await expect(
+    panel.getByRole('heading', { name: 'Review before building', exact: true }),
+  ).toBeFocused();
 }
 for (const width of [1440, 390])
   test(`plan, build, inspect and explicitly activate an index at ${width}px`, async ({ page }) => {
@@ -300,6 +306,7 @@ for (const width of [1440, 390])
     await capture(page, `plan-${width}-light`);
     await panel.getByRole('button', { name: 'Build this index', exact: true }).click();
     await expect(panel.locator('.details')).toContainText('Queued');
+    await expect(panel.locator('.editor')).toHaveCount(0);
     const create = service.writes.find((row) => row.path.endsWith('/knowledge-indexes'))!;
     expect(create.key).toBeTruthy();
     expect(create.body).toMatchObject({
@@ -316,6 +323,9 @@ for (const width of [1440, 390])
       .getByRole('button', { name: 'Activate index', exact: true })
       .click();
     await expect(panel.locator('.action-review')).toContainText('Assignment revision');
+    await expect(
+      panel.locator('.action-review').getByRole('heading', { name: 'Activate index', exact: true }),
+    ).toBeFocused();
     expect(service.writes.some((row) => row.path.endsWith('/activate'))).toBe(false);
     await panel
       .locator('.action-review')
@@ -452,4 +462,19 @@ test('the existing management layout remains readable in dark appearance', async
   await panel.locator('.plan-review').scrollIntoViewIfNeeded();
   await capture(page, 'plan-1440-dark');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('returning from the reviewed plan moves focus to model selection without another provider request', async ({
+  page,
+}) => {
+  const service = await fixture(page);
+  await page.setViewportSize({ width: 390, height: 960 });
+  const panel = await open(page, 390);
+  await plan(page, panel);
+  await panel.getByRole('button', { name: 'Change model', exact: true }).click();
+  await expect(
+    panel.getByRole('heading', { name: 'Plan an index for this space', exact: true }),
+  ).toBeFocused();
+  await expect(panel.getByLabel('Embedding model', { exact: true })).toHaveValue('embedding-v2');
+  expect(service.writes.map((row) => row.path.split('/').pop())).toEqual(['plan']);
 });
