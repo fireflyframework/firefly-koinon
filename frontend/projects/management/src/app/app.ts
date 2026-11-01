@@ -90,8 +90,10 @@ export class App {
     document.documentElement.style.colorScheme = theme;
   }
   async signOut(): Promise<void> {
-    this.invitation.clear();
-    this.share.clear();
-    if (await this.session.signOut()) window.location.assign('/');
+    if (await this.session.signOut()) {
+      this.invitation.clear();
+      this.share.clear();
+      window.location.assign('/');
+    }
   }
 }

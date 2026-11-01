@@ -17,7 +17,7 @@
 >
   <header>
     <div>
-      <span class="eyebrow">{{
+      @if (w.dialog() !== 'sign-out') {<span class="eyebrow">{{
         (w.dialog() === 'account'
           ? 'Account'
           : w.dialog() === 'upload'
@@ -26,10 +26,14 @@
               ? 'Dataset explorer'
               : 'Library'
         ) | ffkText
-      }}</span>
+      }}</span>}
       <h2 id="dialog-title">
         {{
-          w.dialog() === 'account'
+          w.dialog() === 'move'
+            ? ('Move Library folder' | ffkText)
+            : w.dialog() === 'sign-out'
+            ? ('Sign out?' | ffkText)
+            : w.dialog() === 'account'
             ? 'Your account'
             : w.dialog() === 'archived'
               ? 'Archived items'
@@ -38,7 +42,7 @@
                 : w.dialog() === 'add'
                   ? 'Add knowledge'
                   : w.dialog() === 'create'
-                    ? 'Create a ' + w.kind(w.formKind).toLowerCase()
+                    ? ('Create a ' + w.kind(w.formKind).toLowerCase() | ffkText)
                     : w.dialog() === 'edit'
                       ? 'Edit details'
                       : w.dialog() === 'upload'
@@ -63,6 +67,9 @@
   </header>
   @if (w.dialogError()) {
     <div class="workbench-error" role="alert">{{ w.dialogError() }}</div>
+  }
+  @if (w.dialog() === 'move' && w.f.selected(); as entry) {
+    <ffk-move-folder [source]="entry" (closed)="w.closeDialog()" />
   }
   @if (w.dialog() === 'account') {
     <div class="account-body">
@@ -123,6 +130,13 @@
           ><ffk-icon name="chevron" />
         </button>
       }
+    </div>
+  }
+  @if (w.dialog() === 'sign-out') {
+    <p>{{ 'You can sign in again to continue. Your saved knowledge and conversations will stay.' | ffkText }}</p>
+    <div class="dialog-actions">
+      <ffk-button variant="quiet" (click)="w.closeDialog()">{{ 'Cancel' | ffkText }}</ffk-button>
+      <ffk-button variant="danger" (click)="w.closeDialog(); w.signOutRequested.emit()">{{ 'Sign out' | ffkText }}</ffk-button>
     </div>
   }
   @if (w.dialog() === 'create' || w.dialog() === 'edit') {

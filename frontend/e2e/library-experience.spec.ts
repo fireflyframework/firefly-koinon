@@ -77,7 +77,7 @@ async function setup(page: Page) {
       ),
     );
   }
-  await page.goto('/');
+  await page.goto('/library');
   return service;
 }
 async function openLibrary(page: Page) {

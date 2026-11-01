@@ -80,6 +80,12 @@ export const context: ContextResponse = {
   memberships: [],
   workspaces: [fixtures[0]],
 };
+export async function openAdministration(page: Page, name: string) {
+  await page.keyboard.press('Escape');
+  await expect(page.locator('ffk-shell .navigation-drawer')).toHaveCount(0);
+  await page.getByRole('button', { name: /Account menu|Menú de/ }).click();
+  await page.getByRole('menuitem', { name, exact: true }).click();
+}
 export async function mockService(
   page: Page,
   options: {
@@ -240,6 +246,9 @@ export async function mockService(
           body.parent_id ?? null,
           { description: body.description ?? '' },
         );
+        const parent = rows.find(row => row.id === created.parent_id);
+        created.workspace_id = created.kind === 'workspace' ? created.id : parent?.workspace_id ?? null;
+        created.project_id = created.kind === 'project' ? created.id : parent?.project_id ?? null;
         rows.push(created);
         return respond(created, 201);
       }

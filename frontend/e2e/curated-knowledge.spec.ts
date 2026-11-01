@@ -59,7 +59,7 @@ async function controlled(page: Page, mode: 'saved' | 'pending' | 'conflict' | '
   return { calls };
 }
 async function openReview(page: Page) {
-  await page.goto('/');
+  await page.goto('/library');
   await expect(page.getByRole('button', { name: 'Account menu', exact: true })).toBeVisible();
   const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
   if (await menu.isVisible()) await menu.click();

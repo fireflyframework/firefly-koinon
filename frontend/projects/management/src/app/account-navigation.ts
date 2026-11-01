@@ -2,7 +2,8 @@
 import { DOCUMENT } from '@angular/common';
 import { Injectable, OnDestroy, inject, signal } from '@angular/core';
 import type { PrimaryDestination } from '@fireflyframework/koinon-angular/workbench';
-type AccountSection = 'profile' | 'tokens' | 'applications' | 'notifications' | 'notification-preferences';
+type AccountSection =
+  'profile' | 'tokens' | 'applications' | 'notifications' | 'notification-preferences';
 const pendingKey = 'koinon.pending-account-navigation';
 interface PendingNavigation {
   view: PrimaryDestination;
@@ -14,14 +15,19 @@ export class AccountNavigation implements OnDestroy {
   private readonly window = this.document.defaultView;
   private readonly base = new URL('.', this.document.baseURI).pathname;
   readonly section = signal<AccountSection | null>(null);
-  readonly view = signal<PrimaryDestination>('library');
+  readonly view = signal<PrimaryDestination>('chat');
   private readonly restore = () => {
     const pathname = this.window?.location.pathname ?? '';
     const path = pathname.startsWith(this.base) ? pathname.slice(this.base.length) : '';
-    const section = /^account\/(profile|tokens|applications|notifications|notification-preferences)\/?$/.exec(path)?.[1];
+    const section =
+      /^account\/(profile|tokens|applications|notifications|notification-preferences)\/?$/.exec(
+        path,
+      )?.[1];
     this.section.set((section as AccountSection) || null);
     this.view.set(
-      ['chat', 'activity', 'settings'].includes(path) ? (path as PrimaryDestination) : 'library',
+      ['library', 'chat', 'activity', 'settings'].includes(path)
+        ? (path as PrimaryDestination)
+        : 'chat',
     );
   };
   constructor() {
@@ -31,7 +37,7 @@ export class AccountNavigation implements OnDestroy {
   }
   retainForSignIn() {
     const navigation: PendingNavigation = {
-      view: this.section() ? 'library' : this.view(),
+      view: this.section() ? 'chat' : this.view(),
       accountSection: this.section(),
     };
     try {
@@ -59,7 +65,13 @@ export class AccountNavigation implements OnDestroy {
       ['library', 'chat', 'activity', 'settings'].includes(value.view) &&
       (value.accountSection === null ||
         (typeof value.accountSection === 'string' &&
-          ['profile', 'tokens', 'applications', 'notifications', 'notification-preferences'].includes(value.accountSection)))
+          [
+            'profile',
+            'tokens',
+            'applications',
+            'notifications',
+            'notification-preferences',
+          ].includes(value.accountSection)))
     );
   }
   private consumePending() {
@@ -79,7 +91,7 @@ export class AccountNavigation implements OnDestroy {
     if (url.pathname !== this.base || fragment.has('invite') || fragment.has('share')) return;
     const path = saved.accountSection
       ? 'account/' + saved.accountSection
-      : saved.view === 'library'
+      : saved.view === 'chat'
         ? ''
         : saved.view;
     url.pathname = this.base + path;
@@ -97,7 +109,7 @@ export class AccountNavigation implements OnDestroy {
   navigate(view: PrimaryDestination) {
     this.section.set(null);
     this.view.set(view);
-    this.write(view === 'library' ? '' : view);
+    this.write(view === 'chat' ? '' : view);
   }
   private write(path: string) {
     if (!this.window) return;

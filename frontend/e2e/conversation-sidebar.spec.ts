@@ -259,9 +259,10 @@ async function groupedFixture(page: Page) {
   };
 }
 async function openSidebar(page: Page, mobile = false) {
-  await page.goto('/');
+  await page.goto('/library');
   const navigation = page.getByRole('button', { name: 'Open navigation', exact: true });
-  if (await navigation.isVisible()) await navigation.click();
+  if (mobile) await expect(navigation).toBeVisible();
+  if (mobile || await navigation.isVisible()) await navigation.click();
   await page.getByRole('button', { name: 'Chat', exact: true }).click();
   if (mobile) await page.getByRole('button', { name: 'Show conversations', exact: true }).click();
   const sidebar = page.locator('ffk-conversation-sidebar');
@@ -342,9 +343,9 @@ test('folder create rename and removal preserve conversations with revision bodi
   const api = await groupedFixture(page);
   const sidebar = await openSidebar(page);
   await sidebar.getByRole('button', { name: 'Conversation options', exact: true }).click();
-  await sidebar.getByRole('menuitem', { name: 'New folder', exact: true }).click();
+  await sidebar.getByRole('menuitem', { name: 'New chat project', exact: true }).click();
   let dialog = sidebar.getByRole('dialog');
-  await dialog.getByLabel('Folder name', { exact: true }).fill('Acceptance folder');
+  await dialog.getByLabel('Chat project name', { exact: true }).fill('Acceptance folder');
   await dialog.getByRole('button', { name: 'Save changes', exact: true }).click();
   await expect(dialog).not.toBeVisible();
   const created = api.folders.find((row) => row.name === 'Acceptance folder')!;
@@ -354,11 +355,11 @@ test('folder create rename and removal preserve conversations with revision bodi
   );
   expect(write?.csrf).toBe('synthetic-csrf+token');
   await sidebar
-    .getByRole('button', { name: 'Folder actions, Acceptance folder', exact: true })
+    .getByRole('button', { name: 'Chat project actions, Acceptance folder', exact: true })
     .click();
-  await sidebar.getByRole('menuitem', { name: 'Folder settings', exact: true }).click();
+  await sidebar.getByRole('menuitem', { name: 'Chat project settings', exact: true }).click();
   dialog = sidebar.getByRole('dialog');
-  await dialog.getByLabel('Folder name', { exact: true }).fill('Renamed folder');
+  await dialog.getByLabel('Chat project name', { exact: true }).fill('Renamed folder');
   await dialog.getByRole('button', { name: 'Save changes', exact: true }).click();
   await expect(
     sidebar.getByRole('treeitem', { name: 'Renamed folder', exact: true }),
@@ -368,11 +369,11 @@ test('folder create rename and removal preserve conversations with revision bodi
       'expected_revision'
     ],
   ).toBe(1);
-  await sidebar.getByRole('button', { name: 'Folder actions, Research', exact: true }).click();
-  await sidebar.getByRole('menuitem', { name: 'Remove folder', exact: true }).click();
+  await sidebar.getByRole('button', { name: 'Chat project actions, Research', exact: true }).click();
+  await sidebar.getByRole('menuitem', { name: 'Remove chat project', exact: true }).click();
   await sidebar
     .getByRole('dialog')
-    .getByRole('button', { name: 'Remove folder', exact: true })
+    .getByRole('button', { name: 'Remove chat project', exact: true })
     .click();
   await expect(sidebar.getByRole('treeitem', { name: 'Research', exact: true })).toHaveCount(0);
   expect(api.threads.find((row) => row.id === 'filed')?.folder_id).toBe(null);
@@ -415,8 +416,8 @@ test('folder memory needs an explicit saved choice and cancellation keeps it dis
   const api = await groupedFixture(page);
   const sidebar = await openSidebar(page);
   const open = async () => {
-    await sidebar.getByRole('button', { name: 'Folder actions, Research', exact: true }).click();
-    await sidebar.getByRole('menuitem', { name: 'Folder settings', exact: true }).click();
+    await sidebar.getByRole('button', { name: 'Chat project actions, Research', exact: true }).click();
+    await sidebar.getByRole('menuitem', { name: 'Chat project settings', exact: true }).click();
     return sidebar.getByRole('dialog');
   };
   let dialog = await open();
@@ -473,8 +474,8 @@ for (const width of [1440, 390]) for (const theme of ['light', 'dark'])
     await page.addInitScript(theme => localStorage.setItem('koinon-theme', theme), theme);
     await groupedFixture(page);
     const sidebar = await openSidebar(page, width < 600);
-    await sidebar.getByRole('button', { name: 'Folder actions, Research', exact: true }).click();
-    await sidebar.getByRole('menuitem', { name: 'Folder settings', exact: true }).click();
+    await sidebar.getByRole('button', { name: 'Chat project actions, Research', exact: true }).click();
+    await sidebar.getByRole('menuitem', { name: 'Chat project settings', exact: true }).click();
     const dialog = sidebar.getByRole('dialog');
     await expect(dialog).toBeVisible();
     expect(await dialog.evaluate(node => getComputedStyle(node).opacity)).toBe('1');
@@ -494,8 +495,8 @@ test('folder memory explains an organization restriction without changing the sa
     tenant_id: 'tenant-one', default_agent_id: 'agent-one', revision: 2, configured: true, can_run: true, status: 'ready',
     memory: { allow_project_memory: false, max_history_messages: 40, max_history_tokens: 8192, max_project_memory_messages: 20 },
   } }));
-  await sidebar.getByRole('button', { name: 'Folder actions, Research', exact: true }).click();
-  await sidebar.getByRole('menuitem', { name: 'Folder settings', exact: true }).click();
+  await sidebar.getByRole('button', { name: 'Chat project actions, Research', exact: true }).click();
+  await sidebar.getByRole('menuitem', { name: 'Chat project settings', exact: true }).click();
   const dialog = sidebar.getByRole('dialog');
   await expect(dialog.getByText('Your organization has disabled project memory. This preference applies only while organization policy allows it.', { exact: true })).toBeVisible();
   await expect(dialog.getByRole('checkbox', { name: /Use memory from my chats/ })).not.toBeChecked();
@@ -505,8 +506,8 @@ test('a failed memory policy check remains explicit and does not imply memory is
   await groupedFixture(page);
   const sidebar = await openSidebar(page, false);
   await page.route('**/bff/api/v1/tenants/*/chat/settings**', route => route.fulfill({ status: 503, json: { detail: 'Unavailable' } }));
-  await sidebar.getByRole('button', { name: 'Folder actions, Research', exact: true }).click();
-  await sidebar.getByRole('menuitem', { name: 'Folder settings', exact: true }).click();
+  await sidebar.getByRole('button', { name: 'Chat project actions, Research', exact: true }).click();
+  await sidebar.getByRole('menuitem', { name: 'Chat project settings', exact: true }).click();
   const dialog = sidebar.getByRole('dialog');
   await expect(dialog.getByText('The organization memory policy could not be checked. Current server limits still apply.', { exact: true })).toBeVisible();
   await expect(dialog.getByRole('checkbox', { name: /Use memory from my chats/ })).not.toBeChecked();

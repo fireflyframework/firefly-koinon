@@ -1,13 +1,13 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 import { test, expect } from '@playwright/test';
-import { mockService } from './fixtures';
+import { openAdministration,  mockService } from './fixtures';
 test('primary navigation shares the header and knowledge search appears only in Library', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 960 });
   await mockService(page);
-  await page.goto('/');
+  await page.goto('/library');
   const header = page.locator('ffk-shell .topbar');
   const nav = header.getByRole('navigation', { name: 'Main navigation', exact: true });
   await expect(nav).toBeVisible();
@@ -15,14 +15,15 @@ test('primary navigation shares the header and knowledge search appears only in 
     header.getByRole('searchbox', { name: 'Search your knowledge', exact: true }),
   ).toBeVisible();
   const headerBox = (await header.boundingBox())!;
-  for (const name of ['Library', 'Chat', 'Activity', 'Settings']) {
+  expect((await nav.getByRole('button').allTextContents()).map(text => text.trim())).toEqual(['Chat', 'Library']);
+  for (const name of ['Chat', 'Library']) {
     const box = (await nav.getByRole('button', { name, exact: true }).boundingBox())!;
     expect(box.y).toBeGreaterThanOrEqual(headerBox.y);
     expect(box.y + box.height).toBeLessThanOrEqual(headerBox.y + headerBox.height);
   }
   await nav.getByRole('button', { name: 'Chat', exact: true }).click();
   await expect(header.getByRole('searchbox')).toHaveCount(0);
-  await nav.getByRole('button', { name: 'Activity', exact: true }).click();
+  await openAdministration(page, 'Activity');
   await expect(header.getByRole('searchbox')).toHaveCount(0);
   await nav.getByRole('button', { name: 'Library', exact: true }).click();
   await expect(header.getByRole('searchbox')).toBeVisible();
@@ -33,7 +34,7 @@ for (const width of [1440, 1024, 820])
   test(`desktop account and Settings contain their controls ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 800 });
     await mockService(page);
-    await page.goto('/');
+    await page.goto('/library');
     const avatar = page.getByRole('button', { name: 'Account menu', exact: true });
     await expect(avatar).toBeVisible();
     const frame = (await avatar.boundingBox())!;
@@ -52,7 +53,7 @@ for (const width of [1440, 1024, 820])
     await expect(avatar).toBeFocused();
     const toggle = page.getByRole('button', { name: 'Open navigation', exact: true });
     if (await toggle.isVisible()) await toggle.click();
-    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await openAdministration(page, 'Settings');
     const nav = page.getByRole('navigation', { name: 'Settings sections' });
     await expect(nav).toBeVisible();
     const local = (await nav.boundingBox())!,
@@ -92,7 +93,7 @@ test('authenticated avatar loads and a failed image falls back to readable initi
   await page.route('**/bff/api/v1/profile/avatar', (route) =>
     route.fulfill({ contentType: 'image/png', body: Buffer.from(png, 'base64') }),
   );
-  await page.goto('/');
+  await page.goto('/library');
   const avatar = page.getByRole('button', { name: 'Account menu', exact: true });
   await expect(avatar.locator('img')).toBeVisible();
   expect(await avatar.locator('img').evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(
@@ -106,7 +107,7 @@ for (const width of [320, 390])
   test(`mobile sidebar account remains contained ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 680 });
     await mockService(page);
-    await page.goto('/');
+    await page.goto('/library');
     const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
     await menu.click();
     const avatar = page.getByRole('button', { name: 'Your account', exact: true });
@@ -117,7 +118,7 @@ for (const width of [320, 390])
     await page.keyboard.press('Escape');
     await expect(menu).toBeFocused();
     await menu.click();
-    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await openAdministration(page, 'Settings');
     await expect(
       page.getByRole('combobox', { name: 'Settings section', exact: true }),
     ).toBeVisible();
@@ -129,7 +130,7 @@ for (const width of [320, 390])
 test('mobile Library keeps the avatar beside the logo and the search below', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await mockService(page);
-  await page.goto('/');
+  await page.goto('/library');
   const header = page.locator('ffk-shell .topbar'),
     logo = (await header.locator('.brand').boundingBox())!,
     avatar = (await header
@@ -150,7 +151,7 @@ test('Library rows adapt to a narrow embedded region with touch details', async 
   const page = await context.newPage();
   try {
     await mockService(page);
-    await page.goto('/');
+    await page.goto('/library');
     const list = page.locator('ffk-resource-list');
     await list.evaluate((node) => {
       (node as HTMLElement).style.width = '340px';

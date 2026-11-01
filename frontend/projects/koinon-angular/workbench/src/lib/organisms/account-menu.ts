@@ -29,6 +29,14 @@ import { KoinonIcon } from '../atoms/icon';
     <button cdkMenuItem (click)="accountRequested.emit('applications')">
       <ffk-icon name="link" />{{ 'Authorized applications' | ffkText }}
     </button>
+    @if (canConfigure) {
+      <button cdkMenuItem (click)="destinationRequested.emit('activity')">
+        <ffk-icon name="history" />{{ 'Activity' | ffkText }}
+      </button>
+      <button cdkMenuItem (click)="destinationRequested.emit('settings')">
+        <ffk-icon name="settings" />{{ 'Settings' | ffkText }}
+      </button>
+    }
     <button cdkMenuItem (click)="themeRequested.emit()">
       <ffk-icon [name]="theme === 'light' ? 'moon' : 'sun'" />{{
         (theme === 'light' ? 'Use dark theme' : 'Use light theme') | ffkText
@@ -46,6 +54,8 @@ export class KoinonAccountMenu implements AfterViewInit {
   @Input() displayName = '';
   @Input() roleLabel = 'Member';
   @Input() theme: 'light' | 'dark' = 'light';
+  @Input() canConfigure = false;
+  @Output() destinationRequested = new EventEmitter<'activity' | 'settings'>();
   @Output() accountRequested = new EventEmitter<'profile' | 'tokens' | 'applications'>();
   @Output() themeRequested = new EventEmitter<void>();
   @Output() signOutRequested = new EventEmitter<void>();

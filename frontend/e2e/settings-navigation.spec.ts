@@ -3,7 +3,7 @@
 import { expect, test } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { mockService } from './fixtures';
+import { openAdministration,  mockService } from './fixtures';
 for (const width of [1440, 390])
   for (const failed of [false, true])
     test(`later Agents navigation survives initial provider metadata ${failed ? 'failure' : 'completion'} at ${width}px`, async ({
@@ -64,13 +64,13 @@ for (const width of [1440, 390])
           },
         });
       });
-      await page.goto('/');
+      await page.goto('/library');
       const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
       if (width < 700) {
         await expect(menu).toBeVisible();
         await menu.click();
       }
-      await page.getByRole('button', { name: 'Settings', exact: true }).click();
+      await openAdministration(page, 'Settings');
       await started;
       await expect(page.locator('ffk-settings-page')).toBeVisible();
       const mobile = page.getByRole('combobox', { name: 'Settings section', exact: true });
@@ -122,7 +122,7 @@ for (const width of [1440, 390])
     await page.route('**/bff/api/v1/tenants/*/chat/threads**', (route) =>
       route.fulfill({ json: { items: [], page: 1, pages: 0, total: 0 } }),
     );
-    await page.goto('/');
+    await page.goto('/library');
     const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
     if (width < 700) {
         await expect(menu).toBeVisible();

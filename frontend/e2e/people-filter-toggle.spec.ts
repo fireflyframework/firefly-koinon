@@ -1,7 +1,7 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 import { test, expect, type Page } from '@playwright/test';
-import { mockService } from './fixtures';
+import { openAdministration,  mockService } from './fixtures';
 async function openDirectory(page: Page, width: number) {
   await page.setViewportSize({ width, height: 960 });
   await mockService(page);
@@ -21,9 +21,9 @@ async function openDirectory(page: Page, width: number) {
       }),
     });
   });
-  await page.goto('/');
+  await page.goto('/library');
   if (width < 700) await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await openAdministration(page, 'Settings');
   if (width < 700)
     await page.getByLabel('Settings section', { exact: true }).selectOption('people');
   else await page.getByRole('button', { name: 'People', exact: true }).click();

@@ -134,7 +134,9 @@ describe('embedded knowledge workbench', () => {
 
 it.each([
   ['admin', ['catalog:read', 'chat:use'], false],
-  ['viewer', ['catalog:read', 'providers:write'], true],
+  ['viewer', ['catalog:read', 'providers:write'], false],
+  ['admin', ['catalog:read', 'members:write'], true],
+  ['operator', ['catalog:read', 'members:write'], false],
 ] as const)(
   'uses authoritative capabilities for the %s settings navigation',
   async (role, permissions, expected) => {
@@ -152,6 +154,8 @@ it.each([
     );
     expect(fixture.componentInstance.canConfigure()).toBe(expected);
     const root = (fixture.nativeElement.shadowRoot ?? fixture.nativeElement) as HTMLElement;
+    root.querySelector<HTMLButtonElement>('.account-avatar')!.click();
+    await vi.waitFor(() => { fixture.detectChanges(); expect(root.querySelector('[role=menu]')).not.toBeNull(); });
     expect(
       [...root.querySelectorAll('button')].some(
         (button) => button.textContent?.trim() === 'Settings',
@@ -160,7 +164,7 @@ it.each([
   },
 );
 
-it('offers scoped people settings only inside the currently authorized workspace', async () => {
+it('keeps administrator pages unavailable to non-admin workspace operators', async () => {
   const fixture = await mount(async (_method, path) =>
     path === '/context'
       ? {
@@ -184,7 +188,9 @@ it('offers scoped people settings only inside the currently authorized workspace
   expect(fixture.componentInstance.canConfigure()).toBe(false);
   await fixture.componentInstance.f.setWorkspace('workspace-one');
   fixture.detectChanges();
-  expect(fixture.componentInstance.canConfigure()).toBe(true);
+  expect(fixture.componentInstance.canConfigure()).toBe(false);
+  await fixture.componentInstance.navigate('settings');
+  expect(fixture.componentInstance.destination()).toBe('chat');
 });
 
 it('keeps a controlled account section until the host acknowledges navigation', async () => {
@@ -378,4 +384,59 @@ it('does not reveal a personal name when corporate policy supplies an authoritat
   await vi.waitFor(() => expect(fixture.componentInstance.account.organizationName()).toBe(''));
   expect(fixture.componentInstance.displayName()).toBe('Name unavailable');
   expect(fixture.componentInstance.chatActions.displayName()).toBe('Name unavailable');
+});
+
+it('guards direct administrator page requests and leaves owner activity APIs untouched', async () => {
+  const requests: string[] = [];
+  const fixture = await mount(async (_method, path) => {
+    requests.push(path);
+    return path === '/context' ? {
+      subject: 'reader', tenants: [{id:'tenant-one', name:'Read only', roles:['viewer'], permissions:['catalog:read']}],
+      memberships:[], workspaces:[workspace],
+    } : {items: []};
+  });
+  for (const view of ['activity', 'settings'] as const) {
+    fixture.componentRef.setInput('view', view);
+    await fixture.whenStable();
+    expect(fixture.componentInstance.destination()).toBe('chat');
+  }
+  expect(fixture.componentInstance.activityComponent()).toBeNull();
+  expect(fixture.componentInstance.settingsComponent()).toBeNull();
+  expect(requests.some(path => /\/jobs|\/activity|\/providers/.test(path))).toBe(false);
+});
+it('dismisses administrator pages when current organization authority is revoked', async () => {
+  const fixture = await mount(async (_method, path) => path === '/context' ? {
+    subject:'admin',tenants:[{id:'tenant-one',name:'Organization',roles:['admin'],permissions:['catalog:read','members:write']}],
+    memberships:[],workspaces:[workspace],
+  } : {items:[]});
+  await fixture.componentInstance.navigate('settings');
+  expect(fixture.componentInstance.destination()).toBe('settings');
+  fixture.componentInstance.f.context.update(context => context && ({...context,tenants:context.tenants.map(tenant => ({...tenant,roles:['viewer'],permissions:['catalog:read']}))}));
+  await fixture.whenStable();
+  expect(fixture.componentInstance.destination()).toBe('chat');
+});
+
+it('refuses to submit an archive from a stale dialog for a protected system root', async () => {
+  const writes: string[] = [];
+  const fixture = await mount(async (method, path) => {
+    if (method !== 'GET') writes.push(path);
+    return path === '/context' ? {subject:'admin',tenants:[{id:'tenant-one',name:'Team',roles:['admin'],permissions:['catalog:read','catalog:write','members:write']}],memberships:[],workspaces:[workspace]} : {items:[]};
+  });
+  fixture.componentInstance.f.selected.set({...workspace,kind:'workspace',system_managed:true} as typeof workspace & {kind:'workspace';system_managed:boolean});
+  await fixture.componentInstance.archive();
+  expect(writes).toEqual([]);
+  expect(fixture.componentInstance.dialogError()).toBe('System spaces and folders cannot be archived.');
+});
+
+it('preserves an explicit shared receipt during host/default view initialization and dismisses only on user navigation', async () => {
+  const fixture = await mount(async (_method,path) => path === '/context' ? {
+    subject:'reader',tenants:[{id:'tenant-one',name:'Team',roles:['viewer'],permissions:['catalog:read']}],memberships:[],workspaces:[workspace],
+  } : {items:[]});
+  fixture.componentInstance.sharedConversationId = 'saved-receipt';
+  const dismissed = vi.fn();
+  fixture.componentInstance.sharedConversationDismissed.subscribe(dismissed);
+  await fixture.componentInstance.navigate('chat', true);
+  expect(dismissed).not.toHaveBeenCalled();
+  await fixture.componentInstance.navigate('library');
+  expect(dismissed).toHaveBeenCalledOnce();
 });

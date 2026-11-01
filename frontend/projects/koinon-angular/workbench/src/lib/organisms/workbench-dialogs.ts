@@ -7,6 +7,7 @@ import { CdkTrapFocus } from '@angular/cdk/a11y';
 import type { KoinonWorkbench } from '../koinon-angular';
 import { KoinonTextPipe } from '../foundations/i18n';
 import { KoinonAccountPanel } from './account-panel';
+import { KoinonMoveFolder } from './move-folder';
 import { KoinonFolderTree } from './folder-tree';
 import { KoinonCodeBlock } from '../atoms/code-block';
 import { KoinonButton } from '../atoms/button';
@@ -27,6 +28,7 @@ registerKoinonSpanish(PANEL_SPANISH);
     KoinonTextPipe,
     KoinonAccountPanel,
     KoinonFolderTree,
+    KoinonMoveFolder,
     KoinonCodeBlock,
     KoinonButton,
     KoinonIcon,

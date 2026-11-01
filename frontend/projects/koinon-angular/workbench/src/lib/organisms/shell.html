@@ -17,9 +17,9 @@
       </button>
       <a
         class="brand"
-        href="#library"
-        [attr.aria-label]="productName + ', ' + ('Library' | ffkText)"
-        (click)="go('library', $event)"
+        href="#chat"
+        [attr.aria-label]="productName + ', ' + ('Chat' | ffkText)"
+        (click)="go('chat', $event)"
         >@if(logo()){<img [src]="logo()" [alt]="productName"/>}@else{<strong class="custom-brand-name">{{productName}}</strong>}</a>
       <nav class="main-navigation" [attr.aria-label]="'Main navigation' | ffkText">
         @for (item of destinations; track item.id) {
@@ -31,17 +31,6 @@
             (click)="go(item.id)"
           >
             <ffk-icon [name]="item.icon" /><span>{{ item.label | ffkText }}</span>
-          </button>
-        }
-        @if (canConfigure) {
-          <button
-            type="button"
-            class="nav-item"
-            [class.active]="!personalAccount && destination === 'settings'"
-            [attr.aria-current]="!personalAccount && destination === 'settings' ? 'page' : null"
-            (click)="go('settings')"
-          >
-            <ffk-icon name="settings" /><span>{{ 'Settings' | ffkText }}</span>
           </button>
         }
       </nav>
@@ -109,7 +98,7 @@
     @if (accountMenuOpen()) {
       <div #accountMenu tabindex="-1" style="display:contents" (keydown)="accountKey($event)">
         @defer (when accountMenuOpen()) {
-          <ffk-account-menu [displayName]="displayName" [roleLabel]="roleLabel" [theme]="theme" (accountRequested)="requestAccount($event)" (themeRequested)="switchTheme()" (signOutRequested)="requestSignOut()"/>
+          <ffk-account-menu [canConfigure]="canConfigure" (destinationRequested)="go($event)" [displayName]="displayName" [roleLabel]="roleLabel" [theme]="theme" (accountRequested)="requestAccount($event)" (themeRequested)="switchTheme()" (signOutRequested)="requestSignOut()"/>
         } @error {<button (click)="closeAccountMenu()">{{'This panel could not be opened. Refresh this page and try again.'|ffkText}}</button>}
       </div>
     }
@@ -160,9 +149,9 @@
       <div class="drawer-heading">
         <a
           class="brand"
-          href="#library"
-          [attr.aria-label]="productName + ', ' + ('Library' | ffkText)"
-          (click)="go('library', $event)"
+          href="#chat"
+          [attr.aria-label]="productName + ', ' + ('Chat' | ffkText)"
+          (click)="go('chat', $event)"
           >@if(logo()){<img [src]="logo()" [alt]="productName"/>}@else{<strong class="custom-brand-name">{{productName}}</strong>}</a
         ><button
           class="icon-button"
@@ -196,17 +185,6 @@
             (click)="go(item.id)"
           >
             <ffk-icon [name]="item.icon" /><span>{{ item.label | ffkText }}</span>
-          </button>
-        }
-        @if (canConfigure) {
-          <button
-            type="button"
-            class="nav-item"
-            [class.active]="!personalAccount && destination === 'settings'"
-            [attr.aria-current]="!personalAccount && destination === 'settings' ? 'page' : null"
-            (click)="go('settings')"
-          >
-            <ffk-icon name="settings" /><span>{{ 'Settings' | ffkText }}</span>
           </button>
         }
       </nav>

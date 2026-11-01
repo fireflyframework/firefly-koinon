@@ -226,7 +226,7 @@ async function fixture(page: Page) {
   };
 }
 async function open(page: Page) {
-  await page.goto('/');
+  await page.goto('/library');
   for (const name of ['Research operations', 'Operations intelligence', 'Reference library'])
     await page.getByRole('button', { name, exact: true }).click();
   await page.getByRole('button', { name: 'Quarterly service activity', exact: true }).click();

@@ -284,11 +284,11 @@ export class KoinonConversationSidebar implements OnInit, OnChanges, OnDestroy {
   heading() {
     const kind = this.edit()?.kind;
     return kind === 'create-folder'
-      ? 'New folder'
+      ? 'New chat project'
       : kind === 'rename-folder'
-        ? 'Folder settings'
+        ? 'Chat project settings'
         : kind === 'delete-folder'
-          ? 'Remove folder'
+          ? 'Remove chat project'
           : kind === 'rename-thread'
             ? 'Rename conversation'
             : kind === 'move-thread'
@@ -300,7 +300,7 @@ export class KoinonConversationSidebar implements OnInit, OnChanges, OnDestroy {
   saveLabel() {
     const kind = this.edit()?.kind;
     return kind === 'delete-folder'
-      ? 'Remove folder'
+      ? 'Remove chat project'
       : kind === 'delete-thread'
         ? 'Delete conversation'
         : kind === 'archive-thread'

@@ -38,7 +38,7 @@ for (const width of [1440, 1024, 390])
       await page.setViewportSize({ width, height: 960 });
       await page.addInitScript((theme) => localStorage.setItem('koinon-theme', theme), theme);
       await mockService(page);
-      await page.goto('/');
+      await page.goto('/library');
       await folder(page);
       await expect(
         page.getByRole('heading', { name: 'Reference library', exact: true }),
@@ -52,7 +52,7 @@ test('dialog focus and Escape restore the invoking action inside the shadow root
   page,
 }) => {
   await mockService(page);
-  await page.goto('/');
+  await page.goto('/library');
   const open = page.getByRole('button', { name: 'Add knowledge', exact: true });
   await open.click();
   await expect(page.getByRole('dialog')).toBeVisible();
@@ -74,7 +74,7 @@ test('720px reflow, long names, folder drawer and reduced motion', async ({ page
         'source-one',
       ),
     );
-  await page.goto('/');
+  await page.goto('/library');
   await folder(page);
   await capture(page, 'library-720-long-rows');
   await page.getByRole('button', { name: 'Browse folders', exact: true }).click();
@@ -87,7 +87,7 @@ test('720px reflow, long names, folder drawer and reduced motion', async ({ page
 test('controlled query evidence and upload preview', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await mockService(page);
-  await page.goto('/');
+  await page.goto('/library');
   await folder(page);
   await page.getByRole('button', { name: 'Add knowledge', exact: true }).click();
   await page
@@ -116,7 +116,7 @@ for (const width of [1440, 390])
   test(`branded native-login screen ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 960 });
     await mockService(page, { authenticated: false });
-    await page.goto('/');
+    await page.goto('/library');
     await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toBeVisible();
     await capture(page, `login-${width}`);
   });

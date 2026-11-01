@@ -2,7 +2,7 @@
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { test, expect, type Page } from '@playwright/test';
-import { mockService } from './fixtures';
+import { openAdministration,  mockService } from './fixtures';
 async function configurationFixture(page: Page) {
   await mockService(page);
   const providers: Record<string, unknown>[] = [],
@@ -92,8 +92,8 @@ test('operator saves and checks a descriptor-backed provider before configuring 
   page,
 }) => {
   const service = await configurationFixture(page);
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.goto('/library');
+  await openAdministration(page, 'Settings');
   await page.getByRole('button', { name: 'Connect a model', exact: true }).click();
   await page.getByRole('button', { name: 'Ollama', exact: true }).click();
   await page
@@ -129,8 +129,8 @@ test('operator saves and checks a descriptor-backed provider before configuring 
 });
 test('required provider fields are validated before a write is sent', async ({ page }) => {
   const service = await configurationFixture(page);
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.goto('/library');
+  await openAdministration(page, 'Settings');
   await page.getByRole('button', { name: 'Connect a model', exact: true }).click();
   await page.getByRole('button', { name: 'Ollama', exact: true }).click();
   await page.getByRole('button', { name: 'Save provider', exact: true }).click();
@@ -142,10 +142,10 @@ for (const width of [1440, 390])
   test(`controlled Settings review ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
     await configurationFixture(page);
-    await page.goto('/');
+    await page.goto('/library');
     if (width < 700)
       await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
-    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await openAdministration(page, 'Settings');
     await expect(page.getByRole('heading', { name: 'Providers', exact: true })).toBeVisible();
     await page.evaluate(() => {
       document
@@ -180,9 +180,9 @@ test('mobile sections retain a visible label and provider Back retains entered d
 }) => {
   await page.setViewportSize({ width: 390, height: 900 });
   await configurationFixture(page);
-  await page.goto('/');
+  await page.goto('/library');
   await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await openAdministration(page, 'Settings');
   await expect(page.getByRole('combobox', { name: 'Settings section', exact: true })).toHaveValue(
     'providers',
   );
@@ -206,8 +206,8 @@ test('mobile sections retain a visible label and provider Back retains entered d
 test('Settings keeps local navigation visible while its form pane scrolls', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 600 });
   await configurationFixture(page);
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.goto('/library');
+  await openAdministration(page, 'Settings');
   await page.getByRole('button', { name: 'Connect a model', exact: true }).click();
   await page.getByRole('button', { name: 'Ollama', exact: true }).click();
   const navigation = page.getByRole('navigation', { name: 'Settings sections', exact: true });
@@ -290,8 +290,8 @@ test('deployment diagnostics keep an unprobed store unknown and expose no edit a
       }),
     }),
   );
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.goto('/library');
+  await openAdministration(page, 'Settings');
   await page.getByRole('button', { name: 'Storage & indexing', exact: true }).click();
   await expect(
     page.getByText('Managed by your deployment administrator.', { exact: true }),

@@ -15,11 +15,11 @@ for (const width of [1440, 390])
       const identity = structuredClone(context);
       identity.tenants[0].name = longOrganization;
       await page.route('**/bff/api/v1/context', (route) => route.fulfill({ json: identity }));
-      await page.goto('/');
+      await page.goto('/library');
       const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
       if (width === 390) await menu.click();
       const navigation = page.getByRole('navigation', { name: 'Main navigation', exact: true });
-      for (const label of ['Library', 'Chat', 'Activity', 'Settings']) {
+      for (const label of ['Chat', 'Library']) {
         const button = navigation.getByRole('button', { name: label, exact: true });
         await expect(button).toHaveAccessibleName(label);
         const icon = button.locator('ffk-icon');
@@ -69,5 +69,21 @@ for (const width of [1440, 390])
         'aria-current',
         'page',
       );
+      if (width === 390) await page.keyboard.press('Escape');
+      await page.getByRole('button', {name:'Account menu',exact:true}).click();
+      const account = page.getByRole('menu',{name:'Account menu',exact:true});
+      const accountIcon = (await account.getByRole('menuitem',{name:'Your account',exact:true}).locator('ffk-icon').boundingBox())!;
+      for (const label of ['Activity','Settings']) {
+        const item = account.getByRole('menuitem',{name:label,exact:true});
+        await expect(item).toHaveAccessibleName(label);
+        const icon = item.locator('ffk-icon');
+        await expect(icon).toBeVisible();
+        await expect(icon.locator('svg')).toHaveAttribute('aria-hidden','true');
+        const size = (await icon.boundingBox())!;
+        expect(size.width).toBe(accountIcon.width);
+        expect(size.height).toBe(accountIcon.height);
+        const target = (await item.boundingBox())!;
+        expect(target.height).toBeGreaterThanOrEqual(width === 390 ? 44 : 40);
+      }
     });
   });
