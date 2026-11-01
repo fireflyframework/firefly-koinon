@@ -902,6 +902,32 @@ export interface GoogleWorkspaceSettings {
  "customer_id"?: string | null;
  "membership_mode"?: "direct" | "transitive";
 }
+export interface HealthComponent {
+ "id": "database-primary" | "database-documents" | "database-documents-control" | "database-structured" | "database-structured-control" | "storage-documents" | "storage-structured" | "indexes-documents" | "indexes-structured" | "ingestion-documents" | "ingestion-structured" | "model-configuration" | "communications" | "workers";
+ "configured": boolean;
+ "status": "passed" | "failed" | "unknown" | "disabled";
+ "basis": "observed" | "configuration" | "none";
+ "freshness": "current" | "stale" | "unknown";
+ "observed_at"?: string | null;
+ "expires_at"?: string | null;
+ "reason": "DATABASE_OK" | "DATABASE_UNAVAILABLE" | "RUNTIME_ROLE_UNVERIFIED" | "RUNTIME_ROLE_UNSAFE" | "MODULE_DISABLED" | "STORAGE_NOT_PROBED" | "INDEXES_VERIFIED" | "INDEXES_INCOMPLETE" | "INDEXES_NOT_PROBED" | "NO_INDEXES" | "INGESTION_STATE_OBSERVED" | "INGESTION_FAILURES" | "MODEL_CONFIGURATION_PRESENT" | "MODEL_CONFIGURATION_INCOMPLETE" | "PROVIDER_NOT_PROBED" | "COMMUNICATIONS_DISABLED" | "COMMUNICATIONS_CONFIGURED" | "COMMUNICATIONS_INCOMPLETE" | "WORKER_LIVENESS_UNKNOWN" | "OBSERVATION_UNAVAILABLE" | "OBSERVATION_BOUNDED" | "OBSERVATION_STALE";
+ "remediation": "none" | "retry_read" | "review_configuration" | "review_indexes" | "review_ingestion" | "review_communications" | "review_worker";
+ "counts"?: HealthCounts | null;
+ "coverage": "complete" | "partial" | "unavailable";
+}
+export interface HealthCounts {
+ "observed_total": number;
+ "observed_ready"?: number;
+ "observed_pending"?: number;
+ "observed_running"?: number;
+ "observed_failed"?: number;
+}
+export interface HealthSummary {
+ "passed"?: number;
+ "failed"?: number;
+ "unknown"?: number;
+ "disabled"?: number;
+}
 export interface IdentityActivation {
  "expected_revision": number;
  "validation_id": string;
@@ -1679,6 +1705,14 @@ export interface PendingKnowledgeCommit {
  "intent_id": string;
  "reason"?: "commit_outcome_unresolved";
 }
+export interface PlatformHealth {
+ "tenant_id": string;
+ "checked_at": string;
+ "summary"?: HealthSummary;
+ "components": Array<HealthComponent>;
+}
+export interface PlatformValue {
+}
 export interface PrivateChunkPage {
  "items": Array<PrivateChunkView>;
  "total": number;
@@ -2043,6 +2077,44 @@ export interface StructuredKnowledgeSettings {
  "generation_candidates": number;
  "max_refine_retries": number;
  "grounding_min_confidence": number;
+}
+export interface SystemArtifact {
+ "component": "backend" | "documents" | "structured" | "storage" | "python-sdk" | "framework";
+ "kind": "license" | "notice" | "sbom";
+ "present"?: boolean | null;
+ "sha256"?: string | null;
+ "content_type"?: "text/plain" | "application/json" | null;
+}
+export interface SystemCapabilities {
+ "knowledge_enabled": boolean;
+ "mcp_enabled": boolean;
+ "communications_enabled": boolean;
+ "scheduled_consumers_enabled": boolean;
+}
+export interface SystemComponentVersion {
+ "id": "backend" | "documents" | "structured" | "storage" | "python-sdk" | "framework";
+ "distribution": "firefly-koinon" | "firefly-koinon-documents" | "firefly-koinon-structured" | "firefly-koinon-storage" | "firefly-koinon-sdk" | "pyfly";
+ "version"?: string | null;
+ "available": boolean;
+}
+export interface SystemInformation {
+ "tenant_id": string;
+ "checked_at": string;
+ "product"?: "koinon";
+ "components": Array<SystemComponentVersion>;
+ "serving_role": "api" | "worker" | "unknown";
+ "capabilities": SystemCapabilities;
+ "limits": Array<SystemLimit>;
+ "build_revision"?: string | null;
+ "license_expression"?: "Apache-2.0";
+ "copyright"?: "Copyright 2026 Firefly Software Foundation";
+ "artifacts": Array<SystemArtifact>;
+}
+export interface SystemLimit {
+ "id": "api_capacity" | "worker_capacity" | "worker_concurrency" | "max_index_workspaces" | "mcp_max_concurrency" | "mcp_max_request_bytes" | "mcp_max_response_bytes" | "ingestion_raw_max_bytes" | "ingestion_scratch_max_bytes" | "ingestion_child_rss_max_bytes";
+ "value": number;
+ "unit": "operations" | "bytes" | "workspaces";
+ "scope": "process" | "file";
 }
 export interface TableColumnBindingPage {
  "manifest": TableCoordinateManifest;

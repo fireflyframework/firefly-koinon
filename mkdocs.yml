@@ -131,6 +131,7 @@ nav:
           - Worker roles and scaling: operations/workers.md
           - Shared PostgreSQL cache: operations/postgresql-cache.md
           - Configuration and observations: operations/configuration.md
+          - Platform health: operations/platform-health.md
           - Activity summaries: operations/activity-summaries.md
           - MCP authentication: operations/mcp-authentication.md
       - Storage and ECM:

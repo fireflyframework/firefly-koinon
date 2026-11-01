@@ -4192,6 +4192,38 @@
       "customer_id": "customer_id-value",
       "membership_mode": "direct"
     },
+    "HealthComponent": {
+      "id": "database-primary",
+      "configured": false,
+      "status": "passed",
+      "basis": "observed",
+      "freshness": "current",
+      "observed_at": "2026-10-27T12:34:56Z",
+      "expires_at": "2026-10-27T12:34:56Z",
+      "reason": "DATABASE_OK",
+      "remediation": "none",
+      "counts": {
+        "observed_total": 1,
+        "observed_ready": 1,
+        "observed_pending": 1,
+        "observed_running": 1,
+        "observed_failed": 1
+      },
+      "coverage": "complete"
+    },
+    "HealthCounts": {
+      "observed_total": 1,
+      "observed_ready": 1,
+      "observed_pending": 1,
+      "observed_running": 1,
+      "observed_failed": 1
+    },
+    "HealthSummary": {
+      "passed": 1,
+      "failed": 1,
+      "unknown": 1,
+      "disabled": 1
+    },
     "IdentityActivation": {
       "expected_revision": 1,
       "validation_id": "validation_id-value"
@@ -7407,6 +7439,38 @@
       "last_used_at": "2026-10-27T12:34:56Z",
       "created_at": "2026-10-27T12:34:56Z"
     },
+    "PlatformHealth": {
+      "tenant_id": "tenant_id-value",
+      "checked_at": "2026-10-27T12:34:56Z",
+      "summary": {
+        "passed": 1,
+        "failed": 1,
+        "unknown": 1,
+        "disabled": 1
+      },
+      "components": [
+        {
+          "id": "database-primary",
+          "configured": false,
+          "status": "passed",
+          "basis": "observed",
+          "freshness": "current",
+          "observed_at": "2026-10-27T12:34:56Z",
+          "expires_at": "2026-10-27T12:34:56Z",
+          "reason": "DATABASE_OK",
+          "remediation": "none",
+          "counts": {
+            "observed_total": 1,
+            "observed_ready": 1,
+            "observed_pending": 1,
+            "observed_running": 1,
+            "observed_failed": 1
+          },
+          "coverage": "complete"
+        }
+      ]
+    },
+    "PlatformValue": {},
     "PoolUsage": {
       "size": 1,
       "checked_out": 1,
@@ -8648,6 +8712,71 @@
       "generation_candidates": 1,
       "max_refine_retries": 1,
       "grounding_min_confidence": 0.25
+    },
+    "SystemArtifact": {
+      "component": "backend",
+      "kind": "license",
+      "present": false,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "content_type": "text/plain"
+    },
+    "SystemCapabilities": {
+      "knowledge_enabled": false,
+      "mcp_enabled": false,
+      "communications_enabled": false,
+      "scheduled_consumers_enabled": false
+    },
+    "SystemComponentVersion": {
+      "id": "backend",
+      "distribution": "firefly-koinon",
+      "version": "version-value",
+      "available": false
+    },
+    "SystemInformation": {
+      "tenant_id": "tenant_id-value",
+      "checked_at": "2026-10-27T12:34:56Z",
+      "product": "koinon",
+      "components": [
+        {
+          "id": "backend",
+          "distribution": "firefly-koinon",
+          "version": "version-value",
+          "available": false
+        }
+      ],
+      "serving_role": "api",
+      "capabilities": {
+        "knowledge_enabled": false,
+        "mcp_enabled": false,
+        "communications_enabled": false,
+        "scheduled_consumers_enabled": false
+      },
+      "limits": [
+        {
+          "id": "api_capacity",
+          "value": 1,
+          "unit": "operations",
+          "scope": "process"
+        }
+      ],
+      "build_revision": "build_revision-value",
+      "license_expression": "Apache-2.0",
+      "copyright": "Copyright 2026 Firefly Software Foundation",
+      "artifacts": [
+        {
+          "component": "backend",
+          "kind": "license",
+          "present": false,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "content_type": "text/plain"
+        }
+      ]
+    },
+    "SystemLimit": {
+      "id": "api_capacity",
+      "value": 1,
+      "unit": "operations",
+      "scope": "process"
     },
     "TableColumnBindingPage": {
       "manifest": {

@@ -145,7 +145,7 @@ class McpOAuthService:
         scopes = set(params.get("scope", "catalog:read").split())
         for scope in tuple(scopes):
             scopes.update(DEPENDENCIES.get(scope, ()))
-        if not scopes or not scopes <= set(client["scopes"]):
+        if not scopes or not scopes <= MCP_SCOPES or not scopes <= set(client["scopes"]):
             raise OAuthError("invalid_scope")
         if len(params.get("state", "")) > 1024:
             raise OAuthError()

@@ -19,8 +19,8 @@ Choose an area, then an operation. Each operation records its exact SDK mappings
 | [Corporate identity](corporate-identity.md) | 17 |
 | [Personal profiles and tokens](account.md) | 11 |
 | [Applications and MCP](applications-mcp.md) | 22 |
-| [Platform configuration and operations](platform.md) | 36 |
+| [Platform configuration and operations](platform.md) | 38 |
 
-These 240 canonical operations are separate from the [qualified retained glossary API](../sdk-api.md#qualified-retained-glossary-api).
+These 242 canonical operations are separate from the [qualified retained glossary API](../sdk-api.md#qualified-retained-glossary-api).
 
 [Browse retained glossary operation details](retained-glossary.md).

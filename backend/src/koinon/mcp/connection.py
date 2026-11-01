@@ -95,6 +95,7 @@ class McpConnectionService:
                     requires_app=name in REVIEW_TOOLS,
                 )
                 for name, scopes in TOOL_SCOPES.items()
+                if name not in {"koinon_platform_health", "koinon_system_information"}
             ),
             review=McpReviewSupport(
                 supported=enabled and bool(self.config.get("koinon.knowledge.enabled", True))

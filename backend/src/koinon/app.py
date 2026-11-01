@@ -108,6 +108,7 @@ def create_application(config: dict, *, role: ProcessRole = "api"):
         "koinon.catalog",
         "koinon.bootstrap",
         "koinon.activity",
+        "koinon.platform",
         "koinon.jobs",
         "koinon.assistants",
         "koinon.organization_chat",
@@ -189,6 +190,7 @@ def create_application(config: dict, *, role: ProcessRole = "api"):
                     "koinon.sharing",
                     "koinon.communications",
                     "koinon.activity",
+                    "koinon.platform",
                 )
             )
             and getattr(cls, "__pyfly_stereotype__", "") in ("controller", "rest_controller")
@@ -235,6 +237,7 @@ def create_application(config: dict, *, role: ProcessRole = "api"):
 
     install_communications(app, context)
     if mcp_settings.enabled:
+        from koinon.mcp.platform_tools import platform_authorization
         from koinon.mcp_auth.http import install_oauth
         from koinon.mcp_auth.service import McpOAuthService
 
@@ -253,6 +256,7 @@ def create_application(config: dict, *, role: ProcessRole = "api"):
             mcp_settings,
             canonical_bearer,
             application_context=context,
+            platform_authorization=platform_authorization(context),
             installation_branding=BrandingValues.model_validate(Config(values).get("koinon.branding", {})),
             oauth_enabled=Config(values).get("koinon.mcp.oauth.enabled", False),
             can_request_scopes=can_request_scopes,

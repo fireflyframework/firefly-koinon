@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "api_prefix": "/api/v1",
   "status": "Canonical API contract; development snapshot",
-  "canonical_operation_count": 240,
+  "canonical_operation_count": 242,
   "qualified_compatibility_operations": [
     {
       "operation": "GlossaryController.list_terms",
@@ -9128,6 +9128,62 @@
       "response_schema": "OrganizationProfileMapping",
       "success_status": 200,
       "source_sha256": "150f5e13f65b285e533a7da858a36cc3c0d15e75155835c89cf0d640af08f67c",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/platform/health",
+      "category": "canonical",
+      "operation": "PlatformController.health",
+      "source": "backend/src/koinon/platform/controllers.py",
+      "line": 21,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "PlatformHealth",
+      "sdk_python": "platform_health",
+      "sdk_typescript": "platformHealth.health",
+      "sdk_java": "client.platformHealth.health",
+      "request_schema": null,
+      "response_schema": "PlatformHealth",
+      "success_status": 200,
+      "source_sha256": "4a8fe2e5e463308ec9bab9e6658e5ac30d0dfdd162371651e58ef590f6fc16e4",
+      "sdk_typescript_factory": "createPlatformHealthApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/platform-health",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/platform/system-information",
+      "category": "canonical",
+      "operation": "PlatformController.system_information",
+      "source": "backend/src/koinon/platform/controllers.py",
+      "line": 25,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "SystemInformation",
+      "sdk_python": "system_information",
+      "sdk_typescript": "platformHealth.systemInformation",
+      "sdk_java": "client.platformHealth.systemInformation",
+      "request_schema": null,
+      "response_schema": "SystemInformation",
+      "success_status": 200,
+      "source_sha256": "4a8fe2e5e463308ec9bab9e6658e5ac30d0dfdd162371651e58ef590f6fc16e4",
+      "sdk_typescript_factory": "createPlatformHealthApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/platform-health",
       "encoding": "application/json",
       "headers": []
     },

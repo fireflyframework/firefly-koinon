@@ -59,3 +59,8 @@ Discovery and token responses do not set browser cookies. The OAuth token backch
 The implementation follows the [MCP authorization resource and audience requirements](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization) and [official OpenAI authentication documentation](https://developers.openai.com/plugins/build/auth). Hosted Claude and ChatGPT connection acceptance, production TLS, operator callback registration and external identity-provider login remain deployment qualification steps.
 
 Copyright 2026 Firefly Software Foundation. Licensed under Apache-2.0. Made with <3.
+
+
+## Organization-wide operational reads
+
+The `koinon_platform_health` and `koinon_system_information` tools require a current organization-wide administrator PAT with `catalog:read` and `audit:read`, without workspace, asset or resource bounds. Discovery checks current authority on each request and hides these two tools when it cannot establish that authority. Invocation independently repeats the check through the canonical API. `audit:read` is not an OAuth-requestable scope. Workspace-bound OAuth connections cannot use these tools; their consent remains workspace-bound. See [Platform health](platform-health.md) for observation limits and unknown evidence.

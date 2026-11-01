@@ -47,6 +47,7 @@ add("CommunicationsController", "CommunicationsApi", {
 })
 add("CommunicationsController", "EmailInvitationsApi", {"inspect":"review", "accept":"accept", "decline":"decline"})
 add("NotificationController", "NotificationsApi", {"page":"list", "unread_count":"unreadCount", "read":"markRead", "preferences":"preferences", "preferences_update":"updatePreferences", "preferences_preview":"previewSchedule", "email_preview":"previewEmail"})
+add("PlatformController", "PlatformHealthApi", {"health": "health", "system_information": "systemInformation"})
 add("ActivityController", "ActivityApi", {"personal": "personal", "administrative": "administrative"})
 add("AuditController", "AuditApi", {"audit": "list"})
 add("DatasetFilesController", "DatasetsApi", {"append": "appendFile"})

@@ -10418,6 +10418,241 @@
       "title": "GoogleWorkspaceSettings",
       "type": "object"
     },
+    "HealthComponent": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "enum": [
+            "database-primary",
+            "database-documents",
+            "database-documents-control",
+            "database-structured",
+            "database-structured-control",
+            "storage-documents",
+            "storage-structured",
+            "indexes-documents",
+            "indexes-structured",
+            "ingestion-documents",
+            "ingestion-structured",
+            "model-configuration",
+            "communications",
+            "workers"
+          ],
+          "title": "Id",
+          "type": "string"
+        },
+        "configured": {
+          "title": "Configured",
+          "type": "boolean"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "failed",
+            "unknown",
+            "disabled"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "basis": {
+          "enum": [
+            "observed",
+            "configuration",
+            "none"
+          ],
+          "title": "Basis",
+          "type": "string"
+        },
+        "freshness": {
+          "enum": [
+            "current",
+            "stale",
+            "unknown"
+          ],
+          "title": "Freshness",
+          "type": "string"
+        },
+        "observed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observed At"
+        },
+        "expires_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expires At"
+        },
+        "reason": {
+          "enum": [
+            "DATABASE_OK",
+            "DATABASE_UNAVAILABLE",
+            "RUNTIME_ROLE_UNVERIFIED",
+            "RUNTIME_ROLE_UNSAFE",
+            "MODULE_DISABLED",
+            "STORAGE_NOT_PROBED",
+            "INDEXES_VERIFIED",
+            "INDEXES_INCOMPLETE",
+            "INDEXES_NOT_PROBED",
+            "NO_INDEXES",
+            "INGESTION_STATE_OBSERVED",
+            "INGESTION_FAILURES",
+            "MODEL_CONFIGURATION_PRESENT",
+            "MODEL_CONFIGURATION_INCOMPLETE",
+            "PROVIDER_NOT_PROBED",
+            "COMMUNICATIONS_DISABLED",
+            "COMMUNICATIONS_CONFIGURED",
+            "COMMUNICATIONS_INCOMPLETE",
+            "WORKER_LIVENESS_UNKNOWN",
+            "OBSERVATION_UNAVAILABLE",
+            "OBSERVATION_BOUNDED",
+            "OBSERVATION_STALE"
+          ],
+          "title": "Reason",
+          "type": "string"
+        },
+        "remediation": {
+          "enum": [
+            "none",
+            "retry_read",
+            "review_configuration",
+            "review_indexes",
+            "review_ingestion",
+            "review_communications",
+            "review_worker"
+          ],
+          "title": "Remediation",
+          "type": "string"
+        },
+        "counts": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HealthCounts"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "coverage": {
+          "enum": [
+            "complete",
+            "partial",
+            "unavailable"
+          ],
+          "title": "Coverage",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "configured",
+        "status",
+        "basis",
+        "freshness",
+        "reason",
+        "remediation",
+        "coverage"
+      ],
+      "title": "HealthComponent",
+      "type": "object"
+    },
+    "HealthCounts": {
+      "additionalProperties": true,
+      "properties": {
+        "observed_total": {
+          "maximum": 1000,
+          "minimum": 0,
+          "title": "Observed Total",
+          "type": "integer"
+        },
+        "observed_ready": {
+          "default": 0,
+          "maximum": 1000,
+          "minimum": 0,
+          "title": "Observed Ready",
+          "type": "integer"
+        },
+        "observed_pending": {
+          "default": 0,
+          "maximum": 1000,
+          "minimum": 0,
+          "title": "Observed Pending",
+          "type": "integer"
+        },
+        "observed_running": {
+          "default": 0,
+          "maximum": 1000,
+          "minimum": 0,
+          "title": "Observed Running",
+          "type": "integer"
+        },
+        "observed_failed": {
+          "default": 0,
+          "maximum": 1000,
+          "minimum": 0,
+          "title": "Observed Failed",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "observed_total"
+      ],
+      "title": "HealthCounts",
+      "type": "object"
+    },
+    "HealthSummary": {
+      "additionalProperties": true,
+      "properties": {
+        "passed": {
+          "default": 0,
+          "maximum": 16,
+          "minimum": 0,
+          "title": "Passed",
+          "type": "integer"
+        },
+        "failed": {
+          "default": 0,
+          "maximum": 16,
+          "minimum": 0,
+          "title": "Failed",
+          "type": "integer"
+        },
+        "unknown": {
+          "default": 0,
+          "maximum": 16,
+          "minimum": 0,
+          "title": "Unknown",
+          "type": "integer"
+        },
+        "disabled": {
+          "default": 0,
+          "maximum": 16,
+          "minimum": 0,
+          "title": "Disabled",
+          "type": "integer"
+        }
+      },
+      "title": "HealthSummary",
+      "type": "object"
+    },
     "IdentityActivation": {
       "additionalProperties": false,
       "properties": {
@@ -20509,6 +20744,46 @@
       "title": "PersonalToken",
       "type": "object"
     },
+    "PlatformHealth": {
+      "additionalProperties": true,
+      "properties": {
+        "tenant_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "checked_at": {
+          "format": "date-time",
+          "title": "Checked At",
+          "type": "string"
+        },
+        "summary": {
+          "$ref": "#/$defs/HealthSummary"
+        },
+        "components": {
+          "items": {
+            "$ref": "#/$defs/HealthComponent"
+          },
+          "maxItems": 16,
+          "title": "Components",
+          "type": "array"
+        }
+      },
+      "required": [
+        "tenant_id",
+        "checked_at",
+        "components"
+      ],
+      "title": "PlatformHealth",
+      "type": "object"
+    },
+    "PlatformValue": {
+      "additionalProperties": true,
+      "properties": {},
+      "title": "PlatformValue",
+      "type": "object"
+    },
     "PoolUsage": {
       "additionalProperties": true,
       "properties": {
@@ -24210,6 +24485,308 @@
       "title": "StructuredKnowledgeSettings",
       "type": "object"
     },
+    "SystemArtifact": {
+      "additionalProperties": true,
+      "properties": {
+        "component": {
+          "enum": [
+            "backend",
+            "documents",
+            "structured",
+            "storage",
+            "python-sdk",
+            "framework"
+          ],
+          "title": "Component",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "license",
+            "notice",
+            "sbom"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "present": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Present"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sha256"
+        },
+        "content_type": {
+          "anyOf": [
+            {
+              "enum": [
+                "text/plain",
+                "application/json"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Content Type"
+        }
+      },
+      "required": [
+        "component",
+        "kind"
+      ],
+      "title": "SystemArtifact",
+      "type": "object"
+    },
+    "SystemCapabilities": {
+      "additionalProperties": true,
+      "properties": {
+        "knowledge_enabled": {
+          "title": "Knowledge Enabled",
+          "type": "boolean"
+        },
+        "mcp_enabled": {
+          "title": "Mcp Enabled",
+          "type": "boolean"
+        },
+        "communications_enabled": {
+          "title": "Communications Enabled",
+          "type": "boolean"
+        },
+        "scheduled_consumers_enabled": {
+          "title": "Scheduled Consumers Enabled",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "knowledge_enabled",
+        "mcp_enabled",
+        "communications_enabled",
+        "scheduled_consumers_enabled"
+      ],
+      "title": "SystemCapabilities",
+      "type": "object"
+    },
+    "SystemComponentVersion": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "enum": [
+            "backend",
+            "documents",
+            "structured",
+            "storage",
+            "python-sdk",
+            "framework"
+          ],
+          "title": "Id",
+          "type": "string"
+        },
+        "distribution": {
+          "enum": [
+            "firefly-koinon",
+            "firefly-koinon-documents",
+            "firefly-koinon-structured",
+            "firefly-koinon-storage",
+            "firefly-koinon-sdk",
+            "pyfly"
+          ],
+          "title": "Distribution",
+          "type": "string"
+        },
+        "version": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9.!+_-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Version"
+        },
+        "available": {
+          "title": "Available",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "distribution",
+        "available"
+      ],
+      "title": "SystemComponentVersion",
+      "type": "object"
+    },
+    "SystemInformation": {
+      "additionalProperties": true,
+      "properties": {
+        "tenant_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "checked_at": {
+          "format": "date-time",
+          "title": "Checked At",
+          "type": "string"
+        },
+        "product": {
+          "const": "koinon",
+          "default": "koinon",
+          "title": "Product",
+          "type": "string"
+        },
+        "components": {
+          "items": {
+            "$ref": "#/$defs/SystemComponentVersion"
+          },
+          "maxItems": 6,
+          "title": "Components",
+          "type": "array"
+        },
+        "serving_role": {
+          "enum": [
+            "api",
+            "worker",
+            "unknown"
+          ],
+          "title": "Serving Role",
+          "type": "string"
+        },
+        "capabilities": {
+          "$ref": "#/$defs/SystemCapabilities"
+        },
+        "limits": {
+          "items": {
+            "$ref": "#/$defs/SystemLimit"
+          },
+          "maxItems": 10,
+          "title": "Limits",
+          "type": "array"
+        },
+        "build_revision": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{40}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Build Revision"
+        },
+        "license_expression": {
+          "const": "Apache-2.0",
+          "default": "Apache-2.0",
+          "title": "License Expression",
+          "type": "string"
+        },
+        "copyright": {
+          "const": "Copyright 2026 Firefly Software Foundation",
+          "default": "Copyright 2026 Firefly Software Foundation",
+          "title": "Copyright",
+          "type": "string"
+        },
+        "artifacts": {
+          "items": {
+            "$ref": "#/$defs/SystemArtifact"
+          },
+          "maxItems": 18,
+          "title": "Artifacts",
+          "type": "array"
+        }
+      },
+      "required": [
+        "tenant_id",
+        "checked_at",
+        "components",
+        "serving_role",
+        "capabilities",
+        "limits",
+        "artifacts"
+      ],
+      "title": "SystemInformation",
+      "type": "object"
+    },
+    "SystemLimit": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "enum": [
+            "api_capacity",
+            "worker_capacity",
+            "worker_concurrency",
+            "max_index_workspaces",
+            "mcp_max_concurrency",
+            "mcp_max_request_bytes",
+            "mcp_max_response_bytes",
+            "ingestion_raw_max_bytes",
+            "ingestion_scratch_max_bytes",
+            "ingestion_child_rss_max_bytes"
+          ],
+          "title": "Id",
+          "type": "string"
+        },
+        "value": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "Value",
+          "type": "integer"
+        },
+        "unit": {
+          "enum": [
+            "operations",
+            "bytes",
+            "workspaces"
+          ],
+          "title": "Unit",
+          "type": "string"
+        },
+        "scope": {
+          "enum": [
+            "process",
+            "file"
+          ],
+          "title": "Scope",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "value",
+        "unit",
+        "scope"
+      ],
+      "title": "SystemLimit",
+      "type": "object"
+    },
     "TableColumnBindingPage": {
       "additionalProperties": true,
       "properties": {
@@ -26046,6 +26623,36 @@
     }
   },
   "models": {
+    "PlatformValue": {
+      "$ref": "#/$defs/PlatformValue"
+    },
+    "HealthCounts": {
+      "$ref": "#/$defs/HealthCounts"
+    },
+    "HealthComponent": {
+      "$ref": "#/$defs/HealthComponent"
+    },
+    "HealthSummary": {
+      "$ref": "#/$defs/HealthSummary"
+    },
+    "PlatformHealth": {
+      "$ref": "#/$defs/PlatformHealth"
+    },
+    "SystemComponentVersion": {
+      "$ref": "#/$defs/SystemComponentVersion"
+    },
+    "SystemCapabilities": {
+      "$ref": "#/$defs/SystemCapabilities"
+    },
+    "SystemLimit": {
+      "$ref": "#/$defs/SystemLimit"
+    },
+    "SystemArtifact": {
+      "$ref": "#/$defs/SystemArtifact"
+    },
+    "SystemInformation": {
+      "$ref": "#/$defs/SystemInformation"
+    },
     "AvailabilityRequest": {
       "$ref": "#/$defs/AvailabilityRequest"
     },

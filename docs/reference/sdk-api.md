@@ -2,13 +2,13 @@
 
 Python, Java and TypeScript expose the same canonical headless API. The table records concrete SDK methods; it does not count browser-only authentication or retained domain routes outside this contract.
 
-This canonical contract contains 240 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
+This canonical contract contains 242 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
 
 [Download the operation manifest](sdk-contract.json) and [complete wire schemas](sdk-schemas.json). The maintained generator checks source mappings and schemas without starting the backend.
 
 Browse [API areas](api/index.md), [wire models](models/index.md) and the [SDK runtime reference](sdk-runtime.md) for parameters, constraints and connection ownership.
 
-TypeScript communications methods use the separately loaded `createCommunicationsApi` factory from `@fireflyframework/koinon-sdk/communications`. Pass the same `KoinonTransport` used to construct `KoinonClient`; the `communications.*` names below refer to the returned API. This keeps email and notification management out of applications that only use knowledge or chat. Availability observations similarly use `createAvailabilityApi` from `@fireflyframework/koinon-sdk/availability`; `availability.*` refers to its returned API. Python exposes those methods on `KoinonClient`; Java exposes the corresponding typed API groups.
+TypeScript communications methods use the separately loaded `createCommunicationsApi` factory from `@fireflyframework/koinon-sdk/communications`. Pass the same `KoinonTransport` used to construct `KoinonClient`; the `communications.*` names below refer to the returned API. This keeps email and notification management out of applications that only use knowledge or chat. Availability observations similarly use `createAvailabilityApi` from `@fireflyframework/koinon-sdk/availability`; `availability.*` refers to its returned API. Platform observations use `createPlatformHealthApi` from `@fireflyframework/koinon-sdk/platform-health`; `platformHealth.*` refers to its returned API. Python exposes those methods on `KoinonClient`; Java exposes the corresponding typed API groups.
 
 | API operation | Python client | TypeScript client | Java client | Response |
 | --- | --- | --- | --- | --- |
@@ -235,6 +235,8 @@ TypeScript communications methods use the separately loaded `createCommunication
 | [`PATCH /api/v1/tenants/{tenant_id}/organization/directory-settings`](api/people-access.md#organizationpeoplecontroller-update-settings) | `update_organization_directory_settings` | `organizationPeople.updateSettings` | `client.organizationPeople.updateSettings` | `OrganizationDirectorySettings` |
 | [`GET /api/v1/tenants/{tenant_id}/organization/profile-mappings/{provider_id}`](api/people-access.md#organizationpeoplecontroller-mapping) | `organization_profile_mapping` | `organizationPeople.mapping` | `client.organizationPeople.mapping` | `OrganizationProfileMapping` |
 | [`PUT /api/v1/tenants/{tenant_id}/organization/profile-mappings/{provider_id}`](api/people-access.md#organizationpeoplecontroller-update-mapping) | `update_organization_profile_mapping` | `organizationPeople.updateMapping` | `client.organizationPeople.updateMapping` | `OrganizationProfileMapping` |
+| [`GET /api/v1/tenants/{tenant_id}/platform/health`](api/platform.md#platformcontroller-health) | `platform_health` | `platformHealth.health` | `client.platformHealth.health` | `PlatformHealth` |
+| [`GET /api/v1/tenants/{tenant_id}/platform/system-information`](api/platform.md#platformcontroller-system-information) | `system_information` | `platformHealth.systemInformation` | `client.platformHealth.systemInformation` | `SystemInformation` |
 | [`GET /api/v1/profile`](api/account.md#profilecontroller-get) | `profile` | `profile.get` | `client.profile.get` | `UserProfile` |
 | [`PATCH /api/v1/profile`](api/account.md#profilecontroller-update) | `update_profile` | `profile.update` | `client.profile.update` | `UserProfile` |
 | [`GET /api/v1/profile/avatar`](api/account.md#profilecontroller-avatar) | `avatar_download` | `profile.avatarDownload` | `client.profile.avatar` | `BinaryDownload` |
