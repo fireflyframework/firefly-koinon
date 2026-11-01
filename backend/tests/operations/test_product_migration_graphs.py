@@ -22,10 +22,11 @@ def test_document_product_extension_preserves_standalone_head():
     standalone.set_main_option("path_separator", "os")
     assert ScriptDirectory.from_config(standalone).get_heads() == ["0017_embedding_sets"]
     product = ScriptDirectory.from_config(deploy.history_config("canon", versions, None))
-    assert product.get_heads() == ["0020_source_lineage"]
+    assert product.get_heads() == ["0021_pinned_originals"]
     assert product.get_revision("0018_index_provisioning").down_revision == "0017_embedding_sets"
     assert product.get_revision("0019_curated_knowledge").down_revision == "0018_index_provisioning"
     assert product.get_revision("0020_source_lineage").down_revision == "0019_curated_knowledge"
+    assert product.get_revision("0021_pinned_originals").down_revision == "0020_source_lineage"
 
 
 def test_structured_product_extension_preserves_standalone_head():

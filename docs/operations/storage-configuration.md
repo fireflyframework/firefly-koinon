@@ -41,10 +41,12 @@ koinon:
       backend: localfs
       root: /var/lib/koinon/documents
       store_originals: true
+      max_object_bytes: 268435456
     structured:
       backend: local
       root: /var/lib/koinon/structured
       presign_ttl_seconds: 86400
+      max_object_bytes: 268435456
     attachments:
       backend: local
       root: /var/lib/koinon/private-attachments
@@ -69,6 +71,8 @@ A bound attachment profile cannot change in a running instance. A restart with a
 
 ## S3
 
+The retained synchronous adapter remains available. The new queued document file-reference transport is qualified for local development, Azure and GCS; S3 does not yet implement that pinned file port. Do not advertise queued 128 MiB support from this legacy profile.
+
 ```yaml
 koinon:
   storage:
@@ -78,10 +82,12 @@ koinon:
       s3_prefix: koinon/documents
       s3_region: us-east-1
       store_originals: true
+      max_object_bytes: 268435456
     structured:
       backend: s3
       root: s3://koinon-private-data/koinon/structured
       presign_ttl_seconds: 86400
+      max_object_bytes: 268435456
     attachments:
       backend: s3
       s3_bucket: koinon-private-data
@@ -110,12 +116,14 @@ koinon:
       azure_container: koinon-private-data
       azure_prefix: koinon/documents
       store_originals: true
+      max_object_bytes: 268435456
     structured:
       backend: azure
       azure_account_url: https://storageaccount.blob.core.windows.net
       azure_container: koinon-private-data
       azure_prefix: koinon/structured
       presign_ttl_seconds: 86400
+      max_object_bytes: 268435456
     attachments:
       backend: azure
       azure_account_url: https://storageaccount.blob.core.windows.net
@@ -142,12 +150,14 @@ koinon:
       gcs_project: your-project-id
       gcs_prefix: koinon/documents
       store_originals: true
+      max_object_bytes: 268435456
     structured:
       backend: gcs
       gcs_bucket: koinon-private-data
       gcs_project: your-project-id
       gcs_prefix: koinon/structured
       presign_ttl_seconds: 86400
+      max_object_bytes: 268435456
     attachments:
       backend: gcs
       gcs_bucket: koinon-private-data
@@ -181,8 +191,8 @@ Absent aliases preserve the configured values. A product alias overrides its mat
 
 | Boundary | Current behavior |
 | --- | --- |
-| Canonical library upload | One file per request; `koinon.knowledge.max_upload_bytes` defaults to 32 MiB. Request completion and any later indexing state remain distinct. |
-| Shared Azure/GCS and private profile | `max_object_bytes`: 1–67,108,864, default 67,108,864; request timeout: integer 1–60 seconds, default 10. These are whole-object/socket budgets, not hard process deadlines. |
+| Synchronous Library upload | `koinon.knowledge.max_upload_bytes` stays at most 32 MiB. Queued source batches use the [128 MiB Library profile](../reference/library-file-ingestion.md). |
+| Shared Azure/GCS and private profile | `max_object_bytes` supports up to 268,435,456; mounted document/structured profiles need bounds covering their raw originals and artifacts. Private chat keeps its independent default. Request timeout: integer 1–60 seconds, default 10. File transfers stream in bounded SDK chunks; socket timeouts are not hard process deadlines. |
 | Private chat policy | Separate `koinon.attachments` quotas: default file 20 MiB, image 8 MiB, thread 128 MiB/100 files, selected files at most 10, expiry 86,400 seconds. Parser budgets and worker enablement remain independent of the byte store. |
 | Structured signing | Positive cloud URL lifetime of at most seven days; default profile TTL 86,400 seconds. Signing authority must be independently available. |
 | Azure/GCS governed-query scratch | Registered pinned snapshots only, at most 128 tables and an aggregate scratch-byte budget; fresh private temporary files are cleaned after success/failure/cancellation. |

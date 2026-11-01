@@ -13,6 +13,7 @@ from koinon.authorized_applications.dtos import application_dto
 from koinon.authorized_applications.entities import AuthorizedApplication
 from koinon.authorized_applications.repositories import AuthorizedApplicationRepository
 from koinon.catalog.service import CatalogService
+from koinon.communications.ports import AccountEventRecorder
 from koinon.profiles.service import ProfileService
 from koinon.security.authority import primary_authority
 from koinon.tokens.entities import PersonalToken
@@ -30,9 +31,11 @@ class AuthorizedApplicationService:
         profiles: ProfileService,
         catalog: CatalogService,
         settings: TokenSettings,
+        events: AccountEventRecorder | None = None,
     ):
         self.repository, self.tokens, self.profiles = repository, tokens, profiles
         self.catalog, self.settings = catalog, settings
+        self.events = events
 
     @primary_authority()
     async def page(
@@ -151,6 +154,18 @@ class AuthorizedApplicationService:
             row.id,
             {"client_id": client_id, "scopes": row.scopes},
         )
+        if self.events is not None:
+            await self.events.security_changed(
+                subject,
+                subject,
+                tenant_id,
+                "application_granted",
+                row.id,
+                row.name,
+                scopes=row.scopes,
+                expires_at=row.expires_at,
+                workspace_id=row.workspace_id,
+            )
         return row, credential
 
     @transactional
@@ -168,3 +183,15 @@ class AuthorizedApplicationService:
                 .values(revoked_at=row.revoked_at)
             )
             await self.catalog._audit(row.subject, row.tenant_id, action, row.id)
+            if self.events is not None:
+                await self.events.security_changed(
+                    row.subject,
+                    row.subject,
+                    row.tenant_id,
+                    "application_revoked",
+                    row.id,
+                    row.name,
+                    scopes=row.scopes,
+                    expires_at=row.expires_at,
+                    workspace_id=row.workspace_id,
+                )

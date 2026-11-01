@@ -1,0 +1,215 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<section aria-labelledby="invite-title">
+  <ffk-button variant="back" icon="chevron-left" [disabled]="busy" (click)="closed.emit()">{{
+    'Back to people' | ffkText
+  }}</ffk-button>
+  @if (result; as invitation) {
+    <header>
+      <h2 id="invite-title" #stepHeading tabindex="-1">{{ 'Invitation queued' | ffkText }}</h2>
+      <p>
+        {{ 'The invitation is addressed to' | ffkText }}
+        <strong>{{ invitation.recipient_display_name }}</strong> ({{ invitation.recipient_email }}).
+      </p>
+    </header>
+    <p>{{ 'You can follow delivery and manage this invitation from Invitations.' | ffkText }}</p>
+    <ffk-button variant="primary" (click)="closed.emit()">{{
+      'View invitations' | ffkText
+    }}</ffk-button>
+  } @else {
+    <header>
+      <h2 id="invite-title" #stepHeading tabindex="-1">
+        {{
+          (step() === 'person'
+            ? 'Choose a person'
+            : step() === 'access'
+              ? 'Choose access'
+              : 'Review invitation'
+          ) | ffkText
+        }}
+      </h2>
+      <p>
+        {{
+          'Invite someone who already has an account with your organization’s identity provider.'
+            | ffkText
+        }}
+      </p>
+    </header>
+    <ol class="steps" [attr.aria-label]="'Invitation progress' | ffkText">
+      <li [attr.aria-current]="step() === 'person' ? 'step' : null">{{ 'Person' | ffkText }}</li>
+      <li [attr.aria-current]="step() === 'access' ? 'step' : null">{{ 'Access' | ffkText }}</li>
+      <li [attr.aria-current]="step() === 'review' ? 'step' : null">{{ 'Review' | ffkText }}</li>
+    </ol>
+    @if (error || validation()) {
+      <p class="error" role="alert">{{ error || validation() | ffkText }}</p>
+    }
+    @if (step() === 'person') {
+      <ng-content select="[ffkInvitationDirectory]" />
+      <ffk-search-field
+        [value]="query"
+        [label]="'Search identity directory' | ffkText"
+        [placeholder]="'Name or work email' | ffkText"
+        [actionLabel]="'Search' | ffkText"
+        (valueChange)="query = $event"
+        (searchSubmitted)="search()"
+      />
+      <p class="help">
+        {{
+          'Select a directory result. The invitation can only be accepted by that person’s existing account.'
+            | ffkText
+        }}
+      </p>
+      @if (searching) {
+        <ffk-skeleton width="70%" height="3px" [label]="'Searching directory' | ffkText" />
+      }
+      @if (recipients; as page) {
+        <ul class="recipient-list">
+          @for (person of page.items; track person.recipient_ref ?? $index) {
+            <li>
+              <button
+                type="button"
+                class="recipient-choice"
+                [disabled]="busy || !eligible(person)"
+                [attr.aria-pressed]="selected()?.recipient_ref === person.recipient_ref"
+                (click)="selectRecipient(person)"
+              >
+                <span class="avatar" aria-hidden="true">{{ initials(person.display_name) }}</span
+                ><span class="person"
+                  ><strong>{{ person.display_name }}</strong
+                  ><span>{{ person.email || ('No delivery address' | ffkText) }}</span
+                  ><small>{{ person.provider_label }}</small>
+                  @if (eligibilityHelp(person)) {
+                    <small class="eligibility">{{ eligibilityHelp(person) | ffkText }}</small>
+                  }</span
+                ><span class="selection">{{
+                  (selected()?.recipient_ref === person.recipient_ref
+                    ? 'Selected'
+                    : eligible(person)
+                      ? 'Select'
+                      : 'Unavailable'
+                  ) | ffkText
+                }}</span>
+              </button>
+            </li>
+          } @empty {
+            <li class="empty">
+              <ffk-icon name="users" />
+              <h3>{{ 'No matching people' | ffkText }}</h3>
+              <p>
+                {{
+                  'Try a name or work email. If the person is missing, check the identity directory connection.'
+                    | ffkText
+                }}
+              </p>
+            </li>
+          }
+        </ul>
+        @if (page.next_cursor) {
+          <ffk-button [disabled]="searching" (click)="search(page.next_cursor)">{{
+            'More people' | ffkText
+          }}</ffk-button>
+        }
+      } @else if (!searching) {
+        <p class="empty-prompt">
+          {{ 'Search your connected directory to choose the recipient.' | ffkText }}
+        </p>
+      }
+      <div class="actions">
+        <ffk-button variant="primary" [disabled]="busy || !selected()" (click)="advance()">{{
+          'Continue' | ffkText
+        }}</ffk-button>
+      </div>
+    } @else if (step() === 'access') {
+      <div class="recipient-summary">
+        <ffk-icon name="user" />
+        <div>
+          <strong>{{ selected()?.display_name }}</strong
+          ><span>{{ selected()?.email }}</span>
+        </div>
+      </div>
+      <form (ngSubmit)="advance()">
+        <label
+          >{{ 'Access scope' | ffkText
+          }}<select name="scope" [(ngModel)]="scopeId" [disabled]="busy">
+            @if (allowOrganization) {
+              <option value="">{{ 'Entire organization' | ffkText }}</option>
+            } @else {
+              <option value="" disabled>{{ 'Choose a workspace' | ffkText }}</option>
+            }
+            @for (scope of scopes; track scope.id) {
+              <option [value]="scope.id">{{ scope.name }}</option>
+            }</select
+          ><small>{{
+            'Workspace access shares knowledge in that workspace. Personal conversations, folders and memory stay private.'
+              | ffkText
+          }}</small></label
+        >
+        <label
+          >{{ 'Role' | ffkText
+          }}<select name="role" [(ngModel)]="role" [disabled]="busy">
+            @for (option of roles; track option.id) {
+              <option [value]="option.id">{{ option.label | ffkText }}</option>
+            }</select
+          ><small>{{ roleDescription() | ffkText }}</small></label
+        >
+        <label
+          >{{ 'Invitation expires in' | ffkText
+          }}<select name="expiry" [(ngModel)]="hours" [disabled]="busy">
+            <option [ngValue]="1">{{ '1 hour' | ffkText }}</option>
+            <option [ngValue]="24">{{ '24 hours' | ffkText }}</option>
+            <option [ngValue]="72">{{ '3 days' | ffkText }}</option>
+            <option [ngValue]="168">{{ '7 days' | ffkText }}</option>
+          </select></label
+        >
+        @if (role === 'admin') {
+          <p class="caution">
+            {{
+              'Administrators can change other people’s access and manage knowledge settings in this scope.'
+                | ffkText
+            }}
+          </p>
+        }
+        <div class="actions">
+          <ffk-button [disabled]="busy" (click)="back()">{{ 'Back' | ffkText }}</ffk-button
+          ><ffk-button variant="primary" type="submit" [disabled]="busy">{{
+            'Review invitation' | ffkText
+          }}</ffk-button>
+        </div>
+      </form>
+    } @else {
+      <dl class="review-summary">
+        <dt>{{ 'To' | ffkText }}</dt>
+        <dd>
+          {{ recipientName() }}<span>{{ recipientEmail() }}</span>
+        </dd>
+        <dt>{{ 'Access' | ffkText }}</dt>
+        <dd>{{ scopeName() }}</dd>
+        <dt>{{ 'Role' | ffkText }}</dt>
+        <dd>{{ roleLabel() | ffkText }}</dd>
+      </dl>
+      @if (preview && matchingPreview()) {
+        @defer (when step() === 'review') {
+          <ffk-email-preview [value]="preview" [brandBase]="brandBase" />
+        }
+      } @else {
+        <ffk-skeleton width="70%" height="3px" [label]="'Loading email preview' | ffkText" />
+      }
+      <p class="help">
+        {{
+          'No email has been sent. Sending queues this invitation for delivery to the selected person.'
+            | ffkText
+        }}
+      </p>
+      <div class="actions">
+        <ffk-button [disabled]="busy" (click)="back()">{{ 'Back' | ffkText }}</ffk-button
+        ><ffk-button
+          variant="primary"
+          icon="chevron"
+          [loading]="busy"
+          [disabled]="!matchingPreview() || !deliveryAvailable"
+          (click)="submit()"
+          >{{ 'Send invitation' | ffkText }}</ffk-button
+        >
+      </div>
+    }
+  }
+</section>

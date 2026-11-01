@@ -6,7 +6,7 @@ import pytest
 
 
 @pytest.fixture
-async def reviewed(tmp_path):
+async def reviewed(tmp_path, request):
     from pyfly.container.scanner import scan_package
     from pyfly.context import ApplicationContext
     from pyfly.core import Config
@@ -18,10 +18,14 @@ async def reviewed(tmp_path):
     from koinon.knowledge.curated.intents import KnowledgeIntents
     from koinon.knowledge.external_reviews.service import ExternalKnowledgeReviews
     from koinon.knowledge.repositories import DomainBindingRepository
+    from koinon.storage.scratch import ScratchAdmission
     from koinon.tokens.authorization import TokenRestriction
     from koinon.tokens.entities import PersonalToken
     from koinon.tokens.repositories import PersonalTokenRepository
 
+    queued = getattr(request, "param", None) == "queued"
+    bulk_root = tmp_path / "bulk-objects"
+    bulk_root.mkdir(mode=0o700)
     context = ApplicationContext(
         Config(
             {
@@ -34,17 +38,27 @@ async def reviewed(tmp_path):
                             "url": f"sqlite+aiosqlite:///{tmp_path / 'review.db'}",
                         }
                     },
-                }
+                },
+                "koinon": {"knowledge": {"bulk": {"storage_root": str(bulk_root)}}},
             }
         )
     )
     for package in ("koinon.catalog", "koinon.knowledge.curated", "koinon.knowledge.external_reviews"):
         scan_package(package, context.container)
+    if queued:
+        from koinon.assistants.repositories import ProviderRepository
+        from koinon.knowledge.connections.repositories import KnowledgeConnectionRepository
+
+        for package in ("koinon.jobs", "koinon.knowledge.bulk"):
+            scan_package(package, context.container)
+        context.register_bean(ProviderRepository)
+        context.register_bean(KnowledgeConnectionRepository)
     for cls in (
         PersonalTokenRepository,
         TokenRestriction,
         DomainBindingRepository,
         AuthorizedApplicationRepository,
+        ScratchAdmission,
     ):
         context.register_bean(cls)
     await context.start()

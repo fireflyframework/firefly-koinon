@@ -17,7 +17,7 @@ class BulkBatch(Base):
         UniqueConstraint("tenant_id", "key_hash", name="uq_bulk_batch_key"),
         Index("ix_bulk_owner_page", "tenant_id", "subject", "created_at", "id"),
         CheckConstraint(
-            "revision BETWEEN 1 AND 2147483647 AND total_bytes BETWEEN 1 AND 268435456",
+            "revision BETWEEN 1 AND 2147483647 AND total_bytes BETWEEN 1 AND 536870912",
             name="ck_bulk_batch_bounds",
         ),
     )
@@ -53,7 +53,7 @@ class BulkItem(Base):
         ),
         CheckConstraint(
             "mode IN ('document','dataset') AND ordinal BETWEEN 0 AND 99 "
-            "AND size_bytes BETWEEN 1 AND 33554432",
+            "AND size_bytes BETWEEN 1 AND 134217728",
             name="ck_bulk_item_bounds",
         ),
         CheckConstraint(
@@ -95,6 +95,7 @@ class BulkUpload(Base):
     item_id: Mapped[str] = mapped_column(String(64), ForeignKey("koinon_bulk_items.id"))
     key_hash: Mapped[str] = mapped_column(String(64))
     object_key: Mapped[str] = mapped_column(String(1024), unique=True)
+    object_reference_json: Mapped[dict | None] = mapped_column(JSON(none_as_null=True), nullable=True)
     status: Mapped[str] = mapped_column(String(24), default="uploading")
     permit_held: Mapped[bool] = mapped_column(default=True)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=now)

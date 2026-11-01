@@ -18,3 +18,20 @@ it('renders the selected organization in both selectors when the authorized list
   expect(selectors.length).toBe(2);
   for (const select of selectors) expect(select.value).toBe('south');
 });
+
+it('uses the canonical compact wordmark while preserving custom logos and the full desktop family', async () => {
+  const fixture = TestBed.createComponent(KoinonShell);
+  await fixture.whenStable();
+  fixture.componentInstance.compact.set(false);
+  await fixture.whenStable();
+  const image = () => (fixture.nativeElement as HTMLElement).querySelector('.brand img');
+  expect(image()?.getAttribute('src')).toContain('/logos/firefly-koinon-lockup-color.svg');
+  fixture.componentInstance.compact.set(true);
+  fixture.componentRef.setInput('theme', 'dark');
+  await fixture.whenStable();
+  expect(image()?.getAttribute('src')).toContain('/logos/koinon-wordmark-reversed.svg');
+  const custom = 'https://company.example/logos/firefly-koinon-lockup-reversed.svg';
+  fixture.componentRef.setInput('brandLogo', custom);
+  await fixture.whenStable();
+  expect(image()?.getAttribute('src')).toBe(custom);
+});

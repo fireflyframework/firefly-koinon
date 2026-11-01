@@ -61,3 +61,5 @@ export {
 } from './src/lib/services/branding-values';
 
 export { KoinonOrganizationDirectory } from './src/lib/services/organization-directory';
+
+export {KOINON_ACTIVITY_LOADER,KOINON_COMMUNICATIONS_LOADER} from './src/lib/services/chat-loader';

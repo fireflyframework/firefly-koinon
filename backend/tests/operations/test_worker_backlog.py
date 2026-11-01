@@ -111,5 +111,5 @@ async def test_capacity_reports_the_shared_process_limit_without_summing_queue_l
         WorkAdmissionSettings(worker_capacity=1),
     ).snapshot()
     assert view.process_capacity == 1
-    assert len(view.queues) == 7
+    assert len(view.queues) == 10
     assert all(row.capacity == 1 and not row.available for row in view.queues)

@@ -1,0 +1,115 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<section aria-labelledby="recipient-invitation-title">
+  @if (problem) {
+    <h1 id="recipient-invitation-title">{{ 'Review invitation' | ffkText }}</h1>
+    @if (problem === 'sign_in') {
+      <p>{{ 'Sign in with the organization account that received this invitation.' | ffkText }}</p>
+      <ffk-button variant="primary" (click)="signInRequested.emit()">{{
+        'Sign in' | ffkText
+      }}</ffk-button>
+    } @else if (problem === 'wrong_account') {
+      <p>
+        {{
+          'This invitation cannot be reviewed with the current account. Sign in with the organization account that received it.'
+            | ffkText
+        }}
+      </p>
+      <ffk-button variant="primary" (click)="switchAccountRequested.emit()">{{
+        'Switch account' | ffkText
+      }}</ffk-button>
+    } @else {
+      <p>
+        {{
+          'This invitation is unavailable. Ask an administrator to check it or send a new invitation.'
+            | ffkText
+        }}
+      </p>
+    }
+    <div class="actions">
+      <ffk-button variant="quiet" (click)="closed.emit()">{{
+        'Close invitation' | ffkText
+      }}</ffk-button>
+    </div>
+  } @else if (review; as invitation) {
+    <h1 id="recipient-invitation-title">{{ statusTitle() | ffkText }}</h1>
+    @if (invitation.status === 'pending') {
+      <p>
+        {{ 'You have been invited to join' | ffkText }}
+        <strong>{{ invitation.organization_name }}</strong
+        >.
+      </p>
+    } @else {
+      <p role="status">{{ statusHelp() | ffkText }}</p>
+    }
+    <dl>
+      <dt>{{ 'Organization' | ffkText }}</dt>
+      <dd>{{ invitation.organization_name }}</dd>
+      <dt>{{ 'Access' | ffkText }}</dt>
+      <dd>{{ invitation.workspace_name || ('Entire organization' | ffkText) }}</dd>
+      <dt>{{ 'Role' | ffkText }}</dt>
+      <dd>{{ invitation.role_name | ffkText }}</dd>
+      <dt>{{ 'Expires' | ffkText }}</dt>
+      <dd>{{ invitation.expires_at | ffkDate: undefined : 'datetime' }}</dd>
+    </dl>
+    <p>{{ invitation.role_description | ffkText }}</p>
+    @if (invitation.accept_reason) {
+      <p role="status">{{ invitation.accept_reason | ffkText }}</p>
+    }
+    @if (error) {
+      <p class="feedback" role="alert">{{ error | ffkText }}</p>
+    }
+    @if (invitation.status === 'pending') {
+      <p>
+        {{
+          'This invitation is bound to your existing directory account. Accept only if you expected this invitation and recognize the organization.'
+            | ffkText
+        }}
+      </p>
+      @if (confirmDecline()) {
+        <div class="decline">
+          <h2>{{ 'Decline this invitation?' | ffkText }}</h2>
+          <p>{{ 'You will not receive access through this invitation.' | ffkText }}</p>
+          <div class="actions">
+            <ffk-button [disabled]="busy" (click)="confirmDecline.set(false)">{{
+              'Keep invitation' | ffkText
+            }}</ffk-button
+            ><ffk-button variant="danger" [loading]="busy" (click)="decline()">{{
+              'Decline invitation' | ffkText
+            }}</ffk-button>
+          </div>
+        </div>
+      } @else {
+        <div class="actions">
+          @if (invitation.can_accept) {
+            <ffk-button variant="primary" [loading]="busy" (click)="accept()">{{
+              'Accept invitation' | ffkText
+            }}</ffk-button>
+          }
+          @if (invitation.can_decline) {
+            <ffk-button [disabled]="busy" (click)="confirmDecline.set(true)">{{
+              'Decline invitation' | ffkText
+            }}</ffk-button>
+          }
+        </div>
+      }
+    }
+    <div class="close">
+      <ffk-button variant="quiet" [disabled]="busy" (click)="closed.emit()">{{
+        'Close invitation' | ffkText
+      }}</ffk-button>
+    </div>
+  } @else {
+    <h1 id="recipient-invitation-title">{{ 'Review invitation' | ffkText }}</h1>
+    @if (busy) {
+      <ffk-skeleton width="70%" height="3px" [label]="'Loading invitation' | ffkText" />
+    } @else {
+      <p>
+        {{
+          'This invitation could not be loaded. Try again or ask your administrator for help.'
+            | ffkText
+        }}
+      </p>
+      <ffk-button (click)="retryRequested.emit()">{{ 'Try again' | ffkText }}</ffk-button>
+    }
+  }
+</section>

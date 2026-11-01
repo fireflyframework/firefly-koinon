@@ -3,6 +3,8 @@
 """Typed bounded batch operations; uncertain mutations are never retried automatically."""
 
 from abc import ABC, abstractmethod
+from collections.abc import AsyncIterator
+from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
@@ -15,6 +17,7 @@ from koinon_sdk.bulk import (
     FileItemPage,
     StagedFileReceipt,
 )
+from koinon_sdk.file_upload import BLOCK_BYTES, MAX_ORIGINAL_BYTES, verified_original
 
 
 class BulkClientMixin(ABC):
@@ -80,8 +83,8 @@ class BulkClientMixin(ABC):
     async def upload_file_batch_item(
         self, tenant_id: str, batch_id: str, item_id: str, content: bytes, idempotency_key: str
     ) -> StagedFileReceipt:
-        if not 1 <= len(content) <= 33554432:
-            raise ValueError("Original content must be1..33554432bytes")
+        if not 1 <= len(content) <= MAX_ORIGINAL_BYTES:
+            raise ValueError("Choose a nonempty original of at most 128 MiB")
         return StagedFileReceipt.model_validate(
             await self._request(
                 "PUT",
@@ -90,6 +93,40 @@ class BulkClientMixin(ABC):
                 headers={"Idempotency-Key": idempotency_key, "Content-Type": "application/octet-stream"},
             )
         )
+
+    async def upload_file_batch_path(
+        self,
+        tenant_id: str,
+        batch_id: str,
+        item_id: str,
+        path: Path,
+        idempotency_key: str,
+        *,
+        expected_size_bytes: int,
+        expected_sha256: str,
+    ) -> StagedFileReceipt:
+        """Snapshot and verify a caller-selected file, then stream it with bounded memory."""
+        async with verified_original(path, expected_size_bytes, expected_sha256) as source:
+
+            async def body() -> AsyncIterator[bytes]:
+                count = 0
+                while part := source.read(BLOCK_BYTES):
+                    count += len(part)
+                    if count > expected_size_bytes:
+                        raise ValueError("Original grew during upload; inspect its retained receipt")
+                    yield part
+
+            response = await self._request(
+                "PUT",
+                self._batch_item_path(tenant_id, batch_id, item_id) + "/content",
+                content=body(),
+                headers={
+                    "Idempotency-Key": idempotency_key,
+                    "Content-Type": "application/octet-stream",
+                    "Content-Length": str(expected_size_bytes),
+                },
+            )
+            return StagedFileReceipt.model_validate(response)
 
     async def file_batch_item_receipt(self, tenant_id: str, batch_id: str, item_id: str) -> StagedFileReceipt:
         return StagedFileReceipt.model_validate(

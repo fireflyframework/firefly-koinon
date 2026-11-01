@@ -10,6 +10,7 @@ from uuid import UUID
 import httpx
 from pydantic import BaseModel, JsonValue, SecretStr, TypeAdapter
 
+from koinon_sdk.activity import ActivitySummary, ActivityWindow
 from koinon_sdk.answer_audit import AnswerAudit
 from koinon_sdk.attachments import (
     AttachmentCapabilities,
@@ -22,6 +23,7 @@ from koinon_sdk.attachments import (
 )
 from koinon_sdk.authorized_applications import AuthorizedApplication
 from koinon_sdk.bulk_client import BulkClientMixin
+from koinon_sdk.communications_client import CommunicationsClientMixin
 from koinon_sdk.connection_filters import (
     AttachmentChunkFilter,
     AttachmentFilter,
@@ -232,7 +234,7 @@ class ApiError(Exception):
         self.transaction_id = request_id
 
 
-class KoinonClient(BulkClientMixin, QueryBatchClientMixin):
+class KoinonClient(BulkClientMixin, QueryBatchClientMixin, CommunicationsClientMixin):
     def __init__(
         self,
         base_url: str,
@@ -1576,8 +1578,11 @@ class KoinonClient(BulkClientMixin, QueryBatchClientMixin):
         )
 
     async def refresh_organization_profile(
-        self, tenant_id: str, value: CorporateProfileRefreshInput | None = None,
-        *, workspace_id: str | None = None
+        self,
+        tenant_id: str,
+        value: CorporateProfileRefreshInput | None = None,
+        *,
+        workspace_id: str | None = None,
     ) -> CorporateProfileRefresh:
         return CorporateProfileRefresh.model_validate(
             await self._request(
@@ -1589,13 +1594,19 @@ class KoinonClient(BulkClientMixin, QueryBatchClientMixin):
         )
 
     async def refresh_organization_person_profile(
-        self, tenant_id: str, person_id: str, value: CorporateProfileRefreshInput | None = None,
-        *, workspace_id: str | None = None
+        self,
+        tenant_id: str,
+        person_id: str,
+        value: CorporateProfileRefreshInput | None = None,
+        *,
+        workspace_id: str | None = None,
     ) -> CorporateProfileRefresh:
         return CorporateProfileRefresh.model_validate(
             await self._request(
                 "POST",
-                self._tenant(tenant_id) + "/organization/people/" + quote(person_id, safe="")
+                self._tenant(tenant_id)
+                + "/organization/people/"
+                + quote(person_id, safe="")
                 + "/profile-refresh",
                 json=(value or CorporateProfileRefreshInput()).model_dump(mode="json", exclude_unset=True),
                 params={"workspace_id": workspace_id} if workspace_id is not None else {},
@@ -2364,5 +2375,21 @@ class KoinonClient(BulkClientMixin, QueryBatchClientMixin):
                 "GET",
                 self._glossary_path(term_id, agent=agent),
                 headers=self._glossary_headers(tenant_id, workspace_id),
+            )
+        )
+
+    async def personal_activity(self, tenant_id: str, value: ActivityWindow) -> ActivitySummary:
+        return ActivitySummary.model_validate(
+            await self._request(
+                "POST", self._tenant(tenant_id) + "/activity/personal", json=value.model_dump(mode="json")
+            )
+        )
+
+    async def administrative_activity(self, tenant_id: str, value: ActivityWindow) -> ActivitySummary:
+        return ActivitySummary.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/activity/administration",
+                json=value.model_dump(mode="json"),
             )
         )

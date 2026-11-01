@@ -17,7 +17,7 @@ from pyfly.kernel import ConflictException, InvalidRequestException
 
 from koinon.catalog.entities import INTERNAL_METADATA_KEYS, AuditEvent, CatalogEntry, Membership
 from koinon.catalog.errors import AccessDenied, InvalidHierarchy
-from koinon.catalog.ports import ManagedMembershipReader, MembershipRecord
+from koinon.catalog.ports import ManagedMembershipReader, MembershipEventRecorder, MembershipRecord
 from koinon.catalog.repositories import (
     AuditRepository,
     CatalogRepository,
@@ -38,6 +38,7 @@ _READ = frozenset(
         "shares:read",
         "shares:write",
         "evidence:read",
+        "activity:read",
     }
 )
 _OPERATOR = _READ | {
@@ -86,6 +87,7 @@ class CatalogService:
         restriction: TokenRestriction | None = None,
         managed_memberships: ManagedMembershipReader | None = None,
         managed_provider: Provider[ManagedMembershipReader | None] | None = None,
+        membership_events: MembershipEventRecorder | None = None,
     ):
         self.tenant_repository = tenant_repository
         self.membership_repository = membership_repository
@@ -94,6 +96,7 @@ class CatalogService:
         self.restriction = restriction
         self._managed_memberships = managed_memberships
         self._managed_provider = managed_provider
+        self.membership_events = membership_events
 
     @staticmethod
     def require_knowledge_review(kind):
@@ -463,8 +466,10 @@ class CatalogService:
 
     async def _validate_workspace(self, tenant_id: str, workspace_id: str | None) -> None:
         if workspace_id is not None:
-            workspace = await self._scoped_entry(tenant_id, workspace_id)
-            if workspace.kind != "workspace":
+            kind = await self.catalog_repository.scope_kind(tenant_id, workspace_id)
+            if kind is None:
+                raise AccessDenied("Resource is not accessible in the selected context", code="ACCESS_DENIED")
+            if kind != "workspace":
                 raise InvalidHierarchy("Select a workspace in this tenant", code="INVALID_WORKSPACE")
 
     async def list_members(
@@ -557,11 +562,14 @@ class CatalogService:
                 id=str(uuid4()), subject=subject, tenant_id=tenant_id, workspace_id=workspace_id, role=role
             )
         )
+        before = (member.active, member.role) if existing else None
         member.active, member.role = True, role
         saved = await self.membership_repository.save(member)
         await self._audit(
             actor, tenant_id, "membership.created", member.id, {"subject": subject, "role": role}
         )
+        if self.membership_events is not None:
+            await self.membership_events.membership_changed(actor, saved, before)
         return saved
 
     @transactional
@@ -589,6 +597,7 @@ class CatalogService:
             )
             if len(admins) <= 1:
                 raise ConflictException("Tenant must retain an active administrator", code="LAST_ADMIN")
+        before = (member.active, member.role)
         if role is not None:
             member.role = role
         if active is not None:
@@ -597,6 +606,8 @@ class CatalogService:
         await self._audit(
             actor, tenant_id, "membership.updated", member.id, {"role": member.role, "active": member.active}
         )
+        if self.membership_events is not None:
+            await self.membership_events.membership_changed(actor, saved, before)
         return saved
 
     async def audit(self, subject: str, tenant_id: str) -> list[AuditEvent]:

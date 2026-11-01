@@ -1,5 +1,6 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
+import {createLazyExternalReviewsApi} from './external-review-loader.js';
 import {createLazyChatApi} from './chat-loader.js';
 import {createLazyFileBatchesApi} from './file-batch-loader.js';
 import {createLazyQueryBatchesApi} from './query-batch-loader.js';
@@ -9,14 +10,14 @@ import {createLazyOrganizationPeopleApi} from './organization-loader.js';
 import {createLazyCorporateProfilesApi} from './corporate-profile-loader.js';
 export type {CorporateProfilesApi} from './corporate-profiles.js';
 export type {OrganizationPeopleApi} from './organization-people.js';
-import type {ExternalFileCleanupInput,ExternalFileCleanupResult,ExternalFileReviewInput,ExternalFileChunkInput,ExternalFileReviewView,McpConnectionDescriptor,ExternalReviewInput,ExternalReviewDecision,ExternalReviewView} from './generated.js';
+import type {McpConnectionDescriptor} from './generated.js';
 import type {McpOAuthClient,McpOAuthClientCredential,McpOAuthClientInput,McpOAuthClientPage,McpOAuthClientPatch,McpOAuthClientReadiness,McpOAuthClientRevision} from './generated.js';
 import type {McpOAuthClientFilter} from './types.js';
 import type {BrandingValues,OrganizationBranding,OrganizationBrandingInput,BrandingResetInput} from './generated.js';
 import type {OrganizationChatSettings,OrganizationChatSettingsInput} from './generated.js';
 import type {OrganizationKnowledgeSettings,OrganizationKnowledgeSettingsInput} from './generated.js';
 import type {DocumentVersion,DocumentVersionPage,DocumentExtractionPage,DocumentPartPage,DocumentPartContent} from './generated.js';
-import type {AnswerAudit} from './generated.js';
+import type {AnswerAudit,ActivitySummary,ActivityWindow} from './generated.js';
 import type {AuthorizedApplication} from './generated.js';
 import type {AuthorizedApplicationFilter} from './types.js';
 import type {DatasetFileAppendResult} from './generated.js';
@@ -80,6 +81,7 @@ export class KoinonClient {
  readonly members;
  readonly invitations;
  readonly audit;
+ readonly activity;
  readonly configuration;
  readonly providers;
  readonly agents;
@@ -128,21 +130,9 @@ export class KoinonClient {
    update:(tenantId:string,clientId:string,input:McpOAuthClientPatch,options:RequestOptions={})=>transport.request<McpOAuthClient>('PATCH',tenant(tenantId)+'/mcp/oauth-clients/'+id(clientId),{...options,body:input}),
    rotateSecret:(tenantId:string,clientId:string,input:McpOAuthClientRevision,options:RequestOptions={})=>transport.request<McpOAuthClientCredential>('POST',tenant(tenantId)+'/mcp/oauth-clients/'+id(clientId)+'/rotate-secret',{...options,body:input}),
   };
-  this.externalFileReviews={
-   cleanup:(tenantId:string,input:ExternalFileCleanupInput,options:RequestOptions={})=>transport.request<ExternalFileCleanupResult>('POST',`${tenant(tenantId)}/external-file-reviews/cleanup`,{...options,body:input}),
-   stage:(tenantId:string,input:ExternalFileReviewInput,idempotencyKey:string,options:RequestOptions={})=>transport.request<ExternalFileReviewView>('POST',`${tenant(tenantId)}/external-file-reviews`,{...options,body:input,headers:{...options.headers,'Idempotency-Key':idempotencyKey}}),
-   get:(tenantId:string,reviewId:string,options:RequestOptions={})=>transport.request<ExternalFileReviewView>('GET',`${tenant(tenantId)}/external-file-reviews/${id(reviewId)}`,options),
-   chunk:(tenantId:string,reviewId:string,input:ExternalFileChunkInput,options:RequestOptions={})=>transport.request<ExternalFileReviewView>('POST',`${tenant(tenantId)}/external-file-reviews/${id(reviewId)}/chunks`,{...options,body:input}),
-   seal:(tenantId:string,reviewId:string,options:RequestOptions={})=>transport.request<ExternalFileReviewView>('POST',`${tenant(tenantId)}/external-file-reviews/${id(reviewId)}/seal`,options),
-   approve:(tenantId:string,reviewId:string,input:ExternalReviewDecision,idempotencyKey:string,options:RequestOptions={})=>transport.request<ExternalFileReviewView>('POST',`${tenant(tenantId)}/external-file-reviews/${id(reviewId)}/approve`,{...options,body:input,headers:{...options.headers,'Idempotency-Key':idempotencyKey}}),
-   cancel:(tenantId:string,reviewId:string,input:ExternalReviewDecision,options:RequestOptions={})=>transport.request<ExternalFileReviewView>('POST',`${tenant(tenantId)}/external-file-reviews/${id(reviewId)}/cancel`,{...options,body:input}),
-  };
-  this.externalReviews={
-   stage:(tenantId:string,input:ExternalReviewInput,idempotencyKey:string,options:RequestOptions={})=>transport.request<ExternalReviewView>('POST',`${tenant(tenantId)}/external-knowledge-reviews`,{...options,body:input,headers:{...options.headers,'Idempotency-Key':idempotencyKey}}),
-   get:(tenantId:string,reviewId:string,options:RequestOptions={})=>transport.request<ExternalReviewView>('GET',`${tenant(tenantId)}/external-knowledge-reviews/${id(reviewId)}`,options),
-   approve:(tenantId:string,reviewId:string,input:ExternalReviewDecision,idempotencyKey:string,options:RequestOptions={})=>transport.request<KnowledgeCommitOutcome>('POST',`${tenant(tenantId)}/external-knowledge-reviews/${id(reviewId)}/approve`,{...options,body:input,headers:{...options.headers,'Idempotency-Key':idempotencyKey}}),
-   cancel:(tenantId:string,reviewId:string,input:ExternalReviewDecision,options:RequestOptions={})=>transport.request<ExternalReviewView>('POST',`${tenant(tenantId)}/external-knowledge-reviews/${id(reviewId)}/cancel`,{...options,body:input}),
-  };
+  const external=createLazyExternalReviewsApi(transport);
+  this.externalFileReviews=external.externalFileReviews;
+  this.externalReviews=external.externalReviews;
   this.organizationChat=this.organizationSettings<OrganizationChatSettings,OrganizationChatSettingsInput,true>('/chat/settings',true);
   this.structured={glossary:glossary(false),agentGlossary:glossary(true)};
   this.exports={
@@ -301,6 +291,10 @@ export class KoinonClient {
    inspect:(token:string,options:RequestOptions={})=>transport.request<InvitationPreview>('POST','/invitations/inspect',{...options,body:{token}}),
    redeem:(token:string,options:RequestOptions={})=>transport.request<Membership>('POST','/invitations/redeem',{...options,body:{token}}),
   };
+  this.activity={
+   personal:(tenantId:string,input:ActivityWindow,options:RequestOptions={})=>transport.request<ActivitySummary>('POST',`${tenant(tenantId)}/activity/personal`,{...options,body:input}),
+   administrative:(tenantId:string,input:ActivityWindow,options:RequestOptions={})=>transport.request<ActivitySummary>('POST',`${tenant(tenantId)}/activity/administration`,{...options,body:input}),
+  };
   this.audit={list:(tenantId:string,options:RequestOptions&{query?:AuditFilter}={})=>transport.request<Page<AuditEvent>>('GET',`${tenant(tenantId)}/audit`,options)};
  }
  context(options:RequestOptions={}){return this.options.transport.request<ContextResponse>('GET','/context',options);}
@@ -311,3 +305,4 @@ export class KoinonClient {
 }
 export {exactDecimal,exactInteger} from './exact.js';
 export {offsetPages,cursorPages} from './pagination.js';
+export type * from './communications-models.js';

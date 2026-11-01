@@ -41,6 +41,10 @@
   summary:focus-visible {
     outline: 2px solid var(--ffk-gold, #855414);
   }
+  // Landing headings are announced on step changes but are not interactive controls.
+  :is(h1, h2, h3)[tabindex='-1']:not([role]):focus {
+    outline: none;
+  }
   h1,
   h2,
   h3,

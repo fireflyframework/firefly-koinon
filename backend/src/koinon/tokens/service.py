@@ -17,6 +17,7 @@ from koinon.authorized_applications.entities import credential_matches
 from koinon.authorized_applications.repositories import AuthorizedApplicationRepository
 from koinon.catalog.errors import AccessDenied
 from koinon.catalog.service import CatalogService
+from koinon.communications.ports import AccountEventRecorder
 from koinon.mcp_applications.authority import McpOAuthClientAuthority
 from koinon.profiles.service import ProfileService
 from koinon.security.authority import primary_authority
@@ -26,7 +27,7 @@ from koinon.tokens.repositories import PersonalTokenRepository
 from koinon.tokens.settings import TokenSettings
 
 PREFIX = "koinon_pat_"
-PERSONAL_SCOPES = {"profile:read", "profile:write"}
+PERSONAL_SCOPES = {"profile:read", "profile:write", "notifications:read", "notifications:write"}
 DEPENDENCIES = {
     "catalog:write": {"catalog:read"},
     "knowledge:search": {"catalog:read"},
@@ -34,11 +35,13 @@ DEPENDENCIES = {
     "chat:use": {"catalog:read"},
     "ingest:write": {"catalog:read", "catalog:write"},
     "profile:write": {"profile:read"},
+    "notifications:write": {"notifications:read"},
     "exports:read": {"catalog:read"},
     "exports:write": {"catalog:read", "exports:read"},
     "shares:read": {"catalog:read", "chat:use"},
     "shares:write": {"catalog:read", "chat:use", "shares:read"},
     "evidence:read": {"catalog:read"},
+    "activity:read": {"catalog:read"},
 }
 RESOURCE_SCOPES = {
     "catalog:read",
@@ -52,6 +55,7 @@ RESOURCE_SCOPES = {
     "shares:read",
     "shares:write",
     "evidence:read",
+    "activity:read",
 }
 
 
@@ -65,10 +69,12 @@ class PersonalTokenService:
         profiles: ProfileService,
         applications: AuthorizedApplicationRepository | None = None,
         registrations: McpOAuthClientAuthority | None = None,
+        events: AccountEventRecorder | None = None,
     ):
         self.repository, self.catalog, self.settings, self.profiles = repository, catalog, settings, profiles
         self.applications = applications
         self.registrations = registrations
+        self.events = events
 
     async def list(self, subject: str) -> list[dict]:
         return [token_dto(row) for row in await self.repository.find_all(subject=subject, purpose="personal")]
@@ -217,6 +223,17 @@ class PersonalTokenService:
             row.id,
             {"scopes": row.scopes, "expires_at": expires.isoformat()},
         )
+        if purpose == "personal" and self.events is not None:
+            await self.events.security_changed(
+                subject,
+                subject,
+                tenant,
+                "token_created",
+                row.id,
+                row.name,
+                scopes=row.scopes,
+                expires_at=row.expires_at,
+            )
         return {**token_dto(row), "token": raw}
 
     @primary_authority(read_only=False)
@@ -285,6 +302,17 @@ class PersonalTokenService:
             row.revoked_at = datetime.now(UTC)
             await self.repository.save(row)
             await self.catalog._audit(subject, row.tenant_id, "token.revoked", row.id)
+            if self.events is not None:
+                await self.events.security_changed(
+                    subject,
+                    subject,
+                    row.tenant_id,
+                    "token_revoked",
+                    row.id,
+                    row.name,
+                    scopes=row.scopes,
+                    expires_at=row.expires_at,
+                )
 
     async def scope_options(self, subject: str, tenant_id: str, workspace_id: str | None = None) -> dict:
         await self.catalog.authorize(subject, tenant_id, "catalog:read", workspace_id)
@@ -310,8 +338,11 @@ class PersonalTokenService:
             "shares:read": "Read authenticated conversation shares",
             "shares:write": "Create and revoke your conversation shares",
             "evidence:read": "Inspect answer sources",
+            "activity:read": "Read observed activity summaries",
             "profile:read": "Read your profile",
             "profile:write": "Update your profile",
+            "notifications:read": "Read your notifications",
+            "notifications:write": "Manage your notification preferences and read status",
         }
         return {
             "items": [

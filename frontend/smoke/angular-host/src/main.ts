@@ -3,7 +3,11 @@
 import { Component, signal } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { FetchTransport, KoinonClient } from '@fireflyframework/koinon-sdk';
-import { KoinonWorkbench, provideKoinonClient } from '@fireflyframework/koinon-angular/workbench';
+import {
+  KOINON_ACTIVITY_LOADER,KOINON_COMMUNICATIONS_LOADER,
+  KoinonWorkbench,
+  provideKoinonClient,
+} from '@fireflyframework/koinon-angular/workbench';
 const csrf = () => {
   const part = document.cookie
     .split(';')
@@ -16,6 +20,7 @@ const transport = new FetchTransport({
   credentials: 'include',
   csrfToken: csrf,
 });
+const client = new KoinonClient({ transport });
 @Component({
   selector: 'consumer-root',
   imports: [KoinonWorkbench],
@@ -28,6 +33,8 @@ const transport = new FetchTransport({
       <output id="host-selection">{{ selected() }}</output>
     </header>
     <ffk-workbench
+      [client]="client"
+      [transport]="transport"
       brandBase="/consumer/assets/brand"
       tenantId="tenant-one"
       workspaceId="workspace-one"
@@ -37,8 +44,28 @@ const transport = new FetchTransport({
     />`,
 })
 class Consumer {
+  readonly client = client;
+  readonly transport = transport;
   readonly selected = signal('Nothing selected');
 }
 void bootstrapApplication(Consumer, {
-  providers: provideKoinonClient(new KoinonClient({ transport }), transport),
+  providers: [
+    ...provideKoinonClient(client, transport),
+    {provide:KOINON_ACTIVITY_LOADER,useValue:()=>import('@fireflyframework/koinon-angular/activity').then(module=>module.KoinonActivityPanel)},
+    {
+      provide: KOINON_COMMUNICATIONS_LOADER,
+      useValue: (kind: 'trigger' | 'center' | 'email') =>
+        kind === 'trigger'
+          ? import('@fireflyframework/koinon-angular/communications/runtime').then(
+              (module) => module.KoinonNotificationCenterTrigger,
+            )
+          : kind === 'email'
+            ? import('@fireflyframework/koinon-angular/communications/invitations').then(
+                (module) => module.KoinonEmailInvitationAcceptance,
+              )
+            : import('@fireflyframework/koinon-angular/communications/inbox').then(
+                (module) => module.KoinonNotificationCenter,
+              ),
+    },
+  ],
 });

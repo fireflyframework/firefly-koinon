@@ -53,6 +53,11 @@ IDENTITY_CLAIMS = ClaimMappings(
         "koinon_google_hd",
     ),
     raw_attribute_claims=(
+        "oid",
+        "tid",
+        "aud",
+        "azp",
+        "appid",
         "iat",
         "auth_time",
         "amr",

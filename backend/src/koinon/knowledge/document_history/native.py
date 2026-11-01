@@ -83,3 +83,11 @@ class NativeDocumentHistory:
         return await self.repository.original(
             source_version_id=source_version_id, max_bytes=max_bytes, **scope
         )
+
+    async def original_identity(self, *, source_version_id=None, **scope):
+        return await self.repository.original_identity(source_version_id=source_version_id, **scope)
+
+    async def original_file(self, *, path, max_bytes, source_version_id=None, **scope):
+        return await self.repository.original_file(
+            path=path, max_bytes=max_bytes, source_version_id=source_version_id, **scope
+        )

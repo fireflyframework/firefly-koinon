@@ -1,0 +1,201 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<section aria-labelledby="preferences-title">
+  <ffk-button variant="back" icon="chevron-left" (click)="backRequested.emit()">{{
+    'Back to notifications' | ffkText
+  }}</ffk-button>
+  <header [class.embedded]="!showHeading">
+    <h2 id="preferences-title" [class.visually-hidden]="!showHeading">
+      {{ 'Notification preferences' | ffkText }}
+    </h2>
+    <p>
+      {{
+        'Choose how optional updates reach you. Required access and security notices remain enabled by your organization.'
+          | ffkText
+      }}
+    </p>
+  </header>
+  @if (error || validation()) {
+    <p class="feedback" role="alert">{{ error || validation() | ffkText }}</p>
+  }
+  @if (notice) {
+    <p class="feedback" role="status">{{ notice | ffkText }}</p>
+  }
+  @if (preferences; as current) {
+    <form (ngSubmit)="save()">
+      <label class="schedule"
+        >{{ 'Notification language' | ffkText
+        }}<select name="notification-locale" [(ngModel)]="notificationLocale" [disabled]="pending">
+          <option value="">{{ 'Use organization or installation language' | ffkText }}</option>
+          <option value="en-US">English (en-US)</option>
+          <option value="es-ES">Español (es-ES)</option>
+          @if (
+            notificationLocale && notificationLocale !== 'en-US' && notificationLocale !== 'es-ES'
+          ) {
+            <option [value]="notificationLocale">{{ localeLabel(notificationLocale) }}</option>
+          }
+        </select></label
+      >
+      @if (current.effective_locale) {
+        <p class="help">
+          {{ 'Current email language' | ffkText }}: {{ current.effective_locale }} ({{
+            originLabel(current.locale_origin) | ffkText
+          }}).
+        </p>
+      }
+      <div class="rules">
+        @for (rule of rules; track rule.kind) {
+          <fieldset [class.required-rule]="rule.required">
+            <legend>
+              {{ (rule.kind === 'digest' ? 'Summary notifications' : rule.label) | ffkText }}
+              @if (rule.required) {
+                <ffk-badge>{{ 'Required' | ffkText }}</ffk-badge>
+              }
+            </legend>
+            <p>{{ rule.description | ffkText }}</p>
+            <div class="channels">
+              <label
+                ><input
+                  type="checkbox"
+                  [name]="rule.kind + '-inbox'"
+                  [(ngModel)]="rule.inbox"
+                  [disabled]="pending || rule.required"
+                />{{ 'In-app inbox' | ffkText }}</label
+              ><label
+                ><input
+                  type="checkbox"
+                  [name]="rule.kind + '-email'"
+                  [(ngModel)]="rule.email"
+                  [disabled]="pending || rule.required || !rule.email_available"
+                />{{ 'Email' | ffkText }}</label
+              >
+            </div>
+            @if (!rule.email_available) {
+              <small>{{
+                'Email is not available for this update. Contact your administrator if you need help.'
+                  | ffkText
+              }}</small>
+            }
+          </fieldset>
+        }
+      </div>
+      <section class="digest" aria-labelledby="digest-title">
+        <h3 id="digest-title">{{ 'Usage summary' | ffkText }}</h3>
+        <p>
+          {{
+            'Receive a summary of your own usage, without questions, answers, conversations or private memory. Invitations and required access notices follow their own delivery policy.'
+              | ffkText
+          }}
+        </p>
+        <label class="schedule"
+          >{{ 'Email summary' | ffkText
+          }}<select
+            name="digest"
+            [ngModel]="digest"
+            (ngModelChange)="changeDigest($event)"
+            [disabled]="pending"
+          >
+            @for (value of current.allowed_digests; track value) {
+              <option [value]="value">{{ digestLabel(value) | ffkText }}</option>
+            }
+          </select></label
+        ><small
+          >{{
+            'Choosing a schedule enables email summaries when email is available. You can change summary channels above.'
+              | ffkText
+          }}: {{ 'Schedule uses your profile time zone' | ffkText }}:
+          {{ current.time_zone }}.</small
+        >
+        @if (digest !== 'off') {
+          <ffk-digest-schedule [frequency]="digest" [(value)]="schedule" [disabled]="pending" />
+          <div class="schedule-preview">
+            <ffk-button [disabled]="pending || previewPending" (click)="save(true)">{{
+              'Preview next summary' | ffkText
+            }}</ffk-button>
+            @if (matchingSchedulePreview(); as preview) {
+              <p role="status">
+                {{ 'Next summary' | ffkText }}:
+                @if (preview.next_run_at) {
+                  <time [attr.datetime]="preview.next_run_at">{{
+                    preview.next_run_at | ffkDate: localPresentation(preview.time_zone) : 'datetime'
+                  }}</time>
+                } @else {
+                  {{ preview.next_run_local || ('Not scheduled' | ffkText) }}
+                }
+                <small>{{ preview.time_zone }}</small>
+                @if (preview.next_run_at) {
+                  <small
+                    >UTC:
+                    <time [attr.datetime]="preview.next_run_at">{{
+                      preview.next_run_at | ffkDate: localPresentation('UTC') : 'datetime'
+                    }}</time></small
+                  >
+                }
+              </p>
+            } @else if (current.next_run_local) {
+              <p>{{ 'Current saved schedule' | ffkText }}: {{ current.next_run_local }}</p>
+            }
+          </div>
+        }
+      </section>
+      @if (canPreviewEmail) {
+        <section class="usage-preview" aria-labelledby="usage-email-preview-title">
+          <h3 id="usage-email-preview-title">
+            {{ 'Preview your knowledge summary email' | ffkText }}
+          </h3>
+          <p>
+            {{
+              'Use your current draft preferences and a past reporting window. This preview does not save preferences or send email.'
+                | ffkText
+            }}
+          </p>
+          <ffk-activity-window
+            [timeZone]="current.time_zone"
+            [disabled]="pending || emailPreviewPending"
+            (windowChanged)="emailWindow = $event"
+          /><ffk-button
+            [loading]="emailPreviewPending"
+            [disabled]="pending"
+            (click)="previewEmail()"
+            >{{ 'Preview summary email' | ffkText }}</ffk-button
+          >
+          @if (matchingEmailPreview(); as email) {
+            <ffk-email-preview [value]="email" />
+          }
+        </section>
+      }
+      @if (current.admin_summaries_available) {
+        <section
+          class="administrator-summaries"
+          aria-labelledby="personal-administrator-summary-title"
+        >
+          <h3 id="personal-administrator-summary-title">
+            {{ 'Administrator summaries' | ffkText }}
+          </h3>
+          <p>
+            {{
+              'Your organization has configured administrator summary schedules. These are separate from your personal summary and required security notices.'
+                | ffkText
+            }}
+          </p>
+          <label class="schedule"
+            >{{ 'Receive administrator summaries' | ffkText
+            }}<select name="admin-summaries" [(ngModel)]="adminSummaries" [disabled]="pending">
+              <option value="inherit">{{ 'Use organization policy' | ffkText }}</option>
+              <option value="on">{{ 'On' | ffkText }}</option>
+              <option value="off">{{ 'Off' | ffkText }}</option>
+            </select></label
+          >
+          <p>
+            {{ 'Current delivery preference' | ffkText }}:
+            {{ (current.admin_summaries_enabled ? 'Enabled' : 'Off') | ffkText }}
+          </p>
+        </section>
+      }
+      <ffk-button variant="primary" type="submit" [loading]="pending">{{
+        'Save preferences' | ffkText
+      }}</ffk-button>
+    </form>
+  } @else if (pending) {
+    <ffk-skeleton width="70%" height="3px" [label]="'Loading preferences' | ffkText" />
+  }
+</section>

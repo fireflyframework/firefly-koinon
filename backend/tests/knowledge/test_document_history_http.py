@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 from unittest.mock import AsyncMock
 
-from flycanon.core.services.sources.lineage.dtos import VerifiedOriginal
+from flycanon.core.services.sources.lineage.dtos import OriginalFileReceipt
 from test_http_contract import bearer as bearer
 from test_http_contract import client as client
 from test_http_contract import enable_knowledge_routes as enable_knowledge_routes
@@ -90,12 +90,21 @@ def prepared(client, hierarchy, monkeypatch):
         extractions=page(extraction),
         parts=page(summary),
         part=part,
-        original=VerifiedOriginal("version", digest, 8, 'historical"\r\n.html', "text/html", b"retained"),
     )
     reads = {}
     for name, value in methods.items():
         reads[name] = AsyncMock(return_value=value)
         monkeypatch.setattr(reader, name, reads[name])
+    receipt = OriginalFileReceipt("version", digest, 8, 'historical"\r\n.html', "text/html", "a" * 64)
+
+    async def copy_original(**scope):
+        scope["path"].write_bytes(b"retained")
+        return receipt
+
+    reads["original_file"] = AsyncMock(side_effect=copy_original)
+    reads["original_identity"] = AsyncMock(return_value=receipt)
+    monkeypatch.setattr(reader, "original_file", reads["original_file"])
+    monkeypatch.setattr(reader, "original_identity", reads["original_identity"])
     path = f"/api/v1/tenants/north/documents/{document}/versions"
     return path, document, reads
 
@@ -130,8 +139,8 @@ def test_all_exact_document_history_routes_use_verified_current_scope(client, hi
             assert not {"object_key", "projection_chunk_id", "implementation", "projection"} & row.keys()
     assert reads["version"].await_args.kwargs["source_version_id"] == "version"
     assert reads["part"].await_args.kwargs["source_part_id"] == "part"
-    for read in reads.values():
-        assert read.await_count == 1
+    for name, read in reads.items():
+        assert read.await_count >= 1 if name == "original_identity" else read.await_count == 1
         assert read.await_args.kwargs["actor"].endswith("|viewer")
         assert read.await_args.kwargs["workspace_id"] == client.workspace_id
 
@@ -182,7 +191,9 @@ def test_archiving_an_ancestor_during_exact_content_read_denies_the_result(clien
 
     async def archive_during_read(**scope):
         await catalog.archive(
-            "https://identity.example.test/realms/koinon|admin", "north", hierarchy["parent_id"],
+            "https://identity.example.test/realms/koinon|admin",
+            "north",
+            hierarchy["parent_id"],
         )
         return result
 
@@ -190,3 +201,82 @@ def test_archiving_an_ancestor_during_exact_content_read_denies_the_result(clien
     response = client.get(path + "/version/extractions/extraction/parts/part", headers=bearer("viewer"))
     assert response.status_code == 403, response.text
     assert "retained" not in response.text
+
+
+def test_original_download_refuses_insufficient_shared_scratch_before_object_io(
+    client, hierarchy, monkeypatch
+):
+    from koinon.knowledge.document_history.downloads import OriginalDownloads
+    from koinon.storage.scratch import ScratchAdmission
+
+    path, _, reads = prepared(client, hierarchy, monkeypatch)
+    context = client.native_app.state.context
+    scratch = context.get_bean(ScratchAdmission)
+    scratch.capacity_bytes = 8
+    response = client.get(path + "/version/original", headers=bearer("viewer"))
+    assert response.status_code == 413, response.text
+    reads["original_file"].assert_not_awaited()
+    assert scratch.available_bytes == 8
+    assert context.get_bean(OriginalDownloads).slots.available_slots == 1
+
+
+def test_pat_revocation_during_owned_file_copy_returns_no_original_and_releases_capacity(
+    client, hierarchy, monkeypatch
+):
+    from koinon.knowledge.document_history.downloads import OriginalDownloads
+    from koinon.storage.scratch import ScratchAdmission
+    from koinon.tokens.repositories import PersonalTokenRepository
+
+    path, _, reads = prepared(client, hierarchy, monkeypatch)
+    issued = client.post(
+        "/api/v1/tokens",
+        headers=bearer(),
+        json={
+            "name": "original",
+            "tenant_id": "north",
+            "scopes": ["catalog:read"],
+            "expires_at": (datetime.now(UTC) + timedelta(hours=1)).isoformat(),
+        },
+    )
+    assert issued.status_code == 201, issued.text
+    token = issued.json()
+    context = client.native_app.state.context
+    tokens = context.get_bean(PersonalTokenRepository)
+    paths = []
+    original_copy = reads["original_file"].side_effect
+
+    async def revoke(**scope):
+        receipt = await original_copy(**scope)
+        paths.append(scope["path"])
+        row = await tokens.find_by_id(token["id"])
+        row.revoked_at = datetime.now(UTC)
+        await tokens.save(row)
+        return receipt
+
+    reads["original_file"].side_effect = revoke
+    response = client.get(path + "/version/original", headers={"Authorization": "Bearer " + token["token"]})
+    assert response.status_code == 403, response.text
+    assert b"retained" not in response.content
+    assert paths and not paths[0].exists()
+    assert (
+        context.get_bean(ScratchAdmission).available_bytes
+        == context.get_bean(ScratchAdmission).capacity_bytes
+    )
+    assert context.get_bean(OriginalDownloads).slots.available_slots == 1
+
+
+def test_changed_pinned_original_before_stream_release_denies_without_losing_scratch(
+    client, hierarchy, monkeypatch
+):
+    from dataclasses import replace
+
+    from koinon.storage.scratch import ScratchAdmission
+
+    path, _, reads = prepared(client, hierarchy, monkeypatch)
+    receipt = reads["original_identity"].return_value
+    reads["original_identity"].side_effect = [receipt, replace(receipt, anchor="b" * 64)]
+    response = client.get(path + "/version/original", headers=bearer("viewer"))
+    assert response.status_code == 403, response.text
+    assert b"retained" not in response.content
+    scratch = client.native_app.state.context.get_bean(ScratchAdmission)
+    assert scratch.available_bytes == scratch.capacity_bytes

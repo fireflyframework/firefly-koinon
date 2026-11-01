@@ -47,6 +47,7 @@ class BulkOriginal:
     size_bytes: int
     sha256: str
     storage_identity: str | None = None
+    object_reference_json: dict | None = None
 
 
 @service(name="knowledge.bulk.queue")
@@ -226,7 +227,11 @@ class BulkQueue:
             )
         state = await self.records.upload_state(upload.id)
         return BulkOriginal(
-            upload.object_key, item.size_bytes, item.sha256, state.storage_identity if state else None
+            upload.object_key,
+            item.size_bytes,
+            item.sha256,
+            state.storage_identity if state else None,
+            upload.object_reference_json,
         )
 
     @asynccontextmanager

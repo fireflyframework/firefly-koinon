@@ -287,3 +287,37 @@ async def test_actual_cloud_sdk_snapshots_reach_governed_duckdb_execution(endpoi
         assert isinstance(rejected_sql, ExecutionError)
     finally:
         await store.native.close()
+
+
+@pytest.mark.parametrize("backend", ["azure", "gcs"])
+async def test_real_sdk_file_transfer_pins_version_and_uses_bounded_ranges(
+    endpoint, backend, monkeypatch, tmp_path
+):
+    monkeypatch.delenv("STORAGE_EMULATOR_HOST", raising=False)
+    monkeypatch.delenv("API_ENDPOINT_OVERRIDE", raising=False)
+    url, handler = endpoint
+    store = CloudStore(
+        CloudProfile(
+            backend=backend,
+            azure_account_url=url,
+            azure_container="owned-private",
+            gcs_bucket="owned-private",
+            gcs_endpoint_url=url,
+            request_timeout_seconds=2,
+        )
+    )
+    source = tmp_path / "original"
+    source.write_bytes(b"original")
+    try:
+        reference = await store.create_file("tenant/file", source)
+        assert reference.size_bytes == 8 and reference.sha256 == hashlib.sha256(b"original").hexdigest()
+        assert reference.version_kind == ("azure_etag" if backend == "azure" else "gcs_generation")
+        await store.download_file(reference, tmp_path / "restored", max_bytes=8)
+        assert (tmp_path / "restored").read_bytes() == b"original"
+        assert any(
+            any(name.lower() in {"range", "x-ms-range"} for name in headers)
+            for method, path, headers in handler.calls
+            if method == "GET"
+        )
+    finally:
+        await store.close()

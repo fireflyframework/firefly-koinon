@@ -18,6 +18,24 @@ class CorporateBrokerPolicy:
         self.settings, self.oidc, self.directory = settings, oidc, directory
 
     async def check(self, provider):
+        if getattr(provider, "settings_json", {}).get("identity_mode") == "direct":
+            matched = (
+                provider.kind == "entra"
+                and provider.broker_alias is None
+                and provider.canonical_issuer == self.oidc.issuer
+                and self.oidc.issuer
+                == f"https://login.microsoftonline.com/{provider.settings_json.get('tenant_id')}/v2.0"
+                and provider.settings_json.get("client_id") == self.oidc.client_id
+            )
+            return {
+                "id": "broker_policy",
+                "status": "passed" if matched else "blocked",
+                "verified": matched,
+                "available": matched,
+                "message": "The direct native Entra issuer and client are pinned."
+                if matched
+                else "Direct Entra must match the native issuer and client.",
+            }
         if provider.broker_alias is None:
             return {
                 "id": "broker_policy",

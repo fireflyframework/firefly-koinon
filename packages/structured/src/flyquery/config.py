@@ -117,6 +117,7 @@ class FlyquerySettings(BaseSettings):
 
     # Upload caps
     max_file_mb: int = 2048
+    max_file_bytes: int | None = Field(default=None, strict=True, ge=1, le=2 * 1024**3)
     max_workspace_gb: int = 200
 
     # Ingestion resource policy is independent of query execution limits.
@@ -128,6 +129,12 @@ class FlyquerySettings(BaseSettings):
     ingest_decompressed_max_bytes: int = Field(default=5 * 1024**3, strict=True, ge=1, le=64 * 1024**3)
     ingest_native_connections: int = Field(default=32, strict=True, ge=1, le=32)
     ingest_scratch_root: str | None = None
+    ingest_reader_rss_max_bytes: int = Field(default=768 * 1024**2, strict=True, ge=1, le=8 * 1024**3)
+    ingest_reader_timeout_seconds: int = Field(default=120, strict=True, ge=1, le=120)
+    ingest_excel_max_cells: int = Field(default=2_000_000, strict=True, ge=1, le=16_000_000)
+    ingest_excel_max_rows: int = Field(default=1_000_000, strict=True, ge=1, le=1_048_576)
+    ingest_excel_max_columns: int = Field(default=4096, strict=True, ge=1, le=16_384)
+    ingest_shared_strings_max_bytes: int = Field(default=32 * 1024**2, strict=True, ge=1, le=256 * 1024**2)
 
     @model_validator(mode="after")
     def validate_ingestion_resources(self):

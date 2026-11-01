@@ -41,6 +41,7 @@ class EntraSettings(StrictInput):
     client_id: str = Field(min_length=1, max_length=255)
     directory_client_id: str | None = Field(default=None, min_length=1, max_length=255)
     membership_mode: MembershipMode = "direct"
+    identity_mode: Literal["brokered", "direct"] = "brokered"
 
 
 class GoogleWorkspaceSettings(StrictInput):
@@ -115,7 +116,10 @@ class IdentityProviderInput(StrictInput):
     def matching_kind(self):
         if self.settings.kind != self.kind or (self.credential and self.credential.kind != self.kind):
             raise ValueError("Provider settings and credentials must match its kind")
-        if self.kind != "keycloak" and not self.broker_alias:
+        direct_entra = isinstance(self.settings, EntraSettings) and self.settings.identity_mode == "direct"
+        if direct_entra and self.broker_alias is not None:
+            raise ValueError("Direct Entra preserves the native issuer without a broker alias")
+        if self.kind != "keycloak" and not direct_entra and not self.broker_alias:
             raise ValueError("Corporate providers require an explicit broker alias")
         if self.credential and self.credential_reference:
             raise ValueError("Choose a replacement credential or a deployment credential reference")

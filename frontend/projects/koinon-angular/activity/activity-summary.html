@@ -1,0 +1,149 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<section class="activity-summary" aria-labelledby="activity-summary-title">
+  <header>
+    <div>
+      <h2 id="activity-summary-title">
+        {{
+          (value.audience === 'personal'
+            ? 'Your knowledge activity'
+            : 'Organization knowledge activity'
+          ) | ffkText
+        }}
+      </h2>
+      <p>
+        <time [attr.datetime]="value.window.start_at">{{
+          value.window.start_at | ffkDate: local() : 'datetime'
+        }}</time>
+        –
+        <time [attr.datetime]="value.window.end_at">{{
+          value.window.end_at | ffkDate: local() : 'datetime'
+        }}</time>
+        ({{ value.window.time_zone }})
+      </p>
+    </div>
+    <ffk-badge [tone]="value.coverage.complete_window ? 'neutral' : 'attention'">{{
+      (value.coverage.complete_window ? 'Observed window' : 'Partial coverage') | ffkText
+    }}</ffk-badge>
+  </header>
+  @if (!value.coverage.complete_window) {
+    <p class="coverage">
+      {{
+        'Some activity in this window was not observed. Available counts do not imply a complete history.'
+          | ffkText
+      }}
+      @if (value.coverage.observed_since) {
+        {{ 'Observations since' | ffkText }}
+        {{ value.coverage.observed_since | ffkDate: local() : 'datetime' }}.
+      }
+    </p>
+  }
+  <div class="knowledge-counts">
+    @for (key of knowledgeKeys; track key) {
+      <article>
+        <h3>{{ labels[key] | ffkText }}</h3>
+        <strong>{{ count(value.knowledge[key]) }}</strong>
+        @if (value.knowledge[key].status === 'partial') {
+          <small>{{ 'Partial' | ffkText }}</small>
+        }
+      </article>
+    }
+  </div>
+  @if (value.top_projects?.length) {
+    <section class="projects">
+      <h3>{{ 'Top projects' | ffkText }}</h3>
+      <p>{{ 'Current access only. Bars show recorded knowledge consultations.' | ffkText }}</p>
+      <ol>
+        @for (project of value.top_projects; track project.project_id) {
+          <li>
+            <div>
+              <strong>{{ project.name }}</strong
+              ><span>{{ count(project.knowledge.consulted) }} {{ 'consultations' | ffkText }}</span>
+            </div>
+            @if (bar(project.knowledge.consulted); as width) {
+              <div class="project-track" aria-hidden="true">
+                <span class="project-bar" [style.width.%]="width"></span>
+              </div>
+            }
+            <small
+              >{{ 'Created' | ffkText }}: {{ count(project.knowledge.created) }},
+              {{ 'Updated' | ffkText }}: {{ count(project.knowledge.updated) }}</small
+            >
+          </li>
+        }
+      </ol>
+    </section>
+  }
+  @if (value.daily_activity?.length) {
+    <details>
+      <summary>{{ 'Daily knowledge activity' | ffkText }}</summary>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>{{ 'Date' | ffkText }}</th>
+              @for (key of knowledgeKeys; track key) {
+                <th>{{ labels[key] | ffkText }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (day of value.daily_activity; track day.local_date) {
+              <tr>
+                <th>{{ day.local_date }}</th>
+                @for (key of knowledgeKeys; track key) {
+                  <td>{{ count(day.knowledge[key]) }}</td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </details>
+  }
+  <section class="mcp">
+    <h3>{{ 'MCP activity' | ffkText }}</h3>
+    <p>
+      {{
+        'Requests and tool calls are separate observations. Durations describe tool execution only.'
+          | ffkText
+      }}
+    </p>
+    <dl>
+      @for (key of mcpKeys; track key) {
+        @if (value.mcp[key]; as metric) {
+          <div>
+            <dt>{{ mcpLabels[key] | ffkText }}</dt>
+            <dd>
+              {{ count(metric) }}
+              @if (metric.status === 'partial') {
+                <small>{{ 'Partial' | ffkText }}</small>
+              }
+            </dd>
+          </div>
+        }
+      }
+    </dl>
+  </section>
+  <details>
+    <summary>{{ 'Recorded model usage' | ffkText }}</summary>
+    <p>{{ 'External client token usage is not observed.' | ffkText }}</p>
+    <dl>
+      <div>
+        <dt>{{ 'Input tokens' | ffkText }}</dt>
+        <dd>{{ count(value.models.input_tokens) }}</dd>
+      </div>
+      <div>
+        <dt>{{ 'Output tokens' | ffkText }}</dt>
+        <dd>{{ count(value.models.output_tokens) }}</dd>
+      </div>
+      <div>
+        <dt>{{ 'Embedding tokens' | ffkText }}</dt>
+        <dd>{{ count(value.models.embedding_tokens) }}</dd>
+      </div>
+      <div>
+        <dt>{{ 'Recorded cost' | ffkText }}</dt>
+        <dd>{{ cost(value.models.cost) }}</dd>
+      </div>
+    </dl>
+  </details>
+</section>

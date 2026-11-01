@@ -12,12 +12,21 @@
     "asc",
     "desc"
   ],
+  "ActivitySummaryAudience": [
+    "personal",
+    "organization_administrators"
+  ],
   "AddKnowledgeAction": [
     "add"
   ],
   "AddKnowledgeMode": [
     "document",
     "dataset"
+  ],
+  "AdministrativeSummaryScheduleCadence": [
+    "daily",
+    "weekly",
+    "monthly"
   ],
   "AgentConfigurationInputModalities": [
     "text",
@@ -132,6 +141,31 @@
   "CommittedKnowledgeStatus": [
     "committed"
   ],
+  "CommunicationCapabilitiesState": [
+    "disabled",
+    "not_configured",
+    "ready",
+    "degraded"
+  ],
+  "CommunicationCapabilitiesLocaleOrigin": [
+    "user",
+    "organization",
+    "installation",
+    "default"
+  ],
+  "CommunicationPolicyAllowedDigests": [
+    "off",
+    "daily",
+    "weekly",
+    "monthly"
+  ],
+  "CommunicationUsageSummaryScope": [
+    "own"
+  ],
+  "CommunicationUsageSummaryMcpRequestStatus": [
+    "available",
+    "unavailable"
+  ],
   "ConversationExportInputKind": [
     "conversation"
   ],
@@ -199,6 +233,29 @@
   "DatasetFileAppendResultStatus": [
     "ready"
   ],
+  "DeliveryRecordKind": [
+    "invitation",
+    "access_granted",
+    "role_changed",
+    "access_removed",
+    "security",
+    "welcome",
+    "digest"
+  ],
+  "DeliveryRecordChannel": [
+    "email"
+  ],
+  "DeliveryRecordStatus": [
+    "queued",
+    "sending",
+    "sent",
+    "delivered",
+    "deferred",
+    "failed",
+    "suppressed",
+    "cancelled",
+    "unknown"
+  ],
   "DeploymentConfigurationOwnership": [
     "deployment"
   ],
@@ -213,6 +270,20 @@
   "KnowledgeDomain": [
     "documents",
     "structured"
+  ],
+  "DigestSchedulePreviewDstPolicy": [
+    "first_valid_minute_earlier_fold"
+  ],
+  "DirectoryRecipientDeliveryAddressStatus": [
+    "verified_directory",
+    "missing",
+    "unverified",
+    "unavailable"
+  ],
+  "DirectoryRecipientEligibility": [
+    "eligible",
+    "already_has_access",
+    "unavailable"
   ],
   "DocumentEvidenceKind": [
     "document_passage"
@@ -247,12 +318,48 @@
     "chunk",
     "page"
   ],
+  "EmailInvitationActionReasons": [
+    "closed",
+    "cooldown",
+    "send_limit",
+    "delivery_outcome_unknown",
+    "inviter_authority_lost",
+    "origin_token_revoked",
+    "origin_token_expired",
+    "origin_scope_changed",
+    "recipient_connection_changed"
+  ],
+  "MembershipRole": [
+    "viewer",
+    "analyst",
+    "editor",
+    "operator",
+    "admin"
+  ],
+  "EmailInvitationStatus": [
+    "pending",
+    "accepted",
+    "declined",
+    "revoked",
+    "expired"
+  ],
+  "EmailInvitationAllowedActions": [
+    "revoke",
+    "resend"
+  ],
+  "EmailPreviewPoweredBy": [
+    "Powered by koinon"
+  ],
   "EntraCredentialKind": [
     "entra"
   ],
   "EntraSettingsMembershipMode": [
     "direct",
     "transitive"
+  ],
+  "EntraSettingsIdentityMode": [
+    "brokered",
+    "direct"
   ],
   "ExportKind": [
     "conversation",
@@ -333,6 +440,12 @@
   "FileBatchCapabilitiesWorker": [
     "external_native_worker"
   ],
+  "FileBatchCapabilitiesLargeFileTransport": [
+    "queued_file_spool"
+  ],
+  "FileBatchCapabilitiesQuotaSemantics": [
+    "lifetime_admission_bytes"
+  ],
   "FileBatchItemViewStatus": [
     "awaiting_upload",
     "staged",
@@ -379,13 +492,6 @@
     "blocked",
     "not_run"
   ],
-  "MembershipRole": [
-    "viewer",
-    "analyst",
-    "editor",
-    "operator",
-    "admin"
-  ],
   "IdentityProviderKind": [
     "keycloak",
     "entra",
@@ -418,6 +524,9 @@
     "accepted",
     "expired",
     "revoked"
+  ],
+  "InvitationReviewBinding": [
+    "directory_identity"
   ],
   "KeycloakCredentialKind": [
     "keycloak"
@@ -486,7 +595,8 @@
     "knowledge:search",
     "query:execute",
     "chat:use",
-    "evidence:read"
+    "evidence:read",
+    "activity:read"
   ],
   "McpRegisteredClientClientAuth": [
     "public",
@@ -582,6 +692,17 @@
     "metadata",
     "document_extraction",
     "knowledge_version"
+  ],
+  "NotificationTargetKind": [
+    "invitation",
+    "workspace",
+    "access",
+    "none"
+  ],
+  "ObservedCostStatus": [
+    "observed",
+    "partial",
+    "unavailable"
   ],
   "OpenUIArtifactKind": [
     "openui"

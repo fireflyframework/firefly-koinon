@@ -37,6 +37,16 @@ class VerifiedOriginal:
 
 
 @dataclass(frozen=True)
+class OriginalFileReceipt:
+    version_id: str | None
+    sha256: str
+    bytes: int
+    filename: str | None
+    media_type: str | None
+    anchor: str
+
+
+@dataclass(frozen=True)
 class LineagePage:
     items: tuple[dict[str, Any], ...]
     total: int

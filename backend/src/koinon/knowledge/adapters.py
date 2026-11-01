@@ -338,16 +338,23 @@ class NativeDomains:
         publication_guard=None,
         validate_processing=None,
         validate_publication=None,
+        content_file=None,
     ):
         from flycanon.core.services.sources.intake_service import IntakeService
         from flycanon.interfaces.dtos.source import SourceMetadata, SubmitSourceRequest
 
         with native_scope("canon", tenant_id, workspace_id, actor):
-            source = await self._resolve(IntakeService).submit(
+            intake = self._resolve(IntakeService)
+            submit = intake.submit_file if content_file is not None else intake.submit
+            source = await submit(
                 request=SubmitSourceRequest(
                     metadata=SourceMetadata(extra={"catalog_source_id": source_catalog_id})
                 ),
-                content=content,
+                **(
+                    {"path": content_file, "original_reference": None}
+                    if content_file is not None
+                    else {"content": content}
+                ),
                 filename=filename,
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,

@@ -48,6 +48,7 @@ dependencies = [
     # DuckDB's scoped file reads require the allowed_paths security setting.
     "duckdb>=1.3.2",
     "pyarrow>=17.0",
+    "psutil>=6,<9",
 
     # sqlglot -- SQL AST parser / validator / transpiler for the
     # Text-to-SQL pipeline (query classification, example mining,

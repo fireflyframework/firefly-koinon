@@ -107,25 +107,31 @@ test('palette searches scoped server results and opens a resource with keyboard 
   ).toBeVisible();
 });
 
-test('mobile commands fit the header and return focus after Escape', async ({ page }) => {
-  await page.setViewportSize({ width: 320, height: 800 });
-  await mockService(page, { organizationAgent: 'guide' });
-  await page.goto('/');
-  const trigger = page.getByRole('button', { name: 'Search and commands', exact: true });
-  await trigger.click();
-  const dialog = page.getByRole('dialog', { name: 'Search and navigate', exact: true });
-  await expect(dialog).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await dialog.getByRole('combobox').press('Escape');
-  await expect(dialog).not.toBeVisible();
-  await expect(trigger).toBeFocused();
-  const boxes = await page
-    .locator('ffk-shell .brand, ffk-shell .header-actions')
-    .evaluateAll((nodes) =>
-      nodes.map((node) => {
-        const r = node.getBoundingClientRect();
-        return { left: r.left, right: r.right };
-      }),
+for (const width of [320, 390]) {
+  test(`mobile commands fit the header and return focus after Escape at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 800 });
+    await mockService(page, { organizationAgent: 'guide' });
+    await page.goto('/');
+    const trigger = page.getByRole('button', { name: 'Search and commands', exact: true });
+    await trigger.click();
+    const dialog = page.getByRole('dialog', { name: 'Search and navigate', exact: true });
+    await expect(dialog).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
     );
-  expect(boxes[0].right).toBeLessThanOrEqual(boxes[1].left);
-});
+    await dialog.getByRole('combobox').press('Escape');
+    await expect(dialog).not.toBeVisible();
+    await expect(trigger).toBeFocused();
+    const boxes = await page
+      .locator('ffk-shell .brand, ffk-shell .header-actions')
+      .evaluateAll((nodes) =>
+        nodes.map((node) => {
+          const r = node.getBoundingClientRect();
+          return { left: r.left, right: r.right };
+        }),
+      );
+    expect(boxes[0].right).toBeLessThanOrEqual(boxes[1].left);
+  });
+}

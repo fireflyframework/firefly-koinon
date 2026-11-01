@@ -148,7 +148,7 @@ Environment aliases use `KOINON_DOCUMENT_STORAGE_`, `KOINON_STRUCTURED_STORAGE_`
 | `GCS_PREFIX` | `gcs_prefix` |
 | `GCS_ENDPOINT_URL` | `gcs_endpoint_url` |
 | `REQUEST_TIMEOUT_SECONDS` | `request_timeout_seconds` (1–60, default 10) |
-| `MAX_OBJECT_BYTES` | `max_object_bytes` (1–67,108,864, default 67,108,864) |
+| `MAX_OBJECT_BYTES` | `max_object_bytes` (1–268,435,456; the private attachment default remains 67,108,864) |
 
 Aliases override only the matching profile field. Native environment settings use their existing document/structured configuration prefixes with `OBJECT_STORE_` followed by these provider field names. Document selection uses `OBJECT_STORE_BACKEND`; structured selection uses `OBJECT_STORE`. No application secret or credential is embedded in these examples.
 
@@ -178,12 +178,12 @@ These lifecycle changes have source regression coverage. Their inclusion in the 
 
 ## Bulk work remains separate
 
-Canonical library upload currently accepts one file up to 32 MiB and executes ingestion in that request. It is not a durable bulk import contract. The retained structured package has bulk handlers, but exposing them would not supply canonical authorization, atomic admission or distributed backpressure automatically.
+The synchronous Library endpoint remains bounded to 32 MiB. [Durable source batches](../guides/bulk-intake.md) separately provide scoped manifests, writer generations, queued native execution and immutable per-item receipts for originals up to 128 MiB. [The installation file profile](../reference/library-file-ingestion.md) also bounds 512 MiB batches, 256 MiB expansion, parser resources and 16 GiB of lifetime staging admissions. Object SDK transport does not add these product semantics by itself.
 
-For multiple files, bound the caller's queue and per-file bytes, process explicitly authorized destinations, persist each accepted receipt and reconcile ambiguous outcomes before advancing. Do not replay an entire list after a timeout or assume a plain upload has idempotency. Query batches also need caller-owned item, concurrency, result-size and time budgets while retaining read-only SQL and evidence. No durable bulk-import, automatic recovery or large-scale throughput claim follows from the storage adapter alone. See the [Python](../guides/python-knowledge.md), [TypeScript](../guides/typescript-knowledge.md) and [Java](../guides/java-knowledge.md) content-management guides.
+Large originals spool through owned files and pinned provider versions. Azure/GCS file transfer uses bounded chunks with create-only and read-version conditions. Legacy byte-oriented paths remain independently bounded; queued S3 document transport is unsupported until its exact file contract is implemented. A timeout, missing receipt or cancelled caller never authorizes automatic parse/model replay.
 
 Provider behavior follows the [official S3 GetObject contract](https://docs.aws.amazon.com/boto3/latest/reference/services/s3/client/get_object.html). No cloud operation is performed by reading this guide or loading configuration.
 
-The retained structured S3 streaming writer aggregates input into 5 MiB parts, permits a smaller final part and stops before the 10,001st part. It attempts multipart abort on stream, upload, completion or cancellation failure while preserving the original error; provider lifecycle cleanup remains necessary if abort itself fails. Empty streams use a normal empty-object write. Protocol tests cover small and large chunks, failure and cancellation. These rules follow the [official multipart limits](https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html) and [abort contract](https://docs.aws.amazon.com/boto3/latest/reference/services/s3/client/abort_multipart_upload.html); they do not establish live cloud acceptance. Azure/GCS use the bounded whole-object paths described above; whole-file ingestion limits remain in force.
+The retained structured S3 streaming writer aggregates input into 5 MiB parts, permits a smaller final part and stops before the 10,001st part. It attempts multipart abort on stream, upload, completion or cancellation failure while preserving the original error; provider lifecycle cleanup remains necessary if abort itself fails. Empty streams use a normal empty-object write. Protocol tests cover small and large chunks, failure and cancellation. These rules follow the [official multipart limits](https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html) and [abort contract](https://docs.aws.amazon.com/boto3/latest/reference/services/s3/client/abort_multipart_upload.html); they do not establish live cloud acceptance. Azure/GCS queued file transport uses bounded file-backed transfers; legacy byte paths and their limits remain separate.
 
 Copyright 2026 Firefly Software Foundation. Licensed under Apache-2.0. Made with <3.

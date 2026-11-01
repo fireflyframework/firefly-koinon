@@ -1,4 +1,5 @@
 # Copyright 2024-2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -105,6 +106,12 @@ class UrlFetcher:
         )
 
     @property
+    def max_bytes(self) -> int:
+        maximum = getattr(self._settings, "max_bytes", None) or 256 * 1024**2
+        inline = getattr(self._settings, "inline_max_bytes", None)
+        return min(maximum, inline) if inline is not None else maximum
+
+    @property
     def policy(self) -> HostPolicy:
         """The host policy in force -- shared with the callback-URL check."""
         return self._policy
@@ -142,7 +149,7 @@ class UrlFetcher:
                 f"httpx is not installed: {exc}",
             ) from exc
 
-        max_bytes = getattr(self._settings, "max_bytes", None) or 256 * 1024 * 1024
+        max_bytes = self.max_bytes
         timeout_s = getattr(self._settings, "url_fetch_timeout_s", 60.0)
 
         async with httpx.AsyncClient(

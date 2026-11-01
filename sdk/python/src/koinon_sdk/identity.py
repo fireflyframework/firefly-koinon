@@ -3,7 +3,7 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/corporate_identity/dtos.py
-SHA256: 61b82a75735a2f7e186c7373385c8d8c71f550d7e1f86f46397a9c5a85fbd559
+SHA256: d45838fbc0650e84a794aeadb91d781d39fc97a5b6ba538e36f8189c48736aaf
 
 Server authorization and semantic validation remain authoritative.
 """
@@ -36,6 +36,7 @@ class EntraSettings(InputModel):
     client_id: str = Field(min_length=1, max_length=255)
     directory_client_id: str | None = Field(default=None, min_length=1, max_length=255)
     membership_mode: MembershipMode = "direct"
+    identity_mode: Literal["brokered", "direct"] = "brokered"
 
 
 class GoogleWorkspaceSettings(InputModel):

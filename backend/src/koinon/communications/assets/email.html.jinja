@@ -1,0 +1,26 @@
+{# Copyright 2026 Firefly Software Foundation. SPDX-License-Identifier: Apache-2.0 #}
+<!doctype html>
+<html lang="{{ locale }}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ preview.subject }}</title></head>
+<body style="margin:0;padding:0;background:{{ palette.canvas }};color:{{ palette.text }};font-family:{{ brand.font_family }},Arial,sans-serif">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;background:{{ palette.canvas }}"><tr><td align="center" style="padding:24px 12px">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;border-collapse:collapse;background:{{ palette.surface }};border:1px solid {{ palette.line }};border-radius:12px"><tr><td style="padding:24px">
+{% if logo %}<img src="cid:brand-logo" width="{{ logo.width }}" height="{{ logo.height }}" alt="{{ brand.product_name }}" style="display:block;border:0;margin:0 0 24px;max-width:100%;height:auto">{% else %}<p style="margin:0 0 24px;font-weight:700;font-size:16px;color:{{ palette.accent }}">{{ brand.product_name }}</p>{% endif %}
+<h1 style="margin:0 0 16px;font-size:26px;line-height:1.25;font-weight:700;color:{{ palette.text }}">{{ preview.heading }}</h1>
+{% for paragraph in preview.paragraphs %}<p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:{{ palette.text }}">{{ paragraph }}</p>{% endfor %}
+{% if window %}<p style="margin:0 0 4px;font-size:14px;line-height:1.5;color:{{ palette.text }}">{{ window }}</p><p style="margin:0 0 16px;font-size:12px;line-height:1.5;color:{{ palette.muted }}">{{ window_zone }}</p>{% endif %}
+{% if metrics %}<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="table-layout:fixed;border-collapse:collapse;margin:8px 0 20px">{% for metric in metrics %}{% if loop.index0 % 2 == 0 %}<tr>{% endif %}<td valign="top" width="50%" style="padding:8px 8px 12px 0;border-bottom:1px solid {{ palette.line }};overflow-wrap:anywhere"><p style="margin:0 0 4px;font-size:28px;line-height:1.2;font-weight:700;color:{{ palette.text }}">{{ metric.value }}</p><p style="margin:0;font-size:12px;line-height:1.5;color:{{ palette.muted }}">{{ metric.label }}</p></td>{% if loop.index0 % 2 == 1 or loop.last %}</tr>{% endif %}{% endfor %}</table>{% endif %}
+{% if projects %}<h2 style="margin:20px 0 12px;font-size:16px;line-height:1.5">{{ projects_label }}</h2><p style="margin:0 0 12px;font-size:12px;line-height:1.5;color:{{ palette.muted }}">{{ projects_description }}</p>{% for project in projects %}<p style="margin:0 0 4px;font-size:13px;line-height:1.5;overflow-wrap:anywhere">{{ project.name }}: {{ project.value }}</p><p style="margin:0 0 6px;font-size:12px;line-height:1.5;color:{{ palette.muted }}">{{ project.details }}</p><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 12px;border-collapse:collapse"><tr><td style="height:6px;background:{{ palette.canvas }}"><table role="presentation" width="{{ project.percent }}%" cellspacing="0" cellpadding="0"><tr><td style="height:6px;background:{{ palette.accent }}"></td></tr></table></td></tr></table>{% endfor %}{% endif %}
+{% for observation in observations %}<p style="margin:0 0 8px;font-size:13px;line-height:1.5;color:{{ palette.text }}">{{ observation }}</p>{% endfor %}
+{% if unavailable %}<p style="margin:0 0 20px;font-size:13px;line-height:1.5;color:{{ palette.muted }}">{{ unavailable }}</p>{% endif %}
+{% if action_url %}<table role="presentation" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:8px 0 24px"><tr><td bgcolor="{{ palette.action }}" style="border-radius:8px;background:{{ palette.action }}"><a href="{{ action_url }}" style="display:inline-block;padding:13px 20px;color:{{ palette.action_text }};font-size:16px;line-height:1.4;font-weight:700;text-decoration:none;border-radius:8px">{{ preview.action_label }}</a></td></tr></table>{% endif %}
+<p style="margin:0;font-size:13px;line-height:1.6;color:{{ palette.muted }}">{{ preview.footer }}</p>
+{% if preferences_url %}<p style="margin:16px 0 0;font-size:13px;line-height:1.5"><a href="{{ preferences_url }}" style="color:{{ palette.accent }};text-decoration:underline">{{ preferences_label }}</a></p>{% endif %}
+<div style="margin:24px 0 0;padding-top:16px;border-top:1px solid {{ palette.line }};font-size:12px;line-height:1.6;color:{{ palette.muted }}">
+{% if preview.organization_name %}<p style="margin:0">{{ organization_label }}: {{ preview.organization_name }}</p>{% endif %}
+{% if preview.workspace_name %}<p style="margin:0">{{ workspace_label }}: {{ preview.workspace_name }}</p>{% endif %}
+<p style="margin:8px 0 0">Powered by koinon</p>
+<p style="margin:0">© {{ year }} Firefly Software Foundation</p>
+</div>
+</td></tr></table>
+</td></tr></table>
+</body></html>

@@ -59,6 +59,8 @@ from __future__ import annotations
 import datetime
 import re
 import tempfile
+from collections.abc import Sequence
+from contextlib import ExitStack
 from importlib.metadata import version
 from pathlib import Path
 from typing import Any
@@ -68,7 +70,6 @@ from flyquery.core.services.ingestion.coordinates import (
     MaterializationCoordinates,
     input_digest,
 )
-from flyquery.core.services.ingestion.native_call import run_native
 from flyquery.core.services.ingestion.reader import (
     ColumnSchema,
     MaterialiseResult,
@@ -76,7 +77,20 @@ from flyquery.core.services.ingestion.reader import (
     TableExtractionRules,
 )
 from flyquery.core.services.ingestion.readers.delimited import materialize, ranges
-from flyquery.core.services.ingestion.resources import BoundedTextWriter, account_path, output_size
+from flyquery.core.services.ingestion.readers.excel_bounds import (
+    DiskRows,
+    RowView,
+    SectionPositions,
+    preflight,
+    shape,
+)
+from flyquery.core.services.ingestion.readers.excel_process import execute, execute_async
+from flyquery.core.services.ingestion.resources import (
+    BoundedTextWriter,
+    account_path,
+    current_scope,
+    output_size,
+)
 from flyquery.core.services.ingestion.resources import connect as connect_ingestion
 
 _NAME_SAFE_RE = re.compile(r"[^A-Za-z0-9_]+")
@@ -206,7 +220,7 @@ class ExcelReader:
     formats = ("xlsx", "xls", "ods")
 
     async def enumerate_tables(self, source_path: str, rules: TableExtractionRules) -> list[ProposedTable]:
-        return await run_native(self._enumerate_sync, source_path, rules)
+        return await execute_async("enumerate", (source_path, rules))
 
     async def materialise(
         self,
@@ -218,14 +232,16 @@ class ExcelReader:
         type_infer_sample_rows: int,
         max_title_rows: int = 3,
     ) -> MaterialiseResult:
-        return await run_native(
-            self._materialise_sync,
-            source_path,
-            table,
-            target_parquet_key,
-            workspace_locale,
-            type_infer_sample_rows,
-            max_title_rows,
+        return await execute_async(
+            "materialise",
+            (
+                source_path,
+                table,
+                target_parquet_key,
+                workspace_locale,
+                type_infer_sample_rows,
+                max_title_rows,
+            ),
         )
 
     # ------------------------------------------------------------------
@@ -237,7 +253,7 @@ class ExcelReader:
         return _NAME_SAFE_RE.sub("_", name).strip("_") or "sheet"
 
     @staticmethod
-    def _extract_sections(rows: list[list[Any]]) -> list[dict[str, Any]]:
+    def _extract_sections(rows: Sequence[list[Any]]) -> list[dict[str, Any]]:
         """Segment a sheet's rows into tabular sections.
 
         Each returned dict has:
@@ -394,68 +410,80 @@ class ExcelReader:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _enumerate_sync(source_path: str, rules: TableExtractionRules) -> list[ProposedTable]:
+    def _enumerate_sync(source_path, rules) -> list[ProposedTable]:
+        return execute("enumerate", (source_path, rules))
+
+    @staticmethod
+    def _materialise_sync(source_path, table, target, locale, sample_rows, title_rows) -> MaterialiseResult:
+        return execute("materialise", (source_path, table, target, locale, sample_rows, title_rows))
+
+    @staticmethod
+    def _enumerate_local(source_path: str, rules: TableExtractionRules) -> list[ProposedTable]:
         # python-calamine ships in the optional 'file-readers' extra.
         from python_calamine import CalamineWorkbook  # pyright: ignore[reportMissingImports]
 
-        wb = CalamineWorkbook.from_path(source_path)
-        out: list[ProposedTable] = []
-        allow = set(rules.sheet_allowlist) if rules.sheet_allowlist else None
-        for sheet_name in wb.sheet_names:
-            if allow is not None and sheet_name not in allow:
-                continue
-            sheet = wb.get_sheet_by_name(sheet_name)
-            # Normalise leading fully-empty rows so section indices are stable
-            # across re-ingests (HDR-UNSTABLE). The SAME normalisation runs in
-            # ``_materialise_sync`` so the stored indices slice the same rows.
-            rows = _normalise_leading_blanks(sheet.to_python(skip_empty_area=True))
-            if not rows:
-                continue
+        with ExitStack() as stack:
+            preflight(source_path)
+            wb = CalamineWorkbook.from_path(source_path)
+            stack.callback(wb.close)
+            out: list[ProposedTable] = []
+            allow = set(rules.sheet_allowlist) if rules.sheet_allowlist else None
+            for sheet_name in wb.sheet_names:
+                if allow is not None and sheet_name not in allow:
+                    continue
+                sheet = wb.get_sheet_by_name(sheet_name)
+                # Normalise leading fully-empty rows so section indices are stable
+                # across re-ingests (HDR-UNSTABLE). The SAME normalisation runs in
+                # ``_materialise_sync`` so the stored indices slice the same rows.
+                shape(sheet.height, sheet.width)
+                rows = stack.enter_context(DiskRows(sheet.iter_rows()))
+                if not rows:
+                    continue
 
-            sections = ExcelReader._extract_sections(rows)
+                sections = ExcelReader._extract_sections(rows)
 
-            if not sections:
-                # Truly empty / fully-non-tabular sheet -- skip.
-                continue
+                if not sections:
+                    # Truly empty / fully-non-tabular sheet -- skip.
+                    continue
 
-            # Single-section sheet that covers most of the data ->
-            # name the table after the sheet, identical to old behavior.
-            covers_whole_sheet = (
-                len(sections) == 1
-                and sections[0]["header_row_idx"] <= 3
-                and sections[0]["data_end_idx"] >= len(rows) - 2
-            )
-            if covers_whole_sheet:
-                s = sections[0]
-                out.append(
-                    ProposedTable(
-                        name=ExcelReader._sanitise(sheet_name),
-                        sheet_or_json_path=ExcelReader._section_path(sheet_name, s),
-                        n_columns=s["n_cols"],
-                        n_rows_estimate=s["n_data_rows"],
-                    )
+                # Single-section sheet that covers most of the data ->
+                # name the table after the sheet, identical to old behavior.
+                covers_whole_sheet = (
+                    len(sections) == 1
+                    and sections[0]["header_row_idx"] <= 3
+                    and sections[0]["data_end_idx"] >= len(rows) - 2
                 )
-                continue
-
-            # Multi-section sheet -- one ProposedTable per section.
-            sanitised_sheet = ExcelReader._sanitise(sheet_name)
-            used_names: dict[str, int] = {}
-            for s in sections:
-                base = ExcelReader._sanitise(s["label"])[:64] or "section"
-                candidate = f"{sanitised_sheet}__{base}"
-                # Collide-disambiguate
-                idx = used_names.get(candidate, 0)
-                final_name = f"{candidate}_{idx + 1}" if idx > 0 else candidate
-                used_names[candidate] = idx + 1
-                out.append(
-                    ProposedTable(
-                        name=final_name,
-                        sheet_or_json_path=ExcelReader._section_path(sheet_name, s),
-                        n_columns=s["n_cols"],
-                        n_rows_estimate=s["n_data_rows"],
+                if covers_whole_sheet:
+                    s = sections[0]
+                    out.append(
+                        ProposedTable(
+                            name=ExcelReader._sanitise(sheet_name),
+                            sheet_or_json_path=ExcelReader._section_path(sheet_name, s),
+                            n_columns=s["n_cols"],
+                            n_rows_estimate=s["n_data_rows"],
+                        )
                     )
-                )
-        return out
+                    continue
+
+                # Multi-section sheet -- one ProposedTable per section.
+                sanitised_sheet = ExcelReader._sanitise(sheet_name)
+                used_names: dict[str, int] = {}
+                for s in sections:
+                    base = ExcelReader._sanitise(s["label"])[:64] or "section"
+                    candidate = f"{sanitised_sheet}__{base}"
+                    # Collide-disambiguate
+                    idx = used_names.get(candidate, 0)
+                    final_name = f"{candidate}_{idx + 1}" if idx > 0 else candidate
+                    used_names[candidate] = idx + 1
+                    out.append(
+                        ProposedTable(
+                            name=final_name,
+                            sheet_or_json_path=ExcelReader._section_path(sheet_name, s),
+                            n_columns=s["n_cols"],
+                            n_rows_estimate=s["n_data_rows"],
+                        )
+                    )
+            return out
 
     @staticmethod
     def _section_path(sheet_name: str, s: dict[str, Any]) -> str:
@@ -484,7 +512,7 @@ class ExcelReader:
         return m.group("sheet"), header_idx, data_start, data_end
 
     @staticmethod
-    def _materialise_sync(
+    def _materialise_local(
         source_path: str,
         table: ProposedTable,
         target_parquet_key: str,
@@ -505,172 +533,181 @@ class ExcelReader:
         sheet_name, header_idx, data_start, data_end = ExcelReader._parse_section_path(
             table.sheet_or_json_path or table.name
         )
-        wb = CalamineWorkbook.from_path(source_path)
-        sheet = wb.get_sheet_by_name(sheet_name)
-        # Apply the SAME leading-blank normalisation used at enumerate time so
-        # the stored section indices slice the intended rows (HDR-UNSTABLE).
-        raw_rows = sheet.to_python(skip_empty_area=True)
-        rows = _normalise_leading_blanks(raw_rows)
-        start = sheet.start
-        if not rows or start is None:
-            raise ValueError(f"sheet {sheet_name!r} has no usable rows for table {table.name!r}")
-        row_offset = start[0] + len(raw_rows) - len(rows)
-        column_offset = start[1]
+        with ExitStack() as stack:
+            preflight(source_path)
+            wb = CalamineWorkbook.from_path(source_path)
+            stack.callback(wb.close)
+            sheet = wb.get_sheet_by_name(sheet_name)
+            # Apply the SAME leading-blank normalisation used at enumerate time so
+            # the stored section indices slice the intended rows (HDR-UNSTABLE).
+            shape(sheet.height, sheet.width)
+            rows = stack.enter_context(DiskRows(sheet.iter_rows()))
+            start = sheet.start
+            if not rows or start is None:
+                raise ValueError(f"sheet {sheet_name!r} has no usable rows for table {table.name!r}")
+            row_offset = rows.leading_empty
+            column_offset = start[1]
 
-        inherited_header = False
-        if header_idx is not None and data_end is not None and data_start is not None:
-            # Section-encoded path. The header row + the data rows, which may be
-            # NON-contiguous when the header was inherited from a period header
-            # above the section's title (financial-report layout). For the
-            # common contiguous case (data_start == header_idx + 1) this is
-            # exactly ``rows[header_idx:data_end]``.
-            #
-            # ``rows[header_idx]`` is a scalar index, so guard it: if the sheet
-            # changed between enumerate and materialise (re-ingest drift -- the
-            # raison d'être of HDR-UNSTABLE) the index can fall past the end. The
-            # old slice degraded silently; we raise a contextual ValueError
-            # instead of an opaque IndexError.
-            if header_idx >= len(rows):
+            inherited_header = False
+            if header_idx is not None and data_end is not None and data_start is not None:
+                # Section-encoded path. The header row + the data rows, which may be
+                # NON-contiguous when the header was inherited from a period header
+                # above the section's title (financial-report layout). For the
+                # common contiguous case (data_start == header_idx + 1) this is
+                # exactly ``rows[header_idx:data_end]``.
+                #
+                # ``rows[header_idx]`` is a scalar index, so guard it: if the sheet
+                # changed between enumerate and materialise (re-ingest drift -- the
+                # raison d'être of HDR-UNSTABLE) the index can fall past the end. The
+                # old slice degraded silently; we raise a contextual ValueError
+                # instead of an opaque IndexError.
+                if header_idx >= len(rows):
+                    raise ValueError(
+                        f"sheet {sheet_name!r}: header row {header_idx} out of range "
+                        f"(rows={len(rows)}) for table {table.name!r} "
+                        f"(path={table.sheet_or_json_path!r}); sheet changed since enumerate?"
+                    )
+                inherited_header = data_start != header_idx + 1
+                positions = SectionPositions(header_idx, data_start, min(data_end, len(rows)))
+                section_rows = RowView(rows, positions)
+                section_origins = RowView(range(row_offset, row_offset + len(rows)), positions)
+            else:
+                # Legacy / no-section path -- apply the merged-cell title heuristic.
+                body_start = 0
+                for i in range(min(max_title_rows, len(rows))):
+                    non_empty = sum(1 for c in rows[i] if c not in (None, ""))
+                    if non_empty <= 1:
+                        body_start = i + 1
+                    else:
+                        break
+                section_rows = rows[body_start:]
+                section_origins = range(row_offset + body_start, row_offset + len(rows))
+
+            if not section_rows:
                 raise ValueError(
-                    f"sheet {sheet_name!r}: header row {header_idx} out of range "
-                    f"(rows={len(rows)}) for table {table.name!r} "
-                    f"(path={table.sheet_or_json_path!r}); sheet changed since enumerate?"
+                    f"sheet {sheet_name!r} has no usable rows for "
+                    f"table {table.name!r} (path={table.sheet_or_json_path!r})"
                 )
-            inherited_header = data_start != header_idx + 1
-            section_rows = [rows[header_idx]] + rows[data_start:data_end]
-            section_origins = [row_offset + header_idx] + list(
-                range(row_offset + data_start, row_offset + min(data_end, len(rows)))
+
+            # COMPACT to the populated column set. Dashboard-style XLSX
+            # layouts (Orbis/BvD financial reports, Bloomberg / Refinitiv
+            # exports, Excel "templates" that use merged cells for visual
+            # framing, etc.) place real values at sparse, non-consecutive
+            # column indices -- e.g. five yearly figures might land at
+            # cols 18, 32, 51, 70, 91 with everything in between left
+            # empty because the merged title cells span those gaps. A
+            # naive trim to [min_col, max_col] would still leave dozens
+            # of all-empty columns that defeat DuckDB header detection.
+            # Compacting to ONLY the populated indices yields rows that
+            # match the visual "5 yearly columns + label" view a human
+            # sees in Excel.
+            # For an inherited (non-contiguous) header, compact over the DATA rows
+            # only -- a period the sub-section doesn't report must not survive as an
+            # all-NULL year column just because the shared header names it.
+            compact_rows = section_rows[1:] if inherited_header and len(section_rows) > 1 else section_rows
+            populated: set[int] = set()
+            for r in compact_rows:
+                for col_idx, cell in enumerate(r):
+                    if cell not in ("", None):
+                        populated.add(col_idx)
+            keep = sorted(populated) if populated else list(range(max(map(len, section_rows), default=0)))
+
+            # Embedded newlines in Excel cells (multi-line addresses,
+            # description paragraphs, etc.) trip up DuckDB's CSV dialect
+            # sniffer even when the cell is double-quoted -- the sniffer
+            # reads forward and gets confused about row boundaries. We
+            # flatten any newline/CR inside a cell to a single space before
+            # writing. Lossy on layout but preserves the information.
+            def _flatten(cell: Any) -> str:
+                if cell is None:
+                    return ""
+                s = str(cell)
+                if "\n" in s or "\r" in s:
+                    s = s.replace("\r\n", " ").replace("\n", " ").replace("\r", " ")
+                return s
+
+            tmp = stack.enter_context(
+                tempfile.NamedTemporaryFile(
+                    suffix=".csv",
+                    mode="w",
+                    newline="",
+                    delete=False,
+                    encoding="utf-8",
+                    dir=current_scope().policy.scratch_root,
+                )
             )
-        else:
-            # Legacy / no-section path -- apply the merged-cell title heuristic.
-            body_start = 0
-            for i in range(min(max_title_rows, len(rows))):
-                non_empty = sum(1 for c in rows[i] if c not in (None, ""))
-                if non_empty <= 1:
-                    body_start = i + 1
-                else:
-                    break
-            section_rows = rows[body_start:]
-            section_origins = list(range(row_offset + body_start, row_offset + len(rows)))
-
-        if not section_rows:
-            raise ValueError(
-                f"sheet {sheet_name!r} has no usable rows for "
-                f"table {table.name!r} (path={table.sheet_or_json_path!r})"
-            )
-
-        # COMPACT to the populated column set. Dashboard-style XLSX
-        # layouts (Orbis/BvD financial reports, Bloomberg / Refinitiv
-        # exports, Excel "templates" that use merged cells for visual
-        # framing, etc.) place real values at sparse, non-consecutive
-        # column indices -- e.g. five yearly figures might land at
-        # cols 18, 32, 51, 70, 91 with everything in between left
-        # empty because the merged title cells span those gaps. A
-        # naive trim to [min_col, max_col] would still leave dozens
-        # of all-empty columns that defeat DuckDB header detection.
-        # Compacting to ONLY the populated indices yields rows that
-        # match the visual "5 yearly columns + label" view a human
-        # sees in Excel.
-        # For an inherited (non-contiguous) header, compact over the DATA rows
-        # only -- a period the sub-section doesn't report must not survive as an
-        # all-NULL year column just because the shared header names it.
-        compact_rows = section_rows[1:] if inherited_header and len(section_rows) > 1 else section_rows
-        populated: set[int] = set()
-        for r in compact_rows:
-            for col_idx, cell in enumerate(r):
-                if cell not in ("", None):
-                    populated.add(col_idx)
-        keep = sorted(populated) if populated else list(range(max(map(len, section_rows), default=0)))
-        if populated:
-            section_rows = [[r[k] if k < len(r) else "" for k in keep] for r in section_rows]
-
-        # Embedded newlines in Excel cells (multi-line addresses,
-        # description paragraphs, etc.) trip up DuckDB's CSV dialect
-        # sniffer even when the cell is double-quoted -- the sniffer
-        # reads forward and gets confused about row boundaries. We
-        # flatten any newline/CR inside a cell to a single space before
-        # writing. Lossy on layout but preserves the information.
-        def _flatten(cell: Any) -> str:
-            if cell is None:
-                return ""
-            s = str(cell)
-            if "\n" in s or "\r" in s:
-                s = s.replace("\r\n", " ").replace("\n", " ").replace("\r", " ")
-            return s
-
-        with tempfile.NamedTemporaryFile(
-            suffix=".csv", mode="w", newline="", delete=False, encoding="utf-8"
-        ) as tmp:
+            stack.callback(Path(tmp.name).unlink, missing_ok=True)
             writer = csv.writer(BoundedTextWriter(tmp))
             for r in section_rows:
-                writer.writerow([_flatten(c) for c in r])
+                writer.writerow([_flatten(r[k] if k < len(r) else "") for k in keep])
+            tmp.flush()
             tmp_path = tmp.name
 
-        try:
-            conn = connect_ingestion()
             try:
-                receipt = materialize(
-                    conn, tmp_path, target_parquet_key, sample_rows=type_infer_sample_rows, excel=True
-                )
-                rows_ct_row = conn.execute(
-                    "SELECT count(*) FROM read_parquet(?)", [target_parquet_key]
-                ).fetchone()
-                rows_ct = rows_ct_row[0] if rows_ct_row else 0
-                schema = conn.execute(
-                    "SELECT * FROM (DESCRIBE SELECT * FROM read_parquet(?))",
-                    [target_parquet_key],
-                ).fetchall()
-                columns = tuple(
-                    ColumnSchema(name=r[0], data_type=r[1], is_nullable=(r[2] == "YES"), position=i)
-                    for i, r in enumerate(schema)
-                )
-            finally:
-                conn.close()
-        finally:
-            Path(tmp_path).unlink(missing_ok=True)
-
-        byte_size = output_size(target_parquet_key)
-        return MaterialiseResult(
-            target_parquet_key=target_parquet_key,
-            parquet_byte_size=byte_size,
-            n_rows_actual=rows_ct,
-            columns=columns,
-            coordinates=MaterializationCoordinates(
-                "excel",
-                Path(source_path).suffix.lower().lstrip("."),
-                "sheet_row",
-                input_digest(source_path),
-                rows_ct,
-                len(columns),
-                ranges([section_origins[i] for i in receipt.record_indices]),
-                tuple(
-                    ColumnOrigin(
-                        i,
-                        column_offset + keep[i],
-                        (),
-                        None,
-                        ((section_origins[receipt.header_record], column_offset + keep[i]),)
-                        if receipt.header_record is not None
-                        else (),
+                conn = connect_ingestion()
+                try:
+                    receipt = materialize(
+                        conn, tmp_path, target_parquet_key, sample_rows=type_infer_sample_rows, excel=True
                     )
-                    for i, column in enumerate(columns)
+                    rows_ct_row = conn.execute(
+                        "SELECT count(*) FROM read_parquet(?)", [target_parquet_key]
+                    ).fetchone()
+                    rows_ct = rows_ct_row[0] if rows_ct_row else 0
+                    schema = conn.execute(
+                        "SELECT * FROM (DESCRIBE SELECT * FROM read_parquet(?))",
+                        [target_parquet_key],
+                    ).fetchall()
+                    columns = tuple(
+                        ColumnSchema(name=r[0], data_type=r[1], is_nullable=(r[2] == "YES"), position=i)
+                        for i, r in enumerate(schema)
+                    )
+                finally:
+                    conn.close()
+            finally:
+                Path(tmp_path).unlink(missing_ok=True)
+
+            byte_size = output_size(target_parquet_key)
+            return MaterialiseResult(
+                target_parquet_key=target_parquet_key,
+                parquet_byte_size=byte_size,
+                n_rows_actual=rows_ct,
+                columns=columns,
+                coordinates=MaterializationCoordinates(
+                    "excel",
+                    Path(source_path).suffix.lower().lstrip("."),
+                    "sheet_row",
+                    input_digest(source_path),
+                    rows_ct,
+                    len(columns),
+                    ranges(section_origins[i] for i in receipt.record_indices),
+                    tuple(
+                        ColumnOrigin(
+                            i,
+                            column_offset + keep[i],
+                            (),
+                            None,
+                            ((section_origins[receipt.header_record], column_offset + keep[i]),)
+                            if receipt.header_record is not None
+                            else (),
+                        )
+                        for i, column in enumerate(columns)
+                    ),
+                    parser_decisions=receipt.decisions
+                    + (
+                        ("newline_normalization", "crlf_to_space"),
+                        ("value_basis", "calamine_cached_values"),
+                        ("inherited_header", inherited_header),
+                        ("column_compaction", True),
+                    ),
+                    dependencies=(
+                        ("duckdb", duckdb.__version__),
+                        ("python-calamine", version("python-calamine")),
+                    ),
+                    source_sheet=sheet_name,
+                    rejected_source_rows=tuple(section_origins[i] for i in receipt.rejected_records),
+                    complete=receipt.complete and len(columns) == len(keep),
+                    reason_code=None
+                    if receipt.complete and len(columns) == len(keep)
+                    else "UNVERIFIED_SHEET_COVERAGE",
                 ),
-                parser_decisions=receipt.decisions
-                + (
-                    ("newline_normalization", "crlf_to_space"),
-                    ("value_basis", "calamine_cached_values"),
-                    ("inherited_header", inherited_header),
-                    ("column_compaction", True),
-                ),
-                dependencies=(
-                    ("duckdb", duckdb.__version__),
-                    ("python-calamine", version("python-calamine")),
-                ),
-                source_sheet=sheet_name,
-                rejected_source_rows=tuple(section_origins[i] for i in receipt.rejected_records),
-                complete=receipt.complete and len(columns) == len(keep),
-                reason_code=None
-                if receipt.complete and len(columns) == len(keep)
-                else "UNVERIFIED_SHEET_COVERAGE",
-            ),
-        )
+            )

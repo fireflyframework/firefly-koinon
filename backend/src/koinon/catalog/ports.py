@@ -33,3 +33,10 @@ class ManagedMembershipReader(Protocol):
     async def effective_membership_page(self, tenant_id: str, **filters) -> dict: ...
 
     def effective_membership_rows(self) -> Any: ...
+
+
+@runtime_checkable
+class MembershipEventRecorder(Protocol):
+    async def membership_changed(
+        self, actor: str, member: Membership, before: tuple[bool, str] | None
+    ) -> None: ...

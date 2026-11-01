@@ -28,7 +28,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 ### index
 
 - Minimum: `0`
-- Maximum: `511`
+- Maximum: `2047`
 
 ### data_base64
 
@@ -51,7 +51,7 @@ This is a schema definition, not an example request. It preserves all declared k
       "additionalProperties": false,
       "properties": {
         "index": {
-          "maximum": 511,
+          "maximum": 2047,
           "minimum": 0,
           "title": "Index",
           "type": "integer"

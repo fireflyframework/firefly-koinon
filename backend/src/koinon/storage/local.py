@@ -6,11 +6,15 @@ import tempfile
 from contextlib import suppress
 from pathlib import Path
 
+from koinon_storage import local_files
+from koinon_storage.client_lifecycle import ClientLifecycle
+
 from koinon.storage.ports import BlobTooLargeError, validate_key
 
 
 class LocalBlobStore:
     def __init__(self, root: str):
+        self._lifecycle = ClientLifecycle()
         self.root = Path(root).expanduser()
         self.validate_root()
         self.root = self.root.resolve()
@@ -66,6 +70,23 @@ class LocalBlobStore:
         finally:
             if temporary is not None:
                 temporary.unlink(missing_ok=True)
+
+    async def create_file(self, key, path, content_type=None):
+        return await self._lifecycle.run(
+            lambda: local_files.create_file(self.root, self._path(key), key, path, 128 * 1024**2)
+        )
+
+    async def capture_file(self, key, size, digest):
+        return await self._lifecycle.run(
+            lambda: local_files.capture_file(self.root, self._path(key), key, size, digest, 128 * 1024**2)
+        )
+
+    async def download_file(self, reference, path, *, max_bytes):
+        await self._lifecycle.run(
+            lambda: local_files.download_file(
+                self.root, self._path(reference.key), reference, path, max_bytes
+            )
+        )
 
     async def get_bounded(self, key: str, max_bytes: int) -> bytes:
         if type(max_bytes) is not int or max_bytes < 0:

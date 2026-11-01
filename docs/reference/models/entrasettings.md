@@ -20,6 +20,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 | `client_id` | `string` | Yes | Not specified |
 | `directory_client_id` | `string` or `null` | No | `null` |
 | `membership_mode` | `string` | No | `"direct"` |
+| `identity_mode` | `string` | No | `"brokered"` |
 
 ## Model constraints
 
@@ -48,6 +49,10 @@ Required means the key must be present. Nullable means its value may be `null`; 
 ### membership_mode
 
 - Allowed values: `"direct"`, `"transitive"`
+
+### identity_mode
+
+- Allowed values: `"brokered"`, `"direct"`
 
 
 ## Exact JSON Schema
@@ -97,6 +102,15 @@ This is a schema definition, not an example request. It preserves all declared k
             "transitive"
           ],
           "title": "Membership Mode",
+          "type": "string"
+        },
+        "identity_mode": {
+          "default": "brokered",
+          "enum": [
+            "brokered",
+            "direct"
+          ],
+          "title": "Identity Mode",
           "type": "string"
         }
       },

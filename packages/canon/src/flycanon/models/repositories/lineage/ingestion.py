@@ -102,7 +102,15 @@ async def read_chunk_records(
                 *(
                     artifact.c[key].label(f"{prefix}_{key}")
                     for prefix, artifact in (("raw", raw), ("normalized", normalized))
-                    for key in ("id", "role", "sha256", "bytes", "object_key", "media_type")
+                    for key in (
+                        "id",
+                        "role",
+                        "sha256",
+                        "bytes",
+                        "object_key",
+                        "media_type",
+                        "object_reference_json",
+                    )
                 ),
             )
             .select_from(

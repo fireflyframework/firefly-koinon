@@ -60,7 +60,7 @@ class TokenRestriction:
                     ) from None
         return row
 
-    async def resource(self, subject: str, entry, *, write=False):
+    async def resource(self, subject: str, entry, *, write=False, parent_reader=None):
         grant = await self.grant(subject)
         if grant is None:
             return
@@ -77,5 +77,6 @@ class TokenRestriction:
             if current.id in grant.asset_ids:
                 return
             seen.add(current.id)
-            current = await self.entries.find_by_id(current.parent_id) if current.parent_id else None
+            reader = parent_reader or self.entries.find_by_id
+            current = await reader(current.parent_id) if current.parent_id else None
         raise AccessDenied("Resource exceeds the API token scope", code="TOKEN_SCOPE_DENIED")

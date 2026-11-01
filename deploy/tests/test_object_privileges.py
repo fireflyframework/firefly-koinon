@@ -132,3 +132,28 @@ def test_organization_metadata_cannot_be_deleted_by_runtime_reprovisioning(table
         f'REVOKE ALL ON TABLE public."{table}" FROM "example_runtime"',
         f'GRANT SELECT,INSERT,UPDATE ON TABLE public."{table}" TO "example_runtime"',
     ]
+
+
+def test_bootstrap_runtime_can_only_select_and_activate_not_seed_or_rewrite_identity():
+    from koinon.bootstrap.entities import ACTIVATION_COLUMNS, IMMUTABLE_COLUMNS
+
+    connection = Statements()
+    module.grant_table(
+        connection, "koinon_bootstrap_identity_grants", "example_runtime"
+    )
+    assert len(connection.items) == 5
+    assert connection.items[0].startswith("REVOKE ALL ON TABLE")
+    for privilege, statement in zip(
+        ("INSERT", "UPDATE"), connection.items[1:3], strict=True
+    ):
+        assert statement.startswith(f"REVOKE {privilege} (")
+        assert all(
+            f'"{name}"' in statement
+            for name in (*IMMUTABLE_COLUMNS, *ACTIVATION_COLUMNS)
+        )
+    assert connection.items[3].startswith("GRANT SELECT ON TABLE")
+    assert (
+        connection.items[4]
+        == 'GRANT UPDATE ("consumed_at", "consumed_subject", "membership_id") '
+        'ON TABLE public."koinon_bootstrap_identity_grants" TO "example_runtime"'
+    )

@@ -1,0 +1,60 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+@if (preview(); as email) {
+  <section aria-labelledby="email-preview-title">
+    <div class="preview-label">
+      <h3 id="email-preview-title">{{ 'Email preview' | ffkText }}</h3>
+      <ffk-badge>{{ 'Preview' | ffkText }}</ffk-badge>
+    </div>
+    <dl>
+      <dt>{{ 'From' | ffkText }}</dt>
+      <dd>{{ email.sender_name }}</dd>
+      <dt>{{ 'Subject' | ffkText }}</dt>
+      <dd>{{ email.subject }}</dd>
+    </dl>
+    @if (email.rendered_html) {
+      <nav class="preview-tabs" [attr.aria-label]="'Email format' | ffkText">
+        <button
+          type="button"
+          [attr.aria-current]="tab() === 'html' ? 'page' : null"
+          (click)="tab.set('html')"
+        >
+          HTML</button
+        ><button
+          type="button"
+          [attr.aria-current]="tab() === 'text' ? 'page' : null"
+          (click)="tab.set('text')"
+        >
+          {{ 'Plain text' | ffkText }}
+        </button>
+      </nav>
+      @if (tab() === 'html') {
+        <ffk-rendered-email [value]="email.rendered_html" />
+      } @else {
+        <pre>{{ email.rendered_text }}</pre>
+      }
+    } @else {
+      <div class="email-body" [ngStyle]="styles()">
+        @if (logo()) {
+          <img class="email-logo" [src]="logo()" [alt]="identity().product_name" />
+        } @else {
+          <strong class="email-brand">{{ identity().product_name }}</strong>
+        }
+        <h3>{{ email.heading }}</h3>
+        @for (paragraph of email.paragraphs; track $index) {
+          <p>{{ paragraph }}</p>
+        }
+        <span class="email-action">{{ email.action_label }}</span>
+        <p class="email-footer">{{ email.footer }}</p>
+        @if (email.organization_name) {
+          <p class="email-footer">
+            {{ 'Organization' | ffkText }}: {{ email.organization_name }}
+            @if (email.workspace_name) {
+              <br />{{ 'Workspace' | ffkText }}: {{ email.workspace_name }}
+            }
+          </p>
+        }
+        <p class="email-footer">Powered by koinon<br />© {{ year }} Firefly Software Foundation</p>
+      </div>
+    }
+  </section>
+}

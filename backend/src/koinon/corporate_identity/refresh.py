@@ -45,7 +45,7 @@ class CorporateAccessRefresh:
             canonical_issuer=self.oidc.issuer, broker_alias=alias, status="active"
         )
         for provider in rows:
-            identity = verified_identity(policy(provider), claims)
+            identity = verified_identity(policy(provider, self.oidc), claims)
             await self.observe(provider.id, identity.subject, identity.external_subject)
 
     async def subject(self, subject):

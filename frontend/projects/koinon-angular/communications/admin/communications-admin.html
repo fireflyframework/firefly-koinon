@@ -1,0 +1,438 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<section aria-labelledby="communications-title">
+  <header class="heading">
+    <div>
+      <h2 id="communications-title">{{ 'Communications' | ffkText }}</h2>
+      <p>
+        {{
+          'Manage how invitations and access updates reach people in your organization.' | ffkText
+        }}
+      </p>
+    </div>
+    <ffk-button
+      variant="quiet"
+      icon="refresh"
+      [disabled]="loading"
+      (click)="refreshRequested.emit()"
+      >{{ 'Refresh' | ffkText }}</ffk-button
+    >
+  </header>
+  <nav class="tabs" [attr.aria-label]="'Communications views' | ffkText">
+    <button
+      type="button"
+      [attr.aria-current]="tab() === 'service' ? 'page' : null"
+      (click)="openSection('service')"
+    >
+      {{ 'Email service' | ffkText }}</button
+    ><button
+      type="button"
+      [attr.aria-current]="tab() === 'policy' ? 'page' : null"
+      (click)="openSection('policy')"
+    >
+      {{ 'Policies' | ffkText }}</button
+    ><button
+      type="button"
+      [attr.aria-current]="tab() === 'history' ? 'page' : null"
+      (click)="openSection('history')"
+    >
+      {{ 'Delivery history' | ffkText }}
+    </button>
+  </nav>
+  @if (error || validation()) {
+    <p class="feedback" role="alert">{{ error || validation() | ffkText }}</p>
+  }
+  @if (notice) {
+    <p class="feedback" role="status">{{ notice | ffkText }}</p>
+  }
+  @if (loading) {
+    <ffk-skeleton width="70%" height="3px" [label]="'Loading communications' | ffkText" />
+  }
+  @if (tab() === 'service') {
+    @if (readiness; as service) {
+      <section aria-labelledby="email-service-title" class="service">
+        <div class="section-heading">
+          <h3 id="email-service-title">
+            {{ service.provider_label || ('Email delivery' | ffkText) }}
+          </h3>
+          <ffk-badge [tone]="service.state === 'ready' ? 'ready' : 'attention'">{{
+            readinessLabel() | ffkText
+          }}</ffk-badge>
+        </div>
+        <p>
+          {{
+            'Provider credentials and sender verification are managed in deployment configuration.'
+              | ffkText
+          }}
+        </p>
+        <dl>
+          <dt>{{ 'Sender name' | ffkText }}</dt>
+          <dd>{{ service.sender_name || ('Not configured' | ffkText) }}</dd>
+          <dt>{{ 'Sender address' | ffkText }}</dt>
+          <dd>{{ service.sender_address || ('Not configured' | ffkText) }}</dd>
+          <dt>{{ 'Reply to' | ffkText }}</dt>
+          <dd>{{ service.reply_to || ('Uses sender address' | ffkText) }}</dd>
+          <dt>{{ 'Public application address' | ffkText }}</dt>
+          <dd>
+            {{ (service.public_address_configured ? 'Configured' : 'Not configured') | ffkText }}
+          </dd>
+        </dl>
+        @if (service.issues.length) {
+          <div class="issues">
+            <h4>{{ 'Before email can be delivered' | ffkText }}</h4>
+            <ul>
+              @for (issue of service.issues; track issue.code) {
+                <li>{{ issue.explanation }}</li>
+              }
+            </ul>
+          </div>
+        }
+        <p class="help">
+          {{
+            'Recipient eligibility is checked separately against the connected identity directory. A ready sender does not verify a recipient’s identity.'
+              | ffkText
+          }}
+        </p>
+      </section>
+    }
+  } @else if (tab() === 'policy') {
+    @if (policy; as current) {
+      <form (ngSubmit)="savePolicy()">
+        <h3>{{ 'Organization notification policy' | ffkText }}</h3>
+        <p>
+          {{
+            'Required notices protect people’s awareness of access changes. Personal preferences apply to the optional updates you enable.'
+              | ffkText
+          }}
+        </p>
+        <label class="sender-choice"
+          >{{ 'Email sender' | ffkText
+          }}<select name="sender" [(ngModel)]="senderId" [disabled]="saving || !current.can_update">
+            <option value="">{{ 'Use deployment default' | ffkText }}</option>
+            @for (sender of readiness?.sender_options || []; track sender.id) {
+              <option [value]="sender.id">{{ sender.display_name }} ({{ sender.address }})</option>
+            }</select
+          ><small>{{
+            'Only senders verified in deployment configuration are available.' | ffkText
+          }}</small></label
+        >
+        <label class="sender-choice"
+          >{{ 'Default notification language' | ffkText
+          }}<select
+            name="default-locale"
+            [(ngModel)]="defaultLocale"
+            [disabled]="saving || !current.can_update"
+          >
+            <option value="">{{ 'Use installation language' | ffkText }}</option>
+            <option value="en-US">English (en-US)</option>
+            <option value="es-ES">Español (es-ES)</option>
+            @if (defaultLocale && defaultLocale !== 'en-US' && defaultLocale !== 'es-ES') {
+              <option [value]="defaultLocale">{{ defaultLocale }}</option>
+            }</select
+          ><small>{{
+            'People can choose English or Spanish in their own notification preferences.' | ffkText
+          }}</small></label
+        >
+        @for (rule of rules; track rule.kind) {
+          <fieldset>
+            <legend>
+              {{ rule.label | ffkText }}
+              @if (rule.required) {
+                <ffk-badge>{{ 'Required' | ffkText }}</ffk-badge>
+              }
+            </legend>
+            <p>{{ rule.description | ffkText }}</p>
+            <div class="channels">
+              <label
+                ><input
+                  type="checkbox"
+                  [name]="rule.kind + '-inbox'"
+                  [(ngModel)]="rule.inbox"
+                  [disabled]="saving || !current.can_update || rule.required"
+                />{{ 'In-app inbox' | ffkText }}</label
+              ><label
+                ><input
+                  type="checkbox"
+                  [name]="rule.kind + '-email'"
+                  [(ngModel)]="rule.email"
+                  [disabled]="
+                    saving || !current.can_update || rule.required || !rule.email_available
+                  "
+                />{{ 'Email' | ffkText }}</label
+              >
+            </div>
+          </fieldset>
+        }
+        <label class="digest-toggle"
+          ><input
+            type="checkbox"
+            name="digest-enabled"
+            [(ngModel)]="digestEnabled"
+            [disabled]="saving || !current.can_update"
+          /><span
+            >{{ 'Allow optional usage summaries' | ffkText
+            }}<small>{{
+              'People can turn summaries off or choose a schedule from the cadences you allow.'
+                | ffkText
+            }}</small></span
+          ></label
+        >
+        @if (digestEnabled) {
+          <fieldset>
+            <legend>{{ 'Allowed summary schedules' | ffkText }}</legend>
+            <div class="channels">
+              @for (frequency of frequencies; track frequency) {
+                <label
+                  ><input
+                    type="checkbox"
+                    [name]="frequency + '-allowed'"
+                    [ngModel]="allowedDigests.includes(frequency)"
+                    (ngModelChange)="toggleDigest(frequency, $event)"
+                    [disabled]="saving || !current.can_update"
+                  />{{ digestLabel(frequency) | ffkText }}</label
+                >
+              }
+            </div>
+            <p>
+              {{
+                'Summaries contain only the recipient’s own usage counts. Private content is never included.'
+                  | ffkText
+              }}
+            </p>
+          </fieldset>
+          <label class="sender-choice"
+            >{{ 'Default summary schedule' | ffkText
+            }}<select
+              name="default-digest"
+              [(ngModel)]="defaultDigest"
+              [disabled]="saving || !current.can_update"
+            >
+              @for (frequency of allowedDigests; track frequency) {
+                <option [value]="frequency">{{ digestLabel(frequency) | ffkText }}</option>
+              }</select
+            ><small>{{
+              'Defaults apply until the person saves their own preferences. Off is always available.'
+                | ffkText
+            }}</small></label
+          >
+          @if (defaultDigest !== 'off') {
+            <ffk-digest-schedule
+              [frequency]="defaultDigest"
+              [(value)]="defaultSchedule"
+              [disabled]="saving || !current.can_update"
+            />
+            <p class="help">
+              {{ 'Local send time follows each recipient’s profile time zone.' | ffkText }}
+            </p>
+          }
+        }
+        <section class="administrator-summaries" aria-labelledby="administrator-summary-title">
+          <h3 id="administrator-summary-title">{{ 'Administrator summaries' | ffkText }}</h3>
+          <p>
+            {{
+              'Enable separate schedules for current organization administrators. Each administrator can turn these optional summaries off in their own preferences.'
+                | ffkText
+            }}
+          </p>
+          @for (cadence of adminCadences; track cadence) {
+            <fieldset>
+              <legend>
+                <label class="admin-cadence"
+                  ><input
+                    type="checkbox"
+                    [name]="'administrator-' + cadence"
+                    [ngModel]="!!adminSchedule(cadence)"
+                    (ngModelChange)="toggleAdminCadence(cadence, $event)"
+                    [disabled]="saving || !current.can_update"
+                  />{{ digestLabel(cadence) | ffkText }}</label
+                >
+              </legend>
+              @if (adminSchedule(cadence); as schedule) {
+                <ffk-digest-schedule
+                  [frequency]="cadence"
+                  [value]="schedule"
+                  (valueChange)="updateAdminSchedule(cadence, $event)"
+                  [disabled]="saving || !current.can_update"
+                />
+              }
+            </fieldset>
+          }
+          <p class="help">
+            {{
+              'Administrator summaries contain current authorized activity counts. Required security notices follow their own policy.'
+                | ffkText
+            }}
+          </p>
+        </section>
+        @if (current.can_update) {
+          <ffk-button type="submit" variant="primary" [loading]="saving">{{
+            'Save policy' | ffkText
+          }}</ffk-button>
+        } @else {
+          <p class="help">
+            {{
+              'Your role can view this policy. An administrator can change editable options.'
+                | ffkText
+            }}
+          </p>
+        }
+      </form>
+    }
+  } @else {
+    <form class="filters" (ngSubmit)="changePage(1)">
+      <label
+        >{{ 'Delivery status' | ffkText
+        }}<select name="status" [(ngModel)]="status" [disabled]="loading">
+          <option value="">{{ 'All statuses' | ffkText }}</option>
+          @for (state of states; track state) {
+            <option [value]="state">{{ statusLabel(state) | ffkText }}</option>
+          }
+        </select></label
+      ><label
+        >{{ 'Type' | ffkText
+        }}<select name="kind" [(ngModel)]="kind" [disabled]="loading">
+          <option value="">{{ 'All types' | ffkText }}</option>
+          @for (event of kinds; track event) {
+            <option [value]="event">{{ kindLabel(event) | ffkText }}</option>
+          }
+        </select></label
+      ><label
+        >{{ 'From date' | ffkText
+        }}<input type="date" name="from" [(ngModel)]="from" [disabled]="loading" /></label
+      ><label
+        >{{ 'To date' | ffkText
+        }}<input type="date" name="to" [(ngModel)]="to" [disabled]="loading" /></label
+      ><ffk-button type="submit" [disabled]="loading">{{ 'Apply filters' | ffkText }}</ffk-button>
+    </form>
+    @if (deliveries; as history) {
+      <div class="table-wrap" tabindex="0" [attr.aria-label]="'Email delivery records' | ffkText">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">{{ 'Recipient and update' | ffkText }}</th>
+              <th scope="col">{{ 'Access scope' | ffkText }}</th>
+              <th scope="col">{{ 'Status' | ffkText }}</th>
+              <th scope="col">{{ 'Queued' | ffkText }}</th>
+              <th scope="col">
+                <span class="visually-hidden">{{ 'Actions' | ffkText }}</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (delivery of history.items; track delivery.id) {
+              <tr>
+                <td>
+                  <strong>{{ delivery.recipient_display }}</strong
+                  ><small>{{ kindLabel(delivery.kind) | ffkText }}</small>
+                </td>
+                <td>{{ delivery.scope_name }}</td>
+                <td>
+                  <ffk-badge [tone]="delivery.status === 'failed' ? 'attention' : 'neutral'">{{
+                    statusLabel(delivery.status) | ffkText
+                  }}</ffk-badge>
+                </td>
+                <td>
+                  <time [attr.datetime]="delivery.created_at">{{
+                    delivery.created_at | ffkDate: undefined : 'datetime'
+                  }}</time>
+                </td>
+                <td>
+                  <ffk-button
+                    variant="quiet"
+                    [compact]="true"
+                    (click)="deliveryRequested.emit(delivery.id)"
+                    >{{ 'Details' | ffkText }}</ffk-button
+                  >
+                </td>
+              </tr>
+            } @empty {
+              @if (!loading) {
+                <tr>
+                  <td colspan="5" class="empty">
+                    <h3>{{ 'No deliveries match these filters' | ffkText }}</h3>
+                    <p>
+                      {{
+                        'Queued invitations and access updates will appear here. Try changing the status or dates.'
+                          | ffkText
+                      }}
+                    </p>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+      <ffk-pagination
+        [page]="history"
+        [loading]="loading"
+        [showPageSize]="true"
+        label="Delivery history"
+        (pageChanged)="changePage($event)"
+        (sizeChanged)="changePageSize($event)"
+      />
+    }
+    @if (selected; as delivery) {
+      <section class="delivery-detail" aria-labelledby="delivery-title">
+        <div class="section-heading">
+          <h3 id="delivery-title">{{ 'Delivery details' | ffkText }}</h3>
+          <ffk-button
+            variant="quiet"
+            icon="close"
+            [label]="'Close delivery details' | ffkText"
+            (click)="deliveryClosed.emit()"
+          />
+        </div>
+        <dl>
+          <dt>{{ 'Recipient' | ffkText }}</dt>
+          <dd>{{ delivery.recipient_display }}</dd>
+          <dt>{{ 'Update' | ffkText }}</dt>
+          <dd>{{ kindLabel(delivery.kind) | ffkText }}</dd>
+          <dt>{{ 'Access scope' | ffkText }}</dt>
+          <dd>{{ delivery.scope_name }}</dd>
+          <dt>{{ 'Status' | ffkText }}</dt>
+          <dd>{{ statusLabel(delivery.status) | ffkText }}</dd>
+          <dt>{{ 'Attempts' | ffkText }}</dt>
+          <dd>{{ delivery.attempt_count }}</dd>
+          @if (delivery.last_attempt_at) {
+            <dt>{{ 'Last attempt' | ffkText }}</dt>
+            <dd>{{ delivery.last_attempt_at | ffkDate: undefined : 'datetime' }}</dd>
+          }
+          @if (delivery.next_attempt_at) {
+            <dt>{{ 'Next attempt' | ffkText }}</dt>
+            <dd>{{ delivery.next_attempt_at | ffkDate: undefined : 'datetime' }}</dd>
+          }
+        </dl>
+        @if (delivery.safe_explanation) {
+          <p class="feedback">{{ delivery.safe_explanation }}</p>
+        }
+        @if (delivery.can_retry) {
+          @if (confirmingRetry() === delivery.id) {
+            <div class="retry-confirmation">
+              <p>
+                {{
+                  'Retry this delivery? The email service may receive another attempt for this message.'
+                    | ffkText
+                }}
+              </p>
+              <div class="actions">
+                <ffk-button [disabled]="!!retryPending" (click)="confirmingRetry.set('')">{{
+                  'Cancel' | ffkText
+                }}</ffk-button
+                ><ffk-button
+                  variant="primary"
+                  [loading]="retryPending === delivery.id"
+                  (click)="retry(delivery)"
+                  >{{ 'Retry delivery' | ffkText }}</ffk-button
+                >
+              </div>
+            </div>
+          } @else {
+            <ffk-button [disabled]="!!retryPending" (click)="confirmingRetry.set(delivery.id)">{{
+              'Retry delivery' | ffkText
+            }}</ffk-button>
+          }
+        }
+      </section>
+    }
+  }
+</section>

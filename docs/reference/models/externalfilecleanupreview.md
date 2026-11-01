@@ -38,12 +38,12 @@ Required means the key must be present. Nullable means its value may be `null`; 
 ### processed_objects
 
 - Minimum: `0`
-- Maximum: `513`
+- Maximum: `2049`
 
 ### total_objects
 
 - Minimum: `1`
-- Maximum: `513`
+- Maximum: `2049`
 
 
 ## Exact JSON Schema
@@ -71,13 +71,13 @@ This is a schema definition, not an example request. It preserves all declared k
           "type": "string"
         },
         "processed_objects": {
-          "maximum": 513,
+          "maximum": 2049,
           "minimum": 0,
           "title": "Processed Objects",
           "type": "integer"
         },
         "total_objects": {
-          "maximum": 513,
+          "maximum": 2049,
           "minimum": 1,
           "title": "Total Objects",
           "type": "integer"

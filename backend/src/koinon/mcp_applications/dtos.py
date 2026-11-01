@@ -17,6 +17,7 @@ McpOAuthScope = Literal[
     "query:execute",
     "chat:use",
     "evidence:read",
+    "activity:read",
 ]
 
 
@@ -24,7 +25,7 @@ class McpOAuthClientValues(BaseModel):
     model_config = ConfigDict(extra="forbid")
     name: str = Field(min_length=1, max_length=120, strict=True)
     redirect_uris: list[str] = Field(min_length=1, max_length=8)
-    scopes: list[McpOAuthScope] = Field(min_length=1, max_length=7)
+    scopes: list[McpOAuthScope] = Field(min_length=1, max_length=8)
 
     @field_validator("name")
     @classmethod
@@ -78,7 +79,7 @@ class McpOAuthClientRevision(BaseModel):
 class McpOAuthClientPatch(McpOAuthClientRevision):
     name: str | None = Field(default=None, min_length=1, max_length=120, strict=True)
     redirect_uris: list[str] | None = Field(default=None, min_length=1, max_length=8)
-    scopes: list[McpOAuthScope] | None = Field(default=None, min_length=1, max_length=7)
+    scopes: list[McpOAuthScope] | None = Field(default=None, min_length=1, max_length=8)
     enabled: bool | None = Field(default=None, strict=True)
 
 

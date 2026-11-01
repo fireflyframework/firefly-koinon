@@ -531,3 +531,102 @@ async def test_bulk_final_publication_denial_rolls_back_head_and_chunks_but_reta
     assert (
         await lineage.original(scope, version["source_id"], version["id"], max_bytes=8)
     ).content == b"bulk raw"
+
+
+async def test_pinned_original_is_reused_without_a_second_durable_copy(lineage, session_factory, tmp_path):
+    from flycanon.core.services.sources.lineage.dtos import DocumentScope
+    from flycanon.models.entities.source_lineage import source_artifacts
+
+    path = tmp_path / "input"
+    path.write_bytes(b"original file")
+    reference = await lineage.store.create_file("koinon/t/w/pending/job/original", path)
+    scope = DocumentScope("t", "w", "actor")
+    admission = await lineage.admit(
+        scope,
+        logical_key="file",
+        operation_id="file-upload",
+        content=b"",
+        filename="file.txt",
+        media_type="text/plain",
+        original_reference=reference,
+    )
+    async with session_factory() as session:
+        artifact = (await session.execute(select(source_artifacts))).mappings().one()
+    assert artifact["object_key"] == reference.key
+    assert artifact["object_reference_json"] == reference.to_dict()
+    assert admission.bytes == len(b"original file")
+    assert (
+        await lineage.original(scope, admission.source_id, admission.version_id, max_bytes=128)
+    ).content == b"original file"
+    # A later replacement under the same key cannot retarget the retained job or version.
+    await lineage.store.put(reference.key, b"changed bytes")
+    from koinon_storage.cloud import ObjectIntegrityError
+
+    with pytest.raises(ObjectIntegrityError):
+        await lineage.admit(
+            scope,
+            logical_key="file",
+            operation_id="file-upload",
+            content=b"",
+            filename="file.txt",
+            media_type="text/plain",
+            original_reference=reference,
+        )
+
+
+async def test_file_intake_promotes_actual_office_text_and_preserves_raw_reference(
+    lineage, repositories, tmp_path
+):
+    import zipfile
+
+    from flycanon.interfaces.dtos.source import SubmitSourceRequest
+
+    path = tmp_path / "source.docx"
+    with zipfile.ZipFile(path, "w") as archive:
+        archive.writestr(
+            "word/document.xml",
+            '<w:document xmlns:w="urn:w"><w:body><w:p><w:r><w:t>Actual retained document text</w:t></w:r></w:p></w:body></w:document>',
+        )
+    ref = await lineage.store.create_file("koinon/t/w/pending/job/original", path)
+    intake = intake_fixture(lineage, repositories)
+    source = await intake.submit_file(
+        path=path,
+        original_reference=ref,
+        request=SubmitSourceRequest(),
+        tenant_id="t",
+        workspace_id="w",
+        actor="actor",
+        filename="source.docx",
+        logical_source_key="file",
+        operation_id="file-upload",
+    )
+    assert source.status == "ingested" and source.object_store_key == ref.key
+    assert source.n_chunks > 0
+
+
+async def test_native_original_file_copy_is_pinned_and_never_returns_full_original_bytes(lineage, tmp_path):
+    from flycanon.core.services.sources.lineage.dtos import DocumentScope
+
+    path = tmp_path / "input"
+    path.write_bytes(b"retained original")
+    reference = await lineage.store.create_file("koinon/t/w/pending/file/original", path)
+    scope = DocumentScope("t", "w", "actor")
+    admitted = await lineage.admit(
+        scope,
+        logical_key="file",
+        operation_id="file-copy",
+        content=b"",
+        filename="retained.bin",
+        media_type="application/octet-stream",
+        original_reference=reference,
+    )
+    target = tmp_path / "download"
+    receipt = await lineage.copy_original(
+        scope, admitted.source_id, admitted.version_id, target, max_bytes=128 * 1024**2
+    )
+    assert target.read_bytes() == b"retained original" and receipt.bytes == 17
+    assert receipt.sha256 == reference.sha256 and not hasattr(receipt, "content")
+    with pytest.raises(FileExistsError):
+        await lineage.copy_original(
+            scope, admitted.source_id, admitted.version_id, target, max_bytes=128 * 1024**2
+        )

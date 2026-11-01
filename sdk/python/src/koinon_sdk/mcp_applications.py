@@ -3,7 +3,7 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/mcp_applications/dtos.py
-SHA256: 1ca12e63762dfd35683231647b72c67d9e122fc14cf24fc74630c1ba5dabc7a0
+SHA256: 67f0e00f181168a30079506f2920617e00698fcb41a65eadd25b25dd0997621e
 
 Server authorization and semantic validation remain authoritative.
 """
@@ -22,13 +22,14 @@ McpOAuthScope = Literal[
     "query:execute",
     "chat:use",
     "evidence:read",
+    "activity:read",
 ]
 
 
 class McpOAuthClientValues(InputModel):
     name: str = Field(min_length=1, max_length=120, strict=True)
     redirect_uris: list[str] = Field(min_length=1, max_length=8)
-    scopes: list[McpOAuthScope] = Field(min_length=1, max_length=7)
+    scopes: list[McpOAuthScope] = Field(min_length=1, max_length=8)
 
 
 class McpOAuthClientInput(McpOAuthClientValues):
@@ -42,7 +43,7 @@ class McpOAuthClientRevision(InputModel):
 class McpOAuthClientPatch(McpOAuthClientRevision):
     name: str | None = Field(default=None, min_length=1, max_length=120, strict=True)
     redirect_uris: list[str] | None = Field(default=None, min_length=1, max_length=8)
-    scopes: list[McpOAuthScope] | None = Field(default=None, min_length=1, max_length=7)
+    scopes: list[McpOAuthScope] | None = Field(default=None, min_length=1, max_length=8)
     enabled: bool | None = Field(default=None, strict=True)
 
 

@@ -21,6 +21,9 @@ class IdentityPolicy:
     broker_alias: str | None
     external_tenant_id: str | None = None
     hosted_domains: tuple[str, ...] = ()
+    identity_mode: Literal["brokered", "direct"] = "brokered"
+    native_client_id: str | None = None
+    native_api_audience: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,6 +55,9 @@ def verified_identity(policy: IdentityPolicy, claims: dict) -> CorporateIdentity
     if policy.kind == "keycloak":
         external = _text(claims, "koinon_external_subject") if policy.broker_alias else subject
     elif policy.kind == "entra":
+        if policy.identity_mode == "direct":
+            external = _direct_entra(policy, claims)
+            return CorporateIdentity(issuer + "|" + subject, external, True)
         try:
             tenant = str(UUID(_text(claims, "koinon_external_tid")))
             expected = str(UUID(policy.external_tenant_id or ""))
@@ -74,6 +80,47 @@ def verified_identity(policy: IdentityPolicy, claims: dict) -> CorporateIdentity
         or (isinstance(claim_names, dict) and "groups" in claim_names)
     )
     return CorporateIdentity(issuer + "|" + subject, external, overage)
+
+
+def _direct_entra(policy, claims):
+    try:
+        tenant = str(UUID(_text(claims, "tid")))
+        expected = str(UUID(policy.external_tenant_id or ""))
+        external = str(UUID(_text(claims, "oid")))
+    except (ValueError, TypeError):
+        raise _reject() from None
+    if (
+        tenant != expected
+        or policy.canonical_issuer != f"https://login.microsoftonline.com/{expected}/v2.0"
+        or policy.broker_alias is not None
+        or not policy.native_client_id
+        or any(
+            claims.get(name) is not None
+            for name in (
+                "koinon_identity_provider",
+                "koinon_external_oid",
+                "koinon_external_tid",
+                "koinon_external_subject",
+            )
+        )
+    ):
+        raise _reject()
+    audience = claims.get("aud")
+    audiences = [audience] if isinstance(audience, str) else audience
+    if (
+        not isinstance(audiences, list)
+        or not 1 <= len(audiences) <= 10
+        or any(not isinstance(value, str) or not value or len(value) > 512 for value in audiences)
+        or len(set(audiences)) != len(audiences)
+        or not ({policy.native_client_id, policy.native_api_audience} - {None}).intersection(audiences)
+    ):
+        raise _reject()
+    authorized = [claims[name] for name in ("azp", "appid") if name in claims]
+    if any(value != policy.native_client_id for value in authorized):
+        raise _reject()
+    if audiences != [policy.native_client_id] and not authorized:
+        raise _reject()
+    return external
 
 
 @dataclass(frozen=True, slots=True)

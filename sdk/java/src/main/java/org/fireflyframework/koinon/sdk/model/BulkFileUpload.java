@@ -7,8 +7,8 @@ import java.util.Objects;
 public record BulkFileUpload(byte[] content) {
   public BulkFileUpload {
     Objects.requireNonNull(content);
-    if (content.length < 1 || content.length > 33554432)
-      throw new IllegalArgumentException("Original content must be1..33554432bytes");
+    if (content.length < 1 || content.length > 134217728)
+      throw new IllegalArgumentException("Choose a nonempty original of at most 128 MiB");
     content = content.clone();
   }
   @Override public byte[] content() { return content.clone(); }

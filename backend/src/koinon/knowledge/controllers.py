@@ -1,7 +1,5 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
-from hashlib import sha256
-from urllib.parse import quote
 
 from pyfly.container import rest_controller
 from pyfly.kernel import InvalidRequestException, PayloadTooLargeException
@@ -11,6 +9,8 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from koinon.knowledge.content import ContentUpdates
+from koinon.knowledge.document_history.download_response import original_file_response
+from koinon.knowledge.document_history.downloads import OriginalDownloads
 from koinon.knowledge.dtos import (
     DocumentReingestInput,
     DocumentRevisionPreconditions,
@@ -25,8 +25,9 @@ from koinon.security.identity import identity_from_request
 @rest_controller(name="knowledge.controller")
 @request_mapping("/api/v1/tenants/{tenant_id}")
 class KnowledgeController:
-    def __init__(self, knowledge: KnowledgeFacade):
+    def __init__(self, knowledge: KnowledgeFacade, downloads: OriginalDownloads):
         self.knowledge = knowledge
+        self.downloads = downloads
 
     @post_mapping("/sources/upload", status_code=201)
     async def upload(self, tenant_id: PathVar[str], request: Request) -> dict:
@@ -131,19 +132,13 @@ class KnowledgeController:
         document_id: PathVar[str],
         request: Request,
     ) -> Response:
-        result = await self.knowledge.document_original(
-            identity_from_request(request).subject, tenant_id, document_id
+        download = await self.downloads.open(
+            identity_from_request(request).subject,
+            tenant_id,
+            document_id,
+            context=request.state.security_context,
         )
-        return Response(
-            result["content"],
-            media_type=result["content_type"],
-            headers={
-                "Content-Disposition": "attachment; filename*=UTF-8''" + quote(result["filename"], safe=""),
-                "X-Content-Type-Options": "nosniff",
-                "Cache-Control": "private, no-store",
-                "ETag": '"' + sha256(result["content"]).hexdigest() + '"',
-            },
-        )
+        return await original_file_response(download)
 
 
 @rest_controller(name="knowledge.content_controller")

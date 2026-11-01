@@ -42,6 +42,12 @@ add("OrganizationPeopleController", "OrganizationPeopleApi", {
     "update_unit": "updateUnit", "delete_unit": "deleteUnit", "settings": "settings",
     "update_settings": "updateSettings", "mapping": "mapping", "update_mapping": "updateMapping",
 })
+add("CommunicationsController", "CommunicationsApi", {
+    "providers":"recipientProviders", "recipients_search":"recipients", "preview":"previewInvitation", "create":"createInvitation", "page":"invitations", "revoke":"revokeInvitation", "resend":"resendInvitation", "capabilities":"capabilities", "policy":"policy", "policy_update":"updatePolicy", "deliveries":"deliveries", "delivery":"delivery", "retry":"retryDelivery",
+})
+add("CommunicationsController", "EmailInvitationsApi", {"inspect":"review", "accept":"accept", "decline":"decline"})
+add("NotificationController", "NotificationsApi", {"page":"list", "unread_count":"unreadCount", "read":"markRead", "preferences":"preferences", "preferences_update":"updatePreferences", "preferences_preview":"previewSchedule", "email_preview":"previewEmail"})
+add("ActivityController", "ActivityApi", {"personal": "personal", "administrative": "administrative"})
 add("AuditController", "AuditApi", {"audit": "list"})
 add("DatasetFilesController", "DatasetsApi", {"append": "appendFile"})
 add(
@@ -203,6 +209,11 @@ def upper(s):
 
 
 filters = {
+    "CommunicationsController.providers":"RecipientProviderFilter",
+    "CommunicationsController.recipients_search":"RecipientFilter",
+    "CommunicationsController.page":"EmailInvitationFilter",
+    "CommunicationsController.deliveries":"CommunicationDeliveryFilter",
+    "NotificationController.page":"NotificationFilter",
     "QueryBatchController.capabilities": "QueryBatchScope",
     "QueryBatchController.list": "QueryBatchFilter",
     "QueryBatchController.items": "QueryBatchFilter",
@@ -582,6 +593,25 @@ for group, operations in groups.items():
                         for _, n in params[:-1]
                     )
                     + ",RequestOptions.defaults());}\n"
+                )
+        if request == "BulkFileUpload":
+            file_params = [("BulkFilePath" if t == "BulkFileUpload" else t, n) for t, n in params]
+            for async_ in [False, True]:
+                suffix = "Async" if async_ else ""
+                ret = "CompletableFuture<" + result + ">" if async_ else result
+                name = method + "Path" + suffix
+                body += (
+                    "public " + ret + " " + name + "("
+                    + ",".join(t + " " + n for t, n in file_params)
+                    + "){" + setup + "return transport.file" + suffix + "("
+                    + json.dumps(op["method"]) + "," + path_expr + ",input,options," + typ + ");}\n"
+                )
+                body += (
+                    "public " + ret + " " + name + "("
+                    + ",".join(t + " " + n for t, n in file_params[:-1])
+                    + "){return " + name + "("
+                    + ",".join([n for _, n in file_params[:-1]] + ["RequestOptions.defaults()"])
+                    + ");}\n"
                 )
         if binary:
             dp = params[:-1] + [

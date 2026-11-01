@@ -3,6 +3,30 @@
 // Generated from source-backed standalone SDK wire schemas.
 import type {Json} from './types.js';
 
+export interface ActivityCoverage {
+ "observed_since": string | null;
+ "complete_window": boolean;
+ "missing_observations"?: number | null;
+ "reasons"?: Array<string>;
+}
+export interface ActivitySummary {
+ "tenant_id": string;
+ "audience": "personal" | "organization_administrators";
+ "window": ActivityWindow;
+ "coverage": ActivityCoverage;
+ "knowledge": KnowledgeActivityCounts;
+ "top_projects"?: Array<ProjectActivity>;
+ "daily_activity"?: Array<DailyActivity>;
+ "mcp": McpActivityCounts;
+ "models": ModelActivityCounts;
+}
+export interface ActivityValue {
+}
+export interface ActivityWindow {
+ "start_at": string;
+ "end_at": string;
+ "time_zone": string;
+}
 export interface AddKnowledge {
  "expected_revision": number;
  "action": "add";
@@ -377,6 +401,11 @@ export interface CorporateProfileSyncPolicy {
  "google_department"?: "department" | "org_unit_path";
  "keycloak_attributes"?: KeycloakProfileAttributes;
 }
+export interface DailyActivity {
+ "local_date": string;
+ "knowledge": KnowledgeActivityCounts;
+ "mcp_tool_calls": ObservedCount;
+}
 export interface DatasetFileAppendResult {
  "dataset_id": string;
  "file_version_id": string;
@@ -534,6 +563,7 @@ export interface EntraSettings {
  "client_id": string;
  "directory_client_id"?: string | null;
  "membership_mode"?: "direct" | "transitive";
+ "identity_mode"?: "brokered" | "direct";
 }
 export interface EvidenceManifest {
  "revision": string;
@@ -708,6 +738,9 @@ export interface FileBatchCapabilities {
  "writer_fence"?: "primary_database_generation_lease";
  "worker"?: "external_native_worker";
  "automatic_unknown_replay"?: false;
+ "synchronous_max_file_bytes"?: number;
+ "large_file_transport"?: "queued_file_spool";
+ "quota_semantics"?: "lifetime_admission_bytes";
  "max_files": number;
  "max_file_bytes": number;
  "max_batch_bytes": number;
@@ -1015,6 +1048,11 @@ export interface KeycloakSettings {
  "directory_client_id"?: string | null;
  "membership_mode"?: "direct" | "transitive";
 }
+export interface KnowledgeActivityCounts {
+ "created": ObservedCount;
+ "updated": ObservedCount;
+ "consulted": ObservedCount;
+}
 export interface KnowledgeCancellation {
  "expected_revision": number;
 }
@@ -1168,6 +1206,20 @@ export interface KnowledgeVersionView {
  "author_subject": string;
  "committed_at": string;
 }
+export interface McpActivityCounts {
+ "requests": ObservedCount;
+ "tool_calls": ObservedCount;
+ "succeeded": ObservedCount;
+ "failed": ObservedCount;
+ "rejected": ObservedCount;
+ "average_duration_ms": ObservedCount;
+ "p95_duration_ms": ObservedCount;
+ "tool_cancelled"?: ObservedCount;
+ "request_succeeded"?: ObservedCount;
+ "request_failed"?: ObservedCount;
+ "request_rejected"?: ObservedCount;
+ "request_cancelled"?: ObservedCount;
+}
 export interface McpConnectionDescriptor {
  "enabled": boolean;
  "local_only"?: boolean;
@@ -1185,7 +1237,7 @@ export interface McpConnectionDescriptor {
 export interface McpOAuthClient {
  "name": string;
  "redirect_uris": Array<string>;
- "scopes": Array<"catalog:read" | "catalog:write" | "ingest:write" | "knowledge:search" | "query:execute" | "chat:use" | "evidence:read">;
+ "scopes": Array<"catalog:read" | "catalog:write" | "ingest:write" | "knowledge:search" | "query:execute" | "chat:use" | "evidence:read" | "activity:read">;
  "id": string;
  "tenant_id": string;
  "client_id": string;
@@ -1204,7 +1256,7 @@ export interface McpOAuthClientCredential {
 export interface McpOAuthClientInput {
  "name": string;
  "redirect_uris": Array<string>;
- "scopes": Array<"catalog:read" | "catalog:write" | "ingest:write" | "knowledge:search" | "query:execute" | "chat:use" | "evidence:read">;
+ "scopes": Array<"catalog:read" | "catalog:write" | "ingest:write" | "knowledge:search" | "query:execute" | "chat:use" | "evidence:read" | "activity:read">;
  "client_type": "public" | "confidential";
 }
 export interface McpOAuthClientPage {
@@ -1218,7 +1270,7 @@ export interface McpOAuthClientPatch {
  "expected_revision": number;
  "name"?: string | null;
  "redirect_uris"?: Array<string> | null;
- "scopes"?: Array<"catalog:read" | "catalog:write" | "ingest:write" | "knowledge:search" | "query:execute" | "chat:use" | "evidence:read"> | null;
+ "scopes"?: Array<"catalog:read" | "catalog:write" | "ingest:write" | "knowledge:search" | "query:execute" | "chat:use" | "evidence:read" | "activity:read"> | null;
  "enabled"?: boolean | null;
 }
 export interface McpOAuthClientReadiness {
@@ -1235,7 +1287,7 @@ export interface McpOAuthClientRevision {
 export interface McpOAuthClientValues {
  "name": string;
  "redirect_uris": Array<string>;
- "scopes": Array<"catalog:read" | "catalog:write" | "ingest:write" | "knowledge:search" | "query:execute" | "chat:use" | "evidence:read">;
+ "scopes": Array<"catalog:read" | "catalog:write" | "ingest:write" | "knowledge:search" | "query:execute" | "chat:use" | "evidence:read" | "activity:read">;
 }
 export interface McpReadReceipt {
  "status": "recorded" | "not_recorded";
@@ -1300,6 +1352,13 @@ export interface MemoryValue {
 export interface MessageSelection {
  "thread_id": string;
  "message_ids": Array<string>;
+}
+export interface ModelActivityCounts {
+ "input_tokens": ObservedCount;
+ "output_tokens": ObservedCount;
+ "embedding_tokens": ObservedCount;
+ "cost": ObservedCost;
+ "external_client_consumption"?: "not_observed";
 }
 export interface NativeIndexChoice {
  "id": string;
@@ -1366,6 +1425,18 @@ export interface NativeTableSnapshot {
  "table_id": string;
  "table_name": string;
  "snapshot_id": string;
+}
+export interface ObservedCost {
+ "amount"?: number | string | null;
+ "currency"?: string | null;
+ "status": "observed" | "partial" | "unavailable";
+ "source"?: string | null;
+ "reason"?: string | null;
+}
+export interface ObservedCount {
+ "value"?: number | null;
+ "status": "observed" | "partial" | "unavailable";
+ "reason"?: string | null;
 }
 export interface OrganizationBranding {
  "tenant_id": string;
@@ -1603,6 +1674,12 @@ export interface PrivateFileReceipt {
  "sha256": string;
  "used_revision": number;
  "availability": "available" | "expired" | "deleted" | "changed" | "unavailable";
+}
+export interface ProjectActivity {
+ "project_id": string;
+ "workspace_id": string;
+ "name": string;
+ "knowledge": KnowledgeActivityCounts;
 }
 export interface PromotedCatalogEntry {
  "id": string;

@@ -25,6 +25,7 @@ final class BulkIntakeTest {
     final List<byte[]> bodies = new ArrayList<>();
     int status = 200;
     String response = "{}";
+    Runnable beforeBody = () -> {};
     @Override public Optional<CookieHandler> cookieHandler(){return Optional.empty();}
     @Override public Optional<Duration> connectTimeout(){return Optional.empty();}
     @Override public Redirect followRedirects(){return Redirect.NEVER;}
@@ -39,6 +40,7 @@ final class BulkIntakeTest {
     @SuppressWarnings("unchecked")
     @Override public <T> CompletableFuture<HttpResponse<T>> sendAsync(HttpRequest request,HttpResponse.BodyHandler<T> handler){
       requests.add(request);
+      beforeBody.run();
       var received=new ByteArrayOutputStream();
       var completed=new CompletableFuture<byte[]>();
       request.bodyPublisher().ifPresentOrElse(publisher->publisher.subscribe(new Flow.Subscriber<ByteBuffer>(){
@@ -92,6 +94,51 @@ final class BulkIntakeTest {
       assertThrows(ApiException.class,()->api.submit("batch",new BulkAction(1),"stable-key"));
       assertEquals(1,http.requests.size());
       assertThrows(IllegalArgumentException.class,()->new BulkFileUpload(new byte[0]));
+    }
+  }
+
+  @Test void verifiedPathUploadUsesFilePublisherAndRejectsChangedManifest(
+      @org.junit.jupiter.api.io.TempDir java.nio.file.Path directory) throws Exception {
+    var file = directory.resolve("evidence.xlsx");
+    java.nio.file.Files.writeString(file, "evidence");
+    var digest = java.util.HexFormat.of().formatHex(
+        java.security.MessageDigest.getInstance("SHA-256").digest("evidence".getBytes(StandardCharsets.UTF_8)));
+    var http = new InertHttp();
+    http.response = "{\"receipt_id\":\"receipt\",\"batch_id\":\"batch\",\"item_id\":\"item\","
+        + "\"sha256\":\"" + digest + "\",\"size_bytes\":8,\"status\":\"staged\"}";
+    try (var transport = new Transport(URI.create("https://inert.test/api/v1"), http, false,
+        () -> "current-token", new JsonCodec())) {
+      var api = new FileBatchesApi(transport, "north/office");
+      var original = new BulkFilePath(file, 8, digest);
+      assertEquals(8, api.uploadPath("batch", "item", original, "file-key").sizeBytes());
+      assertEquals(8, api.uploadPathAsync("batch", "item", original, "file-key").join().sizeBytes());
+      assertEquals(2, http.requests.size());
+      assertArrayEquals("evidence".getBytes(StandardCharsets.UTF_8), http.bodies.getFirst());
+      assertEquals(8, http.requests.getFirst().bodyPublisher().orElseThrow().contentLength());
+      assertEquals("file-key", http.requests.getFirst().headers().firstValue("Idempotency-Key").orElseThrow());
+      java.nio.file.Files.writeString(file, "changed!");
+      assertThrows(IllegalArgumentException.class, () -> api.uploadPath("batch", "item", original, "file-key"));
+      assertEquals(2, http.requests.size());
+    }
+  }
+
+  @Test void sourceReplacementAfterPreparationCannotChangeThePublishedBody(
+      @org.junit.jupiter.api.io.TempDir java.nio.file.Path directory) throws Exception {
+    var file = directory.resolve("evidence");
+    java.nio.file.Files.writeString(file, "evidence");
+    var digest = java.util.HexFormat.of().formatHex(
+        java.security.MessageDigest.getInstance("SHA-256").digest("evidence".getBytes(StandardCharsets.UTF_8)));
+    var http = new InertHttp();
+    http.beforeBody = () -> {
+      try { java.nio.file.Files.writeString(file, "changed!"); }
+      catch (IOException error) { throw new UncheckedIOException(error); }
+    };
+    try (var transport = new Transport(URI.create("https://inert.test/api/v1"), http, false,
+        () -> "token", new JsonCodec())) {
+      new FileBatchesApi(transport, "north").uploadPath(
+          "batch", "item", new BulkFilePath(file, 8, digest), "key");
+      assertArrayEquals("evidence".getBytes(StandardCharsets.UTF_8), http.bodies.getFirst());
+      assertEquals("changed!", java.nio.file.Files.readString(file));
     }
   }
 }

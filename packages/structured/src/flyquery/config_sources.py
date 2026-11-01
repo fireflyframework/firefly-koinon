@@ -8,10 +8,17 @@ from typing import Any
 
 INGESTION_INTEGERS = frozenset(
     {
+        "max_file_bytes",
         "ingest_duckdb_threads",
         "ingest_scratch_max_bytes",
         "ingest_decompressed_max_bytes",
         "ingest_native_connections",
+        "ingest_reader_rss_max_bytes",
+        "ingest_reader_timeout_seconds",
+        "ingest_excel_max_cells",
+        "ingest_excel_max_rows",
+        "ingest_excel_max_columns",
+        "ingest_shared_strings_max_bytes",
     }
 )
 

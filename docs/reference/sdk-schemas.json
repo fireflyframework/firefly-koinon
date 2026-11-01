@@ -1,5 +1,172 @@
 {
   "$defs": {
+    "ActivityCoverage": {
+      "additionalProperties": true,
+      "properties": {
+        "observed_since": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Observed Since"
+        },
+        "complete_window": {
+          "title": "Complete Window",
+          "type": "boolean"
+        },
+        "missing_observations": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Missing Observations"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10,
+          "title": "Reasons",
+          "type": "array"
+        }
+      },
+      "required": [
+        "observed_since",
+        "complete_window"
+      ],
+      "title": "ActivityCoverage",
+      "type": "object"
+    },
+    "ActivityEmailPreviewInput": {
+      "additionalProperties": false,
+      "properties": {
+        "tenant_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "preferences": {
+          "$ref": "#/$defs/NotificationPreferencesInput"
+        },
+        "window": {
+          "$ref": "#/$defs/ActivityWindow"
+        }
+      },
+      "required": [
+        "tenant_id",
+        "preferences",
+        "window"
+      ],
+      "title": "ActivityEmailPreviewInput",
+      "type": "object"
+    },
+    "ActivitySummary": {
+      "additionalProperties": true,
+      "properties": {
+        "tenant_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "audience": {
+          "enum": [
+            "personal",
+            "organization_administrators"
+          ],
+          "title": "Audience",
+          "type": "string"
+        },
+        "window": {
+          "$ref": "#/$defs/ActivityWindow"
+        },
+        "coverage": {
+          "$ref": "#/$defs/ActivityCoverage"
+        },
+        "knowledge": {
+          "$ref": "#/$defs/KnowledgeActivityCounts"
+        },
+        "top_projects": {
+          "items": {
+            "$ref": "#/$defs/ProjectActivity"
+          },
+          "maxItems": 10,
+          "title": "Top Projects",
+          "type": "array"
+        },
+        "daily_activity": {
+          "items": {
+            "$ref": "#/$defs/DailyActivity"
+          },
+          "maxItems": 367,
+          "title": "Daily Activity",
+          "type": "array"
+        },
+        "mcp": {
+          "$ref": "#/$defs/McpActivityCounts"
+        },
+        "models": {
+          "$ref": "#/$defs/ModelActivityCounts"
+        }
+      },
+      "required": [
+        "tenant_id",
+        "audience",
+        "window",
+        "coverage",
+        "knowledge",
+        "mcp",
+        "models"
+      ],
+      "title": "ActivitySummary",
+      "type": "object"
+    },
+    "ActivityValue": {
+      "additionalProperties": true,
+      "properties": {},
+      "title": "ActivityValue",
+      "type": "object"
+    },
+    "ActivityWindow": {
+      "additionalProperties": false,
+      "properties": {
+        "start_at": {
+          "format": "date-time",
+          "title": "Start At",
+          "type": "string"
+        },
+        "end_at": {
+          "format": "date-time",
+          "title": "End At",
+          "type": "string"
+        },
+        "time_zone": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Time Zone",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start_at",
+        "end_at",
+        "time_zone"
+      ],
+      "title": "ActivityWindow",
+      "type": "object"
+    },
     "AddKnowledge": {
       "additionalProperties": false,
       "properties": {
@@ -49,6 +216,28 @@
         "parent_id"
       ],
       "title": "AddKnowledge",
+      "type": "object"
+    },
+    "AdministrativeSummarySchedule": {
+      "additionalProperties": false,
+      "properties": {
+        "cadence": {
+          "enum": [
+            "daily",
+            "weekly",
+            "monthly"
+          ],
+          "title": "Cadence",
+          "type": "string"
+        },
+        "schedule": {
+          "$ref": "#/$defs/DigestSchedule"
+        }
+      },
+      "required": [
+        "cadence"
+      ],
+      "title": "AdministrativeSummarySchedule",
       "type": "object"
     },
     "AgentConfiguration": {
@@ -3237,6 +3426,385 @@
       "title": "CommittedKnowledge",
       "type": "object"
     },
+    "CommunicationCapabilities": {
+      "additionalProperties": true,
+      "properties": {
+        "state": {
+          "enum": [
+            "disabled",
+            "not_configured",
+            "ready",
+            "degraded"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "provider_label": {
+          "title": "Provider Label",
+          "type": "string"
+        },
+        "sender_name": {
+          "title": "Sender Name",
+          "type": "string"
+        },
+        "sender_address": {
+          "title": "Sender Address",
+          "type": "string"
+        },
+        "reply_to": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reply To"
+        },
+        "sender_options": {
+          "items": {
+            "$ref": "#/$defs/VerifiedSenderOption"
+          },
+          "title": "Sender Options",
+          "type": "array"
+        },
+        "public_address_configured": {
+          "title": "Public Address Configured",
+          "type": "boolean"
+        },
+        "public_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Public Url"
+        },
+        "acceptance_base": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Acceptance Base"
+        },
+        "issues": {
+          "items": {
+            "$ref": "#/$defs/CommunicationIssue"
+          },
+          "title": "Issues",
+          "type": "array"
+        },
+        "effective_locale": {
+          "default": "en-US",
+          "title": "Effective Locale",
+          "type": "string"
+        },
+        "locale_origin": {
+          "default": "default",
+          "enum": [
+            "user",
+            "organization",
+            "installation",
+            "default"
+          ],
+          "title": "Locale Origin",
+          "type": "string"
+        }
+      },
+      "required": [
+        "state",
+        "provider_label",
+        "sender_name",
+        "sender_address",
+        "sender_options",
+        "public_address_configured",
+        "public_url",
+        "acceptance_base",
+        "issues"
+      ],
+      "title": "CommunicationCapabilities",
+      "type": "object"
+    },
+    "CommunicationIssue": {
+      "additionalProperties": true,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "explanation": {
+          "title": "Explanation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "explanation"
+      ],
+      "title": "CommunicationIssue",
+      "type": "object"
+    },
+    "CommunicationPolicy": {
+      "additionalProperties": true,
+      "properties": {
+        "revision": {
+          "title": "Revision",
+          "type": "integer"
+        },
+        "sender_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Sender Id"
+        },
+        "rules": {
+          "items": {
+            "$ref": "#/$defs/NotificationPreferenceRule"
+          },
+          "title": "Rules",
+          "type": "array"
+        },
+        "digest_enabled": {
+          "title": "Digest Enabled",
+          "type": "boolean"
+        },
+        "can_update": {
+          "title": "Can Update",
+          "type": "boolean"
+        },
+        "allowed_digests": {
+          "items": {
+            "enum": [
+              "off",
+              "daily",
+              "weekly",
+              "monthly"
+            ],
+            "type": "string"
+          },
+          "title": "Allowed Digests",
+          "type": "array"
+        },
+        "default_digest": {
+          "default": "off",
+          "enum": [
+            "off",
+            "daily",
+            "weekly",
+            "monthly"
+          ],
+          "title": "Default Digest",
+          "type": "string"
+        },
+        "default_schedule": {
+          "$ref": "#/$defs/DigestSchedule"
+        },
+        "admin_summaries": {
+          "items": {
+            "$ref": "#/$defs/AdministrativeSummarySchedule"
+          },
+          "maxItems": 3,
+          "title": "Admin Summaries",
+          "type": "array"
+        },
+        "default_locale": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Default Locale"
+        }
+      },
+      "required": [
+        "revision",
+        "sender_id",
+        "rules",
+        "digest_enabled",
+        "can_update"
+      ],
+      "title": "CommunicationPolicy",
+      "type": "object"
+    },
+    "CommunicationPolicyInput": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "minimum": 0,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "sender_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sender Id"
+        },
+        "rules": {
+          "items": {
+            "$ref": "#/$defs/NotificationPreferenceRuleInput"
+          },
+          "maxItems": 7,
+          "title": "Rules",
+          "type": "array"
+        },
+        "digest_enabled": {
+          "default": false,
+          "title": "Digest Enabled",
+          "type": "boolean"
+        },
+        "allowed_digests": {
+          "items": {
+            "enum": [
+              "off",
+              "daily",
+              "weekly",
+              "monthly"
+            ],
+            "type": "string"
+          },
+          "title": "Allowed Digests",
+          "type": "array"
+        },
+        "default_digest": {
+          "default": "off",
+          "enum": [
+            "off",
+            "daily",
+            "weekly",
+            "monthly"
+          ],
+          "title": "Default Digest",
+          "type": "string"
+        },
+        "default_schedule": {
+          "$ref": "#/$defs/DigestSchedule"
+        },
+        "admin_summaries": {
+          "items": {
+            "$ref": "#/$defs/AdministrativeSummarySchedule"
+          },
+          "maxItems": 3,
+          "title": "Admin Summaries",
+          "type": "array"
+        },
+        "default_locale": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Default Locale"
+        }
+      },
+      "required": [
+        "expected_revision",
+        "rules"
+      ],
+      "title": "CommunicationPolicyInput",
+      "type": "object"
+    },
+    "CommunicationUsageSummary": {
+      "additionalProperties": true,
+      "properties": {
+        "scope": {
+          "const": "own",
+          "default": "own",
+          "title": "Scope",
+          "type": "string"
+        },
+        "window_start": {
+          "format": "date-time",
+          "title": "Window Start",
+          "type": "string"
+        },
+        "window_end": {
+          "format": "date-time",
+          "title": "Window End",
+          "type": "string"
+        },
+        "time_zone": {
+          "title": "Time Zone",
+          "type": "string"
+        },
+        "assistant_runs": {
+          "minimum": 0,
+          "title": "Assistant Runs",
+          "type": "integer"
+        },
+        "completed_runs": {
+          "minimum": 0,
+          "title": "Completed Runs",
+          "type": "integer"
+        },
+        "failed_runs": {
+          "minimum": 0,
+          "title": "Failed Runs",
+          "type": "integer"
+        },
+        "mcp_requests": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mcp Requests"
+        },
+        "mcp_request_status": {
+          "default": "unavailable",
+          "enum": [
+            "available",
+            "unavailable"
+          ],
+          "title": "Mcp Request Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "window_start",
+        "window_end",
+        "time_zone",
+        "assistant_runs",
+        "completed_runs",
+        "failed_runs"
+      ],
+      "title": "CommunicationUsageSummary",
+      "type": "object"
+    },
     "Configuration": {
       "additionalProperties": true,
       "properties": {
@@ -4624,6 +5192,29 @@
       "title": "CorporateProfileSyncPolicy",
       "type": "object"
     },
+    "DailyActivity": {
+      "additionalProperties": true,
+      "properties": {
+        "local_date": {
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "title": "Local Date",
+          "type": "string"
+        },
+        "knowledge": {
+          "$ref": "#/$defs/KnowledgeActivityCounts"
+        },
+        "mcp_tool_calls": {
+          "$ref": "#/$defs/ObservedCount"
+        }
+      },
+      "required": [
+        "local_date",
+        "knowledge",
+        "mcp_tool_calls"
+      ],
+      "title": "DailyActivity",
+      "type": "object"
+    },
     "DatasetFileAppendResult": {
       "additionalProperties": true,
       "properties": {
@@ -4703,6 +5294,193 @@
           "type": "boolean"
         }
       }
+    },
+    "DeliveryPage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/DeliveryRecord"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "total": {
+          "title": "Total",
+          "type": "integer"
+        },
+        "page": {
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "pages": {
+          "title": "Pages",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size",
+        "pages"
+      ],
+      "title": "DeliveryPage",
+      "type": "object"
+    },
+    "DeliveryRecord": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "invitation",
+            "access_granted",
+            "role_changed",
+            "access_removed",
+            "security",
+            "welcome",
+            "digest"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "channel": {
+          "const": "email",
+          "default": "email",
+          "title": "Channel",
+          "type": "string"
+        },
+        "invitation_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Invitation Id"
+        },
+        "membership_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Membership Id"
+        },
+        "recipient_display": {
+          "title": "Recipient Display",
+          "type": "string"
+        },
+        "scope_name": {
+          "title": "Scope Name",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "queued",
+            "sending",
+            "sent",
+            "delivered",
+            "deferred",
+            "failed",
+            "suppressed",
+            "cancelled",
+            "unknown"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "last_attempt_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Last Attempt At"
+        },
+        "next_attempt_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Attempt At"
+        },
+        "attempt_count": {
+          "title": "Attempt Count",
+          "type": "integer"
+        },
+        "failure_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Failure Code"
+        },
+        "safe_explanation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Safe Explanation"
+        },
+        "can_retry": {
+          "title": "Can Retry",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "invitation_id",
+        "membership_id",
+        "recipient_display",
+        "scope_name",
+        "status",
+        "created_at",
+        "last_attempt_at",
+        "next_attempt_at",
+        "attempt_count",
+        "failure_code",
+        "safe_explanation",
+        "can_retry"
+      ],
+      "title": "DeliveryRecord",
+      "type": "object"
     },
     "DeploymentConfiguration": {
       "additionalProperties": true,
@@ -5033,6 +5811,240 @@
         "id"
       ],
       "title": "DeploymentStorage",
+      "type": "object"
+    },
+    "DigestSchedule": {
+      "additionalProperties": false,
+      "properties": {
+        "local_time": {
+          "default": "09:00",
+          "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$",
+          "title": "Local Time",
+          "type": "string"
+        },
+        "weekday": {
+          "default": 0,
+          "maximum": 6,
+          "minimum": 0,
+          "title": "Weekday",
+          "type": "integer"
+        },
+        "day_of_month": {
+          "default": 1,
+          "maximum": 31,
+          "minimum": 1,
+          "title": "Day Of Month",
+          "type": "integer"
+        }
+      },
+      "title": "DigestSchedule",
+      "type": "object"
+    },
+    "DigestSchedulePreview": {
+      "additionalProperties": true,
+      "properties": {
+        "digest": {
+          "enum": [
+            "off",
+            "daily",
+            "weekly",
+            "monthly"
+          ],
+          "title": "Digest",
+          "type": "string"
+        },
+        "schedule": {
+          "$ref": "#/$defs/DigestSchedule"
+        },
+        "time_zone": {
+          "title": "Time Zone",
+          "type": "string"
+        },
+        "next_run_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Run At"
+        },
+        "next_run_local": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Run Local"
+        },
+        "window_start": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Window Start"
+        },
+        "window_end": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Window End"
+        },
+        "dst_policy": {
+          "const": "first_valid_minute_earlier_fold",
+          "default": "first_valid_minute_earlier_fold",
+          "title": "Dst Policy",
+          "type": "string"
+        },
+        "effective_locale": {
+          "default": "en-US",
+          "title": "Effective Locale",
+          "type": "string"
+        },
+        "locale_origin": {
+          "default": "default",
+          "enum": [
+            "user",
+            "organization",
+            "installation",
+            "default"
+          ],
+          "title": "Locale Origin",
+          "type": "string"
+        }
+      },
+      "required": [
+        "digest",
+        "schedule",
+        "time_zone",
+        "next_run_at",
+        "next_run_local",
+        "window_start",
+        "window_end"
+      ],
+      "title": "DigestSchedulePreview",
+      "type": "object"
+    },
+    "DirectoryRecipient": {
+      "additionalProperties": true,
+      "properties": {
+        "recipient_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Recipient Ref"
+        },
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        },
+        "email": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Email"
+        },
+        "provider_label": {
+          "title": "Provider Label",
+          "type": "string"
+        },
+        "delivery_address_status": {
+          "enum": [
+            "verified_directory",
+            "missing",
+            "unverified",
+            "unavailable"
+          ],
+          "title": "Delivery Address Status",
+          "type": "string"
+        },
+        "eligibility": {
+          "enum": [
+            "eligible",
+            "already_has_access",
+            "unavailable"
+          ],
+          "title": "Eligibility",
+          "type": "string"
+        },
+        "eligibility_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Eligibility Reason"
+        }
+      },
+      "required": [
+        "recipient_ref",
+        "display_name",
+        "email",
+        "provider_label",
+        "delivery_address_status",
+        "eligibility"
+      ],
+      "title": "DirectoryRecipient",
+      "type": "object"
+    },
+    "DirectoryRecipientPage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/DirectoryRecipient"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Next Cursor"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "DirectoryRecipientPage",
       "type": "object"
     },
     "DocumentChunk": {
@@ -6165,6 +7177,416 @@
       "title": "DomainCapability",
       "type": "object"
     },
+    "EmailInvitation": {
+      "additionalProperties": true,
+      "properties": {
+        "action_reasons": {
+          "additionalProperties": {
+            "enum": [
+              "closed",
+              "cooldown",
+              "send_limit",
+              "delivery_outcome_unknown",
+              "inviter_authority_lost",
+              "origin_token_revoked",
+              "origin_token_expired",
+              "origin_scope_changed",
+              "recipient_connection_changed"
+            ],
+            "type": "string"
+          },
+          "propertyNames": {
+            "enum": [
+              "accept",
+              "resend"
+            ]
+          },
+          "title": "Action Reasons",
+          "type": "object"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "tenant_id": {
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "workspace_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Workspace Id"
+        },
+        "organization_name": {
+          "title": "Organization Name",
+          "type": "string"
+        },
+        "workspace_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Workspace Name"
+        },
+        "role": {
+          "enum": [
+            "viewer",
+            "analyst",
+            "editor",
+            "operator",
+            "admin"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "recipient_display_name": {
+          "title": "Recipient Display Name",
+          "type": "string"
+        },
+        "recipient_email": {
+          "title": "Recipient Email",
+          "type": "string"
+        },
+        "provider_label": {
+          "title": "Provider Label",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "pending",
+            "accepted",
+            "declined",
+            "revoked",
+            "expired"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "accepted_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Accepted At"
+        },
+        "declined_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Declined At"
+        },
+        "revoked_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Revoked At"
+        },
+        "delivery": {
+          "$ref": "#/$defs/InvitationDelivery"
+        },
+        "allowed_actions": {
+          "items": {
+            "enum": [
+              "revoke",
+              "resend"
+            ],
+            "type": "string"
+          },
+          "title": "Allowed Actions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "workspace_id",
+        "organization_name",
+        "workspace_name",
+        "role",
+        "recipient_display_name",
+        "recipient_email",
+        "provider_label",
+        "created_at",
+        "expires_at",
+        "status",
+        "delivery",
+        "allowed_actions"
+      ],
+      "title": "EmailInvitation",
+      "type": "object"
+    },
+    "EmailInvitationInput": {
+      "additionalProperties": false,
+      "properties": {
+        "recipient_ref": {
+          "maxLength": 4096,
+          "minLength": 8,
+          "title": "Recipient Ref",
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "viewer",
+            "analyst",
+            "editor",
+            "operator",
+            "admin"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "workspace_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workspace Id"
+        },
+        "expires_in_hours": {
+          "default": 24,
+          "maximum": 168,
+          "minimum": 1,
+          "title": "Expires In Hours",
+          "type": "integer"
+        },
+        "message": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "recipient_ref",
+        "role"
+      ],
+      "title": "EmailInvitationInput",
+      "type": "object"
+    },
+    "EmailInvitationPage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/EmailInvitation"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "total": {
+          "title": "Total",
+          "type": "integer"
+        },
+        "page": {
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "pages": {
+          "title": "Pages",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size",
+        "pages"
+      ],
+      "title": "EmailInvitationPage",
+      "type": "object"
+    },
+    "EmailPreview": {
+      "additionalProperties": true,
+      "properties": {
+        "subject": {
+          "title": "Subject",
+          "type": "string"
+        },
+        "sender_name": {
+          "title": "Sender Name",
+          "type": "string"
+        },
+        "recipient_display_name": {
+          "title": "Recipient Display Name",
+          "type": "string"
+        },
+        "recipient_email": {
+          "title": "Recipient Email",
+          "type": "string"
+        },
+        "heading": {
+          "title": "Heading",
+          "type": "string"
+        },
+        "paragraphs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Paragraphs",
+          "type": "array"
+        },
+        "action_label": {
+          "title": "Action Label",
+          "type": "string"
+        },
+        "footer": {
+          "title": "Footer",
+          "type": "string"
+        },
+        "product_name": {
+          "title": "Product Name",
+          "type": "string"
+        },
+        "accent_color": {
+          "title": "Accent Color",
+          "type": "string"
+        },
+        "branding": {
+          "$ref": "#/$defs/BrandingValues"
+        },
+        "rendered_html": {
+          "default": "",
+          "title": "Rendered Html",
+          "type": "string"
+        },
+        "rendered_text": {
+          "default": "",
+          "title": "Rendered Text",
+          "type": "string"
+        },
+        "usage_summary": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CommunicationUsageSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "activity_summary": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ActivitySummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "organization_name": {
+          "default": "",
+          "title": "Organization Name",
+          "type": "string"
+        },
+        "workspace_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workspace Name"
+        },
+        "effective_locale": {
+          "default": "en-US",
+          "title": "Effective Locale",
+          "type": "string"
+        },
+        "locale_origin": {
+          "default": "default",
+          "enum": [
+            "user",
+            "organization",
+            "installation",
+            "default"
+          ],
+          "title": "Locale Origin",
+          "type": "string"
+        },
+        "powered_by": {
+          "const": "Powered by koinon",
+          "default": "Powered by koinon",
+          "title": "Powered By",
+          "type": "string"
+        },
+        "copyright": {
+          "title": "Copyright",
+          "type": "string"
+        }
+      },
+      "required": [
+        "subject",
+        "sender_name",
+        "recipient_display_name",
+        "recipient_email",
+        "heading",
+        "paragraphs",
+        "action_label",
+        "footer",
+        "product_name",
+        "accent_color",
+        "branding"
+      ],
+      "title": "EmailPreview",
+      "type": "object"
+    },
     "EntraCredential": {
       "additionalProperties": false,
       "properties": {
@@ -6245,6 +7667,15 @@
             "transitive"
           ],
           "title": "Membership Mode",
+          "type": "string"
+        },
+        "identity_mode": {
+          "default": "brokered",
+          "enum": [
+            "brokered",
+            "direct"
+          ],
+          "title": "Identity Mode",
           "type": "string"
         }
       },
@@ -6838,7 +8269,7 @@
       "additionalProperties": false,
       "properties": {
         "index": {
-          "maximum": 511,
+          "maximum": 2047,
           "minimum": 0,
           "title": "Index",
           "type": "integer"
@@ -6927,13 +8358,13 @@
           "type": "string"
         },
         "processed_objects": {
-          "maximum": 513,
+          "maximum": 2049,
           "minimum": 0,
           "title": "Processed Objects",
           "type": "integer"
         },
         "total_objects": {
-          "maximum": 513,
+          "maximum": 2049,
           "minimum": 1,
           "title": "Total Objects",
           "type": "integer"
@@ -7008,7 +8439,7 @@
           "type": "string"
         },
         "size_bytes": {
-          "maximum": 33554432,
+          "maximum": 134217728,
           "minimum": 1,
           "title": "Size Bytes",
           "type": "integer"
@@ -7654,6 +9085,23 @@
           "title": "Automatic Unknown Replay",
           "type": "boolean"
         },
+        "synchronous_max_file_bytes": {
+          "default": 33554432,
+          "title": "Synchronous Max File Bytes",
+          "type": "integer"
+        },
+        "large_file_transport": {
+          "const": "queued_file_spool",
+          "default": "queued_file_spool",
+          "title": "Large File Transport",
+          "type": "string"
+        },
+        "quota_semantics": {
+          "const": "lifetime_admission_bytes",
+          "default": "lifetime_admission_bytes",
+          "title": "Quota Semantics",
+          "type": "string"
+        },
         "max_files": {
           "title": "Max Files",
           "type": "integer"
@@ -8037,7 +9485,7 @@
           "type": "string"
         },
         "size_bytes": {
-          "maximum": 33554432,
+          "maximum": 134217728,
           "minimum": 1,
           "title": "Size Bytes",
           "type": "integer"
@@ -10056,6 +11504,93 @@
       "title": "InvitationCreated",
       "type": "object"
     },
+    "InvitationDelivery": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "queued",
+            "sending",
+            "sent",
+            "delivered",
+            "deferred",
+            "failed",
+            "suppressed",
+            "cancelled",
+            "unknown"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "queued_at": {
+          "format": "date-time",
+          "title": "Queued At",
+          "type": "string"
+        },
+        "last_attempt_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Attempt At"
+        },
+        "next_attempt_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Next Attempt At"
+        },
+        "next_resend_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Next Resend At"
+        },
+        "failure_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Failure Code"
+        }
+      },
+      "required": [
+        "id",
+        "status",
+        "queued_at"
+      ],
+      "title": "InvitationDelivery",
+      "type": "object"
+    },
     "InvitationInput": {
       "additionalProperties": false,
       "properties": {
@@ -10165,6 +11700,124 @@
         "expires_at"
       ],
       "title": "InvitationPreview",
+      "type": "object"
+    },
+    "InvitationReview": {
+      "additionalProperties": true,
+      "properties": {
+        "action_reasons": {
+          "additionalProperties": {
+            "enum": [
+              "closed",
+              "cooldown",
+              "send_limit",
+              "delivery_outcome_unknown",
+              "inviter_authority_lost",
+              "origin_token_revoked",
+              "origin_token_expired",
+              "origin_scope_changed",
+              "recipient_connection_changed"
+            ],
+            "type": "string"
+          },
+          "propertyNames": {
+            "enum": [
+              "accept",
+              "resend"
+            ]
+          },
+          "title": "Action Reasons",
+          "type": "object"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "tenant_id": {
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "organization_name": {
+          "title": "Organization Name",
+          "type": "string"
+        },
+        "workspace_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Workspace Id"
+        },
+        "workspace_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Workspace Name"
+        },
+        "role": {
+          "enum": [
+            "viewer",
+            "analyst",
+            "editor",
+            "operator",
+            "admin"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "pending",
+            "accepted",
+            "declined",
+            "revoked",
+            "expired"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "can_accept": {
+          "title": "Can Accept",
+          "type": "boolean"
+        },
+        "can_decline": {
+          "title": "Can Decline",
+          "type": "boolean"
+        },
+        "binding": {
+          "const": "directory_identity",
+          "default": "directory_identity",
+          "title": "Binding",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "organization_name",
+        "workspace_id",
+        "workspace_name",
+        "role",
+        "expires_at",
+        "status",
+        "can_accept",
+        "can_decline"
+      ],
+      "title": "InvitationReview",
       "type": "object"
     },
     "InvitationToken": {
@@ -10431,6 +12084,27 @@
         "client_id"
       ],
       "title": "KeycloakSettings",
+      "type": "object"
+    },
+    "KnowledgeActivityCounts": {
+      "additionalProperties": true,
+      "properties": {
+        "created": {
+          "$ref": "#/$defs/ObservedCount"
+        },
+        "updated": {
+          "$ref": "#/$defs/ObservedCount"
+        },
+        "consulted": {
+          "$ref": "#/$defs/ObservedCount"
+        }
+      },
+      "required": [
+        "created",
+        "updated",
+        "consulted"
+      ],
+      "title": "KnowledgeActivityCounts",
       "type": "object"
     },
     "KnowledgeCancellation": {
@@ -12188,6 +13862,58 @@
       "title": "LineageNode",
       "type": "object"
     },
+    "McpActivityCounts": {
+      "additionalProperties": true,
+      "properties": {
+        "requests": {
+          "$ref": "#/$defs/ObservedCount"
+        },
+        "tool_calls": {
+          "$ref": "#/$defs/ObservedCount"
+        },
+        "succeeded": {
+          "$ref": "#/$defs/ObservedCount"
+        },
+        "failed": {
+          "$ref": "#/$defs/ObservedCount"
+        },
+        "rejected": {
+          "$ref": "#/$defs/ObservedCount"
+        },
+        "average_duration_ms": {
+          "$ref": "#/$defs/ObservedCount"
+        },
+        "p95_duration_ms": {
+          "$ref": "#/$defs/ObservedCount"
+        },
+        "tool_cancelled": {
+          "$ref": "#/$defs/ObservedCount"
+        },
+        "request_succeeded": {
+          "$ref": "#/$defs/ObservedCount"
+        },
+        "request_failed": {
+          "$ref": "#/$defs/ObservedCount"
+        },
+        "request_rejected": {
+          "$ref": "#/$defs/ObservedCount"
+        },
+        "request_cancelled": {
+          "$ref": "#/$defs/ObservedCount"
+        }
+      },
+      "required": [
+        "requests",
+        "tool_calls",
+        "succeeded",
+        "failed",
+        "rejected",
+        "average_duration_ms",
+        "p95_duration_ms"
+      ],
+      "title": "McpActivityCounts",
+      "type": "object"
+    },
     "McpConnectionDescriptor": {
       "additionalProperties": true,
       "properties": {
@@ -12316,11 +14042,12 @@
               "knowledge:search",
               "query:execute",
               "chat:use",
-              "evidence:read"
+              "evidence:read",
+              "activity:read"
             ],
             "type": "string"
           },
-          "maxItems": 7,
+          "maxItems": 8,
           "minItems": 1,
           "title": "Scopes",
           "type": "array"
@@ -12442,11 +14169,12 @@
               "knowledge:search",
               "query:execute",
               "chat:use",
-              "evidence:read"
+              "evidence:read",
+              "activity:read"
             ],
             "type": "string"
           },
-          "maxItems": 7,
+          "maxItems": 8,
           "minItems": 1,
           "title": "Scopes",
           "type": "array"
@@ -12557,11 +14285,12 @@
                   "knowledge:search",
                   "query:execute",
                   "chat:use",
-                  "evidence:read"
+                  "evidence:read",
+                  "activity:read"
                 ],
                 "type": "string"
               },
-              "maxItems": 7,
+              "maxItems": 8,
               "minItems": 1,
               "type": "array"
             },
@@ -12681,11 +14410,12 @@
               "knowledge:search",
               "query:execute",
               "chat:use",
-              "evidence:read"
+              "evidence:read",
+              "activity:read"
             ],
             "type": "string"
           },
-          "maxItems": 7,
+          "maxItems": 8,
           "minItems": 1,
           "title": "Scopes",
           "type": "array"
@@ -13399,6 +15129,37 @@
         "reason"
       ],
       "title": "MetricsObservation",
+      "type": "object"
+    },
+    "ModelActivityCounts": {
+      "additionalProperties": true,
+      "properties": {
+        "input_tokens": {
+          "$ref": "#/$defs/ObservedCount"
+        },
+        "output_tokens": {
+          "$ref": "#/$defs/ObservedCount"
+        },
+        "embedding_tokens": {
+          "$ref": "#/$defs/ObservedCount"
+        },
+        "cost": {
+          "$ref": "#/$defs/ObservedCost"
+        },
+        "external_client_consumption": {
+          "const": "not_observed",
+          "default": "not_observed",
+          "title": "External Client Consumption",
+          "type": "string"
+        }
+      },
+      "required": [
+        "input_tokens",
+        "output_tokens",
+        "embedding_tokens",
+        "cost"
+      ],
+      "title": "ModelActivityCounts",
       "type": "object"
     },
     "ModelCapability": {
@@ -14507,6 +16268,484 @@
         "snapshot_id"
       ],
       "title": "NativeTableSnapshot",
+      "type": "object"
+    },
+    "NotificationDetails": {
+      "additionalProperties": true,
+      "properties": {
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "scopes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Scopes",
+          "type": "array"
+        },
+        "expires_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expires At"
+        }
+      },
+      "title": "NotificationDetails",
+      "type": "object"
+    },
+    "NotificationPreferenceRule": {
+      "additionalProperties": true,
+      "properties": {
+        "kind": {
+          "enum": [
+            "invitation",
+            "access_granted",
+            "role_changed",
+            "access_removed",
+            "security",
+            "welcome",
+            "digest"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "inbox": {
+          "title": "Inbox",
+          "type": "boolean"
+        },
+        "email": {
+          "title": "Email",
+          "type": "boolean"
+        },
+        "email_available": {
+          "title": "Email Available",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind",
+        "required",
+        "inbox",
+        "email",
+        "email_available"
+      ],
+      "title": "NotificationPreferenceRule",
+      "type": "object"
+    },
+    "NotificationPreferenceRuleInput": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "invitation",
+            "access_granted",
+            "role_changed",
+            "access_removed",
+            "security",
+            "welcome",
+            "digest"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "inbox": {
+          "title": "Inbox",
+          "type": "boolean"
+        },
+        "email": {
+          "title": "Email",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind",
+        "inbox",
+        "email"
+      ],
+      "title": "NotificationPreferenceRuleInput",
+      "type": "object"
+    },
+    "NotificationPreferences": {
+      "additionalProperties": true,
+      "properties": {
+        "admin_summaries_available": {
+          "default": false,
+          "title": "Admin Summaries Available",
+          "type": "boolean"
+        },
+        "admin_summaries_enabled": {
+          "default": false,
+          "title": "Admin Summaries Enabled",
+          "type": "boolean"
+        },
+        "revision": {
+          "title": "Revision",
+          "type": "integer"
+        },
+        "rules": {
+          "items": {
+            "$ref": "#/$defs/NotificationPreferenceRule"
+          },
+          "title": "Rules",
+          "type": "array"
+        },
+        "digest": {
+          "enum": [
+            "off",
+            "daily",
+            "weekly",
+            "monthly"
+          ],
+          "title": "Digest",
+          "type": "string"
+        },
+        "allowed_digests": {
+          "items": {
+            "enum": [
+              "off",
+              "daily",
+              "weekly",
+              "monthly"
+            ],
+            "type": "string"
+          },
+          "title": "Allowed Digests",
+          "type": "array"
+        },
+        "locale": {
+          "title": "Locale",
+          "type": "string"
+        },
+        "time_zone": {
+          "title": "Time Zone",
+          "type": "string"
+        },
+        "schedule": {
+          "$ref": "#/$defs/DigestSchedule"
+        },
+        "next_run_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Next Run At"
+        },
+        "next_run_local": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Next Run Local"
+        },
+        "admin_summaries": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Admin Summaries"
+        },
+        "notification_locale": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notification Locale"
+        },
+        "effective_locale": {
+          "default": "en-US",
+          "title": "Effective Locale",
+          "type": "string"
+        },
+        "locale_origin": {
+          "default": "default",
+          "enum": [
+            "user",
+            "organization",
+            "installation",
+            "default"
+          ],
+          "title": "Locale Origin",
+          "type": "string"
+        }
+      },
+      "required": [
+        "revision",
+        "rules",
+        "digest",
+        "allowed_digests",
+        "locale",
+        "time_zone"
+      ],
+      "title": "NotificationPreferences",
+      "type": "object"
+    },
+    "NotificationPreferencesInput": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "minimum": 0,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "rules": {
+          "items": {
+            "$ref": "#/$defs/NotificationPreferenceRuleInput"
+          },
+          "maxItems": 7,
+          "title": "Rules",
+          "type": "array"
+        },
+        "digest": {
+          "enum": [
+            "off",
+            "daily",
+            "weekly",
+            "monthly"
+          ],
+          "title": "Digest",
+          "type": "string"
+        },
+        "schedule": {
+          "$ref": "#/$defs/DigestSchedule"
+        },
+        "admin_summaries": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Admin Summaries"
+        },
+        "notification_locale": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notification Locale"
+        }
+      },
+      "required": [
+        "expected_revision",
+        "rules",
+        "digest"
+      ],
+      "title": "NotificationPreferencesInput",
+      "type": "object"
+    },
+    "NotificationTarget": {
+      "additionalProperties": true,
+      "properties": {
+        "kind": {
+          "enum": [
+            "invitation",
+            "workspace",
+            "access",
+            "none"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Id"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "NotificationTarget",
+      "type": "object"
+    },
+    "NotificationUnreadCount": {
+      "additionalProperties": true,
+      "properties": {
+        "unread": {
+          "title": "Unread",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "unread"
+      ],
+      "title": "NotificationUnreadCount",
+      "type": "object"
+    },
+    "ObservedCost": {
+      "additionalProperties": true,
+      "properties": {
+        "amount": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Amount"
+        },
+        "currency": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Z]{3}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Currency"
+        },
+        "status": {
+          "enum": [
+            "observed",
+            "partial",
+            "unavailable"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "maxLength": 120,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "ObservedCost",
+      "type": "object"
+    },
+    "ObservedCount": {
+      "additionalProperties": true,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "status": {
+          "enum": [
+            "observed",
+            "partial",
+            "unavailable"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "ObservedCount",
       "type": "object"
     },
     "OpenUIArtifact": {
@@ -16115,6 +18354,175 @@
       "additionalProperties": true,
       "properties": {},
       "title": "Output",
+      "type": "object"
+    },
+    "OwnNotification": {
+      "additionalProperties": true,
+      "properties": {
+        "workspace_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workspace Name"
+        },
+        "actor_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Actor Name"
+        },
+        "details": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NotificationDetails"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "invitation",
+            "access_granted",
+            "role_changed",
+            "access_removed",
+            "security",
+            "welcome",
+            "digest"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "body": {
+          "title": "Body",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "read_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Read At"
+        },
+        "tenant_id": {
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "organization_name": {
+          "title": "Organization Name",
+          "type": "string"
+        },
+        "target": {
+          "$ref": "#/$defs/NotificationTarget"
+        },
+        "effective_locale": {
+          "default": "en-US",
+          "title": "Effective Locale",
+          "type": "string"
+        },
+        "locale_origin": {
+          "default": "default",
+          "enum": [
+            "user",
+            "organization",
+            "installation",
+            "default"
+          ],
+          "title": "Locale Origin",
+          "type": "string"
+        },
+        "powered_by": {
+          "const": "Powered by koinon",
+          "default": "Powered by koinon",
+          "title": "Powered By",
+          "type": "string"
+        },
+        "copyright": {
+          "title": "Copyright",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "title",
+        "body",
+        "created_at",
+        "read_at",
+        "tenant_id",
+        "organization_name",
+        "target"
+      ],
+      "title": "OwnNotification",
+      "type": "object"
+    },
+    "OwnNotificationPage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/OwnNotification"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "total": {
+          "title": "Total",
+          "type": "integer"
+        },
+        "page": {
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "pages": {
+          "title": "Pages",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size",
+        "pages"
+      ],
+      "title": "OwnNotificationPage",
       "type": "object"
     },
     "Page": {
@@ -18153,6 +20561,40 @@
       "title": "ProfileUpdate",
       "type": "object"
     },
+    "ProjectActivity": {
+      "additionalProperties": true,
+      "properties": {
+        "project_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Project Id",
+          "type": "string"
+        },
+        "workspace_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Workspace Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 255,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "knowledge": {
+          "$ref": "#/$defs/KnowledgeActivityCounts"
+        }
+      },
+      "required": [
+        "project_id",
+        "workspace_id",
+        "name",
+        "knowledge"
+      ],
+      "title": "ProjectActivity",
+      "type": "object"
+    },
     "PromotedCatalogEntry": {
       "additionalProperties": true,
       "properties": {
@@ -19449,6 +21891,62 @@
         "format"
       ],
       "title": "QueryResultExportInput",
+      "type": "object"
+    },
+    "RecipientProvider": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "display_name"
+      ],
+      "title": "RecipientProvider",
+      "type": "object"
+    },
+    "RecipientProviderPage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/RecipientProvider"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "total": {
+          "title": "Total",
+          "type": "integer"
+        },
+        "page": {
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "pages": {
+          "title": "Pages",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "items",
+        "total",
+        "page",
+        "page_size",
+        "pages"
+      ],
+      "title": "RecipientProviderPage",
       "type": "object"
     },
     "ReplaceDocument": {
@@ -23034,6 +25532,30 @@
       "title": "ValidationResult",
       "type": "object"
     },
+    "VerifiedSenderOption": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        },
+        "address": {
+          "title": "Address",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "display_name",
+        "address"
+      ],
+      "title": "VerifiedSenderOption",
+      "type": "object"
+    },
     "KnowledgeCommitOutcome": {
       "discriminator": {
         "mapping": {
@@ -23084,7 +25606,7 @@
     "BulkFileUpload": {
       "type": "string",
       "contentEncoding": "binary",
-      "description": "Exact admitted original bytes, 1..33554432 bytes; raw application/octet-stream, never JSON/base64/multipart."
+      "description": "Exact admitted original bytes, 1..134217728 bytes; raw application/octet-stream, never JSON/base64/multipart."
     },
     "AvatarUpload": {
       "type": "string",
@@ -23155,6 +25677,138 @@
     }
   },
   "models": {
+    "Input": {
+      "$ref": "#/$defs/Input"
+    },
+    "Output": {
+      "$ref": "#/$defs/Output"
+    },
+    "DirectoryRecipient": {
+      "$ref": "#/$defs/DirectoryRecipient"
+    },
+    "DirectoryRecipientPage": {
+      "$ref": "#/$defs/DirectoryRecipientPage"
+    },
+    "RecipientProvider": {
+      "$ref": "#/$defs/RecipientProvider"
+    },
+    "RecipientProviderPage": {
+      "$ref": "#/$defs/RecipientProviderPage"
+    },
+    "EmailInvitationInput": {
+      "$ref": "#/$defs/EmailInvitationInput"
+    },
+    "InvitationDelivery": {
+      "$ref": "#/$defs/InvitationDelivery"
+    },
+    "EmailInvitation": {
+      "$ref": "#/$defs/EmailInvitation"
+    },
+    "EmailInvitationPage": {
+      "$ref": "#/$defs/EmailInvitationPage"
+    },
+    "InvitationReview": {
+      "$ref": "#/$defs/InvitationReview"
+    },
+    "CommunicationUsageSummary": {
+      "$ref": "#/$defs/CommunicationUsageSummary"
+    },
+    "EmailPreview": {
+      "$ref": "#/$defs/EmailPreview"
+    },
+    "NotificationTarget": {
+      "$ref": "#/$defs/NotificationTarget"
+    },
+    "NotificationDetails": {
+      "$ref": "#/$defs/NotificationDetails"
+    },
+    "OwnNotification": {
+      "$ref": "#/$defs/OwnNotification"
+    },
+    "OwnNotificationPage": {
+      "$ref": "#/$defs/OwnNotificationPage"
+    },
+    "NotificationUnreadCount": {
+      "$ref": "#/$defs/NotificationUnreadCount"
+    },
+    "NotificationPreferenceRule": {
+      "$ref": "#/$defs/NotificationPreferenceRule"
+    },
+    "NotificationPreferenceRuleInput": {
+      "$ref": "#/$defs/NotificationPreferenceRuleInput"
+    },
+    "DigestSchedule": {
+      "$ref": "#/$defs/DigestSchedule"
+    },
+    "AdministrativeSummarySchedule": {
+      "$ref": "#/$defs/AdministrativeSummarySchedule"
+    },
+    "DigestSchedulePreview": {
+      "$ref": "#/$defs/DigestSchedulePreview"
+    },
+    "NotificationPreferences": {
+      "$ref": "#/$defs/NotificationPreferences"
+    },
+    "NotificationPreferencesInput": {
+      "$ref": "#/$defs/NotificationPreferencesInput"
+    },
+    "CommunicationPolicy": {
+      "$ref": "#/$defs/CommunicationPolicy"
+    },
+    "CommunicationPolicyInput": {
+      "$ref": "#/$defs/CommunicationPolicyInput"
+    },
+    "VerifiedSenderOption": {
+      "$ref": "#/$defs/VerifiedSenderOption"
+    },
+    "CommunicationIssue": {
+      "$ref": "#/$defs/CommunicationIssue"
+    },
+    "CommunicationCapabilities": {
+      "$ref": "#/$defs/CommunicationCapabilities"
+    },
+    "DeliveryRecord": {
+      "$ref": "#/$defs/DeliveryRecord"
+    },
+    "DeliveryPage": {
+      "$ref": "#/$defs/DeliveryPage"
+    },
+    "ActivityEmailPreviewInput": {
+      "$ref": "#/$defs/ActivityEmailPreviewInput"
+    },
+    "ActivityValue": {
+      "$ref": "#/$defs/ActivityValue"
+    },
+    "ActivityWindow": {
+      "$ref": "#/$defs/ActivityWindow"
+    },
+    "ObservedCount": {
+      "$ref": "#/$defs/ObservedCount"
+    },
+    "ActivityCoverage": {
+      "$ref": "#/$defs/ActivityCoverage"
+    },
+    "KnowledgeActivityCounts": {
+      "$ref": "#/$defs/KnowledgeActivityCounts"
+    },
+    "ProjectActivity": {
+      "$ref": "#/$defs/ProjectActivity"
+    },
+    "DailyActivity": {
+      "$ref": "#/$defs/DailyActivity"
+    },
+    "McpActivityCounts": {
+      "$ref": "#/$defs/McpActivityCounts"
+    },
+    "ObservedCost": {
+      "$ref": "#/$defs/ObservedCost"
+    },
+    "ModelActivityCounts": {
+      "$ref": "#/$defs/ModelActivityCounts"
+    },
+    "ActivitySummary": {
+      "$ref": "#/$defs/ActivitySummary"
+    },
     "AuthorSummary": {
       "$ref": "#/$defs/AuthorSummary"
     },
@@ -23644,9 +26298,6 @@
     "StoredResult": {
       "$ref": "#/$defs/StoredResult"
     },
-    "Input": {
-      "$ref": "#/$defs/Input"
-    },
     "MessageSelection": {
       "$ref": "#/$defs/MessageSelection"
     },
@@ -24036,9 +26687,6 @@
     },
     "DocumentPartPage": {
       "$ref": "#/$defs/DocumentPartPage"
-    },
-    "Output": {
-      "$ref": "#/$defs/Output"
     },
     "OrganizationUnitSummary": {
       "$ref": "#/$defs/OrganizationUnitSummary"

@@ -46,6 +46,7 @@ from koinon.organization_people.repositories import (
 )
 from koinon.profiles.service import ProfileService, profile_id
 from koinon.security.authority import primary_authority
+from koinon.security.settings import OidcSettings
 
 
 def denied() -> NoReturn:
@@ -85,7 +86,9 @@ class OrganizationPeopleService:
         mappings: OrganizationProfileMappingRepository,
         presentation: CorporateProfileProjector | None = None,
         corporate_profiles: CorporateProfileRepository | None = None,
+        oidc: OidcSettings | None = None,
     ):
+        self.oidc = oidc
         self.presentation = presentation
         self.corporate_profiles = corporate_profiles
         (

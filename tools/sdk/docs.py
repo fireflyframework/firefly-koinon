@@ -41,6 +41,14 @@ def render(contract: dict) -> str:
         "",
         "Browse [API areas](api/index.md), [wire models](models/index.md) and the [SDK runtime reference](sdk-runtime.md) for parameters, constraints and connection ownership.",
         "",
+        (
+            "TypeScript communications methods use the separately loaded `createCommunicationsApi` factory "
+            "from `@fireflyframework/koinon-sdk/communications`. Pass the same `KoinonTransport` "
+            "used to construct `KoinonClient`; the `communications.*` names below refer to the returned API. "
+            "This keeps email and notification management out of applications that only use knowledge or chat. "
+            "Python exposes those methods on `KoinonClient`; Java exposes the corresponding typed API groups."
+        ),
+        "",
         "| API operation | Python client | TypeScript client | Java client | Response |",
         "| --- | --- | --- | --- | --- |",
     ]

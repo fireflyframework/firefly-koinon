@@ -166,7 +166,30 @@ class CanonCoreConfiguration:
             value = config.get("koinon.storage.documents." + key) if config is not None else None
             if value is not None:
                 overrides[field] = value
+        from koinon_storage.profile import LibraryIngestionProfile
+
+        if config is not None and config.get("koinon.knowledge.ingestion") is not None:
+            profile = LibraryIngestionProfile.from_config(config)
+            overrides.update(
+                {
+                    "max_bytes": profile.raw_max_bytes,
+                    "inline_max_bytes": min(profile.raw_max_bytes, 32 * 1024**2),
+                    "file_expanded_max_bytes": profile.expanded_max_bytes,
+                    "file_scratch_max_bytes": profile.scratch_max_bytes,
+                    "file_child_rss_max_bytes": profile.child_rss_max_bytes,
+                    "file_wall_seconds": profile.wall_seconds,
+                    "file_text_max_bytes": profile.text_max_bytes,
+                    "file_chunks_max": profile.chunks_max,
+                }
+            )
+            overrides.setdefault("object_store_max_object_bytes", 256 * 1024**2)
         settings = CanonSettings(**overrides)
+        if (
+            config is not None
+            and config.get("koinon.knowledge.ingestion") is not None
+            and settings.object_store_max_object_bytes < settings.max_bytes
+        ):
+            raise ValueError("Document storage object bound must cover its configured raw-file limit")
         settings._require_model_bindings = (
             bool(config.get("koinon.knowledge.require_connections", False)) if config else False
         )
@@ -640,6 +663,7 @@ class CanonCoreConfiguration:
             max_bytes=settings.max_bytes,
             max_recursion_depth=settings.binary_max_recursion_depth,
             max_expanded_files=settings.binary_max_expanded_files,
+            max_uncompressed_bytes=settings.file_expanded_max_bytes,
             wrap_text_as_pdf=False,
             email_render_header=True,
             office_converter=settings.office_converter,

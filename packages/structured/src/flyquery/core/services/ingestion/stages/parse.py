@@ -68,6 +68,19 @@ from flyquery.core.services.storage.object_store import ObjectStore
 logger = logging.getLogger(__name__)
 
 
+async def _upload_parquet(object_store, key, path):
+    create_file = getattr(object_store, "create_file", None)
+    if callable(create_file):
+        transfer = create_file(key, path, "application/octet-stream")
+        if not inspect.isawaitable(transfer):
+            raise TypeError("Storage file transport must be asynchronous")
+        await transfer
+        return
+    if Path(path).stat().st_size > 1024**2:
+        raise IngestionResourceLimitError("Large artifacts require bounded storage file transport")
+    await object_store.put(key, Path(path).read_bytes(), "application/octet-stream")
+
+
 def _file_digest(path):
     with open(path, "rb") as stream:
         return hashlib.file_digest(stream, "sha256").hexdigest()
@@ -673,8 +686,7 @@ async def run_parse(
                 # Upload Parquet to object store. We keep the local file
                 # around -- sample / profile / describe read it directly,
                 # ingest_service cleans up after publish.
-                parquet_bytes = Path(local_parquet).read_bytes()
-                await object_store.put(parquet_key, parquet_bytes, "application/octet-stream")
+                await _upload_parquet(object_store, parquet_key, local_parquet)
             except IngestionResourceLimitError:
                 raise
             except Exception:

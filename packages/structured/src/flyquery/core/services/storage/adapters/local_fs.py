@@ -1,4 +1,5 @@
 # Copyright 2024-2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +24,9 @@ from pathlib import Path
 
 import aiofiles
 import aiofiles.os
+from koinon_storage.client_lifecycle import ClientLifecycle
+from koinon_storage.local_files import create_file
+from pyfly.context.lifecycle import pre_destroy
 
 from flyquery.core.services.storage.object_store import ObjectMeta
 
@@ -39,6 +43,7 @@ class LocalFsObjectStore:
         self._base = Path(base).expanduser().resolve()
         self._base.mkdir(parents=True, exist_ok=True)
         self._presign_ttl_s = presign_ttl_s
+        self._file_lifecycle = ClientLifecycle()
 
     def _abs(self, key: str) -> Path:
         # Reject path traversal
@@ -72,6 +77,19 @@ class LocalFsObjectStore:
             last_modified=datetime.utcnow(),
             kms_key_uri=kms_key_uri,
         )
+
+    async def create_file(self, key: str, path: str, content_type: str) -> ObjectMeta:
+        target = self._abs(key)
+        if not target.resolve().is_relative_to(self._base):
+            raise ValueError("Structured artifact key is outside its configured storage root")
+        reference = await self._file_lifecycle.run(
+            lambda: create_file(self._base, target, key, path, 256 * 1024**2)
+        )
+        return ObjectMeta(key, reference.size_bytes, content_type, reference.version, datetime.now())
+
+    @pre_destroy
+    async def close(self) -> None:
+        await self._file_lifecycle.close(lambda: None)
 
     async def get(self, key: str) -> AsyncIterator[bytes]:
         p = self._abs(key)

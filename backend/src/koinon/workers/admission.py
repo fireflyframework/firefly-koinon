@@ -20,11 +20,13 @@ WorkKind = Literal[
     "index",
     "attachment",
     "profile",
+    "communications",
     "document",
     "structured",
     "callback",
     "query",
     "maintenance",
+    "bulk",
 ]
 
 
@@ -153,11 +155,13 @@ class WorkAdmission:
             "index",
             "attachment",
             "profile",
+            "communications",
             "document",
             "structured",
             "callback",
             "query",
             "maintenance",
+            "bulk",
         }:
             raise ValueError("Work admission requires a declared operation kind")
         current = _current.get()

@@ -3,7 +3,7 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/knowledge/bulk/dtos.py
-SHA256: 8cc688f5ade54ee8a6a701d128bc512d298aee3545157191f3c0a634d2944050
+SHA256: 9f14759adc242109a294e1337d401fee55a0428ab090d209dbd12f7897b42ef8
 
 Server authorization and semantic validation remain authoritative.
 """
@@ -39,7 +39,7 @@ class FileManifestItem(Input):
     client_item_id: Identifier
     filename: str = Field(strict=True, min_length=1, max_length=255)
     mode: Literal["document", "dataset"]
-    size_bytes: int = Field(strict=True, ge=1, le=32 * 1024 * 1024)
+    size_bytes: int = Field(strict=True, ge=1, le=128 * 1024 * 1024)
     sha256: Digest
 
 
@@ -70,6 +70,9 @@ class FileBatchCapabilities(Output):
     writer_fence: Literal["primary_database_generation_lease"] = "primary_database_generation_lease"
     worker: Literal["external_native_worker"] = "external_native_worker"
     automatic_unknown_replay: Literal[False] = False
+    synchronous_max_file_bytes: int = 32 * 1024 * 1024
+    large_file_transport: Literal["queued_file_spool"] = "queued_file_spool"
+    quota_semantics: Literal["lifetime_admission_bytes"] = "lifetime_admission_bytes"
     max_files: int
     max_file_bytes: int
     max_batch_bytes: int

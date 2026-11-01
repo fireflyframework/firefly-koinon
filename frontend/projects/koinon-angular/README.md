@@ -105,3 +105,66 @@ Organization administrators can manage names, logos and accessible light/dark pa
 An embedding application may supply a typed `BrandingValues` object through `[branding]` on the Angular workbench or the custom element's `branding` JavaScript property. Its explicit override takes precedence in that instance. `(brandingChange)` reports the effective identity. Set `font_family` to `Manrope` or `Inter`. The workbench scopes palette variables, font selection and image presentation to its own shadow root; it does not change the host document title, favicon or global styles. Continue to supply `brandBase` for shipped logo/font assets. Legal attribution remains intact.
 
 See [Identity and appearance](../../../docs/operations/identity-appearance.md) for deployment configuration, asset constraints, revision checks and Python, TypeScript and Java API operations.
+
+## Invitations and notifications
+
+Management and the supplied Elements entry point register the optional communications loader. Custom Angular hosts can register the same lazy components:
+
+```typescript
+import {KOINON_COMMUNICATIONS_LOADER} from '@fireflyframework/koinon-angular/workbench';
+
+const communicationsProvider = {
+  provide: KOINON_COMMUNICATIONS_LOADER,
+  useValue: (component: 'trigger' | 'center' | 'email') =>
+    component === 'trigger'
+      ? import('@fireflyframework/koinon-angular/communications/runtime')
+          .then(module => module.KoinonNotificationCenterTrigger)
+      : component === 'email'
+        ? import('@fireflyframework/koinon-angular/communications/invitations')
+            .then(module => module.KoinonEmailInvitationAcceptance)
+        : import('@fireflyframework/koinon-angular/communications/inbox')
+            .then(module => module.KoinonNotificationCenter),
+};
+```
+
+Provide the same client and transport through `provideKoinonClient(client, transport)`. If the host overrides a client at runtime, bind its matching transport explicitly:
+
+```html
+<ffk-workbench [client]="currentClient" [transport]="currentTransport" />
+```
+
+For Elements, set both properties in the same update:
+
+```typescript
+Object.assign(document.querySelector('firefly-koinon')!, {
+  client: currentClient,
+  transport: currentTransport,
+});
+```
+
+Changing the client without its matching transport clears the previous communications state and disables raw transport requests. The component never reads private SDK fields or reuses a previous actor's transport. In-app notifications remain independent of email provider availability; sending email requires the server's ready capability.
+
+The bell opens **Your account**, **Notifications**. Preferences expose optional weekly/monthly summaries, profile time-zone scheduling and an English/Spanish language override. **Settings**, **Access** separates recipient-bound email invitations from explicitly labeled legacy bearer links. **Settings**, **Communications** exposes email readiness, organization policy and paginated delivery history. Every emitted lazy chunk must be served with the application.
+
+Email links default to the native `/auth/invitations/email/{uuid}` acceptance page, including headless installs. An embedding host can render `KoinonEmailInvitationAcceptance` on its own authenticated UUID route; configure a custom acceptance path only after that route exists. Never convert a legacy bearer token into an email-mode URL.
+
+
+### Knowledge activity and email previews
+
+The supplied Management and Elements hosts also register `KOINON_ACTIVITY_LOADER`. Embedded hosts can add the same provider alongside their paired client and transport:
+
+```typescript
+import {KOINON_ACTIVITY_LOADER} from '@fireflyframework/koinon-angular/workbench';
+
+const activityProvider = {
+  provide: KOINON_ACTIVITY_LOADER,
+  useValue: () => import('@fireflyframework/koinon-angular/activity')
+    .then(module => module.KoinonActivityPanel),
+};
+```
+
+Register `activityProvider` in the application's providers. The summary loads inside the existing Activity view; the processing job list remains available. Hosts that omit the optional loader keep their existing jobs view. `/activity/window` supplies the shared explicit UTC date-window control, and `/communications/email-preview` supplies the scriptless HTML/plain-text preview used by invitations and personal summary preferences. Each remains a separate lazy package entrypoint.
+
+Activity requests use the current typed client and matching transport pair. Binding a new client without its transport immediately hides prior activity, inbox, preferences, preview and unread values, and prevents a request through the previous actor's transport. The report distinguishes incomplete observations from recorded zeroes and never estimates external clients' token consumption.
+
+See [Communications and invitations](../../../docs/operations/communications.md) for administrator cadence policy, personal opt-out, scheduling and actual rendered summary previews. HTML previews remove navigation targets and active elements in detached inert content, then render in an opaque scriptless frame with no-referrer and a resource-denying content policy. Previewing neither sends email nor changes preferences.

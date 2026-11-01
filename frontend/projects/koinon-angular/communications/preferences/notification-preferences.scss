@@ -1,0 +1,172 @@
+/* Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 */
+:host {
+  display: block;
+  min-width: 0;
+  color: var(--ui-text);
+  font-family: var(--ffk-font, 'Manrope', sans-serif);
+}
+header {
+  margin: 24px 0 30px;
+}
+h2 {
+  font-size: 22px;
+  line-height: 1.5;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+p {
+  max-width: 70ch;
+  color: var(--ui-muted);
+  font-size: 13px;
+  line-height: 1.8;
+}
+form {
+  max-width: 760px;
+}
+fieldset {
+  min-width: 0;
+  border: 0;
+  border-bottom: 1px solid var(--ui-line);
+  padding: 0 0 24px;
+  margin: 0 0 28px;
+}
+legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  font-weight: 500;
+}
+fieldset p {
+  margin: 10px 0 18px;
+}
+.channels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 32px;
+}
+.channels label {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+  line-height: 1.7;
+  min-height: 32px;
+}
+input[type='checkbox'] {
+  accent-color: var(--ui-accent);
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  margin: 0;
+}
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 3px;
+}
+input:disabled {
+  cursor: not-allowed;
+}
+small {
+  display: block;
+  color: var(--ui-muted);
+  font-size: 12px;
+  line-height: 1.8;
+  margin-top: 12px;
+}
+.digest {
+  margin-bottom: 30px;
+}
+h3 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+.schedule {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+  max-width: 300px;
+  margin-top: 18px;
+}
+select {
+  min-height: 44px;
+  border: 1px solid var(--ui-line);
+  border-radius: 8px;
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  padding: 10px 12px;
+  font: 400 13px/1.7 var(--ffk-font);
+}
+.feedback {
+  padding: 12px 16px;
+  background: var(--ui-subtle);
+  border: 1px solid var(--ui-line);
+  border-radius: 8px;
+}
+@media (max-width: 600px) {
+  .channels label {
+    min-height: 44px;
+  }
+  .schedule {
+    max-width: none;
+  }
+}
+
+ffk-digest-schedule {
+  display: block;
+  margin-top: 24px;
+}
+.schedule-preview {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+}
+.schedule-preview p {
+  margin: 0;
+}
+.schedule-preview small {
+  margin-top: 4px;
+}
+.digest > small {
+  margin-top: 10px;
+}
+.rules {
+  margin-top: 28px;
+}
+
+header.embedded {
+  margin-top: 0;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.administrator-summaries {
+  margin: 32px 0;
+}
+
+.usage-preview {
+  margin: 32px 0;
+  padding: 28px 0;
+  border-top: 1px solid var(--ui-line);
+}
+.usage-preview > ffk-button {
+  margin: 20px 0;
+}
+.usage-preview > ffk-activity-window {
+  margin-top: 20px;
+}

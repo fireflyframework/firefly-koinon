@@ -28,6 +28,14 @@ def process_configuration(values: dict, *, role: ProcessRole | None = None) -> d
     knowledge.setdefault("indexes", {})["enabled"] = worker
     result["koinon"].setdefault("attachments", {})["worker_enabled"] = worker
     result["koinon"].setdefault("identity", {}).setdefault("profile_sync", {})["worker_enabled"] = worker
+    bulk = knowledge.setdefault("bulk", {})
+    for key in ("worker_enabled", "query_worker_enabled"):
+        if worker:
+            bulk[key] = parse_bool(Config(result).get("koinon.knowledge.bulk." + key, False), key)
+        else:
+            bulk[key] = False
+            if parse_bool(Config(result).get("koinon.knowledge.bulk." + key), key):
+                raise ValueError("The API role does not enable bulk background workers")
     if worker:
         result["pyfly"].setdefault("mcp", {}).setdefault("sessions", {})["enabled"] = False
         if parse_bool(Config(result).get("pyfly.mcp.sessions.enabled"), "pyfly.mcp.sessions.enabled"):

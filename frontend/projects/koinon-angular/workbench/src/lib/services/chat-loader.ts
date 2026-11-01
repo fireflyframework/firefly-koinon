@@ -5,3 +5,8 @@ export const KOINON_SETTINGS_LOADER=new InjectionToken<()=>Promise<Type<unknown>
 
 export const KOINON_INVITATION_LOADER=new InjectionToken<()=>Promise<Type<unknown>>>('Koinon optional invitation component');
 export const KOINON_SHARED_CONVERSATION_LOADER=new InjectionToken<()=>Promise<Type<unknown>>>('Koinon optional shared conversation component');
+
+export type KoinonCommunicationsComponent='trigger'|'center'|'email';
+export const KOINON_COMMUNICATIONS_LOADER=new InjectionToken<(component:KoinonCommunicationsComponent)=>Promise<Type<unknown>>>('Koinon optional communications component');
+
+export const KOINON_ACTIVITY_LOADER=new InjectionToken<()=>Promise<Type<unknown>>>('Koinon optional Activity component');

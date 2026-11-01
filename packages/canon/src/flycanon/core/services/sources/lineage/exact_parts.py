@@ -121,9 +121,9 @@ async def read_exact_parts(
     if max(normalized["bytes"], output["bytes"]) > reader.max_bytes:
         reader._unavailable("The historical document view exceeds the verified read limit")
     version = await lineage.version(scope, source_id, source_version_id)
-    if version["bytes"] > reader.max_bytes:
+    if version["bytes"] > reader.max_raw_bytes:
         reader._unavailable("The historical original exceeds the verified read limit")
-    await lineage.original(scope, source_id, source_version_id, max_bytes=reader.max_bytes)
+    await lineage.verify_original(scope, source_id, source_version_id, max_bytes=reader.max_raw_bytes)
     await lineage._verified(normalized, reader.max_bytes)
     view = await lineage._verified(output, reader.max_bytes)
     if sum(len(page["text"].encode()) for page in pages) > reader.max_bytes:

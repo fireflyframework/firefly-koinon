@@ -17,6 +17,15 @@ class CloudBlobStore:
         except ObjectTooLargeError:
             raise BlobTooLargeError("Private cloud blob exceeds its configured byte bound") from None
 
+    async def create_file(self, key, path, content_type=None):
+        return await self.native.create_file(key, path, content_type)
+
+    async def capture_file(self, key, size, digest):
+        return await self.native.capture_file(key, size, digest)
+
+    async def download_file(self, reference, path, *, max_bytes):
+        await self.native.download_file(reference, path, max_bytes=max_bytes)
+
     async def get_bounded(self, key, max_bytes):
         try:
             return await self.native.get_bounded(key, max_bytes)

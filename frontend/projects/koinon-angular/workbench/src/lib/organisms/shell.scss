@@ -60,14 +60,13 @@
 }
 .brand {
   display: block;
-  width: 190px;
   min-width: 128px;
   flex: 0 1 190px;
 }
 .brand img {
   display: block;
   width: 100%;
-  height: auto;
+  height: var(--ui-control-size);
 }
 .main-navigation {
   display: flex;
@@ -170,7 +169,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-left: auto;
   flex-shrink: 0;
 }
 .icon-button {
@@ -443,9 +441,6 @@ select:focus-visible {
   }
 }
 
-.brand {
-  order: 0;
-}
 .main-navigation {
   order: 1;
 }
@@ -461,9 +456,6 @@ select:focus-visible {
   order: 4;
   margin-left: 0;
 }
-.navigation-toggle {
-  order: 0;
-}
 @container koinon-shell (max-width: 1100px) {
   .header-actions {
     margin-left: auto;
@@ -472,8 +464,7 @@ select:focus-visible {
 
 @container koinon-shell (max-width: 760px) {
   .brand {
-    flex: 1 1 100px;
-    width: auto;
+    flex: 1 1 0;
     min-width: 0;
     max-width: 190px;
   }

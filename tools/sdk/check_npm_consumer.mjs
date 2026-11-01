@@ -62,7 +62,10 @@ client.organizationKnowledge.update('north',{expected_revision:0});
   const files = (await readdir(path.join(repository, 'sdk/typescript/test'))).filter(name => name.endsWith('.test.mjs'));
   for (const name of files) {
     const source = await readFile(path.join(repository, 'sdk/typescript/test', name), 'utf8');
-    await writeFile(path.join(consumer, 'test', name), source.replaceAll('../dist/index.js', '@fireflyframework/koinon-sdk'));
+    const installedSource = source
+      .replaceAll('../dist/index.js', '@fireflyframework/koinon-sdk')
+      .replaceAll('../dist/communications.js', '@fireflyframework/koinon-sdk/communications');
+    await writeFile(path.join(consumer, 'test', name), installedSource);
   }
   run(process.execPath, ['--test', ...files.map(name => path.join('test', name))]);
   console.log('Installed npm archive: contract tests and license notices passed.');

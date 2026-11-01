@@ -1,4 +1,5 @@
 # Copyright 2024-2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,11 +36,14 @@ from __future__ import annotations
 import base64
 import json
 import logging
+import tempfile
 import uuid
 from contextlib import nullcontext
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
+from koinon_storage.files import StoredObjectReference, source_file
 from pyfly.container import service
 from pyfly.context.consumer_context import PRIVATE_CONSUMER_CONTEXT, consumer_context, public_consumer_data
 from pyfly.eda import EventPublisher
@@ -54,6 +58,7 @@ from flycanon.core.services.sources.lease import (
     authorize_ingest_output,
     bind_ingest_lease,
 )
+from flycanon.core.services.storage.object_store import ObjectStore
 from flycanon.interfaces.dtos.source import SubmitSourceRequest
 from flycanon.interfaces.enums import SourceKind
 from flycanon.models.entities.ingest_job import IngestJobRow
@@ -79,12 +84,14 @@ class AsyncIngestService:
         audit: AuditService,
         event_publisher: EventPublisher,
         settings: CanonSettings,
+        object_store: ObjectStore | None = None,
     ) -> None:
         self._intake = intake
         self._repository = repository
         self._audit = audit
         self._publisher = event_publisher
         self._settings = settings
+        self._object_store = object_store
 
     # ------------------------------------------------------------------
     # Submit side
@@ -109,18 +116,59 @@ class AsyncIngestService:
         propagate the request-bound :class:`TenantContext`. A missing
         scope is a controller bug, not a silent ``"default"`` fallback.
         """
+        with tempfile.TemporaryDirectory(prefix="koinon-intake-") as directory:
+            path = Path(directory) / "original"
+            if len(content) > self._settings.max_bytes:
+                raise ValueError("Document exceeds the configured intake byte limit")
+            path.write_bytes(content)
+            return await self.submit_file_async(
+                request=request,
+                path=path,
+                filename=filename,
+                content_type=content_type,
+                actor=actor,
+                correlation_id=correlation_id,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                callback_url=callback_url,
+            )
+
+    async def submit_file_async(
+        self,
+        *,
+        request,
+        path,
+        filename,
+        content_type,
+        actor,
+        correlation_id,
+        tenant_id,
+        workspace_id,
+        callback_url=None,
+    ) -> IngestJobRow:
+        if self._object_store is None or not self._settings.store_originals:
+            raise RuntimeError("Durable pinned original storage is required for queued ingestion")
+        if (
+            not tenant_id
+            or not workspace_id
+            or any("/" in value or ".." in value for value in (tenant_id, workspace_id))
+        ):
+            raise ValueError("A valid authoritative document scope is required")
         job_id = str(uuid.uuid4())
-        scope_tenant = tenant_id
-        scope_workspace = workspace_id
-        # Bytes ride on the row as base64 inside ``metadata_json``.
-        # That keeps the worker decoupled from a separate blob store
-        # for v1; production deploys that need 100-MB intakes should
-        # land a follow-up that offloads the bytes to S3 + indexes
-        # the URL here. For the canonical operational-knowledge
-        # corpus (mostly Office docs, PDFs, transcripts) a row-bound
-        # payload is fine.
+        scope_tenant, scope_workspace = tenant_id, workspace_id
+        with source_file(path, self._settings.max_bytes):
+            pass
+        reference = await self._object_store.create_file(
+            f"koinon/{tenant_id}/{workspace_id}/pending/{job_id}/original", path, content_type
+        )
+        if reference.size_bytes > self._settings.max_bytes:
+            raise ValueError("Document exceeds the configured intake byte limit")
         payload: dict[str, Any] = {
-            "content_base64": base64.b64encode(content).decode("ascii"),
+            "content_reference": {
+                "tenant_id": tenant_id,
+                "workspace_id": workspace_id,
+                "object": reference.to_dict(),
+            },
             "kind": request.kind.value if request.kind else SourceKind.unknown.value,
             "uri": request.uri,
             "metadata": public_consumer_data(_serialise_metadata(request)),
@@ -173,7 +221,7 @@ class AsyncIngestService:
             "ingest job queued id=%s filename=%s bytes=%d",
             stored.id,
             filename,
-            len(content),
+            reference.size_bytes,
         )
         return stored
 
@@ -329,8 +377,6 @@ class AsyncIngestService:
         job_id = job.id
         payload = job.metadata_json or {}
         try:
-            content_b64 = payload.get("content_base64") or ""
-            content = base64.b64decode(content_b64) if content_b64 else b""
             kind_value = payload.get("kind") or SourceKind.unknown.value
             metadata = payload.get("metadata") or {}
             request = SubmitSourceRequest.model_validate(
@@ -348,9 +394,8 @@ class AsyncIngestService:
                 tenant_id=job.tenant_id,
                 workspace_id=job.workspace_id,
             )
-            source = await self._intake.submit(
+            arguments = dict(
                 request=request,
-                content=content,
                 tenant_id=job.tenant_id,
                 workspace_id=job.workspace_id,
                 filename=job.filename,
@@ -358,6 +403,40 @@ class AsyncIngestService:
                 actor=job.actor,
                 correlation_id=job.correlation_id,
             )
+            if "content_reference" in payload:
+                captured = payload["content_reference"]
+                if (
+                    not isinstance(captured, dict)
+                    or set(captured) != {"tenant_id", "workspace_id", "object"}
+                    or (captured["tenant_id"], captured["workspace_id"]) != (job.tenant_id, job.workspace_id)
+                ):
+                    raise ValueError("Pending original scope differs from its authoritative job")
+                reference = StoredObjectReference.from_dict(captured["object"])
+                expected_prefix = f"koinon/{job.tenant_id}/{job.workspace_id}/pending/{job.id}/"
+                if not reference.key.startswith(expected_prefix) or self._object_store is None:
+                    raise ValueError("Pending original does not belong to this document job")
+                with tempfile.TemporaryDirectory(prefix="koinon-document-") as directory:
+                    path = Path(directory) / "original"
+                    await self._object_store.download_file(
+                        reference, path, max_bytes=self._settings.max_bytes
+                    )
+                    source = await self._intake.submit_file(
+                        **arguments,
+                        path=path,
+                        original_reference=reference,
+                        logical_source_key=f"ingest:{job.id}",
+                        operation_id=f"ingest:{job.id}",
+                    )
+            else:
+                encoded = payload.get("content_base64") or ""
+                # Old retained jobs remain readable, with their original 32 MiB ceiling.
+                legacy_max = min(self._settings.max_bytes, 32 * 1024**2)
+                if not isinstance(encoded, str) or len(encoded) > ((legacy_max + 2) // 3) * 4:
+                    raise ValueError("Legacy document exceeds its registered byte bound")
+                content = base64.b64decode(encoded, validate=True)
+                if len(content) > legacy_max:
+                    raise ValueError("Legacy document exceeds its registered byte bound")
+                source = await self._intake.submit(**arguments, content=content)
             await self._repository.append_event(
                 job_id,
                 stage="finished",

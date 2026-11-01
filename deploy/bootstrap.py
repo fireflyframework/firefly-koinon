@@ -5,20 +5,22 @@
 import argparse
 import asyncio
 import re
+from pathlib import Path
 from uuid import uuid4
 
 
 async def bootstrap(
     context, issuer: str, tenant_id: str, name: str, subject: str
 ) -> dict[str, str]:
+    from pyfly.data.transaction import TransactionTemplate
+    from pyfly.data.transaction.registry import TransactionManagerRegistry
+
     from koinon.catalog.entities import AuditEvent, Membership, Tenant
     from koinon.catalog.repositories import (
         AuditRepository,
         MembershipRepository,
         TenantRepository,
     )
-    from pyfly.data.transaction import TransactionTemplate
-    from pyfly.data.transaction.registry import TransactionManagerRegistry
 
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", tenant_id):
         raise ValueError(
@@ -48,6 +50,14 @@ async def bootstrap(
         await members.save(
             Membership(id=member_id, subject=subject, tenant_id=tenant_id, role="admin")
         )
+        from koinon.communications.settings import CommunicationsSettings
+        from koinon.communications.welcome import WelcomeAdmissions
+
+        if (
+            context.container.contains_type(CommunicationsSettings)
+            and context.get_bean(CommunicationsSettings).enabled
+        ):
+            await context.get_bean(WelcomeAdmissions).admit(subject, tenant_id)
         await audits.save(
             AuditEvent(
                 id=str(uuid4()),
@@ -61,12 +71,37 @@ async def bootstrap(
     return {"tenant_id": tenant_id, "membership_id": member_id}
 
 
-async def main():
+def arguments(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tenant-id", required=True)
     parser.add_argument("--name", required=True)
-    parser.add_argument("--subject", required=True)
-    args = parser.parse_args()
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument(
+        "--subject",
+        help="Exact canonical subject obtained from verified application SSO",
+    )
+    mode.add_argument(
+        "--identity-grants-file",
+        type=Path,
+        help="Reviewed pending direct-Entra grant file; requires an operator database role",
+    )
+    return parser.parse_args(argv)
+
+
+def load_identity_grants(path: Path):
+    from koinon.bootstrap.dtos import BootstrapSeedInput
+
+    if not path.is_file() or path.stat().st_size > 65536:
+        raise ValueError("Supply a reviewed bootstrap grant file of at most 64 KiB")
+    with path.open("rb") as stream:
+        value = stream.read(65537)
+    if len(value) > 65536:
+        raise ValueError("Supply a reviewed bootstrap grant file of at most 64 KiB")
+    return BootstrapSeedInput.model_validate_json(value)
+
+
+async def main():
+    args = arguments()
     from koinon.main import app
     from koinon.security.settings import OidcSettings
 
@@ -74,10 +109,24 @@ async def main():
     await context.start()
     try:
         issuer = context.get_bean(OidcSettings).issuer
-        result = await bootstrap(
-            context, issuer, args.tenant_id, args.name, args.subject
-        )
-        print("Created new tenant and initial administrator:", result["tenant_id"])
+        if args.identity_grants_file is not None:
+            from koinon.bootstrap.service import BootstrapGrants
+
+            count = await context.get_bean(BootstrapGrants).seed(
+                args.tenant_id,
+                args.name,
+                load_identity_grants(args.identity_grants_file),
+            )
+            print(
+                "Created new tenant with pending verified-login grants:",
+                args.tenant_id,
+                count,
+            )
+        else:
+            result = await bootstrap(
+                context, issuer, args.tenant_id, args.name, args.subject
+            )
+            print("Created new tenant and initial administrator:", result["tenant_id"])
     finally:
         await context.stop()
 

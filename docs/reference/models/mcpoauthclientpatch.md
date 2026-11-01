@@ -45,8 +45,8 @@ Required means the key must be present. Nullable means its value may be `null`; 
 ### scopes
 
 - anyOf branch 1 (Array of `string`): Minimum items: `1`
-- anyOf branch 1 (Array of `string`): Maximum items: `7`
-- anyOf branch 1 (Array of `string`): Each item: Allowed values: `"catalog:read"`, `"catalog:write"`, `"ingest:write"`, `"knowledge:search"`, `"query:execute"`, `"chat:use"`, `"evidence:read"`
+- anyOf branch 1 (Array of `string`): Maximum items: `8`
+- anyOf branch 1 (Array of `string`): Each item: Allowed values: `"catalog:read"`, `"catalog:write"`, `"ingest:write"`, `"knowledge:search"`, `"query:execute"`, `"chat:use"`, `"evidence:read"`, `"activity:read"`
 
 
 ## Exact JSON Schema
@@ -107,11 +107,12 @@ This is a schema definition, not an example request. It preserves all declared k
                   "knowledge:search",
                   "query:execute",
                   "chat:use",
-                  "evidence:read"
+                  "evidence:read",
+                  "activity:read"
                 ],
                 "type": "string"
               },
-              "maxItems": 7,
+              "maxItems": 8,
               "minItems": 1,
               "type": "array"
             },

@@ -78,3 +78,30 @@ Use the checked `sdk/contract/operations.json` and `schemas.json` for current si
 Build and test through the package's configured scripts. Source checks, packed consumers, publication, provider/database integration and live application acceptance remain separate evidence.
 
 Copyright 2026 Firefly Software Foundation. Licensed under Apache-2.0.
+
+## Optional communications
+
+Import communications through its dedicated subpath. Its runtime factory is intentionally absent from the root entry point so applications can keep it out of their initial bundle. DTO types remain available from the root package.
+
+```typescript
+import type {KoinonTransport} from '@fireflyframework/koinon-sdk';
+import {createCommunicationsApi} from '@fireflyframework/koinon-sdk/communications';
+
+export async function previewMonthlySummary(transport: KoinonTransport) {
+  const communications = createCommunicationsApi(transport);
+  const current = await communications.notifications.preferences();
+  return communications.notifications.previewPreferences({
+    expected_revision: current.revision,
+    rules: current.rules.map(({kind, inbox, email}) => ({kind, inbox, email})),
+    digest: 'monthly',
+    schedule: {local_time: '09:00', weekday: 0, day_of_month: 31},
+    notification_locale: null,
+  });
+}
+```
+
+The example previews a calendar without saving preferences. Use only a cadence returned in `allowed_digests`; the server applies the profile's time zone, daylight-saving rules and month-end clipping. Passing `notification_locale: null` inherits the organization or installation language rather than asserting a profile default.
+
+Subject-owned inbox/preferences requests use the current authenticated subject and do not require organization membership. Personal tokens need the explicit `notifications:read` or `notifications:write` scope. Email invitation acceptance and decline require an interactive authenticated session with CSRF protection. Email invitation IDs are noncredential UUIDs; the separate legacy bearer invitation API retains its existing contract. The SDK never retries a send, resend or acceptance automatically.
+
+See [Communications and invitations](../../docs/operations/communications.md) for provider readiness, delivery states, weekly/monthly schedules and the immutable email attribution.

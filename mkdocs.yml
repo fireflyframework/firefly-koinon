@@ -83,6 +83,7 @@ nav:
           - Guided configuration: guides/knowledge-setup.md
           - Identity and appearance: operations/identity-appearance.md
       - People and applications:
+          - Communications and invitations: operations/communications.md
           - People and organization: guides/people-and-organization.md
           - Corporate profile synchronization: guides/corporate-profile-sync.md
           - Authorized applications: guides/authorized-applications.md
@@ -94,6 +95,7 @@ nav:
       - Integration essentials:
           - Headless API and SDK: guides/headless.md
           - API permissions and writes: guides/api-permissions.md
+          - Communications, invitations and summaries: guides/headless-communications.md
           - Embedded components: guides/embedding.md
       - Python SDK:
           - Start: guides/headless-python.md
@@ -126,6 +128,7 @@ nav:
           - Production: operations/production.md
           - Worker roles and scaling: operations/workers.md
           - Configuration and observations: operations/configuration.md
+          - Activity summaries: operations/activity-summaries.md
           - MCP authentication: operations/mcp-authentication.md
       - Storage and ECM:
           - Overview: operations/storage.md
@@ -161,6 +164,7 @@ nav:
           - Platform configuration and operations: reference/api/platform.md
       - Wire models: reference/models/index.md
       - SDK runtime and helpers: reference/sdk-runtime.md
+      - Library file ingestion: reference/library-file-ingestion.md
       - Retained glossary API: reference/api/retained-glossary.md
       - Architecture:
           - System architecture: concepts/architecture.md

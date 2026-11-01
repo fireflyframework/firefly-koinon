@@ -251,7 +251,7 @@ test('private invitation is shown once then can be revoked without exposing its 
   const service = await fixture(page);
   await open(page);
   const panel = page.locator('ffk-people-access');
-  await panel.getByRole('button', { name: 'Invite person', exact: true }).click();
+  await panel.getByRole('button', { name: 'Create legacy invitation link', exact: true }).click();
   await panel.getByLabel('Invitation label (optional)').fill('Research onboarding');
   await panel.getByRole('combobox', { name: 'Role', exact: true }).selectOption('editor');
   await panel.getByRole('button', { name: 'Create invitation link' }).click();
@@ -369,7 +369,7 @@ for (const variant of [
       })
       .click();
     await expect(panel.locator('h2')).toHaveText(
-      variant.spanish ? 'Invitar a una persona' : 'Invite a person',
+      variant.spanish ? 'Elige una persona' : 'Choose a person',
     );
     await page.screenshot({
       path: resolve(directory, `invite-${variant.width}.png`),
@@ -386,7 +386,7 @@ test('keyboard entry and return restore focus and keep the narrow table inside i
   const invite = panel.getByRole('button', { name: 'Invite person', exact: true });
   await invite.focus();
   await page.keyboard.press('Enter');
-  await expect(panel.getByRole('heading', { name: 'Invite a person', exact: true })).toBeVisible();
+  await expect(panel.getByRole('heading', { name: 'Choose a person', exact: true })).toBeVisible();
   await panel.getByRole('button', { name: 'Back to people', exact: true }).click();
   await expect(invite).toBeFocused();
   await page.setViewportSize({ width: 780, height: 844 });

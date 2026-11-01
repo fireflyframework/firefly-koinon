@@ -64,3 +64,5 @@ export { KoinonEvidenceGroups } from './lib/services/evidence-groups';
 import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
 import { SPANISH } from './lib/foundations/spanish';
 registerKoinonSpanish(SPANISH);
+
+export {KOINON_COMMUNICATIONS_LOADER} from '@fireflyframework/koinon-angular/workbench';

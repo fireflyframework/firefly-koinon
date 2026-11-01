@@ -35,13 +35,15 @@ The following are current defaults. Deployment configuration and the returned pr
 
 | Boundary | Default or explicit behavior |
 | --- | --- |
-| Library upload | One file per request; 32 MiB default file limit. Uploading in the interface can send several separate requests. |
+| Synchronous Library upload | One file per request; at most 32 MiB. |
+| Queued Library source batch | Up to 128 MiB per original and 512 MiB per batch, subject to the actual capability and installation profile. |
+| Queued document extraction | Up to 256 MiB expanded content, 16 MiB emitted text and 4096 chunks; bounded parser/scratch resources. Original images are retained without an implied vision interpretation. |
 | Append to an existing dataset | One multipart file and a stable `Idempotency-Key`; the same upload byte limit. At most 128 new parsed tables in that append operation. |
 | Private chat file | 20 MiB per document/archive file; 8 MiB per image. |
 | Private conversation allowance | 100 files and 128 MiB total; at most 10 selected attachments per message. |
 | Private extraction | Up to 60 seconds per extraction; defaults include 32 MiB expanded content, 8 artifacts, 200 pages and 2 MiB normalized text. These are separate from the original upload size. |
 | Private file retention | 24-hour default expiry. Expiry changes access to the original; a retained answer's recorded evidence does not recreate expired bytes. |
-| Blob transport | Azure/GCS and the configured private object profile have their own bounded object limits, commonly 64 MiB. A storage limit is not permission to exceed an upload or extraction limit. |
+| Blob transport | Shared Azure/GCS supports configured bounds up to 256 MiB. Document/structured originals and artifacts can need a larger object bound than the 128 MiB raw-file limit. Private chat keeps its separate limits. |
 
 Model context has its own bounds. A large accepted file is not necessarily inserted in full into every model request. Inspect the answer's source and execution audit to understand which available content was used.
 
@@ -58,6 +60,6 @@ For private chat, wait for the selected attachments to become ready. Failed or e
 
 ## Multiple files and bulk loading
 
-Multiple selection in the interface and a loop in an SDK send separate uploads. They do not provide an all-or-nothing batch or automatic recovery across files. Library upload is synchronous. Dataset append has durable idempotency and publication guards, but it is not asynchronous bulk intake: partial native effects can require reconciliation after failure. Do not retry an unfinished append with a fresh key to bypass its retained state.
+Use the [durable source batch](bulk-intake.md) for queued document/dataset intake with saved manifests, per-item jobs and explicit reconciliation. A loop around the synchronous endpoint remains separate requests. Batch submission is not an all-or-nothing transaction across files, and cancellation does not erase successful commits or refund the lifetime admission ledger.
 
-A general durable bulk-loading/query-batch API is not currently provided. Use bounded sequential calls with per-file results, preserve returned identifiers and inspect failures before retrying. See the [Python](headless-python.md), [TypeScript](headless-typescript.md) and [Java](headless-java.md) SDK guides for the supported flow, and [file persistence and storage](../operations/storage.md) for the remaining bulk contract and cloud-operation boundaries.
+The [Library file policy](../reference/library-file-ingestion.md) documents the actual installation keys and different raw, batch, expansion, scratch, memory and text limits. The [query batch guide](bulk-queries.md) covers its independent read-only workload. Preserve each accepted identity and inspect failures before explicit recovery; unknown outcomes never authorize a fresh replay.

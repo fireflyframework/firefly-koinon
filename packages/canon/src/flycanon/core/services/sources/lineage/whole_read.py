@@ -62,6 +62,7 @@ class WholeDocumentReader:
     ):
         self.lineage = lineage
         self.max_bytes = max_bytes
+        self.max_raw_bytes = 128 * 1024**2
         self.max_parts = max_parts
 
     async def resolve_parts(
@@ -189,9 +190,9 @@ class WholeDocumentReader:
                 )
             )
         version = await self.lineage.version(scope, source_id, source_version_id)
-        if version["bytes"] > self.max_bytes or input_artifact["bytes"] > self.max_bytes:
+        if version["bytes"] > self.max_raw_bytes or input_artifact["bytes"] > self.max_bytes:
             self._unavailable("The full document exceeds the verified read limit")
-        await self.lineage.original(scope, source_id, source_version_id, max_bytes=self.max_bytes)
+        await self.lineage.verify_original(scope, source_id, source_version_id, max_bytes=self.max_raw_bytes)
         await self.lineage._verified(input_artifact, self.max_bytes)
         if not sections or len(sections) > self.max_parts:
             self._unavailable("Complete committed document sections are required")

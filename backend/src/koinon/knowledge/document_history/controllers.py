@@ -1,12 +1,13 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
-from urllib.parse import quote
 
 from pyfly.container import rest_controller
 from pyfly.web import PathVar, QueryParam, get_mapping, request_mapping
 from starlette.requests import Request
 from starlette.responses import Response
 
+from koinon.knowledge.document_history.download_response import original_file_response
+from koinon.knowledge.document_history.downloads import OriginalDownloads
 from koinon.knowledge.document_history.dtos import (
     DocumentExtractionPage,
     DocumentPartContent,
@@ -21,8 +22,9 @@ from koinon.security.identity import identity_from_request
 @rest_controller(name="knowledge.document_history")
 @request_mapping("/api/v1/tenants/{tenant_id}/documents/{document_id}/versions")
 class DocumentHistoryController:
-    def __init__(self, history: DocumentHistoryService):
+    def __init__(self, history: DocumentHistoryService, downloads: OriginalDownloads):
         self.history = history
+        self.downloads = downloads
 
     @get_mapping("")
     async def versions(
@@ -125,20 +127,11 @@ class DocumentHistoryController:
         source_version_id: PathVar[str],
         request: Request,
     ) -> Response:
-        result = await self.history.original(
+        download = await self.downloads.open(
             identity_from_request(request).subject,
             tenant_id,
             document_id,
-            source_version_id,
+            source_version_id=source_version_id,
+            context=request.state.security_context,
         )
-        return Response(
-            result.content,
-            media_type=result.media_type or "application/octet-stream",
-            headers={
-                "Content-Disposition": "attachment; filename*=UTF-8''"
-                + quote(result.filename or "document", safe=""),
-                "X-Content-Type-Options": "nosniff",
-                "Cache-Control": "private, no-store",
-                "ETag": '"' + result.sha256 + '"',
-            },
-        )
+        return await original_file_response(download)

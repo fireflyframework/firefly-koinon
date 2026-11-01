@@ -1,0 +1,119 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<section aria-labelledby="notifications-title">
+  <header class="heading">
+    <div>
+      <h2 id="notifications-title">{{ 'Your notifications' | ffkText }}</h2>
+      <p>{{ 'Invitations and updates about your access to shared knowledge.' | ffkText }}</p>
+    </div>
+    <ffk-button variant="quiet" icon="settings" (click)="preferencesRequested.emit()">{{
+      'Notification preferences' | ffkText
+    }}</ffk-button>
+  </header>
+  <form class="filters" (ngSubmit)="applyFilters()">
+    <label
+      >{{ 'Show' | ffkText
+      }}<select name="read-state" [(ngModel)]="read" [disabled]="loading">
+        <option value="all">{{ 'All notifications' | ffkText }}</option>
+        <option value="unread">{{ 'Unread only' | ffkText }}</option>
+      </select></label
+    ><label
+      >{{ 'Type' | ffkText
+      }}<select name="event-kind" [(ngModel)]="kind" [disabled]="loading">
+        <option value="">{{ 'All types' | ffkText }}</option>
+        @for (item of kinds; track item.id) {
+          <option [value]="item.id">{{ item.label | ffkText }}</option>
+        }
+      </select></label
+    ><ffk-button type="submit" [disabled]="loading">{{ 'Apply filters' | ffkText }}</ffk-button>
+  </form>
+  @if (error) {
+    <p class="error" role="alert">{{ error | ffkText }}</p>
+    <ffk-button (click)="applyFilters()">{{ 'Try again' | ffkText }}</ffk-button>
+  }
+  @if (loading) {
+    <ffk-skeleton width="70%" height="3px" [label]="'Loading notifications' | ffkText" />
+  }
+  @if (page; as notifications) {
+    <ul class="notifications">
+      @for (notice of notifications.items; track notice.id) {
+        <li>
+          <article [class.unread]="!notice.read_at">
+            <div class="notice-icon" aria-hidden="true">
+              <ffk-icon
+                [name]="
+                  notice.kind === 'invitation'
+                    ? 'users'
+                    : notice.kind === 'digest'
+                      ? 'file'
+                      : 'shield'
+                "
+              />
+            </div>
+            <div class="notice-content">
+              <div class="notice-heading">
+                <h3>{{ notice.title }}</h3>
+                @if (!notice.read_at) {
+                  <ffk-badge tone="attention">{{ 'Unread' | ffkText }}</ffk-badge>
+                }
+              </div>
+              <p>{{ notice.body }}</p>
+              <div class="notice-meta">
+                @if (notice.organization_name) {
+                  <span>{{ notice.organization_name }}</span>
+                }
+                <time [attr.datetime]="notice.created_at">{{
+                  notice.created_at | ffkDate: undefined : 'datetime'
+                }}</time>
+              </div>
+              <div class="notice-actions">
+                @if (hasTarget(notice)) {
+                  <ffk-button [compact]="true" (click)="open(notice)">{{
+                    targetLabel(notice) | ffkText
+                  }}</ffk-button>
+                }
+                @if (!notice.read_at) {
+                  <ffk-button
+                    variant="quiet"
+                    [compact]="true"
+                    [loading]="readPending === notice.id"
+                    [disabled]="!!readPending"
+                    (click)="markRead(notice)"
+                    >{{ 'Mark as read' | ffkText }}</ffk-button
+                  >
+                }
+              </div>
+            </div>
+          </article>
+        </li>
+      } @empty {
+        @if (!loading && !error) {
+          <li class="empty">
+            <ffk-icon name="shield" />
+            <h3>
+              {{
+                (read === 'unread' ? 'You’re all caught up' : 'Your updates will appear here')
+                  | ffkText
+              }}
+            </h3>
+            <p>
+              {{
+                (read === 'unread'
+                  ? 'There are no unread notifications for these filters.'
+                  : 'When someone invites you or changes your access, you can review it here.'
+                ) | ffkText
+              }}
+            </p>
+          </li>
+        }
+      }
+    </ul>
+    <ffk-pagination
+      [page]="notifications"
+      [loading]="loading"
+      [showPageSize]="true"
+      label="Notifications"
+      (pageChanged)="changePage($event)"
+      (sizeChanged)="changePageSize($event)"
+    />
+  }
+</section>

@@ -79,15 +79,15 @@ class CloudProfile:
     gcs_prefix: str = ""
     gcs_endpoint_url: str = ""
     request_timeout_seconds: int = 10
-    max_object_bytes: int = 64 * 1024 * 1024
+    max_object_bytes: int = 256 * 1024 * 1024
 
     def __post_init__(self):
         if self.backend not in {"azure", "gcs"}:
             raise ValueError("Cloud backend must be azure or gcs")
         if type(self.request_timeout_seconds) is not int or not 1 <= self.request_timeout_seconds <= 60:
             raise ValueError("Cloud timeout must be an integer from 1 to 60 seconds")
-        if type(self.max_object_bytes) is not int or not 1 <= self.max_object_bytes <= 64 * 1024 * 1024:
-            raise ValueError("Cloud object byte limit must be from 1 byte to 64 MiB")
+        if type(self.max_object_bytes) is not int or not 1 <= self.max_object_bytes <= 256 * 1024 * 1024:
+            raise ValueError("Cloud object byte limit must be from 1 byte to 256 MiB")
         for name in (
             "azure_account_url",
             "azure_container",
@@ -413,6 +413,29 @@ class CloudStore:
             ):
                 raise ObjectIntegrityError("Cloud object digest verification failed")
         return content
+
+    def identity(self) -> str:
+        from koinon_storage.files import route_identity
+
+        return route_identity(self.profile)
+
+    @_cloud_operation
+    async def create_file(self, key, path, content_type=None):
+        from koinon_storage.files import create_file
+
+        return await create_file(self, key, path, content_type)
+
+    @_cloud_operation
+    async def capture_file(self, key, size, digest):
+        from koinon_storage.files import capture_file
+
+        return await capture_file(self, key, size, digest)
+
+    @_cloud_operation
+    async def download_file(self, reference, path, *, max_bytes):
+        from koinon_storage.files import download_file
+
+        await download_file(self, reference, path, max_bytes)
 
     @_cloud_operation
     async def get_bounded(self, key: str, max_bytes: int) -> bytes:

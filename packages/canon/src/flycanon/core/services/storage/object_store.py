@@ -49,6 +49,14 @@ class ObjectStore(ABC):
     async def put(self, key: str, data: bytes, content_type: str | None = None) -> None:
         """Write ``data`` at ``key``, overwriting any existing object."""
 
+    async def create_file(self, key: str, path, content_type: str | None = None):
+        """Create an immutable original from a file and return its pinned provider receipt."""
+        raise NotImplementedError("This object store does not support pinned file creates")
+
+    async def download_file(self, reference, path, *, max_bytes: int) -> None:
+        """Stream and verify the exact pinned version into a new caller-owned scratch file."""
+        raise NotImplementedError("This object store does not support pinned file downloads")
+
     @abstractmethod
     async def get(self, key: str) -> bytes:
         """Return the bytes at ``key``; raise ``FileNotFoundError`` if absent."""

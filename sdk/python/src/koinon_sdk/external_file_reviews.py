@@ -3,7 +3,7 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/knowledge/external_reviews/file_dtos.py
-SHA256: 14b8498d850c0b15198a63816a353163b660d4135ecfabd9b4f709d6a90505df
+SHA256: a787949e95a94b7432e48cc51898b0d7405f4f50e2de9ceb3824530dc7627e70
 
 Server authorization and semantic validation remain authoritative.
 """
@@ -16,7 +16,7 @@ from koinon_sdk._base import InputModel
 from koinon_sdk.curated import Frozen, Identifier, KnowledgeDestination, Sha256
 
 CHUNK_BYTES = 65536
-MAX_FILE_BYTES = 32 * 1024 * 1024
+MAX_FILE_BYTES = 128 * 1024 * 1024
 
 
 class ExternalFileReviewInput(InputModel):
@@ -29,7 +29,7 @@ class ExternalFileReviewInput(InputModel):
 
 
 class ExternalFileChunkInput(InputModel):
-    index: int = Field(ge=0, le=511, strict=True)
+    index: int = Field(ge=0, le=2047, strict=True)
     data_base64: str = Field(min_length=4, max_length=87384)
     sha256: Sha256
 
@@ -91,8 +91,8 @@ class ExternalFileCleanupInput(InputModel):
 class ExternalFileCleanupReview(Frozen):
     id: Identifier
     status: Literal["purging", "purged"]
-    processed_objects: int = Field(ge=0, le=513)
-    total_objects: int = Field(ge=1, le=513)
+    processed_objects: int = Field(ge=0, le=2049)
+    total_objects: int = Field(ge=1, le=2049)
 
 
 class ExternalFileCleanupResult(Frozen):

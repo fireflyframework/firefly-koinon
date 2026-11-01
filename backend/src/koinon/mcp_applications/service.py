@@ -16,6 +16,7 @@ from sqlalchemy import select, update
 from koinon.authorized_applications.entities import AuthorizedApplication
 from koinon.catalog.errors import AccessDenied
 from koinon.catalog.service import CatalogService
+from koinon.communications.ports import AccountEventRecorder
 from koinon.mcp.settings import McpSettings
 from koinon.mcp_applications.dtos import (
     McpOAuthClient,
@@ -45,8 +46,10 @@ class McpOAuthClientRegistry:
         catalog: CatalogService,
         settings: McpOAuthSettings,
         mcp: McpSettings,
+        events: AccountEventRecorder | None = None,
     ):
         self.repository, self.catalog, self.settings, self.mcp = repository, catalog, settings, mcp
+        self.events = events
 
     async def _authorize(self, actor, tenant_id):
         context = SecurityContextHolder.get_context()
@@ -144,6 +147,10 @@ class McpOAuthClientRegistry:
             )
         )
         await self.catalog._audit(actor, tenant_id, "mcp.client.created", identifier, {"revision": 1})
+        if self.events is not None:
+            await self.events.security_changed(
+                actor, actor, tenant_id, "client_registered", row.id, row.name, scopes=row.scopes
+            )
         return McpOAuthClientCredential(client=client_dto(row), client_secret=secret)
 
     @transactional
@@ -212,3 +219,14 @@ class McpOAuthClientRegistry:
             .values(revoked_at=row.updated_at)
         )
         await self.catalog._audit(actor, row.tenant_id, action, row.id, {"revision": row.revision})
+        if self.events is not None:
+            subtype = (
+                "client_secret_rotated"
+                if action == "mcp.client.secret_rotated"
+                else "client_revoked"
+                if not row.enabled
+                else "client_changed"
+            )
+            await self.events.security_changed(
+                actor, actor, row.tenant_id, subtype, row.id, row.name, scopes=row.scopes
+            )

@@ -8,6 +8,12 @@ Personal display names, uploaded photos, language, time zone and response prefer
 
 ## Prepare the corporate connection
 
+This is an optional post-installation step. Native Entra OIDC sign-in, verified initial-administrator enrollment and locally assigned organization/workspace roles work without a Graph application grant. Knowledge, chat and MCP use that current local authority independently of directory synchronization. New connections remain **Draft** until validated and activated; leaving a connection absent, draft or disabled does not require directory resolution during ordinary login.
+
+Enable group-derived access and profile/position updates only after their real credential, permission and validation checks pass. Directory recipient search and recipient-bound email invitations also require a working connection. Personal profile settings and in-app notifications remain separate. Do not treat missing directory data as a verified email address or substitute an Entra object ID for the signed pairwise OIDC subject.
+
+An already configured managed grant keeps its original freshness and revocation rules. Directory failures make expired managed access unavailable; disabling a provider or mapping stops the corresponding managed authorization. Local memberships remain independently administered. The profile worker flag only controls consumption; it is not a switch that makes stale managed grants authoritative.
+
 Configure sign-in and the corporate directory connection with an organization administrator's ordinary verified identity. Personal API tokens cannot administer corporate providers, discover their groups or change group/profile mappings. The connection's directory credential is stored on the server and is separate from a user's koinon API token or an authorized MCP application's token.
 
 Select the exact issuer, tenant or hosted domain belonging to the organization. Supply the directory credential through the existing corporate access configuration, validate the connection and activate it only after reviewing the selected source. Group-to-role mappings remain a separate access policy. Read [identity and appearance](../operations/identity-appearance.md) and [API permissions](api-permissions.md) before delegating administration.

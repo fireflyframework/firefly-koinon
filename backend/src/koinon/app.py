@@ -59,7 +59,9 @@ def merge_configuration(base: dict, overlay: dict) -> dict:
 
 
 def create_application(config: dict, *, role: ProcessRole = "api"):
-    config = process_configuration(config, role=role)
+    from koinon.knowledge.ingestion_profile import resolve_ingestion_profile
+
+    config = process_configuration(resolve_ingestion_profile(config), role=role)
     settings = Config(config).bind(OidcSettings)
     defaults = {
         "koinon": {"knowledge": {"require_connections": True}},
@@ -102,6 +104,8 @@ def create_application(config: dict, *, role: ProcessRole = "api"):
     context.container.register_instance(LegacyOperationPolicies, LegacyOperationPolicies())
     for package in (
         "koinon.catalog",
+        "koinon.bootstrap",
+        "koinon.activity",
         "koinon.jobs",
         "koinon.assistants",
         "koinon.organization_chat",
@@ -121,6 +125,7 @@ def create_application(config: dict, *, role: ProcessRole = "api"):
         "koinon.sharing",
         "koinon.storage",
         "koinon.workers",
+        "koinon.communications",
     ):
         register_product_package(context, package, controllers=role == "api")
     for cls in (
@@ -221,6 +226,9 @@ def create_application(config: dict, *, role: ProcessRole = "api"):
     for exception in (PyFlyException, ValidationError, JSONDecodeError):
         app.add_exception_handler(exception, global_exception_handler)
     register_domain_problems(app)
+    from koinon.communications.http import install_communications
+
+    install_communications(app, context)
     if mcp_settings.enabled:
         from koinon.mcp_auth.http import install_oauth
         from koinon.mcp_auth.service import McpOAuthService
@@ -231,6 +239,10 @@ def create_application(config: dict, *, role: ProcessRole = "api"):
         async def can_request_scopes(raw, scopes):
             return await context.get_bean(McpOAuthService).can_request_scopes(raw, scopes)
 
+        from pyfly.observability.ports import MetricsRecorder
+
+        from koinon.activity.ports import ActivityObservationRecorder
+
         server = create_mcp_server(
             app,
             mcp_settings,
@@ -238,6 +250,8 @@ def create_application(config: dict, *, role: ProcessRole = "api"):
             installation_branding=BrandingValues.model_validate(Config(values).get("koinon.branding", {})),
             oauth_enabled=Config(values).get("koinon.mcp.oauth.enabled", False),
             can_request_scopes=can_request_scopes,
+            activity_recorder=lambda: context.get_bean(ActivityObservationRecorder),
+            activity_metrics=lambda: context.get_bean(MetricsRecorder),
             private_review=private_review_reader(context)
             if Config(values).get("koinon.knowledge.enabled", True)
             else None,
@@ -267,7 +281,12 @@ def create_application(config: dict, *, role: ProcessRole = "api"):
             max_request_body_size=mcp_settings.max_request_bytes,
         )
         app.router.routes.append(transport.route)
-        app.add_middleware(McpHttpBoundary, settings=mcp_settings)
+        app.add_middleware(
+            McpHttpBoundary,
+            settings=mcp_settings,
+            activity_recorder=lambda: context.get_bean(ActivityObservationRecorder),
+            activity_metrics=lambda: context.get_bean(MetricsRecorder),
+        )
         app.state.mcp_server = server
         app.state.mcp_transport = transport
         install_oauth(app, context)

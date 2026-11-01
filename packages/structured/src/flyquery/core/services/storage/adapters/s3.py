@@ -1,4 +1,5 @@
 # Copyright 2024-2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -107,6 +108,27 @@ class S3ObjectStore:
             last_modified=datetime.now(UTC),
             kms_key_uri=kms_key_uri,
         )
+
+    async def create_file(self, key: str, path: str, content_type: str) -> ObjectMeta:
+        from pathlib import Path
+
+        from koinon_storage.client_lifecycle import ClientLifecycle
+        from koinon_storage.cloud import ObjectTooLargeError
+
+        if Path(path).stat().st_size > 256 * 1024**2:
+            raise ObjectTooLargeError("Structured artifact exceeds the file transport byte limit")
+
+        async def chunks():
+            total = 0
+            lifecycle = ClientLifecycle()
+            with open(path, "rb") as stream:
+                while chunk := await lifecycle.run(lambda: stream.read(64 * 1024)):
+                    total += len(chunk)
+                    if total > 256 * 1024**2:
+                        raise ObjectTooLargeError("Structured artifact exceeds the file transport byte limit")
+                    yield chunk
+
+        return await self.put(key, chunks(), content_type)
 
     async def _put_stream(self, client, arguments, body):
         initiated = await client.create_multipart_upload(**arguments)

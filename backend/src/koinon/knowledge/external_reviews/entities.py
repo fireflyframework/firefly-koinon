@@ -6,6 +6,8 @@ from pyfly.data.relational.sqlalchemy import Base, UtcDateTime
 from sqlalchemy import JSON, ForeignKey, Index, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
+from koinon.knowledge.bulk.entities import BulkBatch
+
 
 class ExternalReviewRow(Base):
     __tablename__ = "koinon_external_knowledge_reviews"
@@ -54,6 +56,10 @@ class ExternalFileReviewRow(Base):
     status: Mapped[str] = mapped_column(String(32))
     chunks_json: Mapped[dict] = mapped_column(JSON, default=dict)
     blob_key: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    blob_reference_json: Mapped[dict | None] = mapped_column(JSON(none_as_null=True), nullable=True)
+    bulk_batch_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey(BulkBatch.id, name="fk_external_file_bulk_batch"), nullable=True
+    )
     nonce_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
     confirmation_key: Mapped[str | None] = mapped_column(String(128), nullable=True)
     source_id: Mapped[str | None] = mapped_column(String(64), nullable=True)

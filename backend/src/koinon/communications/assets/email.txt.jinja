@@ -1,0 +1,43 @@
+{# Copyright 2026 Firefly Software Foundation. SPDX-License-Identifier: Apache-2.0 #}
+{{ brand.product_name }}
+
+{{ preview.heading }}
+{% for paragraph in preview.paragraphs %}
+{{ paragraph }}
+{% endfor %}
+{% if window %}
+{{ window }}
+{{ window_zone }}
+{% endif %}
+{% for metric in metrics %}
+{{ metric.label }}: {{ metric.value }}
+{% endfor %}
+{% if projects %}
+{{ projects_label }}
+{{ projects_description }}
+{% for project in projects %}{{ project.name }}: {{ project.value }}
+{{ project.details }}
+{% endfor %}
+{% endif %}
+{% for observation in observations %}{{ observation }}
+{% endfor %}
+{% if unavailable %}
+{{ unavailable }}
+{% endif %}
+{% if action_url %}
+{{ preview.action_label }}: {{ action_url }}
+{% endif %}
+{{ preview.footer }}
+{% if preferences_url %}
+{{ preferences_label }}: {{ preferences_url }}
+{% endif %}
+
+{% if preview.organization_name %}
+{{ organization_label }}: {{ preview.organization_name }}
+{% endif %}
+{% if preview.workspace_name %}
+{{ workspace_label }}: {{ preview.workspace_name }}
+{% endif %}
+
+Powered by koinon
+© {{ year }} Firefly Software Foundation

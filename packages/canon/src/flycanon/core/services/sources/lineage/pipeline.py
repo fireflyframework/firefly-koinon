@@ -8,11 +8,13 @@ from contextlib import AsyncExitStack
 from typing import Any
 from uuid import uuid4
 
+from pyfly.agentic.content.binary import BinaryArtifact
 from pyfly.container import service
 from pyfly.kernel import ConflictException, ServiceUnavailableException
 
 from flycanon.core.mappers.intake_mapper import _metadata_to_json
 from flycanon.core.services.embeddings.embedding_sets import bind_embedding_set
+from flycanon.core.services.ingestion.loaders import LoadedDocument, Section
 from flycanon.core.services.sources.intake_events import publish_success
 from flycanon.core.services.sources.intake_runtime import SourceIntakeComponents
 from flycanon.core.services.sources.intake_transforms import (
@@ -62,6 +64,8 @@ class DocumentLineagePipeline:
         publication_guard: PublicationGuard | None = None,
         validate_processing: StageAuthorization | None = None,
         validate_publication: StageAuthorization | None = None,
+        original_reference=None,
+        prepared_document=None,
     ) -> SourceRow:
         service = self.components
         if not service.settings.store_originals:
@@ -90,6 +94,7 @@ class DocumentLineagePipeline:
                 source_id=source_id,
                 expected_source_version_id=expected_source_version_id,
                 expected_extraction_id=expected_extraction_id,
+                original_reference=original_reference,
             )
         completed = await self.lineage.committed(scope, admission.source_id, admission.version_id)
         if completed is not None:
@@ -115,6 +120,7 @@ class DocumentLineagePipeline:
                 publication_guard,
                 validate_processing,
                 validate_publication,
+                prepared_document,
             )
         except Exception as error:
             await self.lineage.failed(scope, admission, type(error).__name__)
@@ -133,12 +139,24 @@ class DocumentLineagePipeline:
         publication_guard: PublicationGuard | None = None,
         validate_processing: StageAuthorization | None = None,
         validate_publication: StageAuthorization | None = None,
+        prepared_document=None,
     ) -> SourceRow:
         service = self.components
         if validate_processing is not None:
             await validate_processing()
-        outputs = await service.binary_normalizer.normalise(
-            content, declared_media_type=content_type, filename=filename
+        outputs = (
+            [
+                BinaryArtifact(
+                    bytes=prepared_document.text.encode(),
+                    media_type="text/markdown",
+                    filename=(filename or "document") + ".md",
+                    kind="markdown",
+                )
+            ]
+            if prepared_document is not None
+            else await service.binary_normalizer.normalise(
+                content, declared_media_type=content_type, filename=filename
+            )
         )
         observations = []
         merged_kind, merged, metadata = merge_artifacts(
@@ -151,7 +169,11 @@ class DocumentLineagePipeline:
             id=admission.source_id,
             tenant_id=scope.tenant_id,
             workspace_id=scope.workspace_id,
-            kind=(request.kind if request.kind != SourceKind.unknown else merged_kind).value,
+            kind=(
+                SourceKind.markdown
+                if prepared_document is not None
+                else (request.kind if request.kind != SourceKind.unknown else merged_kind)
+            ).value,
             status="pending",
             filename=filename,
             uri=request.uri,
@@ -161,8 +183,24 @@ class DocumentLineagePipeline:
             metadata_json={**_metadata_to_json(request.metadata), **metadata},
         )
         result = service.ingestion.ingest(
-            source=source, content=processed, tenant_id=scope.tenant_id, workspace_id=scope.workspace_id
+            source=source,
+            content=processed,
+            tenant_id=scope.tenant_id,
+            workspace_id=scope.workspace_id,
+            **(
+                {
+                    "loaded_document": LoadedDocument(
+                        sections=[Section(**section) for section in prepared_document.sections]
+                    )
+                }
+                if prepared_document is not None and processed == merged
+                else {}
+            ),
         )
+        if prepared_document is not None:
+            source.kind = request.kind.value
+        if len(result.chunks) > getattr(service.settings, "file_chunks_max", 4096):
+            raise ValueError("Document exceeds its configured chunk limit")
         first = outputs[0] if outputs else None
         extracted = service.metadata_extractor.extract(
             first.bytes if first else processed,
@@ -170,7 +208,25 @@ class DocumentLineagePipeline:
             filename=filename,
             text_sample=first_text(result.chunks),
         )
-        source.metadata_json = {**source.metadata_json, "extracted": extracted.to_dict()}
+        source.metadata_json = {
+            **source.metadata_json,
+            "extracted": (
+                prepared_document.metadata if prepared_document is not None else extracted.to_dict()
+            ),
+        }
+        if prepared_document is not None:
+            from flycanon.core.services.ingestion.file_parser import parse_document_file
+
+            normalizer_signature = signature(parse_document_file)
+            normalizer_signature["configuration"] = {
+                "raw_max_bytes": service.settings.max_bytes,
+                "expanded_max_bytes": service.settings.file_expanded_max_bytes,
+                "text_max_bytes": service.settings.file_text_max_bytes,
+                "chunks_max": service.settings.file_chunks_max,
+            }
+            normalizer_signature["configuration_recorded"] = True
+        else:
+            normalizer_signature = signature(service.binary_normalizer)
         artifacts, edges = [], []
         included = {index for index, _, used, _ in observations if used} if observations else {0}
         for index, output in enumerate(outputs):
@@ -183,7 +239,7 @@ class DocumentLineagePipeline:
                     "normalize",
                     admission.artifact_id,
                     record["id"],
-                    signature(service.binary_normalizer),
+                    normalizer_signature,
                     {
                         "filename": output.filename,
                         "kind": str(output.kind),

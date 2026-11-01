@@ -35,6 +35,17 @@ class GcsBlob:
         self.objects[self.name] = data
         self.objects.metadata[self.name] = self.metadata
 
+    def upload_from_file(self, source, **kwargs):
+        data = b"".join(iter(lambda: source.read(65536), b""))
+        assert len(data) == kwargs.pop("size")
+        assert kwargs.pop("rewind") is False
+        assert kwargs.pop("checksum") == "auto"
+        self.upload_from_string(data, **kwargs)
+
+    def download_to_file(self, target, **kwargs):
+        assert kwargs.pop("checksum") == "auto"
+        target.write(self.download_as_bytes(**kwargs))
+
     def reload(self, **kwargs):
         if self.name not in self.objects:
             raise ProviderError(404)
@@ -70,6 +81,9 @@ class AzureBlob:
         assert kwargs["timeout"] == 3 and kwargs["max_concurrency"] == 1
         if self.name in self.objects:
             raise ProviderError(409)
+        if hasattr(data, "read"):
+            data = b"".join(iter(lambda: data.read(65536), b""))
+            assert len(data) == kwargs["length"]
         self.objects[self.name] = data
         self.objects.metadata[self.name] = kwargs["metadata"]
 
@@ -86,7 +100,8 @@ class AzureBlob:
 
     def download_blob(self, **kwargs):
         assert kwargs["etag"] == "etag" and kwargs["max_concurrency"] == 1
-        return SimpleNamespace(readall=lambda: self.objects[self.name][: kwargs["length"]])
+        data = self.objects[self.name][: kwargs["length"]]
+        return SimpleNamespace(readall=lambda: data, chunks=lambda: iter((data,)))
 
     def delete_blob(self, **kwargs):
         if self.name not in self.objects:

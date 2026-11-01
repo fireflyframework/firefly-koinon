@@ -24,6 +24,7 @@ import {
   KoinonFolderTree,
   friendlyStatus,
 } from '@fireflyframework/koinon-angular';
+import {KoinonCommunicationsSettings} from '@fireflyframework/koinon-angular/communications/admin';
 import { KoinonModelOptionsForm } from './model-options-form';
 import { describeModelOptions, parseModelOptions, type ModelOptionValues } from './model-options';
 import { KoinonOrganizationPeople } from './organization-directory';
@@ -57,6 +58,7 @@ registerKoinonSpanish({ ...ORGANIZATION_SPANISH, Applications: 'Aplicaciones' })
 @Component({
   selector: 'ffk-settings-page',
   imports: [
+    KoinonCommunicationsSettings,
     KoinonIdentityAppearance,
     KoinonMcpApplications,
     KoinonTextPipe,
@@ -145,7 +147,7 @@ export class KoinonSettingsPage implements OnInit {
     {
       id: 'organization',
       label: 'Organization',
-      sections: ['people', 'structure', 'access', 'identity', 'applications'],
+      sections: ['people', 'structure', 'access', 'communications', 'identity', 'applications'],
     },
     {
       id: 'knowledge',
@@ -168,6 +170,7 @@ export class KoinonSettingsPage implements OnInit {
       permission: 'members:write',
       icon: 'lineage',
     },
+    { id: 'communications', label: 'Communications', permission: 'members:write', icon: 'mail' },
     { id: 'access', label: 'Access', permission: 'members:write', icon: 'shield' },
     { id: 'applications', label: 'Applications', permission: 'identity:manage', icon: 'grid' },
     {

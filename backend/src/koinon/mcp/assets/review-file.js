@@ -194,7 +194,7 @@ function createKoinonFileReview(bridge) {
         Number(value["chunk_bytes"]) > 65536 ||
         !Number.isInteger(value["max_file_bytes"]) ||
         Number(value["max_file_bytes"]) < 1 ||
-        Number(value["max_file_bytes"]) > 33554432
+        Number(value["max_file_bytes"]) > 134217728
       )
         throw new Error("Invalid file destination");
       if (busy) return true;
@@ -230,7 +230,7 @@ function createKoinonFileReview(bridge) {
         destination_id: value.destination.id,
         destination_name: value.destination.name,
         mode: value.mode,
-        max_file_bytes: 33554432,
+        max_file_bytes: 134217728,
         chunk_bytes: 65536,
       };
     if (changed) {

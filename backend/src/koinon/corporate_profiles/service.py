@@ -33,6 +33,7 @@ from koinon.corporate_profiles.repositories import (
 from koinon.organization_people.service import OrganizationPeopleService
 from koinon.profiles.service import profile_id
 from koinon.security.authority import primary_authority
+from koinon.security.settings import OidcSettings
 
 
 def conflict(code="PROFILE_REVISION_CONFLICT"):
@@ -62,7 +63,9 @@ class CorporateProfileService:
         projector: CorporateProfileProjector,
         snapshots: CorporateProfileRepository,
         preferences: OrganizationPresentationPreferenceRepository,
+        oidc: OidcSettings | None = None,
     ):
+        self.oidc = oidc
         self.catalog, self.people, self.projector = catalog, people, projector
         self.snapshots, self.preferences = snapshots, preferences
 
@@ -244,7 +247,7 @@ class CorporateProfileService:
             try:
                 if active_policy(mapping) is not None:
                     grouped[provider.tenant_id].append(
-                        (mapping, provider, verified_identity(identity_policy(provider), claims))
+                        (mapping, provider, verified_identity(identity_policy(provider, self.oidc), claims))
                     )
             except Exception:
                 continue
@@ -298,7 +301,7 @@ class CorporateProfileService:
                 or active_policy(current) is None
             ):
                 continue
-            identity = verified_identity(identity_policy(fresh), claims)
+            identity = verified_identity(identity_policy(fresh, self.oidc), claims)
             settings = TypeAdapter(ProviderSettings).validate_python(fresh.settings_json)
             collision = await self.snapshots.external_owner(
                 tenant_id, fresh.id, identity.external_subject, subject

@@ -33,7 +33,8 @@ class PresentationClaimSettings:
                 not isinstance(name, str)
                 or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,79}", name)
                 or name.casefold().startswith("koinon_")
-                or name.casefold() in {"name", "locale", "picture", "sid", "iat", "auth_time", "amr"}
+                or name.casefold()
+                in {"name", "locale", "picture", "sid", "iat", "auth_time", "amr", "aud", "azp", "appid"}
             ):
                 raise ValueError("Choose a flat presentation claim without identity or credential fields")
             OrganizationProfileFields.presentation_only(name)
