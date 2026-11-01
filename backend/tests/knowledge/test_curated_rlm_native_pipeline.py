@@ -222,7 +222,8 @@ async def test_native_curated_rlm_reads_exact_published_version_and_never_republ
                 asset_ids=[published.item_id],
                 answer=True,
             )
-        assert result.complete and result.data["answer"] == "47"
+        assert result.complete and "The renewal threshold is 47." in result.data["answer"]
+        assert result.data["answer"].startswith("Source excerpts")
         assert result.data["knowledge_settings_snapshot"]["revision"] == 7
         assert len(result.sources) == 1 and result.sources[0].kind == "knowledge_version"
         source = result.sources[0]

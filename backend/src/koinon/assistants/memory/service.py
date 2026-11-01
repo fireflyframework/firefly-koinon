@@ -221,6 +221,10 @@ class PersonalConversationMemory(ChatMemoryAccess):
             )
             if digest([asdict(item) for item in refs]) != ref.attachment_sha256:
                 raise unavailable()
+            if ref.answer_included and not await self.answer_proven(
+                value.subject, value.tenant_id, rows, refs
+            ):
+                raise unavailable()
             if ref.source_manifest_sha256 and ref.answer_included:
                 source = await self.repository.for_generation(ref.generation_id)
                 if source is None or source.manifest_sha256 != ref.source_manifest_sha256:
@@ -252,6 +256,18 @@ class PersonalConversationMemory(ChatMemoryAccess):
                     raise unavailable()
 
     async def answer_proven(self, subject, tenant_id, rows, refs) -> bool:
+        from koinon.answers.receipts import verified_release
+
+        if not rows:
+            return False
+        assistants = self.assistants.get()
+        if assistants is None:
+            return False
+        run = await assistants.runs.find_by_id(rows[0].run_id)
+        message = await assistants.message_repository.find_by_id(run.message_id) if run else None
+        release = verified_release(message, rows) if message else None
+        if release is None or release.outcome != "grounded":
+            return False
         if refs:
             captured = [
                 item

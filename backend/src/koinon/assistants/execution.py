@@ -6,9 +6,12 @@ import asyncio
 import json
 import logging
 from contextlib import asynccontextmanager, nullcontext, suppress
+from dataclasses import replace
 from pathlib import Path
 
+from pydantic import ValidationError
 from pydantic_ai import Tool as PydanticTool
+from pydantic_ai.exceptions import UnexpectedModelBehavior
 from pydantic_ai.messages import ModelRequest, SystemPromptPart, UserPromptPart
 from pydantic_ai.models import ModelRequestParameters
 from pydantic_ai.usage import UsageLimits
@@ -22,6 +25,7 @@ from pyfly.kernel import ConflictException, InvalidRequestException, ServiceUnav
 from pyfly.security.context import SecurityContext
 from pyfly.security.context_holder import SecurityContextHolder
 
+from koinon.answers.dtos import EvidenceAnswerPlan
 from koinon.assistants.attachment_input import prepare_attachment_input
 from koinon.assistants.connections import (
     input_modalities,
@@ -31,11 +35,10 @@ from koinon.assistants.connections import (
 )
 from koinon.assistants.context_budget import ConservativeTokenEstimator, history_budget
 from koinon.assistants.entities import ChatRun
-from koinon.assistants.grounding import evidence_view, has_evidence, refusal_message
+from koinon.assistants.grounding import evidence_view
 from koinon.assistants.lifecycle import timestamp
 from koinon.assistants.memory.service import PersonalConversationMemory
 from koinon.assistants.model_bindings import BorrowedModel, bind_model
-from koinon.assistants.private_citations import PrivateCitationLabels
 from koinon.assistants.queue import AssistantQueue
 from koinon.assistants.service import AssistantService
 from koinon.assistants.tool_activity import tracked_tool
@@ -126,10 +129,10 @@ class AssistantExecutor:
         worker_id: str,
         enabled: list[str],
         observed: set[str] | None = None,
-        grounded: set[str] | None = None,
         attachment_refs: tuple[AttachmentRef, ...] = (),
         private_search_enabled: bool = True,
         offering: ToolOffering | None = None,
+        private_facts: list | None = None,
     ):
         if attachment_refs:
             offering = private_offering(attachment_refs, search_enabled=private_search_enabled)
@@ -205,12 +208,31 @@ class AssistantExecutor:
                 raise ServiceUnavailableException(
                     "Narrow the question to fit the source audit budget", code="EVIDENCE_BUDGET_EXCEEDED"
                 ) from error
-            view = evidence_view(kind, data, result_id, remaining)
+            view = (
+                evidence_view(kind, data, result_id, remaining)
+                if kind == "schema"
+                else {"evidence_id": result_id}
+            )
+            view["answer_facts"] = []
+            for fact in await self.queue.fact_pool(run_id, worker_id):
+                if fact.result_id != result_id:
+                    continue
+                value = {
+                    "id": fact.id,
+                    "kind": fact.kind,
+                    "label": fact.label,
+                    **({"text": fact.text} if fact.kind == "quote" else {"value": fact.value}),
+                }
+                proposed = {**view, "answer_facts": [*view["answer_facts"], value]}
+                if (
+                    ConservativeTokenEstimator().estimate(json.dumps(proposed, ensure_ascii=False))
+                    > remaining
+                ):
+                    break
+                view = proposed
             remaining = max(
                 0, remaining - ConservativeTokenEstimator().estimate(json.dumps(view, ensure_ascii=False))
             )
-            if grounded is not None and has_evidence(kind, view):
-                grounded.add(result_id)
             return view
 
         @agent_tool(
@@ -385,6 +407,8 @@ class AssistantExecutor:
             await self.authority(run_id, worker_id)
             await access.authorize_evidence(thread.subject, run.tenant_id, thread.id, attachment_refs)
             result_id = await self.queue.evidence(run.id, worker_id, "attachment", value.evidence, [])
+            if private_facts is not None:
+                private_facts.extend(replace(fact, result_id=result_id) for fact in value.facts)
             view = {"evidence_id": result_id, "text": value.text, **value.evidence}
             cost = ConservativeTokenEstimator().estimate(json.dumps(view, ensure_ascii=False))
             if cost > remaining:
@@ -393,8 +417,6 @@ class AssistantExecutor:
                     code="ATTACHMENT_CONTEXT_BUDGET_EXCEEDED",
                 )
             remaining -= cost
-            if grounded is not None:
-                grounded.add(result_id)
             if observed is not None:
                 observed.add("search_private_attachments")
             return view
@@ -516,7 +538,7 @@ class AssistantExecutor:
             await attachments.for_run(thread.subject, run.tenant_id, thread.id, run.id) if attachments else ()
         )
         observed_tools: set[str] = set()
-        grounded_results: set[str] = set()
+        private_facts = []
         async with self.models.build_with_secret(spec, secret or "unused") as model:
             binding_output_mode = output_mode_for(provider.kind, agent_config.model_options)
             if agent_config.model_options.get("output_mode") is not None:
@@ -567,9 +589,9 @@ class AssistantExecutor:
                     worker_id,
                     agent_config.tools,
                     observed_tools,
-                    grounded_results,
                     attachment_refs=refs,
                     offering=offering,
+                    private_facts=private_facts,
                     private_search_enabled=private_search_enabled,
                 )
                 budget = history_budget(
@@ -578,6 +600,7 @@ class AssistantExecutor:
                     question=prompt.user,
                     tools=tools,
                     output_tokens=(spec.options.max_tokens or 4096) if spec.options else 4096,
+                    output_schema=EvidenceAnswerPlan.model_json_schema(),
                 )
                 user_prompt = prompt.user
                 if refs:
@@ -591,7 +614,8 @@ class AssistantExecutor:
                                 system=prompt.system,
                                 question=value,
                                 tools=tools,
-                                output_tokens=spec.options.max_tokens if spec.options else 4096,
+                                output_tokens=(spec.options.max_tokens or 4096) if spec.options else 4096,
+                                output_schema=EvidenceAnswerPlan.model_json_schema(),
                             )
                             return True
                         except InvalidRequestException:
@@ -624,7 +648,10 @@ class AssistantExecutor:
                             return False
                         reserved = (
                             usage.input_tokens
-                            + (spec.options.max_tokens if spec.options else 4096)
+                            + ((spec.options.max_tokens or 4096) if spec.options else 4096)
+                            + ConservativeTokenEstimator().estimate(
+                                json.dumps(EvidenceAnswerPlan.model_json_schema())
+                            )
                             + self.assistants.settings.tool_result_tokens
                             + 512
                         )
@@ -648,7 +675,8 @@ class AssistantExecutor:
                         system=prompt.system,
                         question=private.text,
                         tools=tools,
-                        output_tokens=spec.options.max_tokens if spec.options else 4096,
+                        output_tokens=(spec.options.max_tokens or 4096) if spec.options else 4096,
+                        output_schema=EvidenceAnswerPlan.model_json_schema(),
                     )
                     if binary_budget is not None:
                         budget = min(budget, binary_budget)
@@ -657,12 +685,12 @@ class AssistantExecutor:
                     evidence_id = await self.queue.evidence(
                         run_id, worker_id, "attachment", private.evidence, []
                     )
-                    grounded_results.add(evidence_id)
+                    private_facts.extend(replace(fact, result_id=evidence_id) for fact in private.facts)
                 agent = factory.create(
                     name=f"koinon-chat-{run.id}",
                     model=model,
                     instructions=prompt.system,
-                    output_type=str,
+                    output_type=EvidenceAnswerPlan,
                     tools=tools,
                     auto_register=False,
                     memory=None,
@@ -683,68 +711,56 @@ class AssistantExecutor:
                 history = await self.history(
                     run, token_budget=budget, attachment_refs=refs, generation_id=generation_id
                 )
-                pending = ""
-                citation_labels = PrivateCitationLabels(refs)
                 await self.authority(run_id, worker_id)
                 await self.memory.authorize(thread.subject, run.tenant_id, run.id)
-                async with await agent.run_stream(
-                    user_prompt,
-                    message_history=history,
-                    usage_limits=UsageLimits(
-                        request_limit=12,
-                        tool_calls_limit=12,
-                        input_tokens_limit=self.assistants.settings.max_context_tokens,
-                    ),
-                ) as stream:
-                    async for delta in stream.stream_text(delta=True, debounce_by=0.05):
-                        await self.authority(run_id, worker_id)
-                        await self.memory.authorize(thread.subject, run.tenant_id, run.id)
-                        if delta:
-                            pending += citation_labels.feed(delta)
-                            if len(pending) > 256000:
-                                raise InvalidRequestException(
-                                    "Answer exceeds the supported size", code="ANSWER_TOO_LARGE"
-                                )
-                            if grounded_results and pending:
-                                await self.assistants.authorize_results(thread.subject, run.tenant_id, run.id)
-                                await self.queue.append(run_id, worker_id, "message_delta", {"text": pending})
-                                pending = ""
-                pending += citation_labels.finish()
-                if grounded_results:
-                    await self.authority(run_id, worker_id)
-                    await self.assistants.authorize_results(thread.subject, run.tenant_id, run.id)
-                    if pending:
-                        await self.queue.append(run_id, worker_id, "message_delta", {"text": pending})
-                    await self.queue.policy(run_id, worker_id, {"outcome": "grounded"})
-                    remaining = (
-                        self.assistants.settings.run_timeout_seconds
-                        - (asyncio.get_running_loop().time() - started)
-                        - 2
-                    )
-                    await self.suggest_title(run_id, worker_id, timeout=min(15.0, remaining))
-                else:
-                    language = preferences["response_language"]
-                    code = (
-                        "REVIEW_REQUIRED"
-                        if "propose_catalog_update" in observed_tools
-                        else "NO_MATCHING_EVIDENCE"
-                        if observed_tools & {"search_knowledge", "query_dataset"}
-                        else "FACTUAL_EVIDENCE_REQUIRED"
-                        if "inspect_schema" in observed_tools
-                        else "KNOWLEDGE_ONLY"
-                    )
-                    text = refusal_message(preferences["locale"] if language == "auto" else language, code)
-                    await self.queue.policy(
+                try:
+                    async with await agent.run_stream(
+                        user_prompt,
+                        message_history=history,
+                        usage_limits=UsageLimits(
+                            request_limit=12,
+                            tool_calls_limit=12,
+                            input_tokens_limit=self.assistants.settings.max_context_tokens,
+                        ),
+                    ) as stream:
+                        plan = EvidenceAnswerPlan.model_validate(await stream.get_output())
+                except (UnexpectedModelBehavior, ValidationError):
+                    plan = EvidenceAnswerPlan(outcome="insufficient_evidence")
+                await self.authority(run_id, worker_id)
+                await self.memory.authorize(thread.subject, run.tenant_id, run.id)
+                language = preferences["response_language"]
+                language = preferences["locale"] if language == "auto" else language
+                refusal_code = (
+                    "NO_MATCHING_EVIDENCE"
+                    if observed_tools & {"search_knowledge", "query_dataset", "search_private_attachments"}
+                    or refs
+                    else "FACTUAL_EVIDENCE_REQUIRED"
+                    if "inspect_schema" in observed_tools
+                    else "KNOWLEDGE_ONLY"
+                )
+                try:
+                    await self.queue.release_answer(
                         run_id,
                         worker_id,
-                        {
-                            "outcome": "review_required" if code == "REVIEW_REQUIRED" else "refused",
-                            "code": code,
-                            "reason": text,
-                        },
+                        plan,
+                        language,
+                        private_facts=tuple(private_facts),
+                        refusal_code=refusal_code,
                     )
-                    await self.memory.authorize(thread.subject, run.tenant_id, run.id)
-                    await self.queue.append(run_id, worker_id, "message_delta", {"text": text})
+                except ValueError:
+                    await self.queue.release_answer(
+                        run_id,
+                        worker_id,
+                        EvidenceAnswerPlan(outcome="insufficient_evidence"),
+                        language,
+                        refusal_code=refusal_code,
+                    )
+                remaining = (
+                    self.assistants.settings.run_timeout_seconds
+                    - (asyncio.get_running_loop().time() - started)
+                    - 2
+                )
+                await self.suggest_title(run_id, worker_id, timeout=min(15.0, remaining))
         await self.authority(run_id, worker_id)
         await self.assistants.configuration_service.record_runtime_qualification(
             run.tenant_id,
@@ -754,7 +770,6 @@ class AssistantExecutor:
             sorted(observed_tools),
             spec.options.model_dump(mode="json", exclude_none=True) if spec.options else {},
         )
-        await self.queue.citations(run_id, worker_id)
         await self.queue.finish(run_id, worker_id)
 
     async def execute(self, run_id: str, worker_id: str):

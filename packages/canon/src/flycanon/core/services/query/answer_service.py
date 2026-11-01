@@ -14,14 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""RAG answerer -- hybrid retrieval + LLM answer with citations.
+"""RAG source selection with an extractive public answer boundary.
 
 Composes :class:`RetrievalService` with a FireflyAgent answer call.
 The agent returns a structured :class:`AnswerOutput` containing the
-written answer and the ``chunk_id`` set the model actually cited;
+internal draft and the ``chunk_id`` set the model actually cited;
 the service hydrates those citations from the retrieval result so
 the caller gets the full hit row back (content + score + source_id +
-metadata), not just an opaque list of ids.
+metadata), not just an opaque list of ids. Only those exact source
+excerpts are rendered in the public answer; the draft is not published.
 """
 
 from __future__ import annotations
@@ -37,6 +38,7 @@ from flycanon.core.agents import build_agent
 from flycanon.core.agents.model_bindings import model_reference
 from flycanon.core.services.consolidation.prompt_loader import PromptTemplate
 from flycanon.core.services.query import provenance
+from flycanon.core.services.query.answer_release import release_excerpts
 from flycanon.core.services.query.search_service import _filters_from_request
 from flycanon.core.services.retrieval.retrieval_service import RetrievalService
 from flycanon.interfaces.dtos.query import AnswerRequest, AnswerResponse, Hit
@@ -180,6 +182,13 @@ class AnswerService:
                 continue
             citations.append(_hit_dto(hit))
 
+        await provenance.authorize()
+        answer, citations, no_answer = release_excerpts(
+            citations,
+            no_answer=bool(output.no_answer)
+            or any(identifier not in hits_by_id for identifier in output.citation_chunk_ids),
+        )
+
         elapsed_ms = int((time.perf_counter() - start) * 1000)
         logger.info(
             "answered question=%s hits=%d citations=%d elapsed_ms=%d",
@@ -189,7 +198,7 @@ class AnswerService:
             elapsed_ms,
         )
         return AnswerResponse(
-            answer=output.answer,
+            answer=answer,
             citations=citations,
             model=model_reference(
                 "documents.fallback"
@@ -198,7 +207,7 @@ class AnswerService:
                 model_id,
             ),
             elapsed_ms=elapsed_ms,
-            no_answer=bool(output.no_answer),
+            no_answer=no_answer,
         )
 
     async def _call_model(

@@ -1,6 +1,7 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
 from dataclasses import replace
+from hashlib import sha256
 
 import pytest
 from pyfly.kernel import InvalidRequestException
@@ -35,7 +36,7 @@ async def fixture(assistants):
         kind="document",
         chunk_id="chunk",
         quote="Verified native chunk",
-        used_revision="chunk-sha256:" + "a" * 64,
+        used_revision="chunk-sha256:" + sha256(b"Verified native chunk").hexdigest(),
     )
     return service, context, run, entry, data, source
 
@@ -54,11 +55,10 @@ async def test_only_separate_typed_receipt_can_make_new_source_manifest_complete
         "complete": True,
         "sources": [source.model_dump(mode="json")],
     }
-    await queue.policy(run.id, "proposal-worker", {"outcome": "grounded"})
+    from release_helpers import seal_first_quote
+
+    await seal_first_quote(context, run, "proposal-worker")
     await queue.finish(run.id, "proposal-worker")
-    message = await service.message_repository.find_by_id(run.message_id)
-    message.artifacts = [value for value in message.artifacts if value["id"] == result_id]
-    await service.message_repository.save(message)
     snapshot = await context.get_bean(ConversationSnapshotPort).snapshot(
         "issuer|admin", "north", run.thread_id, [run.message_id]
     )

@@ -8,19 +8,25 @@ from pyfly.context import ApplicationContext
 from pyfly.core import Config
 from pyfly.kernel import ConflictException
 
+import koinon.jobs.entities  # noqa: F401
 from koinon.catalog.entities import Membership, Tenant
 from koinon.catalog.repositories import MembershipRepository, TenantRepository
 from koinon.evidence.dtos import ConversationMessage, ConversationSnapshot
-from koinon.evidence.ports import ConversationSnapshotPort
+from koinon.evidence.ports import ConversationOutputPort, ConversationSnapshotPort
 from koinon.evidence.reviews import EvidenceReviews
 from koinon.exports.dtos import ConversationExportInput
 from koinon.sharing.dtos import ShareReviewInput
 
 
-class SnapshotFixture:
+class SnapshotFixture(ConversationOutputPort):
     revision = "a" * 64
     private = False
     origin_tokens = ()
+
+    async def authorize_output(self, subject, tenant_id, thread_id, message_ids, *, snapshot=None):
+        assert subject == "owner" and tenant_id == "north"
+        if snapshot is not None:
+            assert all(message.text == "Reviewed answer" for message in snapshot.messages)
 
     async def snapshot(self, subject, tenant_id, thread_id, message_ids):
         return ConversationSnapshot(
@@ -66,6 +72,7 @@ async def reviews(tmp_path):
     )
     snapshot = SnapshotFixture()
     context.container.register_instance(ConversationSnapshotPort, snapshot)
+    context.container.register_instance(ConversationOutputPort, snapshot)
     for package in (
         "koinon.catalog",
         "koinon.profiles",

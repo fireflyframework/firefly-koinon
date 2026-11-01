@@ -162,7 +162,11 @@ class AnswerAudits:
             if memory_access is not None
             else None
         )
+        from koinon.answers.receipts import verified_release
+
+        message = await self.assistants.message_repository.find_by_id(run.message_id)
         return AnswerAudit(
+            output_release=verified_release(message, rows),
             run_id=run.id,
             memory=memory,
             knowledge_settings_snapshot=snapshot_for_run(run),

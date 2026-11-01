@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Per-call native observations; no current-source lookup or historical enrichment."""
 
+import json
 from asyncio import current_task
 from collections.abc import Awaitable, Callable
 from dataclasses import replace
@@ -17,6 +18,7 @@ from koinon.knowledge.capture_dtos import (
     DocumentRead,
     NativeCaptureLimits,
     NativeDatabaseContext,
+    NativeQueryResult,
     NativeReadFingerprint,
     NativeReadOrigin,
     NativeSqlAttempt,
@@ -73,6 +75,9 @@ class NativeEvidenceReceipt:
         self.model_snapshots: list[SnapshotRead] = []
         self.resolved_snapshots: list[SnapshotRead] = []
         self._attempts: list[NativeSqlAttempt] = []
+        self._executed_results: dict[int, NativeQueryResult] = {}
+        self.query_results: list[NativeQueryResult] = []
+        self._query_result_failure: NativeCaptureBudgetExceeded | None = None
         self.authorize_knowledge: Callable[[], Awaitable[Any]] | None = None
         self.authorize_model: Callable[[], Awaitable[Any]] | None = None
         self.verify_structured: Callable[[Any, dict], Awaitable[bool | NativeDatabaseContext]] | None = None
@@ -289,6 +294,10 @@ class NativeEvidenceReceipt:
             self.documents[identifier] = value
 
     def query(self, tenant_id, workspace_id, actor, dataset_id, result):
+        if self._query_result_failure is not None:
+            raise self._query_result_failure
+        from koinon.knowledge.adapters import _json
+
         self.scope(tenant_id, workspace_id, actor)
         pins = result.get("snapshot_pins")
         if (
@@ -321,6 +330,40 @@ class NativeEvidenceReceipt:
                     str(workspace_id), str(dataset_id), None, name, snapshot, str(result["query_id"])
                 ),
             )
+        preview = _json(result.get("preview"))
+        if not isinstance(preview, list) or len(preview) > 50:
+            return
+        try:
+            preview_json = json.dumps(
+                preview, sort_keys=True, ensure_ascii=False, separators=(",", ":"), allow_nan=False
+            )
+        except ValueError:
+            self.complete = False
+            return
+        matches = []
+        for proof in self._executed_results.values():
+            actual = json.loads(proof.preview_json)
+            if (
+                proof.statement_sha256 == sha256(sql.encode()).hexdigest()
+                and dict(proof.snapshot_pins) == pins
+                and proof.row_count == result.get("row_count")
+                and proof.truncated == result.get("truncated")
+                and json.dumps(
+                    actual[: len(preview)], sort_keys=True, ensure_ascii=False, separators=(",", ":")
+                )
+                == preview_json
+                and (preview or proof.row_count == 0)
+            ):
+                matches.append(proof)
+        if matches:
+            proof = replace(
+                matches[-1],
+                query_id=str(result["query_id"]),
+                preview_json=preview_json,
+            )
+            self.query_results.append(proof)
+        elif self._executed_results:
+            self.complete = False
 
     def schema(self, tenant_id, workspace_id, actor, dataset_id, table, objects):
         self.scope(tenant_id, workspace_id, actor)
@@ -508,6 +551,36 @@ class NativeEvidenceReceipt:
             truncated=result.truncated if success else None,
             reason_code=None if success else "SQL_EXECUTION_FAILED",
         )
+        if success:
+            try:
+                from koinon.knowledge.adapters import _json
+
+                attempt = self._attempts[identifier - 1]
+                rows = _json(result.rows[:50])
+                self.check_result_bytes({"preview": rows})
+                try:
+                    preview = json.dumps(
+                        rows, sort_keys=True, ensure_ascii=False, separators=(",", ":"), allow_nan=False
+                    )
+                except ValueError:
+                    return
+                self.check_result_bytes(
+                    {
+                        "executed_previews": [proof.preview_json for proof in self._executed_results.values()]
+                        + [preview]
+                    }
+                )
+                self._executed_results[identifier] = NativeQueryResult(
+                    attempt.statement_sha256,
+                    "",
+                    tuple(sorted(attempt.snapshot_pins.items())),
+                    tuple(result.columns),
+                    preview,
+                    result.row_count,
+                    result.truncated,
+                )
+            except NativeCaptureBudgetExceeded as error:
+                self._query_result_failure = error
 
     def sql_candidate(self, identifier, status, classification):
         attempt = self._attempts[identifier - 1]
@@ -833,6 +906,8 @@ class NativeEvidenceReceipt:
             self.source_origins[source] = NativeReadOrigin(original_filename=filename)
 
     def structured_result(self, execution, scope):
+        if self._query_result_failure is not None:
+            raise self._query_result_failure
         self.scope(scope.tenant_id, scope.workspace_id, scope.actor)
         digest = sha256(execution["sql"].encode()).hexdigest()
         result = execution["result"]
