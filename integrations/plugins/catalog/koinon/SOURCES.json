@@ -1,0 +1,13 @@
+{
+  "canonical_skills": {
+    "koinon-evidence/SKILL.md": "8a8e5a7d9153f216fcee3d85c1af4739d862a5209d93e822a4cd36e054c4337e",
+    "koinon-evidence/references/workflows.md": "9d40dd31a98a9ec2048511802d705d8086ba2a19ffcdd1462ddfd0fe5efd2182"
+  },
+  "brand_inputs": {
+    "brand/tokens.json": "6236e3197662e607d05b7e5d958efaf29f064d59284eaed7a1027bfedd4dfff2",
+    "brand/exports/koinon-symbol-color-512.png": "8f3ec58293412febf9ea42d040fb05378f0574b92c5ea644a3239375241214fc",
+    "brand/exports/koinon-symbol-reversed-512.png": "431892c9e82016efa5af116ef60c38a30ec0f02db6231f06876ff09a98d6ec86"
+  },
+  "license_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+  "connection_or_membership_created": false
+}

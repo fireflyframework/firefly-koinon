@@ -1,0 +1,14 @@
+{
+  "name": "firefly-koinon",
+  "owner": {
+    "name": "Firefly Software Foundation"
+  },
+  "description": "Reusable instructions for authorized koinon knowledge and catalog work. Connect your own installation separately.",
+  "plugins": [
+    {
+      "name": "koinon",
+      "source": "./integrations/plugins/catalog/koinon",
+      "description": "Work with authorized koinon knowledge and catalog operations."
+    }
+  ]
+}

@@ -119,6 +119,7 @@ nav:
           - External-agent management: guides/external-agent-management.md
           - In-chat knowledge management: guides/mcp-knowledge-management.md
           - Desktop MCP extension: integrations/desktop.md
+          - Plugin marketplaces: integrations/plugins.md
           - Integration data flow and privacy: integrations/privacy.md
   - Operations:
       - Overview: operations/README.md

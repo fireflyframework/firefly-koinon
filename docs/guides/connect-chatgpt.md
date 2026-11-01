@@ -121,3 +121,5 @@ Reconnecting the same application to the same space replaces its active grant wi
 Local tests cover official MCP protocol initialization/discovery, native scope enforcement, PKCE, owner-only consent, token isolation, expiry and revocation. They do not prove that an actual ChatGPT account completed OAuth or accepted a deployed server. Retain the real client connection result separately from package and protocol tests.
 
 The official setup pages were checked on October 30, 2026. This guide describes their current web flow without assuming a particular subscription or workspace policy. The local MCPB and portable evidence skill remain separate artifacts; neither installs a ChatGPT OAuth connection.
+
+The [plugin marketplace and profile guide](../integrations/plugins.md) explains GitHub distribution, canonical skills and deployment-specific OAuth metadata. Packages do not replace account authorization or supported human review.
