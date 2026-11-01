@@ -92,6 +92,8 @@ class CommunicationsSettings:
     resend_cooldown_seconds: int = 300
     max_invitation_sends: int = 5
     default_locale: str | None = None
+    operator_contact_max_lifetime_days: int = 365
+    operator_contact_expiry_warning_days: int = 30
 
     def __post_init__(self):
         if self.default_locale is not None:
@@ -109,6 +111,8 @@ class CommunicationsSettings:
             (self.max_attempts, 1, 10),
             (self.resend_cooldown_seconds, 60, 3600),
             (self.max_invitation_sends, 1, 10),
+            (self.operator_contact_max_lifetime_days, 1, 3650),
+            (self.operator_contact_expiry_warning_days, 1, 365),
         ):
             if type(value) is not int or not minimum <= value <= maximum:
                 raise ValueError("Communications processing requires bounded integer limits")
