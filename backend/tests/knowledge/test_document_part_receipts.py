@@ -87,7 +87,10 @@ async def test_knowledge_confirmation_rejects_a_changed_ingestion_head_while_his
 
         async def authorize_output(self, subject, tenant_id, thread_id, message_ids, *, snapshot=None):
             assert (subject, tenant_id, thread_id, message_ids) == (
-                "issuer|owner", "north", "thread", ["answer"]
+                "issuer|owner",
+                "north",
+                "thread",
+                ["answer"],
             )
             assert snapshot.messages[0].text == text
             assert snapshot.sources == (reference,)
