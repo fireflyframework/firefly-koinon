@@ -7,7 +7,11 @@ import {
   type KoinonTransport,
   type RequestOptions,
 } from '@fireflyframework/koinon-sdk';
-import { LibraryUploadCoordinator, type UploadScope } from './library-upload-coordinator';
+import {
+  effectiveUploadLimits,
+  LibraryUploadCoordinator,
+  type UploadScope,
+} from './library-upload-coordinator';
 
 function fixture(configured = true) {
   const calls: { method: string; path: string; options: RequestOptions }[] = [];
@@ -128,6 +132,25 @@ function fixture(configured = true) {
   return { calls, scope, transport, state, synchronous, hash, changed };
 }
 describe('durable regular Library uploads', () => {
+  it('shares honest displayed and enforced limits when server caps exceed browser or synchronous bounds', async () => {
+    const f = fixture();
+    await f.state.start([new File(['one'], 'office.docx')], 'document');
+    const capabilities = {
+      ...f.state.view().capabilities!,
+      max_file_bytes: 536870912,
+      max_batch_bytes: 1073741824,
+      synchronous_max_file_bytes: 134217728,
+    };
+    expect(effectiveUploadLimits(capabilities)).toEqual({
+      max_file_bytes: 134217728,
+      max_batch_bytes: 536870912,
+      max_files: 100,
+    });
+    expect(effectiveUploadLimits({ ...capabilities, configured: false }).max_file_bytes).toBe(
+      33554432,
+    );
+    f.state.dispose();
+  });
   it('keeps transfer ownership active between observed staging requests, then clears it', async () => {
     const f = fixture();
     const request = f.transport.request.bind(f.transport);

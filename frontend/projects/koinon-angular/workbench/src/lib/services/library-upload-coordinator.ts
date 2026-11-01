@@ -80,6 +80,20 @@ interface Session {
   synchronousAttempted: boolean;
   batchId: string | null;
 }
+export function effectiveUploadLimits(capabilities: FileBatchCapabilities) {
+  const bounded = (observed: number | null | undefined, maximum: number) =>
+    typeof observed === 'number' && Number.isSafeInteger(observed) && observed > 0
+      ? Math.min(observed, maximum)
+      : 0;
+  const file = bounded(capabilities.max_file_bytes, 134217728);
+  return {
+    max_file_bytes: capabilities.configured
+      ? file
+      : Math.min(file, bounded(capabilities.synchronous_max_file_bytes, 33554432)),
+    max_batch_bytes: bounded(capabilities.max_batch_bytes, 536870912),
+    max_files: bounded(capabilities.max_files, 100),
+  };
+}
 const empty = (): UploadView => ({
   stage: 'idle',
   busy: false,
@@ -284,17 +298,20 @@ export class LibraryUploadCoordinator {
         );
         this.check(session);
         this.set(session, { capabilities: caps });
+        const limits = effectiveUploadLimits(caps);
+        if (!caps.configured && files.some((file) => file.size > limits.max_file_bytes)) {
+          this.set(session, {
+            stage: 'idle',
+            message:
+              'Large files need configured queued storage. They were not sent to synchronous processing.',
+          });
+          return;
+        }
         if (
           !caps.modes.includes(mode) ||
-          !Number.isSafeInteger(caps.max_files) ||
-          files.length > Math.min(caps.max_files, 100) ||
-          !Number.isSafeInteger(caps.max_file_bytes) ||
-          !Number.isSafeInteger(caps.max_batch_bytes) ||
-          files.some(
-            (file) => file.size < 1 || file.size > Math.min(caps.max_file_bytes, 134217728),
-          ) ||
-          files.reduce((size, file) => size + file.size, 0) >
-            Math.min(caps.max_batch_bytes, 536870912)
+          files.length > limits.max_files ||
+          files.some((file) => file.size < 1 || file.size > limits.max_file_bytes) ||
+          files.reduce((size, file) => size + file.size, 0) > limits.max_batch_bytes
         ) {
           this.set(session, {
             stage: 'idle',
@@ -304,19 +321,6 @@ export class LibraryUploadCoordinator {
           return;
         }
         if (!caps.configured) {
-          const bound = caps.synchronous_max_file_bytes;
-          if (
-            !bound ||
-            !Number.isSafeInteger(bound) ||
-            files.some((file) => file.size > Math.min(bound, 33554432))
-          ) {
-            this.set(session, {
-              stage: 'idle',
-              message:
-                'Large files need configured queued storage. They were not sent to synchronous processing.',
-            });
-            return;
-          }
           for (const file of files) {
             this.set(session, { stage: 'staging', currentFile: file.name });
             session.synchronousAttempted = true;
