@@ -18,6 +18,7 @@ from koinon.assistants.audit_dtos import AnswerAudit
 def generated(monkeypatch):
     root = Path(__file__).parents[3]
     monkeypatch.syspath_prepend(str(root / "sdk/python/src"))
+    importlib.import_module("koinon_sdk")
     spec = importlib.util.spec_from_file_location(
         "release_contract_generator", root / "tools/sdk/generate_python_connections.py"
     )
