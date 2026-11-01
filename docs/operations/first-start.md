@@ -5,7 +5,7 @@ Use this order after [installing a matching release](installation.md). It connec
 
 ## 1. Prepare persistent storage and private PostgreSQL
 
-Choose persistent roots for original documents, structured artifacts and private chat files before starting the API or workers. All replicas must use the intended shared storage. Follow [storage configuration](storage-configuration.md) for the three independent profiles and required cloud extras.
+Choose persistent roots for original documents, structured artifacts and private chat files before starting the API or workers. All replicas must use the intended shared storage. Follow [storage configuration](storage-configuration.md) for the three independent final-content profiles and required cloud extras. Queued Library uploads additionally require [bulk staging](durable-bulk.md) under its own configuration prefix. Prepare that private namespace before accepting file batches; configuring only the final document store is insufficient.
 
 For a filesystem-backed deployment, identify the intended persistent volume using
 your platform's attachment record and the host's supported device mapping. Match
@@ -56,6 +56,8 @@ Follow [migrations](migrations.md) in order: provision roles, apply the three mi
 Start the migrated API with its runtime credentials and persistent storage. Serve the management build and backend routes through the reviewed HTTPS proxy. Use the [management proxy instructions](production.md#serve-the-management-application); login, callback, `/auth`, API, MCP and discovery routes must reach the backend. Confirm `/health` for liveness and `/ready` for the real database check.
 
 The API and sign-in screen must be available for the first interactive login. A successful identity-provider login alone does not grant organization membership. Establish that membership through one of the explicit initialization modes below. Start the complete background process with `python -m koinon.worker` before testing generated chat answers or scheduled work. Set `KOINON_PROCESS_ROLE=worker` for that process and `api` for the HTTP process. API readiness alone does not consume queues or run maintenance. See [backend operation](production.md#operate-the-backend) for worker templates and connection budgets.
+
+Enable only the bulk consumers this deployment needs. Queued Library file processing requires `PYFLY_KOINON_KNOWLEDGE_BULK_WORKER_ENABLED=true` on its worker replicas. Query batches have the separate `PYFLY_KOINON_KNOWLEDGE_BULK_QUERY_WORKER_ENABLED` opt-in. Both default to false and must remain off on API replicas. Follow [worker roles](workers.md) for these flags, shared heavy-operation admission and database connection sizing.
 
 ## 4. Establish the first administrators
 
@@ -116,7 +118,7 @@ backend/.venv/bin/python deploy/run.py --env-file /private/runtime.env -- \
 
 `deploy/run.py` reads a mode-0600 literal `KEY=VALUE` file without shell evaluation. A systemd `EnvironmentFile` uses different quoting rules. The bootstrap validates the configured issuer prefix, creates the tenant and first administrator in one native transaction, and records an audit event. It refuses an existing tenant; use its authorized membership workflow instead of rerunning bootstrap to repair access.
 
-Reopen or reload the management application and select the new organization. If it does not appear, compare the signed-in `/auth/me` subject with the exact bootstrap value before changing any membership.
+Reopen or reload the management application. If this is the account's only authorized organization, koinon uses it without displaying an organization selector. If the account has several authorized organizations, choose the new one using that selector. If the new organization is unavailable, compare the signed-in `/auth/me` subject with the exact bootstrap value before changing any membership.
 
 ## 5. Complete guided organization configuration
 
@@ -126,7 +128,7 @@ Leave a new connection in **Draft**, or do not create one yet. When ready, confi
 
 For an already active managed-access policy, directory failure or provider disablement does not turn its managed grants into local memberships. Expired or invalid managed grants stop authorizing access; independently assigned local memberships retain their own authority. Do not disable freshness checks to make a directory-dependent account work during an outage.
 
-Continue with [Configure your corporate brain](../guides/knowledge-setup.md). Review **Access**, **Identity & appearance**, **Providers**, **Knowledge models**, **Knowledge behavior** and **Agents** in that order. Confirm the active organization before saving. Installation branding controls the signed-out experience; organization overrides apply after authentication.
+Continue with [Configure your corporate brain](../guides/knowledge-setup.md). Review **Access**, **Identity & appearance**, **Providers**, **Knowledge models** and **Agents** in that order. **Knowledge behavior** is the first panel within **Knowledge models**, followed by model-role assignments. Confirm the active organization before saving. Installation branding controls the signed-out experience; organization overrides apply after authentication.
 
 Validate the actual provider endpoint, protocol and chosen model. Assign an explicit compatible document embedding model, dimensions and space as well as the answer and chat roles. Begin with RAG for the first document exercise. Discovery or a saved model assignment does not establish that streaming, tools or RLM work. Confirm storage observations and an actual write/read under deployment credentials; a configured bucket alone is insufficient.
 
@@ -135,6 +137,10 @@ Validate the actual provider endpoint, protocol and chosen model. Assign an expl
 Upload a small fictional document with a fact whose answer you know. Wait for ingestion and indexing, then ask a bounded question using that source. Check streamed text through the public proxy, the completed answer and its cited fragment. Open **Audit** to inspect actual tool outcomes, sources and recorded policy. Check the same flow with a reader account and a source it cannot access.
 
 Replace the test document through the authorized, revision-checked flow. Ask again and confirm the new answer uses the new version while the earlier answer still resolves its original immutable source. Follow [agents and chat](../guides/agents.md) for SSE and audit, and [versions and lineage](../guides/lineage.md) for the exact replacement preconditions. A functioning stream or model action alone is insufficient factual acceptance. Publishing a proposed organizational conclusion still requires explicit user confirmation.
+
+Repeat the [representative acceptance exercise](../guides/knowledge-setup.md#complete-the-first-acceptance-exercise) for a dataset, a reader outside the source's scope, an insufficient-evidence question and a completed SSE reconnect. The server releases exact authorized source excerpts and verified typed values; it does not use general model knowledge as fallback factual content. Tool activity may stream before the final evidence selection passes, but unvalidated model drafts remain private. See [knowledge-only responses](../reference/knowledge-only-responses.md) for the output receipt and historical-response behavior.
+
+Use [Platform health](platform-health.md#diagnose-a-problem-in-order) to locate a missing prerequisite. Its passive observations do not run a model, send email, prove worker liveness or perform a cloud write. Keep a deployment acceptance record with the exact release, storage routes, processing outcomes, source versions, question, expected result and permissions tested. Record an external client journey separately when that client is enabled.
 
 ## 7. Connect external applications through the public endpoint
 

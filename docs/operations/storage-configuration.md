@@ -18,6 +18,18 @@ All three profiles belong under `koinon.storage` in the deployment configuration
 
 These are independent profiles. Choose distinct roots or prefixes and bind every reader/worker to the same intended profile. PostgreSQL remains required for ownership, versions, text/projections, catalog bindings, jobs and indexes; cloud objects do not replace those databases.
 
+### Configure queued staging separately
+
+The table describes the three final-content profiles. Queued Library uploads also need **bulk staging** under `koinon.knowledge.bulk`, outside `koinon.storage`. Selecting an Azure document container or GCS dataset bucket does not configure this fourth binding.
+
+1. Configure the final profiles needed for documents, datasets and private chat files using this page.
+2. Configure the independent private staging backend, namespace and prefix using [durable bulk staging](durable-bulk.md). Local staging requires the same durable private filesystem for every consumer; independently placed containers normally need the supported shared cloud profile.
+3. Give the API and workers their reviewed storage permissions and the same immutable route configuration. Keep credentials in the deployment identity or secret store.
+4. Enable the file-batch consumer on the intended worker replicas. `koinon.knowledge.bulk.worker_enabled` defaults to false; the [worker guide](workers.md) documents its native environment override and the separate query-batch consumer. An ordinary chat worker does not imply these opt-ins.
+5. Run a representative upload, retain its batch/item receipts and inspect final resource availability. A capability response describes configured bounds; it does not prove a cloud write, parser completion or indexing.
+
+The pinned queued transport supports local, Azure and GCS staging. S3 remains a final-store compatibility option and does not supply this staging contract. The [Library ingestion profile](../reference/library-file-ingestion.md) explains per-file, expansion, scratch, parser and lifetime-admission limits. Raise none of them merely because a bucket accepts a larger object.
+
 ## Install the required optional dependencies
 
 Use the release's qualified Python 3.13 environment and locked dependencies. For a private distribution, install the chosen extras from the operator's verified wheelhouse; source/package qualification does not imply public registry publication.

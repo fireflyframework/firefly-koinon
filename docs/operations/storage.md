@@ -11,9 +11,10 @@ koinon persists original files as well as the knowledge extracted from them. An 
 | Documents | Original versions, normalized artifacts and replay inputs tied to recorded source identities. |
 | Structured data | Original dataset files, registered Parquet snapshots and retained query results. |
 | Private chat files | Owner/conversation-scoped originals, normalized content and registered staging. |
+| Durable bulk staging | Exact originals admitted to file batches, upload attempts and retained receipt inputs before canonical processing. This has an independent private storage profile. |
 | PostgreSQL | Ownership, permissions, catalog/version bindings, hashes, source text, indexes, jobs, conversations, audit, profiles and encrypted credentials. |
 
-The three object stores can each use local storage, S3, Azure Blob Storage or Google Cloud Storage. They have independent profiles. Object storage does not replace PostgreSQL, and an index is not a backup of the originals.
+The document, structured and private-chat stores can each use local storage, S3, Azure Blob Storage or Google Cloud Storage. They have independent profiles. Durable bulk staging separately supports local storage, Azure Blob Storage or Google Cloud Storage; its pinned queued-file contract does not currently support S3. Object storage does not replace PostgreSQL, and an index is not a backup of the originals.
 
 ## Find the right guide
 
@@ -21,6 +22,7 @@ The three object stores can each use local storage, S3, Azure Blob Storage or Go
 | --- | --- |
 | Set up a new store, credentials or environment variables | [Configure storage providers](storage-configuration.md) |
 | Understand durability, limits, shared mounts and cloud behavior | [Durability and limits](storage-behavior.md) |
+| Configure queued Library originals and their consumers | [Durable bulk staging](durable-bulk.md) and [worker roles](workers.md) |
 | Move retained data or rehearse recovery | [Migration and recovery](storage-migration.md) |
 | Connect an external enterprise document system | [ECM integration](ecm-integration.md) |
 | Create and check database backups | [Backup and recovery](backup-restore.md) |
@@ -39,6 +41,8 @@ Changing configuration does not copy files or rewrite historical snapshot URIs. 
 
 ## Bulk work remains separate
 
-Use [durable source batches](../guides/bulk-intake.md) for queued originals up to 128 MiB each and 512 MiB per batch. The synchronous upload endpoint remains at most 32 MiB. A cloud adapter alone does not supply the native admission, lease, authorization or immutable publication contract. The [Library file profile](../reference/library-file-ingestion.md) records raw/expanded/object/parser bounds and the lifetime quota policy. Preserve every accepted receipt and reconcile unknown outcomes explicitly.
+When its capability is configured, ordinary Library uploads use the same [durable source batches](../guides/bulk-intake.md) as headless callers: queued originals up to 128 MiB each and 512 MiB per batch, subject to effective lower limits. Their staging profile and file-batch consumer are independent prerequisites. The synchronous upload endpoint remains at most 32 MiB; larger originals are not silently sent through it when queued storage is unavailable.
+
+A cloud adapter alone does not supply the native admission, lease, authorization or immutable publication contract. The [Library file profile](../reference/library-file-ingestion.md) records raw/expanded/object/parser bounds and the lifetime quota policy. Preserve every accepted receipt and reconcile unknown outcomes explicitly. A submitted batch is not yet searchable knowledge; verify per-file processing and final availability.
 
 Copyright 2026 Firefly Software Foundation. Licensed under Apache-2.0. Made with <3.
