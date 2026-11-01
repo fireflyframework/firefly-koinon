@@ -20,8 +20,12 @@ async def test_preview_without_memory_consent_can_be_explicitly_confirmed_and_re
     service, catalog, destination, context = curated
     original = service.authority.observe
 
-    async def observe(subject, tenant_id, request, recorded_at, *, memory_capture=None):
-        evidence, origins = await original(subject, tenant_id, request, recorded_at)
+    async def observe(
+        subject, tenant_id, request, recorded_at, *, memory_capture=None, output_capture=None
+    ):
+        evidence, origins = await original(
+            subject, tenant_id, request, recorded_at, output_capture=output_capture
+        )
         memory_capture.update(
             {
                 "present": True,
