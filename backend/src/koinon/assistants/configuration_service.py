@@ -75,6 +75,9 @@ class AssistantConfigurationService:
     ) -> dict:
         await self.catalog._lock_tenant(tenant_id)
         await self.catalog.authorize(subject, tenant_id, "providers:write")
+        return await self._write_provider(subject, tenant_id, values, provider_id)
+
+    async def _write_provider(self, subject, tenant_id, values, provider_id=None, *, create_id=None):
         if set(values) - {"name", "kind", "api", "base_url", "model_ids", "secret", "enabled"}:
             raise InvalidRequestException("Unsupported provider fields", code="INVALID_PROVIDER")
         current = (
@@ -95,7 +98,7 @@ class AssistantConfigurationService:
             )
         address = self.provider_address(kind, values.get("base_url", current.base_url if current else ""))
         row = current or Provider(
-            id=identifier(), tenant_id=tenant_id, name=name, kind=kind, base_url=address
+            id=create_id or identifier(), tenant_id=tenant_id, name=name, kind=kind, base_url=address
         )
         try:
             row.api = api_for(
@@ -281,6 +284,12 @@ class AssistantConfigurationService:
         self, subject: str, tenant_id: str, values: dict, agent_id: str | None = None
     ) -> dict:
         await self.catalog.authorize(subject, tenant_id, "agents:write")
+        row = await self._write_agent(subject, tenant_id, values, agent_id)
+        return await self.agent_dto(row, subject=subject, scope=row.scope)
+
+    async def _write_agent(
+        self, subject, tenant_id, values, agent_id=None, *, create_id=None, initial_scope=None
+    ):
         if set(values) - {
             "name",
             "description",
@@ -322,14 +331,24 @@ class AssistantConfigurationService:
                 "The selected model does not support this conversational agent",
                 code="MODEL_CAPABILITY_UNSUPPORTED",
             )
-        scope = await self.validate_scope(subject, tenant_id, value("scope", {}))
+        if initial_scope is not None and initial_scope != {}:
+            raise InvalidRequestException("Initial agents must be organization-wide", code="INVALID_SCOPE")
+        scope = (
+            initial_scope
+            if initial_scope is not None
+            else await self.validate_scope(subject, tenant_id, value("scope", {}))
+        )
         instructions, description = value("instructions", ""), value("description", "")
         if len(instructions) > 8000 or len(description) > 2000:
             raise InvalidRequestException(
                 "Agent description or instructions are too long", code="INVALID_AGENT"
             )
         row = current or AgentConfiguration(
-            id=identifier(), tenant_id=tenant_id, provider_id=provider.id, name=name, model_id=model
+            id=create_id or identifier(),
+            tenant_id=tenant_id,
+            provider_id=provider.id,
+            name=name,
+            model_id=model,
         )
         try:
             spec = self.connections.spec(provider, model, value("model_options", {}))
@@ -350,7 +369,7 @@ class AssistantConfigurationService:
         row.updated_at = timestamp()
         row = await self.agents.save(row)
         await self.catalog._audit(subject, tenant_id, "agent.saved", row.id, {"revision": row.revision})
-        return await self.agent_dto(row, subject=subject, scope=row.scope)
+        return row
 
     async def list_agents(self, subject: str, tenant_id: str, *, scope: dict | None = None) -> list[dict]:
         if scope is not None:
@@ -399,6 +418,9 @@ class AssistantConfigurationService:
     ):
         await self.catalog._lock_tenant(tenant_id)
         await self.catalog.authorize(subject, tenant_id, "providers:write")
+        await self._write_validation(subject, tenant_id, provider_id, revision, checks)
+
+    async def _write_validation(self, subject, tenant_id, provider_id, revision, checks):
         row = await self.providers.find_by_id(provider_id, lock=LockMode.PESSIMISTIC_WRITE)
         if row is None or row.tenant_id != tenant_id or row.revision != revision:
             raise ConflictException(

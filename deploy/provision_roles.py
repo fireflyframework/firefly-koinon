@@ -19,6 +19,13 @@ ROLES = (
 
 
 def grant_table(connection, table, role, *, document_control=False):
+    if table == "koinon_installation_runs":
+        connection.execute(
+            sql.SQL("REVOKE ALL ON TABLE public.{} FROM {}").format(
+                sql.Identifier(table), sql.Identifier(role)
+            )
+        )
+        return
     if table == "koinon_bootstrap_contacts":
         from koinon.communications.bootstrap_guards import IMMUTABLE_CONTACT_COLUMNS
 
