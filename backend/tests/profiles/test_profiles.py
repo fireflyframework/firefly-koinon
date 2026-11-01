@@ -215,3 +215,17 @@ async def test_batched_author_summaries_preserve_public_projection_and_missing_p
         for value in summaries.values()
     )
     assert await service.author_summaries(set()) == {}
+
+
+async def test_installer_author_is_koinon_and_unknown_system_like_subjects_stay_unknown(profiles):
+    service, _ = profiles
+    subjects = {"system:installation", "system:unknown", "issuer|system:installation", "historical"}
+    summaries = await service.author_summaries(subjects)
+    assert summaries["system:installation"] == {
+        "subject": "system:installation",
+        "display_name": "koinon",
+        "avatar_data_url": None,
+        "avatar_version": None,
+    }
+    for subject in subjects - {"system:installation"}:
+        assert summaries[subject]["display_name"] == ""

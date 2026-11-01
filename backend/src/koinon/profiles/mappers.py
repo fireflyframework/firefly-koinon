@@ -4,6 +4,17 @@ from koinon.profiles.dtos import ProfileOutput
 from koinon.profiles.entities import Profile
 
 
+def system_author(subject: str) -> dict | None:
+    if subject != "system:installation":
+        return None
+    return {
+        "subject": subject,
+        "display_name": "koinon",
+        "avatar_data_url": None,
+        "avatar_version": None,
+    }
+
+
 def profile_dto(row: Profile) -> dict:
     return ProfileOutput.model_validate(
         {

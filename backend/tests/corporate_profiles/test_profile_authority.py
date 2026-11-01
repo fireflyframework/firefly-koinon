@@ -81,6 +81,15 @@ async def test_tenant_author_projection_does_not_return_other_tenant_personal_pr
     assert authors[S]["display_name"] != "Private current name from South"
 
 
+async def test_system_author_survives_corporate_projection_without_guessing_other_authors(corporate):
+    d = corporate
+    subjects = {"system:installation", "system:other", "issuer|system:installation"}
+    authors = await d.profiles.author_summaries(subjects, actor=A, tenant_id="north", workspace_id=d.a)
+    assert authors["system:installation"]["display_name"] == "koinon"
+    assert authors["system:other"]["display_name"] == ""
+    assert authors["issuer|system:installation"]["display_name"] == ""
+
+
 async def test_disabling_policy_hides_retained_unbound_conflict_and_resumes_personal(corporate):
     d = corporate
     p = await provider(d)
