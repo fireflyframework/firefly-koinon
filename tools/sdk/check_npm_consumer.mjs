@@ -28,6 +28,14 @@ try {
   const installed = path.join(consumer, 'node_modules/@fireflyframework/koinon-sdk');
   await writeFile(path.join(consumer, 'policy-consumer.ts'), `
 import {KoinonClient,type OrganizationKnowledgeSettingsInput,type OrganizationKnowledgeSnapshot,type SearchResponse,type AnswerAudit} from '@fireflyframework/koinon-sdk';
+import {createAvailabilityApi} from '@fireflyframework/koinon-sdk/availability';
+import type {KoinonTransport,AvailabilityRequest} from '@fireflyframework/koinon-sdk';
+declare const transport:KoinonTransport;
+const availability=createAvailabilityApi(transport);
+const selected:AvailabilityRequest={asset_ids:['asset'],workspace_id:'workspace'};
+void availability.observe('north',selected);
+// @ts-expect-error Availability observes explicit assets, never an arbitrary actor.
+void availability.observe('north',{asset_ids:['asset'],subject:'another-user'});
 declare const client:KoinonClient;
 async function position(tenant:string){
  const page=await client.organizationPeople.list(tenant,{q:'Alex',page:1,page_size:25});
@@ -64,7 +72,8 @@ client.organizationKnowledge.update('north',{expected_revision:0});
     const source = await readFile(path.join(repository, 'sdk/typescript/test', name), 'utf8');
     const installedSource = source
       .replaceAll('../dist/index.js', '@fireflyframework/koinon-sdk')
-      .replaceAll('../dist/communications.js', '@fireflyframework/koinon-sdk/communications');
+      .replaceAll('../dist/communications.js', '@fireflyframework/koinon-sdk/communications')
+      .replaceAll('../dist/availability.js', '@fireflyframework/koinon-sdk/availability');
     await writeFile(path.join(consumer, 'test', name), installedSource);
   }
   run(process.execPath, ['--test', ...files.map(name => path.join('test', name))]);
