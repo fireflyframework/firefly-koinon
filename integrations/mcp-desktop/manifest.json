@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "firefly-koinon",
   "display_name": "firefly koinon",
-  "version": "26.11.1",
+  "version": "26.11.2",
   "description": "Connect your desktop assistant to authorized knowledge in firefly koinon.",
   "long_description": "Discover document and dataset evidence through your organization's firefly koinon MCP endpoint. This desktop extension forwards remote tools, resources, and prompts. Access remains governed by your personal access token and server permissions. Configure your operator's HTTPS MCP URL before connecting.",
   "author": {
