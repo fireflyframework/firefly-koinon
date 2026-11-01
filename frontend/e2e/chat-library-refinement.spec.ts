@@ -107,12 +107,9 @@ for (const width of [1440, 390]) {
       if (item.kind !== 'collection')
         await test.step('Open created ' + item.kind, async () => {
           const details = page.getByRole('button', { name: 'Close details', exact: true });
-          if (await details.isVisible()) {
-            await details.click();
-            await expect(
-              page.getByRole('dialog', { name: 'Resource details', exact: true }),
-            ).toHaveCount(0);
-          }
+          await expect(details).toBeVisible();
+          await details.click();
+          await expect(page.getByLabel('Resource details', { exact: true })).toHaveCount(0);
           await page.getByRole('button', { name: item.name, exact: true }).click();
           await expect(page.getByRole('heading', { name: item.name, exact: true })).toBeVisible();
         });

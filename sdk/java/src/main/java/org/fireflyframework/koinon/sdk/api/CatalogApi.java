@@ -44,4 +44,12 @@ public CatalogEntry move(String entryId,CatalogMove input,RequestOptions options
 public CatalogEntry move(String entryId,CatalogMove input){return move(entryId,input,RequestOptions.defaults());}
 public CompletableFuture<CatalogEntry> moveAsync(String entryId,CatalogMove input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.jsonAsync("POST",prefix+"/catalog/"+Transport.id(entryId)+"/move",input,options,transport.type(CatalogEntry.class));}
 public CompletableFuture<CatalogEntry> moveAsync(String entryId,CatalogMove input){return moveAsync(entryId,input,RequestOptions.defaults());}
+public AvailabilityResponse availability(AvailabilityRequest input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.json("POST",prefix+"/catalog/availability",input,options,transport.type(AvailabilityResponse.class));}
+public AvailabilityResponse availability(AvailabilityRequest input){return availability(input,RequestOptions.defaults());}
+public CompletableFuture<AvailabilityResponse> availabilityAsync(AvailabilityRequest input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.jsonAsync("POST",prefix+"/catalog/availability",input,options,transport.type(AvailabilityResponse.class));}
+public CompletableFuture<AvailabilityResponse> availabilityAsync(AvailabilityRequest input){return availabilityAsync(input,RequestOptions.defaults());}
+public ProcessingResponse processing(ProcessingRequest input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.json("POST",prefix+"/knowledge-processing",input,options,transport.type(ProcessingResponse.class));}
+public ProcessingResponse processing(ProcessingRequest input){return processing(input,RequestOptions.defaults());}
+public CompletableFuture<ProcessingResponse> processingAsync(ProcessingRequest input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.jsonAsync("POST",prefix+"/knowledge-processing",input,options,transport.type(ProcessingResponse.class));}
+public CompletableFuture<ProcessingResponse> processingAsync(ProcessingRequest input){return processingAsync(input,RequestOptions.defaults());}
 }

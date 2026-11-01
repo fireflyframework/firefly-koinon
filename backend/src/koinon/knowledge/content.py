@@ -12,6 +12,7 @@ from pyfly.kernel import ConflictException, InvalidRequestException
 
 from koinon.catalog.errors import AccessDenied, InvalidHierarchy
 from koinon.catalog.mappers import entry_dto
+from koinon.knowledge.availability.repository import ATTEMPT_KEY, mark_content_attempt
 from koinon.knowledge.dtos import DocumentRevisionPreconditions
 from koinon.knowledge.service import KnowledgeFacade
 
@@ -95,6 +96,7 @@ class ContentUpdates:
             await self.knowledge.catalog.restriction.resource(subject, chain[0], write=True)
         return chain
 
+    @transactional(datasource="primary")
     async def _version(self, subject, tenant, parent, operation, filename, content):
         version = await self.knowledge.catalog.create(
             subject,
@@ -104,7 +106,32 @@ class ContentUpdates:
             parent_id=parent,
             metadata={"operation": operation, "sha256": sha256(content).hexdigest(), "bytes": len(content)},
         )
-        return await self.knowledge.catalog.update(subject, tenant, version.id, {"status": "pending"})
+        version = await self.knowledge.catalog.update(subject, tenant, version.id, {"status": "pending"})
+        await mark_content_attempt(self.knowledge.catalog.catalog_repository, version, operation)
+        await self.knowledge.catalog._audit(
+            subject,
+            tenant,
+            "knowledge.content.recorded",
+            version.id,
+            {"operation": operation, "state": "unknown"},
+        )
+        return version
+
+    @transactional(datasource="primary")
+    async def _finish_version(self, subject, tenant, version, fields, state):
+        version = await self.knowledge.catalog.update(subject, tenant, version.id, fields)
+        marker = version.metadata_json[ATTEMPT_KEY]
+        await mark_content_attempt(
+            self.knowledge.catalog.catalog_repository, version, marker["operation"], state
+        )
+        await self.knowledge.catalog._audit(
+            subject,
+            tenant,
+            "knowledge.content.recorded",
+            version.id,
+            {"operation": marker["operation"], "state": state},
+        )
+        return version
 
     @transactional
     async def _claim_tables(self, subject, tenant, entries):
@@ -142,14 +169,18 @@ class ContentUpdates:
                         "metadata": {**metadata, "latest_content_version_id": version.id},
                     },
                 )
-            version = await catalog.update(
+            version = await self._finish_version(
                 subject,
                 tenant,
-                version.id,
+                version,
                 {
                     "status": "ready",
-                    "metadata": {**version.metadata_json, "effects": effects},
+                    "metadata": {
+                        **{key: value for key, value in version.metadata_json.items() if key != ATTEMPT_KEY},
+                        "effects": effects,
+                    },
                 },
+                "complete",
             )
             return version, effects
         except Exception as error:
@@ -164,18 +195,19 @@ class ContentUpdates:
                         else "error",
                     },
                 )
-            await catalog.update(
+            await self._finish_version(
                 subject,
                 tenant,
-                version.id,
+                version,
                 {
                     "status": "error",
                     "metadata": {
-                        **version.metadata_json,
+                        **{key: value for key, value in version.metadata_json.items() if key != ATTEMPT_KEY},
                         "failure_type": type(error).__name__,
                         "failure_code": getattr(error, "code", None),
                     },
                 },
+                "failed",
             )
             raise
 

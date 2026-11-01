@@ -59,6 +59,39 @@ flowchart LR
 
 Editors can add and maintain knowledge in their authorized scope. Viewers can read and ask questions. Analysts can also query datasets. A missing permission should explain the action that requires access without exposing information from another organization or space.
 
+## Understand availability
+
+A successful upload records the result of that request. It does not establish that a source is searchable. Library rows and details observe the current native source, extraction or table snapshot separately from catalog metadata.
+
+- **Text available** means that the current document has a recorded extraction and matching text chunks. It does not promise complete extraction of every page or image.
+- **Searchable** additionally requires matching vectors in the active embedding set and its qualified native search index. A queued or running index job can show **Queued** or **Indexing** while text remains readable.
+- **Available to query** means that the current dataset or table has an active, recorded snapshot. Provider health and a future query's success remain separate checks.
+- **Queued** and **Processing** require a durable job record. A synchronous upload does not acquire an invented queue stage. **Not checked** remains visible when native evidence is absent, unsupported or changes during the observation.
+
+An unsuccessful replacement can leave a serving version available. Details show the observed serving revision separately from the latest recorded replacement or reingestion attempt. **Observed version remains available** does not authorize retrying a failed operation or establish which effects a failed request committed. Check the retained attempt and current revision before recovery.
+
+Availability reads check current organization, space and asset permissions before and after native observations. They are bounded to the visible items and show an observation time. They are not an execution reservation: a later request checks authority and native state again. Missing native state or revision drift stays unknown instead of falling back to a ready catalog status.
+
+Administrators can open **Activity** to inspect current knowledge jobs and server-recorded content attempts. The processing list is paginated. Earlier synchronous stages without durable records remain unavailable. Bulk jobs do not offer the generic job cancellation button; cancellation requires the bulk operation's own current batch and revision contract.
+
+### Observe availability from an SDK
+
+Use the same authenticated transport and current tenant as the rest of your client. The TypeScript factory is a secondary entry point so ordinary SDK clients do not load processing UI code:
+
+```typescript
+import type { KoinonTransport } from '@fireflyframework/koinon-sdk';
+import { createAvailabilityApi } from '@fireflyframework/koinon-sdk/availability';
+
+async function inspect(transport: KoinonTransport, tenantId: string, assetId: string) {
+  const availability = createAvailabilityApi(transport);
+  const observation = await availability.observe(tenantId, { asset_ids: [assetId] });
+  const asset = observation.items[assetId];
+  return { observedAt: observation.observed_at, asset };
+}
+```
+
+The equivalent Python operations are `knowledge_availability` and `knowledge_processing`; Java exposes `catalog(tenantId).availability` and `catalog(tenantId).processing`. The [generated SDK reference](../reference/sdk-api.md) records their typed inputs and outputs. Availability accepts at most 100 unique asset IDs. Administrator processing pages accept at most 50 records and require current jobs-management authority over the complete requested scope; asset-restricted credentials cannot read whole-workspace history.
+
 ## Maintain and inspect
 
 Keep titles and descriptions recognizable to the team. Inspect original source details, processing state, lineage and references before replacing or retiring knowledge. Dataset query results should identify the snapshot used; source evidence should retain section or page references when supplied by the source format.

@@ -13,7 +13,7 @@ Choose an area, then an operation. Each operation records its exact SDK mappings
 | [Curated knowledge](curated-knowledge.md) | 7 |
 | [Chat and attachments](chat.md) | 31 |
 | [Exports and sharing](exports-sharing.md) | 11 |
-| [Knowledge connections and indexes](knowledge-services.md) | 17 |
+| [Knowledge connections and indexes](knowledge-services.md) | 19 |
 | [Models and agents](models-agents.md) | 8 |
 | [People and access](people-access.md) | 24 |
 | [Corporate identity](corporate-identity.md) | 17 |
@@ -21,6 +21,6 @@ Choose an area, then an operation. Each operation records its exact SDK mappings
 | [Applications and MCP](applications-mcp.md) | 22 |
 | [Platform configuration and operations](platform.md) | 36 |
 
-These 238 canonical operations are separate from the [qualified retained glossary API](../sdk-api.md#qualified-retained-glossary-api).
+These 240 canonical operations are separate from the [qualified retained glossary API](../sdk-api.md#qualified-retained-glossary-api).
 
 [Browse retained glossary operation details](retained-glossary.md).

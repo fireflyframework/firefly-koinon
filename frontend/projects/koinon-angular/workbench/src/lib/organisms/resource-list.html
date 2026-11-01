@@ -86,8 +86,11 @@
                 }
               }
             </span>
+            @if (['source', 'document', 'dataset', 'table'].includes(item.kind)) {
+              @defer (on immediate) { <ffk-knowledge-availability [entry]="item"/> }
+            }
             @if (item.status && item.status !== 'ready' && item.status !== 'active') {
-              <ffk-badge [tone]="item.status === 'failed' ? 'attention' : 'neutral'">{{
+              <ffk-badge [tone]="['failed', 'error'].includes(item.status) ? 'attention' : 'neutral'">{{
                 status(item.status) | ffkText
               }}</ffk-badge>
             }

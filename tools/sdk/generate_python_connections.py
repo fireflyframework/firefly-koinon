@@ -12,6 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCES = {
+    "availability": "backend/src/koinon/knowledge/availability/dtos.py",
     "communications": "backend/src/koinon/communications/dtos.py",
     "activity": "backend/src/koinon/activity/dtos.py",
     "memory": "backend/src/koinon/assistants/memory/dtos.py",

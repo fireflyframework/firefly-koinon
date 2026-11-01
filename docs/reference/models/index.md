@@ -3,7 +3,7 @@
 
 # Wire models
 
-The canonical schema contains 410 definitions and 401 named model aliases. Supporting definitions are included so every schema reference can be followed. Language-specific generated names can differ from wire names; consult the SDK imports in the workflow guides.
+The canonical schema contains 419 definitions and 410 named model aliases. Supporting definitions are included so every schema reference can be followed. Language-specific generated names can differ from wire names; consult the SDK imports in the workflow guides.
 
 Each page lists field presence, nullability, defaults and validation constraints. The downloadable [complete schema](../sdk-schemas.json) remains the machine-readable contract.
 
@@ -24,6 +24,7 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`AgenticCapability`](agenticcapability.md)
 - [`AnswerAudit`](answeraudit.md)
 - [`AnswerPolicy`](answerpolicy.md)
+- [`AssetAvailability`](assetavailability.md)
 - [`AttachmentCapabilities`](attachmentcapabilities.md)
 - [`AttachmentEvidence`](attachmentevidence.md)
 - [`AttachmentEvidenceItem`](attachmentevidenceitem.md)
@@ -43,6 +44,11 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`AuditValue`](auditvalue.md)
 - [`AuthorSummary`](authorsummary.md)
 - [`AuthorizedApplication`](authorizedapplication.md)
+- [`AvailabilityAttempt`](availabilityattempt.md)
+- [`AvailabilityCapability`](availabilitycapability.md)
+- [`AvailabilityRequest`](availabilityrequest.md)
+- [`AvailabilityResponse`](availabilityresponse.md)
+- [`AvailabilityRevision`](availabilityrevision.md)
 - [`AvatarUpload`](avatarupload.md)
 
 ## B
@@ -383,6 +389,9 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`PrivateChunkPage`](privatechunkpage.md)
 - [`PrivateChunkView`](privatechunkview.md)
 - [`PrivateFileReceipt`](privatefilereceipt.md)
+- [`ProcessingActivity`](processingactivity.md)
+- [`ProcessingRequest`](processingrequest.md)
+- [`ProcessingResponse`](processingresponse.md)
 - [`ProfileUpdate`](profileupdate.md)
 - [`ProjectActivity`](projectactivity.md)
 - [`PromotedCatalogEntry`](promotedcatalogentry.md)

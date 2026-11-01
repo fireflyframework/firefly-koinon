@@ -67,6 +67,7 @@ add(
     },
 )
 add("CatalogHierarchyController", "CatalogApi", {"move": "move"})
+add("KnowledgeAvailabilityController", "CatalogApi", {"observe": "availability", "processing": "processing"})
 add("ContextController", "PlatformApi", {"context": "context"})
 add("CapabilitiesController", "PlatformApi", {"capabilities": "capabilities"})
 add("JobController", "JobsApi", {"list": "list", "get": "get", "cancel": "cancel"})

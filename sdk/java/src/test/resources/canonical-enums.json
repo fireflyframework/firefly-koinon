@@ -64,6 +64,16 @@
     "refused",
     "review_required"
   ],
+  "AssetAvailabilityPhase": [
+    "unknown",
+    "queued",
+    "processing",
+    "indexing",
+    "complete",
+    "failed",
+    "cancelled",
+    "reconciliation_required"
+  ],
   "AttachmentFormatKind": [
     "document",
     "image",
@@ -96,6 +106,13 @@
     "active",
     "revoked",
     "expired"
+  ],
+  "AvailabilityCapabilityState": [
+    "ready",
+    "pending",
+    "unavailable",
+    "unknown",
+    "not_applicable"
   ],
   "ExecutionStatus": [
     "OK",

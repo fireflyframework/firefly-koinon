@@ -2,13 +2,13 @@
 
 Python, Java and TypeScript expose the same canonical headless API. The table records concrete SDK methods; it does not count browser-only authentication or retained domain routes outside this contract.
 
-This canonical contract contains 238 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
+This canonical contract contains 240 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
 
 [Download the operation manifest](sdk-contract.json) and [complete wire schemas](sdk-schemas.json). The maintained generator checks source mappings and schemas without starting the backend.
 
 Browse [API areas](api/index.md), [wire models](models/index.md) and the [SDK runtime reference](sdk-runtime.md) for parameters, constraints and connection ownership.
 
-TypeScript communications methods use the separately loaded `createCommunicationsApi` factory from `@fireflyframework/koinon-sdk/communications`. Pass the same `KoinonTransport` used to construct `KoinonClient`; the `communications.*` names below refer to the returned API. This keeps email and notification management out of applications that only use knowledge or chat. Python exposes those methods on `KoinonClient`; Java exposes the corresponding typed API groups.
+TypeScript communications methods use the separately loaded `createCommunicationsApi` factory from `@fireflyframework/koinon-sdk/communications`. Pass the same `KoinonTransport` used to construct `KoinonClient`; the `communications.*` names below refer to the returned API. This keeps email and notification management out of applications that only use knowledge or chat. Availability observations similarly use `createAvailabilityApi` from `@fireflyframework/koinon-sdk/availability`; `availability.*` refers to its returned API. Python exposes those methods on `KoinonClient`; Java exposes the corresponding typed API groups.
 
 | API operation | Python client | TypeScript client | Java client | Response |
 | --- | --- | --- | --- | --- |
@@ -126,6 +126,8 @@ TypeScript communications methods use the separately loaded `createCommunication
 | [`POST /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}/retry`](api/chat.md#chatattachmentscontroller-retry) | `retry_attachment` | `chat.attachments.retry` | `client.chatAttachments.retry` | `AttachmentView` |
 | [`DELETE /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}`](api/chat.md#chatattachmentscontroller-delete) | `remove_attachment` | `chat.attachments.remove` | `client.chatAttachments.remove` | `void` |
 | [`POST /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/{attachment_id}/knowledge`](api/chat.md#chatattachmentscontroller-knowledge) | `promote_attachment` | `chat.attachments.promote` | `client.chatAttachments.promote` | `AttachmentPromotionView` |
+| [`POST /api/v1/tenants/{tenant_id}/catalog/availability`](api/knowledge-services.md#knowledgeavailabilitycontroller-observe) | `knowledge_availability` | `availability.observe` | `client.catalog.availability` | `AvailabilityResponse` |
+| [`POST /api/v1/tenants/{tenant_id}/knowledge-processing`](api/knowledge-services.md#knowledgeavailabilitycontroller-processing) | `knowledge_processing` | `availability.processing` | `client.catalog.processing` | `ProcessingResponse` |
 | [`GET /api/v1/tenants/{tenant_id}/source-batch-capabilities`](api/sources.md#filebatchcontroller-capabilities) | `file_batch_capabilities` | `fileBatches.capabilities` | `client.fileBatches.capabilities` | `FileBatchCapabilities` |
 | [`POST /api/v1/tenants/{tenant_id}/sources/batches`](api/sources.md#filebatchcontroller-create) | `create_file_batch` | `fileBatches.create` | `client.fileBatches.create` | `FileBatchView` |
 | [`GET /api/v1/tenants/{tenant_id}/sources/batches`](api/sources.md#filebatchcontroller-list) | `file_batches` | `fileBatches.list` | `client.fileBatches.list` | `FileBatchPage` |
