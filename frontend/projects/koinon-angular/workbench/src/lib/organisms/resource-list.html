@@ -59,6 +59,9 @@
             <button class="name" (click)="opened.emit(item)" [title]="item.name">
               {{ item.name }}
             </button>
+            @if (isSystemManaged(item)) {
+              <span class="system-label">{{ (item.kind === 'workspace' ? 'System space' : 'System folder') | ffkText }}</span>
+            }
             @if (item.description) {
               <span class="description" [title]="item.description">{{ item.description }}</span>
             }

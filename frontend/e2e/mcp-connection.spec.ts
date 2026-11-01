@@ -50,7 +50,7 @@ for (const width of [1440, 390])
         },
       }),
     );
-    await page.goto('/');
+    await page.goto('/library');
     await page.getByRole('button', { name: 'Account menu', exact: true }).click();
     await page.getByRole('menuitem', { name: 'Authorized applications', exact: true }).click();
     await page.getByRole('button', { name: 'Connect an app', exact: true }).click();
@@ -100,7 +100,7 @@ test('disabled MCP gives an operator action without suggesting an unusable conne
       },
     }),
   );
-  await page.goto('/');
+  await page.goto('/library');
   await page.getByRole('button', { name: 'Account menu', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Authorized applications', exact: true }).click();
   await page.getByRole('button', { name: 'Connect an app', exact: true }).click();
@@ -140,7 +140,7 @@ test('local listener URL explains desktop access without promising hosted connec
       },
     }),
   );
-  await page.goto('/');
+  await page.goto('/library');
   await page.getByRole('button', { name: 'Account menu', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Authorized applications', exact: true }).click();
   await page.getByRole('button', { name: 'Connect an app', exact: true }).click();

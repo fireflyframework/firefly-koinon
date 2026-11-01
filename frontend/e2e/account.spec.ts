@@ -25,7 +25,7 @@ test('profile preferences switch the actual shell language after persistence and
     }
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(profile) });
   });
-  await page.goto('/');
+  await page.goto('/library');
   await page.getByRole('button', { name: 'Account menu', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Your account', exact: true }).click();
   await page
@@ -104,7 +104,7 @@ test('personal token secret is shown once and revoke uses the SDK with CSRF', as
       pages: tokens.length ? 1 : 0,
     });
   });
-  await page.goto('/');
+  await page.goto('/library');
   await page.getByRole('button', { name: 'Account menu', exact: true }).click();
   await page.getByRole('menuitem', { name: 'API tokens', exact: true }).click();
   await page.getByRole('button', { name: 'Create a token', exact: true }).click();
@@ -130,7 +130,7 @@ for (const width of [1440, 390])
   test(`profile page navigation and focus ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
     await mockService(page);
-    await page.goto('/');
+    await page.goto('/library');
     await page.getByRole('button', { name: 'Account menu', exact: true }).click();
     await page.getByRole('menuitem', { name: 'Your account', exact: true }).click();
     await expect(page.getByRole('textbox', { name: 'Display name', exact: true })).toHaveValue(
@@ -161,6 +161,6 @@ for (const width of [1440, 390])
       .getByRole('navigation', { name: 'Breadcrumb', exact: true })
       .getByRole('button', { name: 'Library', exact: true })
       .click();
-    await expect(page).toHaveURL('/');
+    await expect(page).toHaveURL('/library');
     await expect(page.getByRole('heading', { name: 'Library', exact: true })).toBeVisible();
   });

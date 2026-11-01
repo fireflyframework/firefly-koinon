@@ -23,7 +23,12 @@ describe('browser session boundary', () => {
     const request = TestBed.inject(HttpTestingController).expectOne('/logout');
     expect(request.request.method).toBe('POST');
     expect(request.request.withCredentials).toBe(true);
+    expect(request.request.responseType).toBe('text');
     request.flush(null, { status: 204, statusText: 'No Content' });
+    (await vi.waitFor(() => TestBed.inject(HttpTestingController).expectOne('/auth/me'))).flush(
+      {},
+      { status: 401, statusText: 'Unauthorized' },
+    );
     expect(await result).toBe(true);
     expect(service.error()).toBe('');
     expect(cleared).toHaveBeenCalledOnce();
@@ -34,8 +39,50 @@ describe('browser session boundary', () => {
     const result = service.signOut();
     const request = TestBed.inject(HttpTestingController).expectOne('/logout');
     request.flush({ detail: 'Unavailable' }, { status: 503, statusText: 'Service unavailable' });
+    (await vi.waitFor(() => TestBed.inject(HttpTestingController).expectOne('/auth/me'))).flush({
+      authenticated: true,
+    });
     expect(await result).toBe(false);
     expect(cleared).not.toHaveBeenCalled();
-    expect(service.error()).toContain('has not been cleared');
+    expect(service.error()).toContain('still signed in');
+  });
+  it('recognizes a cleared session even when the native logout redirect target fails', async () => {
+    const service = TestBed.inject(SessionService);
+    const result = service.signOut();
+    TestBed.inject(HttpTestingController)
+      .expectOne('/logout')
+      .flush('Not found', { status: 404, statusText: 'Not found' });
+    (await vi.waitFor(() => TestBed.inject(HttpTestingController).expectOne('/auth/me'))).flush(
+      {},
+      { status: 401, statusText: 'Unauthorized' },
+    );
+    expect(await result).toBe(true);
+    expect(service.error()).toBe('');
+  });
+  it('accepts a native HTML redirect response only after checking the authenticated session', async () => {
+    const service = TestBed.inject(SessionService);
+    const result = service.signOut();
+    TestBed.inject(HttpTestingController)
+      .expectOne('/logout')
+      .flush('<!doctype html><title>Signed out</title>');
+    (await vi.waitFor(() => TestBed.inject(HttpTestingController).expectOne('/auth/me'))).flush(
+      {},
+      { status: 401, statusText: 'Unauthorized' },
+    );
+    expect(await result).toBe(true);
+  });
+  it('reports unknown verification honestly without claiming that the cookie was retained', async () => {
+    const service = TestBed.inject(SessionService);
+    const result = service.signOut();
+    TestBed.inject(HttpTestingController)
+      .expectOne('/logout')
+      .flush(null, { status: 204, statusText: 'No content' });
+    (await vi.waitFor(() => TestBed.inject(HttpTestingController).expectOne('/auth/me'))).flush(
+      {},
+      { status: 503, statusText: 'Unavailable' },
+    );
+    expect(await result).toBe(false);
+    expect(service.error()).toContain('could not be confirmed');
+    expect(service.error()).not.toContain('has not been cleared');
   });
 });

@@ -546,7 +546,7 @@ async function artifactFixture(page: Page, rights = true, structuredOrigin = tru
   return { calls };
 }
 async function openChat(page: Page) {
-  await page.goto('/');
+  await page.goto('/library');
   await expect(
     page.getByRole('button', { name: /^(Account menu|Menú de cuenta)$/, exact: true }),
   ).toBeVisible();
@@ -859,7 +859,7 @@ test('Spanish mobile export labels follow the persisted interface language', asy
       },
     }),
   );
-  await page.goto('/');
+  await page.goto('/library');
   await page.getByRole('button', { name: 'Abrir navegación', exact: true }).click();
   await page.getByRole('button', { name: 'Chat', exact: true }).click();
   await expect(

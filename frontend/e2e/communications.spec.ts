@@ -3,7 +3,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mkdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { mockService, context as baseContext } from './fixtures';
+import { openAdministration,  mockService, context as baseContext } from './fixtures';
 import { DEFAULT_BRANDING } from '../projects/koinon-angular/workbench/src/lib/services/branding-values';
 import type { ActivitySummary, EmailPreview } from '@fireflyframework/koinon-sdk';
 const browserErrors = new WeakMap<Page, string[]>();
@@ -333,10 +333,10 @@ for (const width of [1440, 390])
   test(`recipient-bound invitation uses the actual lazy host at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
     const state = await fixture(page);
-    await page.goto('/');
+    await page.goto('/library');
     if (width < 700)
       await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
-    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await openAdministration(page, 'Settings');
     if (width < 700)
       await page
         .getByRole('combobox', { name: 'Settings section', exact: true })
@@ -403,7 +403,7 @@ test('disabled email preserves in-app notifications and shows readiness instead 
   await page.goto('/account/notifications');
   await expect(page.getByRole('heading', { name: 'Your notifications' })).toBeVisible();
   await expect(page.getByText('Access token revoked', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await openAdministration(page, 'Settings');
   await page.getByRole('button', { name: 'Communications', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Communications', exact: true })).toBeVisible();
   await expect(
@@ -415,10 +415,10 @@ for (const width of [1440, 390])
   test(`past knowledge summary and actual rendered usage email at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1100 });
     const state = await fixture(page);
-    await page.goto('/');
+    await page.goto('/library');
     if (width < 700)
       await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
-    await page.getByRole('button', { name: 'Activity', exact: true }).click();
+    await openAdministration(page, 'Activity');
     const activity = page.locator('ffk-activity-panel');
     await expect(activity.getByRole('heading', { name: 'Your knowledge activity' })).toBeVisible();
     await expect(activity.getByRole('heading', { name: 'Top projects' })).toBeVisible();
@@ -469,10 +469,10 @@ for (const width of [1440, 390])
   }) => {
     await page.setViewportSize({ width, height: 1100 });
     const state = await fixture(page);
-    await page.goto('/');
+    await page.goto('/library');
     if (width < 700)
       await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
-    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await openAdministration(page, 'Settings');
     if (width < 700)
       await page
         .getByRole('combobox', { name: 'Settings section', exact: true })

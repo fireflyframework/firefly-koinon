@@ -4,7 +4,7 @@ import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { test, expect, type Page } from '@playwright/test';
 import type { OrganizationPerson, OrganizationUnit } from '@fireflyframework/koinon-sdk';
-import { mockService } from './fixtures';
+import { openAdministration,  mockService } from './fixtures';
 
 async function directoryService(page: Page) {
   await mockService(page);
@@ -104,9 +104,9 @@ async function directoryService(page: Page) {
 }
 
 async function openPeople(page: Page, width: number) {
-  await page.goto('/');
+  await page.goto('/library');
   if (width < 700) await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await openAdministration(page, 'Settings');
   if (width < 700)
     await page.getByLabel('Settings section', { exact: true }).selectOption('people');
   else await page.getByRole('button', { name: 'People', exact: true }).click();

@@ -143,9 +143,8 @@ export class KoinonShell implements AfterViewInit, OnDestroy {
   }
   readonly failedAvatar = signal('');
   readonly destinations: { id: PrimaryDestination; label: string; icon: string }[] = [
-    { id: 'library', label: 'Library', icon: 'folder' },
     { id: 'chat', label: 'Chat', icon: 'chat' },
-    { id: 'activity', label: 'Activity', icon: 'history' },
+    { id: 'library', label: 'Library', icon: 'folder' },
   ];
   go(destination: PrimaryDestination, event?: Event) {
     event?.preventDefault();

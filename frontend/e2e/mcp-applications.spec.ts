@@ -5,7 +5,7 @@ import { test, expect, type Page } from '@playwright/test';
 import type { McpOAuthClient } from '@fireflyframework/koinon-sdk';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { mockService } from './fixtures';
+import { openAdministration,  mockService } from './fixtures';
 
 const registered: McpOAuthClient = {
   id: 'client-one',
@@ -102,16 +102,14 @@ async function setup(page: Page, conflict = false, total = 3, spanish = false) {
     row = { ...row, ...body, revision: row.revision + 1 } as McpOAuthClient;
     return route.fulfill({ json: row });
   });
-  await page.goto('/');
+  await page.goto('/library');
   await expect(page.locator('ffk-shell .topbar')).toBeVisible();
   const navigation = page.getByRole('button', {
     name: spanish ? 'Abrir navegación' : 'Open navigation',
     exact: true,
   });
   if (await navigation.isVisible()) await navigation.click();
-  await page
-    .getByRole('button', { name: spanish ? 'Configuración' : 'Settings', exact: true })
-    .click();
+  await openAdministration(page, spanish ? 'Configuración' : 'Settings');
   if ((page.viewportSize()?.width ?? 1440) < 700)
     await page
       .getByLabel(spanish ? 'Sección de configuración' : 'Settings section', { exact: true })

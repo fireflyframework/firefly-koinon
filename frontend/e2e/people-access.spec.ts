@@ -3,7 +3,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type { Membership, Invitation } from '@fireflyframework/koinon-sdk';
-import { mockService, context as baseContext, setDarkAppearance } from './fixtures';
+import { openAdministration,  mockService, context as baseContext, setDarkAppearance } from './fixtures';
 async function fixture(page: Page, spanish = false) {
   await mockService(page);
   const members: Membership[] = Array.from({ length: 56 }, (_, index) => ({
@@ -167,8 +167,8 @@ async function fixture(page: Page, spanish = false) {
   return { members, invitations, reads, writes };
 }
 async function open(page: Page) {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.goto('/library');
+  await openAdministration(page, 'Settings');
   await page.getByRole('button', { name: 'Access', exact: true }).click();
   await expect(page.locator('ffk-people-access h2')).toHaveText('People & access');
 }
@@ -276,7 +276,7 @@ for (const variant of [
   }) => {
     await page.setViewportSize(variant);
     await fixture(page, variant.spanish);
-    await page.goto('/');
+    await page.goto('/library');
     if (variant.width < 700)
       await page
         .getByRole('button', {
@@ -284,9 +284,7 @@ for (const variant of [
           exact: true,
         })
         .click();
-    await page
-      .getByRole('button', { name: variant.spanish ? 'Configuración' : 'Settings', exact: true })
-      .click();
+    await openAdministration(page, variant.spanish ? 'Configuración' : 'Settings');
     if (variant.width < 700)
       await page
         .getByLabel(variant.spanish ? 'Sección de configuración' : 'Settings section')

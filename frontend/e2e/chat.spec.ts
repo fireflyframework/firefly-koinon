@@ -358,7 +358,7 @@ async function assistantFixture(
   return { resultReads, submittedAgents };
 }
 async function ask(page: Page) {
-  await page.goto('/');
+  await page.goto('/library');
   await expect(page.locator('ffk-shell .topbar')).toBeVisible();
   const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
   if (await menu.isVisible()) await menu.click();
@@ -508,7 +508,7 @@ test('composer supports new lines and IME composition without sending prematurel
   page.on('request', (request) => {
     if (request.url().endsWith('/runs')) sends.push(request.postData() || '');
   });
-  await page.goto('/');
+  await page.goto('/library');
   await page.getByRole('button', { name: 'Chat', exact: true }).click();
   const composer = page.getByRole('textbox', { name: 'Message koinon' });
 
@@ -555,7 +555,7 @@ test('a new chat centers a simple koinon prompt with independent navigation cont
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await assistantFixture(page);
-  await page.goto('/');
+  await page.goto('/library');
   await page.getByRole('button', { name: 'Chat', exact: true }).click();
   await expect(page.locator('.conversation.new-draft')).toBeVisible();
   const composer = page.locator('ffk-chat-composer');
@@ -615,10 +615,10 @@ test('sidebar empty and error states keep their own layout inside the workbench'
   page,
 }) => {
   await assistantFixture(page);
-  await page.goto('/');
+  await page.goto('/library');
   await page.getByRole('button', { name: 'Chat', exact: true }).click();
   const sidebar = page.locator('ffk-conversation-sidebar');
-  const empty = sidebar.getByText('Create a folder to organize your conversations.', {
+  const empty = sidebar.getByText('Create a chat project to organize your conversations.', {
     exact: true,
   });
   await expect(empty).toBeVisible();

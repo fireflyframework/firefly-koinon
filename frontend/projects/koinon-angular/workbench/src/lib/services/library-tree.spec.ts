@@ -22,6 +22,8 @@ describe('Library hierarchy projection',()=>{
  });
  it('offers only supported backend folder kinds',()=>{
   expect(nextFolderKind(undefined)).toBe('workspace');expect(nextFolderKind(rows[0])).toBe('project');
-  expect(nextFolderKind(rows[1])).toBe('collection');expect(nextFolderKind(rows[2])).toBeNull();
+  expect(nextFolderKind(rows[1])).toBe('collection');expect(nextFolderKind(rows[2])).toBe('collection');
+  expect(nextFolderKind(entry('nested','corpus','folder'))).toBe('collection');
+  expect(nextFolderKind(rows[4])).toBeNull();
  });
 });

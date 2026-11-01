@@ -266,7 +266,7 @@ it('marks generic introductory copy so the mobile heading can stay compact', () 
     fixture.nativeElement.querySelector('.library-heading p.generic-description'),
   ).not.toBeNull();
   expect(
-    fixture.nativeElement.querySelector('.compact-add [aria-label="Add knowledge"]'),
+    fixture.nativeElement.querySelector('.library-add [aria-label="Add knowledge"]'),
   ).not.toBeNull();
 });
 
@@ -286,4 +286,23 @@ it('localizes recorded language names when the interface locale changes and leav
   });
   fixture.detectChanges();
   expect(fixture.nativeElement.textContent).toContain('not a language code');
+});
+
+it('keeps contextual creation and knowledge upload as distinct authorized actions', () => {
+  const fixture = setup();
+  fixture.componentRef.setInput('canAdd', true);
+  fixture.componentRef.setInput('createLabel', 'Create a space');
+  fixture.detectChanges();
+  const created = vi.fn(), uploaded = vi.fn();
+  fixture.componentInstance.createRequested.subscribe(created);
+  fixture.componentInstance.addRequested.subscribe(uploaded);
+  const buttons = [...fixture.nativeElement.querySelectorAll('button')] as HTMLButtonElement[];
+  buttons.find(button => button.textContent?.trim() === 'Create a space')!.click();
+  expect(created).toHaveBeenCalledOnce();
+  expect(uploaded).not.toHaveBeenCalled();
+  buttons.find(button => button.getAttribute('aria-label') === 'Add knowledge')!.click();
+  expect(uploaded).toHaveBeenCalledOnce();
+  fixture.componentRef.setInput('canAdd', false);
+  fixture.detectChanges();
+  expect(fixture.nativeElement.querySelector('.library-actions')).toBeNull();
 });

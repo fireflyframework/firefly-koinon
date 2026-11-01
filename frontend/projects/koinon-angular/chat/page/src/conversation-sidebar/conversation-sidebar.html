@@ -38,7 +38,7 @@
     (keydown)="menuKeys($event)"
   >
     <button type="button" role="menuitem" [disabled]="!s.canUse()" (click)="begin('create-folder')">
-      {{ 'New folder' | ffkText }}</button
+      {{ 'New chat project' | ffkText }}</button
     ><button
       type="button"
       role="menuitem"
@@ -56,7 +56,7 @@
   <button
     type="button"
     class="destination"
-    [attr.aria-label]="('Clear folder selection' | ffkText) + ', ' + destinationFolder.name"
+    [attr.aria-label]="('Clear chat project selection' | ffkText) + ', ' + destinationFolder.name"
     (click)="s.selectedFolder.set(null)"
   >
     <ffk-icon name="folder" /><span>{{ destinationFolder.name }}</span
@@ -135,11 +135,11 @@
       }}</ffk-button>
     }
     <header class="group-title folders-heading">
-      <h3>{{ 'Folders' | ffkText }}</h3>
+      <h3>{{ 'Chat projects' | ffkText }}</h3>
       <button
         type="button"
         class="icon-button small"
-        [attr.aria-label]="'New folder' | ffkText"
+        [attr.aria-label]="'New chat project' | ffkText"
         (click)="begin('create-folder')"
       >
         <ffk-icon name="plus" />
@@ -151,18 +151,18 @@
     @if (s.roots().error) {
       <ng-container [ngTemplateOutlet]="failed" [ngTemplateOutletContext]="{ retry: 'folders' }" />
     }
-    <div role="tree" [attr.aria-label]="'Conversation folders' | ffkText">
+    <div role="tree" [attr.aria-label]="'Chat projects' | ffkText">
       <ng-container
         [ngTemplateOutlet]="folderTree"
         [ngTemplateOutletContext]="{ $implicit: s.roots().items, level: 1 }"
       />
     </div>
     @if (s.roots().page > 0 && !s.roots().pending && !s.roots().error && !s.roots().items.length) {
-      <p class="empty">{{ 'Create a folder to organize your conversations.' | ffkText }}</p>
+      <p class="empty">{{ 'Create a chat project to organize your conversations.' | ffkText }}</p>
     }
     @if (s.roots().page < (s.roots().pages ?? 0)) {
       <ffk-button variant="quiet" [disabled]="s.roots().pending" (click)="more('folders')">{{
-        'More folders' | ffkText
+        'More chat projects' | ffkText
       }}</ffk-button>
     }
   }
@@ -234,7 +234,7 @@
             [disabled]="threadBusy() || s.mutating()"
             (click)="begin('move-thread', null, thread)"
           >
-            {{ 'Move to folder' | ffkText }}
+            {{ 'Move to chat project' | ffkText }}
           </button>
           @if (thread.archived_at) {
             <button
@@ -292,7 +292,7 @@
           ><button
             type="button"
             class="icon-button small item-menu"
-            [attr.aria-label]="('Folder actions' | ffkText) + ', ' + folder.name"
+            [attr.aria-label]="('Chat project actions' | ffkText) + ', ' + folder.name"
             [attr.aria-expanded]="menu()?.kind === 'folder' && menu()?.id === folder.id"
             (click)="openMenu($event, 'folder', folder.id)"
           >
@@ -303,15 +303,15 @@
           <div
             class="context-menu"
             role="menu" tabindex="-1"
-            [attr.aria-label]="'Folder actions' | ffkText"
+            [attr.aria-label]="'Chat project actions' | ffkText"
             (keydown)="menuKeys($event)"
           >
             <button type="button" role="menuitem" (click)="begin('create-folder', folder)">
-              {{ 'New folder' | ffkText }}</button
+              {{ 'New chat project' | ffkText }}</button
             ><button type="button" role="menuitem" (click)="begin('rename-folder', folder)">
-              <ffk-icon name="settings" />{{ 'Folder settings' | ffkText }}</button
+              <ffk-icon name="settings" />{{ 'Chat project settings' | ffkText }}</button
             ><button type="button" role="menuitem" (click)="begin('delete-folder', folder)">
-              {{ 'Remove folder' | ffkText }}
+              {{ 'Remove chat project' | ffkText }}
             </button>
           </div>
         }
@@ -322,7 +322,7 @@
             }
             @if (branch.children.error || branch.threads.error) {
               <div class="error" role="alert">
-                <p>{{ 'This folder could not be loaded.' | ffkText }}</p>
+                <p>{{ 'This chat project could not be loaded.' | ffkText }}</p>
                 <ffk-button variant="quiet" (click)="reloadFolder(folder)">{{
                   'Try again' | ffkText
                 }}</ffk-button>
@@ -351,14 +351,14 @@
               !branch.children.items.length &&
               !branch.threads.items.length
             ) {
-              <p class="empty compact">{{ 'No conversations in this folder yet.' | ffkText }}</p>
+              <p class="empty compact">{{ 'No conversations in this chat project yet.' | ffkText }}</p>
             }
             @if (branch.children.page < (branch.children.pages ?? 0)) {
               <ffk-button
                 variant="quiet"
                 [disabled]="branch.children.pending"
                 (click)="more('children', folder)"
-                >{{ 'More folders' | ffkText }}</ffk-button
+                >{{ 'More chat projects' | ffkText }}</ffk-button
               >
             }
             @if (branch.threads.page < (branch.threads.pages ?? 0)) {
@@ -384,13 +384,13 @@
         form.kind === 'rename-thread'
       ) {
         <label class="field"
-          >{{ (form.kind === 'rename-thread' ? 'Conversation title' : 'Folder name') | ffkText
+          >{{ (form.kind === 'rename-thread' ? 'Conversation title' : 'Chat project name') | ffkText
           }}<input name="name" [(ngModel)]="formName" maxlength="160" required autocomplete="off"
         /></label>
         @if (form.kind === 'create-folder') {
           <p class="help">
             {{
-              'Folders organize your private conversations without granting knowledge access.'
+              'Chat projects organize private conversations without granting Library access.'
                 | ffkText
             }}
           </p>
@@ -426,7 +426,7 @@
         <label class="memory-setting">
           <input type="checkbox" name="memoryEnabled" [(ngModel)]="formMemoryEnabled" />
           <span>
-            <strong>{{ 'Use memory from my chats in this folder' | ffkText }}</strong>
+            <strong>{{ 'Use memory from my chats in this project' | ffkText }}</strong>
             <small>{{ 'Only your chats with the same knowledge scope can contribute. Private files stay in their original chat.' | ffkText }}</small>
           </span>
         </label>
@@ -442,18 +442,18 @@
         </p>
         <ffk-search-field
           [value]="folderQuery"
-          [label]="'Find a folder' | ffkText"
-          [placeholder]="'Find a folder' | ffkText"
+          [label]="'Find a chat project' | ffkText"
+          [placeholder]="'Find a chat project' | ffkText"
           (valueChange)="folderQuery = $event"
           (searchSubmitted)="lookupFolders()"
         />
-        <div class="folder-picker" role="group" [attr.aria-label]="'Destination folder' | ffkText">
+        <div class="folder-picker" role="group" [attr.aria-label]="'Destination chat project' | ffkText">
           <button
             type="button"
             [class.selected]="destination() === null"
             (click)="destination.set(null)"
           >
-            <ffk-icon name="history" /><span>{{ 'Recent (no folder)' | ffkText }}</span>
+            <ffk-icon name="history" /><span>{{ 'Recent (no chat project)' | ffkText }}</span>
             @if (destination() === null) {
               <ffk-icon name="check" />
             }
@@ -478,26 +478,26 @@
           }
         </div>
         @if (s.picker().pending) {
-          <ffk-skeleton height="3px" [label]="'Loading folders' | ffkText" />
+          <ffk-skeleton height="3px" [label]="'Loading chat projects' | ffkText" />
         }
         @if (s.picker().error) {
-          <p class="error" role="alert">{{ 'Folders could not be loaded.' | ffkText }}</p>
+          <p class="error" role="alert">{{ 'Chat projects could not be loaded.' | ffkText }}</p>
           <ffk-button variant="quiet" (click)="lookupFolders()">{{
             'Try again' | ffkText
           }}</ffk-button>
         }
         @if (s.picker().page < (s.picker().pages ?? 0)) {
           <ffk-button variant="quiet" (click)="more('picker')">{{
-            'More folders' | ffkText
+            'More chat projects' | ffkText
           }}</ffk-button>
         }
       }
       @if (form.kind === 'delete-folder') {
         <p>
-          {{ 'Remove this folder?' | ffkText }} <strong>{{ form.folder?.name }}</strong>
+          {{ 'Remove this chat project?' | ffkText }} <strong>{{ form.folder?.name }}</strong>
         </p>
         <p class="help">
-          {{ 'Conversations are kept in Recent. Nested folders move up one level.' | ffkText }}
+          {{ 'Conversations are kept in Recent. Nested chat projects move up one level.' | ffkText }}
         </p>
       }
       @if (form.kind === 'archive-thread') {

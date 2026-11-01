@@ -43,7 +43,7 @@ test('installation Inter is loaded on the unauthenticated sign-in screen', async
   await page.route('**/bff/api/v1/context', (route) =>
     route.fulfill({ status: 401, json: { detail: 'Sign in' } }),
   );
-  await page.goto('/');
+  await page.goto('/library');
   await usesInter(
     page,
     page.getByRole('heading', { name: 'Welcome to Northstar Knowledge' }),
@@ -60,12 +60,14 @@ test('standalone account route retains installation Inter and leaves host body t
 test('failed logout session notice uses the selected installation font', async ({ page }) => {
   const received = await installation(page);
   await page.route('**/logout', (route) => route.fulfill({ status: 503, json: {} }));
-  await page.goto('/');
+  await page.route('**/auth/me', (route) => route.fulfill({ json: { authenticated: true } }));
+  await page.goto('/library');
   await page.getByRole('button', { name: 'Account menu', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Sign out', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Sign out?', exact: true }).getByRole('button', { name: 'Sign out', exact: true }).click();
   await usesInter(
     page,
-    page.getByRole('alert').filter({ hasText: 'Sign out did not complete' }),
+    page.getByRole('alert').filter({ hasText: 'You are still signed in' }),
     received,
   );
 });
@@ -77,13 +79,15 @@ test('successful logout returns to the installation-branded sign-in screen', asy
     if (signedOut) await route.fulfill({ status: 401, json: { detail: 'Sign in' } });
     else await route.fallback();
   });
+  await page.route('**/auth/me', (route) => route.fulfill({ status: 401, json: {} }));
   await page.route('**/logout', (route) => {
     signedOut = true;
     return route.fulfill({ status: 204 });
   });
-  await page.goto('/');
+  await page.goto('/library');
   await page.getByRole('button', { name: 'Account menu', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Sign out', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Sign out?', exact: true }).getByRole('button', { name: 'Sign out', exact: true }).click();
   await usesInter(
     page,
     page.getByRole('heading', { name: 'Welcome to Northstar Knowledge' }),

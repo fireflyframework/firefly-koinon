@@ -58,7 +58,7 @@ test('management restores the chosen organization before catalog reads across re
   page,
 }) => {
   const state = await setup(page);
-  await page.goto('/');
+  await page.goto('/library');
   await organization(page).selectOption('tenant-two');
   await expect(organization(page)).toHaveValue('tenant-two');
   await expect(page.getByRole('status', { name: 'Working', exact: true })).toHaveCount(0);
@@ -88,7 +88,7 @@ for (const screen of ['/chat', '/account/profile'])
     await setup(page);
     await page.goto(screen + '?retained=one#panel=two');
     await organization(page).selectOption('tenant-two');
-    await expect(page).toHaveURL('/?retained=one#panel=two');
+    await expect(page).toHaveURL('/library?retained=one#panel=two');
     await expect(page.getByRole('heading', { name: 'Library', exact: true })).toBeVisible();
     await expect(
       page.getByRole('heading', { name: 'Profile & preferences', exact: true }),
@@ -115,10 +115,10 @@ test('a deferred organization catalog response cannot clobber a later Chat navig
   await organization(page).selectOption('tenant-two');
   await pending;
   await page.getByRole('button', { name: 'Chat', exact: true }).first().click();
-  await expect(page).toHaveURL('/chat');
+  await expect(page).toHaveURL('/');
   release();
   await expect(page.getByRole('status', { name: 'Working', exact: true })).toHaveCount(0);
-  await expect(page).toHaveURL('/chat');
+  await expect(page).toHaveURL('/');
   await expect(page.locator('ffk-chat-page')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Library', exact: true })).toHaveCount(0);
   await expect
@@ -135,7 +135,7 @@ test('fresh context validates a saved organization across reorder, identity chan
   page,
 }) => {
   const state = await setup(page);
-  await page.goto('/');
+  await page.goto('/library');
   await organization(page).selectOption('tenant-two');
   await expect(page.getByRole('status', { name: 'Working', exact: true })).toHaveCount(0);
   state.current.tenants.reverse();
@@ -189,11 +189,11 @@ test('denied tab storage preserves usable selection without affecting the manage
       },
     });
   });
-  await page.goto('/');
+  await page.goto('/library');
   await organization(page).selectOption('tenant-two');
   await expect(organization(page)).toHaveValue('tenant-two');
   await page.getByRole('button', { name: 'Chat', exact: true }).first().click();
-  await expect(page).toHaveURL('/chat');
+  await expect(page).toHaveURL('/');
   await page.reload();
   await expect(organization(page)).toHaveValue('tenant-one');
 });
@@ -202,7 +202,7 @@ test('an explicit valid share organization wins over the saved organization befo
   page,
 }) => {
   const state = await setup(page);
-  await page.goto('/');
+  await page.goto('/library');
   await organization(page).selectOption('tenant-two');
   await expect(page.getByRole('status', { name: 'Working', exact: true })).toHaveCount(0);
   state.catalogs.length = 0;
@@ -223,7 +223,7 @@ test('an accepted invitation selects its organization instead of a retained pref
   page,
 }) => {
   const state = await setup(page);
-  await page.goto('/');
+  await page.goto('/library');
   await organization(page).selectOption('tenant-two');
   await expect(page.getByRole('status', { name: 'Working', exact: true })).toHaveCount(0);
   const token = 'controlled_invitation'.padEnd(43, 'a');
@@ -265,7 +265,7 @@ test('retry restores the chosen authorized organization after a failed fresh-con
   page,
 }) => {
   const state = await setup(page);
-  await page.goto('/');
+  await page.goto('/library');
   await organization(page).selectOption('tenant-two');
   await expect(page.getByRole('status', { name: 'Working', exact: true })).toHaveCount(0);
   let failed = false;
@@ -327,7 +327,7 @@ for (const width of [1440, 390])
   test(`retained organization stays visible in account and Chat at ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
     await setup(page);
-    await page.goto('/');
+    await page.goto('/library');
     if (width < 1100)
       await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
     await organization(page).selectOption('tenant-two');

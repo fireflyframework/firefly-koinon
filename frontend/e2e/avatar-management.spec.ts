@@ -50,7 +50,7 @@ test('a personal photo is previewed, explicitly saved, restored after reload and
     await page.getByRole('button', { name: 'Account menu', exact: true }).click();
     await page.getByRole('menuitem', { name: 'Your account', exact: true }).click();
   };
-  await page.goto('/');
+  await page.goto('/library');
   await open();
   const panel = page.locator('ffk-account-panel');
   const select = () =>

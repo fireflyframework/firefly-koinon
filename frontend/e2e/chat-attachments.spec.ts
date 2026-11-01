@@ -203,7 +203,7 @@ test('uploads a private file, waits for extraction and submits only selected IDs
     }
     return route.fallback();
   });
-  await page.goto('/');
+  await page.goto('/library');
   await page.getByRole('button', { name: 'Chat', exact: true }).click();
   const composer = page.locator('ffk-chat-composer');
   await composer.getByRole('button', { name: 'Add context', exact: true }).click();
@@ -306,7 +306,7 @@ for (const spanish of [false, true])
         });
       return route.fallback();
     });
-    await page.goto('/');
+    await page.goto('/library');
     if (spanish)
       await expect(page.getByRole('heading', { name: 'Biblioteca', exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Chat', exact: true }).click();

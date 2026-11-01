@@ -1,6 +1,6 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 import { test, expect, type Page } from '@playwright/test';
-import { mockService } from './fixtures';
+import { openAdministration,  mockService } from './fixtures';
 const provider = {
   id: 'provider-one',
   name: 'Controlled model connection',
@@ -126,8 +126,8 @@ test('provider API choice and explicit key removal use the native request contra
   page,
 }) => {
   const service = await contract(page);
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.goto('/library');
+  await openAdministration(page, 'Settings');
   await page.getByRole('button', { name: 'Edit', exact: true }).click();
   await page.getByRole('combobox', { name: 'Model API', exact: true }).selectOption('responses');
   await page.getByRole('checkbox', { name: 'Remove the current API key', exact: true }).check();
@@ -141,8 +141,8 @@ test('schema-backed options reject invalid input and retain false before an unve
 }) => {
   const service = await contract(page);
   service.providers[0].api = 'responses';
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.goto('/library');
+  await openAdministration(page, 'Settings');
   await page.getByText('Model capabilities', { exact: true }).first().click();
   await expect(page.getByRole('cell', { name: 'Not checked', exact: true })).toHaveCount(3);
   await page.getByRole('button', { name: 'Agents', exact: true }).click();

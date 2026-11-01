@@ -526,6 +526,9 @@ select:focus-visible {
 .history-collapsed .history-boundary {
   left: 8px;
 }
+.history-collapsed .conversation {
+  padding-left: 64px;
+}
 .quick-new {
   position: absolute;
   z-index: 3;
@@ -536,7 +539,7 @@ select:focus-visible {
   grid-template-columns: minmax(0, 1fr);
 }
 :host(.chat-compact) .conversation {
-  padding: 48px 16px 16px;
+  padding: 64px 16px 16px;
 }
 :host(.chat-compact) .history-boundary {
   left: 8px;

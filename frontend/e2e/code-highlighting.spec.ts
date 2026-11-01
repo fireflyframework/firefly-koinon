@@ -111,7 +111,7 @@ for (const theme of ['light', 'dark']) {
         if (path.endsWith('/runs') && route.request().method() === 'POST') ++modelRequests;
         return route.fallback();
       });
-      await page.goto('/');
+      await page.goto('/library');
       if (width === 320)
         await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
       await page.getByRole('button', { name: 'Chat', exact: true }).click();

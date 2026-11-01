@@ -3,7 +3,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { mockService, context, setDarkAppearance } from './fixtures';
+import { openAdministration,  mockService, context, setDarkAppearance } from './fixtures';
 async function fixture(page: Page, spanish = false) {
   await mockService(page);
   const reads: URLSearchParams[] = [];
@@ -80,14 +80,12 @@ async function fixture(page: Page, spanish = false) {
   return { reads, setDenied: (value: boolean) => (denied = value) };
 }
 async function open(page: Page, spanish = false, mobile = false) {
-  await page.goto('/');
+  await page.goto('/library');
   if (mobile)
     await page
       .getByRole('button', { name: spanish ? 'Abrir navegación' : 'Open navigation', exact: true })
       .click();
-  await page
-    .getByRole('button', { name: spanish ? 'Configuración' : 'Settings', exact: true })
-    .click();
+  await openAdministration(page, spanish ? 'Configuración' : 'Settings');
   if (mobile)
     await page
       .getByLabel(spanish ? 'Sección de configuración' : 'Settings section')

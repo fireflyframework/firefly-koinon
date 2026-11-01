@@ -6,11 +6,11 @@ Conversation memory helps koinon understand a follow-up without asking you to re
 
 Memory and published knowledge have different purposes. A remembered question can explain what you mean; it cannot establish that an old answer is still correct. Answers about organizational knowledge still need current, authorized sources. A proposed addition to the knowledge repository requires your explicit approval before publication.
 
-## Enable memory for one folder
+## Enable memory for one chat project
 
-1. Open **Chat** and find the folder in the conversation sidebar. Use **New folder** if the conversations do not yet have a home.
-2. Open the folder's actions and choose **Folder settings**.
-3. Select **Use memory from my chats in this folder**.
+1. Open **Chat** and find the chat project in the conversation sidebar. Use **New chat project** if the conversations do not yet have a home.
+2. Open the chat project's actions and choose **Chat project settings**.
+3. Select **Use memory from my chats in this project**.
 4. Choose **Save changes**. Closing the panel or choosing **Cancel** keeps the saved preference.
 5. Move the conversations you want to group into that folder. Starting a chat from the folder also associates the new conversation with it.
 

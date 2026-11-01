@@ -3,7 +3,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { mockService, context } from './fixtures';
+import { openAdministration,  mockService, context } from './fixtures';
 import {
   documents,
   structured,
@@ -89,9 +89,7 @@ async function open(
       exact: true,
     });
     if ((page.viewportSize()?.width ?? 1440) < 760) await menu.click();
-    await page
-      .getByRole('button', { name: options.spanish ? 'Configuración' : 'Settings', exact: true })
-      .click();
+    await openAdministration(page, options.spanish ? 'Configuración' : 'Settings');
   }
   await expect(page.locator('ffk-settings-page')).toBeVisible();
   const select = page.getByRole('combobox', {

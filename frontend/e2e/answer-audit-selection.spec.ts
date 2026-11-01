@@ -143,7 +143,7 @@ async function open(page: Page, spanish = false, multiple = false, catalogOnly =
       return json({ items: [], total: 0, page: 1, page_size: 25, pages: 0 });
     return route.fallback();
   });
-  await page.goto('/');
+  await page.goto('/library');
   await expect(
     page.getByRole('button', { name: /^(Account menu|Menú de cuenta)$/, exact: true }),
   ).toBeVisible();
