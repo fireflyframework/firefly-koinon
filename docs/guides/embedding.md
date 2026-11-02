@@ -25,7 +25,7 @@ An embedded component must not take over the host router, create a global authen
 
 ## Choose an Angular entry point
 
-Use `@fireflyframework/koinon-angular/workbench/page` for the workbench shell and its optional page-loader tokens. Supply the client through `provideKoinonClient` from `@fireflyframework/koinon-angular/workbench/core`. This keeps document details and other panels outside the shell’s initial static dependency graph until they are opened.
+Use `@fireflyframework/koinon-angular/workbench/page` for the workbench shell and its optional page-loader tokens. Supply the client through `provideKoinonClient` from `@fireflyframework/koinon-angular/workbench/core`. This keeps document details and other panels outside the shell’s static initial dependency graph. Optional feature loaders that use the compatibility entry point can fetch the shared panel package after the first render, before a particular panel is opened.
 
 The existing package root and `/workbench` imports remain compatible: they re-export the same component classes, injection tokens and services. Hosts that use individual panels can import `KoinonInspector`, `KoinonFolderTree`, `KoinonSidePanel`, `KoinonFormField`, `KoinonCodeBlock` and `KoinonCitationPanel` from `/workbench/panels`. Passive availability indicators and their shared observation session use `/workbench/availability`. Importing a panel eagerly in the host makes it part of that host’s initial bundle; the package cannot defer a component that the host uses immediately.
 
