@@ -193,3 +193,30 @@ it('reevaluates separate membership expirations without retaining expired contro
     vi.useRealTimers();
   }
 });
+
+it('explicit organization-default navigation requires a workspace choice without silently using Library scope', async () => {
+  const { fixture, calls, element } = setup();
+  await fixture.whenStable();
+  calls.length = 0;
+  fixture.componentRef.setInput('initialSelection', { workspaceId: '', domain: 'structured' });
+  fixture.detectChanges();
+  await fixture.whenStable();
+  expect(element.querySelector<HTMLSelectElement>('[aria-label="Index workspace"]')?.value).toBe(
+    '',
+  );
+  expect(fixture.componentInstance.domain()).toBe('structured');
+  expect(calls.filter((call) => call.path.includes('/knowledge-index'))).toEqual([]);
+});
+it('carries an authorized explicit workspace and clears it when its owner-bound input is removed', async () => {
+  const { fixture } = setup();
+  await fixture.whenStable();
+  fixture.componentRef.setInput('initialSelection', { workspaceId: 'space', domain: 'structured' });
+  fixture.detectChanges();
+  await fixture.whenStable();
+  expect(fixture.componentInstance.workspace()).toBe('space');
+  expect(fixture.componentInstance.domain()).toBe('structured');
+  fixture.componentRef.setInput('initialSelection', null);
+  fixture.detectChanges();
+  await fixture.whenStable();
+  expect(fixture.componentInstance.workspace()).toBe('');
+});

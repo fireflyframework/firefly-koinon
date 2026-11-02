@@ -31,6 +31,7 @@ import { KoinonOrganizationPeople } from './organization-directory';
 import { KoinonOrganizationStructure } from './organization-structure';
 import { KoinonPeopleAccess } from './people-access';
 import { KoinonAuditPanel } from './audit-panel';
+import { knowledgeDomainRegistered, type KnowledgeSectionRequest } from './knowledge-navigation';
 import { KoinonKnowledgeModels } from './knowledge-models';
 import { KoinonKnowledgeBehavior } from './knowledge-behavior';
 import { KoinonDeploymentPanel } from './deployment-panel';
@@ -120,6 +121,70 @@ export class KoinonSettingsPage implements OnInit {
   private readonly clients = inject(KoinonClientContext);
   private readonly tasks = inject(PendingTasks);
   private deferredProviderMetadata = false;
+  private readonly knowledgeSelection = signal<{
+    owner: ReturnType<KoinonFacade['context']>;
+    tenantId: string;
+    clientRevision: number;
+    scope: string;
+    index: { workspaceId: string; domain: 'documents' | 'structured' } | null;
+  } | null>(null);
+  private currentKnowledgeSelection() {
+    const selection = this.knowledgeSelection();
+    return selection &&
+      selection.owner === this.f.context() &&
+      selection.tenantId === this.f.tenantId() &&
+      selection.clientRevision === this.clients.revision()
+      ? selection
+      : null;
+  }
+  readonly knowledgeScope = computed(() => this.currentKnowledgeSelection()?.scope ?? '');
+  readonly knowledgeIndexSelection = computed(
+    () => this.currentKnowledgeSelection()?.index ?? null,
+  );
+  private knowledgeWorkspaceAllowed(scope: string | null) {
+    return (
+      !scope ||
+      this.f
+        .context()
+        ?.workspaces.some(
+          (row) =>
+            row.id === scope &&
+            row.tenant_id === this.f.tenantId() &&
+            row.kind === 'workspace' &&
+            row.status !== 'archived',
+        ) === true
+    );
+  }
+  rememberKnowledgeScope(scope: string) {
+    if (!this.knowledgeWorkspaceAllowed(scope)) return;
+    this.knowledgeSelection.set({
+      owner: this.f.context(),
+      tenantId: this.f.tenantId(),
+      clientRevision: this.clients.revision(),
+      scope,
+      index: null,
+    });
+  }
+  async openKnowledgeSection(request: KnowledgeSectionRequest) {
+    if (!this.tabs.some((tab) => tab.id === request.section && this.tabAllowed(tab))) return;
+    if (!this.knowledgeWorkspaceAllowed(request.workspaceId)) return;
+    if (
+      request.section === 'storage' &&
+      (!request.domain || !knowledgeDomainRegistered(this.f.capabilities(), request.domain))
+    )
+      return;
+    this.knowledgeSelection.set({
+      owner: this.f.context(),
+      tenantId: this.f.tenantId(),
+      clientRevision: this.clients.revision(),
+      scope: request.workspaceId ?? '',
+      index:
+        request.section === 'storage' && request.domain
+          ? { workspaceId: request.workspaceId ?? '', domain: request.domain }
+          : null,
+    });
+    await this.openSection(request.section);
+  }
   readonly section = signal('providers');
   readonly editor = signal<'provider' | 'agent' | null>(null);
   readonly step = signal(1);

@@ -293,3 +293,26 @@ input:focus-visible {
   margin-top: 4px;
   overflow-wrap: anywhere;
 }
+
+.navigation-review {
+  max-width: 690px;
+  border: 1px solid var(--ui-line);
+  border-radius: 8px;
+  background: var(--ui-subtle);
+  padding: 16px;
+  margin-bottom: 24px;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.navigation-review h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+.navigation-review p {
+  margin: 8px 0 16px;
+}
+.prerequisite ffk-button {
+  display: block;
+  margin: 8px 0 0 -12px;
+}

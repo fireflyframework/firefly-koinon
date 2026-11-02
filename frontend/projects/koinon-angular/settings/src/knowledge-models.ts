@@ -5,6 +5,8 @@ import {
   ElementRef,
   Injector,
   Input,
+  Output,
+  EventEmitter,
   OnInit,
   PendingTasks,
   afterNextRender,
@@ -31,6 +33,11 @@ import type {
   KnowledgeConnection,
   KnowledgeRole,
 } from '@fireflyframework/koinon-sdk';
+import {
+  knowledgeDomainRegistered,
+  type KnowledgeSectionRequest,
+  type KnowledgeSettingsSection,
+} from './knowledge-navigation';
 import { KoinonKnowledgeConfiguration } from './knowledge-configuration';
 import { connectionInput, type KnowledgeFormValues } from './knowledge-form';
 import { KoinonModelOptionsForm } from './model-options-form';
@@ -55,6 +62,15 @@ import { describeModelOptions, parseModelOptions, type ModelOptionValues } from 
 })
 export class KoinonKnowledgeModels implements OnInit {
   @Input() configuration: Configuration | null = null;
+  @Input() initialScope = '';
+  @Output() readonly assignmentScopeChanged = new EventEmitter<string>();
+  @Output() readonly sectionRequested = new EventEmitter<KnowledgeSectionRequest>();
+  private navigationAuthority: {
+    owner: ReturnType<KoinonFacade['context']>;
+    tenant: string;
+    revision: number;
+  } | null = null;
+  readonly navigationReview = signal<KnowledgeSectionRequest | null>(null);
   readonly service = inject(KoinonKnowledgeConfiguration);
   readonly facade = inject(KoinonFacade);
   private readonly clients = inject(KoinonClientContext);
@@ -96,13 +112,17 @@ export class KoinonKnowledgeModels implements OnInit {
     { id: 'documents', label: 'Documents' },
     { id: 'structured', label: 'Datasets' },
   ];
+  private owner = this.facade.context();
   private context = this.facade.tenantId() + ':' + this.clients.revision();
   constructor() {
     effect(() => {
       const context = this.facade.tenantId() + ':' + this.clients.revision();
-      if (context !== this.context) {
+      const owner = this.facade.context();
+      if (context !== this.context || owner !== this.owner) {
+        this.owner = owner;
         this.context = context;
         this.editing.set(null);
+        this.navigationReview.set(null);
         untracked(() => this.tasks.run(() => this.service.load('')));
       }
     });
@@ -111,12 +131,88 @@ export class KoinonKnowledgeModels implements OnInit {
     return Object.keys(this.modelOptions).length > 0;
   }
   ngOnInit() {
-    this.tasks.run(() => this.service.load());
+    this.tasks.run(() =>
+      this.service.load(
+        this.workspaces().some((row) => row.id === this.initialScope) ? this.initialScope : '',
+      ),
+    );
   }
   async scopeChanged(scope: string) {
+    if (scope && !this.workspaces().some((row) => row.id === scope)) return;
+    const owner = this.facade.context(),
+      tenant = this.facade.tenantId(),
+      revision = this.clients.revision();
+    this.navigationReview.set(null);
     this.editing.set(null);
     this.removeConfirmation.set(false);
-    await this.service.load(scope);
+    const loaded = await this.service.load(scope);
+    if (
+      loaded &&
+      owner === this.facade.context() &&
+      tenant === this.facade.tenantId() &&
+      revision === this.clients.revision()
+    )
+      this.assignmentScopeChanged.emit(scope);
+  }
+  canNavigate(section: KnowledgeSettingsSection, domain = this.editing()?.domain ?? null) {
+    const permission = {
+      providers: 'providers:write',
+      storage: 'indexes:manage',
+      agents: 'agents:write',
+    }[section];
+    return (
+      !this.service.pending() &&
+      this.facade.tenantPermissions().has(permission) &&
+      (section !== 'storage' ||
+        (domain !== null && knowledgeDomainRegistered(this.facade.capabilities(), domain)))
+    );
+  }
+  requestSection(section: KnowledgeSettingsSection) {
+    if (!this.canNavigate(section)) return;
+    const request: KnowledgeSectionRequest = {
+      section,
+      workspaceId: this.service.scope() || null,
+      domain: this.editing()?.domain ?? null,
+    };
+    if (!this.editing()) {
+      this.sectionRequested.emit(request);
+      return;
+    }
+    this.navigationAuthority = {
+      owner: this.facade.context(),
+      tenant: this.facade.tenantId(),
+      revision: this.clients.revision(),
+    };
+    this.navigationReview.set(request);
+    afterNextRender(
+      () =>
+        this.host.nativeElement
+          .querySelector<HTMLButtonElement>('[data-keep-editing] button')
+          ?.focus(),
+      { injector: this.injector },
+    );
+  }
+  keepEditing() {
+    this.navigationReview.set(null);
+    afterNextRender(() => this.heading()?.nativeElement.focus(), { injector: this.injector });
+  }
+  confirmNavigation() {
+    const request = this.navigationReview();
+    const authority = this.navigationAuthority;
+    if (
+      !request ||
+      !authority ||
+      authority.owner !== this.facade.context() ||
+      authority.tenant !== this.facade.tenantId() ||
+      authority.revision !== this.clients.revision() ||
+      !this.canNavigate(request.section, request.domain)
+    )
+      return;
+    this.sectionRequested.emit(request);
+  }
+  reindexRequired() {
+    const error = this.service.error();
+    return error && 'code' in error && error.code === 'KNOWLEDGE_EMBEDDING_REINDEX_REQUIRED';
   }
   scopeName() {
     return this.workspaces().find((workspace) => workspace.id === this.service.scope())?.name ?? '';
@@ -162,6 +258,7 @@ export class KoinonKnowledgeModels implements OnInit {
   }
   begin(role: KnowledgeRole) {
     const row = this.assignment(role);
+    this.navigationReview.set(null);
     this.existing.set(row);
     this.editing.set(role);
     this.formMode.set(row?.mode ?? 'provider');
@@ -186,6 +283,7 @@ export class KoinonKnowledgeModels implements OnInit {
   }
   back() {
     const role = this.editing();
+    this.navigationReview.set(null);
     this.editing.set(null);
     this.removeConfirmation.set(false);
     afterNextRender(
@@ -258,7 +356,7 @@ export class KoinonKnowledgeModels implements OnInit {
           KNOWLEDGE_CONNECTION_EXISTS:
             'This role already has an assignment. Reload to edit its current version.',
           KNOWLEDGE_EMBEDDING_REINDEX_REQUIRED:
-            'This index is tied to a different embedding configuration. Ask your deployment administrator to complete a reviewed reindex before changing it.',
+            'This index is tied to a different embedding configuration. Review and activate a compatible index in Storage & indexing before changing this assignment.',
           KNOWLEDGE_CURRENT_AGENT_REQUIRED:
             'This role needs a running chat agent. Choose a separate provider for operations outside Chat.',
           INVALID_KNOWLEDGE_EMBEDDING:

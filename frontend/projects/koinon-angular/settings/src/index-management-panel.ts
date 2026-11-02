@@ -58,6 +58,8 @@ registerKoinonSpanish(INDEX_MANAGEMENT_SPANISH);
 })
 export class KoinonIndexManagementPanel implements OnDestroy {
   readonly configuration = input<Configuration | null>(null);
+  readonly initialSelection = input<{ workspaceId: string; domain: IndexDomain } | null>(null);
+  private appliedSelection: ReturnType<typeof this.initialSelection> = null;
   private readonly f = inject(KoinonFacade);
   private readonly clients = inject(KoinonClientContext);
   private readonly tasks = inject(PendingTasks);
@@ -179,6 +181,25 @@ export class KoinonIndexManagementPanel implements OnDestroy {
       'This explicitly restores the previous native target and reviewed assignment after an interrupted activation.',
   };
   constructor() {
+    effect(() => {
+      const selection = this.initialSelection();
+      if (selection === this.appliedSelection) return;
+      const previous = this.appliedSelection;
+      this.appliedSelection = selection;
+      untracked(() => {
+        if (selection) {
+          this.workspace.set(
+            this.workspaces().some((row) => row.id === selection.workspaceId)
+              ? selection.workspaceId
+              : '',
+          );
+          this.domain.set(selection.domain);
+        } else if (previous) {
+          this.workspace.set('');
+          this.domain.set('documents');
+        }
+      });
+    });
     effect(() => {
       this.scope();
       untracked(() => {

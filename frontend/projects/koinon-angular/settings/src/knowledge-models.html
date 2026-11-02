@@ -46,6 +46,11 @@
         <summary>{{ 'Error details' | ffkText }}</summary>
         <p>{{ service.error()?.message }}</p>
       </details>
+      @if (reindexRequired() && canNavigate('storage')) {
+        <ffk-button variant="quiet" icon="table" (click)="requestSection('storage')">{{
+          'Review indexes' | ffkText
+        }}</ffk-button>
+      }
       @if (!service.pending()) {
         <ffk-button variant="quiet" (click)="reload()">{{
           'Reload assignments' | ffkText
@@ -74,6 +79,32 @@
       }
     </p>
   </header>
+  @if (navigationReview()) {
+    <section
+      class="navigation-review"
+      role="region"
+      [attr.aria-label]="'Leave this assignment editor?' | ffkText"
+    >
+      <h3>{{ 'Leave this assignment editor?' | ffkText }}</h3>
+      <p>
+        {{
+          'Your unsaved assignment changes will be lost. The selected assignment scope will be kept.'
+            | ffkText
+        }}
+      </p>
+      <div class="actions">
+        <ffk-button data-keep-editing variant="primary" (click)="keepEditing()">{{
+          'Keep editing' | ffkText
+        }}</ffk-button>
+        <ffk-button
+          variant="quiet"
+          (click)="confirmNavigation()"
+          [disabled]="!canNavigate(navigationReview()!.section, navigationReview()!.domain)"
+          >{{ 'Leave editor' | ffkText }}</ffk-button
+        >
+      </div>
+    </section>
+  }
   <form class="assignment-form" (ngSubmit)="save()" [attr.aria-busy]="service.pending()">
     @if (role.supports_current_agent && role.kind !== 'embedding') {
       <label class="select-field"
@@ -96,12 +127,19 @@
     @if (formMode() === 'current_agent') {
       <div class="prerequisite">
         <ffk-icon name="chat" />
-        <p>
-          {{
-            'This choice works only during a chat run. Operations outside Chat need a separate model assignment.'
-              | ffkText
-          }}
-        </p>
+        <div>
+          <p>
+            {{
+              'This choice works only during a chat run. Operations outside Chat need a separate model assignment.'
+                | ffkText
+            }}
+          </p>
+          @if (canNavigate('agents')) {
+            <ffk-button variant="quiet" icon="chat" (click)="requestSection('agents')">{{
+              'Review organization chat' | ffkText
+            }}</ffk-button>
+          }
+        </div>
       </div>
     } @else {
       <div class="form-grid">
@@ -148,9 +186,20 @@
         </label>
       </div>
       @if (!providers().length) {
-        <p class="prerequisite">
-          {{ 'Connect a compatible provider in Providers before assigning this role.' | ffkText }}
-        </p>
+        <div class="prerequisite">
+          <div>
+            <p>
+              {{
+                'Connect a compatible provider in Providers before assigning this role.' | ffkText
+              }}
+            </p>
+            @if (canNavigate('providers')) {
+              <ffk-button variant="quiet" icon="link" (click)="requestSection('providers')">{{
+                'Open Providers' | ffkText
+              }}</ffk-button>
+            }
+          </div>
+        </div>
       }
       @if (role.kind === 'embedding') {
         <div class="prerequisite">
@@ -159,10 +208,15 @@
             <strong>{{ 'An existing compatible index is required' | ffkText }}</strong>
             <p>
               {{
-                'Ask your deployment administrator for the approved index reference and dimensions. Saving an assignment does not build or migrate an index.'
+                'Review indexes for the selected workspace in Storage & indexing, then use the compatible index reference and dimensions here. Organization defaults do not select a workspace. Saving this assignment does not build or migrate an index.'
                   | ffkText
               }}
             </p>
+            @if (canNavigate('storage')) {
+              <ffk-button variant="quiet" icon="table" (click)="requestSection('storage')">{{
+                'Review indexes' | ffkText
+              }}</ffk-button>
+            }
           </div>
         </div>
         <div class="form-grid">

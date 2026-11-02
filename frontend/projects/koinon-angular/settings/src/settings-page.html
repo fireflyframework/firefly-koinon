@@ -211,7 +211,12 @@
           <ffk-knowledge-behavior />
           @if (allowed('providers:write')) {
             <div id="knowledge-model-assignments">
-              <ffk-knowledge-models [configuration]="c.configuration()" />
+              <ffk-knowledge-models
+                [configuration]="c.configuration()"
+                [initialScope]="knowledgeScope()"
+                (assignmentScopeChanged)="rememberKnowledgeScope($event)"
+                (sectionRequested)="openKnowledgeSection($event)"
+              />
             </div>
           }
         } @loading {
@@ -718,18 +723,26 @@
         <div>
           <h2>{{ 'Storage & indexing' | ffkText }}</h2>
           <p>
-            {{
-              'Manage knowledge indexes and inspect deployment configuration.' | ffkText
-            }}
+            {{ 'Manage knowledge indexes and inspect deployment configuration.' | ffkText }}
           </p>
         </div>
       </header>
       @defer (on immediate) {
-        <ffk-index-management-panel [configuration]="c.configuration()" />
+        <ffk-index-management-panel
+          [configuration]="c.configuration()"
+          [initialSelection]="knowledgeIndexSelection()"
+        />
         <details class="deployment-observations">
           <summary>{{ 'Deployment observations' | ffkText }}</summary>
-          <p>{{ 'These read-only observations describe deployment storage, indexes and database connections.' | ffkText }}</p>
-          <ffk-button variant="quiet" icon="refresh" [disabled]="c.pending()" (click)="c.load()">{{ 'Refresh deployment observations' | ffkText }}</ffk-button>
+          <p>
+            {{
+              'These read-only observations describe deployment storage, indexes and database connections.'
+                | ffkText
+            }}
+          </p>
+          <ffk-button variant="quiet" icon="refresh" [disabled]="c.pending()" (click)="c.load()">{{
+            'Refresh deployment observations' | ffkText
+          }}</ffk-button>
           <ffk-deployment-panel
             [deployment]="c.configuration()?.deployment"
             [workspaceNames]="workspaceNames()"
@@ -836,7 +849,6 @@
           <p>{{ 'No deployment model connections were returned.' | ffkText }}</p>
         }
       </details>
-
     }
   </section>
 </div>
