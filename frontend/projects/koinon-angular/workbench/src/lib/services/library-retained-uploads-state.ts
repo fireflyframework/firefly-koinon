@@ -221,7 +221,7 @@ export class RetainedUploadsState {
   }
   private admit(s: Session, batch: FileBatchView, items: FileBatchItemView[]) {
     this.batch(s, batch);
-    let pending: RetainedUploadRequest[] = [];
+    let pending: RetainedUploadRequest[];
     let journalError = false;
     try {
       pending = this.ports.journal.forBatch(s.scope.subject, s.scope.tenantId, batch.id);
