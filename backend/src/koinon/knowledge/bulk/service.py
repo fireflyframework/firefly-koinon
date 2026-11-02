@@ -19,33 +19,40 @@ from pyfly.data.relational.sqlalchemy import Isolation, Propagation, transaction
 from pyfly.data.transaction import current_unit_of_work
 from pyfly.kernel import (
     ConflictException,
+    ForbiddenException,
     GoneException,
     InvalidRequestException,
     PayloadTooLargeException,
     RateLimitException,
     ServiceUnavailableException,
 )
+from pyfly.security.context_holder import SecurityContextHolder
 
 from koinon.catalog.errors import AccessDenied
 from koinon.catalog.service import CatalogService
 from koinon.jobs.service import JobService
-from koinon.knowledge.bulk.authority import BulkAuthority, token_identity
+from koinon.knowledge.bulk.authority import BulkAuthority, execution_context, token_identity
 from koinon.knowledge.bulk.dataset_dtos import DatasetReservation
 from koinon.knowledge.bulk.dtos import (
     BulkAction,
     BulkDestination,
+    BulkRecoveryAction,
     FileBatchCapabilities,
     FileBatchCreate,
     FileBatchItemView,
     FileBatchPage,
     FileBatchView,
     FileItemPage,
+    FileRecoveryView,
+    NativeRecoveryState,
+    RecoveryOperation,
     StagedFileReceipt,
     aggregate_status,
 )
 from koinon.knowledge.bulk.entities import BulkBatch, BulkItem, BulkRecovery, BulkUpload, BulkUploadState, now
 from koinon.knowledge.bulk.ports import BulkIntakePort
 from koinon.knowledge.bulk.queue import BulkQueue
+from koinon.knowledge.bulk.recovery_intent import PENDING_RECOVERY, ProcessingRecoveryIntent
 from koinon.knowledge.bulk.repositories import BulkRepository
 from koinon.knowledge.bulk.settings import BulkSettings
 from koinon.knowledge.bulk.storage import BulkStorage, LocalWriterPermit
@@ -1245,4 +1252,214 @@ class FileBatches:
             item.error_code = "BULK_NATIVE_OUTCOME_UNRESOLVED"
         row.revision += 1
         await self.records.flush()
+        return await self._view(row)
+
+    async def _processing_recovery(self, row: BulkBatch, item: BulkItem):
+        job = await self.records.job(item.job_id) if item.job_id else None
+        if job is None:
+            raise ConflictException("Processing job is unavailable", code="BULK_NATIVE_RECEIPT_REQUIRED")
+        if (
+            job.tenant_id != row.tenant_id
+            or job.resource_id != item.asset_id
+            or job.payload != {"batch_id": row.id, "item_id": item.id}
+            or job.idempotency_key != "bulk:" + item.id
+            or not 0 <= job.attempts <= job.max_attempts <= 2147483647
+            or job.max_attempts < 1
+        ):
+            raise ConflictException("Processing reservation changed", code="BULK_NATIVE_RECEIPT_CONFLICT")
+
+        upload = await self.records.upload_by_id(item.winning_upload_id) if item.winning_upload_id else None
+        verified_original = (
+            upload is not None
+            and upload.item_id == item.id
+            and upload.status == "verified"
+            and not upload.permit_held
+        )
+
+        def descriptor(
+            state: NativeRecoveryState = "not_checked",
+            operation: RecoveryOperation | None = None,
+            reason=None,
+            checked=None,
+        ) -> FileRecoveryView:
+            return FileRecoveryView(
+                batch_id=row.id,
+                item_id=item.id,
+                batch_revision=row.revision,
+                native_state=state,
+                operation=operation,
+                reason_code=reason,
+                attempts=job.attempts,
+                max_attempts=job.max_attempts,
+                checked_at=checked,
+                job_status=job.status
+                if job.status in {"queued", "running", "succeeded", "failed", "cancelled"}
+                else "unknown",
+                original_receipt_state="verified" if verified_original else "unavailable",
+            )
+
+        if row.cancelled or row.expires_at <= now() or not row.submitted:
+            return descriptor(reason="BULK_RECOVERY_UNAVAILABLE"), job, None, None
+        if item.status not in {"reconciling", "failed"}:
+            return descriptor(reason="BULK_RECOVERY_NOT_REQUIRED"), job, None, None
+        # Expired running leases are still unknown, not proof that an old writer drained.
+        if job.status != "failed" or job.worker_id is not None or job.lease_until is not None:
+            return descriptor(reason="BULK_RECOVERY_BUSY"), job, None, None
+        if not item.native_workspace_id:
+            return descriptor(reason="BULK_NATIVE_RECEIPT_REQUIRED"), job, None, None
+        if item.connection_json != await self.records.connection(row.tenant_id, row.workspace_id, item.mode):
+            return descriptor(reason="BULK_CONNECTION_CHANGED"), job, None, None
+        if not await self.records.workspace_matches(
+            row.tenant_id,
+            row.workspace_id,
+            "canon" if item.mode == "document" else "structured",
+            item.native_workspace_id,
+        ):
+            return descriptor(reason="BULK_NATIVE_SCOPE_CHANGED"), job, None, None
+        port = self.intakes.get() if self.intakes else None
+        if port is None:
+            return descriptor(reason="BULK_NATIVE_REQUIRED"), job, None, None
+        lease = BulkQueue._lease(job, item, row)
+        with SecurityContextHolder.using(execution_context(row.subject, row.token_id)):
+            try:
+                async with asyncio.timeout(10):
+                    observed = await port.inspect(lease)
+            except ForbiddenException:
+                raise
+            except Exception:
+                return (
+                    descriptor("unknown", reason="BULK_NATIVE_OUTCOME_UNRESOLVED", checked=now()),
+                    job,
+                    lease,
+                    port,
+                )
+        checked = now()
+        if observed.status == "committed":
+            receipt = observed.receipt
+            if (
+                receipt is None
+                or receipt.sha256 != item.sha256
+                or receipt.size_bytes != item.size_bytes
+                or receipt.native_workspace_id != item.native_workspace_id
+                or receipt.domain != ("canon" if item.mode == "document" else "structured")
+                or (item.native_id is not None and item.native_id != receipt.native_asset_id)
+            ):
+                return (
+                    descriptor("committed", reason="BULK_NATIVE_RECEIPT_CONFLICT", checked=checked),
+                    job,
+                    lease,
+                    port,
+                )
+            return descriptor("committed", "acknowledge_commit", checked=checked), job, lease, port
+        if observed.status not in {"absent", "prepared"}:
+            return (
+                descriptor(observed.status, reason="BULK_NATIVE_OUTCOME_UNRESOLVED", checked=checked),
+                job,
+                lease,
+                port,
+            )
+        if observed.receipt is not None or item.native_id is not None or item.receipt_json is not None:
+            return (
+                descriptor(observed.status, reason="BULK_NATIVE_RECEIPT_CONFLICT", checked=checked),
+                job,
+                lease,
+                port,
+            )
+        if job.attempts >= job.max_attempts:
+            return (
+                descriptor(observed.status, reason="BULK_RETRY_EXHAUSTED", checked=checked),
+                job,
+                lease,
+                port,
+            )
+        if observed.status == "prepared":
+            if item.mode != "dataset":
+                return (
+                    descriptor("prepared", reason="BULK_NATIVE_RECEIPT_CONFLICT", checked=checked),
+                    job,
+                    lease,
+                    port,
+                )
+            return descriptor("prepared", "finalize_publication", checked=checked), job, lease, port
+        if not verified_original:
+            return descriptor("absent", reason="BULK_ORIGINAL_UNAVAILABLE", checked=checked), job, lease, port
+        return descriptor("absent", "retry_processing", checked=checked), job, lease, port
+
+    @transactional(
+        datasource="primary",
+        name=PRIMARY_POLICY_UNIT,
+        propagation=Propagation.REQUIRES_NEW,
+        isolation=Isolation.SERIALIZABLE,
+        read_from_primary=True,
+    )
+    async def processing_recovery(
+        self, subject: str, tenant: str, identifier: str, item_id: str
+    ) -> FileRecoveryView:
+        row = await self._scope(subject, tenant, identifier, write=True)
+        item = await self._item_for_write(subject, tenant, row, item_id)
+        descriptor, _, _, _ = await self._processing_recovery(row, item)
+        return descriptor
+
+    @transactional(
+        datasource="primary",
+        name=PRIMARY_POLICY_UNIT,
+        propagation=Propagation.REQUIRES_NEW,
+        isolation=Isolation.SERIALIZABLE,
+        read_from_primary=True,
+    )
+    async def recover_processing(
+        self, subject: str, tenant: str, identifier: str, item_id: str, body: BulkRecoveryAction, key: str
+    ) -> FileBatchView:
+        row = await self._scope(subject, tenant, identifier, write=True)
+        item = await self._item_for_write(subject, tenant, row, item_id)
+        if not self._action(row, "recover_processing:" + item_id, key, body):
+            return await self._view(row)
+        descriptor, job, lease, port = await self._processing_recovery(row, item)
+        if (
+            descriptor.operation is None
+            or descriptor.operation != body.operation
+            or lease is None
+            or port is None
+        ):
+            raise ConflictException(
+                "Inspect the current native outcome before choosing a recovery action",
+                code=descriptor.reason_code or "BULK_RECOVERY_STATE_CHANGED",
+            )
+        await self.catalog._audit(
+            subject,
+            tenant,
+            "knowledge.bulk.recovery_requested",
+            item.asset_id,
+            {
+                "batch_id": row.id,
+                "item_id": item.id,
+                "job_id": job.id,
+                "operation": body.operation,
+                "native_state": descriptor.native_state,
+                "previous_error_code": item.error_code,
+                "attempts": job.attempts,
+                "max_attempts": job.max_attempts,
+            },
+        )
+        if body.operation == "acknowledge_commit":
+            # The native adapter independently rereads the exact commit before primary publication.
+            with SecurityContextHolder.using(execution_context(row.subject, row.token_id)):
+                observed = await port.inspect(lease)
+                if observed.status != "committed" or observed.receipt is None:
+                    raise ConflictException("Native outcome changed", code="BULK_RECOVERY_STATE_CHANGED")
+                await port.acknowledge_committed(lease, observed.receipt)
+        else:
+            intent = ProcessingRecoveryIntent(
+                operation=body.operation,
+                starting_attempt=job.attempts + 1,
+                expected_revision=body.expected_revision,
+                key_hash=key_digest(key),
+                request_hash=row.actions_json[key_digest(key)],
+            )
+            job.result = {**(job.result or {}), "bulk_processing_recovery": intent.model_dump()}
+            job.status, job.available_at, job.updated_at = "queued", now(), now()
+            job.error = PENDING_RECOVERY
+            item.status, item.error_code = "queued", None
+            row.revision += 1
+            await self.records.flush()
         return await self._view(row)
