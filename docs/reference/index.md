@@ -25,4 +25,4 @@ The [API and SDK reference](sdk-api.md) connects the complete method index to [A
 
 ## Release evidence
 
-Read the [26.11.8 release notes](../releases/26.11.8.md) for distribution and runtime requirements. The [qualification history](../operations/qualification.md) records checks against specific revisions and environments.
+Read the [26.11.9 release notes](../releases/26.11.9.md) for distribution and runtime requirements. The [qualification history](../operations/qualification.md) records checks against specific revisions and environments.

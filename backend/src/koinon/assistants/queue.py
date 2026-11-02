@@ -279,6 +279,7 @@ class AssistantQueue:
             sources = tuple(
                 SourceReference.model_validate(value.model_dump(mode="json")) for value in capture.sources
             )
+            observed = {read.entity_id for read in capture.native_reads}
         except (AttributeError, TypeError, ValueError) as error:
             raise invalid() from error
         ids = {value.id for value in sources}
@@ -289,7 +290,9 @@ class AssistantQueue:
             or covered - set(assets)
             or (
                 capture.complete
-                and (covered != set(assets) or any(value.used_revision is None for value in sources))
+                and (
+                    covered | observed != set(assets) or any(value.used_revision is None for value in sources)
+                )
             )
         ):
             raise invalid()

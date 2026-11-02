@@ -13,7 +13,7 @@ from koinon.communications.digest import DigestScheduler
 from koinon.communications.outbox import CommunicationOutbox
 from koinon.communications.settings import CommunicationsSettings
 from koinon.communications.submission import EmailSubmission
-from koinon.workers.admission import WorkAdmission
+from koinon.workers.admission import WorkAdmission, WorkAdmissionUnavailable
 
 
 @service(name="communications.worker")
@@ -37,16 +37,23 @@ class CommunicationsWorker:
         if not self.settings.enabled or self._running:
             return
         self._running = True
+        admitted = False
         try:
             if self.digests is not None:
                 async with self.admission.hold("communications"):
+                    admitted = True
                     await self.digests.reconcile()
                     await self.digests.admit_due()
             for _ in range(10):
+                admitted = False
                 async with self.admission.hold("communications"):
+                    admitted = True
                     ticket = await self.state.claim(self.worker_id)
                     if ticket is None:
                         return
                     await self.submission.execute(ticket)
+        except WorkAdmissionUnavailable:
+            if admitted:
+                raise
         finally:
             self._running = False
