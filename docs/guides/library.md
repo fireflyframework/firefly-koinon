@@ -2,6 +2,16 @@
 
 The library is the main place to find organizational knowledge. A space contains team folders; folders contain documents and datasets. Technical records such as chunks, tables, snapshots and index versions belong in an item's details rather than the main navigation.
 
+## Read a document or download its original
+
+Open a document's filename to read the version currently available to your account. The reader loads when opened and checks availability before requesting its recorded version and extraction. A failed replacement can leave an earlier version readable. Expand **Document version** to inspect the source version, original SHA256 and extraction used by the reader.
+
+**Extracted text** shows recorded text parts, not the original Office or PDF page layout. Choose a part or use **Previous parts** and **Next parts** to read further. Source text is displayed as text; embedded HTML is not executed. **Preview original** displays supported PNG, JPEG, WebP and GIF images locally. For a PDF, choose **Prepare PDF**, then **Open PDF in browser tab**. This explicit link opens the verified original in your browser's PDF viewer, separately from the application. It does not provide an in-application PDF renderer or send the file to an external viewer service.
+
+Choose **Download original** to save the same recorded version. Original transfers are limited to 128 MiB; preparing a PDF or image preview is limited to 16 MiB. A larger source can still have readable extracted text. The reader explains a transfer limit without treating the text as unavailable. Your current access is checked by the service when content or original bytes are requested; changing account or scope clears the reader's local content and prepared links.
+
+If processing has not produced a readable version, the reader explains that status and disables original download. Use the item's separate **Details** action to inspect its processing status. Datasets retain their existing table exploration and lineage views; this document reader does not add a dataset-original download endpoint. Press Escape to close the reader and return keyboard focus to its filename.
+
 ## Spaces, projects and folders
 
 A **space** is a knowledge boundary. Its documents and datasets keep that space's identity in both native knowledge engines, and every operation checks the caller's current access. A folder name or a tag does not grant access. Create separate spaces when teams or clients need different permissions; do not rely on sibling folders for confidentiality.
@@ -30,6 +40,10 @@ A move between spaces or Library projects returns `KNOWLEDGE_TRANSFER_REQUIRED`.
 At the Library home, the server-paginated list contains spaces only. Open a space to see its projects, then open a project or folder to browse its children. Names in different levels are not peer spaces. Global knowledge search remains a separate action; the home list does not filter a previously downloaded recursive catalog on the client.
 
 ## Find and open
+
+Right-click a Library row, or use its actions button, to open the actions available for that item. Keyboard users can focus an item and press **Shift+F10** or the context-menu key. Choose **Open folder** to browse, **Details** to inspect, or **Edit details** to change the name and description. Editors can also move ordinary nested folders within their current project or archive ordinary items after confirmation. System folders never offer move or archive. The separate information button still opens details directly.
+
+Right-click the unused area of a folder list to create the next space, project or folder, or to add knowledge at the current location. These use the same forms and access checks as the toolbar. The toolbar remains available on touch devices. Press **Escape** to close the menu and return focus; actions are checked again against the current item and permissions before a form opens.
 
 Choose the organization and space you have access to. Browse folders with the list, breadcrumb or knowledge tree. Search narrows the current context; clear the search to return to the folder. Opening an item and inspecting its details are separate actions, so a details drawer does not interrupt browsing.
 

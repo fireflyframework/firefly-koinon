@@ -10,8 +10,8 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { KoinonOrganizationDirectory } from '../services/organization-directory';
-import { KoinonTextPipe } from '../foundations/i18n';
-import { KoinonButton } from '../atoms/button';
+import { KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonPagination } from '../molecules/pagination';
 import type { OrganizationPerson } from '@fireflyframework/koinon-sdk';
 @Component({

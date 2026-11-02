@@ -1,7 +1,8 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 import {bootstrapApplication} from '@angular/platform-browser';
 import {Component,signal} from '@angular/core';
-import {KoinonButton,KoinonBadge,KoinonSkeleton,KoinonIcon,KoinonSearchField,KoinonFormField,KoinonShell,KoinonLibraryTemplate,KoinonResourceList} from '@fireflyframework/koinon-angular/workbench';
+import {KoinonButton,KoinonBadge,KoinonSkeleton,KoinonIcon,KoinonSearchField,KoinonShell,KoinonLibraryTemplate,KoinonResourceList} from '@fireflyframework/koinon-angular/workbench/page';
+import {KoinonFormField} from '@fireflyframework/koinon-angular/workbench/panels';
 import type {CatalogEntry} from '@fireflyframework/koinon-sdk';
 import {ComposerReview} from './composer-review';
 const fixture=(id:string,kind:CatalogEntry['kind'],name:string,parent_id:string|null):CatalogEntry=>({id,kind,name,parent_id,tenant_id:'fixture-org',workspace_id:'fixture-space',project_id:'fixture-project',status:'ready',description:'Controlled design fixture only',metadata:{},created_at:'2026-10-26T10:00:00Z'});

@@ -3,7 +3,7 @@
 import { DestroyRef, effect, type Injector } from '@angular/core';
 import type { CatalogEntry } from '@fireflyframework/koinon-sdk';
 import type { KoinonWorkbench } from '../koinon-angular';
-import { KoinonClientContext } from './client-context';
+import { KoinonClientContext } from '@fireflyframework/koinon-angular/workbench/core';
 import { LibraryUploadCoordinator, type UploadScope } from './library-upload-coordinator';
 
 export interface LibraryUploadRuntime {

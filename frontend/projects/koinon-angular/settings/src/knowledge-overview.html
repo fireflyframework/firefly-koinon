@@ -1,0 +1,44 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<header>
+  <h2>{{ 'Knowledge & AI' | ffkText }}</h2>
+  <p>
+    {{
+      'Connect your model services, then configure how this organization processes knowledge and answers questions.'
+        | ffkText
+    }}
+  </p>
+  @if (connections) {
+    <dl class="connection-observations">
+      <div>
+        <dt>{{ 'Saved model connections' | ffkText }}</dt>
+        <dd>{{ connections.saved }}</dd>
+      </div>
+      <div>
+        <dt>{{ 'Generation and streaming checks recorded' | ffkText }}</dt>
+        <dd>{{ connections.checked }}</dd>
+      </div>
+    </dl>
+  }
+</header>
+<div class="knowledge-tasks">
+  @for (task of tasks; track task.section) {
+    @if (sections.includes(task.section)) {
+      <section class="knowledge-task">
+        <ffk-icon [name]="task.icon" />
+        <div>
+          <h3>{{ task.title | ffkText }}</h3>
+          <p>{{ task.description | ffkText }}</p>
+        </div>
+        <ffk-button variant="quiet" icon="chevron" (click)="open(task.section)">{{
+          task.action | ffkText
+        }}</ffk-button>
+      </section>
+    }
+  }
+</div>
+<p class="scope-note">
+  {{
+    'Organization defaults and workspace overrides are separate. Review the selected workspace before changing embeddings or indexes. Saved settings do not confirm that a model or index has been tested.'
+      | ffkText
+  }}
+</p>

@@ -1,11 +1,11 @@
 <!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
 <section
-  [attr.aria-label]="'Knowledge behavior' | ffkText"
+  [attr.aria-label]="'Knowledge answers' | ffkText"
   [attr.aria-busy]="c.pending() || c.saving()"
 >
   <header>
     <div>
-      <h2>{{ 'Knowledge behavior' | ffkText }}</h2>
+      <h2>{{ 'Knowledge answers' | ffkText }}</h2>
       <p class="organization"><ffk-icon name="users" />{{ c.f.tenant()?.name }}</p>
       <p>
         {{
@@ -63,6 +63,7 @@
               [value]="mode"
               [ngModel]="c.values()['documents.answer_mode']"
               (ngModelChange)="c.set('documents.answer_mode', $event)"
+              (change)="revealField($any($event.target))"
               [attr.aria-invalid]="c.errors()['documents.answer_mode'] ? true : null"
             /><span
               ><strong>{{
@@ -127,6 +128,7 @@
                       [name]="id(field)"
                       [ngModel]="c.values()[id(field)]"
                       (ngModelChange)="c.set(id(field), $event)"
+                      (change)="revealField($any($event.target))"
                       [disabled]="!c.canEdit()"
                     />{{ field.label | ffkText }}</label
                   >
@@ -140,7 +142,7 @@
                     [min]="c.bound(field)?.minimum ?? null"
                     [max]="c.bound(field)?.maximum ?? null"
                     [value]="c.values()[id(field)]"
-                    (input)="c.set(id(field), $any($event.target).value)"
+                    (input)="updateField(field, $any($event.target))"
                     [disabled]="!c.canEdit() || !c.bound(field)"
                     [attr.aria-invalid]="c.errors()[id(field)] ? true : null"
                     [attr.aria-describedby]="id(field) + '-help'"
@@ -182,7 +184,7 @@
         @if (!c.roles()) {
           <p>
             {{
-              'Model assignments could not be read in this scope. An administrator can review them in Knowledge models.'
+              'Model assignments could not be read in this scope. An administrator can review them in Model assignments.'
                 | ffkText
             }}
           </p>
@@ -196,7 +198,7 @@
           }}</small>
         }
         @if (c.f.tenantPermissions().has('providers:write')) {
-          <a href="#knowledge-model-assignments">{{ 'Review model assignments' | ffkText }}</a>
+          <ffk-button variant="quiet" (click)="reviewAssignments()">{{ 'Review model assignments' | ffkText }}</ffk-button>
         }
       </details>
       <footer [class.dirty-actions]="c.dirty() || c.saving()">

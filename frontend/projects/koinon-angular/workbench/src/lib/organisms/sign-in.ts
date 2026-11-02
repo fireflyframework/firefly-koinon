@@ -8,9 +8,9 @@ import {
   Output,
   signal,
 } from '@angular/core';
-import { KoinonTextPipe } from '../foundations/i18n';
-import { KoinonButton } from '../atoms/button';
-import { KoinonIcon } from '../atoms/icon';
+import { KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonIcon } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonPoweredBy } from '../atoms/powered-by';
 @Component({
   selector: 'ffk-sign-in',

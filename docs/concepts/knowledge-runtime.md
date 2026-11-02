@@ -7,12 +7,12 @@ koinon connects a question to the knowledge its caller can access. Documents, da
 
 | Component | Responsibility | Configuration |
 | --- | --- | --- |
-| Model provider | Supplies a particular model through an approved endpoint and API protocol. | **Providers** |
-| Chat agent | Combines a model, instructions, allowed tools and a permitted knowledge scope. | **Agents** |
-| Knowledge model assignment | Selects the model used for a processing role, such as embeddings or SQL generation. | **Knowledge models** |
+| Model provider | Supplies a particular model through an approved endpoint and API protocol. | **Model connections** |
+| Chat agent | Combines a model, instructions, allowed tools and a permitted knowledge scope. | **Assistant** |
+| Knowledge model assignment | Selects the model used for a processing role, such as embeddings or SQL generation. | **Model assignments** |
 | Embedding model | Converts content and search input into compatible vectors for retrieval. It does not write an answer. | An explicit embedding assignment, dimensions and embedding space |
 | Retrieval index | Makes the recorded knowledge searchable using the configured retrieval backend. | **Storage & indexing** and deployment configuration |
-| Answer policy | Chooses document RAG or RLM and bounds retrieval, analysis and structured-query work. | **Knowledge behavior** within **Knowledge models** |
+| Answer policy | Chooses document RAG or RLM and bounds retrieval, analysis and structured-query work. | **Knowledge answers** |
 | Conversation worker | Executes a durable admitted run, retains events and evidence, and observes cancellation and lease ownership. | Deployment configuration |
 
 A connected provider, a discovered model and a successful capability check are different observations. Check the exact model's chat, streaming, tool and image support. A saved connection does not establish that an end-to-end answer has been tested.

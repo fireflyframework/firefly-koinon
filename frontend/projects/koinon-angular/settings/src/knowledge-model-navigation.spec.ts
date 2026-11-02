@@ -224,3 +224,103 @@ it('dismisses a previous departure confirmation when assignment scope is explici
   model.confirmNavigation();
   expect(events).toEqual([]);
 });
+
+it('separates answer behavior from model assignments and places source processing in Operations', () => {
+  const { f } = setup();
+  f.context.update((value) => ({
+    ...value!,
+    tenants: [
+      {
+        ...value!.tenants[0],
+        permissions: [...value!.tenants[0].permissions, 'settings:write', 'sources:configure'],
+      },
+    ],
+  }));
+  const parent = TestBed.createComponent(KoinonSettingsPage).componentInstance;
+  expect(
+    parent.tabsFor(parent.groups.find((group) => group.id === 'knowledge')!).map((tab) => tab.id),
+  ).toEqual(['knowledge', 'providers', 'models', 'answers', 'agents', 'storage']);
+  expect(
+    parent.tabsFor(parent.groups.find((group) => group.id === 'operations')!).map((tab) => tab.id),
+  ).toContain('sources');
+});
+
+it('does not give a connection administrator answer-policy or assistant administration', () => {
+  const { f } = setup();
+  f.context.update((value) => ({
+    ...value!,
+    tenants: [{ ...value!.tenants[0], permissions: ['providers:write'] }],
+  }));
+  const parent = TestBed.createComponent(KoinonSettingsPage).componentInstance;
+  expect(
+    parent.tabsFor(parent.groups.find((group) => group.id === 'knowledge')!).map((tab) => tab.id),
+  ).toEqual(['knowledge', 'providers', 'models']);
+});
+
+it('reviews sidebar departure and preserves the exact connection draft when editing continues', async () => {
+  setup();
+  const parent = TestBed.createComponent(KoinonSettingsPage).componentInstance;
+  parent.editor.set('provider');
+  parent.providerValues = { name: 'Unsaved connection', secret: 'fixture-only-key' };
+  await parent.openSection('models');
+  expect(parent.section()).toBe('providers');
+  expect(parent.departureReview()?.section).toBe('models');
+  parent.keepSectionEditing();
+  expect(parent.editor()).toBe('provider');
+  expect(parent.providerValues).toEqual({ name: 'Unsaved connection', secret: 'fixture-only-key' });
+  expect(parent.departureReview()).toBeNull();
+});
+
+it('requires a fresh permitted destination after departure is explicitly confirmed', async () => {
+  const { f } = setup();
+  const parent = TestBed.createComponent(KoinonSettingsPage).componentInstance;
+  parent.editor.set('provider');
+  await parent.openSection('models');
+  f.context.update((value) => ({
+    ...value!,
+    tenants: [{ ...value!.tenants[0], permissions: ['agents:write'] }],
+  }));
+  await parent.confirmSectionDeparture();
+  expect(parent.section()).toBe('providers');
+  expect(parent.editor()).toBe('provider');
+});
+
+it('does not carry a previous identity departure decision into a replacement credential', async () => {
+  setup();
+  const parent = TestBed.createComponent(KoinonSettingsPage).componentInstance;
+  parent.editor.set('provider');
+  await parent.openSection('models');
+  TestBed.inject(KoinonClientContext).revision.update((value) => value + 1);
+  await parent.confirmSectionDeparture();
+  expect(parent.section()).toBe('providers');
+  expect(parent.departureReview()).toBeNull();
+});
+
+it('does not open a requested agent editor after the current agent record disappears', async () => {
+  setup();
+  const parent = TestBed.createComponent(KoinonSettingsPage).componentInstance;
+  const agent = { id: 'shared', name: 'Shared assistant', description: '', provider_id: 'provider', model_id: 'model', tools: [], scope: {}, instructions: '', enabled: true, revision: 2, status: 'ready' as const, checks: [] };
+  parent.c.agents.set({ items: [agent] });
+  parent.editor.set('provider');
+  parent.beginAgent(agent);
+  expect(parent.departureReview()?.agentId).toBe('shared');
+  parent.c.agents.set({ items: [] });
+  await parent.confirmSectionDeparture();
+  expect(parent.agentRecord()).toBeNull();
+  expect(parent.editor()).toBe('provider');
+  expect(parent.formError()).toContain('no longer available');
+});
+
+it('does not carry an agent departure decision across a credential replacement', async () => {
+  setup();
+  const parent = TestBed.createComponent(KoinonSettingsPage).componentInstance;
+  const agent = { id: 'shared', name: 'Shared assistant', description: '', provider_id: 'provider', model_id: 'model', tools: [], scope: {}, instructions: '', enabled: true, revision: 2, status: 'ready' as const, checks: [] };
+  parent.c.agents.set({ items: [agent] });
+  parent.editor.set('provider');
+  parent.beginAgent(agent);
+  TestBed.inject(KoinonClientContext).revision.update(value => value + 1);
+  expect(parent.departureReview()).toBeNull();
+  await parent.confirmSectionDeparture();
+  expect(parent.agentRecord()).toBeNull();
+  expect(parent.editor()).toBe('provider');
+});

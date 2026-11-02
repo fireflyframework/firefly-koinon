@@ -1,7 +1,7 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 import type { UserProfile } from '@fireflyframework/koinon-sdk';
 import type { KoinonAccount } from './account';
-import type { KoinonClientContext } from './client-context';
+import type { KoinonClientContext } from '@fireflyframework/koinon-angular/workbench/core';
 import type { AccountPerformer } from './account-tokens';
 export class AccountAvatar {
   private url = '';

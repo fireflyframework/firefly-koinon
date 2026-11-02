@@ -9,8 +9,8 @@ import type {
   TableRowRangePage,
   TableColumnBindingPage,
 } from '@fireflyframework/koinon-sdk';
-import { KoinonFacade } from '../koinon-facade';
-import { KoinonClientContext } from './client-context';
+import { KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonClientContext } from '@fireflyframework/koinon-angular/workbench/core';
 
 export interface CoordinateTarget {
   datasetId: string;
