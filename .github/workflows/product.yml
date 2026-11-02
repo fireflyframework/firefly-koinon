@@ -59,6 +59,9 @@ jobs:
         run: |
           .venv/bin/ruff check src tests
           .venv/bin/pyright --pythonpath .venv/bin/python src/koinon
+      - name: Verify real Office parsers before full-suite execution
+        working-directory: backend
+        run: .venv/bin/python -m pytest -q tests/knowledge/bulk/test_real_office_parsers.py
       - name: Test application and deployment configuration
         working-directory: backend
         run: |

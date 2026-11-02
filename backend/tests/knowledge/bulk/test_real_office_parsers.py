@@ -2,14 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 """Actual bounded native readers preserve original bytes and source coordinates."""
 
+import asyncio
 from hashlib import sha256
+from tempfile import TemporaryFile
 
 import pytest
 from office_fixtures import office_original
 
 
 @pytest.mark.parametrize("kind", ["docx", "pptx", "xlsx", "csv"])
-async def test_real_office_documents_extract_text_and_preserve_original_bytes(tmp_path, kind):
+async def test_real_office_documents_extract_text_and_preserve_original_bytes(tmp_path, kind, monkeypatch):
     from flycanon.core.services.ingestion.file_parser import DocumentFilePolicy, parse_document_file
 
     content = office_original(kind)
@@ -17,7 +19,18 @@ async def test_real_office_documents_extract_text_and_preserve_original_bytes(tm
         assert content.startswith(b"PK\x03\x04")
     path = tmp_path / ("review." + kind)
     path.write_bytes(content)
-    parsed = await parse_document_file(path, filename=path.name, policy=DocumentFilePolicy())
+    spawn = asyncio.create_subprocess_exec
+    with TemporaryFile() as diagnostics:
+        async def observed_spawn(*args, **kwargs):
+            kwargs["stderr"] = diagnostics
+            return await spawn(*args, **kwargs)
+
+        monkeypatch.setattr(asyncio, "create_subprocess_exec", observed_spawn)
+        try:
+            parsed = await parse_document_file(path, filename=path.name, policy=DocumentFilePolicy())
+        except ValueError:
+            diagnostics.seek(0)
+            pytest.fail(diagnostics.read(4096).decode(errors="replace"))
     assert parsed.kind == kind and parsed.raw_bytes == len(content)
     assert "North" in parsed.text and "125" in parsed.text
     assert path.read_bytes() == content
