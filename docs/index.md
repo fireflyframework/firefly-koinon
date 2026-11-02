@@ -47,7 +47,7 @@ Already operating an organization? Follow a [complete workflow by role](guides/u
   <section>
     <h3>Use an AI client</h3>
     <p>Connect your authorized repository and review changes inside a compatible host.</p>
-    <ul><li><a href="guides/connect-claude/">Connect Claude</a></li><li><a href="guides/connect-chatgpt/">Connect ChatGPT</a></li><li><a href="guides/mcp-knowledge-management/">Understand in-chat review</a></li></ul>
+    <ul><li><a href="guides/connect-ai-assistants/">Choose and connect your assistant</a></li><li><a href="guides/connect-claude/">Connect Claude</a></li><li><a href="guides/connect-chatgpt/">Connect ChatGPT</a></li><li><a href="guides/connect-grok/">Connect Grok</a></li><li><a href="guides/mcp-knowledge-management/">Understand in-chat review</a></li></ul>
   </section>
 </div>
 
