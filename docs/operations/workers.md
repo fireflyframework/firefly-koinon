@@ -20,6 +20,16 @@ The diagnostic contains exception types and the module, function and line where 
 
 ## Capacity and demand
 
+### Investigating slow responses
+
+Measure a complete user action before changing concurrency. Opening an already recorded tool result should not generate another model answer. Its cost comes from authentication, current source and permission checks, reading the saved result, and rendering it. Compare the API request duration with the browser's loading state to separate server latency from rendering. An open SSE request has a deliberately long lifetime; its total HTTP duration alone does not measure the delay before the first useful event.
+
+For a new answer, use the run's admission time, recorded tool activity, first published message event and terminal event. These separate queue wait, knowledge retrieval, model work and final publication. Record p50 and p95 durations with realistic concurrent users, alongside throughput and errors. Also inspect oldest queue age, pool checkout waits, SQL counts, event-loop responsiveness, worker CPU and memory, and provider throttling. Preserve provenance and the final authorization check during performance testing.
+
+Increasing `worker_concurrency` alone cannot overcome a smaller `worker_capacity`. Likewise, more API replicas cannot speed up a query that repeats hundreds of unnecessary database reads. First remove repeated work within each consistent read, then test a bounded increase in consumers or replicas against the same workload. Include simultaneous audit reads, chat streams and document intake. Verify cancellation, permission revocation, lease recovery and connection release, as well as response time. Keep ingestion memory and scratch limits in the capacity calculation when it shares workers with chat.
+
+### Setting capacity limits
+
 Keep at least one worker initially, including during periods with no interactive demand, so periodic profile and retention work continues. Scale API replicas from HTTP demand independently. Tune worker demand targets and replica limits using measured queue age, model latency, provider limits and database saturation.
 
 The internal typed `WorkerBacklog.snapshot()` observation returns bounded counts for ten queues: conversation, index, attachment, profile, document ingestion, structured ingestion, callback, communications, bulk intake and bulk read-only queries. Each includes ready, active, retry, oldest ready age and declared per-replica capacity. Demand is ready plus active work, including jobs waiting for a provider. A missing datasource reports unavailable rather than an empty queue. No identifiers, prompts, source contents or credentials are returned, and this observation adds no public route or grant.

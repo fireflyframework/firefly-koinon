@@ -26,6 +26,7 @@ from koinon.catalog.repositories import (
     TenantRepository,
 )
 from koinon.security.authority import primary_authority
+from koinon.security.policy_reads import snapshot_values
 from koinon.tokens.authorization import TokenRestriction
 from koinon.tokens.entities import PersonalToken
 
@@ -131,12 +132,22 @@ class CatalogService:
 
     @primary_authority()
     async def _memberships(self, subject: str) -> list[MembershipRecord]:
-        rows = await self.membership_repository.find_all(subject=subject, active=True)
-        records: list[MembershipRecord] = list(rows)
-        if self.managed_memberships is not None:
-            records.extend(await self.managed_memberships.load_managed_memberships(subject))
+        observed = snapshot_values(self, "memberships")
+        records = observed.get(subject) if observed is not None else None
+        if records is None:
+            records = list(await self.membership_repository.find_all(subject=subject, active=True))
+            if self.managed_memberships is not None:
+                records.extend(await self.managed_memberships.load_managed_memberships(subject))
+            if observed is not None:
+                observed[subject] = records
         grant = await self.restriction.grant(subject) if self.restriction else None
-        return [row for row in records if grant is None or row.tenant_id == grant.tenant_id]
+        now = datetime.now(UTC)
+        return [
+            row
+            for row in records
+            if (grant is None or row.tenant_id == grant.tenant_id)
+            and (getattr(row, "expires_at", None) is None or row.expires_at > now)
+        ]
 
     async def permissions(
         self, subject: str, tenant_id: str, workspace_id: str | None = None
@@ -203,7 +214,13 @@ class CatalogService:
             raise AccessDenied("Resource is not accessible in the selected context", code="ACCESS_DENIED")
 
     async def _scoped_entry(self, tenant_id: str, entry_id: str, *, lock=False) -> CatalogEntry:
-        rows = await self.catalog_repository.find_all(id=entry_id, tenant_id=tenant_id)
+        observed = snapshot_values(self, "entries") if not lock else None
+        key = (tenant_id, entry_id)
+        rows = observed.get(key) if observed is not None else None
+        if rows is None:
+            rows = await self.catalog_repository.find_all(id=entry_id, tenant_id=tenant_id)
+            if observed is not None:
+                observed[key] = rows
         if not rows:
             raise AccessDenied("Resource is not accessible in the selected context", code="ACCESS_DENIED")
         return (
@@ -550,7 +567,14 @@ class CatalogService:
 
     async def _validate_workspace(self, tenant_id: str, workspace_id: str | None) -> None:
         if workspace_id is not None:
-            kind = await self.catalog_repository.scope_kind(tenant_id, workspace_id)
+            observed = snapshot_values(self, "workspace-kinds")
+            key = (tenant_id, workspace_id)
+            if observed is not None and key in observed:
+                kind = observed[key]
+            else:
+                kind = await self.catalog_repository.scope_kind(tenant_id, workspace_id)
+                if observed is not None:
+                    observed[key] = kind
             if kind is None:
                 raise AccessDenied("Resource is not accessible in the selected context", code="ACCESS_DENIED")
             if kind != "workspace":

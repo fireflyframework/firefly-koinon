@@ -24,6 +24,7 @@ from koinon.knowledge.entities import DomainBinding
 from koinon.knowledge.repositories import DomainBindingRepository
 from koinon.organization_knowledge.runtime import settings_for_operation
 from koinon.organization_knowledge.service import OrganizationKnowledgeService
+from koinon.security.policy_reads import policy_read
 
 
 @component(name="knowledge.settings")
@@ -57,6 +58,11 @@ class KnowledgeFacade:
         self.knowledge_settings = knowledge_settings
 
     async def _chain(self, subject: str, tenant_id: str, entry_id: str, permission="catalog:read"):
+        await self.catalog._refresh_managed_memberships(subject)
+        async with policy_read():
+            return await self._read_chain(subject, tenant_id, entry_id, permission)
+
+    async def _read_chain(self, subject: str, tenant_id: str, entry_id: str, permission="catalog:read"):
         chain, seen = [], set()
         current = entry_id
         while current is not None:
