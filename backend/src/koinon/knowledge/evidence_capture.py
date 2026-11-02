@@ -225,7 +225,21 @@ class NativeKnowledgeEvidence:
             data = await self.knowledge.search(subject, tenant_id, **arguments, _capture=receipt)
             from koinon.knowledge.rlm_provenance import execution_views
 
-            complete = receipt.complete and receipt.observed
+            empty_catalog = (
+                receipt.catalog_search_empty
+                and receipt.authorize_empty_search is not None
+                and not data.get("hits")
+                and not data.get("answer")
+                and not data.get("citations")
+                and not receipt.observed
+                and not receipt.native_reads
+                and not receipt.documents
+                and not receipt.knowledge_sources
+                and not receipt.sql_attempts
+            )
+            if empty_catalog and receipt.authorize_empty_search is not None:
+                await receipt.authorize_empty_search()
+            complete = receipt.complete and (receipt.observed or empty_catalog)
             admitted = {}
             for hit in data.get("hits", []):
                 known = receipt.knowledge_sources.get(str(hit.get("id")))
@@ -332,7 +346,7 @@ class NativeKnowledgeEvidence:
                     [(source, bindings[source.asset_id]) for source in part_sources],
                 )
                 sources.update(verified)
-            if arguments.get("answer", False):
+            if arguments.get("answer", False) and not empty_catalog:
                 from koinon.knowledge.rlm_provenance import verified_rlm_answer
 
                 rlm = any(row.stage.startswith("rlm.") for row in receipt.native_reads)
