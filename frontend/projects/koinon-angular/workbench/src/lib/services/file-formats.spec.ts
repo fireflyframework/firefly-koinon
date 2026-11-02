@@ -12,7 +12,7 @@ describe('server-provided file format presentation', () => {
       'PowerPoint',
       'PDF',
       'Text',
-      'Datasets',
+      'Tabular files',
     ]);
     expect(groups.find((group) => group.label === 'PowerPoint')?.extensions).toEqual(['.pptx']);
     expect(groups.flatMap((group) => group.extensions)).not.toContain('.ppt');
@@ -30,7 +30,7 @@ describe('server-provided file format presentation', () => {
       '.xlsx',
       '.xlsx.gz',
     ]);
-    expect(groups.find((group) => group.label === 'Datasets')?.extensions).toEqual([
+    expect(groups.find((group) => group.label === 'Tabular files')?.extensions).toEqual([
       '.csv',
       '.csv.gz',
       '.csv.zip',

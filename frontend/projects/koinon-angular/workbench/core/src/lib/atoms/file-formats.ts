@@ -10,7 +10,7 @@ const families: readonly [string, readonly string[]][] = [
   ['PDF', ['.pdf']],
   ['Text', ['.txt', '.text', '.md', '.markdown', '.rtf', '.html', '.htm', '.xml']],
   [
-    'Datasets',
+    'Tabular files',
     [
       '.csv',
       '.tsv',
@@ -45,7 +45,7 @@ export function fileFormatGroups(extensions: readonly string[]) {
       ...new Set(selected.map((extension) => extension.replace(/\.(gz|bz2|zip)$/, ''))),
     ];
     const summary =
-      label === 'Datasets'
+      label === 'Tabular files'
         ? base.slice(0, 2).join(', ') + (base.length > 2 ? ', …' : '')
         : ['Word', 'Excel', 'PowerPoint', 'PDF'].includes(label) || selected.length <= 2
           ? [
@@ -60,7 +60,7 @@ registerKoinonSpanish({
   'Supported file types': 'Tipos de archivo admitidos',
   'All file formats': 'Todos los formatos de archivo',
   'Other formats': 'Otros formatos',
-  Datasets: 'Conjuntos de datos',
+  'Tabular files': 'Archivos tabulares',
   Text: 'Texto',
   Images: 'Imágenes',
   'Unavailable on this server': 'No disponibles en este servidor',
