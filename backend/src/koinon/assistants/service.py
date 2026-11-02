@@ -37,6 +37,7 @@ from koinon.knowledge.attachments.ports import AttachmentRef, ChatAttachmentAcce
 from koinon.operations.settings import OperationalSettings
 from koinon.organization_knowledge.runtime import snapshot_for_run
 from koinon.organization_knowledge.service import OrganizationKnowledgeService
+from koinon.security.authority import primary_authority
 
 
 @service(name="assistants.service")
@@ -455,7 +456,7 @@ class AssistantService:
             "event_cursor": str(run.sequence),
         }
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def activity_page(
         self, subject: str, tenant_id: str, run_id: str, *, page: int = 1, page_size: int = 25
     ):
@@ -551,7 +552,7 @@ class AssistantService:
             if access is not None:
                 await access.authorize(subject, tenant_id, run_id)
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def thread_page(
         self, subject, tenant_id, *, q="", page=1, page_size=25, sort="updated_at", order="desc"
     ):

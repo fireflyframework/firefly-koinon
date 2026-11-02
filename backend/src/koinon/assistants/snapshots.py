@@ -7,6 +7,7 @@ import json
 
 from pyfly.container import Provider, service
 from pyfly.data import transactional
+from pyfly.data.transaction import Propagation
 from pyfly.kernel import InvalidRequestException, ServiceUnavailableException
 from pyfly.security.context import SecurityContext
 from pyfly.security.context_holder import SecurityContextHolder
@@ -39,7 +40,8 @@ class ConversationSnapshots(ConversationSnapshotPort, ConversationOutputPort):
         self.assistants, self.tokens = assistants, tokens
         self.egress = egress
 
-    @transactional(read_only=True, read_from_primary=True)
+    # Final memory/output checks own fresh primary units; do not retain an enclosing connection.
+    @transactional(propagation=Propagation.NOT_SUPPORTED, read_only=True, read_from_primary=True)
     async def authorize_output(
         self,
         subject: str,
@@ -225,7 +227,7 @@ class ConversationSnapshots(ConversationSnapshotPort, ConversationOutputPort):
             complete = message.answer_policy.get("outcome") == "refused"
         return tuple(references[key] for key in sorted(references)), tuple(result_ids), complete
 
-    @transactional(read_only=True, read_from_primary=True)
+    @transactional(propagation=Propagation.NOT_SUPPORTED, read_only=True, read_from_primary=True)
     async def snapshot(
         self, subject: str, tenant_id: str, thread_id: str, message_ids: list[str]
     ) -> ConversationSnapshot:
