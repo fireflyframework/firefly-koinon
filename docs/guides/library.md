@@ -121,7 +121,7 @@ After confirmation, refresh the upload and open the Library item to inspect its 
 
 A successful upload records the result of that request. It does not establish that a source is searchable. Library rows and details observe the current native source, extraction or table snapshot separately from catalog metadata.
 
-Documents, datasets, tables and source records show one observed ingestion status rather than a second, potentially older catalog status. **Archived** remains a separate lifecycle label. If a replacement fails while an earlier version remains readable, the row keeps both the attention status and the explanation that the observed version is still available. An unavailable observation stays **Availability not checked**; it does not become ready because catalog metadata says so.
+Documents, datasets, tables and source records show one observed ingestion status rather than a second, potentially older catalog processing marker. Explicit lifecycle labels such as **Draft**, **Disabled** and **Archived**, and other catalog states, remain visible independently. If a replacement fails while an earlier version remains readable, the row keeps both the attention status and the explanation that the observed version is still available. An unavailable observation stays **Availability not checked**; it does not become ready because catalog metadata says so.
 
 - **Text available** means that the current document has a recorded extraction and matching text chunks. It does not promise complete extraction of every page or image.
 - **Searchable** additionally requires matching vectors in the active embedding set and its qualified native search index. A queued or running index job can show **Queued** or **Indexing** while text remains readable.

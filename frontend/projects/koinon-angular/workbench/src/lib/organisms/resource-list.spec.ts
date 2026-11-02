@@ -41,3 +41,27 @@ it('retains folder catalog status', () => {
     render('collection', 'pending').querySelector(':scope > ffk-badge')?.textContent,
   ).toContain('Pending');
 });
+
+it.each([
+  ['draft', 'Draft'],
+  ['disabled', 'Disabled'],
+  ['review_requested', 'Review requested'],
+])('retains explicit %s lifecycle or custom status', (status, label) => {
+  expect(render('document', status).querySelector(':scope > ffk-badge')?.textContent).toContain(
+    label,
+  );
+});
+
+it.each([
+  'processing',
+  'running',
+  'queued',
+  'indexing',
+  'failed',
+  'error',
+  'cancelled',
+  'completed',
+  'succeeded',
+])('delegates the recognized %s processing marker to native availability', (status) => {
+  expect(render('document', status).querySelector(':scope > ffk-badge')).toBeNull();
+});
