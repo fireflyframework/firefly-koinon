@@ -51,11 +51,14 @@ export interface CommunicationPolicyUpdate {
 }
 import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
 import { COMMUNICATIONS_ADMIN_SPANISH } from './spanish';
+import { KoinonDeliveryRecovery } from './delivery-recovery';
+import type { KoinonCommunicationsSession } from '@fireflyframework/koinon-angular/communications/runtime';
 registerKoinonSpanish(COMMUNICATIONS_ADMIN_SPANISH);
 
 @Component({
   selector: 'ffk-communications-admin',
   imports: [
+    KoinonDeliveryRecovery,
     KoinonDigestSchedule,
     FormsModule,
     KoinonBadge,
@@ -70,6 +73,7 @@ registerKoinonSpanish(COMMUNICATIONS_ADMIN_SPANISH);
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KoinonCommunicationsAdmin implements OnChanges {
+  @Input() deliverySession: KoinonCommunicationsSession | null = null;
   @Input() readiness: CommunicationReadiness | null = null;
   @Input() policy: CommunicationPolicyView | null = null;
   @Input() deliveries: DeliveryPage | null = null;
@@ -83,6 +87,7 @@ export class KoinonCommunicationsAdmin implements OnChanges {
   @Output() filterChanged = new EventEmitter<DeliveryFilter>();
   @Output() policyChanged = new EventEmitter<CommunicationPolicyUpdate>();
   @Output() deliveryRequested = new EventEmitter<string>();
+  @Output() deliveryAccessDenied = new EventEmitter<void>();
   @Output() deliveryClosed = new EventEmitter<void>();
   @Output() retryRequested = new EventEmitter<string>();
   @Output() refreshRequested = new EventEmitter<void>();

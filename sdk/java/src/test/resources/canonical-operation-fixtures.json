@@ -5231,6 +5231,129 @@
     "idempotency": false
   },
   {
+    "operation": "DeliveryRecoveryController.delivery_recovery",
+    "group": "CommunicationsApi",
+    "group_scoped": true,
+    "method": "recovery",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/communications/deliveries/delivery_id value/recovery",
+    "ids": {
+      "tenant_id": "tenant value",
+      "delivery_id": "delivery_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "DeliveryRecoveryOptions",
+    "body": {
+      "delivery_id": "delivery_id-value",
+      "generation": 1,
+      "submission_status": "queued",
+      "attempt_count": 1,
+      "can_inspect": false,
+      "inspection_reason": "inspection_reason-value",
+      "provider_binding_state": "verified",
+      "can_recover_welcome": false,
+      "recovery_reason": "recovery_reason-value",
+      "contact_id": "contact_id-value",
+      "contact_revision": 1,
+      "possible_original_late_arrival": true
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "DeliveryRecoveryController.delivery_observations",
+    "group": "CommunicationsApi",
+    "group_scoped": true,
+    "method": "observations",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/communications/deliveries/delivery_id value/observations",
+    "ids": {
+      "tenant_id": "tenant value",
+      "delivery_id": "delivery_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "DeliveryObservationPage",
+    "body": {
+      "items": [
+        {
+          "id": "id-value",
+          "delivery_id": "delivery_id-value",
+          "source": "operation_lookup",
+          "operation_state": "checking",
+          "recipient_state": "not_observed",
+          "checked_at": "2026-10-27T12:34:56Z",
+          "reason_code": "reason_code-value"
+        }
+      ],
+      "has_more": false
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "DeliveryRecoveryController.inspect_delivery",
+    "group": "CommunicationsApi",
+    "group_scoped": true,
+    "method": "inspectDelivery",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/communications/deliveries/delivery_id value/observations",
+    "ids": {
+      "tenant_id": "tenant value",
+      "delivery_id": "delivery_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "DeliveryInspectionInput",
+    "response": "DeliveryOperationObservation",
+    "body": {
+      "id": "id-value",
+      "delivery_id": "delivery_id-value",
+      "source": "operation_lookup",
+      "operation_state": "checking",
+      "recipient_state": "not_observed",
+      "checked_at": "2026-10-27T12:34:56Z",
+      "reason_code": "reason_code-value"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": true
+  },
+  {
+    "operation": "DeliveryRecoveryController.recover_welcome",
+    "group": "CommunicationsApi",
+    "group_scoped": true,
+    "method": "recoverWelcome",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/communications/deliveries/delivery_id value/welcome-recovery",
+    "ids": {
+      "tenant_id": "tenant value",
+      "delivery_id": "delivery_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "WelcomeRecoveryInput",
+    "response": "WelcomeRecoveryAcknowledgement",
+    "body": {
+      "original_delivery_id": "original_delivery_id-value",
+      "delivery_id": "delivery_id-value",
+      "status": "queued",
+      "possible_original_late_arrival": true
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": true
+  },
+  {
     "operation": "CorporateIdentityController.list",
     "group": "IdentityApi",
     "group_scoped": true,

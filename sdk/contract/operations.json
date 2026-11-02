@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "api_prefix": "/api/v1",
   "status": "Canonical API contract; development snapshot",
-  "canonical_operation_count": 244,
+  "canonical_operation_count": 248,
   "qualified_compatibility_operations": [
     {
       "operation": "GlossaryController.list_terms",
@@ -3436,6 +3436,158 @@
       "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
       "encoding": "application/json",
       "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/communications/deliveries/{delivery_id}/recovery",
+      "category": "canonical",
+      "operation": "DeliveryRecoveryController.delivery_recovery",
+      "source": "backend/src/koinon/communications/recovery_controller.py",
+      "line": 29,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "delivery_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "DeliveryRecoveryOptions",
+      "sdk_python": "communication_delivery_recovery",
+      "sdk_typescript": "communications.administration.recovery",
+      "sdk_java": "client.communications.recovery",
+      "request_schema": null,
+      "response_schema": "DeliveryRecoveryOptions",
+      "success_status": 200,
+      "source_sha256": "5d5dff3b17453a2b7c64d1fbe41ba917743103a4fd7cb9be5b1636beff9fa848",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/communications/deliveries/{delivery_id}/observations",
+      "category": "canonical",
+      "operation": "DeliveryRecoveryController.delivery_observations",
+      "source": "backend/src/koinon/communications/recovery_controller.py",
+      "line": 35,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "delivery_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "DeliveryObservationPage",
+      "sdk_python": "communication_delivery_observations",
+      "sdk_typescript": "communications.administration.observations",
+      "sdk_java": "client.communications.observations",
+      "request_schema": null,
+      "response_schema": "DeliveryObservationPage",
+      "success_status": 200,
+      "source_sha256": "5d5dff3b17453a2b7c64d1fbe41ba917743103a4fd7cb9be5b1636beff9fa848",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/communications/deliveries/{delivery_id}/observations",
+      "category": "canonical",
+      "operation": "DeliveryRecoveryController.inspect_delivery",
+      "source": "backend/src/koinon/communications/recovery_controller.py",
+      "line": 41,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "delivery_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[DeliveryInspectionInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "DeliveryOperationObservation",
+      "sdk_python": "inspect_communication_delivery",
+      "sdk_typescript": "communications.administration.inspectDelivery",
+      "sdk_java": "client.communications.inspectDelivery",
+      "request_schema": "DeliveryInspectionInput",
+      "response_schema": "DeliveryOperationObservation",
+      "success_status": 200,
+      "source_sha256": "5d5dff3b17453a2b7c64d1fbe41ba917743103a4fd7cb9be5b1636beff9fa848",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/communications/deliveries/{delivery_id}/welcome-recovery",
+      "category": "canonical",
+      "operation": "DeliveryRecoveryController.recover_welcome",
+      "source": "backend/src/koinon/communications/recovery_controller.py",
+      "line": 57,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "delivery_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[WelcomeRecoveryInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "WelcomeRecoveryAcknowledgement",
+      "sdk_python": "recover_welcome_delivery",
+      "sdk_typescript": "communications.administration.recoverWelcome",
+      "sdk_java": "client.communications.recoverWelcome",
+      "request_schema": "WelcomeRecoveryInput",
+      "response_schema": "WelcomeRecoveryAcknowledgement",
+      "success_status": 200,
+      "source_sha256": "5d5dff3b17453a2b7c64d1fbe41ba917743103a4fd7cb9be5b1636beff9fa848",
+      "sdk_typescript_factory": "createCommunicationsApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/communications",
+      "encoding": "application/json",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
     },
     {
       "method": "GET",

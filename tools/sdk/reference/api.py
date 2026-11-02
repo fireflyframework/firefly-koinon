@@ -92,6 +92,7 @@ AREAS = (
             "AuditController",
             "ActivityController",
             "CommunicationsController",
+            "DeliveryRecoveryController",
             "NotificationController",
             "EvidenceController",
         ),

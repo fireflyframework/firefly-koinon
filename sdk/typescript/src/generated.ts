@@ -469,6 +469,36 @@ export interface DatasetFileAppendResult {
  "table_ids": Array<string>;
  "status": "ready";
 }
+export interface DeliveryInspectionInput {
+ "expected_generation": number;
+}
+export interface DeliveryObservationPage {
+ "items": Array<DeliveryOperationObservation>;
+ "has_more": boolean;
+}
+export interface DeliveryOperationObservation {
+ "id": string;
+ "delivery_id": string;
+ "source"?: "operation_lookup";
+ "operation_state": "checking" | "pending" | "accepted" | "rejected" | "unknown" | "unavailable";
+ "recipient_state"?: "not_observed";
+ "checked_at"?: string | null;
+ "reason_code"?: string | null;
+}
+export interface DeliveryRecoveryOptions {
+ "delivery_id": string;
+ "generation": number;
+ "submission_status": "queued" | "sending" | "sent" | "delivered" | "deferred" | "failed" | "suppressed" | "cancelled" | "unknown";
+ "attempt_count": number;
+ "can_inspect": boolean;
+ "inspection_reason"?: string | null;
+ "provider_binding_state": "verified" | "operator_verification_required" | "unavailable";
+ "can_recover_welcome": boolean;
+ "recovery_reason"?: string | null;
+ "contact_id"?: string | null;
+ "contact_revision"?: number | null;
+ "possible_original_late_arrival"?: true;
+}
 export interface DocumentEvidence {
  "kind"?: "document_passage";
  "source": SourceReference;
@@ -2279,6 +2309,19 @@ export interface UserStatementEvidence {
 }
 export interface UserStatementOrigin {
  "kind": "user_statement";
+}
+export interface WelcomeRecoveryAcknowledgement {
+ "original_delivery_id": string;
+ "delivery_id": string;
+ "status": "queued" | "sending" | "sent" | "delivered" | "deferred" | "failed" | "suppressed" | "cancelled" | "unknown";
+ "possible_original_late_arrival"?: true;
+}
+export interface WelcomeRecoveryInput {
+ "expected_generation": number;
+ "contact_id": string;
+ "expected_contact_revision": number;
+ "reason": "recipient_reported_not_received";
+ "acknowledge_possible_duplicate": true;
 }
 export type AttachmentStatus = AttachmentView["status"];
 export type AttachmentKind = AttachmentView["kind"];

@@ -1,0 +1,201 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+@if (state(); as driver) {
+  @let v = driver.view();
+  @if (allowed()) {
+    <section aria-labelledby="delivery-observations-title" [attr.aria-busy]="v.busy">
+      <div class="section-heading">
+        <h4 #sectionTitle tabindex="-1" id="delivery-observations-title">
+          {{ 'Email service and receipt' | ffkText }}
+        </h4>
+        <ffk-button
+          variant="quiet"
+          icon="refresh"
+          [label]="'Refresh recorded checks' | ffkText"
+          [disabled]="v.busy"
+          (click)="driver.open(delivery().id)"
+        />
+      </div>
+      <p>
+        {{
+          'An email service can accept a message without confirming that the recipient received it. A check reads the existing provider operation; it does not resend the message.'
+            | ffkText
+        }}
+      </p>
+      @if (v.busy) {
+        <ffk-skeleton width="65%" height="3px" [label]="'Loading delivery checks' | ffkText" />
+      }
+      @if (v.error) {
+        <p class="feedback" role="alert">{{ v.error | ffkText }}</p>
+      }
+      @if (v.notice) {
+        <p class="feedback" role="status">{{ v.notice | ffkText }}</p>
+      }
+      @if (v.acknowledgment; as acknowledgment) {
+        <p class="reference">
+          {{ 'New delivery reference' | ffkText }} <code>{{ acknowledgment.delivery_id }}</code>
+        </p>
+      }
+      @if (v.acknowledgment; as acknowledgment) {
+        <ffk-button
+          variant="quiet"
+          icon="chevron"
+          (click)="deliveryRequested.emit(acknowledgment.delivery_id)"
+          >{{ 'View new welcome' | ffkText }}</ffk-button
+        >
+      }
+      @if (v.options; as options) {
+        <dl>
+          <dt>{{ 'Provider observation' | ffkText }}</dt>
+          <dd>
+            {{
+              (v.history.length
+                ? operationLabel(v.history[0].operation_state)
+                : 'No check recorded'
+              ) | ffkText
+            }}
+          </dd>
+          <dt>{{ 'Recipient receipt' | ffkText }}</dt>
+          <dd>{{ 'Not confirmed' | ffkText }}</dd>
+          @if (v.history[0]?.checked_at; as checked) {
+            <dt>{{ 'Last checked' | ffkText }}</dt>
+            <dd>{{ checked | ffkDate: undefined : 'datetime' }}</dd>
+          }
+        </dl>
+        @if (!v.review && !v.pending.length) {
+          <div class="actions">
+            <ffk-button
+              icon="search"
+              [disabled]="v.busy || v.journalError || !options.can_inspect"
+              (click)="review('inspect')"
+              >{{ 'Check email service' | ffkText }}</ffk-button
+            >
+            @if (delivery().kind === 'welcome' && options.can_recover_welcome) {
+              <ffk-button
+                icon="mail"
+                [disabled]="v.busy || v.journalError"
+                (click)="review('welcome')"
+                >{{ 'Send a new welcome' | ffkText }}</ffk-button
+              >
+            }
+          </div>
+          @if (!options.can_inspect && reason(options.inspection_reason)) {
+            <p class="help">{{ reason(options.inspection_reason) | ffkText }}</p>
+          }
+          @if (
+            delivery().kind === 'welcome' &&
+            !options.can_recover_welcome &&
+            reason(options.recovery_reason)
+          ) {
+            <p class="help">{{ reason(options.recovery_reason) | ffkText }}</p>
+          }
+        }
+      }
+      @if (v.pending.length && !v.review) {
+        <section class="saved" aria-labelledby="delivery-saved-title">
+          <h5 id="delivery-saved-title">{{ 'A request needs confirmation' | ffkText }}</h5>
+          <p>
+            {{
+              'Refreshing or signing in never repeats a saved request. Inspect the delivery, then review the original request if its result is still unknown.'
+                | ffkText
+            }}
+          </p>
+          @for (request of v.pending; track request.key) {
+            <ffk-button variant="quiet" [disabled]="v.busy" (click)="reviewSaved(request)">{{
+              'Review saved request' | ffkText
+            }}</ffk-button>
+          }
+        </section>
+      }
+      @if (v.review; as review) {
+        <section
+          class="review"
+          role="region"
+          [attr.aria-label]="'Review delivery action' | ffkText"
+        >
+          <h5 #reviewTitle tabindex="-1">
+            {{
+              (review.request.operation === 'welcome'
+                ? 'Send a new welcome'
+                : 'Check email service'
+              ) | ffkText
+            }}
+          </h5>
+          @if (review.replay) {
+            <p>
+              {{
+                'This uses the exact saved request and its original key. If the service already accepted it, it returns the recorded result. If it did not, it may perform the reviewed action.'
+                  | ffkText
+              }}
+            </p>
+          }
+          @if (review.request.operation === 'welcome') {
+            <p>
+              {{
+                'Confirm with the recipient before sending another welcome. This queues a new message for the current approved recipient and preserves the original delivery and its attempts.'
+                  | ffkText
+              }}
+            </p>
+            <p class="recipient">{{ delivery().recipient_display }}</p>
+            <label
+              ><input
+                type="checkbox"
+                [ngModel]="duplicate()"
+                (ngModelChange)="duplicate.set($event)"
+                [disabled]="v.busy"
+              />{{
+                'The recipient reported that the welcome did not arrive. I understand both messages may arrive.'
+                  | ffkText
+              }}</label
+            >
+          } @else {
+            <p>
+              {{
+                'Read the retained operation status from the configured email service. This check does not send another email or confirm inbox placement.'
+                  | ffkText
+              }}
+            </p>
+          }
+          <div class="actions">
+            <ffk-button variant="quiet" icon="close" [disabled]="v.busy" (click)="cancel()">{{
+              'Cancel' | ffkText
+            }}</ffk-button
+            ><ffk-button
+              variant="primary"
+              [icon]="review.request.operation === 'welcome' ? 'mail' : 'search'"
+              [disabled]="v.busy || (review.request.operation === 'welcome' && !duplicate())"
+              [loading]="v.busy"
+              (click)="confirm()"
+              >{{
+                (review.request.operation === 'welcome'
+                  ? 'Queue new welcome'
+                  : 'Check email service'
+                ) | ffkText
+              }}</ffk-button
+            >
+          </div>
+        </section>
+      }
+      @if (v.history.length) {
+        <details>
+          <summary>{{ 'Recorded provider checks' | ffkText }}</summary>
+          <ol>
+            @for (observation of v.history; track observation.id) {
+              <li>
+                <strong>{{ operationLabel(observation.operation_state) | ffkText }}</strong>
+                @if (observation.checked_at) {
+                  <time>{{ observation.checked_at | ffkDate: undefined : 'datetime' }}</time>
+                }
+                @if (reason(observation.reason_code)) {
+                  <p>{{ reason(observation.reason_code) | ffkText }}</p>
+                }
+              </li>
+            }
+          </ol>
+          @if (v.hasMore) {
+            <p>{{ 'Only the 25 most recent checks are shown.' | ffkText }}</p>
+          }
+        </details>
+      }
+    </section>
+  }
+}

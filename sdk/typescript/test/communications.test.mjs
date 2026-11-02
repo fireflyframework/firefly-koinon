@@ -30,3 +30,22 @@ test('failed sends are surfaced without a client side retry',async()=>{
 
 test('actual email preview preserves past window and administrator opt-out but strips unknown payload fields',async()=>{const {api,calls}=fixture();await api.notifications.previewEmail({tenant_id:'org',preferences:{expected_revision:4,rules:[],digest:'weekly',admin_summaries:false,schedule:{local_time:'08:00',weekday:1,day_of_month:1},token:'SECRET'},window:{start_at:'2026-10-01T00:00:00Z',end_at:'2026-10-08T00:00:00Z',time_zone:'Europe/Madrid',subject:'OTHER'},send:true});assert.equal(calls[0][0],'POST');assert.equal(calls[0][1],'/notifications/preferences/email-preview');assert.deepEqual(calls[0][2].body,{tenant_id:'org',preferences:{expected_revision:4,notification_locale:null,admin_summaries:false,rules:[],digest:'weekly',schedule:{local_time:'08:00',weekday:1,day_of_month:1}},window:{start_at:'2026-10-01T00:00:00Z',end_at:'2026-10-08T00:00:00Z',time_zone:'Europe/Madrid'}});});
 test('notification and delivery event filters use native kind query names and never leak arbitrary filter fields',async()=>{const {api,calls}=fixture();await api.notifications.list({event_kind:'security',read:'unread',tenant_id:'org',page:2,page_size:25,token:'SECRET'});await api.administration.deliveries('org',{event_kind:'digest',status:'queued',created_from:'2026-10-01T00:00:00Z',page:3,page_size:10,token:'SECRET'});assert.equal(calls[0][2].query.kind,'security');assert.equal(calls[1][2].query.kind,'digest');for(const call of calls){assert.equal('event_kind' in call[2].query,false);assert.equal('token' in call[2].query,false);}assert.equal(calls[0][2].query.read,'unread');assert.equal(calls[1][2].query.page,3);});
+
+test('explicit delivery inspection and new welcome use separate typed endpoints and stable caller keys',async()=>{
+ const {api,calls}=fixture(); const signal=new AbortController().signal;
+ await api.administration.recovery('north/office','original',{signal});
+ await api.administration.observations('north/office','original',{signal});
+ await api.administration.inspectDelivery('north/office','original',{expected_generation:0,recipient:'PRIVATE'},'inspect-key',{signal,headers:{'idempotency-key':'old'}});
+ await api.administration.recoverWelcome('north/office','original',{expected_generation:0,contact_id:'approved',expected_contact_revision:3,reason:'recipient_reported_not_received',acknowledge_possible_duplicate:true,recipient_email:'PRIVATE'},'welcome-key',{signal});
+ assert.equal(calls.length,4);assert.equal(calls[0][1],'/tenants/north%2Foffice/communications/deliveries/original/recovery');
+ assert.equal(calls[1][0],'GET');assert.equal(calls[2][0],'POST');assert.equal(calls[2][2].headers['Idempotency-Key'],'inspect-key');assert.equal(calls[2][2].headers['idempotency-key'],undefined);
+ assert.deepEqual(calls[2][2].body,{expected_generation:0});
+ assert.deepEqual(calls[3][2].body,{expected_generation:0,contact_id:'approved',expected_contact_revision:3,reason:'recipient_reported_not_received',acknowledge_possible_duplicate:true});
+ for(const call of calls)assert.equal(call[2].signal,signal);
+});
+
+test('an unknown new-welcome response is never retried by the SDK',async()=>{
+ let attempts=0; const api=createCommunicationsApi({request:async()=>{attempts++;throw new TypeError('network');},stream:async function*(){}});
+ await assert.rejects(api.administration.recoverWelcome('north','original',{expected_generation:0,contact_id:'approved',expected_contact_revision:1,reason:'recipient_reported_not_received',acknowledge_possible_duplicate:true},'retained-key'));
+ assert.equal(attempts,1);
+});

@@ -42,6 +42,7 @@ add("OrganizationPeopleController", "OrganizationPeopleApi", {
     "update_unit": "updateUnit", "delete_unit": "deleteUnit", "settings": "settings",
     "update_settings": "updateSettings", "mapping": "mapping", "update_mapping": "updateMapping",
 })
+add("DeliveryRecoveryController", "CommunicationsApi", {"delivery_recovery":"recovery", "delivery_observations":"observations", "inspect_delivery":"inspectDelivery", "recover_welcome":"recoverWelcome"})
 add("CommunicationsController", "CommunicationsApi", {
     "providers":"recipientProviders", "recipients_search":"recipients", "preview":"previewInvitation", "create":"createInvitation", "page":"invitations", "revoke":"revokeInvitation", "resend":"resendInvitation", "capabilities":"capabilities", "policy":"policy", "policy_update":"updatePolicy", "deliveries":"deliveries", "delivery":"delivery", "retry":"retryDelivery",
 })

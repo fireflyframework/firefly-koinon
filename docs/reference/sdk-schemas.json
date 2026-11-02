@@ -5742,6 +5742,112 @@
         }
       }
     },
+    "DeliveryInspectionInput": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_generation": {
+          "minimum": 0,
+          "title": "Expected Generation",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "expected_generation"
+      ],
+      "title": "DeliveryInspectionInput",
+      "type": "object"
+    },
+    "DeliveryObservationPage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/DeliveryOperationObservation"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "has_more": {
+          "title": "Has More",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "items",
+        "has_more"
+      ],
+      "title": "DeliveryObservationPage",
+      "type": "object"
+    },
+    "DeliveryOperationObservation": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "delivery_id": {
+          "title": "Delivery Id",
+          "type": "string"
+        },
+        "source": {
+          "const": "operation_lookup",
+          "default": "operation_lookup",
+          "title": "Source",
+          "type": "string"
+        },
+        "operation_state": {
+          "enum": [
+            "checking",
+            "pending",
+            "accepted",
+            "rejected",
+            "unknown",
+            "unavailable"
+          ],
+          "title": "Operation State",
+          "type": "string"
+        },
+        "recipient_state": {
+          "const": "not_observed",
+          "default": "not_observed",
+          "title": "Recipient State",
+          "type": "string"
+        },
+        "checked_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Checked At"
+        },
+        "reason_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason Code"
+        }
+      },
+      "required": [
+        "id",
+        "delivery_id",
+        "operation_state"
+      ],
+      "title": "DeliveryOperationObservation",
+      "type": "object"
+    },
     "DeliveryPage": {
       "additionalProperties": true,
       "properties": {
@@ -5927,6 +6033,120 @@
         "can_retry"
       ],
       "title": "DeliveryRecord",
+      "type": "object"
+    },
+    "DeliveryRecoveryOptions": {
+      "additionalProperties": true,
+      "properties": {
+        "delivery_id": {
+          "title": "Delivery Id",
+          "type": "string"
+        },
+        "generation": {
+          "title": "Generation",
+          "type": "integer"
+        },
+        "submission_status": {
+          "enum": [
+            "queued",
+            "sending",
+            "sent",
+            "delivered",
+            "deferred",
+            "failed",
+            "suppressed",
+            "cancelled",
+            "unknown"
+          ],
+          "title": "Submission Status",
+          "type": "string"
+        },
+        "attempt_count": {
+          "title": "Attempt Count",
+          "type": "integer"
+        },
+        "can_inspect": {
+          "title": "Can Inspect",
+          "type": "boolean"
+        },
+        "inspection_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inspection Reason"
+        },
+        "provider_binding_state": {
+          "enum": [
+            "verified",
+            "operator_verification_required",
+            "unavailable"
+          ],
+          "title": "Provider Binding State",
+          "type": "string"
+        },
+        "can_recover_welcome": {
+          "title": "Can Recover Welcome",
+          "type": "boolean"
+        },
+        "recovery_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recovery Reason"
+        },
+        "contact_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Contact Id"
+        },
+        "contact_revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Contact Revision"
+        },
+        "possible_original_late_arrival": {
+          "const": true,
+          "default": true,
+          "title": "Possible Original Late Arrival",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "delivery_id",
+        "generation",
+        "submission_status",
+        "attempt_count",
+        "can_inspect",
+        "provider_binding_state",
+        "can_recover_welcome"
+      ],
+      "title": "DeliveryRecoveryOptions",
       "type": "object"
     },
     "DeploymentConfiguration": {
@@ -26844,6 +27064,87 @@
       "title": "VerifiedSenderOption",
       "type": "object"
     },
+    "WelcomeRecoveryAcknowledgement": {
+      "additionalProperties": true,
+      "properties": {
+        "original_delivery_id": {
+          "title": "Original Delivery Id",
+          "type": "string"
+        },
+        "delivery_id": {
+          "title": "Delivery Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "queued",
+            "sending",
+            "sent",
+            "delivered",
+            "deferred",
+            "failed",
+            "suppressed",
+            "cancelled",
+            "unknown"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "possible_original_late_arrival": {
+          "const": true,
+          "default": true,
+          "title": "Possible Original Late Arrival",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "original_delivery_id",
+        "delivery_id",
+        "status"
+      ],
+      "title": "WelcomeRecoveryAcknowledgement",
+      "type": "object"
+    },
+    "WelcomeRecoveryInput": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_generation": {
+          "minimum": 0,
+          "title": "Expected Generation",
+          "type": "integer"
+        },
+        "contact_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Contact Id",
+          "type": "string"
+        },
+        "expected_contact_revision": {
+          "minimum": 1,
+          "title": "Expected Contact Revision",
+          "type": "integer"
+        },
+        "reason": {
+          "const": "recipient_reported_not_received",
+          "title": "Reason",
+          "type": "string"
+        },
+        "acknowledge_possible_duplicate": {
+          "const": true,
+          "title": "Acknowledge Possible Duplicate",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "expected_generation",
+        "contact_id",
+        "expected_contact_revision",
+        "reason",
+        "acknowledge_possible_duplicate"
+      ],
+      "title": "WelcomeRecoveryInput",
+      "type": "object"
+    },
     "KnowledgeCommitOutcome": {
       "discriminator": {
         "mapping": {
@@ -27120,6 +27421,24 @@
     },
     "ActivityEmailPreviewInput": {
       "$ref": "#/$defs/ActivityEmailPreviewInput"
+    },
+    "WelcomeRecoveryInput": {
+      "$ref": "#/$defs/WelcomeRecoveryInput"
+    },
+    "WelcomeRecoveryAcknowledgement": {
+      "$ref": "#/$defs/WelcomeRecoveryAcknowledgement"
+    },
+    "DeliveryOperationObservation": {
+      "$ref": "#/$defs/DeliveryOperationObservation"
+    },
+    "DeliveryInspectionInput": {
+      "$ref": "#/$defs/DeliveryInspectionInput"
+    },
+    "DeliveryRecoveryOptions": {
+      "$ref": "#/$defs/DeliveryRecoveryOptions"
+    },
+    "DeliveryObservationPage": {
+      "$ref": "#/$defs/DeliveryObservationPage"
     },
     "ActivityValue": {
       "$ref": "#/$defs/ActivityValue"

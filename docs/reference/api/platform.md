@@ -39,6 +39,10 @@ Use the linked wire models for field constraints. Operation metadata does not en
 - [Preferences update](#notificationcontroller-preferences-update) (PATCH)
 - [Preferences preview](#notificationcontroller-preferences-preview) (POST)
 - [Email preview](#notificationcontroller-email-preview) (POST)
+- [Delivery recovery](#deliveryrecoverycontroller-delivery-recovery) (GET)
+- [Delivery observations](#deliveryrecoverycontroller-delivery-observations) (GET)
+- [Inspect delivery](#deliveryrecoverycontroller-inspect-delivery) (POST)
+- [Recover welcome](#deliveryrecoverycontroller-recover-welcome) (POST)
 - [Conversation](#evidencecontroller-conversation) (POST)
 - [Defaults](#brandingdefaultscontroller-defaults) (GET)
 - [Get](#organizationbrandingcontroller-get) (GET)
@@ -1308,6 +1312,176 @@ Encoding identifies the upload, stream or download format when applicable; other
 ### Headers
 
 No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: DeliveryRecoveryController.delivery_recovery -->
+<a id="deliveryrecoverycontroller-delivery-recovery"></a>
+## Delivery recovery
+
+```http
+GET /api/v1/tenants/{tenant_id}/communications/deliveries/{delivery_id}/recovery
+```
+
+Contract operation: `DeliveryRecoveryController.delivery_recovery`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `communication_delivery_recovery` |
+| TypeScript | `communications.administration.recovery` |
+| Java | `client.communications.recovery` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `delivery_id` | path | `PathVar[str]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | No request schema declared |
+| Response schema | [`DeliveryRecoveryOptions`](../models/deliveryrecoveryoptions.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: DeliveryRecoveryController.delivery_observations -->
+<a id="deliveryrecoverycontroller-delivery-observations"></a>
+## Delivery observations
+
+```http
+GET /api/v1/tenants/{tenant_id}/communications/deliveries/{delivery_id}/observations
+```
+
+Contract operation: `DeliveryRecoveryController.delivery_observations`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `communication_delivery_observations` |
+| TypeScript | `communications.administration.observations` |
+| Java | `client.communications.observations` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `delivery_id` | path | `PathVar[str]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | No request schema declared |
+| Response schema | [`DeliveryObservationPage`](../models/deliveryobservationpage.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: DeliveryRecoveryController.inspect_delivery -->
+<a id="deliveryrecoverycontroller-inspect-delivery"></a>
+## Inspect delivery
+
+```http
+POST /api/v1/tenants/{tenant_id}/communications/deliveries/{delivery_id}/observations
+```
+
+Contract operation: `DeliveryRecoveryController.inspect_delivery`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `inspect_communication_delivery` |
+| TypeScript | `communications.administration.inspectDelivery` |
+| Java | `client.communications.inspectDelivery` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `delivery_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[DeliveryInspectionInput]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`DeliveryInspectionInput`](../models/deliveryinspectioninput.md) |
+| Response schema | [`DeliveryOperationObservation`](../models/deliveryoperationobservation.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+- `Idempotency-Key (required; caller-supplied stable operation key)`
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: DeliveryRecoveryController.recover_welcome -->
+<a id="deliveryrecoverycontroller-recover-welcome"></a>
+## Recover welcome
+
+```http
+POST /api/v1/tenants/{tenant_id}/communications/deliveries/{delivery_id}/welcome-recovery
+```
+
+Contract operation: `DeliveryRecoveryController.recover_welcome`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `recover_welcome_delivery` |
+| TypeScript | `communications.administration.recoverWelcome` |
+| Java | `client.communications.recoverWelcome` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `delivery_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[WelcomeRecoveryInput]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`WelcomeRecoveryInput`](../models/welcomerecoveryinput.md) |
+| Response schema | [`WelcomeRecoveryAcknowledgement`](../models/welcomerecoveryacknowledgement.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+- `Idempotency-Key (required; caller-supplied stable operation key)`
 
 Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
 

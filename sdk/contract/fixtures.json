@@ -2564,6 +2564,32 @@
     "Deleted": {
       "deleted": false
     },
+    "DeliveryInspectionInput": {
+      "expected_generation": 1
+    },
+    "DeliveryObservationPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "delivery_id": "delivery_id-value",
+          "source": "operation_lookup",
+          "operation_state": "checking",
+          "recipient_state": "not_observed",
+          "checked_at": "2026-10-27T12:34:56Z",
+          "reason_code": "reason_code-value"
+        }
+      ],
+      "has_more": false
+    },
+    "DeliveryOperationObservation": {
+      "id": "id-value",
+      "delivery_id": "delivery_id-value",
+      "source": "operation_lookup",
+      "operation_state": "checking",
+      "recipient_state": "not_observed",
+      "checked_at": "2026-10-27T12:34:56Z",
+      "reason_code": "reason_code-value"
+    },
     "DeliveryPage": {
       "items": [
         {
@@ -2605,6 +2631,20 @@
       "failure_code": "failure_code-value",
       "safe_explanation": "safe_explanation-value",
       "can_retry": false
+    },
+    "DeliveryRecoveryOptions": {
+      "delivery_id": "delivery_id-value",
+      "generation": 1,
+      "submission_status": "queued",
+      "attempt_count": 1,
+      "can_inspect": false,
+      "inspection_reason": "inspection_reason-value",
+      "provider_binding_state": "verified",
+      "can_recover_welcome": false,
+      "recovery_reason": "recovery_reason-value",
+      "contact_id": "contact_id-value",
+      "contact_revision": 1,
+      "possible_original_late_arrival": true
     },
     "DeploymentConfiguration": {
       "ownership": "deployment",
@@ -9460,6 +9500,19 @@
       "id": "id-value",
       "display_name": "display_name-value",
       "address": "address-value"
+    },
+    "WelcomeRecoveryAcknowledgement": {
+      "original_delivery_id": "original_delivery_id-value",
+      "delivery_id": "delivery_id-value",
+      "status": "queued",
+      "possible_original_late_arrival": true
+    },
+    "WelcomeRecoveryInput": {
+      "expected_generation": 1,
+      "contact_id": "contact_id-value",
+      "expected_contact_revision": 1,
+      "reason": "recipient_reported_not_received",
+      "acknowledge_possible_duplicate": true
     },
     "KnowledgeCommitOutcome": {
       "status": "committed",

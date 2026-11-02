@@ -15,6 +15,7 @@ SOURCES = {
     "platform_health": "backend/src/koinon/platform/dtos.py",
     "availability": "backend/src/koinon/knowledge/availability/dtos.py",
     "communications": "backend/src/koinon/communications/dtos.py",
+    "communications_recovery": "backend/src/koinon/communications/recovery_dtos.py",
     "activity": "backend/src/koinon/activity/dtos.py",
     "memory": "backend/src/koinon/assistants/memory/dtos.py",
     "bulk_queries": "backend/src/koinon/knowledge/bulk_queries/dtos.py",
@@ -209,6 +210,7 @@ def render(source):
     declared = {node.name for node in module.body if isinstance(node, ast.ClassDef)}
     declared.update(target.id for node in module.body if isinstance(node, ast.Assign) for target in node.targets if isinstance(target, ast.Name))
     names -= declared
+    available["koinon_sdk.communications"] = ["DeliveryStatus"]
     available["koinon_sdk.activity"] = ["ActivitySummary", "ActivityWindow"]
     available["koinon_sdk.organization_branding"] = ["BrandingValues"]
     available["koinon_sdk.evidence"] = ["ConversationIdentity", "ConversationMessage", "Frozen", "Identifier", "Revision", "SourceReference", "StoredResult"]
