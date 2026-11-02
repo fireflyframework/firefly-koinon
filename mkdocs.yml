@@ -156,7 +156,7 @@ nav:
           - Backup and restore: operations/backup-restore.md
           - Email delivery and welcome recovery: guides/email-delivery-recovery.md
       - Release evidence:
-          - Release notes: releases/26.11.9.md
+          - Release notes: releases/26.11.10.md
           - Version 26.11.7: releases/26.11.7.md
           - Version 26.11.5: releases/26.11.5.md
           - Version 26.11.4: releases/26.11.4.md
