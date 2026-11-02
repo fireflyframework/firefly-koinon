@@ -19,29 +19,21 @@ export interface LibraryMenuAction {
   icon: string;
 }
 
-export function libraryActions(
+export function canRunLibraryAction(
   entry: CatalogEntry | null,
+  action: LibraryAction,
   canEdit: boolean,
-  canAdd: boolean,
-  createLabel: string,
-): LibraryMenuAction[] {
-  if (!entry)
-    return [
-      ...(canEdit && createLabel
-        ? [{ id: 'create' as const, label: createLabel, icon: 'folder' }]
-        : []),
-      ...(canAdd ? [{ id: 'add' as const, label: 'Add knowledge', icon: 'plus' }] : []),
-    ];
-  const actions: LibraryMenuAction[] = [];
-  if (isFolder(entry)) actions.push({ id: 'open', label: 'Open folder', icon: 'folder' });
-  actions.push({ id: 'details', label: 'Details', icon: 'info' });
-  if (canEdit) {
-    actions.push({ id: 'edit', label: 'Edit details', icon: 'edit' });
-    if (!isSystemManaged(entry)) {
-      if (entry.kind === 'collection' || entry.kind === 'corpus')
-        actions.push({ id: 'move', label: 'Move Library folder', icon: 'folder' });
-      actions.push({ id: 'archive', label: 'Archive', icon: 'archive' });
-    }
-  }
-  return actions;
+  canAdd = false,
+  createLabel = '',
+): boolean {
+  if (!entry) return action === 'create' ? canEdit && !!createLabel : action === 'add' && canAdd;
+  if (action === 'open') return isFolder(entry);
+  if (action === 'details') return true;
+  return (
+    canEdit &&
+    (action === 'edit' ||
+      (!isSystemManaged(entry) &&
+        (action === 'archive' ||
+          (action === 'move' && (entry.kind === 'collection' || entry.kind === 'corpus')))))
+  );
 }

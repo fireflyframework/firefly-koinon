@@ -114,21 +114,18 @@ export class KoinonResourceList {
   @Output() opened = new EventEmitter<CatalogEntry>();
   @Output() selected = new EventEmitter<CatalogEntry>();
   @Output() contextRequested = new EventEmitter<LibraryContextRequest>();
-  openContext(event: MouseEvent, entry: CatalogEntry) {
+  openContext(event: MouseEvent | KeyboardEvent, entry: CatalogEntry, trigger?: HTMLElement) {
     event.preventDefault();
     event.stopPropagation();
     const target = event.currentTarget as HTMLElement;
-    const trigger = target.matches('button') ? target : target.querySelector<HTMLElement>('button.name') ?? target;
+    trigger ??= target.matches('button') ? target : target.querySelector<HTMLElement>('button.name') ?? target;
     const rect = trigger.getBoundingClientRect();
-    this.contextRequested.emit({ entry, trigger, x: event.clientX || rect.left, y: event.clientY || rect.bottom });
+    const pointer = event as Partial<MouseEvent>;
+    this.contextRequested.emit({ entry, trigger, x: pointer.clientX || rect.left, y: pointer.clientY || rect.bottom });
   }
   contextKey(event: KeyboardEvent, entry: CatalogEntry) {
     if (event.key !== 'ContextMenu' && !(event.shiftKey && event.key === 'F10')) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const trigger = event.target as HTMLElement;
-    const rect = trigger.getBoundingClientRect();
-    this.contextRequested.emit({ entry, trigger, x: rect.left, y: rect.bottom });
+    this.openContext(event, entry, event.target as HTMLElement);
   }
   readonly isSystemManaged = isSystemManaged;
   readonly status = friendlyStatus;

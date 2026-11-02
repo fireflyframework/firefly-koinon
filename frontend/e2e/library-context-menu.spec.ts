@@ -3,6 +3,30 @@ import { test, expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { mockService } from './fixtures';
 
+test('Library menu keeps arrow-key selection until Enter opens the chosen action', async ({
+  page,
+}) => {
+  await mockService(page);
+  await page.goto('/library');
+  const trigger = page.getByRole('button', {
+    name: 'Actions for Research operations',
+    exact: true,
+  });
+  await trigger.focus();
+  await page.keyboard.press('Shift+F10');
+  const menu = page.getByRole('menu', { name: 'Library actions', exact: true });
+  await expect(menu.getByRole('menuitem', { name: 'Open folder', exact: true })).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(menu.getByRole('menuitem', { name: 'Details', exact: true })).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(menu.getByRole('menuitem', { name: 'Edit details', exact: true })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(menu).toHaveCount(0);
+  await expect(
+    page.getByRole('dialog').getByRole('textbox', { name: 'Name', exact: true }),
+  ).toHaveValue('Research operations');
+});
+
 for (const width of [1440, 390]) {
   test(`Library actions use the current folder and remain inside the viewport at ${width}px`, async ({
     page,

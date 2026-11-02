@@ -3,7 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import type { CatalogEntry } from '@fireflyframework/koinon-sdk';
 import { KoinonResourceList } from '../organisms/resource-list';
 import { KoinonLibraryTemplate } from '../templates/library-template';
-import { libraryActions } from './library-context-actions';
+import { libraryActions } from '../organisms/library-context-menu';
+import { canRunLibraryAction } from './library-context-actions';
 
 const folder: CatalogEntry = {
   id: 'folder',
@@ -80,10 +81,7 @@ it('routes creation in empty space through the existing create action and rechec
   fixture.componentInstance.createRequested.subscribe(() => created++);
   const surface = fixture.nativeElement.querySelector('.collection-surface');
   surface.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
-  expect(fixture.componentInstance.contextActions().map((action) => action.id)).toEqual([
-    'create',
-    'add',
-  ]);
+  expect(fixture.componentInstance.contextMenu?.entry).toBeNull();
   fixture.componentInstance.chooseContext('create');
   expect(created).toBe(1);
   surface.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
@@ -91,4 +89,13 @@ it('routes creation in empty space through the existing create action and rechec
   fixture.detectChanges();
   fixture.componentInstance.chooseContext('create');
   expect(created).toBe(1);
+});
+
+it('rejects stale mutation choices against current permissions and protected item state', () => {
+  expect(canRunLibraryAction(folder, 'archive', false)).toBe(false);
+  expect(canRunLibraryAction({ ...folder, system_managed: true }, 'archive', true)).toBe(false);
+  expect(canRunLibraryAction({ ...folder, system_managed: true }, 'move', true)).toBe(false);
+  expect(canRunLibraryAction({ ...folder, kind: 'workspace' }, 'move', true)).toBe(false);
+  expect(canRunLibraryAction(folder, 'create', true, true, 'Create a folder')).toBe(false);
+  expect(canRunLibraryAction(folder, 'details', false)).toBe(true);
 });

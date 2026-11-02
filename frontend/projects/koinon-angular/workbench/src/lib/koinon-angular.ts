@@ -29,7 +29,7 @@ import {KoinonButton} from './atoms/button';
 import {KoinonIcon} from './atoms/icon';
 import {KoinonSkeleton} from './atoms/skeleton';
 import type {KoinonScope} from './models';
-import {libraryActions,type LibraryActionRequest} from './services/library-context-actions';
+import {canRunLibraryAction,type LibraryActionRequest} from './services/library-context-actions';
 type Dialog='uploads'|'move'|'sign-out'|'account'|'archived'|'tree'|'add'|'create'|'edit'|'upload'|'archive'|'query'|'lineage'|'citation';
 @Component({selector:'ffk-workbench',imports:[KoinonSignIn,KoinonAccountPage,CdkTrapFocus,KoinonTableLineagePanel,KoinonTextPipe,KoinonCommandPalette,NgComponentOutlet,KoinonWorkbenchDialogs,KoinonShell,KoinonLibraryTemplate,KoinonInspector,KoinonButton,KoinonIcon,KoinonSkeleton],providers:[KoinonBranding,KoinonTableLineage,KoinonFontLoader,KoinonI18n,KoinonAccount,KoinonClientContext,KoinonFacade,KoinonAssistant],templateUrl:'./workbench.html',styleUrl:'./workbench.scss',host:{'[class.koinon-dark]':"theme==='dark'",'[attr.lang]':'i18n.preferences().locale'},encapsulation:ViewEncapsulation.ShadowDom,changeDetection:ChangeDetectionStrategy.OnPush})
 export class KoinonWorkbench implements OnInit,OnChanges,OnDestroy{
@@ -110,7 +110,7 @@ export class KoinonWorkbench implements OnInit,OnChanges,OnDestroy{
  async openFolder(id:string){this.clearSearch();this.f.selected.set(null);const entry=this.allEntries().find(x=>x.id===id);if(!id){this.f.workspaceId.set('');this.f.projectId.set('');this.f.parentId.set('');await this.f.loadLibrary({page:1,q:'',kind:undefined,status:undefined,tag:undefined,format:undefined});}else if(entry?.kind==='workspace'){await this.f.setWorkspace(entry.id);}else if(entry){this.f.workspaceId.set(entry.workspace_id??'');this.f.projectId.set(entry.kind==='project'?entry.id:entry.project_id??'');this.f.parentId.set(entry.id);await this.f.loadLibrary({page:1,q:'',kind:undefined,status:undefined,tag:undefined,format:undefined});}if(entry)this.selectionChange.emit(entry);this.emitContext();}
  runLibraryAction(request:LibraryActionRequest){
   const entry=this.entries().find(item=>item.id===request.entry?.id&&item.tenant_id===this.f.tenantId());
-  if(!entry||this.f.pending()||!libraryActions(entry,this.f.canWrite(),false,'').some(action=>action.id===request.action))return;
+  if(!entry||this.f.pending()||!canRunLibraryAction(entry,request.action,this.f.canWrite()))return;
   this.select(entry);
   if(request.action==='edit')this.openEdit();
   else if(request.action==='move')this.showDialog('move');

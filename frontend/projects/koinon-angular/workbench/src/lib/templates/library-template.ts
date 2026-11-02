@@ -9,7 +9,7 @@ import { KoinonSearchField } from '../molecules/search-field';
 import { KoinonResourceList } from '../organisms/resource-list';
 import { friendlyStatus } from '../services/library-tree';
 import { KoinonLibraryContextMenu } from '../organisms/library-context-menu';
-import { libraryActions, type LibraryAction, type LibraryActionRequest, type LibraryContextRequest } from '../services/library-context-actions';
+import { canRunLibraryAction, type LibraryAction, type LibraryActionRequest, type LibraryContextRequest } from '../services/library-context-actions';
 @Component({
   selector: 'ffk-library-template',
   imports: [
@@ -223,7 +223,7 @@ import { libraryActions, type LibraryAction, type LibraryActionRequest, type Lib
   </section>
   @defer (when contextMenu) {
     @if (contextMenu; as request) {
-      <ffk-library-context-menu [request]="request" [actions]="contextActions()" (chosen)="chooseContext($event)" (dismissed)="closeContext($event)"/>
+      <ffk-library-context-menu [request]="request" [canEdit]="canEdit" [canAdd]="canAdd" [createLabel]="createLabel" (chosen)="chooseContext($event)" (dismissed)="closeContext($event)"/>
     }
   }`,
   styleUrl: './library-template.scss',
@@ -234,10 +234,9 @@ export class KoinonLibraryTemplate implements OnChanges {
   @Output() actionRequested = new EventEmitter<LibraryActionRequest>();
   contextMenu: LibraryContextRequest | null = null;
   ngOnChanges() { this.closeContext(false); }
-  contextActions() { return libraryActions(this.contextMenu?.entry ?? null, this.canEdit, this.canAdd, this.createLabel); }
   openEmptyContext(event: MouseEvent) {
     if (this.loading || !(event.target instanceof HTMLElement) || event.target.closest('button, input, select, textarea, a, [role=row]')) return;
-    if (!libraryActions(null, this.canEdit, this.canAdd, this.createLabel).length) return;
+    if (!(this.canEdit && this.createLabel) && !this.canAdd) return;
     event.preventDefault();
     event.stopPropagation();
     this.contextMenu = { entry: null, x: event.clientX, y: event.clientY, trigger: event.currentTarget as HTMLElement };
@@ -248,7 +247,7 @@ export class KoinonLibraryTemplate implements OnChanges {
     if (restoreFocus) trigger?.focus();
   }
   chooseContext(action: LibraryAction) {
-    if (!this.contextMenu || !this.contextActions().some(item => item.id === action)) return;
+    if (!this.contextMenu || !canRunLibraryAction(this.contextMenu.entry, action, this.canEdit, this.canAdd, this.createLabel)) return;
     const entry = this.contextMenu.entry;
     this.closeContext(true);
     if (action === 'create') this.createRequested.emit();
