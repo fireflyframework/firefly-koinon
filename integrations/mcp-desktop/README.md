@@ -2,7 +2,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # firefly koinon desktop extension
 
-This source candidate adds browser OAuth to the koinon desktop extension. It has not been published: the released 26.11.10 archive still uses the PAT setup documented in the [published-package walkthrough](../../docs/integrations/desktop.md). The source version has not been bumped. A local build with the same version string is not the published artifact.
+The 26.11.11 source candidate adds browser OAuth to the koinon desktop extension. It has not been published: the released 26.11.10 archive still uses the PAT setup documented in the [published-package walkthrough](../../docs/integrations/desktop.md). Local package checks and installed-host acceptance are separate release gates; a source build is not a published artifact.
 
 The bridge uses the official TypeScript MCP SDK and forwards remote tools, resources, and prompts; the server owns tool schemas and permission checks. The instructions below describe this source candidate.
 
