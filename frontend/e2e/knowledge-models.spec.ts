@@ -3,7 +3,13 @@ import { test, expect, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type { KnowledgeConnection, KnowledgeRole } from '@fireflyframework/koinon-sdk';
-import { openAdministration,  mockService, context as contextFixture, entry, setDarkAppearance } from './fixtures';
+import {
+  openAdministration,
+  mockService,
+  context as contextFixture,
+  entry,
+  setDarkAppearance,
+} from './fixtures';
 const roles: KnowledgeRole[] = [
   {
     id: 'documents.answer',
@@ -48,12 +54,22 @@ async function fixture(page: Page, spanish = false) {
   const writes: { method: string; query: URLSearchParams; body: Record<string, unknown> | null }[] =
     [];
   let rejectEmbedding = false;
+  let noProviders = false;
   await page.route('**/bff/api/v1/**', async (route) => {
     const request = route.request(),
       url = new URL(request.url()),
       path = url.pathname;
     const json = (value: unknown, status = 200) =>
       route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(value) });
+    if (path.endsWith('/capabilities'))
+      return json({
+        providers: [],
+        features: [],
+        domains: {
+          canon: { installed: true, registered: true },
+          structured: { installed: true, registered: true },
+        },
+      });
     if (path.endsWith('/context'))
       return json({
         ...contextFixture,
@@ -92,16 +108,18 @@ async function fixture(page: Page, spanish = false) {
             };
           }),
           model_options_schema: { properties: {} },
-          providers: [
-            {
-              id: 'model-provider',
-              name: 'Controlled native model',
-              kind: 'ollama',
-              api: 'chat',
-              model_ids: ['qualified-chat', 'qualified-embedding'],
-              enabled: true,
-            },
-          ],
+          providers: noProviders
+            ? []
+            : [
+                {
+                  id: 'model-provider',
+                  name: 'Controlled native model',
+                  kind: 'ollama',
+                  api: 'chat',
+                  model_ids: ['qualified-chat', 'qualified-embedding'],
+                  enabled: true,
+                },
+              ],
         });
       return json({ items: rows.filter((row) => row.workspace_id === scope) });
     }
@@ -157,6 +175,9 @@ async function fixture(page: Page, spanish = false) {
   return {
     rows,
     writes,
+    withoutProviders: () => {
+      noProviders = true;
+    },
     rejectEmbeddings: () => {
       rejectEmbedding = true;
     },
@@ -289,7 +310,7 @@ test('embedding form blocks incompatible dimensions and preserves a native reind
   await page.getByRole('textbox', { name: 'Storage dimensions', exact: true }).fill('768');
   await page.getByRole('button', { name: 'Save assignment', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText(
-    'Ask your deployment administrator to complete a reviewed reindex',
+    'Review and activate a compatible index in Storage & indexing',
   );
   expect(service.rows).toHaveLength(0);
   await expect(page.getByRole('button', { name: 'Save assignment', exact: true })).toBeVisible();
@@ -398,4 +419,137 @@ test('Spanish Settings translates provider setup and empty-state instructions', 
       { exact: true },
     ),
   ).toBeVisible();
+});
+
+for (const width of [1440, 390])
+  test(`model prerequisites preserve explicit scope and require an editor departure ${width}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    const service = await fixture(page);
+    await open(page, width < 700);
+    await page
+      .getByRole('combobox', { name: 'Assignment scope', exact: true })
+      .selectOption('workspace-one');
+    await page
+      .getByRole('button', { name: 'Customize Structured schema embeddings', exact: true })
+      .click();
+    await page
+      .getByRole('textbox', { name: 'Approved index reference', exact: true })
+      .fill('unsaved-reference');
+    await page.getByRole('button', { name: 'Review indexes', exact: true }).click();
+    const keep = page.getByRole('button', { name: 'Keep editing', exact: true });
+    await expect(keep).toBeFocused();
+    await keep.click();
+    await expect(
+      page.getByRole('heading', { name: 'Structured schema embeddings', exact: true }),
+    ).toBeFocused();
+    await expect(
+      page.getByRole('textbox', { name: 'Approved index reference', exact: true }),
+    ).toHaveValue('unsaved-reference');
+    await page.getByRole('button', { name: 'Review indexes', exact: true }).click();
+    if (process.env['KOINON_MODEL_NAV_SCREENSHOTS']) {
+      await page
+        .locator('ffk-knowledge-models .editor-heading')
+        .evaluate((el) => el.scrollIntoView({ block: 'start' }));
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+      const directory = process.env['KOINON_MODEL_NAV_SCREENSHOTS']!;
+      await mkdir(directory, { recursive: true });
+      await page.screenshot({
+        path: resolve(directory, `model-navigation-${width}.png`),
+        animations: 'disabled',
+      });
+    }
+    await page.getByRole('button', { name: 'Leave editor', exact: true }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Knowledge indexes', exact: true }),
+    ).toBeVisible();
+    await expect(page.getByRole('combobox', { name: 'Index workspace', exact: true })).toHaveValue(
+      'workspace-one',
+    );
+    await expect(page.getByRole('combobox', { name: 'Index domain', exact: true })).toHaveValue(
+      'structured',
+    );
+    expect(service.writes).toEqual([]);
+    if (width < 700)
+      await page
+        .getByRole('combobox', { name: 'Settings section', exact: true })
+        .selectOption('models');
+    else await page.getByRole('button', { name: 'Knowledge models', exact: true }).click();
+    await expect(page.getByRole('combobox', { name: 'Assignment scope', exact: true })).toHaveValue(
+      'workspace-one',
+    );
+  });
+test('organization model defaults do not silently open an index in the Library workspace', async ({
+  page,
+}) => {
+  const service = await fixture(page);
+  await open(page);
+  await page.getByRole('button', { name: 'Configure Document embeddings', exact: true }).click();
+  await page.getByRole('button', { name: 'Review indexes', exact: true }).click();
+  await page.getByRole('button', { name: 'Leave editor', exact: true }).click();
+  await expect(page.getByRole('combobox', { name: 'Index workspace', exact: true })).toHaveValue(
+    '',
+  );
+  await expect(page.getByRole('combobox', { name: 'Index domain', exact: true })).toHaveValue(
+    'documents',
+  );
+  expect(service.writes).toEqual([]);
+});
+test('current agent prerequisites open organization chat only after explicit departure', async ({
+  page,
+}) => {
+  const service = await fixture(page);
+  await open(page);
+  await page
+    .getByRole('button', { name: 'Configure Document answer and query expansion', exact: true })
+    .click();
+  await page
+    .getByRole('combobox', { name: 'Model selection', exact: true })
+    .selectOption('current_agent');
+  await page.getByRole('button', { name: 'Review organization chat', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Keep editing', exact: true })).toBeFocused();
+  await page.getByRole('button', { name: 'Leave editor', exact: true }).click();
+  await expect(page.locator('ffk-organization-chat-settings')).toBeVisible();
+  expect(service.writes).toEqual([]);
+});
+
+test('missing-provider prerequisite links to Providers without creating an assignment', async ({
+  page,
+}) => {
+  const service = await fixture(page);
+  service.withoutProviders();
+  await open(page);
+  await page
+    .getByRole('button', { name: 'Configure Document answer and query expansion', exact: true })
+    .click();
+  await page.getByRole('button', { name: 'Open Providers', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Keep editing', exact: true })).toBeFocused();
+  await page.getByRole('button', { name: 'Leave editor', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Providers', exact: true })).toBeVisible();
+  expect(service.writes).toEqual([]);
+});
+
+test('Spanish prerequisite navigation explains the departure decision', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 1000 });
+  const service = await fixture(page, true);
+  await open(page, true, true);
+  await page
+    .getByRole('button', {
+      name: 'Configurar Representaciones vectoriales de documentos',
+      exact: true,
+    })
+    .click();
+  await page.getByRole('button', { name: 'Revisar índices', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Seguir editando', exact: true })).toBeFocused();
+  await expect(
+    page.getByRole('region', { name: '¿Salir del editor de asignación?', exact: true }),
+  ).toContainText('Se mantendrá el ámbito seleccionado.');
+  await page.getByRole('button', { name: 'Seguir editando', exact: true }).click();
+  await expect(
+    page.getByRole('textbox', { name: 'Referencia del índice aprobado', exact: true }),
+  ).toBeVisible();
+  expect(service.writes).toEqual([]);
 });

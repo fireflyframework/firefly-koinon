@@ -1,5 +1,18 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 export const ORGANIZATION_SPANISH: Readonly<Record<string, string>> = {
+  'Open Providers': 'Abrir proveedores',
+  'Review indexes': 'Revisar índices',
+  'Review organization chat': 'Revisar el chat de la organización',
+  'Leave this assignment editor?': '¿Salir del editor de asignación?',
+  'Your unsaved assignment changes will be lost. The selected assignment scope will be kept.':
+    'Se perderán los cambios sin guardar de esta asignación. Se mantendrá el ámbito seleccionado.',
+  'Leave editor': 'Salir del editor',
+  'Keep editing': 'Seguir editando',
+  'This index is tied to a different embedding configuration. Review and activate a compatible index in Storage & indexing before changing this assignment.':
+    'Este índice está vinculado a otra configuración de embeddings. Revisa y activa un índice compatible en Almacenamiento e indexación antes de cambiar esta asignación.',
+  'Review indexes for the selected workspace in Storage & indexing, then use the compatible index reference and dimensions here. Organization defaults do not select a workspace. Saving this assignment does not build or migrate an index.':
+    'Revisa los índices del espacio seleccionado en Almacenamiento e indexación y utiliza aquí la referencia y las dimensiones del índice compatible. Los valores predeterminados de la organización no seleccionan un espacio. Guardar esta asignación no crea ni migra un índice.',
+
   'Identity providers': 'Proveedores de identidad',
   'Mapping revision': 'Revisión de la asignación',
   'Last observed': 'Última observación',
@@ -218,8 +231,8 @@ export const ORGANIZATION_SPANISH: Readonly<Record<string, string>> = {
     'Elige un intervalo de entre 5 minutos y 24 horas.',
   'view-users or equivalent fine-grained user-view permission':
     'view-users o un permiso equivalente para consultar usuarios',
-  Communications:'Comunicaciones',
-  'Create legacy invitation link':'Crear enlace de invitación heredado',
-  'Legacy invitation links':'Enlaces de invitación heredados',
-  'Email invitations':'Invitaciones por correo',
+  Communications: 'Comunicaciones',
+  'Create legacy invitation link': 'Crear enlace de invitación heredado',
+  'Legacy invitation links': 'Enlaces de invitación heredados',
+  'Email invitations': 'Invitaciones por correo',
 };
