@@ -21,11 +21,13 @@ from starlette.requests import Request
 
 from koinon.knowledge.bulk.dtos import (
     BulkAction,
+    BulkRecoveryAction,
     FileBatchCapabilities,
     FileBatchCreate,
     FileBatchPage,
     FileBatchView,
     FileItemPage,
+    FileRecoveryView,
     StagedFileReceipt,
 )
 from koinon.knowledge.bulk.service import FileBatches, key_digest
@@ -173,5 +175,26 @@ class FileBatchController:
         request: Request,
     ) -> FileBatchView:
         return await self.files.recover_original(
+            identity_from_request(request).subject, tenant_id, batch_id, item_id, body, action_key(request)
+        )
+
+    @get_mapping("/sources/batches/{batch_id}/items/{item_id}/recovery")
+    async def processing_recovery(
+        self, tenant_id: PathVar[str], batch_id: PathVar[str], item_id: PathVar[str], request: Request
+    ) -> FileRecoveryView:
+        return await self.files.processing_recovery(
+            identity_from_request(request).subject, tenant_id, batch_id, item_id
+        )
+
+    @post_mapping("/sources/batches/{batch_id}/items/{item_id}/recover", status_code=202)
+    async def recover_processing(
+        self,
+        tenant_id: PathVar[str],
+        batch_id: PathVar[str],
+        item_id: PathVar[str],
+        body: Valid[Body[BulkRecoveryAction]],
+        request: Request,
+    ) -> FileBatchView:
+        return await self.files.recover_processing(
             identity_from_request(request).subject, tenant_id, batch_id, item_id, body, action_key(request)
         )
