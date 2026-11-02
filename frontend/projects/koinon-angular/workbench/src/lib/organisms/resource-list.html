@@ -47,7 +47,7 @@
       <span role="columnheader" class="sr-only">{{ 'Details' | ffkText }}</span>
     </div>
     @for (item of items; track item.id) {
-      <div role="row" class="row" [class.selected]="item.id === selectedId">
+      <div role="row" tabindex="-1" class="row" [class.selected]="item.id === selectedId" (contextmenu)="openContext($event, item)" (keydown)="contextKey($event, item)">
         <div role="cell" class="name-cell">
           <span
             class="resource-icon"
@@ -130,12 +130,14 @@
           ><small>{{ actorName(item.updated_by || item.created_by) }}</small></span
         >
         <div role="cell" class="detail-cell">
+          <button class="details" [attr.aria-label]="('Details for' | ffkText) + ' ' + item.name" (click)="selected.emit(item)"><ffk-icon name="info" /></button>
           <button
             class="details"
-            [attr.aria-label]="('Details for' | ffkText) + ' ' + item.name"
-            (click)="selected.emit(item)"
+            [attr.aria-label]="('Actions for' | ffkText) + ' ' + item.name"
+            aria-haspopup="menu"
+            (click)="openContext($event, item)"
           >
-            <ffk-icon name="info" />
+            <ffk-icon name="more" />
           </button>
         </div>
       </div>

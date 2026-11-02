@@ -20,6 +20,7 @@ import { KoinonBadge } from '../atoms/badge';
 import { KoinonSkeleton } from '../atoms/skeleton';
 import { KoinonKnowledgeAvailability } from './knowledge-availability';
 import { friendlyStatus, friendlyKind, isFolder, isSystemManaged, resourceIcon } from '../services/library-tree';
+import type { LibraryContextRequest } from '../services/library-context-actions';
 @Component({
   selector: 'ffk-resource-list',
   imports: [KoinonTextPipe, KoinonDatePipe, KoinonIcon, KoinonBadge, KoinonSkeleton, KoinonKnowledgeAvailability],
@@ -112,6 +113,23 @@ export class KoinonResourceList {
   @Input() emptyDescription = 'Add files here to make them available to your team.';
   @Output() opened = new EventEmitter<CatalogEntry>();
   @Output() selected = new EventEmitter<CatalogEntry>();
+  @Output() contextRequested = new EventEmitter<LibraryContextRequest>();
+  openContext(event: MouseEvent, entry: CatalogEntry) {
+    event.preventDefault();
+    event.stopPropagation();
+    const target = event.currentTarget as HTMLElement;
+    const trigger = target.matches('button') ? target : target.querySelector<HTMLElement>('button.name') ?? target;
+    const rect = trigger.getBoundingClientRect();
+    this.contextRequested.emit({ entry, trigger, x: event.clientX || rect.left, y: event.clientY || rect.bottom });
+  }
+  contextKey(event: KeyboardEvent, entry: CatalogEntry) {
+    if (event.key !== 'ContextMenu' && !(event.shiftKey && event.key === 'F10')) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const trigger = event.target as HTMLElement;
+    const rect = trigger.getBoundingClientRect();
+    this.contextRequested.emit({ entry, trigger, x: rect.left, y: rect.bottom });
+  }
   readonly isSystemManaged = isSystemManaged;
   readonly status = friendlyStatus;
   readonly kind = friendlyKind;

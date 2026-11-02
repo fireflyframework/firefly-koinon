@@ -4,7 +4,7 @@
   display: block;
   min-width: 0;
   container: koinon-resources / inline-size;
-  --resource-action-size: 36px;
+  --resource-action-size: 76px;
 }
 .table {
   width: 100%;
@@ -151,6 +151,7 @@ button.tag:hover {
   font-size: 11px;
   color: var(--ui-muted);
 }
+.detail-cell { display: flex; gap: 4px; }
 .details {
   display: flex;
   align-items: center;
@@ -158,8 +159,8 @@ button.tag:hover {
   border: 0;
   background: transparent;
   color: var(--ui-muted);
-  width: var(--resource-action-size);
-  height: var(--resource-action-size);
+  width: calc((var(--resource-action-size) - 4px) / 2);
+  height: calc((var(--resource-action-size) - 4px) / 2);
   border-radius: 6px;
   cursor: pointer;
   font-size: 15px;
@@ -288,7 +289,7 @@ button:focus-visible {
 }
 @media (pointer: coarse) {
   :host {
-    --resource-action-size: 44px;
+    --resource-action-size: 92px;
   }
 }
 

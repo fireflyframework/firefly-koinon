@@ -1,6 +1,6 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 import { KoinonTextPipe } from '../foundations/i18n';
-import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, OnChanges } from '@angular/core';
 import type { CatalogEntry, CatalogFilter, Page, ResourceKind } from '@fireflyframework/koinon-sdk';
 import { KoinonPagination } from '../molecules/pagination';
 import { KoinonButton } from '../atoms/button';
@@ -8,6 +8,8 @@ import { KoinonBreadcrumb } from '../molecules/breadcrumb';
 import { KoinonSearchField } from '../molecules/search-field';
 import { KoinonResourceList } from '../organisms/resource-list';
 import { friendlyStatus } from '../services/library-tree';
+import { KoinonLibraryContextMenu } from '../organisms/library-context-menu';
+import { libraryActions, type LibraryAction, type LibraryActionRequest, type LibraryContextRequest } from '../services/library-context-actions';
 @Component({
   selector: 'ffk-library-template',
   imports: [
@@ -17,6 +19,7 @@ import { friendlyStatus } from '../services/library-tree';
     KoinonBreadcrumb,
     KoinonSearchField,
     KoinonResourceList,
+    KoinonLibraryContextMenu,
   ],
   template: `<section class="library-grid" [attr.aria-label]="'Knowledge library' | ffkText">
     <div class="breadcrumb">
@@ -56,7 +59,7 @@ import { friendlyStatus } from '../services/library-tree';
         </div>
       }
     </header>
-    <div class="collection-surface">
+    <div class="collection-surface" tabindex="-1" (contextmenu)="openEmptyContext($event)">
       <div class="library-toolbar">
         @if (serverControls) {
           <div class="name-filter">
@@ -203,6 +206,7 @@ import { friendlyStatus } from '../services/library-tree';
           "
           (opened)="opened.emit($event)"
           (selected)="selected.emit($event)"
+          (contextRequested)="contextMenu = $event"
         />
       </div>
       @if (serverControls) {
@@ -216,11 +220,43 @@ import { friendlyStatus } from '../services/library-tree';
         />
       }
     </div>
-  </section>`,
+  </section>
+  @defer (when contextMenu) {
+    @if (contextMenu; as request) {
+      <ffk-library-context-menu [request]="request" [actions]="contextActions()" (chosen)="chooseContext($event)" (dismissed)="closeContext($event)"/>
+    }
+  }`,
   styleUrl: './library-template.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class KoinonLibraryTemplate {
+export class KoinonLibraryTemplate implements OnChanges {
+  @Input() canEdit = false;
+  @Output() actionRequested = new EventEmitter<LibraryActionRequest>();
+  contextMenu: LibraryContextRequest | null = null;
+  ngOnChanges() { this.closeContext(false); }
+  contextActions() { return libraryActions(this.contextMenu?.entry ?? null, this.canEdit, this.canAdd, this.createLabel); }
+  openEmptyContext(event: MouseEvent) {
+    if (this.loading || !(event.target instanceof HTMLElement) || event.target.closest('button, input, select, textarea, a, [role=row]')) return;
+    if (!libraryActions(null, this.canEdit, this.canAdd, this.createLabel).length) return;
+    event.preventDefault();
+    event.stopPropagation();
+    this.contextMenu = { entry: null, x: event.clientX, y: event.clientY, trigger: event.currentTarget as HTMLElement };
+  }
+  closeContext(restoreFocus: boolean) {
+    const trigger = this.contextMenu?.trigger;
+    this.contextMenu = null;
+    if (restoreFocus) trigger?.focus();
+  }
+  chooseContext(action: LibraryAction) {
+    if (!this.contextMenu || !this.contextActions().some(item => item.id === action)) return;
+    const entry = this.contextMenu.entry;
+    this.closeContext(true);
+    if (action === 'create') this.createRequested.emit();
+    else if (action === 'add') this.addRequested.emit();
+    else if (entry && action === 'open') this.opened.emit(entry);
+    else if (entry && action === 'details') this.selected.emit(entry);
+    else this.actionRequested.emit({ entry, action });
+  }
   readonly statusLabel = friendlyStatus;
   readonly sortOptions = [
     { value: 'name.asc', label: 'Name (A to Z)' },
