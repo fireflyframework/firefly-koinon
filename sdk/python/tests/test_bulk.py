@@ -113,3 +113,52 @@ async def test_uncertain_batch_mutation_is_sent_once_and_error_metadata_survives
             await client.submit_file_batch("north", "batch", BulkAction(expected_revision=2), "stable-key")
     assert len(requests) == 1 and failure.value.code == "BULK_NATIVE_OUTCOME_UNRESOLVED"
     assert failure.value.request_id == "request"
+
+
+@pytest.mark.parametrize("operation", ["retry_processing", "finalize_publication", "acknowledge_commit"])
+async def test_processing_recovery_keeps_exact_action_and_key_without_retry(operation):
+    from koinon_sdk import BulkRecoveryAction, FileRecoveryView
+
+    requests = []
+
+    def handle(request):
+        requests.append(request)
+        if request.method == "GET":
+            return httpx.Response(
+                200,
+                json={
+                    "batch_id": "batch",
+                    "item_id": "item",
+                    "batch_revision": 9,
+                    "native_state": "prepared",
+                    "operation": operation,
+                    "reason_code": None,
+                    "attempts": 1,
+                    "max_attempts": 3,
+                    "checked_at": None,
+                    "job_status": "failed",
+                    "original_receipt_state": "verified",
+                },
+            )
+        return httpx.Response(503, json={"code": "BULK_NATIVE_OUTCOME_UNRESOLVED"})
+
+    async with KoinonClient(
+        "https://inert.test/api/v1", token_provider=lambda: "current", transport=httpx.MockTransport(handle)
+    ) as client:
+        descriptor = await client.file_batch_processing_recovery("north/office", "batch/one", "item/one")
+        assert isinstance(descriptor, FileRecoveryView)
+        assert descriptor.operation == operation
+        with pytest.raises(ApiError):
+            await client.recover_file_batch_processing(
+                "north/office",
+                "batch/one",
+                "item/one",
+                BulkRecoveryAction(expected_revision=9, operation=operation),
+                "reviewed-key",
+            )
+    assert len(requests) == 2
+    assert requests[0].url.raw_path.endswith(b"/sources/batches/batch%2Fone/items/item%2Fone/recovery")
+    assert requests[1].headers["Idempotency-Key"] == "reviewed-key"
+    import json
+
+    assert json.loads(requests[1].content) == {"expected_revision": 9, "operation": operation}

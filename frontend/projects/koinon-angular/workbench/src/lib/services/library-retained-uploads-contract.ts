@@ -5,7 +5,14 @@ import type {
   FileBatchItemView,
   FileBatchView,
 } from '@fireflyframework/koinon-sdk';
-export type RetainedUploadOperation = 'submit' | 'cancel' | 'recover_original' | 'reconcile';
+export type RetainedUploadOperation =
+  | 'submit'
+  | 'cancel'
+  | 'recover_original'
+  | 'reconcile'
+  | 'retry_processing'
+  | 'finalize_publication'
+  | 'acknowledge_commit';
 export interface RetainedUploadScope {
   owner: object | null;
   subject: string;

@@ -38,6 +38,10 @@ import {
   KoinonTextPipe,
   registerKoinonSpanish,
 } from '../foundations/i18n';
+import {
+  uploadProcessingHelp,
+  uploadRecoveryReason,
+} from '../services/library-upload-recovery-messages';
 import { RETAINED_UPLOADS_SPANISH } from './library-retained-uploads-spanish';
 registerKoinonSpanish(RETAINED_UPLOADS_SPANISH);
 @Component({
@@ -129,7 +133,26 @@ export class KoinonLibraryRetainedUploadsPanel implements OnDestroy {
     reconcile: 'Inspect processing outcome',
     submit: 'Submit for processing',
     cancel: 'Request cancellation',
+    retry_processing: 'Retry processing',
+    finalize_publication: 'Finish publication',
+    acknowledge_commit: 'Record completed import',
   };
+  readonly processingHelp = uploadProcessingHelp;
+  readonly recoveryReason = uploadRecoveryReason;
+  readonly technicalAccess = computed(
+    () =>
+      this.f
+        .context()
+        ?.memberships.some(
+          (m) =>
+            m.subject === this.f.context()?.subject &&
+            m.tenant_id === this.f.tenantId() &&
+            m.workspace_id === null &&
+            m.active &&
+            m.role === 'admin' &&
+            (m.expires_at == null || Date.parse(m.expires_at) > Math.max(this.now(), Date.now())),
+        ) ?? false,
+  );
   readonly explanations: Record<RetainedUploadOperation, string> = {
     recover_original:
       'This reads the original retained by the server to verify its size and checksum. It can mark that original as received. It does not upload a file or start processing.',
@@ -137,6 +160,12 @@ export class KoinonLibraryRetainedUploadsPanel implements OnDestroy {
       'This inspects the native processing outcome and records a verified receipt when one exists. It does not repeat the import. An unresolved outcome remains unresolved.',
     submit:
       'This submits the currently staged originals for processing. Every original must be received first. Queued processing is separate from searchable knowledge.',
+    retry_processing:
+      'Process the saved file again. This may use your configured AI services. Earlier attempts remain in the activity history.',
+    finalize_publication:
+      'This finishes publication of an already prepared result. It does not authorize starting a new processing attempt if the result changes.',
+    acknowledge_commit:
+      'This records the verified import that already completed. It does not import the original again.',
     cancel:
       'This requests cancellation of pending work. Published knowledge and already committed effects can remain. It does not delete the retained history.',
   };
@@ -183,7 +212,7 @@ export class KoinonLibraryRetainedUploadsPanel implements OnDestroy {
           staging: 'Awaiting originals',
           queued: 'Queued',
           running: 'Processing',
-          reconciling: 'Outcome needs inspection',
+          reconciling: 'Processing needs review',
           succeeded: 'Processing completed',
           partial: 'Partially completed',
           failed: 'Failed',
@@ -192,6 +221,29 @@ export class KoinonLibraryRetainedUploadsPanel implements OnDestroy {
         } as Record<string, string>
       )[value] ?? 'Not verified'
     );
+  }
+  technicalCode(value: string | null | undefined) {
+    return value && /^[A-Z][A-Z0-9_]{0,63}$/.test(value) ? value : '';
+  }
+  recoveryStatus(value: string) {
+    return (
+      (
+        {
+          absent: 'Not published',
+          admitted: 'Publication not confirmed',
+          prepared: 'Ready to publish',
+          committed: 'Import completed',
+          unknown: 'Not confirmed',
+          not_checked: 'Not checked',
+          verified: 'Upload confirmed',
+          unavailable: 'Original unavailable',
+        } as Record<string, string>
+      )[value] ?? this.status(value)
+    );
+  }
+  async inspectRecovery(id: string) {
+    await this.track(() => this.state.inspectRecovery(id));
+    if (this.state.view().recovery[id]) this.focus('upload-recovery-' + id);
   }
   batchStatus(batch: FileBatchView) {
     return batch.status === 'staging' &&

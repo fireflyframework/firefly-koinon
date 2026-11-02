@@ -20,7 +20,7 @@ def add(controller, group, methods):
 
 add("FileBatchController", "FileBatchesApi", {"capabilities":"capabilities", "create":"create", "list":"list",
     "get":"get", "items":"items", "content":"upload", "receipt":"receipt", "submit":"submit",
-    "cancel":"cancel", "reconcile":"reconcile", "recover_original":"recoverOriginal"})
+    "cancel":"cancel", "reconcile":"reconcile", "recover_original":"recoverOriginal", "processing_recovery":"processingRecovery", "recover_processing":"recoverProcessing"})
 add("QueryBatchController", "QueryBatchesApi", {"capabilities":"capabilities", "create":"create", "list":"list",
     "get":"get", "items":"items", "result":"result", "cancel":"cancel", "reconcile":"reconcile"})
 add("McpConnectionController", "McpApi", {"get": "connection"})

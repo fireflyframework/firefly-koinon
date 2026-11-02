@@ -60,6 +60,7 @@ from koinon_sdk.availability import (
 from koinon_sdk.bulk import (
     BulkAction,
     BulkDestination,
+    BulkRecoveryAction,
     FileBatchCapabilities,
     FileBatchCreate,
     FileBatchItemView,
@@ -67,6 +68,7 @@ from koinon_sdk.bulk import (
     FileBatchView,
     FileItemPage,
     FileManifestItem,
+    FileRecoveryView,
     StagedFileReceipt,
 )
 from koinon_sdk.bulk_queries import (
@@ -854,6 +856,8 @@ __all__ += [
 
 __all__ += [
     "BulkAction",
+    "BulkRecoveryAction",
+    "FileRecoveryView",
     "BulkDestination",
     "FileBatchCapabilities",
     "FileBatchCreate",

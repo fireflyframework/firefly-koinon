@@ -7407,6 +7407,80 @@
     "idempotency": true
   },
   {
+    "operation": "FileBatchController.processing_recovery",
+    "group": "FileBatchesApi",
+    "group_scoped": true,
+    "method": "processingRecovery",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/sources/batches/batch_id value/items/item_id value/recovery",
+    "ids": {
+      "tenant_id": "tenant value",
+      "batch_id": "batch_id value",
+      "item_id": "item_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "FileRecoveryView",
+    "body": {
+      "batch_id": "batch_id-value",
+      "item_id": "item_id-value",
+      "batch_revision": 1,
+      "native_state": "absent",
+      "operation": "retry_processing",
+      "reason_code": "reason_code-value",
+      "attempts": 1,
+      "max_attempts": 1,
+      "checked_at": "2026-10-27T12:34:56Z",
+      "job_status": "queued",
+      "original_receipt_state": "verified"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "FileBatchController.recover_processing",
+    "group": "FileBatchesApi",
+    "group_scoped": true,
+    "method": "recoverProcessing",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/sources/batches/batch_id value/items/item_id value/recover",
+    "ids": {
+      "tenant_id": "tenant value",
+      "batch_id": "batch_id value",
+      "item_id": "item_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "BulkRecoveryAction",
+    "response": "FileBatchView",
+    "body": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "destination": {
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "parent_id": "parent_id-value"
+      },
+      "status": "expired",
+      "revision": 1,
+      "total_items": 1,
+      "total_bytes": 1,
+      "counts": {
+        "example": 1
+      },
+      "cancellation_requested": false,
+      "created_at": "2026-10-27T12:34:56Z",
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "status": 202,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": true
+  },
+  {
     "operation": "QueryBatchController.capabilities",
     "group": "QueryBatchesApi",
     "group_scoped": true,

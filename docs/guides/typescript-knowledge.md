@@ -209,3 +209,7 @@ export function moveFolder(
 ```
 
 `system_managed` identifies retained installation defaults; it is an output, never an editable metadata flag. The backend protects those folders even if a host omits the interface check. Ordinary collection and corpus folders move only inside the same project and space. Handle `CATALOG_CHANGED` by reloading and reviewing a new decision. `KNOWLEDGE_TRANSFER_REQUIRED` means the request crosses a boundary that this move operation cannot change. See [Library hierarchy and permissions](library.md#spaces-projects-and-folders).
+
+### Recover an existing processing attempt
+
+`fileBatches.processingRecovery` and `fileBatches.recoverProcessing` separate current inspection from explicit recovery of the same saved original. Review the server-offered operation and current revision before confirming; never invent a retry from a failed HTTP response or a reserved source ID. Preserve the exact reviewed body and idempotency key if the result is uncertain. The [processing recovery walkthrough](bulk-intake.md#recover-processing-without-uploading-the-original-again) includes the Library journey, typed examples, attempt limits and the distinction between an upload receipt, processing and search availability.

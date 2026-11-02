@@ -24,6 +24,8 @@ export function createFileBatchesApi(transport:KoinonTransport){return {
   for(const name of Object.keys(headers))if(name.toLowerCase()==='content-type')delete headers[name];
   return transport.request<G.StagedFileReceipt>('PUT',`${item(tenantId,batchId,itemId)}/content`,{...request,body:content,headers:{...headers,'Content-Type':'application/octet-stream'}});
  },
+ processingRecovery:(tenantId:string,batchId:string,itemId:string,options:RequestOptions={})=>transport.request<G.FileRecoveryView>('GET',`${item(tenantId,batchId,itemId)}/recovery`,options),
+ recoverProcessing:(tenantId:string,batchId:string,itemId:string,input:G.BulkRecoveryAction,key:string,options:RequestOptions={})=>transport.request<G.FileBatchView>('POST',`${item(tenantId,batchId,itemId)}/recover`,{...keyed(options,key),body:input}),
  receipt:(tenantId:string,batchId:string,itemId:string,options:RequestOptions={})=>transport.request<G.StagedFileReceipt>('GET',`${item(tenantId,batchId,itemId)}/receipt`,options),
  submit:(tenantId:string,batchId:string,input:G.BulkAction,key:string,options:RequestOptions={})=>transport.request<G.FileBatchView>('POST',`${batch(tenantId,batchId)}/submit`,{...keyed(options,key),body:input}),
  cancel:(tenantId:string,batchId:string,input:G.BulkAction,key:string,options:RequestOptions={})=>transport.request<G.FileBatchView>('POST',`${batch(tenantId,batchId)}/cancel`,{...keyed(options,key),body:input}),

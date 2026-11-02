@@ -3,7 +3,7 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/knowledge/bulk/dtos.py
-SHA256: 9f14759adc242109a294e1337d401fee55a0428ab090d209dbd12f7897b42ef8
+SHA256: b62365ef5c9327a5d5acaac23f70b30b1a2ebc6f18c721f32a522e939b993669
 
 Server authorization and semantic validation remain authoritative.
 """
@@ -53,8 +53,32 @@ class BulkAction(Input):
     expected_revision: int = Field(strict=True, ge=1, le=2147483647)
 
 
+RecoveryOperation = Literal["retry_processing", "finalize_publication", "acknowledge_commit"]
+
+
+class BulkRecoveryAction(BulkAction):
+    operation: RecoveryOperation
+
+
 class Output(ResponseModel):
     pass
+
+
+NativeRecoveryState = Literal["absent", "admitted", "prepared", "committed", "unknown", "not_checked"]
+
+
+class FileRecoveryView(Output):
+    batch_id: Identifier
+    item_id: Identifier
+    batch_revision: int = Field(ge=1, le=2147483647)
+    native_state: NativeRecoveryState
+    operation: RecoveryOperation | None
+    reason_code: str | None = Field(default=None, max_length=64)
+    attempts: int = Field(ge=0, le=2147483647)
+    max_attempts: int = Field(ge=1, le=2147483647)
+    checked_at: datetime | None
+    job_status: Literal["queued", "running", "succeeded", "failed", "cancelled", "unknown"]
+    original_receipt_state: Literal["verified", "unavailable", "not_checked"]
 
 
 class FileBatchCapabilities(Output):

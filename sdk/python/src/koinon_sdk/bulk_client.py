@@ -10,11 +10,13 @@ from urllib.parse import quote
 
 from koinon_sdk.bulk import (
     BulkAction,
+    BulkRecoveryAction,
     FileBatchCapabilities,
     FileBatchCreate,
     FileBatchPage,
     FileBatchView,
     FileItemPage,
+    FileRecoveryView,
     StagedFileReceipt,
 )
 from koinon_sdk.file_upload import BLOCK_BYTES, MAX_ORIGINAL_BYTES, verified_original
@@ -176,6 +178,27 @@ class BulkClientMixin(ABC):
             await self._request(
                 "POST",
                 self._batch_item_path(tenant_id, batch_id, item_id) + "/original/reconcile",
+                json=value.model_dump(mode="json"),
+                headers={"Idempotency-Key": idempotency_key},
+            )
+        )
+
+    async def file_batch_processing_recovery(
+        self, tenant_id: str, batch_id: str, item_id: str
+    ) -> FileRecoveryView:
+        """Inspect the current server-offered recovery without reading or resending the original."""
+        return FileRecoveryView.model_validate(
+            await self._request("GET", self._batch_item_path(tenant_id, batch_id, item_id) + "/recovery")
+        )
+
+    async def recover_file_batch_processing(
+        self, tenant_id: str, batch_id: str, item_id: str, value: BulkRecoveryAction, idempotency_key: str
+    ) -> FileBatchView:
+        """Send one explicitly reviewed recovery; preserve its exact body/key on an uncertain outcome."""
+        return FileBatchView.model_validate(
+            await self._request(
+                "POST",
+                self._batch_item_path(tenant_id, batch_id, item_id) + "/recover",
                 json=value.model_dump(mode="json"),
                 headers={"Idempotency-Key": idempotency_key},
             )

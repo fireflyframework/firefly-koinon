@@ -102,13 +102,14 @@ function setup() {
       values.delete(key);
     },
   });
+  let writeAccess = true;
   const client = new KoinonClient({ transport });
   const make = () =>
     new RetainedUploadsState({
       scope: () => scope,
       client: () => client,
       journal,
-      access: () => ({ read: true, write: true }),
+      access: () => ({ read: true, write: writeAccess }),
     });
   return {
     state: make(),
@@ -121,6 +122,18 @@ function setup() {
     scope: () => scope,
     intercept: (fn: typeof intercept) => {
       intercept = fn;
+    },
+    revokeWrite: () => {
+      writeAccess = false;
+    },
+    processingFailure: () => {
+      item = {
+        ...item,
+        status: 'reconciling',
+        job_id: 'job',
+        error_code: 'INGEST_EXECUTION_CONTEXT_REQUIRED',
+      };
+      batch = { ...batch, status: 'reconciling' };
     },
     revise: () => {
       batch = { ...batch, revision: batch.revision + 1 };
@@ -289,4 +302,170 @@ it('reviews the saved exact body instead of a caller-modified request with the s
   await f.state.select('batch');
   await f.state.reviewSaved({ ...request, expectedRevision: 99 });
   expect(f.state.view().review?.request.expectedRevision).toBe(1);
+});
+
+const recovery = (
+  operation:
+    'retry_processing' | 'finalize_publication' | 'acknowledge_commit' | null = 'retry_processing',
+) => ({
+  batch_id: 'batch',
+  item_id: 'item',
+  batch_revision: 1,
+  native_state:
+    operation === 'finalize_publication'
+      ? 'prepared'
+      : operation === 'acknowledge_commit'
+        ? 'committed'
+        : 'absent',
+  operation,
+  reason_code: null,
+  attempts: 1,
+  max_attempts: 3,
+  checked_at: '2026-11-01T01:00:00Z',
+  job_status: 'failed',
+  original_receipt_state: 'verified',
+});
+it('never inspects or repeats processing on list/reload; fresh recovery needs a separate explicit review and confirmation', async () => {
+  const f = setup();
+  f.processingFailure();
+  f.intercept((method, path) =>
+    path.endsWith('/recovery')
+      ? Promise.resolve(recovery())
+      : path.endsWith('/recover') && method === 'POST'
+        ? Promise.resolve(f.state.view().selected)
+        : undefined,
+  );
+  await f.state.load();
+  await f.state.select('batch');
+  expect(f.calls.some((c) => c.path.endsWith('/recovery'))).toBe(false);
+  await f.state.inspectRecovery('item');
+  expect(f.state.view().recovery['item'].job_status).toBe('failed');
+  expect(f.calls.some((c) => c.method === 'POST')).toBe(false);
+  await f.state.review('retry_processing', 'item');
+  expect(f.state.view().review?.request.operation).toBe('retry_processing');
+  await f.state.confirm();
+  const writes = f.calls.filter((c) => c.method === 'POST');
+  expect(writes).toHaveLength(1);
+  expect(writes[0].path).toBe('/tenants/north/sources/batches/batch/items/item/recover');
+  expect(writes[0].options.body).toEqual({ expected_revision: 1, operation: 'retry_processing' });
+  expect(f.calls.some((c) => c.method === 'PUT' || c.path.endsWith('/receipt'))).toBe(false);
+});
+it('refuses a changed recovery action before sending and never substitutes processing for publication', async () => {
+  const f = setup();
+  f.processingFailure();
+  let offered = 'finalize_publication' as 'finalize_publication' | 'retry_processing';
+  f.intercept((_, path) =>
+    path.endsWith('/recovery') ? Promise.resolve(recovery(offered)) : undefined,
+  );
+  await f.state.select('batch');
+  await f.state.inspectRecovery('item');
+  await f.state.review('finalize_publication', 'item');
+  offered = 'retry_processing';
+  await f.state.confirm();
+  expect(f.calls.some((c) => c.method === 'POST')).toBe(false);
+  expect(f.state.view().error).toContain('changed');
+});
+it('does not offer recovery from an unknown outcome or changed credential', async () => {
+  const f = setup();
+  f.processingFailure();
+  f.intercept((_, path) =>
+    path.endsWith('/recovery')
+      ? Promise.resolve({
+          ...recovery(null),
+          native_state: 'unknown',
+          reason_code: 'BULK_NATIVE_OUTCOME_UNRESOLVED',
+        })
+      : undefined,
+  );
+  await f.state.select('batch');
+  await f.state.inspectRecovery('item');
+  expect(f.state.canAct('retry_processing', 'item')).toBe(false);
+  await f.state.review('retry_processing', 'item');
+  expect(f.state.view().review).toBeNull();
+  f.setScope({ clientRevision: 1 });
+  f.state.syncScope();
+  expect(f.state.view().recovery).toEqual({});
+  expect(f.calls.some((c) => c.method === 'POST')).toBe(false);
+});
+it('retains an uncertain exact recovery request across reload and permits only explicit same-key reconciliation even when the descriptor no longer offers an action', async () => {
+  const f = setup();
+  f.processingFailure();
+  let first = true;
+  f.intercept((method, path) =>
+    path.endsWith('/recovery')
+      ? Promise.resolve(recovery(first ? 'acknowledge_commit' : null))
+      : path.endsWith('/recover') && method === 'POST'
+        ? first
+          ? ((first = false), Promise.reject(new TypeError('network')))
+          : Promise.resolve(f.state.view().selected)
+        : undefined,
+  );
+  await f.state.select('batch');
+  await f.state.inspectRecovery('item');
+  await f.state.review('acknowledge_commit', 'item');
+  await f.state.confirm();
+  const original = f.calls.find((c) => c.method === 'POST')!;
+  const restored = f.make();
+  await restored.select('batch');
+  expect(restored.view().pending).toHaveLength(1);
+  expect(f.calls.filter((c) => c.method === 'POST')).toHaveLength(1);
+  await restored.reviewSaved(restored.view().pending[0]);
+  await restored.confirm();
+  const writes = f.calls.filter((c) => c.method === 'POST');
+  expect(writes).toHaveLength(2);
+  expect(writes[1].options.body).toEqual(original.options.body);
+  expect(writes[1].options.headers).toEqual(original.options.headers);
+});
+
+it('rejects mismatched server recovery identities and refuses writes after current permission loss', async () => {
+  const f = setup();
+  f.processingFailure();
+  let forged = true;
+  f.intercept((_, path) =>
+    path.endsWith('/recovery')
+      ? Promise.resolve({ ...recovery(), item_id: forged ? 'other-item' : 'item' })
+      : undefined,
+  );
+  await f.state.select('batch');
+  await f.state.inspectRecovery('item');
+  expect(f.state.view().recovery).toEqual({});
+  expect(f.state.canAct('retry_processing', 'item')).toBe(false);
+  forged = false;
+  await f.state.inspectRecovery('item');
+  await f.state.review('retry_processing', 'item');
+  f.revokeWrite();
+  await f.state.confirm();
+  expect(f.calls.some((c) => c.method === 'POST')).toBe(false);
+});
+it('masks descriptor and original metadata after recovery inspection authorization fails', async () => {
+  const f = setup();
+  f.processingFailure();
+  f.intercept((_, path) =>
+    path.endsWith('/recovery')
+      ? Promise.reject(new KoinonError(403, 'ACCESS_DENIED', 'Private native exception'))
+      : undefined,
+  );
+  await f.state.select('batch');
+  await f.state.inspectRecovery('item');
+  expect(f.state.view().selected).toBeNull();
+  expect(f.state.view().recovery).toEqual({});
+  expect(f.state.view().items).toEqual([]);
+  expect(f.state.view().error).not.toContain('Private native');
+});
+
+it.each([
+  { native_state: 'admitted' },
+  { attempts: 4, max_attempts: 3 },
+  { job_status: 'running' },
+])('rejects inconsistent actionable recovery descriptors: %o', async (invalid) => {
+  const f = setup();
+  f.processingFailure();
+  f.intercept((_, path) =>
+    path.endsWith('/recovery') ? Promise.resolve({ ...recovery(), ...invalid }) : undefined,
+  );
+  await f.state.select('batch');
+  await f.state.inspectRecovery('item');
+  expect(f.state.view().recovery).toEqual({});
+  expect(f.state.canAct('retry_processing', 'item')).toBe(false);
+  expect(f.calls.some((c) => c.method === 'POST')).toBe(false);
 });

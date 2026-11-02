@@ -100,6 +100,12 @@ The [typed Library file profile](../reference/library-file-ingestion.md) supplie
 Configure [ingestion resources](ingestion-resources.md) separately from staging and
 query execution. Object storage does not remove parser memory or local scratch.
 
+## Recover a failed processing attempt
+
+After correcting a deployment or processing-context failure, preserve the existing batch and original. Use the [Library recovery review or typed SDK processing-recovery operations](../guides/bulk-intake.md#recover-processing-without-uploading-the-original-again). The server offers an action only after checking current owner/token authority, destination, attempt bounds, worker leases and native state. An unknown outcome does not authorize another attempt. A prepared publication cannot silently become a parsing/model retry if its state changes.
+
+`original_receipt_state` is the retained database receipt observation; it does not perform a new cloud-object read. Verify the original explicitly when a current storage check is needed. A recovery acknowledgment is separate from eventual processing and search availability. Do not repair a failed item by changing its owner, resetting counters or directly updating job rows.
+
 ## Retention and rollout
 
 ### Recover an original affected by the pinned-receipt migration

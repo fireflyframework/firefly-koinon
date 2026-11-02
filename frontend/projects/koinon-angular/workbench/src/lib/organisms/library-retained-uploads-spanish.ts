@@ -84,4 +84,60 @@ export const RETAINED_UPLOADS_SPANISH: Record<string, string> = {
     'La acción se ha confirmado. Consulta el estado registrado; eso no significa que el procesamiento haya terminado.',
   'The retained original was verified. This does not establish processing or search availability.':
     'Se ha verificado el original conservado. Eso no confirma su procesamiento ni su disponibilidad para buscar.',
+  'Processing failed': 'Procesamiento fallido',
+  'Inspect recovery': 'Revisar recuperación',
+  'Processing recovery': 'Recuperación del procesamiento',
+  'Processing needs review': 'Procesamiento pendiente de revisión',
+  'Retry processing': 'Reintentar procesamiento',
+  'Finish publication': 'Finalizar publicación',
+  'Record completed import': 'Registrar importación completada',
+  'Verify retained original': 'Verificar original conservado',
+  Publication: 'Publicación',
+  Attempts: 'Intentos',
+  'Not published': 'No publicado',
+  'Publication not confirmed': 'Publicación sin confirmar',
+  'Ready to publish': 'Listo para publicar',
+  'Import completed': 'Importación completada',
+  'Not confirmed': 'Sin confirmar',
+  'Upload confirmed': 'Subida confirmada',
+  'Original unavailable': 'Original no disponible',
+  'Processing reference': 'Referencia técnica del procesamiento',
+  'Process the saved file again. This may use your configured AI services. Earlier attempts remain in the activity history.':
+    'Vuelve a procesar el archivo guardado. Puede utilizar los servicios de IA configurados. Los intentos anteriores se conservan en el historial de actividad.',
+  'This finishes publication of an already prepared result. It does not authorize starting a new processing attempt if the result changes.':
+    'Finaliza la publicación de un resultado ya preparado. No autoriza iniciar otro procesamiento si el resultado cambia.',
+  'This records the verified import that already completed. It does not import the original again.':
+    'Registra la importación verificada que ya terminó. No vuelve a importar el original.',
+  'The upload receipt confirms the file was saved. Use Verify retained original to check that it is still available.':
+    'El comprobante de subida confirma que se guardó el archivo. Utiliza Verificar original conservado para comprobar si sigue disponible.',
+  'The service could not start this processing step securely. An administrator must update the processing service, then review recovery.':
+    'El servicio no pudo iniciar este paso de procesamiento de forma segura. Un administrador debe actualizar el servicio de procesamiento y después revisar la recuperación.',
+  'This processing step needs attention. Inspect recovery to see whether the retained original can be used safely.':
+    'Este paso de procesamiento necesita atención. Revisa la recuperación para comprobar si el original conservado puede utilizarse de forma segura.',
+  'Recovery is not available for this upload. Check whether it was cancelled, expired or submitted.':
+    'La recuperación no está disponible para esta subida. Comprueba si se canceló, caducó o llegó a enviarse a procesamiento.',
+  'No recovery action is required for the recorded processing state.':
+    'El estado de procesamiento registrado no requiere ninguna acción de recuperación.',
+  'Processing is still active or queued. Wait, then inspect recovery again.':
+    'El procesamiento sigue activo o en cola. Espera y vuelve a revisar la recuperación.',
+  'A processing receipt is needed before recovery can be offered. Ask an administrator to inspect the processing job.':
+    'Se necesita un comprobante de procesamiento antes de ofrecer una recuperación. Pide a un administrador que revise el trabajo.',
+  'The source connection changed. An administrator must review it before recovery.':
+    'La conexión de origen ha cambiado. Un administrador debe revisarla antes de recuperar el procesamiento.',
+  'The knowledge destination changed. An administrator must review its scope before recovery.':
+    'El destino del conocimiento ha cambiado. Un administrador debe revisar su ámbito antes de recuperar el procesamiento.',
+  'The processing service is not available. An administrator must restore it before recovery.':
+    'El servicio de procesamiento no está disponible. Un administrador debe restablecerlo antes de recuperar el procesamiento.',
+  'The processing outcome is not confirmed. Nothing will be repeated until a safe recovery action is available.':
+    'El resultado del procesamiento no está confirmado. No se repetirá nada hasta que exista una acción de recuperación segura.',
+  'The recorded processing receipts disagree. An administrator must inspect them before recovery.':
+    'Los comprobantes de procesamiento registrados no coinciden. Un administrador debe revisarlos antes de recuperar el procesamiento.',
+  'The processing attempt limit has been reached. Ask an administrator to inspect the failure.':
+    'Se ha alcanzado el límite de intentos de procesamiento. Pide a un administrador que revise el fallo.',
+  'The retained original is not available for this recovery. Ask an administrator to check storage.':
+    'El original conservado no está disponible para esta recuperación. Pide a un administrador que compruebe el almacenamiento.',
+  'The processing state changed. Inspect recovery again before choosing an action.':
+    'El estado de procesamiento ha cambiado. Vuelve a revisar la recuperación antes de elegir una acción.',
+  'No safe recovery action could be confirmed. Refresh the upload and ask an administrator to inspect processing.':
+    'No se ha podido confirmar una acción de recuperación segura. Actualiza la subida y pide a un administrador que revise el procesamiento.',
 };
