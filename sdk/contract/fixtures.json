@@ -7855,6 +7855,7 @@
       ]
     },
     "ProfileUpdate": {
+      "initialize_only": false,
       "display_name": "display_name-value",
       "locale": "locale-value",
       "time_zone": "time_zone-value",
@@ -9562,6 +9563,7 @@
       ]
     },
     "UserProfile": {
+      "preferences_initialized": false,
       "subject": "subject-value",
       "display_name": "display_name-value",
       "locale": "locale-value",

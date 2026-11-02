@@ -8,6 +8,18 @@ import { APPLICATIONS_SPANISH } from './applications-spanish';
 import { MCP_SPANISH } from './mcp-spanish';
 export const SPANISH: Readonly<Record<string, string>> = {
   Uploads: 'Subidas',
+  'Your saved regional preferences could not be displayed. Review the device defaults below and save your choices.': 'No se han podido mostrar tus preferencias regionales guardadas. Revisa los valores del dispositivo que aparecen abajo y guarda tus opciones.',
+  'Language and region': 'Idioma y región',
+  'Calendar': 'Calendario',
+  'Time format': 'Formato de hora',
+  '12-hour (1–12)': '12 horas (1–12)',
+  '24-hour (0–23)': '24 horas (0–23)',
+  '12-hour (0–11)': '12 horas (0–11)',
+  '24-hour (1–24)': '24 horas (1–24)',
+  'Date and time preview': 'Vista previa de fecha y hora',
+  'Use device preferences': 'Usar preferencias del dispositivo',
+  'Your name, photo and preferences apply to your account.': 'Tu nombre, foto y preferencias se aplican a tu cuenta.',
+  'Corporate profile sync does not change your regional preferences.': 'La sincronización del perfil corporativo no cambia tus preferencias regionales.',
  'Loading details…':'Cargando detalles…','Details could not be opened. Close and try again.':'No se pudieron abrir los detalles. Cierra y vuelve a intentarlo.',
   'Your access context changed. Cancel and start a new token to review its access.':
     'Tu contexto de acceso ha cambiado. Cancela y empieza un nuevo token para revisar su acceso.',

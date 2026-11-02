@@ -37,3 +37,21 @@ async def test_profile_methods_keep_identity_server_owned_and_images_binary():
     assert all(request.headers["Authorization"] == "Bearer fresh" for request in seen)
     with pytest.raises(ValueError):
         ProfileUpdate(subject="issuer|other")
+
+
+async def test_typed_regional_initialization_preserves_unicode_calendar_and_hour_cycle():
+    import json
+
+    expected = {"locale": "es-ES-u-ca-gregory-hc-h23", "time_zone": "Europe/Madrid", "initialize_only": True}
+
+    def handle(request):
+        assert request.method == "PATCH" and request.url.path == "/api/v1/profile"
+        assert json.loads(request.content) == expected
+        return httpx.Response(200, json={**PROFILE, **expected, "preferences_initialized": True})
+
+    async with KoinonClient(
+        "https://api.test/api/v1", token_provider=lambda: "fresh", transport=httpx.MockTransport(handle)
+    ) as client:
+        saved = await client.update_profile(ProfileUpdate(**expected))
+    assert saved.preferences_initialized and saved.locale == expected["locale"]
+    assert ProfileUpdate(locale="en-US").model_dump(exclude_unset=True) == {"locale": "en-US"}

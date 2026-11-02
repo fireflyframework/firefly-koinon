@@ -15,6 +15,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 
 | Field | Type | Required | Default |
 | --- | --- | --- | --- |
+| `initialize_only` | `boolean` | No | `false` |
 | `display_name` | `string` or `null` | No | `null` |
 | `locale` | `string` or `null` | No | `null` |
 | `time_zone` | `string` or `null` | No | `null` |
@@ -34,6 +35,11 @@ This is a schema definition, not an example request. It preserves all declared k
     {
       "additionalProperties": false,
       "properties": {
+        "initialize_only": {
+          "default": false,
+          "title": "Initialize Only",
+          "type": "boolean"
+        },
         "display_name": {
           "anyOf": [
             {

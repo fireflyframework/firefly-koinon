@@ -21907,6 +21907,11 @@
     "ProfileUpdate": {
       "additionalProperties": false,
       "properties": {
+        "initialize_only": {
+          "default": false,
+          "title": "Initialize Only",
+          "type": "boolean"
+        },
         "display_name": {
           "anyOf": [
             {
@@ -27090,6 +27095,11 @@
     "UserProfile": {
       "additionalProperties": true,
       "properties": {
+        "preferences_initialized": {
+          "default": true,
+          "title": "Preferences Initialized",
+          "type": "boolean"
+        },
         "subject": {
           "title": "Subject",
           "type": "string"

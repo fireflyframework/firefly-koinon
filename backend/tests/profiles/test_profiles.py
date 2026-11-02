@@ -229,3 +229,40 @@ async def test_installer_author_is_koinon_and_unknown_system_like_subjects_stay_
     }
     for subject in subjects - {"system:installation"}:
         assert summaries[subject]["display_name"] == ""
+
+
+async def test_device_defaults_apply_once_and_never_overwrite_saved_preferences(profiles):
+    service, _ = profiles
+    initial = await service.get("issuer|member", {"locale": "es-MX", "zoneinfo": "America/Mexico_City"})
+    assert initial["time_zone"] == "America/Mexico_City"
+    assert initial["preferences_initialized"] is False
+    device = {"locale": "es-ES-u-ca-gregory-hc-h23", "time_zone": "Europe/Madrid"}
+    saved = await service.update("issuer|member", device, initialize_only=True)
+    assert saved["locale"] == device["locale"] and saved["preferences_initialized"] is True
+    again = await service.update(
+        "issuer|member", {"locale": "en-US", "time_zone": "UTC"}, initialize_only=True
+    )
+    assert again == saved
+    signed_in = await service.get("issuer|member", {"locale": "en-US", "zoneinfo": "UTC"})
+    assert signed_in == saved
+    changed = await service.update("issuer|member", {"locale": "en-GB-u-ca-buddhist-hc-h12"})
+    assert changed["time_zone"] == "Europe/Madrid"
+    assert changed["locale"] == "en-GB-u-ca-buddhist-hc-h12"
+
+
+async def test_explicit_preferences_win_over_later_device_initialization(profiles):
+    service, _ = profiles
+    await service.update("issuer|member", {"locale": "en-US", "time_zone": "UTC"})
+    saved = await service.update("issuer|member", {"locale": "es-ES"}, initialize_only=True)
+    assert saved["locale"] == "en-US" and saved["time_zone"] == "UTC"
+    assert saved["preferences_initialized"] is True
+
+
+async def test_device_initialization_cannot_change_identity_or_answer_language(profiles):
+    service, _ = profiles
+    for values in ({"display_name": "Device"}, {"response_language": "en"}):
+        with pytest.raises(InvalidRequestException):
+            await service.update("issuer|member", values, initialize_only=True)
+    initial = await service.get("issuer|member", {"zoneinfo": "Invalid/Zone"})
+    assert initial["time_zone"] == "UTC"
+    assert initial["preferences_initialized"] is False

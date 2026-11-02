@@ -122,3 +122,19 @@ test('folder moves keep observed parent and timestamp preconditions on the authe
   assert.equal(moved.system_managed,false);
  });
 });
+
+test('profile initialization preserves calendar and hour cycle with explicit write semantics', async () => {
+ const input = {locale:'es-ES-u-ca-gregory-hc-h23',time_zone:'Europe/Madrid',initialize_only:true};
+ await server((req,res)=>{
+  assert.equal(req.method,'PATCH');assert.equal(req.url,'/bff/api/v1/profile');
+  let raw='';req.on('data',part=>raw+=part);req.on('end',()=>{
+   assert.deepEqual(JSON.parse(raw),input);
+   res.setHeader('Content-Type','application/json');
+   res.end(JSON.stringify({...input,subject:'issuer|self',display_name:'Self',response_language:'auto',preferences_initialized:true}));
+  });
+ },async baseUrl=>{
+  const client=new KoinonClient({transport:new FetchTransport({baseUrl,accessToken:()=> 'scoped-profile-token'})});
+  const profile=await client.profile.update(input);
+  assert.equal(profile.locale,input.locale);assert.equal(profile.preferences_initialized,true);
+ });
+});

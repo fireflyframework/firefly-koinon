@@ -23,6 +23,7 @@ def profile_dto(row: Profile) -> dict:
             "locale": row.locale,
             "time_zone": row.time_zone,
             "response_language": row.response_language,
+            "preferences_initialized": row.preferences_initialized,
             "avatar_url": ("/api/v1/profile/avatar?v=" + row.avatar_version) if row.avatar_version else None,
             "avatar_version": row.avatar_version,
         }

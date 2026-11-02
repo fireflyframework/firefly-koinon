@@ -4,10 +4,10 @@ import type { Presentation } from '@fireflyframework/koinon-sdk';
 import { WORKBENCH_SPANISH } from './workbench-spanish.generated';
 const spanish:Record<string,string>={...WORKBENCH_SPANISH};
 export function registerKoinonSpanish(dictionary:Readonly<Record<string,string>>) {Object.assign(spanish,dictionary);}
-const INITIAL: Presentation = { locale: 'en-US', time_zone: 'UTC', response_language: 'en' };
+import { devicePresentation } from './presentation-preferences';
 @Injectable({ providedIn: 'root' })
 export class KoinonI18n {
-  readonly preferences = signal<Presentation>(INITIAL);
+  readonly preferences = signal<Presentation>(devicePresentation());
   apply(value: Presentation) {
     this.preferences.set({ ...value });
   }

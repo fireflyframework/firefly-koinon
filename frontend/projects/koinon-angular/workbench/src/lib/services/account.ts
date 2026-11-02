@@ -17,10 +17,13 @@ import type {
   TokenScopeOptions,
   Page,
 } from '@fireflyframework/koinon-sdk';
-import { KoinonClientContext, organizationContextKey } from '@fireflyframework/koinon-angular/workbench/core';
+import {
+  KoinonClientContext,
+  organizationContextKey,
+} from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
 import type { AccountOrganization } from './account-organization';
-import { KoinonI18n } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonI18n, devicePresentation } from '@fireflyframework/koinon-angular/workbench/core';
 const ACCOUNT_ERROR = 'Your account could not be updated.';
 @Injectable()
 export class KoinonAccount implements OnDestroy {
@@ -110,7 +113,7 @@ export class KoinonAccount implements OnDestroy {
     this.profile.set(null);
     this.clearTokenContext();
     this.clearAvatar();
-    this.i18n.apply({ locale: 'en-US', time_zone: 'UTC', response_language: 'en' });
+    this.i18n.apply(devicePresentation());
   }
   private clearTokenContext() {
     this.tokens.set({ items: [] });
@@ -185,10 +188,24 @@ export class KoinonAccount implements OnDestroy {
   }
 
   async load() {
-    const profile = await this.perform(
+    const identity = this.contextKey();
+    let profile = await this.perform(
       () => this.clients.get().profile.get(),
       (value) => this.accept(value),
     );
+    if (profile?.preferences_initialized === false && identity === this.contextKey()) {
+      const device = devicePresentation();
+      profile =
+        (await this.perform(
+          () =>
+            this.clients.get().profile.update({
+              locale: device.locale,
+              time_zone: device.time_zone,
+              initialize_only: true,
+            }),
+          (value) => this.accept(value),
+        )) ?? profile;
+    }
     if (profile) await this.loadAvatar(profile);
     return profile;
   }

@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 
 from pyfly.data.relational.sqlalchemy import Base, UtcDateTime
-from sqlalchemy import LargeBinary, String
+from sqlalchemy import Boolean, LargeBinary, String, true
 from sqlalchemy.orm import Mapped, mapped_column
 
 
@@ -18,3 +18,4 @@ class Profile(Base):
     avatar_bytes: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
     avatar_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=lambda: datetime.now(UTC))
+    preferences_initialized: Mapped[bool] = mapped_column(Boolean, default=False, server_default=true())

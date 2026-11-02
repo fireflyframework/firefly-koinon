@@ -156,3 +156,25 @@ def test_personal_token_profile_permissions_are_separate_from_knowledge_scopes(c
     assert changed.status_code == 200, changed.text
     assert changed.json()["subject"] == native.ISSUER + "|admin"
     assert client.get("/api/v1/tokens", headers=write).status_code == 403
+
+
+def test_profile_initialization_is_typed_self_owned_and_idempotent(client):
+    headers = bearer("viewer")
+    first = client.patch(
+        "/api/v1/profile",
+        headers=headers,
+        json={"initialize_only": True, "locale": "es-ES-u-ca-gregory-hc-h23", "time_zone": "Europe/Madrid"},
+    )
+    assert first.status_code == 200, first.text
+    assert first.json()["preferences_initialized"] is True
+    assert first.json()["subject"] == native.ISSUER + "|viewer"
+    again = client.patch(
+        "/api/v1/profile",
+        headers=headers,
+        json={"initialize_only": True, "locale": "en-US", "time_zone": "UTC"},
+    )
+    assert again.status_code == 200 and again.json() == first.json()
+    invalid = client.patch(
+        "/api/v1/profile", headers=headers, json={"initialize_only": True, "display_name": "Invalid"}
+    )
+    assert invalid.status_code == 400

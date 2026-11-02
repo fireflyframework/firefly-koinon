@@ -88,8 +88,8 @@ export interface ChatRun {event_cursor?:string;run_id:string;message_id:string;s
 export type ChatEventData = {chunk_index?:number;text_offset?:number;chunk_count?:number;proposal_update?:ProposalUpdate;tool_activity?:ToolActivity;answer_policy?:AnswerPolicy;presentation?:Presentation;text?:string;stage?:string;message?:string;status?:MessageStatus;code?:string|null;message_id?:string;artifact?:OpenUIArtifact;citation?:Citation};
 export type EvidenceResult = {id:string;run_id:string}&({kind:'search';data:SearchResponse}|{kind:'query';data:QueryResponse}|{kind:'schema';data:DatasetSchema}|{kind:'lineage';data:Lineage}|{kind:'attachment';data:AttachmentEvidence}|{kind:'proposal';data:CatalogProposal});
 export interface PublicActor {subject:string;display_name:string;avatar_data_url:string|null;avatar_version:string|null}
-export interface UserProfile {subject:string;display_name:string;locale:string;time_zone:string;response_language:string;avatar_url:string|null;avatar_version:string|null}
-export type ProfileInput=Partial<Pick<UserProfile,'display_name'|'locale'|'time_zone'|'response_language'>>;
+export interface UserProfile {preferences_initialized?:boolean;subject:string;display_name:string;locale:string;time_zone:string;response_language:string;avatar_url:string|null;avatar_version:string|null}
+export type ProfileInput=Partial<Pick<UserProfile,'display_name'|'locale'|'time_zone'|'response_language'>> & {initialize_only?:boolean};
 export interface Presentation {locale:string;time_zone:string;response_language:string;effective_language?:'en'|'es'|null}
 export interface PersonalToken {id:string;name:string;tenant_id:string;prefix:string;scopes:string[];workspace_ids:string[]|null;asset_ids:string[]|null;expires_at:string;revoked_at:string|null;last_used_at:string|null;created_at:string}
 export interface PersonalTokenInput {name:string;tenant_id:string;scopes:string[];expires_at:string;workspace_ids?:string[]|null;asset_ids?:string[]|null}
