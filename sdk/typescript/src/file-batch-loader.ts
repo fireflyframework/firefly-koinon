@@ -17,6 +17,8 @@ export function createLazyFileBatchesApi(transport:KoinonTransport):FileBatchesA
   get:delegate(api=>api.get),
   items:delegate(api=>api.items),
   upload:delegate(api=>api.upload),
+  processingRecovery:delegate(api=>api.processingRecovery),
+  recoverProcessing:delegate(api=>api.recoverProcessing),
   receipt:delegate(api=>api.receipt),
   submit:delegate(api=>api.submit),
   cancel:delegate(api=>api.cancel),

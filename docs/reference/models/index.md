@@ -3,7 +3,7 @@
 
 # Wire models
 
-The canonical schema contains 432 definitions and 421 named model aliases. Supporting definitions are included so every schema reference can be followed. Language-specific generated names can differ from wire names; consult the SDK imports in the workflow guides.
+The canonical schema contains 434 definitions and 423 named model aliases. Supporting definitions are included so every schema reference can be followed. Language-specific generated names can differ from wire names; consult the SDK imports in the workflow guides.
 
 Each page lists field presence, nullability, defaults and validation constraints. The downloadable [complete schema](../sdk-schemas.json) remains the machine-readable contract.
 
@@ -64,6 +64,7 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`BulkAction`](bulkaction.md)
 - [`BulkDestination`](bulkdestination.md)
 - [`BulkFileUpload`](bulkfileupload.md)
+- [`BulkRecoveryAction`](bulkrecoveryaction.md)
 
 ## C
 
@@ -197,6 +198,7 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`FileBatchView`](filebatchview.md)
 - [`FileItemPage`](fileitempage.md)
 - [`FileManifestItem`](filemanifestitem.md)
+- [`FileRecoveryView`](filerecoveryview.md)
 - [`FolderCreate`](foldercreate.md)
 - [`FolderPatch`](folderpatch.md)
 - [`Frozen`](frozen.md)

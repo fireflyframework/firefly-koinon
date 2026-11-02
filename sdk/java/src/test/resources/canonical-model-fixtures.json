@@ -1,5 +1,5 @@
 {
-  "definition_count": 432,
+  "definition_count": 434,
   "excluded_definitions": [
     "AttachmentUpload",
     "AvatarUpload",
@@ -1331,6 +1331,10 @@
       "workspace_id": "workspace_id-value",
       "project_id": "project_id-value",
       "parent_id": "parent_id-value"
+    },
+    "BulkRecoveryAction": {
+      "expected_revision": 1,
+      "operation": "retry_processing"
     },
     "Capabilities": {
       "attachments": {
@@ -4174,6 +4178,19 @@
       "mode": "document",
       "size_bytes": 1,
       "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "FileRecoveryView": {
+      "batch_id": "batch_id-value",
+      "item_id": "item_id-value",
+      "batch_revision": 1,
+      "native_state": "absent",
+      "operation": "retry_processing",
+      "reason_code": "reason_code-value",
+      "attempts": 1,
+      "max_attempts": 1,
+      "checked_at": "2026-10-27T12:34:56Z",
+      "job_status": "queued",
+      "original_receipt_state": "verified"
     },
     "FolderCreate": {
       "name": "name-value",

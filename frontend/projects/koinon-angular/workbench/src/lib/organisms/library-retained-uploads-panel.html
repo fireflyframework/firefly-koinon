@@ -57,7 +57,7 @@
               <td class="size">{{ size(batch.total_bytes) }}</td>
               <td>
                 <ffk-badge [tone]="tone(batch.status)">{{
-                  status(batch.status) | ffkText
+                  batchStatus(batch) | ffkText
                 }}</ffk-badge>
               </td>
               <td>
@@ -197,22 +197,30 @@
                   {{ size(item.size_bytes) }}
                 </p>
               </div>
-              <ffk-badge [tone]="tone(item.status)">{{ status(item.status) | ffkText }}</ffk-badge>
+              <ffk-badge [tone]="tone(item.status)">{{
+                (v.recovery[item.id]?.job_status === 'failed'
+                  ? 'Processing failed'
+                  : status(item.status)
+                ) | ffkText
+              }}</ffk-badge>
             </header>
+            @if (processingHelp(item.error_code); as help) {
+              <p class="processing-help">{{ help | ffkText }}</p>
+            }
             <div class="actions">
+              @if (state.canInspectRecovery(item.id)) {
+                <ffk-button variant="neutral" (click)="inspectRecovery(item.id)">{{
+                  'Inspect recovery' | ffkText
+                }}</ffk-button>
+              }
               @if (state.canAct('recover_original', item.id)) {
                 <ffk-button variant="neutral" (click)="review('recover_original', item.id)">{{
                   labels.recover_original | ffkText
                 }}</ffk-button>
               }
-              @if (state.canAct('reconcile', item.id)) {
-                <ffk-button variant="neutral" (click)="review('reconcile', item.id)">{{
-                  labels.reconcile | ffkText
-                }}</ffk-button>
-              }
               @if (item.status === 'staged' || item.job_id) {
                 <ffk-button variant="quiet" [disabled]="v.busy" (click)="receipt(item.id)">{{
-                  'Verify staged original' | ffkText
+                  'Verify retained original' | ffkText
                 }}</ffk-button>
               }
               <ffk-button
@@ -222,6 +230,67 @@
                 >{{ 'Open in Library' | ffkText }}</ffk-button
               >
             </div>
+            @if (v.recovery[item.id]; as recovery) {
+              <section class="recovery" [attr.aria-label]="'Processing recovery' | ffkText">
+                <h5 [id]="'upload-recovery-' + item.id" tabindex="-1">
+                  {{ 'Processing recovery' | ffkText }}
+                </h5>
+                <dl class="recovery-summary">
+                  <div>
+                    <dt>{{ 'Original' | ffkText }}</dt>
+                    <dd>{{ recoveryStatus(recovery.original_receipt_state) | ffkText }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'Processing job' | ffkText }}</dt>
+                    <dd>
+                      {{
+                        (recovery.job_status === 'failed'
+                          ? 'Processing failed'
+                          : status(recovery.job_status)
+                        ) | ffkText
+                      }}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'Publication' | ffkText }}</dt>
+                    <dd>{{ recoveryStatus(recovery.native_state) | ffkText }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'Attempts' | ffkText }}</dt>
+                    <dd>{{ recovery.attempts | number }} / {{ recovery.max_attempts | number }}</dd>
+                  </div>
+                </dl>
+                @if (recovery.original_receipt_state === 'verified') {
+                  <p>
+                    {{
+                      'The upload receipt confirms the file was saved. Use Verify retained original to check that it is still available.'
+                        | ffkText
+                    }}
+                  </p>
+                }
+                @if (recovery.reason_code || !recovery.operation) {
+                  <p>{{ recoveryReason(recovery.reason_code) | ffkText }}</p>
+                }
+                @if (recovery.checked_at) {
+                  <p class="checked">
+                    {{ 'Checked' | ffkText }}
+                    {{ recovery.checked_at | ffkDate: undefined : 'datetime' }}
+                  </p>
+                } @else {
+                  <p class="checked">{{ 'Not checked' | ffkText }}</p>
+                }
+                @if (recovery.operation; as operation) {
+                  <div class="actions">
+                    <ffk-button
+                      variant="primary"
+                      [disabled]="!state.canAct(operation, item.id)"
+                      (click)="review(operation, item.id)"
+                      >{{ labels[operation] | ffkText }}</ffk-button
+                    >
+                  </div>
+                }
+              </section>
+            }
             @if (v.receipts[item.id]; as receipt) {
               <p class="receipt" role="status">
                 {{ 'Original verified at' | ffkText }}
@@ -231,6 +300,12 @@
             <details>
               <summary>{{ 'Source and upload references' | ffkText }}</summary>
               <dl class="references">
+                @if (technicalAccess() && technicalCode(item.error_code)) {
+                  <dt>{{ 'Processing reference' | ffkText }}</dt>
+                  <dd>
+                    <code>{{ technicalCode(item.error_code) }}</code>
+                  </dd>
+                }
                 <dt>{{ 'Upload item' | ffkText }}</dt>
                 <dd>
                   <code>{{ item.id }}</code>

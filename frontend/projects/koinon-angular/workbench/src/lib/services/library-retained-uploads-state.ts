@@ -5,6 +5,7 @@ import type {
   FileBatchItemView,
   FileBatchPage,
   FileBatchView,
+  FileRecoveryView,
   KoinonClient,
   StagedFileReceipt,
 } from '@fireflyframework/koinon-sdk';
@@ -15,6 +16,7 @@ import {
   type RetainedUploadRequest,
   type RetainedUploadScope,
 } from './library-retained-uploads-contract';
+import { isProcessingRecovery } from './library-upload-recovery-messages';
 import { RetainedUploadJournal } from './library-retained-uploads-journal';
 interface Review {
   request: RetainedUploadRequest;
@@ -29,6 +31,7 @@ interface View {
   items: FileBatchItemView[];
   pending: RetainedUploadRequest[];
   review: Review | null;
+  recovery: Record<string, FileRecoveryView>;
   receipts: Record<string, { value: StagedFileReceipt; observedAt: string }>;
   busy: boolean;
   error: string;
@@ -44,6 +47,7 @@ const empty = (): View => ({
   items: [],
   pending: [],
   review: null,
+  recovery: {},
   receipts: {},
   busy: false,
   error: '',
@@ -240,7 +244,10 @@ export class RetainedUploadsState {
               ? item?.status === 'staged'
               : action.operation === 'reconcile'
                 ? item?.status === 'succeeded'
-                : items.length > 0 && items.every((i) => !!i.job_id) && batch.status !== 'staging';
+                : action.operation === 'submit' &&
+                  items.length > 0 &&
+                  items.every((i) => !!i.job_id) &&
+                  batch.status !== 'staging';
         if (observed) this.ports.journal.clear(action);
       }
       pending = this.ports.journal.forBatch(s.scope.subject, s.scope.tenantId, batch.id);
@@ -254,6 +261,7 @@ export class RetainedUploadsState {
       pending,
       journalError,
       review: null,
+      recovery: {},
       receipts: {},
       ...(journalError
         ? {
@@ -277,6 +285,7 @@ export class RetainedUploadsState {
         items: [],
         pending: [],
         review: null,
+        recovery: {},
         receipts: {},
         journalError: false,
       }));
@@ -292,7 +301,11 @@ export class RetainedUploadsState {
       !v.busy &&
       !v.journalError &&
       this.ports.access(v.selected).write &&
-      retainedUploadActions(v.selected, v.items, itemId).includes(operation) &&
+      (isProcessingRecovery(operation)
+        ? !!itemId &&
+          v.recovery[itemId]?.operation === operation &&
+          v.recovery[itemId]?.batch_revision === v.selected.revision
+        : retainedUploadActions(v.selected, v.items, itemId).includes(operation)) &&
       !v.pending.some((p) => p.operation === operation && p.itemId === (itemId ?? null))
     );
   }
@@ -302,13 +315,20 @@ export class RetainedUploadsState {
     return this.run(async (s) => {
       const { batch, items } = await this.read(s, selected.id);
       this.admit(s, batch, items);
+      const descriptor =
+        isProcessingRecovery(operation) && itemId
+          ? await this.recoveryDescriptor(s, batch, items, itemId)
+          : null;
       if (
         !this.ports.access(batch).write ||
-        !retainedUploadActions(batch, items, itemId).includes(operation) ||
+        (isProcessingRecovery(operation)
+          ? descriptor?.operation !== operation
+          : !retainedUploadActions(batch, items, itemId).includes(operation)) ||
         this.state().journalError
       )
         return;
       this.set(s, {
+        ...(descriptor && itemId ? { recovery: { [itemId]: descriptor } } : {}),
         review: {
           request: {
             subject: s.scope.subject,
@@ -351,12 +371,18 @@ export class RetainedUploadsState {
         this.state().journalError
       )
         return;
+      const descriptor =
+        !review.replay && isProcessingRecovery(action.operation) && action.itemId
+          ? await this.recoveryDescriptor(s, batch, items, action.itemId)
+          : null;
       if (
         batch.revision !== review.observedRevision ||
         (!review.replay &&
-          !retainedUploadActions(batch, items, action.itemId ?? undefined).includes(
-            action.operation,
-          ))
+          (isProcessingRecovery(action.operation)
+            ? descriptor?.operation !== action.operation
+            : !retainedUploadActions(batch, items, action.itemId ?? undefined).includes(
+                action.operation,
+              )))
       ) {
         this.set(s, {
           error: 'The batch changed. Inspect its current state before another action.',
@@ -384,6 +410,15 @@ export class RetainedUploadsState {
           action.key,
           this.options(s),
         );
+      else if (isProcessingRecovery(action.operation))
+        result = await api.recoverProcessing(
+          s.scope.tenantId,
+          batch.id,
+          action.itemId!,
+          { ...body, operation: action.operation },
+          action.key,
+          this.options(s),
+        );
       else
         result = await api.reconcile(
           s.scope.tenantId,
@@ -404,6 +439,72 @@ export class RetainedUploadsState {
             ? 'Original check completed. Inspect the current receipt state before submitting for processing.'
             : 'Action acknowledged. Review the current recorded state; processing completion is a separate result.',
       });
+    });
+  }
+  canInspectRecovery(itemId: string) {
+    const v = this.view();
+    return (
+      !!v.selected &&
+      !v.busy &&
+      !v.denied &&
+      this.ports.access(v.selected).write &&
+      v.items.some((item) => item.id === itemId && ['failed', 'reconciling'].includes(item.status))
+    );
+  }
+  private async recoveryDescriptor(
+    s: Session,
+    batch: FileBatchView,
+    items: FileBatchItemView[],
+    itemId: string,
+  ) {
+    if (!this.ports.access(batch).write || !items.some((item) => item.id === itemId))
+      throw Error('Recovery scope could not be verified');
+    const result = await s.client.fileBatches.processingRecovery(
+      s.scope.tenantId,
+      batch.id,
+      itemId,
+      this.options(s),
+    );
+    this.check(s);
+    if (
+      !this.ports.access(batch).write ||
+      result.batch_id !== batch.id ||
+      result.item_id !== itemId ||
+      result.batch_revision !== batch.revision ||
+      !Number.isSafeInteger(result.attempts) ||
+      result.attempts < 0 ||
+      !Number.isSafeInteger(result.max_attempts) ||
+      result.max_attempts < 1 ||
+      result.attempts > result.max_attempts ||
+      !['absent', 'admitted', 'prepared', 'committed', 'unknown', 'not_checked'].includes(
+        result.native_state,
+      ) ||
+      !['queued', 'running', 'succeeded', 'failed', 'cancelled', 'unknown'].includes(
+        result.job_status,
+      ) ||
+      !['verified', 'unavailable', 'not_checked'].includes(result.original_receipt_state) ||
+      (result.operation !== null && !isProcessingRecovery(result.operation)) ||
+      (result.operation !== null &&
+        (result.job_status !== 'failed' ||
+          (
+            {
+              retry_processing: 'absent',
+              finalize_publication: 'prepared',
+              acknowledge_commit: 'committed',
+            } as const
+          )[result.operation] !== result.native_state))
+    )
+      throw Error('Recovery observation could not be verified');
+    return result;
+  }
+  async inspectRecovery(itemId: string) {
+    const selected = this.view().selected;
+    if (!selected || !this.canInspectRecovery(itemId)) return;
+    return this.run(async (s) => {
+      const { batch, items } = await this.read(s, selected.id);
+      this.admit(s, batch, items);
+      const result = await this.recoveryDescriptor(s, batch, items, itemId);
+      this.set(s, { recovery: { [itemId]: result } });
     });
   }
   async verifyReceipt(itemId: string) {

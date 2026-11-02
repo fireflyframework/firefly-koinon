@@ -22,9 +22,9 @@ After renewing your session or reloading the page, open **Uploads** again and se
 | What the current details show | Deliberate action | What it establishes |
 | --- | --- | --- |
 | An original is not verified and the batch is still staging | Review **Check retained original**, then confirm that check | The server attempts to verify an original it already retained. This can perform storage reads and record a receipt; it does not send another file or start processing. A missing original or active writer remains unresolved. |
-| A received original or an item with a processing job needs an explicit storage check | Choose **Verify staged original** | The server checks the retained original and returns its size/hash-bound receipt. This is an explicit storage operation, not a passive list refresh. |
+| A received original or an item with a processing job needs an explicit storage check | Choose **Verify retained original** | The server checks the retained original and returns its size/hash-bound receipt. This is an explicit storage operation, not a passive list refresh. |
 | Every current original is received | Review **Submit for processing**, then confirm | The batch can be admitted to the native worker queue using the reviewed revision. It is not a claim that the knowledge is searchable. |
-| A native processing outcome is unresolved and the item has a recorded job | Review **Inspect processing outcome**, then confirm | The native receipt is inspected and recorded when verified. The import is not repeated. |
+| Processing needs review | Choose **Inspect recovery**, read the current observation, then review its offered action | The server distinguishes a safe retry, prepared publication and an already completed import. Unknown outcomes offer no mutation. |
 | Supported pending work should stop | Review **Request cancellation**, then confirm | Pending cancellation is requested. Already published knowledge and committed effects can remain. |
 
 Original receipt, processing completion and search availability are different states. Inspect the resulting Library item and its availability before using it in an answer. The per-item **Source and upload references** include the source, knowledge item, checksum, job and returned immutable version/extraction identities where available. An identifier being reserved does not mean that its processing has completed.
@@ -42,6 +42,120 @@ Refreshing, reopening the panel and signing in never repeat a mutation. A saved 
 A newly observed desired state can resolve the panel's uncertainty without claiming which request caused it. A changed revision requires fresh inspection. Do not manufacture a new key, reset counters, rewrite an owner or delete a retained batch to bypass a conflict. If no retained original can be verified, preserve the reference and investigate the original upload before choosing a supported next step.
 
 Closing the panel stops its checks and does not cancel submitted work. Current permissions are checked again before each action. A session failure hides the retained details and requires sign-in; a different account or credential cannot restore another connection's saved request.
+
+## Recover processing without uploading the original again
+
+A received original is not the same as searchable knowledge. If a file shows **Processing needs review**, open its upload details and read the explanation beneath the filename. For example, `INGEST_EXECUTION_CONTEXT_REQUIRED` means the service could not start the processing step with the required execution authority. An administrator must update the processing service before reviewing recovery. Uploading a second copy does not repair that service configuration.
+
+![Inspecting processing recovery in Library](../assets/screenshots/retained-upload-processing-recovery-1440.png)
+
+This capture uses controlled example data. The original receipt and the failed processing job are shown separately.
+
+1. Open **Library**, choose **Uploads**, and inspect the existing batch under the account and credential that admitted it. Keep its batch, item and source identities.
+2. Choose **Inspect recovery** on the affected file. This reads current processing metadata and native outcome; it does not upload bytes or automatically start another attempt. Current `catalog:write` and `ingest:write`, the original owner/credential, destination access and token bounds are required.
+3. Read **Original**, **Processing job**, **Publication**, the attempt count and the observation time separately. **Upload confirmed** describes a previously verified durable receipt. This inspection does not fetch the Blob or object. Use **Verify retained original** for a separate current storage check. A failed job can coexist with a completed native commit; a missing HTTP response cannot establish that nothing happened.
+4. Review the action offered by the server. An unknown result, active worker, changed connection, conflicting receipt or exhausted attempt limit can leave no safe action. Follow the explanation; do not substitute a retry based on a native identifier or a missing receipt.
+5. Confirm the selected operation once. Current authority, revision and native state are rechecked. Refresh the upload afterward and inspect the resulting Library item's availability before relying on it in chat or search.
+
+| Offered action | What you authorize | What it does not authorize |
+| --- | --- | --- |
+| **Retry processing** | Process the same saved original again using the configured processing and AI services. Earlier attempts remain in activity history. | Uploading another original, resetting counters or bypassing a changed source connection. |
+| **Finish publication** | Completion of the already prepared result under the current lease and destination. | Reinterpreting a changed result as permission to parse or call models again. |
+| **Record completed import** | Recording the verified native commit that already completed. | Reimporting the source or repeating embeddings. |
+
+A current descriptor with `operation: null` offers no mutation. `native_state: unknown` or `not_checked` is not failure and is not evidence of absence. An administrator can expand **Source and upload references** to read the safe processing reference; arbitrary provider exception text is not displayed.
+
+An accepted recovery response acknowledges the requested action. It does not assert that queued processing has completed or that every source is already indexed. The attempt limit is reported as `max_attempts` by the current descriptor; a client cannot raise it in the recovery request.
+
+![Reviewing a bounded processing retry on mobile](../assets/screenshots/retained-upload-processing-review-390.png){ width="390" }
+
+This controlled example shows approval before the request is sent. It is not evidence that a production import has completed.
+
+### Headless inspection and explicit confirmation
+
+Read `GET /api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/items/{item_id}/recovery` to obtain `FileRecoveryView`. It reports the current batch revision, offered operation, native state, recorded job state, original-receipt state, attempt bounds, safe reason and nullable check time. It never returns storage URLs, credentials or internal native identifiers.
+
+The separate `POST` at the item's `/recover` path accepts `BulkRecoveryAction`: the exact `expected_revision` and offered `operation`, plus an explicit `Idempotency-Key` header. The following helpers deliberately separate inspection from confirmation. Authenticate the client as explained in the [SDK guides](headless.md); save the reviewed action and its stable key in your integration's durable operation record before calling the confirmation function.
+
+=== "Python"
+
+    ```python
+    from koinon_sdk import (
+        BulkRecoveryAction, FileBatchView, FileRecoveryView, KoinonClient,
+    )
+
+    async def inspect_recovery(
+        client: KoinonClient, tenant: str, batch: str, item: str,
+    ) -> FileRecoveryView:
+        return await client.file_batch_processing_recovery(tenant, batch, item)
+
+    async def confirm_reviewed_recovery(
+        client: KoinonClient, tenant: str, batch: str, item: str,
+        reviewed: BulkRecoveryAction, stable_key: str,
+    ) -> FileBatchView:
+        return await client.recover_file_batch_processing(
+            tenant, batch, item, reviewed, stable_key,
+        )
+    ```
+
+    After displaying the descriptor and receiving approval, construct `BulkRecoveryAction(expected_revision=descriptor.batch_revision, operation=descriptor.operation)` only when `operation` is present. The helper sends once. It does not retry a timeout or infer success from the prior descriptor.
+
+=== "TypeScript"
+
+    ```typescript
+    import type {
+      BulkRecoveryAction, FileBatchView, FileRecoveryView, KoinonClient,
+    } from '@fireflyframework/koinon-sdk';
+
+    export async function inspectRecovery(
+      client: KoinonClient, tenant: string, batch: string, item: string,
+      signal?: AbortSignal,
+    ): Promise<FileRecoveryView> {
+      return client.fileBatches.processingRecovery(
+        tenant, batch, item, { signal },
+      );
+    }
+
+    export async function confirmReviewedRecovery(
+      client: KoinonClient, tenant: string, batch: string, item: string,
+      reviewed: BulkRecoveryAction, stableKey: string, signal?: AbortSignal,
+    ): Promise<FileBatchView> {
+      return client.fileBatches.recoverProcessing(
+        tenant, batch, item, reviewed, stableKey, { signal },
+      );
+    }
+    ```
+
+    Cancellation stops the client request, not a committed server action. Keep the exact reviewed body and key if its result is unknown.
+
+=== "Java 21+"
+
+    ```java
+    import org.fireflyframework.koinon.sdk.KoinonClient;
+    import org.fireflyframework.koinon.sdk.model.BulkRecoveryAction;
+    import org.fireflyframework.koinon.sdk.model.FileBatchView;
+    import org.fireflyframework.koinon.sdk.model.FileRecoveryView;
+
+    public final class ProcessingRecovery {
+      public static FileRecoveryView inspect(
+          KoinonClient client, String tenant, String batch, String item) {
+        return client.fileBatches(tenant).processingRecovery(batch, item);
+      }
+
+      public static FileBatchView confirmReviewed(
+          KoinonClient client, String tenant, String batch, String item,
+          BulkRecoveryAction reviewed, String stableKey) {
+        return client.fileBatches(tenant)
+            .recoverProcessing(batch, item, reviewed, stableKey);
+      }
+    }
+    ```
+
+    `processingRecoveryAsync` and `recoverProcessingAsync` expose the same typed contract with `CompletableFuture`. After an approved non-null operation, `new BulkRecoveryAction(descriptor.batchRevision(), descriptor.operation())` retains the server-selected operation and revision.
+
+If confirmation times out, first inspect the existing batch under fresh authority. Only an explicit reconciliation may resend the **same** request body, original revision and original key. A prior accepted request can return its stored receipt even when the current revision advanced or no action is now offered; that replay does not queue a second attempt. Never replace the key or operation automatically. `BULK_REVISION_CONFLICT` or `BULK_RECOVERY_STATE_CHANGED` requires fresh inspection and a new review; it does not authorize a different operation under an old approval.
+
+These recovery controls are exposed through Library, the REST API and the three SDKs. They do not add an MCP recovery tool. An external agent's existing knowledge review must not silently repeat failed processing.
 
 ## Admit, upload, review and submit
 
@@ -97,7 +211,7 @@ export async function admitDataset(
 }
 ```
 
-`fileBatches` exposes `capabilities`, `create`, `list`, `get`, `items`, `upload`, `receipt`, `submit`, `cancel`, `reconcile` and `recoverOriginal`. Pass an immutable `Blob` to `upload`; the helper preserves its raw bytes and sets the content type. Read methods and writes accept the usual `RequestOptions.signal`. An abort stops the client request; it does not prove a server mutation was cancelled. Keep the batch/item IDs and inspect the retained receipt before further action.
+`fileBatches` exposes `capabilities`, `create`, `list`, `get`, `items`, `upload`, `receipt`, `submit`, `cancel`, `reconcile`, `recoverOriginal`, `processingRecovery` and `recoverProcessing`. Pass an immutable `Blob` to `upload`; the helper preserves its raw bytes and sets the content type. Read methods and writes accept the usual `RequestOptions.signal`. An abort stops the client request; it does not prove a server mutation was cancelled. Keep the batch/item IDs and inspect the retained receipt before further action.
 
 ### Java 21+
 
@@ -121,7 +235,7 @@ public final class BulkExample {
 }
 ```
 
-`client.fileBatches(tenant)` exposes the same eleven operations with synchronous and `Async` variants. `BulkFileUpload` defensively copies its bounded byte array and `upload` sends raw bytes. `FileBatchScope` carries the required workspace for capabilities; `FileBatchFilter` carries pagination. `BulkAction` uses an integer revision. Cancelling a future is client cancellation, not proof of server rollback. Keep explicit batch cancellation separate.
+`client.fileBatches(tenant)` exposes the same thirteen operations with synchronous and `Async` variants. `BulkFileUpload` defensively copies its bounded byte array and `upload` sends raw bytes. `FileBatchScope` carries the required workspace for capabilities; `FileBatchFilter` carries pagination. `BulkAction` uses an integer revision. Cancelling a future is client cancellation, not proof of server rollback. Keep explicit batch cancellation separate.
 
 ## Upload a large original without loading it all into memory
 

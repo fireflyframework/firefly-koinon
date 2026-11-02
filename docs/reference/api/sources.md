@@ -20,6 +20,8 @@ Use the linked wire models for field constraints. Operation metadata does not en
 - [Cancel](#filebatchcontroller-cancel) (POST)
 - [Reconcile](#filebatchcontroller-reconcile) (POST)
 - [Recover original](#filebatchcontroller-recover-original) (POST)
+- [Processing recovery](#filebatchcontroller-processing-recovery) (GET)
+- [Recover processing](#filebatchcontroller-recover-processing) (POST)
 - [Upload](#knowledgecontroller-upload) (POST)
 - [Schema](#knowledgecontroller-schema) (GET)
 - [Lineage](#knowledgecontroller-lineage) (GET)
@@ -506,6 +508,93 @@ These are the declared path, query and body arguments. Multipart and binary inpu
 | Request schema | [`BulkAction`](../models/bulkaction.md) |
 | Response schema | [`FileBatchView`](../models/filebatchview.md) |
 | Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+- `Idempotency-Key (required; caller-supplied stable operation key)`
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: FileBatchController.processing_recovery -->
+<a id="filebatchcontroller-processing-recovery"></a>
+## Processing recovery
+
+```http
+GET /api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/items/{item_id}/recovery
+```
+
+Contract operation: `FileBatchController.processing_recovery`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `file_batch_processing_recovery` |
+| TypeScript | `fileBatches.processingRecovery` |
+| Java | `client.fileBatches.processingRecovery` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `batch_id` | path | `PathVar[str]` | Yes | Not specified |
+| `item_id` | path | `PathVar[str]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | No request schema declared |
+| Response schema | [`FileRecoveryView`](../models/filerecoveryview.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: FileBatchController.recover_processing -->
+<a id="filebatchcontroller-recover-processing"></a>
+## Recover processing
+
+```http
+POST /api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/items/{item_id}/recover
+```
+
+Contract operation: `FileBatchController.recover_processing`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `recover_file_batch_processing` |
+| TypeScript | `fileBatches.recoverProcessing` |
+| Java | `client.fileBatches.recoverProcessing` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `batch_id` | path | `PathVar[str]` | Yes | Not specified |
+| `item_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[BulkRecoveryAction]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`BulkRecoveryAction`](../models/bulkrecoveryaction.md) |
+| Response schema | [`FileBatchView`](../models/filebatchview.md) |
+| Success status | `202` |
 | Declared encoding | `application/json` |
 
 Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.

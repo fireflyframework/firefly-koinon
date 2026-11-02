@@ -2,7 +2,7 @@
 
 Python, Java and TypeScript expose the same canonical headless API. The table records concrete SDK methods; it does not count browser-only authentication or retained domain routes outside this contract.
 
-This canonical contract contains 242 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
+This canonical contract contains 244 operations. Resource operations require the caller's current membership, permissions and resource scope. Bearer credentials also enforce their saved expiry and bounds. Authorized-application management requires a verified interactive user session; personal tokens and application credentials cannot manage authorizations. [Read about authorized applications](../guides/authorized-applications.md).
 
 [Download the operation manifest](sdk-contract.json) and [complete wire schemas](sdk-schemas.json). The maintained generator checks source mappings and schemas without starting the backend.
 
@@ -139,6 +139,8 @@ TypeScript communications methods use the separately loaded `createCommunication
 | [`POST /api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/cancel`](api/sources.md#filebatchcontroller-cancel) | `cancel_file_batch` | `fileBatches.cancel` | `client.fileBatches.cancel` | `FileBatchView` |
 | [`POST /api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/items/{item_id}/reconcile`](api/sources.md#filebatchcontroller-reconcile) | `reconcile_file_batch_item` | `fileBatches.reconcile` | `client.fileBatches.reconcile` | `FileBatchView` |
 | [`POST /api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/items/{item_id}/original/reconcile`](api/sources.md#filebatchcontroller-recover-original) | `reconcile_file_batch_original` | `fileBatches.recoverOriginal` | `client.fileBatches.recoverOriginal` | `FileBatchView` |
+| [`GET /api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/items/{item_id}/recovery`](api/sources.md#filebatchcontroller-processing-recovery) | `file_batch_processing_recovery` | `fileBatches.processingRecovery` | `client.fileBatches.processingRecovery` | `FileRecoveryView` |
+| [`POST /api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/items/{item_id}/recover`](api/sources.md#filebatchcontroller-recover-processing) | `recover_file_batch_processing` | `fileBatches.recoverProcessing` | `client.fileBatches.recoverProcessing` | `FileBatchView` |
 | [`GET /api/v1/tenants/{tenant_id}/query-batch-capabilities`](api/queries.md#querybatchcontroller-capabilities) | `query_batch_capabilities` | `queryBatches.capabilities` | `client.queryBatches.capabilities` | `QueryBatchCapabilities` |
 | [`POST /api/v1/tenants/{tenant_id}/queries/batches`](api/queries.md#querybatchcontroller-create) | `create_query_batch` | `queryBatches.create` | `client.queryBatches.create` | `QueryBatchView` |
 | [`GET /api/v1/tenants/{tenant_id}/queries/batches`](api/queries.md#querybatchcontroller-list) | `query_batches` | `queryBatches.list` | `client.queryBatches.list` | `QueryBatchPage` |

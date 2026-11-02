@@ -284,6 +284,10 @@ export interface BulkDestination {
  "project_id": string;
  "parent_id": string;
 }
+export interface BulkRecoveryAction {
+ "expected_revision": number;
+ "operation": "retry_processing" | "finalize_publication" | "acknowledge_commit";
+}
 export interface CatalogProposal {
  "id": string;
  "run_id": string;
@@ -851,6 +855,19 @@ export interface FileManifestItem {
  "mode": "document" | "dataset";
  "size_bytes": number;
  "sha256": string;
+}
+export interface FileRecoveryView {
+ "batch_id": string;
+ "item_id": string;
+ "batch_revision": number;
+ "native_state": "absent" | "admitted" | "prepared" | "committed" | "unknown" | "not_checked";
+ "operation": "retry_processing" | "finalize_publication" | "acknowledge_commit" | null;
+ "reason_code"?: string | null;
+ "attempts": number;
+ "max_attempts": number;
+ "checked_at": string | null;
+ "job_status": "queued" | "running" | "succeeded" | "failed" | "cancelled" | "unknown";
+ "original_receipt_state": "verified" | "unavailable" | "not_checked";
 }
 export interface Frozen {
 }

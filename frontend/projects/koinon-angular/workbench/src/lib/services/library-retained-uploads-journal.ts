@@ -36,8 +36,13 @@ function valid(value: unknown): value is RetainedUploadRequest {
     return false;
   return ['submit', 'cancel'].includes(String(row['operation']))
     ? row['itemId'] === null
-    : ['recover_original', 'reconcile'].includes(String(row['operation'])) &&
-        text(row['itemId'], 64);
+    : [
+        'recover_original',
+        'reconcile',
+        'retry_processing',
+        'finalize_publication',
+        'acknowledge_commit',
+      ].includes(String(row['operation'])) && text(row['itemId'], 64);
 }
 const same = (a: RetainedUploadRequest, b: RetainedUploadRequest) =>
   FIELDS.every((field) => a[field] === b[field]);
