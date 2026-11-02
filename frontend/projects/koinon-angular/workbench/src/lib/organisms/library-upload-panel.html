@@ -228,6 +228,15 @@
           {{ 'Data to explore with queries' | ffkText }}
         </option>
       </select>
+      <p class="mode-help field-help">
+        {{
+          (w.uploadMode === 'dataset'
+            ? 'Query rows and columns in spreadsheets and data files. Word and PowerPoint belong in Documents for reading.'
+            : 'Read and search the text in your files. Excel and CSV can also be uploaded this way.'
+          ) | ffkText
+        }}
+        {{ 'This choice applies to every file in this upload.' | ffkText }}
+      </p>
       <div class="drop-zone" (dragover)="$event.preventDefault()" (drop)="w.captureDrop($event)">
         <ffk-icon name="upload" /><strong>{{ 'Drop your files here' | ffkText }}</strong>
         <span>{{ 'or choose files from your computer' | ffkText }}</span>
@@ -246,9 +255,10 @@
         @if (view()?.checkingCapabilities) {
           <p>{{ 'Checking upload readiness' | ffkText }}</p>
         }
-        @if (accept()) {
-          <p>{{ 'Supported file types' | ffkText }}: {{ accept() }}</p>
-        }
+        <ffk-file-formats
+          [extensions]="accept() ? accept().split(',') : []"
+          [unavailable]="unavailableFormats()"
+        />
         @if (!w.formParent) {
           <p>{{ 'Choose a destination folder to see supported files and limits.' | ffkText }}</p>
         }
@@ -310,7 +320,7 @@
       }
       <p class="field-help">
         {{
-          'Worker extraction records text or tables. Search availability is checked separately.'
+          'After upload, files are processed for reading or queries. Search availability is checked separately.'
             | ffkText
         }}
       </p>

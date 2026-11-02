@@ -44,3 +44,19 @@ def test_document_hints_match_bounded_parser_admission_and_office_requires_xml_p
             if any(suffix in {".docx", ".pptx"} for suffix in item.extensions):
                 assert item.available is False
     assert not any(".ppt" in item.extensions for item in formats)
+
+
+def test_browser_office_fixture_uses_server_registered_extensions():
+    import json
+    from pathlib import Path
+
+    path = Path(__file__).parents[4] / "frontend/e2e/office-format-capabilities.json"
+    fixture = json.loads(path.read_text())
+    assert {(row["mode"], tuple(row["extensions"])) for row in fixture} == {
+        (row.mode, tuple(row.extensions)) for row in upload_formats()
+    }
+    document_extensions = {
+        extension for row in fixture if row["mode"] == "document" for extension in row["extensions"]
+    }
+    assert {".docx", ".pptx", ".xlsx", ".csv"} <= document_extensions
+    assert ".ppt" not in document_extensions

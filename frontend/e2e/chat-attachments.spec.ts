@@ -412,7 +412,7 @@ for (const width of [1440, 390]) {
     const composer = page.locator('ffk-chat-composer');
     await composer.getByRole('button', { name: 'Add context', exact: true }).click();
     const menu = page.getByRole('menu', { name: 'Add context', exact: true });
-    await expect(menu).toContainText('Supported file types: .txt');
+    await expect(menu).toContainText('Supported file types');
     await expect(menu).toContainText('Maximum per file: 1 MB');
     const directory = process.env['KOINON_UPLOAD_SCREENSHOTS'];
     if (directory) {

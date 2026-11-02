@@ -5,13 +5,33 @@ import { test, expect, type Page } from '@playwright/test';
 import { createHash } from 'node:crypto';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import type { FileBatchCreate, FileBatchItemView } from '@fireflyframework/koinon-sdk';
+import type {
+  FileBatchCapabilities,
+  FileBatchCreate,
+  FileBatchItemView,
+} from '@fireflyframework/koinon-sdk';
 import { entry, mockService } from './fixtures';
+import { officeFile } from './office-fixtures';
+import officeFormats from './office-format-capabilities.json';
 test.use({ trace: 'off' });
 async function fixture(page: Page, options: { configured?: boolean; loseSubmit?: boolean } = {}) {
   const service = await mockService(page, {
     queuedStorageConfigured: options.configured !== false,
   });
+  await page.route('**/source-batch-capabilities*', (route) =>
+    route.fulfill({
+      json: {
+        configured: options.configured !== false,
+        modes: ['document', 'dataset'],
+        formats: officeFormats as FileBatchCapabilities['formats'],
+        max_active_batches_per_subject: 3,
+        max_files: 100,
+        max_file_bytes: 134217728,
+        max_batch_bytes: 536870912,
+        synchronous_max_file_bytes: 33554432,
+      } satisfies FileBatchCapabilities,
+    }),
+  );
   let status = 'staging',
     revision = 1,
     live = false;
@@ -327,7 +347,8 @@ for (const width of [1440, 390]) {
       }),
     );
     const dialog = await open(page);
-    await expect(dialog).toContainText('Supported file types: .txt,.pdf');
+    await expect(dialog.locator('ffk-file-formats')).toContainText('PDF');
+    await expect(dialog.locator('ffk-file-formats')).toContainText('Text');
     await expect(dialog).toContainText('Maximum per file: 1 MiB.');
     await expect(dialog).toContainText('Maximum files: 3.');
     await dialog.getByLabel('Choose files').setInputFiles([
@@ -409,4 +430,77 @@ test('multiple originals show confirmed per-file transfer progress before queued
   release();
   await expect(dialog.getByText('Queued', { exact: true }).first()).toBeVisible();
   await expect(dialog.getByRole('progressbar', { name: 'Files transferred' })).toHaveCount(0);
+});
+
+for (const width of [1440, 390]) {
+  test(`Office files explain supported formats and one processing choice at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: width < 600 ? 844 : 1000 });
+    const state = await fixture(page),
+      dialog = await open(page);
+    const formats = dialog.locator('ffk-file-formats');
+    for (const family of ['Word', 'Excel', 'PowerPoint', 'PDF'])
+      await expect(formats.locator('.format-families')).toContainText(family);
+    await expect(formats.locator('.format-families')).not.toContainText('.gz');
+    await expect(dialog).toContainText('This choice applies to every file in this upload.');
+    await capture(page, 'office-types-' + width);
+    await formats.getByText('All file formats', { exact: true }).focus();
+    await formats.getByText('All file formats', { exact: true }).press('Enter');
+    await expect(formats).toContainText('Renaming the file does not convert it.');
+    await formats.getByText('All file formats', { exact: true }).focus();
+    await formats.getByText('All file formats', { exact: true }).press('Enter');
+    const kinds = ['docx', 'pptx', 'xlsx', 'csv'] as const;
+    const files = kinds.map((kind) => ({
+      name: 'review.' + kind,
+      mimeType: 'application/octet-stream',
+      buffer: officeFile(kind),
+    }));
+    await dialog.getByLabel('Choose files').setInputFiles([
+      ...files,
+      {
+        name: 'older.ppt',
+        mimeType: 'application/vnd.ms-powerpoint',
+        buffer: Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]),
+      },
+    ]);
+    await expect(dialog).toContainText(
+      'Open this .ppt file in PowerPoint and use Save As .pptx, then upload the converted file.',
+    );
+    await dialog.getByRole('button', { name: 'Remove file: older.ppt', exact: true }).click();
+    await expect(dialog.locator('.upload-file')).toHaveCount(4);
+    const submit = dialog.getByRole('button', { name: 'Upload 4 files', exact: true });
+    await expect(submit).toBeEnabled();
+    await submit.scrollIntoViewIfNeeded();
+    await capture(page, 'office-files-' + width);
+    await submit.click();
+    await expect(dialog.getByText('Queued', { exact: true }).first()).toBeVisible();
+    expect(state.input?.items.map((item) => item.mode)).toEqual([
+      'document',
+      'document',
+      'document',
+      'document',
+    ]);
+    expect(state.transferred).toBe(files.reduce((size, file) => size + file.buffer.length, 0));
+    for (const kind of kinds) await expect(dialog).toContainText('review.' + kind);
+    await capture(page, 'office-queued-' + width);
+  });
+}
+test('Excel and CSV become datasets only after an explicit batch-mode choice', async ({ page }) => {
+  const state = await fixture(page),
+    dialog = await open(page);
+  await dialog.getByLabel('Use these files as').selectOption('dataset');
+  await expect(dialog).toContainText('Query rows and columns');
+  await expect(dialog.locator('ffk-file-formats .format-families')).toContainText('Excel');
+  await expect(dialog.locator('ffk-file-formats .format-families')).not.toContainText('PowerPoint');
+  await dialog.getByLabel('Choose files').setInputFiles(
+    ['xlsx', 'csv'].map((kind) => ({
+      name: 'review.' + kind,
+      mimeType: 'application/octet-stream',
+      buffer: officeFile(kind as 'xlsx' | 'csv'),
+    })),
+  );
+  await dialog.getByRole('button', { name: 'Upload 2 files', exact: true }).click();
+  await expect(dialog.getByText('Queued', { exact: true }).first()).toBeVisible();
+  expect(state.input?.items.map((item) => item.mode)).toEqual(['dataset', 'dataset']);
 });

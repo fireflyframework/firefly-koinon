@@ -153,7 +153,7 @@
     </button>
     @if (attachmentsEnabled && fileLimits; as limits) {
       <div class="file-capabilities">
-        <p>{{ 'Supported file types' | ffkText }}: {{ accept || ('Not reported' | ffkText) }}</p>
+        <ffk-file-formats [extensions]="accept ? accept.split(',') : []" [showDetails]="false" />
         <p>
           {{ 'Maximum per file' | ffkText }}: {{ size(limits.max_file_bytes) }} ·
           {{ 'Files per message' | ffkText }}: {{ limits.max_selected }}

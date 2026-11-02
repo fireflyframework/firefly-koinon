@@ -194,7 +194,12 @@ export class KoinonChatAttachments implements OnDestroy {
           ) && format.extraction.available === true,
       );
       if (!format) {
-        reject(file, 'This file type is not supported by the configured file processor.');
+        reject(
+          file,
+          file.name.toLowerCase().endsWith('.ppt')
+            ? 'Open this .ppt file in PowerPoint and use Save As .pptx, then upload the converted file.'
+            : 'This file type is not supported by the configured file processor.',
+        );
         continue;
       }
       if (
