@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /** Typed canonical UserProfile contract. */
 public record UserProfile(
+    @JsonProperty("preferences_initialized") Boolean preferencesInitialized,
     @JsonProperty("subject") String subject,
     @JsonProperty("display_name") String displayName,
     @JsonProperty("locale") String locale,
@@ -15,5 +16,6 @@ public record UserProfile(
     @JsonProperty("avatar_url") String avatarUrl,
     @JsonProperty("avatar_version") String avatarVersion
 ) {
+    public UserProfile(String subject, String displayName, String locale, String timeZone, String responseLanguage, String avatarUrl, String avatarVersion){this(null,subject,displayName,locale,timeZone,responseLanguage,avatarUrl,avatarVersion);}
 
 }

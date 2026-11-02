@@ -9452,7 +9452,7 @@
       "request_schema": null,
       "response_schema": "UserProfile",
       "success_status": 200,
-      "source_sha256": "9edd084d7930a5e757937bcd579fabc4f163501c49c81d0d76473c2a52db5ecb",
+      "source_sha256": "74816fab8584769adae9d70e8c75eebe84ec4bd9968cbdfb49f281542c651d94",
       "encoding": "application/json",
       "headers": []
     },
@@ -9478,7 +9478,7 @@
       "request_schema": "ProfileUpdate",
       "response_schema": "UserProfile",
       "success_status": 200,
-      "source_sha256": "9edd084d7930a5e757937bcd579fabc4f163501c49c81d0d76473c2a52db5ecb",
+      "source_sha256": "74816fab8584769adae9d70e8c75eebe84ec4bd9968cbdfb49f281542c651d94",
       "encoding": "application/json",
       "headers": []
     },
@@ -9488,7 +9488,7 @@
       "category": "canonical",
       "operation": "ProfileController.avatar",
       "source": "backend/src/koinon/profiles/controllers.py",
-      "line": 63,
+      "line": 66,
       "parameters": [],
       "return_annotation": "Response",
       "sdk_python": "avatar_download",
@@ -9497,7 +9497,7 @@
       "request_schema": null,
       "response_schema": "BinaryDownload",
       "success_status": 200,
-      "source_sha256": "9edd084d7930a5e757937bcd579fabc4f163501c49c81d0d76473c2a52db5ecb",
+      "source_sha256": "74816fab8584769adae9d70e8c75eebe84ec4bd9968cbdfb49f281542c651d94",
       "encoding": "binary",
       "headers": [
         "If-None-Match (optional; avatars only)"
@@ -9509,7 +9509,7 @@
       "category": "canonical",
       "operation": "ProfileController.set_avatar",
       "source": "backend/src/koinon/profiles/controllers.py",
-      "line": 68,
+      "line": 71,
       "parameters": [],
       "return_annotation": "dict",
       "sdk_python": "set_avatar",
@@ -9518,7 +9518,7 @@
       "request_schema": "AvatarUpload",
       "response_schema": "UserProfile",
       "success_status": 200,
-      "source_sha256": "9edd084d7930a5e757937bcd579fabc4f163501c49c81d0d76473c2a52db5ecb",
+      "source_sha256": "74816fab8584769adae9d70e8c75eebe84ec4bd9968cbdfb49f281542c651d94",
       "encoding": "image/png|image/jpeg|image/webp",
       "headers": []
     },
@@ -9528,7 +9528,7 @@
       "category": "canonical",
       "operation": "ProfileController.delete_avatar",
       "source": "backend/src/koinon/profiles/controllers.py",
-      "line": 85,
+      "line": 88,
       "parameters": [],
       "return_annotation": "dict",
       "sdk_python": "delete_avatar",
@@ -9537,7 +9537,7 @@
       "request_schema": null,
       "response_schema": "UserProfile",
       "success_status": 200,
-      "source_sha256": "9edd084d7930a5e757937bcd579fabc4f163501c49c81d0d76473c2a52db5ecb",
+      "source_sha256": "74816fab8584769adae9d70e8c75eebe84ec4bd9968cbdfb49f281542c651d94",
       "encoding": "application/json",
       "headers": []
     },
@@ -9547,7 +9547,7 @@
       "category": "canonical",
       "operation": "ProfileController.people",
       "source": "backend/src/koinon/profiles/controllers.py",
-      "line": 90,
+      "line": 93,
       "parameters": [
         {
           "name": "tenant_id",
@@ -9591,7 +9591,7 @@
       "request_schema": null,
       "response_schema": "Page[Person]",
       "success_status": 200,
-      "source_sha256": "9edd084d7930a5e757937bcd579fabc4f163501c49c81d0d76473c2a52db5ecb",
+      "source_sha256": "74816fab8584769adae9d70e8c75eebe84ec4bd9968cbdfb49f281542c651d94",
       "encoding": "application/json",
       "headers": []
     },
@@ -9601,7 +9601,7 @@
       "category": "canonical",
       "operation": "ProfileController.person_avatar",
       "source": "backend/src/koinon/profiles/controllers.py",
-      "line": 108,
+      "line": 111,
       "parameters": [
         {
           "name": "tenant_id",
@@ -9630,7 +9630,7 @@
       "request_schema": null,
       "response_schema": "BinaryDownload",
       "success_status": 200,
-      "source_sha256": "9edd084d7930a5e757937bcd579fabc4f163501c49c81d0d76473c2a52db5ecb",
+      "source_sha256": "74816fab8584769adae9d70e8c75eebe84ec4bd9968cbdfb49f281542c651d94",
       "encoding": "binary",
       "headers": [
         "If-None-Match (optional; avatars only)"

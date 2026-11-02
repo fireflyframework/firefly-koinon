@@ -55,9 +55,12 @@ class ProfileController:
     @patch_mapping("/profile")
     async def update(self, body: Valid[Body[ProfileInput]], request: Request) -> dict:
         identity = require_personal_permission(request, "profile:write")
-        values = body.model_dump(exclude_unset=True)
+        values = body.model_dump(exclude_unset=True, exclude={"initialize_only"})
         await self.profiles.get(identity.subject, request.state.security_context.attributes)
-        return browser_urls(await self.profiles.update(identity.subject, values), request)
+        return browser_urls(
+            await self.profiles.update(identity.subject, values, initialize_only=body.initialize_only),
+            request,
+        )
 
     @get_mapping("/profile/avatar")
     async def avatar(self, request: Request) -> Response:

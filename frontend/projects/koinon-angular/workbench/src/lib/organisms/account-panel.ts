@@ -18,8 +18,17 @@ import { KoinonOrganizationInformation } from './organization-information';
 import { KoinonPhotoDraft } from '../services/photo-draft';
 import { KoinonClientContext } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonAccount } from '../services/account';
+import {
+  devicePresentation,
+  presentationLocale,
+  type HourCycle,
+} from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
-import { KoinonI18n, KoinonTextPipe, KoinonDatePipe } from '@fireflyframework/koinon-angular/workbench/core';
+import {
+  KoinonI18n,
+  KoinonTextPipe,
+  KoinonDatePipe,
+} from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonFormField } from '@fireflyframework/koinon-angular/workbench/panels';
 import { KoinonPagination } from '../molecules/pagination';
@@ -68,6 +77,7 @@ export class KoinonAccountPanel implements OnInit, OnChanges {
   });
   readonly copied = signal(false);
   readonly formError = signal('');
+  readonly regionalError = signal('');
   readonly revoking = signal('');
   readonly scopeNotice = signal('');
   readonly scopeGroups: { id: TokenScopeGroup; name: string }[] = [
@@ -78,6 +88,11 @@ export class KoinonAccountPanel implements OnInit, OnChanges {
   ];
   name = '';
   locale = 'en-US';
+  calendar = 'gregory';
+  hourCycle: HourCycle = 'h12';
+  private originalLocale = 'en-US';
+  readonly calendars = Intl.supportedValuesOf('calendar');
+  readonly previewInstant = new Date().toISOString();
   timeZone = 'UTC';
   responseLanguage = 'en';
   tokenName = '';
@@ -137,10 +152,48 @@ export class KoinonAccountPanel implements OnInit, OnChanges {
     const profile = this.account.profile();
     if (profile) {
       this.name = profile.display_name;
-      this.locale = profile.locale;
-      this.timeZone = profile.time_zone;
+      this.fillRegionalPreferences(profile.locale, profile.time_zone);
       this.responseLanguage = profile.response_language;
     }
+  }
+  private fillRegionalPreferences(locale: string, timeZone: string) {
+    try {
+      const format = new Intl.DateTimeFormat(locale, {
+        hour: 'numeric',
+        timeZone,
+      }).resolvedOptions();
+      this.regionalError.set('');
+      this.originalLocale = locale;
+      this.locale = new Intl.Locale(locale).baseName;
+      this.calendar = format.calendar;
+      this.hourCycle = format.hourCycle ?? 'h23';
+      this.timeZone = timeZone;
+    } catch {
+      const device = devicePresentation(),
+        normalized = new Intl.Locale(device.locale);
+      this.originalLocale = device.locale;
+      this.locale = normalized.baseName;
+      this.calendar = normalized.calendar ?? 'gregory';
+      this.hourCycle = normalized.hourCycle ?? 'h23';
+      this.timeZone = device.time_zone;
+      this.regionalError.set(
+        'Your saved regional preferences could not be displayed. Review the device defaults below and save your choices.',
+      );
+    }
+  }
+  useDevicePreferences() {
+    const device = devicePresentation();
+    this.fillRegionalPreferences(device.locale, device.time_zone);
+  }
+  draftPresentation() {
+    return {
+      locale: presentationLocale(this.locale, this.calendar, this.hourCycle, this.originalLocale),
+      time_zone: this.timeZone,
+      response_language: this.responseLanguage,
+    };
+  }
+  calendarName(calendar: string) {
+    return new Intl.DisplayNames([this.locale], { type: 'calendar' }).of(calendar) ?? calendar;
   }
   async showTab(tab: 'profile' | 'tokens' | 'applications') {
     this.tab.set(tab);
@@ -161,7 +214,7 @@ export class KoinonAccountPanel implements OnInit, OnChanges {
     if (
       await this.account.save({
         display_name: this.name.trim(),
-        locale: this.locale,
+        locale: this.draftPresentation().locale,
         time_zone: this.timeZone,
         response_language: this.responseLanguage,
       })

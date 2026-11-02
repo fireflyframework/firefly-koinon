@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class ProfileInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    initialize_only: bool = Field(default=False, strict=True)
     display_name: str | None = Field(default=None, min_length=1, max_length=120)
     locale: str | None = Field(default=None, min_length=2, max_length=64)
     time_zone: str | None = Field(default=None, min_length=1, max_length=64)
@@ -18,6 +19,7 @@ class ProfileOutput(BaseModel):
     locale: str
     time_zone: str
     response_language: str
+    preferences_initialized: bool = True
     avatar_url: str | None = None
     avatar_version: str | None = None
 

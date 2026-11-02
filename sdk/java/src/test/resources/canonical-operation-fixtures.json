@@ -13562,6 +13562,7 @@
     "request": null,
     "response": "UserProfile",
     "body": {
+      "preferences_initialized": false,
       "subject": "subject-value",
       "display_name": "display_name-value",
       "locale": "locale-value",
@@ -13590,6 +13591,7 @@
     "request": "ProfileUpdate",
     "response": "UserProfile",
     "body": {
+      "preferences_initialized": false,
       "subject": "subject-value",
       "display_name": "display_name-value",
       "locale": "locale-value",
@@ -13638,6 +13640,7 @@
     "request": "AvatarUpload",
     "response": "UserProfile",
     "body": {
+      "preferences_initialized": false,
       "subject": "subject-value",
       "display_name": "display_name-value",
       "locale": "locale-value",
@@ -13666,6 +13669,7 @@
     "request": null,
     "response": "UserProfile",
     "body": {
+      "preferences_initialized": false,
       "subject": "subject-value",
       "display_name": "display_name-value",
       "locale": "locale-value",

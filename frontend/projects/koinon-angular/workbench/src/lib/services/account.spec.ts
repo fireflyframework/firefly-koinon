@@ -484,3 +484,30 @@ it('keeps a personal photo save scoped to the account while lazy helpers load ac
   expect(uploads).toBe(1);
   expect(account.profile()?.display_name).toBe('Alex Rivera');
 });
+
+it('initializes only new profiles and preserves the answer-language preference', async () => {
+  const writes: unknown[] = [];
+  const account = setup(async <T>(method: HttpMethod, _path: string, options?: RequestOptions) => {
+    if (method === 'PATCH') {
+      writes.push(options?.body);
+      return { ...profile, preferences_initialized: true, ...(options?.body as object) } as T;
+    }
+    return { ...profile, preferences_initialized: false } as T;
+  });
+  await account.load();
+  expect(writes).toHaveLength(1);
+  expect(writes[0]).toMatchObject({ initialize_only: true });
+  expect(writes[0]).not.toHaveProperty('response_language');
+  expect(account.profile()?.response_language).toBe('en');
+});
+
+it('does not change existing en-US/UTC preferences when loading a profile', async () => {
+  const methods: string[] = [];
+  const account = setup(async <T>(method: HttpMethod) => {
+    methods.push(method);
+    return { ...profile, preferences_initialized: true } as T;
+  });
+  await account.load();
+  expect(methods).toEqual(['GET']);
+  expect(account.profile()?.locale).toBe('en-US');
+});

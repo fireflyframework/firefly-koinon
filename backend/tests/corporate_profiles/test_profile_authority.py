@@ -171,3 +171,18 @@ async def test_unbound_conflict_cannot_save_personal_override_under_enforced_pol
         )
     view = await d.sync.presentation(C, "north", workspace_id=d.a)
     assert view.revision == 0 and view.display_name == "" and not view.allow_personal_overrides
+
+
+async def test_corporate_login_refresh_does_not_replace_personal_regional_preferences(corporate):
+    d = corporate
+    await provider(d)
+    personal = await d.profiles.update(
+        C,
+        {
+            "locale": "es-MX-u-ca-gregory-hc-h23",
+            "time_zone": "America/Mexico_City",
+            "response_language": "es",
+        },
+    )
+    await d.sync.observe_login(claims("colleague", locale="en-US", zoneinfo="UTC"))
+    assert await d.profiles.get(C) == personal

@@ -15,6 +15,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 
 | Field | Type | Required | Default |
 | --- | --- | --- | --- |
+| `preferences_initialized` | `boolean` | No | `true` |
 | `subject` | `string` | Yes | Not specified |
 | `display_name` | `string` | Yes | Not specified |
 | `locale` | `string` | Yes | Not specified |
@@ -37,6 +38,11 @@ This is a schema definition, not an example request. It preserves all declared k
     {
       "additionalProperties": true,
       "properties": {
+        "preferences_initialized": {
+          "default": true,
+          "title": "Preferences Initialized",
+          "type": "boolean"
+        },
         "subject": {
           "title": "Subject",
           "type": "string"

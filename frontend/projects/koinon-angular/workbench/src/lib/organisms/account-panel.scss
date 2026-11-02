@@ -321,3 +321,24 @@ h2 {
   font: 600 17px/1.5 var(--ffk-font);
   margin: 0 0 8px;
 }
+
+.regional-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.regional-preview p {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+}
+.regional-preview span {
+  color: var(--ui-muted);
+}
+.regional-preview strong {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}

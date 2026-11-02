@@ -109,11 +109,11 @@ class ProfileService:
 
     def _defaults(self, subject: str, verified: dict | None = None) -> Profile:
         values = {"display_name": "", "locale": "en-US", "time_zone": "UTC", "response_language": "auto"}
-        for claim, key in (("name", "display_name"), ("locale", "locale")):
+        for claim, key in (("name", "display_name"), ("locale", "locale"), ("zoneinfo", "time_zone")):
             if verified and isinstance(verified.get(claim), str):
                 with suppress(ValueError):
                     values.update(preferences({key: verified[claim]}))
-        return Profile(id=profile_id(subject), subject=subject, **values)
+        return Profile(id=profile_id(subject), subject=subject, preferences_initialized=False, **values)
 
     async def get(self, subject: str, verified: dict | None = None) -> dict:
         row = await self.profiles.find_by_id(profile_id(subject))
@@ -141,6 +141,7 @@ class ProfileService:
                 locale=initial.locale,
                 time_zone=initial.time_zone,
                 response_language=initial.response_language,
+                preferences_initialized=False,
             )
             .on_conflict_do_nothing(index_elements=["subject"])
         )
@@ -156,12 +157,18 @@ class ProfileService:
         await self._locked(subject, verified)
 
     @transactional
-    async def update(self, subject: str, values: dict) -> dict:
+    async def update(self, subject: str, values: dict, *, initialize_only: bool = False) -> dict:
         try:
+            if initialize_only and set(values) - {"locale", "time_zone"}:
+                raise ValueError("Device defaults may only initialize locale and time zone")
             changes = preferences(values)
         except ValueError as error:
             raise InvalidRequestException(str(error), code="INVALID_PROFILE") from error
         row = await self._locked(subject)
+        if initialize_only and row.preferences_initialized:
+            return profile_dto(row)
+        if {"locale", "time_zone", "response_language"} & changes.keys():
+            row.preferences_initialized = True
         for key, value in changes.items():
             setattr(row, key, value)
         row.updated_at = datetime.now(UTC)

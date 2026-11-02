@@ -258,6 +258,7 @@ for name, definition in defs.items():
     copies = []
     accessors = []
     added_memory_fields = {
+        "UserProfile": "preferences_initialized", "ProfileUpdate": "initialize_only",
         "FolderCreate": "memory_enabled", "FolderPatch": "memory_enabled", "ChatFolder": "memory_enabled",
         "OrganizationChatSettings": "memory", "OrganizationChatSettingsInput": "memory",
         "ShareCreate": "include_remembered_context", "ShareReview": "remembered_context_present",

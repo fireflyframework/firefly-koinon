@@ -799,6 +799,7 @@ class RunInput(InputModel):
 
 
 class UserProfile(ResponseModel):
+    preferences_initialized: bool = True
     subject: str
     display_name: str
     locale: str
@@ -809,6 +810,7 @@ class UserProfile(ResponseModel):
 
 
 class ProfileUpdate(InputModel):
+    initialize_only: bool = False
     display_name: str | None = None
     locale: str | None = None
     time_zone: str | None = None

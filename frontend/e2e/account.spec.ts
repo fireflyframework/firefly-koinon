@@ -29,19 +29,20 @@ test('profile preferences switch the actual shell language after persistence and
   await page.getByRole('button', { name: 'Account menu', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Your account', exact: true }).click();
   await page
-    .getByRole('combobox', { name: 'Interface language', exact: true })
+    .getByRole('combobox', { name: 'Language and region', exact: true })
     .selectOption('es-ES');
   await expect(page.getByRole('button', { name: 'Library', exact: true }).first()).toBeVisible();
   await page
     .getByRole('combobox', { name: 'Time zone', exact: true })
     .selectOption('Europe/Madrid');
+  await page.getByRole('combobox', { name: 'Time format', exact: true }).selectOption('h12');
   await page.getByRole('button', { name: 'Save preferences', exact: true }).click();
   await expect(page.getByText('Perfil guardado.', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Biblioteca', exact: true }).first()).toBeVisible();
   expect(writes).toEqual([
     {
       display_name: 'Alex Rivera',
-      locale: 'es-ES',
+      locale: 'es-ES-u-ca-gregory-hc-h12',
       time_zone: 'Europe/Madrid',
       response_language: 'en',
     },
@@ -50,9 +51,9 @@ test('profile preferences switch the actual shell language after persistence and
   await expect(page.getByRole('button', { name: 'Biblioteca', exact: true }).first()).toBeVisible();
   await page.getByRole('button', { name: 'Menú de cuenta', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Tu cuenta', exact: true }).click();
-  await expect(
-    page.getByRole('combobox', { name: 'Idioma de la interfaz', exact: true }),
-  ).toHaveValue('es-ES');
+  await expect(page.getByRole('combobox', { name: 'Idioma y región', exact: true })).toHaveValue(
+    'es-ES',
+  );
 });
 test('personal token secret is shown once and revoke uses the SDK with CSRF', async ({ page }) => {
   await mockService(page);
@@ -146,11 +147,21 @@ for (const width of [1440, 390])
         'position:fixed;bottom:0;left:0;right:0;z-index:9999;padding:5px 12px;background:#855414;color:white;font:10px system-ui;pointer-events:none;text-align:center';
       document.body.append(mark);
     });
-    const dir = resolve('../../control/frontend-captures/account-pages-v21');
+    const dir = resolve('../../control/koinon-personal-locale-20261102/screenshots-v2');
     await mkdir(dir, { recursive: true });
     await page.screenshot({
       path: resolve(dir, `profile-${width}.png`),
       fullPage: true,
+      animations: 'disabled',
+    });
+    await page
+      .getByRole('button', { name: 'Save preferences', exact: true })
+      .scrollIntoViewIfNeeded();
+    await page
+      .getByRole('button', { name: 'Save preferences', exact: true })
+      .click({ trial: true });
+    await page.screenshot({
+      path: resolve(dir, `profile-regional-${width}.png`),
       animations: 'disabled',
     });
     await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -164,3 +175,85 @@ for (const width of [1440, 390])
     await expect(page).toHaveURL('/library');
     await expect(page.getByRole('heading', { name: 'Library', exact: true })).toBeVisible();
   });
+
+test.describe('first-use regional preferences', () => {
+  test.use({ locale: 'en-GB', timezoneId: 'Europe/Madrid' });
+  test('initializes from the device once and keeps explicit saves separate', async ({ page }) => {
+    await mockService(page);
+    let profile = {
+      subject: 'synthetic.reviewer',
+      display_name: 'Alex Rivera',
+      locale: 'en-US',
+      time_zone: 'UTC',
+      response_language: 'es',
+      preferences_initialized: false,
+      avatar_url: null,
+      avatar_version: null,
+    };
+    const writes: Record<string, unknown>[] = [];
+    await page.route('**/bff/api/v1/profile', async (route) => {
+      if (route.request().method() === 'PATCH') {
+        const input = route.request().postDataJSON();
+        writes.push(input);
+        if (!input.initialize_only || !profile.preferences_initialized)
+          profile = { ...profile, ...input, preferences_initialized: true };
+      }
+      await route.fulfill({ json: profile });
+    });
+    await page.goto('/library');
+    await page.getByRole('button', { name: 'Account menu', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Your account', exact: true }).click();
+    await expect(page.getByRole('combobox', { name: 'Time zone', exact: true })).toHaveValue(
+      'Europe/Madrid',
+    );
+    expect(writes).toEqual([
+      { initialize_only: true, locale: 'en-GB-u-ca-gregory-hc-h23', time_zone: 'Europe/Madrid' },
+    ]);
+    await page.getByRole('combobox', { name: 'Time format', exact: true }).selectOption('h12');
+    await page.getByRole('button', { name: 'Use device preferences', exact: true }).click();
+    await expect(page.getByRole('combobox', { name: 'Time format', exact: true })).toHaveValue(
+      'h23',
+    );
+    expect(writes).toHaveLength(1);
+    await expect(
+      page.getByRole('combobox', { name: 'Response language', exact: true }),
+    ).toHaveValue('es');
+    await page.reload();
+    await expect(page.getByRole('combobox', { name: 'Time zone', exact: true })).toHaveValue(
+      'Europe/Madrid',
+    );
+    expect(writes).toHaveLength(1);
+  });
+});
+
+test('an unsupported saved locale remains recoverable without silently rewriting the profile', async ({
+  page,
+}) => {
+  await mockService(page);
+  let writes = 0;
+  await page.route('**/bff/api/v1/profile', async (route) => {
+    if (route.request().method() === 'PATCH') writes++;
+    await route.fulfill({
+      json: {
+        subject: 'synthetic.reviewer',
+        display_name: 'Alex Rivera',
+        locale: 'en-US-US',
+        time_zone: 'UTC',
+        response_language: 'en',
+        preferences_initialized: true,
+        avatar_url: null,
+        avatar_version: null,
+      },
+    });
+  });
+  await page.goto('/library');
+  await page.getByRole('button', { name: 'Account menu', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Your account', exact: true }).click();
+  await expect(
+    page
+      .getByRole('alert')
+      .filter({ hasText: 'Your saved regional preferences could not be displayed.' }),
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save preferences', exact: true })).toBeEnabled();
+  expect(writes).toBe(0);
+});

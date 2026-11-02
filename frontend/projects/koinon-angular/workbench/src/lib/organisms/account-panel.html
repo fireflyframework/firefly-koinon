@@ -49,7 +49,7 @@
   @if (account.profile()) {
     <h2>{{ 'Personal profile' | ffkText }}</h2>
     <p class="help">
-      {{ 'Your name, photo and preferences apply to your account across organizations.' | ffkText }}
+      {{ 'Your name, photo and preferences apply to your account.' | ffkText }}
     </p>
     <div class="photo">
       <div class="avatar">
@@ -107,9 +107,12 @@
         [disabled]="account.pending()"
         required
       />
+      @if (regionalError()) {
+        <p role="alert" class="error">{{ regionalError() | ffkText }}</p>
+      }
       <div class="preference-grid">
         <label
-          >{{ 'Interface language' | ffkText
+          >{{ 'Language and region' | ffkText
           }}<select name="locale" [(ngModel)]="locale" [disabled]="account.pending()">
             <option value="en-US">English (United States)</option>
             <option value="en-GB">English (United Kingdom)</option>
@@ -127,6 +130,24 @@
             @for (zone of timeZones; track zone) {
               <option [value]="zone">{{ zone.replaceAll('_', ' ') }}</option>
             }
+            @if (!timeZones.includes(timeZone)) {
+              <option [value]="timeZone">{{ timeZone.replaceAll('_', ' ') }}</option>
+            }
+          </select></label
+        ><label
+          >{{ 'Calendar' | ffkText
+          }}<select name="calendar" [(ngModel)]="calendar" [disabled]="account.pending()">
+            @for (item of calendars; track item) {
+              <option [value]="item">{{ calendarName(item) }}</option>
+            }
+          </select></label
+        ><label
+          >{{ 'Time format' | ffkText
+          }}<select name="hour_cycle" [(ngModel)]="hourCycle" [disabled]="account.pending()">
+            <option value="h12">{{ '12-hour (1–12)' | ffkText }}</option>
+            <option value="h23">{{ '24-hour (0–23)' | ffkText }}</option>
+            <option value="h11">{{ '12-hour (0–11)' | ffkText }}</option>
+            <option value="h24">{{ '24-hour (1–24)' | ffkText }}</option>
           </select></label
         ><label
           >{{ 'Response language' | ffkText
@@ -144,6 +165,21 @@
           </select></label
         >
       </div>
+      <div class="regional-preview">
+        <p>
+          <span>{{ 'Date and time preview' | ffkText }}</span
+          ><strong>{{ previewInstant | ffkDate: draftPresentation() : 'datetime' }}</strong>
+        </p>
+        <ffk-button
+          variant="quiet"
+          [disabled]="account.pending()"
+          (click)="useDevicePreferences()"
+          >{{ 'Use device preferences' | ffkText }}</ffk-button
+        >
+      </div>
+      <p class="help">
+        {{ 'Corporate profile sync does not change your regional preferences.' | ffkText }}
+      </p>
       <p class="help">
         {{
           'Dates and numbers use your preferences. Downloaded data keeps its original values.'
@@ -214,6 +250,9 @@
             | ffkText
         }}
       </p>
+      @if (regionalError()) {
+        <p role="alert" class="error">{{ regionalError() | ffkText }}</p>
+      }
       <div class="preference-grid">
         <ffk-form-field
           inputId="token-name"
