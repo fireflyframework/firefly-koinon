@@ -431,14 +431,29 @@ export class RetainedUploadsState {
       this.batch(s, result, batch.id);
       if (!sameDestination(batch, result)) throw Error('Batch destination changed');
       this.ports.journal.clear(action);
-      const observed = await this.read(s, batch.id);
-      this.admit(s, observed.batch, observed.items);
       this.set(s, {
+        selected: result,
+        pending: this.ports.journal.forBatch(s.scope.subject, s.scope.tenantId, batch.id),
+        recovery: {},
         notice:
           action.operation === 'recover_original'
             ? 'Original check completed. Inspect the current receipt state before submitting for processing.'
             : 'Action acknowledged. Review the current recorded state; processing completion is a separate result.',
       });
+      try {
+        const observed = await this.read(s, batch.id);
+        this.admit(s, observed.batch, observed.items);
+      } catch (error) {
+        const status = error instanceof Error && 'status' in error ? error.status : null;
+        if (status === 401 || status === 403) throw error;
+        this.set(s, {
+          items: [],
+          receipts: {},
+          notice: '',
+          error:
+            'The action was acknowledged, but the current status could not be refreshed. Inspect the upload again; do not repeat the action.',
+        });
+      }
     });
   }
   canInspectRecovery(itemId: string) {

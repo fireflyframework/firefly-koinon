@@ -102,7 +102,7 @@ jobs:
           uv sync --project backend --locked --extra dev
       - name: Verify real indexes, recovery and scope fences
         working-directory: backend
-        run: .venv/bin/python -m pytest -q tests/installation/test_installation_native_postgres.py tests/answers/test_release_postgres.py tests/assistants/test_memory_authority_postgres.py tests/knowledge/bulk/test_bulk_pinned_postgres.py tests/operations/test_bulk_ingestion_authority_postgres.py tests/knowledge/bulk/test_bulk_processing_recovery_postgres.py ../deploy/tests/test_operator_contacts.py ../deploy/tests/test_operator_cli_postgres.py
+        run: .venv/bin/python -m pytest -q tests/installation/test_installation_native_postgres.py tests/answers/test_release_postgres.py tests/assistants/test_memory_authority_postgres.py tests/knowledge/bulk/test_bulk_pinned_postgres.py tests/operations/test_bulk_ingestion_authority_postgres.py tests/knowledge/bulk/test_bulk_processing_recovery_postgres.py tests/knowledge/bulk/test_document_lineage_roundtrip_postgres.py ../deploy/tests/test_operator_contacts.py ../deploy/tests/test_operator_cli_postgres.py
 
   native-units:
     runs-on: ubuntu-latest

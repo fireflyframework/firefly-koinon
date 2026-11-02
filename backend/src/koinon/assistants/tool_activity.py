@@ -3,6 +3,8 @@
 """Record actual native tool invocations without exposing their arguments or reasoning."""
 
 import asyncio
+import json
+import logging
 from contextlib import suppress
 from functools import wraps
 from time import monotonic
@@ -12,6 +14,9 @@ from pydantic import BaseModel, ConfigDict, Field
 from pyfly.kernel import ConflictException
 
 from koinon.assistants.lifecycle import identifier, timestamp
+from koinon.operations.failure_diagnostics import failure_metadata
+
+logger = logging.getLogger(__name__)
 
 ToolName = Literal[
     "search_knowledge",
@@ -84,6 +89,14 @@ def tracked_tool(queue, authority, run_id: str, worker_id: str, tool_name: ToolN
                     if isinstance(exc, ConflictException) and exc.code == "RUN_LEASE_LOST"
                     else "failed"
                 )
+                if state == "failed":
+                    logger.warning(
+                        "Knowledge tool failed: run_id=%s call_id=%s tool=%s diagnostics=%s",
+                        run_id,
+                        call_id,
+                        tool_name,
+                        json.dumps(failure_metadata(exc), separators=(",", ":")),
+                    )
                 with suppress(Exception):
                     await emit(state)
                 raise

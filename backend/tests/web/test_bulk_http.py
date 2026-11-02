@@ -16,6 +16,7 @@ def native_bulk_slice(monkeypatch):
 
     import koinon.app
     from koinon.knowledge.bulk.controllers import FileBatchController
+    from koinon.knowledge.connections.repositories import KnowledgeConnectionRepository
     from koinon.web.projection import register_controller
 
     original = koinon.app.create_application
@@ -23,6 +24,7 @@ def native_bulk_slice(monkeypatch):
     def composed(config):
         app = original(config)
         scan_package("koinon.knowledge.bulk", app.state.context.container)
+        app.state.context.register_bean(KnowledgeConnectionRepository)
         register_controller(app.state.context, FileBatchController)
         return app
 
@@ -104,3 +106,133 @@ def test_native_bulk_routes_validate_stream_hash_scope_and_private_pagination(cl
     assert (
         client.post(path, headers={**headers, "Idempotency-Key": "dataset"}, json=dataset).status_code == 201
     )
+
+
+def test_browser_recovery_acknowledgment_is_an_unwrapped_serialized_batch(client, tmp_path):
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+
+    from pyfly.data.relational.datasource_registry import DataSourceRegistry
+    from pyfly.data.transaction import infrastructure_unit
+    from pyfly.security.context import SecurityContext
+    from pyfly.session.ports.outbound import SessionStore
+
+    from koinon.assistants.entities import Provider
+    from koinon.assistants.repositories import ProviderRepository
+    from koinon.knowledge.bulk.dtos import BulkAction, FileBatchCreate
+    from koinon.knowledge.bulk.ports import NativeObservation
+    from koinon.knowledge.bulk.queue import BulkQueue
+    from koinon.knowledge.bulk.repositories import BulkRepository
+    from koinon.knowledge.bulk.service import FileBatches
+    from koinon.knowledge.connections.entities import KnowledgeConnection
+    from koinon.knowledge.connections.repositories import KnowledgeConnectionRepository
+
+    context = client.native_app.state.context
+    root = tmp_path / "retained-originals"
+    root.mkdir(mode=0o700)
+    context.get_bean(BulkSettings).storage_root = str(root)
+
+    async def failed_upload():
+        catalog = context.get_bean(CatalogService)
+        owner = ISSUER + "|editor"
+        project = await catalog.create(
+            owner, "north", kind="project", name="Project", parent_id=client.workspace_id
+        )
+        parent = await catalog.create(owner, "north", kind="collection", name="Folder", parent_id=project.id)
+        await context.get_bean(ProviderRepository).save(
+            Provider(
+                id="embedding",
+                tenant_id="north",
+                name="Inert",
+                kind="ollama",
+                base_url="http://unresolved.invalid",
+                model_ids=["embedding"],
+                enabled=True,
+                revision=1,
+                validated_revision=1,
+            )
+        )
+        await context.get_bean(KnowledgeConnectionRepository).save(
+            KnowledgeConnection(
+                id="embedding",
+                tenant_id="north",
+                workspace_id=client.workspace_id,
+                scope_key=client.workspace_id,
+                domain="documents",
+                role="documents.embedding",
+                mode="provider",
+                provider_id="embedding",
+                model_id="embedding",
+                dimensions=768,
+                embedding_fingerprint="f" * 64,
+                created_by=owner,
+                updated_by=owner,
+            )
+        )
+        files = context.get_bean(FileBatches)
+        body = FileBatchCreate.model_validate(
+            {
+                "destination": {
+                    "workspace_id": client.workspace_id,
+                    "project_id": project.id,
+                    "parent_id": parent.id,
+                },
+                "items": [
+                    {
+                        "client_item_id": "one",
+                        "filename": "facts.md",
+                        "mode": "document",
+                        "size_bytes": 8,
+                        "sha256": sha256(b"original").hexdigest(),
+                    }
+                ],
+            }
+        )
+        batch = await files.create(owner, "north", body, "create")
+        item = (await files.items(owner, "north", batch.id)).items[0]
+        await files.stage(owner, "north", batch.id, item.id, b"original", "upload")
+        current = await files.get(owner, "north", batch.id)
+        await files.submit(owner, "north", batch.id, BulkAction(expected_revision=current.revision), "submit")
+        queue = context.get_bean(BulkQueue)
+        lease = await queue.claim("first-worker")
+        records = context.get_bean(BulkRepository)
+        async with infrastructure_unit(context.get_bean(DataSourceRegistry).get("primary")):
+            stored = await records.item(batch.id, item.id, lock=True)
+            stored.native_workspace_id = client.workspace_id
+            await records.flush()
+        await queue.failed(lease, code="INGEST_EXECUTION_CONTEXT_REQUIRED", unknown=True)
+        files.intakes = SimpleNamespace(
+            get=lambda: SimpleNamespace(inspect=AsyncMock(return_value=NativeObservation("absent")))
+        )
+        records.workspace_matches = AsyncMock(return_value=True)
+        return batch.id, item.id
+
+    batch_id, item_id = client.portal.call(failed_upload)
+    store = context.get_bean(SessionStore)
+    client.portal.call(
+        store.save,
+        "recovery-browser",
+        {"SECURITY_CONTEXT": SecurityContext(user_id="editor", attributes={"iss": ISSUER, "sub": "editor"})},
+        1800,
+    )
+    client.cookies.set("PYFLY_SESSION", "recovery-browser", domain="testserver.local", path="/")
+    assert client.get("/bff/api/v1/context").status_code == 200
+    path = f"/bff/api/v1/tenants/north/sources/batches/{batch_id}/items/{item_id}"
+    descriptor = client.get(path + "/recovery")
+    assert descriptor.status_code == 200, descriptor.text
+    before = descriptor.json()
+    assert before["operation"] == "retry_processing" and before["job_status"] == "failed"
+    response = client.post(
+        path + "/recover",
+        json={"expected_revision": before["batch_revision"], "operation": "retry_processing"},
+        headers={"X-XSRF-TOKEN": client.cookies.get("XSRF-TOKEN"), "Idempotency-Key": "browser-recovery"},
+    )
+    assert response.status_code == 202, response.text
+    result = response.json()
+    assert result["id"] == batch_id and result["tenant_id"] == "north"
+    assert result["revision"] == before["batch_revision"] + 1
+    assert result["status"] == "queued" and result["counts"] == {"queued": 1}
+    assert result["total_items"] == 1 and result["total_bytes"] == 8
+    assert isinstance(result["created_at"], str) and isinstance(result["expires_at"], str)
+    assert "data" not in result and "result" not in result
+    (tmp_path / "acknowledged-batch.json").write_text(response.text)
