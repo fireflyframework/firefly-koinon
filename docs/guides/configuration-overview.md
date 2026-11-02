@@ -10,10 +10,12 @@ Configure how your organization uses koinon: who can access it, how knowledge is
 | --- | --- | --- |
 | Install the product and establish the first administrator | [First start in production](../operations/first-start.md) | The verified account has the intended organization membership; API and worker roles use the migrated stores. |
 | Configure an existing organization for its first useful answer | [Guided configuration](knowledge-setup.md) | A representative source is processed and an authorized user receives a source-backed answer. |
+| Change a provider, model, embedding target or delivery policy | [Configuration lifecycle](configuration-lifecycle.md) | The new operation succeeds, source history remains readable and the rollback conditions are understood. |
 | Find a particular administration control | [Administration guide](administration.md#find-a-setting) | The correct page, organization and authority are identified before a change. |
 | Choose models and document RAG or RLM behavior | [Knowledge behavior](../operations/organization-knowledge.md) | Current model assignments, supported capabilities and saved policy agree. |
 | Configure original files and durable processing | [Storage providers](../operations/storage-configuration.md), then [durable staging](../operations/durable-bulk.md) | Final objects and staged originals survive process replacement; the relevant consumers are enabled. |
 | Diagnose an unavailable service or index | [Platform health](../operations/platform-health.md) | The observation, coverage and next action are understood without treating unknown as healthy. |
+| Enable administrator email without directory synchronization | [Operator delivery contacts](../reference/operator-delivery-contacts.md) | A separately approved contact has a genuine signed binding, current administrator authority and valid expiry; this does not grant membership or replace invitation verification. |
 
 Open Settings from the avatar menu in the intended installation. An account with one authorized organization enters that organization without a selector. Only accounts with several authorized organizations need to choose one using the organization selector. The browser administration area requires organization administrator access. Deployment operators use protected installation configuration for infrastructure; scoped API permissions do not automatically open browser administration. See the [role boundaries](administration.md#people-and-access) before assigning authority.
 

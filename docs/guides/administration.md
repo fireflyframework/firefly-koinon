@@ -118,6 +118,8 @@ Activity presents observed processing state and recoverable errors. Audit record
 
 ### Make a configuration change deliberately
 
+Use the [configuration lifecycle walkthrough](configuration-lifecycle.md) for a complete provider/model change, reviewed embedding build and activation, rollback checks or email eligibility review. It keeps saved configuration separate from the actual operation and its evidence.
+
 Read the current configuration and scope first. Change the smallest relevant setting, save once, then reload it to confirm the stored value. Where a page uses an expected revision, a conflict means another change must be reviewed; read the new revision rather than repeatedly submitting the old form. API clients must make that decision explicitly too.
 
 Next, perform the operation that needs the setting. A successful save is not a successful model request, import, index build or email delivery. Check the resulting task or answer and its audit. Keep the previous configuration and the affected revision in your change record. Storage moves, embedding changes and identity migrations require their dedicated procedures; changing a field is not a data migration.

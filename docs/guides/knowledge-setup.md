@@ -3,6 +3,8 @@
 
 Follow this path for a new installation or organization. It connects deployment prerequisites, visual configuration and a small acceptance exercise. The linked screenshots use controlled example data; they illustrate the screens and do not establish that your provider or deployment is ready.
 
+For an already configured organization, use [Change providers, models and delivery configuration](configuration-lifecycle.md). The [workflows by role](user-journeys.md) connect initial setup with everyday reading, editing, curation and sharing.
+
 Sign in to the intended installation. With one authorized organization, no organization selection is needed and no selector is shown. If your account has several authorized organizations, choose the intended one using the organization selector. Then open your avatar menu and select **Settings**. On a phone, use **Settings section** to choose a page. On a larger screen, use the settings navigation. The management administration area requires organization administrator access; a workspace role or a successful sign-in alone does not grant it.
 
 Before starting, agree who owns each part of the installation:

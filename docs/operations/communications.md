@@ -4,6 +4,21 @@
 
 Use in-app notifications to follow invitations and changes to your access. For installation fields and provider setup, see [communications configuration](../reference/communications-configuration.md). Email is available only when the operator has configured a supported provider, a verified sender and the installation's canonical public address. A disabled, dummy or incomplete provider does not count as a successful delivery.
 
+## Check recipient eligibility
+
+Directory synchronization is optional for sign-in, in-app notifications, knowledge and chat. Email has separate recipient requirements. A configured provider or an email address in a profile does not satisfy them.
+
+| Recipient workflow | Required source of eligibility |
+| --- | --- |
+| Administrator summaries and supported administrative emails | A current authoritative directory recipient, or an [operator-approved administrator delivery contact](../reference/operator-delivery-contacts.md) with genuine signed identity binding, valid expiry and current event-specific authority. |
+| Ordinary optional summaries | The existing directory-backed recipient lane and current membership; operator contacts do not add a general sign-in-email fallback. |
+| Email invitations | The selected authoritative directory identity and address; a delivery contact does not create an invitation identity or role. |
+| Initial welcome | The separately configured welcome workflow; a welcome-only contact does not authorize later recurring summaries. |
+
+An installation operator can provision, renew or revoke an administrator contact through the [native operator procedure](../reference/operator-delivery-contacts.md), using its separate reviewed database role. An organization administrator cannot create that authority by typing an address into Settings. Check pending sign-in, expiry, revocation and current role eligibility before enabling a schedule. Sign-in does not extend the approved lifetime. An expired contact needs an explicit revision-checked renewal using a fresh authoritative observation.
+
+Follow [the configuration lifecycle](../guides/configuration-lifecycle.md#6-configure-email-eligibility-before-schedules) when changing a sender, provider or schedule. Previewing the actual message is passive; an explicitly authorized native diagnostic queues a new event through the worker. Neither action replays an unknown welcome or establishes mailbox receipt.
+
 ## Invite an existing organization account
 
 Open **Settings**, **Access**, **Invite person**. Choose a connected identity directory, search for the intended person and select a directory result. The server verifies the recipient's immutable directory identity and delivery address. An email address entered or selected in the browser never establishes identity.
