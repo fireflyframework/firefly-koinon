@@ -52,3 +52,5 @@
 <ffk-command-palette [open]="commandsOpen()" [commands]="commands()" (closed)="commandsOpen.set(false)" (commandSelected)="runCommand($event)" (resourceSelected)="openCommandResource($event)" (searchRequested)="commandSearch($event)"/>
 
 @defer (when !!tableLineage.target()) {<ffk-table-lineage-panel/>} @loading {<ffk-skeleton width="60%" height="12px" label="Opening panel"/>} @error {<p role="alert">{{'This panel could not be opened. Refresh this page and try again.' | ffkText}}</p>}
+
+@if(viewerEntry();as entry){@if(destination()==='library'&&!f.authRequired()){@defer(when !!viewerEntry()){<ffk-document-viewer [entry]="entry" (closed)="viewerEntry.set(null)"/>} @loading{<ffk-skeleton width="60%" height="12px" label="Loading document"/>} @error{<p role="alert">{{'The document could not be opened. Close it and try again.'|ffkText}}</p>}}}

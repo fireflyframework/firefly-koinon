@@ -15,8 +15,7 @@ import type {
   OrganizationProfileMappingInput,
   IdentityProviderPage,
 } from '@fireflyframework/koinon-sdk';
-import { organizationContextKey } from './organization-directory-context';
-import { KoinonClientContext } from './client-context';
+import { KoinonClientContext, organizationContextKey } from './client-context';
 import { KoinonFacade } from '../koinon-facade';
 @Injectable()
 export class KoinonOrganizationDirectory implements OnDestroy {
