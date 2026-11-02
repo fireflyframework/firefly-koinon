@@ -1,5 +1,7 @@
 # Profiles and personal access tokens
 
+To create a credential through the interface, follow [Create a personal access token](../guides/create-personal-token.md). It shows where to find the page, how to choose workspace limits and permissions, and where to copy, replace or revoke the secret.
+
 For photos, job titles, departments, managers and directory visibility, see [People and organization](../guides/people-and-organization.md). Personal preferences belong to the verified user; corporate positions belong to the selected organization and never grant access permissions.
 
 For file uploads, catalog maintenance, administrator operations and examples in all three SDK languages, see [API permissions and writes](../guides/api-permissions.md). The token form groups reading, knowledge maintenance, organization management and profile access. Choosing **Administration** explicitly removes resource limits and selects available organization permissions; review and narrow that selection before creating a token.

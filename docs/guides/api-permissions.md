@@ -6,6 +6,8 @@ A personal API token can write as well as read. Its effective authority is the i
 
 ## Choose access for the integration
 
+For a guided walkthrough of the actual form, start with [Create a personal access token](create-personal-token.md). The steps begin in your avatar menu and cover scope selection, workspace limits, the one-time secret and revocation.
+
 Open your profile menu, choose **API tokens**, select the organization, and create a token with a name and expiration. Choose the narrowest scopes and destination that fit the integration. Copy the secret once into your application's secret store; the list shows metadata afterward.
 
 [![Selecting workspace knowledge permissions before generating a token](../assets/screenshots/scoped-token-setup.png)](../assets/screenshots/scoped-token-setup.png)

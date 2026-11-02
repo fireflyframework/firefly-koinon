@@ -70,6 +70,7 @@ nav:
       - Getting oriented:
           - Visual walkthrough: guides/interface-tour.md
           - Your profile and API tokens: operations/profiles-and-tokens.md
+          - Create a personal access token: guides/create-personal-token.md
       - Work with knowledge:
           - Library: guides/library.md
           - Files and formats: guides/intake-formats.md
