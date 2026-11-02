@@ -3,7 +3,7 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/knowledge/bulk/dtos.py
-SHA256: b62365ef5c9327a5d5acaac23f70b30b1a2ebc6f18c721f32a522e939b993669
+SHA256: 1347ec29a877e634daf20294aee288c0f6e70a202cab6b3db689d4e941bd4826
 
 Server authorization and semantic validation remain authoritative.
 """
@@ -64,7 +64,9 @@ class Output(ResponseModel):
     pass
 
 
-NativeRecoveryState = Literal["absent", "admitted", "prepared", "committed", "unknown", "not_checked"]
+NativeRecoveryState = Literal[
+    "absent", "admitted", "failed", "prepared", "committed", "unknown", "not_checked"
+]
 
 
 class FileRecoveryView(Output):

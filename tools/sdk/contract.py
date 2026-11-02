@@ -16,7 +16,7 @@ from compatibility import qualified_glossary
 
 root = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(root / "sdk/python/src"))
-from koinon_sdk import activity, communications, availability, platform_health
+from koinon_sdk import activity, communications, communications_recovery, availability, platform_health
 from koinon_sdk import contracts, models, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance
 from koinon_sdk.client import KoinonClient
 from koinon_sdk import coordinates, curated, dataset_files, authorized_applications, organization_chat
@@ -30,6 +30,10 @@ PlatformController.health|platform_health|platformHealth.health|-|PlatformHealth
 PlatformController.system_information|system_information|platformHealth.systemInformation|-|SystemInformation
 KnowledgeAvailabilityController.processing|knowledge_processing|availability.processing|ProcessingRequest|ProcessingResponse
 KnowledgeAvailabilityController.observe|knowledge_availability|availability.observe|AvailabilityRequest|AvailabilityResponse
+DeliveryRecoveryController.delivery_recovery|communication_delivery_recovery|communications.administration.recovery|-|DeliveryRecoveryOptions
+DeliveryRecoveryController.delivery_observations|communication_delivery_observations|communications.administration.observations|-|DeliveryObservationPage
+DeliveryRecoveryController.inspect_delivery|inspect_communication_delivery|communications.administration.inspectDelivery|DeliveryInspectionInput|DeliveryOperationObservation
+DeliveryRecoveryController.recover_welcome|recover_welcome_delivery|communications.administration.recoverWelcome|WelcomeRecoveryInput|WelcomeRecoveryAcknowledgement
 CommunicationsController.providers|communication_providers|communications.recipients.providers|-|RecipientProviderPage
 CommunicationsController.recipients_search|communication_recipients|communications.recipients.list|-|DirectoryRecipientPage
 CommunicationsController.preview|preview_email_invitation|communications.emailInvitations.preview|EmailInvitationInput|EmailPreview
@@ -474,7 +478,7 @@ for op in inventory["operations"]:
         else ["If-None-Match (optional; avatars only)"]
         if response == "BinaryDownload" and "avatar" in op["path"]
         else ["Idempotency-Key (required; caller-supplied stable operation key)"]
-        if (op["operation"].startswith(("FileBatchController.", "QueryBatchController.")) and op["method"] != "GET") or op["operation"] in {"KnowledgeIndexesController.create", "KnowledgeIndexesController.resume", "ChatAttachmentsController.upload", "ChatAttachmentsController.retry", "ChatAttachmentsController.knowledge", "CuratedKnowledgeController.confirm", "DatasetFilesController.append", "ExternalKnowledgeReviewController.stage", "ExternalKnowledgeReviewController.approve", "ExternalFileReviewController.stage", "ExternalFileReviewController.approve", "CommunicationsController.create"}
+        if (op["operation"].startswith(("FileBatchController.", "QueryBatchController.")) and op["method"] != "GET") or op["operation"] in {"KnowledgeIndexesController.create", "KnowledgeIndexesController.resume", "ChatAttachmentsController.upload", "ChatAttachmentsController.retry", "ChatAttachmentsController.knowledge", "CuratedKnowledgeController.confirm", "DatasetFilesController.append", "ExternalKnowledgeReviewController.stage", "ExternalKnowledgeReviewController.approve", "ExternalFileReviewController.stage", "ExternalFileReviewController.approve", "CommunicationsController.create", "DeliveryRecoveryController.inspect_delivery", "DeliveryRecoveryController.recover_welcome"}
         else []
     )
     if op["operation"] in {"ContentController.document", "ContentController.reingest_document"}:
@@ -484,7 +488,7 @@ assert not mapping, mapping
 assert not unmapped, "Canonical API operations awaiting typed SDK mapping: " + ", ".join(unmapped)
 
 classes = {}
-for module in (platform_health, availability, communications, activity, models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files, authorized_applications, organization_chat, organization_knowledge, organization_branding, mcp, external_reviews, external_file_reviews, mcp_applications, document_history, organization_people, corporate_profiles, memory, bulk, bulk_queries):
+for module in (platform_health, availability, communications, communications_recovery, activity, models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files, authorized_applications, organization_chat, organization_knowledge, organization_branding, mcp, external_reviews, external_file_reviews, mcp_applications, document_history, organization_people, corporate_profiles, memory, bulk, bulk_queries):
     classes.update(
         {
             name: value

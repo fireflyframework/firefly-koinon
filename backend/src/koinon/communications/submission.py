@@ -21,10 +21,12 @@ from koinon.communications.delivery import EmailDispatcher
 from koinon.communications.digest import DigestScheduler
 from koinon.communications.invitations import EmailInvitationService
 from koinon.communications.mappers import invitation_status
+from koinon.communications.observations import EmailOperationObservations
 from koinon.communications.operator_contacts import OperatorContacts, PreparedOperatorContact
 from koinon.communications.outbox import CommunicationOutbox
 from koinon.communications.readiness import EmailReadiness
 from koinon.communications.recipients import RecipientService, recipient_unavailable
+from koinon.communications.recovery import PreparedWelcomeRecovery, WelcomeRecoveryService
 from koinon.communications.repositories import (
     CommunicationPolicyRepository,
     EmailInvitationRepository,
@@ -62,6 +64,8 @@ class EmailSubmission:
         summaries: ActivitySummaryReader | None = None,
         bootstrap_contacts: BootstrapContacts | None = None,
         operator_contacts: OperatorContacts | None = None,
+        welcome_recovery: WelcomeRecoveryService | None = None,
+        operation_observations: EmailOperationObservations | None = None,
     ):
         self.state, self.outbox, self.invitations, self.invitation_service = (
             state,
@@ -80,6 +84,8 @@ class EmailSubmission:
         self.identities, self.digests, self.summaries = identities, digests, summaries
         self.bootstrap_contacts = bootstrap_contacts
         self.operator_contacts = operator_contacts
+        self.welcome_recovery = welcome_recovery
+        self.operation_observations = operation_observations
 
     async def _notice_allowed(self, event):
         if event.kind in {"security", "access_removed"}:
@@ -99,6 +105,11 @@ class EmailSubmission:
         event = await self.outbox.find_by_id(ticket.id)
         if event is None:
             return None
+        if event.kind == "welcome" and event.event_json.get("welcome_recovery_id"):
+            if self.welcome_recovery is None:
+                raise recipient_unavailable()
+            prepared = await self.welcome_recovery.prepare(event)
+            return event, None, None, prepared
         if event.kind == "welcome" and event.event_json.get("bootstrap_contact_id"):
             if self.bootstrap_contacts is None:
                 raise recipient_unavailable()
@@ -158,14 +169,21 @@ class EmailSubmission:
 
     @transactional
     async def _begin(self, ticket, prepared, expected_owner):
+        recovery = isinstance(prepared, PreparedWelcomeRecovery)
         bootstrap = isinstance(prepared, PreparedBootstrapContact)
         operator = isinstance(prepared, PreparedOperatorContact)
         await self.invitation_service.catalog._lock_tenant(
-            prepared.tenant_id if bootstrap or operator else prepared.provider.tenant_id
+            prepared.tenant_id if bootstrap or operator or recovery else prepared.provider.tenant_id
         )
         event = await self.outbox.find_by_id(ticket.id, lock=LockMode.PESSIMISTIC_WRITE)
         if event is None or event.owner_subject != expected_owner:
             return False
+        if recovery:
+            if self.welcome_recovery is None or not await self.welcome_recovery.validate(event, prepared):
+                return False
+            policy = await self.policies.find_by_id(event.tenant_id)
+            self.readiness.require_ready(sender_id=policy.sender_id if policy else None)
+            return await self._send_admitted(ticket, event)
         if operator:
             if (
                 self.operator_contacts is None
@@ -175,13 +193,13 @@ class EmailSubmission:
                 return False
             policy = await self.policies.find_by_id(event.tenant_id)
             self.readiness.require_ready(sender_id=policy.sender_id if policy else None)
-            return await self.state.begin_send(ticket)
+            return await self._send_admitted(ticket, event)
         if bootstrap:
             if self.bootstrap_contacts is None or not await self.bootstrap_contacts.validate(event, prepared):
                 return False
             policy = await self.policies.find_by_id(event.tenant_id)
             self.readiness.require_ready(sender_id=policy.sender_id if policy else None)
-            return await self.state.begin_send(ticket)
+            return await self._send_admitted(ticket, event)
         await self.recipients.ensure_current(prepared.provider)
         self.invitation_service._fresh(prepared)
         if event.kind == "invitation":
@@ -207,6 +225,11 @@ class EmailSubmission:
                 return False
         policy = await self.policies.find_by_id(event.tenant_id)
         self.readiness.require_ready(sender_id=policy.sender_id if policy else None)
+        return await self._send_admitted(ticket, event)
+
+    async def _send_admitted(self, ticket, event):
+        if self.operation_observations is not None:
+            await self.operation_observations.bind_dispatch(event)
         return await self.state.begin_send(ticket)
 
     async def execute(self, ticket):
@@ -220,7 +243,7 @@ class EmailSubmission:
             event, invitation, provider, external = target
             prepared = (
                 external
-                if isinstance(external, PreparedOperatorContact)
+                if isinstance(external, (PreparedOperatorContact, PreparedWelcomeRecovery))
                 else await self.bootstrap_contacts.prepare(event)
                 if provider is None and self.bootstrap_contacts
                 else await self.recipients.observe(provider, external)

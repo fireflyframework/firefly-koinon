@@ -15,7 +15,7 @@ from pyfly.security.context_holder import SecurityContextHolder
 from koinon.knowledge.bulk.authority import BulkAuthority, execution_context
 from koinon.knowledge.bulk.dtos import BulkDestination
 from koinon.knowledge.bulk.entities import BulkTableReservation
-from koinon.knowledge.bulk.recovery_intent import recovery_operation
+from koinon.knowledge.bulk.recovery_intent import NativeFailureProof, recovery_failure, recovery_operation
 from koinon.knowledge.bulk.repositories import BulkRepository
 from koinon.knowledge.bulk.settings import BulkSettings
 from koinon.knowledge.bulk.structured_dtos import StructuredTablePlan
@@ -40,6 +40,8 @@ class BulkLease:
     destination: BulkDestination
     expires_at: datetime | None = None
     recovery_operation: str | None = None
+    attempt_started_at: datetime | None = None
+    recovery_failure: NativeFailureProof | None = None
 
 
 @dataclass(frozen=True)
@@ -94,6 +96,8 @@ class BulkQueue:
             worker_id=job.worker_id or "",
             attempt=job.attempts,
             recovery_operation=recovery_operation(job, item, batch),
+            attempt_started_at=job.updated_at,
+            recovery_failure=recovery_failure(job, item, batch),
             source_id=item.source_id,
             asset_id=item.asset_id,
             filename=item.filename,
@@ -192,6 +196,8 @@ class BulkQueue:
             )
             if recovery_operation(job, item, batch) != lease.recovery_operation:
                 raise ConflictException("Recovery action changed", code="BULK_RECOVERY_STATE_CHANGED")
+            if recovery_failure(job, item, batch) != lease.recovery_failure:
+                raise ConflictException("Recovery proof changed", code="BULK_RECOVERY_STATE_CHANGED")
             if item.connection_json != await self.records.connection(
                 batch.tenant_id, batch.workspace_id, item.mode
             ):

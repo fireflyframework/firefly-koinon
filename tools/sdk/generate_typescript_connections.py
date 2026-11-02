@@ -16,6 +16,7 @@ sys.path.insert(0,str(ROOT/'sdk/python/src'))
 
 # Preserve the existing required response fields exported by types.ts.
 ALIASES = {name: 'BatchQuery' + name for name in ('AgentUsage', 'UsageSummary', 'ClarificationFrame')}
+ALIASES['DeliveryStatus'] = 'RecoveryDeliveryStatus'
 
 
 def kind(schema):
@@ -40,7 +41,7 @@ def kind(schema):
 
 def render():
     classes=[]
-    for name in ('platform_health','availability','activity','memory','bulk_queries','bulk','corporate_profiles','organization_people','document_history','mcp_applications','mcp','external_reviews','external_file_reviews','organization_branding','organization_knowledge','organization_chat','authorized_applications','indexes','identity','attachments','evidence','exports','sharing','proposals','glossary','answer_audit','provenance','coordinates','curated','dataset_files'):
+    for name in ('communications_recovery','platform_health','availability','activity','memory','bulk_queries','bulk','corporate_profiles','organization_people','document_history','mcp_applications','mcp','external_reviews','external_file_reviews','organization_branding','organization_knowledge','organization_chat','authorized_applications','indexes','identity','attachments','evidence','exports','sharing','proposals','glossary','answer_audit','provenance','coordinates','curated','dataset_files'):
         module=importlib.import_module('koinon_sdk.'+name)
         classes.extend(value for value in vars(module).values() if inspect.isclass(value) and issubclass(value,BaseModel) and value.__module__==module.__name__)
     from koinon_sdk.models import AttachmentHistorySummary

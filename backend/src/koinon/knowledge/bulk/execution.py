@@ -32,12 +32,20 @@ class BulkExecutor:
                 await native.reserve(lease)
                 observed = await native.inspect(lease)
                 recovery = getattr(lease, "recovery_operation", None)
-                expected_state = {"retry_processing": "absent", "finalize_publication": "prepared"}
+                expected_failure = getattr(lease, "recovery_failure", None)
+                expected_state = {
+                    "retry_processing": "failed" if expected_failure is not None else "absent",
+                    "finalize_publication": "prepared",
+                }
                 if recovery is not None and observed.status != expected_state.get(recovery):
                     raise ConflictException(
                         "Native recovery state changed", code="BULK_RECOVERY_STATE_CHANGED"
                     )
-                if observed.status == "admitted":
+                if expected_failure is not None and (
+                    recovery != "retry_processing" or observed.failure != expected_failure
+                ):
+                    raise ConflictException("Native failure changed", code="BULK_RECOVERY_STATE_CHANGED")
+                if observed.status in {"admitted", "failed"} and expected_failure is None:
                     await self.queue.failed(lease, code="BULK_NATIVE_OUTCOME_UNRESOLVED", unknown=True)
                     return
                 if observed.status == "committed":

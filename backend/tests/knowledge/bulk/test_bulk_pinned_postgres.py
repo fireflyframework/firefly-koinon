@@ -22,6 +22,7 @@ from test_bulk_native import request
 from test_bulk_pinned_migration import invalid_references
 from test_bulk_writer_leases import expire_writer
 
+from koinon.communications.recovery_entities import WelcomeRecoveryRecord
 from koinon.knowledge.bulk.dtos import BulkAction
 from koinon.knowledge.bulk.repositories import BulkRepository
 
@@ -33,6 +34,11 @@ def load(path, name):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+@pytest.fixture
+def bulk_schema_migrated():
+    return True
 
 
 @pytest.fixture
@@ -234,6 +240,15 @@ async def test_migrated_postgres_validates_first_pin_against_public_manifest_as_
 
 @pytest.mark.parametrize("bulk_url", ["koinon_0039_answer_release"], indirect=True)
 async def test_upgrade_retains_failed_original_then_explicit_recovery_pins_once(bulk, tmp_path, bulk_url):
+    with psycopg.connect(
+        make_url(bulk_url).set(drivername="postgresql").render_as_string(hide_password=False)
+    ) as connection:
+        assert connection.execute("SELECT version_num FROM koinon_native_version").fetchone() == (
+            "koinon_0039_answer_release",
+        )
+        assert connection.execute(
+            "SELECT to_regclass(%s)", (f"public.{WelcomeRecoveryRecord.__tablename__}",)
+        ).fetchone() == (None,)
     batch, item, ticket, path = await original(bulk, tmp_path, b"x" * (32 * 1024**2 + 1))
     with pytest.raises(DBAPIError, match="Immutable bulk identity or receipt"):
         await bulk.service.finish_stream(

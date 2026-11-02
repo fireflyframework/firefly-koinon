@@ -45,3 +45,43 @@ async def test_future_preview_window_is_rejected_using_native_database_clock_wit
     assert failure.value.code == "ACTIVITY_PREVIEW_FUTURE"
     service.summaries.personal.assert_not_awaited()
     assert not await repo.find_all(kind="digest")
+
+
+async def test_operator_only_contact_preview_uses_same_verified_target_without_directory(email_context):
+    from test_operator_contacts import bind, contacts, observation
+    from test_summary_rendering import activity_summary
+
+    from koinon.catalog.service import CatalogService
+    from koinon.communications.content import CommunicationContent
+    from koinon.communications.recipients import RecipientService
+    from koinon.communications.repositories import CommunicationPolicyRepository, RecipientIdentityRepository
+    from koinon.communications.settings import CommunicationsSettings, InstallationLinks
+    from koinon.communications.templates import EmailRenderer
+
+    context, directory = email_context
+    operator = await contacts(context)
+    await operator.provision(observation())
+    await bind(operator)
+    summary = activity_summary()
+    service = ActivityEmailPreviewService(
+        context.get_bean(CommunicationContent),
+        context.get_bean(RecipientService),
+        context.get_bean(RecipientIdentityRepository),
+        context.get_bean(OutboxRepository),
+        context.get_bean(CommunicationPolicyRepository),
+        context.get_bean(CommunicationsSettings),
+        context.get_bean(InstallationLinks),
+        context.get_bean(EmailRenderer),
+        context.get_bean(CatalogService),
+        SimpleNamespace(personal=AsyncMock(return_value=summary)),
+        operator_contacts=operator,
+    )
+    body = ActivityEmailPreviewInput(
+        tenant_id="north",
+        window=summary.window,
+        preferences=NotificationPreferencesInput(expected_revision=0, rules=[], digest="weekly"),
+    )
+    value = await service.preview(ACTOR, body)
+    assert value.rendered_html and value.rendered_text and directory.reads == 0
+    assert value.recipient_email == "approved@example.test"
+    assert not await context.get_bean(OutboxRepository).find_all(kind="digest")

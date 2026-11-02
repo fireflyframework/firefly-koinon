@@ -52,3 +52,47 @@ The diagnostic accepts no recipient address or subject. It resolves the approved
 Status output separates recipient eligibility, administrator eligibility, transport configuration and expiry state. `pending_signed_login`, `ineligible`, `revoked` or `expired` is not ready for a diagnostic. `expiring` is an operator warning, not automatic renewal. Include these observations in installation monitoring and review them before scheduled-report acceptance; the general transport capability alone does not establish recipient eligibility. A configured provider and a queued event do not establish provider acceptance or mailbox delivery.
 
 The worker rechecks contact revision, expiry, revocation, configuration pins and event-specific authority after rendering and before dispatch. Security and access-removal notices preserve their existing delivery semantics after role loss. Administrative summaries and diagnostics require their current administrative authority; ordinary summaries retain their own membership and scope checks. Contact authorization never replaces those checks. Bootstrap welcome contacts remain a separate welcome-only mechanism.
+
+
+## Inspect an existing delivery or recover a welcome
+
+Apply native migration `koinon_0041_email_recovery` and review the complete installation context before these commands. The CLI still requires its dedicated operator authority; do not put that credential in the API or worker. A status inspection reads a retained provider operation and records a new observation, without sending email:
+
+```sh
+python deploy/communications.py inspect-delivery \
+  --delivery-id DELIVERY_UUID \
+  --expected-generation CURRENT_GENERATION \
+  --operation-id NEW_OPERATION_UUID
+```
+
+If the configured provider instance cannot be matched to the original submission, an operator must establish that relationship from retained evidence before inspection. `bind-delivery-provider` requires the original provider-reference digest and an evidence digest from the operator's reviewed deployment record. It does not discover an account or accept a replacement endpoint, email address or recipient identity. Matching sender addresses or display names alone is not evidence of the same provider account:
+
+```sh
+python deploy/communications.py bind-delivery-provider \
+  --delivery-id DELIVERY_UUID \
+  --expected-provider-reference ORIGINAL_PROVIDER_REFERENCE_SHA256 \
+  --evidence-sha256 REVIEWED_EVIDENCE_SHA256
+```
+
+For an eligible initial welcome, the operator can explicitly request a new linked event after the recipient reports nonreceipt. A pre-login target remains an operator-only workflow. First read its current eligibility, generation and approved contact revision through the native status helper; it makes no provider request and does not write an outbox event:
+
+```sh
+python deploy/communications.py welcome-recovery-status \
+  --delivery-id ORIGINAL_DELIVERY_UUID \
+  --contact-id APPROVED_CONTACT_UUID
+```
+
+Review the returned reason if the target is not eligible. Do not guess a generation or change a contact to bypass that result. Retain one operation UUID with the exact reviewed request and acknowledge possible duplicate arrival:
+
+```sh
+python deploy/communications.py welcome-recovery \
+  --delivery-id ORIGINAL_DELIVERY_UUID \
+  --contact-id APPROVED_CONTACT_UUID \
+  --expected-generation CURRENT_GENERATION \
+  --expected-contact-revision CURRENT_CONTACT_REVISION \
+  --operation-id NEW_OPERATION_UUID \
+  --reason recipient_reported_not_received \
+  --acknowledge-possible-duplicate
+```
+
+This creates a new welcome outbox event. The original unknown outcome, attempt count and frozen payload remain unchanged; the worker handles the new event through the normal configured transport. Keep both references. Repeating an uncertain request requires its exact original key and body, not another operation UUID. A new key authorizes new work and may be throttled. The CLI never resets enrollment or grants access. See the [administrator and typed SDK walkthrough](../guides/email-delivery-recovery.md) for the visual review and provider-versus-recipient boundary.

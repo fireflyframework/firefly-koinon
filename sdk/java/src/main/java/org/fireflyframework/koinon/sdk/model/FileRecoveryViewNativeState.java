@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public enum FileRecoveryViewNativeState {
     ABSENT("absent"),
     ADMITTED("admitted"),
+    FAILED("failed"),
     PREPARED("prepared"),
     COMMITTED("committed"),
     UNKNOWN("unknown"),

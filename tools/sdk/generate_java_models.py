@@ -93,7 +93,8 @@ def pascal(s):
 
 def enum_type(values, owner, field):
     key = tuple(sorted(values))
-    name = names.setdefault(key, owner + pascal(field))
+    name = (owner + pascal(field) if owner == "DeliveryOperationObservation" and field == "recipient_state"
+            else names.setdefault(key, owner + pascal(field)))
     enums[name] = values
     return name
 

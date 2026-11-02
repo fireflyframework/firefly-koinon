@@ -296,3 +296,7 @@ Page organization delivery history with current administration authority. In Pyt
 Every preview, HTML/text email and notification preserves **Powered by koinon** and **© year Firefly Software Foundation**, even with custom branding. Originating organization/workspace provenance remains visible where authorized. Render the actual returned HTML only inside a scriptless, navigation-free sandbox; treat plain text as text. The [communications guide](../operations/communications.md) covers the incumbent interface, and [communications configuration](../reference/communications-configuration.md) covers the real sender, public URL, queue and installation settings.
 
 Copyright 2026 Firefly Software Foundation. Licensed under Apache-2.0.
+
+## Inspect a delivery or request another welcome
+
+For explicit provider-operation checks and a separately authorized new welcome, follow [email delivery and welcome recovery](email-delivery-recovery.md). The original delivery and its attempts are retained. Provider acceptance does not establish mailbox receipt, and an unknown action is never repeated automatically.

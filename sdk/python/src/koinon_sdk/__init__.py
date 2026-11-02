@@ -99,6 +99,14 @@ from koinon_sdk.communications import (
     NotificationPreferences,
     NotificationPreferencesInput,
 )
+from koinon_sdk.communications_recovery import (
+    DeliveryInspectionInput,
+    DeliveryObservationPage,
+    DeliveryOperationObservation,
+    DeliveryRecoveryOptions,
+    WelcomeRecoveryAcknowledgement,
+    WelcomeRecoveryInput,
+)
 from koinon_sdk.connection_filters import (
     AttachmentChunkFilter,
     AttachmentFilter,
@@ -933,3 +941,14 @@ __all__ += [
 ]
 
 __all__ += ["CatalogPrecondition"]
+
+
+
+__all__ += [
+    "DeliveryInspectionInput",
+    "DeliveryObservationPage",
+    "DeliveryOperationObservation",
+    "DeliveryRecoveryOptions",
+    "WelcomeRecoveryAcknowledgement",
+    "WelcomeRecoveryInput",
+]

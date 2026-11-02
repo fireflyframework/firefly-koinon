@@ -3,11 +3,11 @@
 
 # Wire models
 
-The canonical schema contains 434 definitions and 423 named model aliases. Supporting definitions are included so every schema reference can be followed. Language-specific generated names can differ from wire names; consult the SDK imports in the workflow guides.
+The canonical schema contains 440 definitions and 429 named model aliases. Supporting definitions are included so every schema reference can be followed. Language-specific generated names can differ from wire names; consult the SDK imports in the workflow guides.
 
 Each page lists field presence, nullability, defaults and validation constraints. The downloadable [complete schema](../sdk-schemas.json) remains the machine-readable contract.
 
-[A](#a) [B](#b) [C](#c) [D](#d) [E](#e) [F](#f) [G](#g) [H](#h) [I](#i) [J](#j) [K](#k) [L](#l) [M](#m) [N](#n) [O](#o) [P](#p) [Q](#q) [R](#r) [S](#s) [T](#t) [U](#u) [V](#v)
+[A](#a) [B](#b) [C](#c) [D](#d) [E](#e) [F](#f) [G](#g) [H](#h) [I](#i) [J](#j) [K](#k) [L](#l) [M](#m) [N](#n) [O](#o) [P](#p) [Q](#q) [R](#r) [S](#s) [T](#t) [U](#u) [V](#v) [W](#w)
 
 ## A
 
@@ -127,8 +127,12 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`DatasetFileUpload`](datasetfileupload.md)
 - [`DatasetSchema`](datasetschema.md)
 - [`Deleted`](deleted.md)
+- [`DeliveryInspectionInput`](deliveryinspectioninput.md)
+- [`DeliveryObservationPage`](deliveryobservationpage.md)
+- [`DeliveryOperationObservation`](deliveryoperationobservation.md)
 - [`DeliveryPage`](deliverypage.md)
 - [`DeliveryRecord`](deliveryrecord.md)
+- [`DeliveryRecoveryOptions`](deliveryrecoveryoptions.md)
 - [`DeploymentConfiguration`](deploymentconfiguration.md)
 - [`DeploymentDatasource`](deploymentdatasource.md)
 - [`DeploymentIndex`](deploymentindex.md)
@@ -508,3 +512,8 @@ Each page lists field presence, nullability, defaults and validation constraints
 
 - [`ValidationResult`](validationresult.md)
 - [`VerifiedSenderOption`](verifiedsenderoption.md)
+
+## W
+
+- [`WelcomeRecoveryAcknowledgement`](welcomerecoveryacknowledgement.md)
+- [`WelcomeRecoveryInput`](welcomerecoveryinput.md)

@@ -21,3 +21,6 @@ client.fileBatches.recoverProcessing('t','b','i',reviewed,'stable-key',{signal:n
 // @ts-expect-error Recovery cannot invent an operation.
 const unsupportedRecovery:BulkRecoveryAction={expected_revision:1,operation:'reprocess_everything'};
 void recovery;void unsupportedRecovery;
+
+const failedNativeState:FileRecoveryView['native_state']='failed';
+void failedNativeState;

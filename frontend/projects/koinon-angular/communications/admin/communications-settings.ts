@@ -18,6 +18,7 @@ import type { CommunicationPolicyUpdate } from './communications-admin';
   imports: [KoinonCommunicationsAdmin],
   providers: [KoinonCommunicationsSession],
   template: `<ffk-communications-admin
+    [deliverySession]="session"
     [readiness]="readiness()"
     [policy]="policy()"
     [deliveries]="deliveries()"
@@ -33,6 +34,7 @@ import type { CommunicationPolicyUpdate } from './communications-admin';
     (policyChanged)="save($event)"
     (deliveryRequested)="detail($event)"
     (deliveryClosed)="selected.set(null)"
+    (deliveryAccessDenied)="deliveryDenied()"
     (retryRequested)="retry($event)"
   />`,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -134,6 +136,10 @@ export class KoinonCommunicationsSettings {
         this.session.api!.administration.delivery(this.session.facade.tenantId(), id, { signal }),
       (value) => this.selected.set(value),
     );
+  }
+  deliveryDenied() {
+    this.selected.set(null);
+    this.deliveries.set(null);
   }
   async retry(id: string) {
     if (!this.selected()?.can_retry || this.selected()?.id !== id || this.retryPending()) return;

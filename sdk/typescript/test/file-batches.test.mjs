@@ -48,12 +48,12 @@ test('explicit original key and content type replace inherited case variants',as
 });
 
 
-test('processing recovery preserves the selected operation, exact key and abort signal without implicit retry', async()=>{
+for(const nativeState of ['prepared','failed']) test(`processing recovery preserves ${nativeState}, selected operation, exact key and abort signal without retry`, async()=>{
  const calls=[];const controller=new AbortController();
- const transport={request:async(method,path,options={})=>{calls.push({method,path,options});if(method==='POST')throw new TypeError('uncertain');return {operation:'finalize_publication',batch_revision:9};}};
+ const transport={request:async(method,path,options={})=>{calls.push({method,path,options});if(method==='POST')throw new TypeError('uncertain');return {operation:'finalize_publication',batch_revision:9,native_state:nativeState};}};
  const api=new KoinonClient({transport}).fileBatches;
  const descriptor=await api.processingRecovery('north/office','batch/one','item/one',{signal:controller.signal});
- assert.equal(descriptor.operation,'finalize_publication');
+ assert.equal(descriptor.operation,'finalize_publication');assert.equal(descriptor.native_state,nativeState);
  const input={expected_revision:9,operation:'finalize_publication'};
  await assert.rejects(()=>api.recoverProcessing('north/office','batch/one','item/one',input,'exact-reviewed-key',{signal:controller.signal,headers:{'idempotency-key':'old'}}),TypeError);
  assert.equal(calls.length,2);

@@ -660,17 +660,29 @@ test('shows persisted tool names and outcomes without exposing invocation argume
   await expect(activity.getByText('Read 2 returned rows', { exact: true })).toBeVisible();
   await expect(activity.locator('pre,input,textarea')).toHaveCount(0);
   expect(service.resultReads.length).toBe(reads);
-  await activity
+  const toggle = activity
     .locator('.tool-list > li')
     .filter({ hasText: 'Query data' })
-    .getByRole('button', { name: 'View result', exact: true })
-    .click();
+    .getByRole('button', { name: 'View result', exact: true });
+  await expect(toggle).toHaveText('Tool result');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(toggle.locator('ffk-icon')).toHaveCount(1);
+  const controlledResult = await toggle.getAttribute('aria-controls');
+  expect(controlledResult).toBeTruthy();
+  await toggle.click();
+  await expect(activity.getByRole('button', { name: 'Hide result', exact: true })).toHaveAttribute(
+    'aria-expanded',
+    'true',
+  );
   await expect(
     activity.getByText('SELECT region, COUNT(*) AS count FROM service_activity GROUP BY region', {
       exact: true,
     }),
   ).toBeVisible();
   await expect(activity.getByText('Executed SQL', { exact: true })).toBeVisible();
+  expect(service.resultReads).toEqual(['r-query', 'r-query']);
+  await activity.getByRole('button', { name: 'Hide result', exact: true }).click();
+  await expect(activity.locator('[id="' + controlledResult + '"]')).toHaveCount(0);
   expect(service.resultReads).toEqual(['r-query', 'r-query']);
   await page.keyboard.press('Escape');
   await expect(activity).not.toBeVisible();
@@ -834,7 +846,9 @@ for (const width of [1440, 390])
         },
       };
     });
-    await expect(page.getByRole('button', { name: 'Save as knowledge', exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Save as knowledge', exact: true }),
+    ).toBeVisible();
     expect(bounds.targets).toHaveLength(4);
     expect(bounds.row.height).toBeLessThanOrEqual(width < 700 ? 44 : 32);
     for (const target of bounds.targets) {

@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from koinon.knowledge.bulk.queue import BulkLease
+from koinon.knowledge.bulk.recovery_intent import NativeFailureProof
 
 
 @dataclass(frozen=True)
@@ -35,8 +36,9 @@ class NativeCommit:
 
 @dataclass(frozen=True)
 class NativeObservation:
-    status: Literal["absent", "admitted", "prepared", "committed"]
+    status: Literal["absent", "admitted", "failed", "prepared", "committed"]
     receipt: NativeCommit | None = None
+    failure: NativeFailureProof | None = None
 
 
 class BulkIntakePort(ABC):
