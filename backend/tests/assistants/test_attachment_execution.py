@@ -193,6 +193,7 @@ async def test_selected_private_text_grounds_native_run_and_never_enters_later_u
         call_tools=[],
         custom_output_args={
             "outcome": "answer",
+            "language": "en",
             "quotes": [{"fact_id": selected.facts[0].id, "quote": model_text}],
         },
     )

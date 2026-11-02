@@ -85,3 +85,16 @@ def test_insufficiency_has_fixed_localized_text_without_model_claims():
 def test_an_answer_requires_at_least_one_current_evidence_selection():
     with pytest.raises(ValidationError):
         EvidenceAnswerPlan.model_validate({"outcome": "answer"})
+
+
+@pytest.mark.parametrize("language", [None, "missing"])
+def test_model_plan_requires_language_without_invalidating_historical_plans(language):
+    from koinon.answers.model_dtos import ModelAnswerPlan
+
+    recorded = {"outcome": "insufficient_evidence"}
+    if language is None:
+        recorded["language"] = None
+    assert EvidenceAnswerPlan.model_validate(recorded).language is None
+    with pytest.raises(ValidationError):
+        ModelAnswerPlan.model_validate(recorded)
+    assert ModelAnswerPlan.model_validate({**recorded, "language": "es"}).language == "es"
