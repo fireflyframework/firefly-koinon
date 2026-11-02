@@ -58,12 +58,14 @@ class AnswerAudits:
         with context:
             await self.assistants.thread(subject, tenant_id, run.thread_id)
             await self.assistants.validate_scope(subject, tenant_id, run.scope)
-            await self.assistants.authorize_results(subject, tenant_id, run.id)
+            await self.assistants.authorize_results(subject, tenant_id, run.id, require_memory=False)
 
     # Final memory/output checks own fresh primary units; do not retain an enclosing connection.
     @transactional(propagation=Propagation.NOT_SUPPORTED, read_only=True, read_from_primary=True)
     async def get(self, subject, tenant_id, run_id):
-        run = await self.assistants.owned_run(subject, tenant_id, run_id, require_attachment_use=False)
+        run = await self.assistants.owned_run(
+            subject, tenant_id, run_id, require_attachment_use=False, require_origin=False
+        )
         rows = sorted(
             await self.assistants.results.find_all(run_id=run.id), key=lambda row: (row.created_at, row.id)
         )

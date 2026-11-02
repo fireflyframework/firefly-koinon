@@ -46,6 +46,11 @@ class KnowledgeScopePolicy:
                     raise AccessDenied("Selected knowledge exceeds the agent's scope", code="SCOPE_DENIED")
                 value = list(dict.fromkeys(value))
             scope[key] = value
+        await self.catalog._prefetch_ancestry(
+            tenant_id,
+            [scope[key] for key in ("workspace_id", "project_id", "collection_id") if key in scope]
+            + scope.get("asset_ids", []),
+        )
         selected = []
         for key, kind in (
             ("workspace_id", "workspace"),

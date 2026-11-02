@@ -143,6 +143,29 @@ class MembershipRepository(Repository[Membership, str]):
 class CatalogRepository(Repository[CatalogEntry, str]):
     """Scoped catalog entries shared by both domains."""
 
+    async def ancestry_rows(self, tenant_id: str, entry_ids: tuple[str, ...]) -> list[CatalogEntry]:
+        node = aliased(CatalogEntry)
+        ancestors = (
+            select(CatalogEntry.id, CatalogEntry.parent_id, literal(0).label("depth"))
+            .where(CatalogEntry.tenant_id == tenant_id, CatalogEntry.id.in_(entry_ids))
+            .cte("policy_ancestors", recursive=True)
+        )
+        ancestors = ancestors.union(
+            select(node.id, node.parent_id, ancestors.c.depth + 1)
+            .join(ancestors, node.id == ancestors.c.parent_id)
+            .where(node.tenant_id == tenant_id, ancestors.c.depth < 17)
+        )
+        return list(
+            (
+                await self._require_session().scalars(
+                    select(CatalogEntry).where(
+                        CatalogEntry.tenant_id == tenant_id,
+                        CatalogEntry.id.in_(select(ancestors.c.id)),
+                    )
+                )
+            ).all()
+        )
+
     async def subtree_facts(self, tenant_id: str, root: CatalogEntry) -> dict:
         node = aliased(CatalogEntry)
         branch = (

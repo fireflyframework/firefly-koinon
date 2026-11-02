@@ -213,9 +213,26 @@ class CatalogService:
                 raise AccessDenied("API token lacks the required permission", code="TOKEN_INSUFFICIENT_SCOPE")
             raise AccessDenied("Resource is not accessible in the selected context", code="ACCESS_DENIED")
 
+    async def _prefetch_ancestry(self, tenant_id: str, entry_ids) -> None:
+        observed = snapshot_values(self, "entries")
+        kinds = snapshot_values(self, "workspace-kinds")
+        if observed is None or kinds is None:
+            return
+        missing = tuple(dict.fromkeys(value for value in entry_ids if (tenant_id, value) not in observed))
+        if not missing:
+            return
+        rows = await self.catalog_repository.ancestry_rows(tenant_id, missing)
+        for value in missing:
+            observed[(tenant_id, value)] = []
+        for row in rows:
+            observed[(tenant_id, row.id)] = [row]
+            kinds[(tenant_id, row.id)] = row.kind
+
     async def _scoped_entry(self, tenant_id: str, entry_id: str, *, lock=False) -> CatalogEntry:
         observed = snapshot_values(self, "entries") if not lock else None
         key = (tenant_id, entry_id)
+        if observed is not None and key not in observed:
+            await self._prefetch_ancestry(tenant_id, (entry_id,))
         rows = observed.get(key) if observed is not None else None
         if rows is None:
             rows = await self.catalog_repository.find_all(id=entry_id, tenant_id=tenant_id)
