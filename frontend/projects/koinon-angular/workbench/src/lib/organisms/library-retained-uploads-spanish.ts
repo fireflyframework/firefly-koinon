@@ -82,6 +82,8 @@ export const RETAINED_UPLOADS_SPANISH: Record<string, string> = {
     'La comprobación del original ha terminado. Revisa el estado de recepción antes de enviarlo a procesamiento.',
   'Action acknowledged. Review the current recorded state; processing completion is a separate result.':
     'La acción se ha confirmado. Consulta el estado registrado; eso no significa que el procesamiento haya terminado.',
+  'The action was acknowledged, but the current status could not be refreshed. Inspect the upload again; do not repeat the action.':
+    'La acción se ha confirmado, pero no se ha podido actualizar su estado. Vuelve a consultar la subida; no repitas la acción.',
   'The retained original was verified. This does not establish processing or search availability.':
     'Se ha verificado el original conservado. Eso no confirma su procesamiento ni su disponibilidad para buscar.',
   'Processing failed': 'Procesamiento fallido',
