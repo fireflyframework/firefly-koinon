@@ -74,7 +74,15 @@ python deploy/communications.py bind-delivery-provider \
   --evidence-sha256 REVIEWED_EVIDENCE_SHA256
 ```
 
-For an eligible initial welcome, the operator can explicitly request a new linked event after the recipient reports nonreceipt. A pre-login target remains an operator-only workflow. Read the current generation and approved contact revision first, retain the operation UUID with that exact request, and acknowledge possible duplicate arrival:
+For an eligible initial welcome, the operator can explicitly request a new linked event after the recipient reports nonreceipt. A pre-login target remains an operator-only workflow. First read its current eligibility, generation and approved contact revision through the native status helper; it makes no provider request and does not write an outbox event:
+
+```sh
+python deploy/communications.py welcome-recovery-status \
+  --delivery-id ORIGINAL_DELIVERY_UUID \
+  --contact-id APPROVED_CONTACT_UUID
+```
+
+Review the returned reason if the target is not eligible. Do not guess a generation or change a contact to bypass that result. Retain one operation UUID with the exact reviewed request and acknowledge possible duplicate arrival:
 
 ```sh
 python deploy/communications.py welcome-recovery \
