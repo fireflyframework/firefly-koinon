@@ -29,6 +29,7 @@ from koinon.assistants.scope import KnowledgeScopePolicy
 from koinon.assistants.settings import AssistantSettings, ProviderSecrets
 from koinon.catalog.errors import AccessDenied
 from koinon.catalog.service import CatalogService
+from koinon.security.authority import primary_authority
 
 TOOLS = frozenset({"search_knowledge", "inspect_schema", "query_dataset", "propose_catalog_update"})
 
@@ -452,7 +453,7 @@ class AssistantConfigurationService:
         await self.validate_provider(subject, tenant_id, row.provider_id)
         return await self.agent_dto(row, subject=subject, scope=row.scope)
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def agent_page(
         self,
         subject,
