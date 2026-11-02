@@ -514,6 +514,7 @@
   "FileRecoveryViewNativeState": [
     "absent",
     "admitted",
+    "failed",
     "prepared",
     "committed",
     "unknown",

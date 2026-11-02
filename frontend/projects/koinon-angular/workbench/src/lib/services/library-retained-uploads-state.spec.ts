@@ -471,6 +471,43 @@ it.each([
   expect(f.calls.some((c) => c.method === 'POST')).toBe(false);
 });
 
+it('requires explicit review and confirmation for a verified failed native attempt', async () => {
+  const f = setup();
+  f.processingFailure();
+  f.intercept((method, path) =>
+    path.endsWith('/recovery')
+      ? Promise.resolve({ ...recovery(), native_state: 'failed' })
+      : path.endsWith('/recover') && method === 'POST'
+        ? Promise.resolve(f.state.view().selected)
+        : undefined,
+  );
+  await f.state.select('batch');
+  await f.state.inspectRecovery('item');
+  expect(f.calls.filter((c) => c.path.endsWith('/recover'))).toHaveLength(0);
+  expect(f.state.view().recovery['item']?.native_state).toBe('failed');
+  await f.state.review('retry_processing', 'item');
+  expect(f.calls.filter((c) => c.path.endsWith('/recover'))).toHaveLength(0);
+  await f.state.confirm();
+  const sent = f.calls.filter((c) => c.path.endsWith('/recover') && c.method === 'POST');
+  expect(sent).toHaveLength(1);
+  expect(sent[0]?.options.body).toEqual({ expected_revision: 1, operation: 'retry_processing' });
+});
+
+it('never accepts failed native processing as already prepared publication', async () => {
+  const f = setup();
+  f.processingFailure();
+  f.intercept((_, path) =>
+    path.endsWith('/recovery')
+      ? Promise.resolve({ ...recovery('finalize_publication'), native_state: 'failed' })
+      : undefined,
+  );
+  await f.state.select('batch');
+  await f.state.inspectRecovery('item');
+  expect(f.state.view().error).toContain('Inspect the current batch');
+  expect(f.state.view().recovery['item']).toBeUndefined();
+  expect(f.state.canAct('finalize_publication', 'item')).toBe(false);
+  expect(f.calls.filter((c) => c.method === 'POST')).toHaveLength(0);
+});
 it.each(['unavailable', 'revision-change', 'denied', 'invalid-destination'])(
   'clears an acknowledged HTTP202 recovery before a failed status refresh: %s',
   async (failure) => {

@@ -50,7 +50,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 
 ### native_state
 
-- Allowed values: `"absent"`, `"admitted"`, `"prepared"`, `"committed"`, `"unknown"`, `"not_checked"`
+- Allowed values: `"absent"`, `"admitted"`, `"failed"`, `"prepared"`, `"committed"`, `"unknown"`, `"not_checked"`
 
 ### operation
 
@@ -115,6 +115,7 @@ This is a schema definition, not an example request. It preserves all declared k
           "enum": [
             "absent",
             "admitted",
+            "failed",
             "prepared",
             "committed",
             "unknown",

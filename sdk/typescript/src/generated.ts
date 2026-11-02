@@ -890,7 +890,7 @@ export interface FileRecoveryView {
  "batch_id": string;
  "item_id": string;
  "batch_revision": number;
- "native_state": "absent" | "admitted" | "prepared" | "committed" | "unknown" | "not_checked";
+ "native_state": "absent" | "admitted" | "failed" | "prepared" | "committed" | "unknown" | "not_checked";
  "operation": "retry_processing" | "finalize_publication" | "acknowledge_commit" | null;
  "reason_code"?: string | null;
  "attempts": number;

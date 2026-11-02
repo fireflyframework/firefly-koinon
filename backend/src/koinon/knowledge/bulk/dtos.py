@@ -74,7 +74,9 @@ class Output(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
 
-NativeRecoveryState = Literal["absent", "admitted", "prepared", "committed", "unknown", "not_checked"]
+NativeRecoveryState = Literal[
+    "absent", "admitted", "failed", "prepared", "committed", "unknown", "not_checked"
+]
 
 
 class FileRecoveryView(Output):
