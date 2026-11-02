@@ -23,9 +23,16 @@ pytestmark = pytest.mark.integration
     [{"pool": {"size": size, "max-overflow": 0, "timeout": 2}} for size in (1, 5)],
     indirect=True,
 )
-async def test_scope_sql_budget_with_concurrent_readers(pg_assistants):
+@pytest.mark.parametrize("assets", [1, 40])
+async def test_scope_sql_budget_with_concurrent_readers(pg_assistants, assets):
     service, context, _ = pg_assistants
     scope = await scoped_tree(service)
+    first = await service.catalog.get("issuer|admin", "north", scope["asset_ids"][0])
+    for index in range(assets - 1):
+        row = await service.catalog.create(
+            "issuer|admin", "north", kind="dataset", name=f"Dataset {index}", parent_id=first.parent_id
+        )
+        scope["asset_ids"].append(row.id)
     engine = context.get_bean(DataSourceRegistry).primary.engine
     statements = []
 
@@ -37,7 +44,7 @@ async def test_scope_sql_budget_with_concurrent_readers(pg_assistants):
         assert await service.validate_scope("issuer|admin", "north", scope) == scope
     finally:
         event.remove(engine.sync_engine, "before_cursor_execute", capture)
-    assert len(statements) <= 20, f"Scope issued {len(statements)} SQL statements for five entries"
+    assert len(statements) <= 3, f"Scope of {assets} assets issued {len(statements)} SQL statements"
     async with asyncio.timeout(10):
         results = await asyncio.gather(
             *(service.validate_scope("issuer|admin", "north", scope) for _ in range(5))

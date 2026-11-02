@@ -195,6 +195,18 @@ def reads(service, context, run):
     }
 
 
+@pytest.mark.parametrize("pg_outputs", [1], indirect=True)
+async def test_audit_validates_memory_once_at_the_final_output_boundary(pg_outputs, monkeypatch):
+    service, context, run = pg_outputs
+    memory = context.get_bean(PersonalConversationMemory)
+    authorize = AsyncMock(wraps=memory.authorize)
+    monkeypatch.setattr(memory, "authorize", authorize)
+    result = await reads(service, context, run)["audit"]()
+    assert result["output_release"] is not None
+    assert authorize.await_count == 1
+    assert authorize.await_args.kwargs["captures"][0].run_id == run.id
+
+
 @pytest.mark.parametrize("pg_outputs", POOLS, indirect=True)
 async def test_sealed_memory_output_reads_complete_at_pool_capacity(pg_outputs, monkeypatch):
     service, context, run = pg_outputs
