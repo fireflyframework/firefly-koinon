@@ -35,7 +35,7 @@ def test_native_folder_move_checks_authentication_current_state_and_hierarchy(cl
     assert stale.json()["code"] == "CATALOG_CHANGED"
 
 
-def test_system_spaces_are_protected_through_native_http_not_only_the_interface(client):
+def test_legacy_spaces_use_ordinary_lifecycle_and_keep_provenance_through_http(client):
     async def provision_fixture():
         from koinon.catalog.service import CatalogService
 
@@ -55,9 +55,12 @@ def test_system_spaces_are_protected_through_native_http_not_only_the_interface(
     url = "/api/v1/tenants/north/catalog/" + identifier
     observed = client.get(url, headers=bearer())
     assert observed.status_code == 200
-    assert observed.json()["system_managed"] is True
-    for response in (client.delete(url, headers=bearer()), client.post(url + "/archive", headers=bearer())):
-        assert response.status_code == 409, response.text
-        assert response.json()["code"] == "SYSTEM_SPACE_PROTECTED"
+    assert observed.json()["system_managed"] is False
     assert client.patch(url, json={"system_key": None}, headers=bearer()).status_code == 422
+    archived = client.post(url + "/archive", headers=bearer())
+    assert archived.status_code == 200, archived.text
     assert client.get(url, headers=bearer()).json()["created_by"] == "system:installation"
+    restored = client.post(url + "/restore", headers=bearer())
+    assert restored.status_code == 200, restored.text
+    removed = client.delete(url, headers=bearer())
+    assert removed.status_code == 204, removed.text

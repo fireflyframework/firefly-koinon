@@ -208,7 +208,7 @@ export function moveFolder(
 }
 ```
 
-`system_managed` identifies retained installation defaults; it is an output, never an editable metadata flag. The backend protects those folders even if a host omits the interface check. Ordinary collection and corpus folders move only inside the same project and space. Handle `CATALOG_CHANGED` by reloading and reviewing a new decision. `KNOWLEDGE_TRANSFER_REQUIRED` means the request crosses a boundary that this move operation cannot change. See [Library hierarchy and permissions](library.md#spaces-projects-and-folders).
+`system_managed` is a read-only compatibility field that now returns `false`. Previously installed folders follow the same permissions and lifecycle rules as folders you create; their contents and installation history are retained. Ordinary collection and corpus folders move only inside the same project and space. Handle `CATALOG_CHANGED` by reloading and reviewing a new decision. `KNOWLEDGE_TRANSFER_REQUIRED` means the request crosses a boundary that this move operation cannot change. See [Library hierarchy and permissions](library.md#spaces-projects-and-folders).
 
 ### Recover an existing processing attempt
 

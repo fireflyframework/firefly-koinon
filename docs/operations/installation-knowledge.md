@@ -1,33 +1,28 @@
 # Provision knowledge before the first sign-in
 
-An operator can provision initial model connections, protected knowledge spaces, compatible empty indexes and the organization chat agent before any administrator signs in. This is a deployment command, not a public HTTP endpoint. It uses native pyfly dependency injection, repositories, transactions, encryption and existing domain services. It records `system:installation` as the audit actor and never creates a user, session, token or membership.
+An operator can provision initial model connections, optional team-defined spaces, compatible empty indexes and the organization chat agent before any administrator signs in. This is a deployment command, not a public HTTP endpoint. It uses native pyfly dependency injection, repositories, transactions, encryption and existing domain services. It records `system:installation` as the audit actor and never creates a user, session, token or membership.
 
-Apply migrations through `koinon_0037_system_spaces` and run the normal scoped-role grant step first. The installation ledger introduced by `koinon_0036_installation` is writable only by the privileged installation/migration database identity. The API and worker identities must have no ledger privileges. The operator requires the normal named Canon and Structured data sources and their restricted native provisioning capabilities. PostgreSQL is required for this operator workflow; SQLite does not admit an installation.
+Apply migrations through the current release head (including `koinon_0043_ordinary_folders`) and run the normal scoped-role grant step first. The installation ledger introduced by `koinon_0036_installation` is writable only by the privileged installation/migration database identity. The API and worker identities must have no ledger privileges. The operator requires the normal named Canon and Structured data sources and their restricted native provisioning capabilities. PostgreSQL is required for this operator workflow; SQLite does not admit an installation.
 
 ## Prepare a protected manifest
 
 Start from [`installation-plan.json.example`](https://github.com/fireflyframework/firefly-koinon/blob/main/deploy/production/installation-plan.json.example). Set an existing organization ID, approved provider endpoints and model IDs. Configure the real `koinon.assistants.allowed_provider_hosts` allowlist for those hosts. The normal provider address policy remains in force. Credentials are read from the environment names in `secret_env`; the manifest must not contain keys or URL credentials. Mount both the manifest and secret inputs through your deployment's protected configuration mechanism.
 
-The source example declares one workspace with a project, document collection and table corpus. Each manifest folder receives a unique server-owned `system_key`; these installed folders cannot be deleted, archived, moved or stripped of their system identity. A workspace is an actual knowledge isolation boundary. Nested collections and corpora organize a project within that boundary. Users can create additional ordinary folders through the normal authorized APIs.
+The supplied manifest configures providers, organization-wide model connections and the default agent. Its `catalog` and `indexes` arrays are empty: installation does not create a prescribed Library structure. Keeping model configuration separate from folder creation lets each team decide how to organize its knowledge.
 
-### Understand the initial structure
+### Choose your initial structure
 
-The supplied manifest creates the following structure. These are example names: the installer uses the names and descriptions in your protected manifest, so prepare them in the installation's language before the first run.
+Start in Library with **Create a space**, then create a project and the document or dataset folders you need. Names and descriptions belong to your team. There are no protected system folders. An authorized user can rename, move, archive or delete folders within the normal hierarchy, access and content-retention rules. Deleting a populated folder is not a shortcut around those rules.
 
-| Level | Example name | Purpose |
-| --- | --- | --- |
-| Space | Company knowledge | The shared knowledge boundary for this organization. Create another space for a client or team that needs different access. |
-| Library project | General | A place for knowledge that applies across this space. This does not create a chat project or enable shared chat memory. |
-| Document folder | Documents | A starting destination for documents and their extracted, cited content. |
-| Dataset folder | Tables | A starting destination for structured files and their table snapshots. |
+Operators who deliberately want to provision a structure can still declare `catalog` entries in the manifest. These become ordinary folders, with installation provenance retained for recovery and auditing. `indexes` may reference only workspaces explicitly declared in that same manifest. With an empty Library, configure and qualify the embedding index for each workspace after creating it; registering an embedding provider alone does not create a serving index or establish ingestion readiness.
 
-The two initial folders are organizational starting points, not separate security boundaries. Putting confidential information in a sibling folder does not isolate it from people who can access the space. Use space memberships and roles for that purpose. New folders beneath the defaults are ordinary user-managed folders; they do not inherit system protection.
+Upgrades preserve the IDs, source bindings, permissions, contents and installation receipts of earlier default folders. Migration 43 removes their special archive, move and deletion restrictions without deleting any rows. The original installation keys remain internal historical provenance, not a protection flag or an access grant. Do not rerun an old bootstrap to reorganize a populated installation. Drain old application and worker replicas before this migration, then start the matching release; an old binary can still impose the retired restrictions.
 
 Installed records retain the audit subject `system:installation`. The public author display for that exact subject is **koinon**, including on branded installations. This attribution identifies the software action and does not create a person or grant access. Unknown historical authors remain unknown. Later edits retain the identity of the actual editor.
 
 See [Work with the knowledge library](../guides/library.md) for browsing, folder maintenance, upload states and source history. The initial provisioning command creates and qualifies empty indexes; it does not yet publish an introductory document into those indexes. A successful setup receipt alone therefore does not establish that the assistant can answer questions about the product itself.
 
-Use stable keys, including context in child keys when multiple workspaces contain similarly named folders. Keys are unique across the organization. Keep the same `plan_key`, folder keys and manifest content for retries of the same plan.
+Use stable keys, including context in child keys when multiple workspaces contain similarly named folders. Keys are unique within each manifest section. Keep the same `plan_key`, folder keys and manifest content for retries of the same plan.
 
 ```bash
 chmod 600 /run/installation/knowledge.json

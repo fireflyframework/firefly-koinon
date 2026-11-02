@@ -439,9 +439,7 @@ async def test_custom_tag_display_preserves_case_and_filter_matching_is_normaliz
     assert (await service.page("issuer|reader", "north", tag="PII"))["total"] == 1
 
 
-async def test_system_workspace_cannot_be_deleted_archived_or_stripped_of_protection(catalog):
-    from pyfly.kernel import ConflictException
-
+async def test_legacy_workspace_is_ordinary_but_keeps_immutable_provenance(catalog):
     from koinon.catalog.errors import InvalidHierarchy
     from koinon.catalog.mappers import entry_dto
 
@@ -456,20 +454,16 @@ async def test_system_workspace_cannot_be_deleted_archived_or_stripped_of_protec
         system_key="organization",
     )
     await session.commit()
-    assert root.workspace_id == root.id
-    assert root.system_key == "organization"
-    assert root.installation_run_id == "installation-run"
-    assert entry_dto(root)["system_managed"] is True
-    for operation in (service.delete, service.archive):
-        with pytest.raises(ConflictException, match="System knowledge spaces"):
-            await operation("issuer|alice", "north", root.id)
+    assert entry_dto(root)["system_managed"] is False
     for field in ("system_key", "installation_run_id"):
         with pytest.raises(InvalidHierarchy):
             await service.update("issuer|alice", "north", root.id, {field: None})
-    root = await service.update("issuer|alice", "north", root.id, {"metadata": {"tags": ["team"]}})
-    assert root.system_key == "organization"
-    assert root.installation_run_id == "installation-run"
+    root = await service.archive("issuer|alice", "north", root.id)
+    assert root.status == "archived"
+    assert (root.system_key, root.installation_run_id) == ("organization", "installation-run")
+    root = await service.restore("issuer|alice", "north", root.id)
     assert root.status == "ready"
+    await service.delete("issuer|alice", "north", root.id)
 
 
 async def test_ordinary_user_workspaces_remain_deletable_and_cannot_claim_system_fields(catalog):
@@ -630,12 +624,10 @@ async def test_archived_parent_does_not_accept_new_nested_content(catalog):
         await service.create("issuer|alice", "north", kind="collection", name="Hidden", parent_id=project.id)
 
 
-async def test_installed_child_folders_are_protected_without_creating_new_knowledge_boundaries(catalog):
-    from pyfly.kernel import ConflictException
-
+async def test_legacy_folders_can_move_archive_and_delete_without_losing_scope(catalog):
     from koinon.catalog.hierarchy_service import CatalogHierarchyService
 
-    service, _, _ = catalog
+    service, session, _ = catalog
     parent = None
     for kind in ("workspace", "project", "collection"):
         entry = await service._write_create(
@@ -648,20 +640,20 @@ async def test_installed_child_folders_are_protected_without_creating_new_knowle
             system_key=f"default-{kind}",
         )
         parent = entry.id
-    for operation in (service.delete, service.archive):
-        with pytest.raises(ConflictException):
-            await operation("issuer|alice", "north", entry.id)
-    with pytest.raises(ConflictException):
-        await CatalogHierarchyService(service).move(
-            "issuer|alice",
-            "north",
-            entry.id,
-            parent_id=entry.project_id,
-            expected_parent_id=entry.parent_id,
-            expected_updated_at=entry.updated_at,
-        )
-    child = await service.create(
-        "issuer|alice", "north", kind="collection", name="User folder", parent_id=entry.id
+    await session.commit()
+    destination = await service.create(
+        "issuer|alice", "north", kind="collection", name="Destination", parent_id=entry.project_id
     )
-    assert (child.workspace_id, child.project_id) == (entry.workspace_id, entry.project_id)
-    await service.delete("issuer|alice", "north", child.id)
+    moved = await CatalogHierarchyService(service).move(
+        "issuer|alice",
+        "north",
+        entry.id,
+        parent_id=destination.id,
+        expected_parent_id=entry.parent_id,
+        expected_updated_at=entry.updated_at,
+    )
+    assert (moved.workspace_id, moved.project_id) == (entry.workspace_id, entry.project_id)
+    assert (moved.system_key, moved.installation_run_id) == ("default-collection", "run")
+    await service.archive("issuer|alice", "north", moved.id)
+    await service.restore("issuer|alice", "north", moved.id)
+    await service.delete("issuer|alice", "north", moved.id)

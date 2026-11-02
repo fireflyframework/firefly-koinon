@@ -19,7 +19,8 @@ class KnowledgeIndexRepository(Repository[KnowledgeIndex, str]):
                 CatalogEntry.workspace_id == workspace_id,
                 or_(
                     CatalogEntry.installation_run_id.is_distinct_from(run_id),
-                    CatalogEntry.system_key.is_(None),
+                    CatalogEntry.kind.not_in(("workspace", "project", "collection", "corpus")),
+                    CatalogEntry.created_by != "system:installation",
                 ),
             )
             .exists()

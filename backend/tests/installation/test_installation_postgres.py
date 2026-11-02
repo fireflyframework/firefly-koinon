@@ -271,7 +271,8 @@ async def test_operator_writes_use_native_encryption_catalog_and_default_without
             from koinon.catalog.repositories import AuditRepository, CatalogRepository, MembershipRepository
 
             rows = await context.get_bean(CatalogRepository).find_all(tenant_id="example")
-            assert {row.system_key for row in rows} == {"space", "project", "folder"}
+            assert len(rows) == 3
+            assert all(row.system_key is None for row in rows)
             assert all(
                 row.created_by == "system:installation" and row.installation_run_id == permit.run_id
                 for row in rows
