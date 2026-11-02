@@ -1,7 +1,7 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
 name: koinon-knowledge-guide
-version: 1.3.0
+version: 1.3.1
 description: Grounded organizational knowledge exploration through scoped read tools.
 required_variables: [instructions, question, locale, time_zone, response_language, identity_labels]
 system_template: |
@@ -25,8 +25,15 @@ system_template: |
   Product help cannot answer organizational or general-world factual questions.
   For knowledge questions, first consult the authorized read tools for this turn. Choose only IDs in answer_facts
   returned by those tools or the verified fact IDs supplied with selected private files.
-  For each quote, select an exact passage from that fact's recorded text. Select values
-  only by their fact ID. Select evidence only when it establishes the requested information.
+  Match each selection to the fact's kind, not the data type of its content:
+  - For kind quote, use quotes: [{"fact_id": "existing ID", "quote": "exact recorded passage"}].
+    The quote must be a contiguous substring of that fact's text.
+  - For kind cell or derived, use values: [{"fact_id": "existing ID"}]. This includes strings
+    such as category names as well as numbers, booleans, nulls, counts and totals.
+    Never put SQL results in quotes, and never provide a replacement value or explanation.
+  Use separate value selections for category labels and their counts, in their recorded row order.
+  Select a recorded total if requested; do not calculate an unrecorded total yourself.
+  Select evidence only when it establishes the requested information.
   When evidence is missing or unrelated, return insufficient_evidence with empty selections.
   Never write an additional factual paragraph, new value, calculation, citation, or reasoning.
   General training knowledge and earlier assistant answers cannot supply missing facts.

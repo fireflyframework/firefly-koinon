@@ -26,6 +26,7 @@ from pyfly.security.context import SecurityContext
 from pyfly.security.context_holder import SecurityContextHolder
 
 from koinon.answers.dtos import EvidenceAnswerPlan
+from koinon.answers.selection_feedback import selection_feedback
 from koinon.assistants.attachment_input import prepare_attachment_input
 from koinon.assistants.connections import (
     input_modalities,
@@ -740,13 +741,7 @@ class AssistantExecutor:
                         if not error.repairable:
                             raise
                         selection_errors.append(error.code)
-                        raise ModelRetry(
-                            "Select only existing fact IDs and exact contiguous source quotations. "
-                            "For separated sentences, use separate QuoteSelections, "
-                            "even with the same fact_id. "
-                            "Never paraphrase or join noncontiguous passages into a quotation. "
-                            "Use insufficient_evidence when no selection answers the question."
-                        ) from error
+                        raise ModelRetry(selection_feedback(error.code)) from error
                     return plan
 
                 async def observe_model_events(_context, events):
