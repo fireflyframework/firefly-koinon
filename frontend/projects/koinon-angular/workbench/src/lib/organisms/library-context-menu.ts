@@ -29,6 +29,7 @@ export function libraryActions(
   canAdd: boolean,
   createLabel: string,
   canRead = true,
+  canUpload = false,
 ): LibraryMenuAction[] {
   const actions: LibraryMenuAction[] = entry
     ? [
@@ -44,10 +45,11 @@ export function libraryActions(
       ]
     : [
         { id: 'create', label: createLabel, icon: 'folder' },
+        { id: 'upload', label: 'Upload files', icon: 'upload' },
         { id: 'add', label: 'Add knowledge', icon: 'plus' },
       ];
   return actions.filter((action) =>
-    canRunLibraryAction(entry, action.id, canEdit, canAdd, createLabel, canRead),
+    canRunLibraryAction(entry, action.id, canEdit, canAdd, createLabel, canRead, canUpload),
   );
 }
 
@@ -78,6 +80,7 @@ export class KoinonLibraryContextMenu implements AfterViewInit, OnChanges, OnDes
   @Input() canEdit = false;
   @Input() canRead = true;
   @Input() canAdd = false;
+  @Input() canUpload = false;
   @Input() createLabel = '';
   actions: LibraryMenuAction[] = [];
   @Output() chosen = new EventEmitter<LibraryAction>();
@@ -96,6 +99,7 @@ export class KoinonLibraryContextMenu implements AfterViewInit, OnChanges, OnDes
       this.canAdd,
       this.createLabel,
       this.canRead,
+      this.canUpload,
     );
     if (this.ready && changes['request'])
       queueMicrotask(() => {
