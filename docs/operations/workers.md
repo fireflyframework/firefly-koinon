@@ -12,6 +12,12 @@ Claims use existing attempt and start-time generations. Every stage transaction 
 
 On `SIGTERM` or `SIGINT`, stop claiming work, allow a bounded drain and then cancel remaining work before closing shared resources. Use a platform termination grace longer than the configured drain and retain a finite hard termination deadline. A killed process may leave an unknown remote outcome; do not describe callback delivery as exactly once. Expired claims are recoverable and stale finalizers cannot overwrite a replacement attempt.
 
+## Investigating a failed conversation
+
+Use the conversation run identifier to correlate its recorded status with worker logs. A failed knowledge tool emits `Knowledge tool failed` with the run identifier, tool-call identifier and tool name. A failure in the surrounding execution emits `Conversation execution failed` with the same run identifier.
+
+The diagnostic contains exception types and the module, function and line where they occurred. It retains at most eight related exceptions and four frames per exception. Exception messages, local variables, source text, file paths, questions and provider credentials are excluded. The conversation keeps its existing failure or cancellation state; recording a diagnostic does not retry a tool or publish an answer. Read these logs through your deployment's restricted operations access and check the corresponding source revision before interpreting line numbers.
+
 ## Capacity and demand
 
 Keep at least one worker initially, including during periods with no interactive demand, so periodic profile and retention work continues. Scale API replicas from HTTP demand independently. Tune worker demand targets and replica limits using measured queue age, model latency, provider limits and database saturation.

@@ -14,7 +14,7 @@ from koinon.knowledge.capture_dtos import CapturedEvidence
 
 
 @pytest.mark.parametrize("outcome", ["completed", "failed", "cancelled"])
-async def test_actual_native_tool_call_persists_safe_stable_lifecycle(assistants, outcome):
+async def test_actual_native_tool_call_persists_safe_stable_lifecycle(assistants, outcome, caplog):
     service, context = assistants
     _, agent = await configured(service)
     thread = await service.create_thread("issuer|viewer", "north", {})
@@ -66,6 +66,14 @@ async def test_actual_native_tool_call_persists_safe_stable_lifecycle(assistants
     assert rows[-1]["duration_ms"] >= 0 and rows[-1]["finished_at"]
     assert "private-password" not in str(rows) and "sensitive SQL" not in str(rows)
     assert rows[-1].get("result_id") == (evidence if outcome == "completed" else None)
+    diagnostics = [record for record in caplog.records if record.message.startswith("Knowledge tool failed")]
+    assert len(diagnostics) == (1 if outcome == "failed" else 0)
+    if diagnostics:
+        assert "ValueError" in diagnostics[0].message and run.id in diagnostics[0].message
+        assert "inspect_schema" in diagnostics[0].message
+        assert "sensitive SQL" not in diagnostics[0].message
+        assert "private-password" not in diagnostics[0].message
+        assert diagnostics[0].exc_info is None
 
 
 async def test_old_attempt_cannot_append_tool_timeline(assistants):

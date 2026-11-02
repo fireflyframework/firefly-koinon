@@ -49,6 +49,7 @@ from koinon.catalog.errors import AccessDenied
 from koinon.knowledge.attachments.ports import AttachmentRef
 from koinon.knowledge.capture_dtos import CapturedEvidence
 from koinon.knowledge.evidence_capture import NativeEvidenceFailure, NativeKnowledgeEvidence, failure_capture
+from koinon.operations.failure_diagnostics import failure_metadata
 from koinon.organization_branding.service import OrganizationBrandingService
 from koinon.organization_knowledge.dtos import OrganizationKnowledgeSnapshot
 from koinon.organization_knowledge.runtime import bind_snapshot, snapshot_for_run
@@ -801,6 +802,11 @@ class AssistantExecutor:
         except asyncio.CancelledError:
             raise
         except Exception as exc:
+            logger.warning(
+                "Conversation execution failed: run_id=%s diagnostics=%s",
+                run_id,
+                json.dumps(failure_metadata(exc), separators=(",", ":")),
+            )
             code = getattr(exc, "code", None) or (
                 "RUN_TIMEOUT" if isinstance(exc, TimeoutError) else "GENERATION_FAILED"
             )
