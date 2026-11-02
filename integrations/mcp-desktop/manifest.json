@@ -4,7 +4,7 @@
   "display_name": "firefly koinon",
   "version": "26.11.10",
   "description": "Connect your desktop assistant to authorized knowledge in firefly koinon.",
-  "long_description": "Discover document and dataset evidence through your organization's firefly koinon MCP endpoint. This desktop extension forwards remote tools, resources, and prompts. Access remains governed by your personal access token and server permissions. Configure your operator's HTTPS MCP URL before connecting.",
+  "long_description": "Discover authorized knowledge through your organization's firefly koinon MCP endpoint. Use an operator-registered public OAuth client and explicit browser sign-in. OAuth credentials stay in memory for this desktop session only; reconnect after restart or expiry. Personal access tokens remain an explicit compatibility mode. Server permissions govern every operation.",
   "author": {
     "name": "Firefly Software Foundation",
     "url": "https://github.com/fireflyframework"
@@ -43,6 +43,9 @@
       ],
       "env": {
         "KOINON_MCP_URL": "${user_config.server_url}",
+        "KOINON_AUTH_MODE": "${user_config.auth_mode}",
+        "KOINON_OAUTH_CLIENT_ID": "${user_config.oauth_client_id}",
+        "KOINON_OAUTH_CALLBACK_PORT": "${user_config.oauth_callback_port}",
         "KOINON_TOKEN": "${user_config.token}"
       }
     }
@@ -73,12 +76,35 @@
       "description": "Your operator's full HTTPS MCP URL, for example https://knowledge.example.com/mcp. No credentials or query parameters.",
       "required": true
     },
+    "auth_mode": {
+      "type": "string",
+      "title": "Authentication mode",
+      "description": "Use oauth for browser sign-in (recommended), or pat for explicit personal-token compatibility. Leave the token field empty in OAuth mode.",
+      "default": "oauth",
+      "required": true
+    },
+    "oauth_client_id": {
+      "type": "string",
+      "title": "Public OAuth client ID",
+      "description": "The public client ID registered by your operator. This is not a secret. Required in OAuth mode; no automatic client registration is performed.",
+      "default": "firefly-koinon-desktop",
+      "required": false
+    },
+    "oauth_callback_port": {
+      "type": "number",
+      "title": "OAuth callback port",
+      "description": "Must match your operator's exact registered callback: http://127.0.0.1:42839/oauth/callback for the default port. Local sign-in uses this port temporarily.",
+      "default": 42839,
+      "min": 1024,
+      "max": 65535,
+      "required": false
+    },
     "token": {
       "type": "string",
-      "title": "Personal access token",
-      "description": "A koinon personal access token issued for your authorized scope. Sent only to the configured MCP endpoint.",
+      "title": "Personal access token (pat mode only)",
+      "description": "Leave empty for OAuth. In pat mode, use a scoped koinon personal access token. Sent only to the configured MCP endpoint.",
       "sensitive": true,
-      "required": true
+      "required": false
     }
   }
 }

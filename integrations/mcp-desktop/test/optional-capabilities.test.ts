@@ -24,7 +24,7 @@ for (const unauthorized of [false, true]) {
     await new Promise<void>((done) => http.listen(0, '127.0.0.1', done));
     const address = http.address();
     assert.ok(address && typeof address !== 'string');
-    const bridge = createBridge({ url: new URL(`http://127.0.0.1:${address.port}/mcp`), token: 'secret-token' }, 'data:image/png;base64,', 'data:image/png;base64,');
+    const bridge = createBridge({ mode: 'pat', url: new URL(`http://127.0.0.1:${address.port}/mcp`), token: 'secret-token' }, 'data:image/png;base64,', 'data:image/png;base64,');
     const [local, host] = InMemoryTransport.createLinkedPair();
     const client = new Client({ name: 'test-host', version: '1.0.0' });
     try {

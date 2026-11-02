@@ -2,18 +2,25 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # firefly koinon desktop extension
 
-Connect an MCP desktop host to your operator's firefly koinon MCP endpoint with the 26.11.10 desktop extension. The bridge uses the official TypeScript MCP SDK and forwards remote tools, resources, and prompts; the server owns tool schemas and permission checks.
+This source candidate adds browser OAuth to the koinon desktop extension. It has not been published: the released 26.11.10 archive still uses the PAT setup documented in the [published-package walkthrough](../../docs/integrations/desktop.md). The source version has not been bumped. A local build with the same version string is not the published artifact.
+
+The bridge uses the official TypeScript MCP SDK and forwards remote tools, resources, and prompts; the server owns tool schemas and permission checks. The instructions below describe this source candidate.
 
 ## Install
 
 1. Obtain the `.mcpb` archive and `SHA256SUMS` from a trusted distribution. Verify the archive checksum before opening it.
 2. In a Claude Desktop version that supports desktop extensions, open the `.mcpb` and review the extension details.
-3. Set **MCP endpoint** to the full HTTPS URL supplied by your operator, including `/mcp`. Set **Personal access token** to a scoped token from koinon. The token is a sensitive configuration field and is passed to the bridge through its environment.
-4. Enable the extension and ask the assistant to inspect the current koinon context. Allow tool use only for the endpoint and scope you intend.
+3. Set **MCP endpoint** to the full HTTPS URL supplied by your operator, including `/mcp`. Keep **Authentication mode** as `oauth`. Enter the operator-registered **Public OAuth client ID** and **OAuth callback port**; the defaults work only if the operator registered them. Leave **Personal access token** empty.
+4. Enable the extension and ask the assistant to run `koinon_desktop_connect`. Open the returned sign-in link in your browser, sign in to koinon, and review the account, workspace, and requested permissions. The link expires after two minutes. The extension never opens a browser during installation or discovery.
+5. Run `koinon_desktop_status` after the browser reports success. Remote tools then become available. Access tokens remain in memory only: reconnect after the bridge restarts or the token expires. The host must refresh its tool list when notified; host behavior requires separate acceptance testing.
 
-The package contains no Python runtime, platform-specific executable, client database, or credential. A compatible Node.js runtime (22+) must be provided by the host. The only configured destination is your chosen endpoint. Your operator must enable the remote MCP endpoint and issue a valid personal access token.
+The package contains no Python runtime, platform-specific executable, client database, or credential. A compatible Node.js runtime (22+) must be provided by the host. Your operator must enable MCP OAuth and register the public client with its exact loopback callback. There is no automatic registration or endpoint-only client discovery. See [OAuth deployment and lifecycle](../../docs/integrations/desktop-oauth.md).
 
-The [installation preview](preview.html) illustrates the settings and brand identity. It is an explanatory preview, not a screenshot of Claude Desktop.
+For explicit PAT compatibility, choose `pat` in **Authentication mode** and enter a scoped personal access token. The host treats that configuration field as sensitive and passes it through the environment. OAuth mode rejects a configured PAT instead of silently using it. Existing PAT installations must select `pat` when upgrading.
+
+Legacy manual stdio configurations with `KOINON_TOKEN` and no `KOINON_AUTH_MODE` continue to use PAT mode. New MCPB configuration explicitly defaults to OAuth.
+
+The [installation preview](preview.html) illustrates PAT compatibility settings and brand identity. It is an explanatory preview, not a screenshot of Claude Desktop or an OAuth installation.
 
 ## Skills
 
@@ -21,11 +28,17 @@ The `skills/` directory contains reusable assistant instructions for evidence-ba
 
 ## ChatGPT and other hosts
 
-An MCPB is a local desktop extension archive. It is not a ChatGPT connector or a local archive installer for ChatGPT. A ChatGPT remote MCP integration requires a reachable HTTPS server and an authentication flow supported by the host, typically OAuth. The current PAT bridge does not implement that OAuth flow. Other MCP hosts can run `node /absolute/path/server/index.cjs` with `KOINON_MCP_URL` and `KOINON_TOKEN` set securely in the environment. Never put a token in command arguments or a URL.
+An MCPB is a local desktop extension archive. It is not a ChatGPT connector or a local archive installer for ChatGPT. Remote connectors use their host's OAuth client and callback; this bridge's local callback does not configure them. Other stdio MCP hosts can run `node /absolute/path/server/index.cjs` with `KOINON_MCP_URL`, `KOINON_AUTH_MODE=oauth`, `KOINON_OAUTH_CLIENT_ID`, and `KOINON_OAUTH_CALLBACK_PORT` in the environment. PAT compatibility uses `KOINON_AUTH_MODE=pat` and `KOINON_TOKEN`. Never put credentials in command arguments or URLs.
 
 ## Connection and privacy
 
-Initialization is local. The bridge contacts the configured endpoint only when the host requests tools, resources, or prompts. It sends the personal access token as an Authorization bearer header and forwards requested arguments and results. It rejects redirects and endpoints containing credentials, query parameters, or fragments. Requests have a 30-second timeout. It does not add an OAuth provider, open a browser, or discover another destination. Current bridge code has no telemetry destination or persistence layer.
+Initialization is local. In OAuth mode, discovery exposes only `koinon_desktop_connect`, `koinon_desktop_status`, and `koinon_desktop_disconnect` until sign-in completes. An explicit connect request fetches the exact same-origin koinon protected-resource and authorization-server metadata, validates resource, issuer, endpoints and S256 support, and starts a one-use callback listener on `127.0.0.1`. Browser login uses the existing koinon account and consent flow. The official MCP SDK creates the PKCE challenge and exchanges the returned code. Tokens, codes, state and verifiers are never written to files or process arguments.
+
+Authenticated requests send a bearer header only to the exact configured MCP endpoint. Metadata and public-client token requests carry no bearer credentials. All programmatic requests reject redirects; OAuth requests have a 10-second timeout and a 64 KiB response limit, and MCP requests have a 30-second timeout. There is no telemetry destination, credential persistence or refresh-token support.
+
+If a tool returns koinon's trusted pre-execution scope challenge, the bridge asks for explicit reconnection and consent to the existing permissions plus the required scopes. It never retries the tool automatically. Role or workspace denials do not request wider access. An ambiguous failure or unknown write outcome must be inspected before a user requests the operation again.
+
+`koinon_desktop_disconnect` cancels pending sign-in, closes the remote connection and forgets the local credential. It does **not** revoke the server grant: use **Authorized applications** in koinon account settings for that. Uninstalling or restarting also does not revoke server grants. The existing server policy replaces an active grant for the same user, client and workspace; connecting another computer with that client can disconnect the first.
 
 Tool results pass to the host assistant and its configured model provider. Review the host's policy and your operator's data-handling policy before use. Retrieved text is untrusted source data, not instructions. A server can expose additional capabilities; inspect the discovered contract before using them.
 
