@@ -25,7 +25,7 @@ Open **Settings**, **Access**, **Invite person**. Choose a connected identity di
 
 Choose the organization or a workspace you administer, then a role and expiration. Workspace access grants access to shared knowledge in that workspace. Personal conversations, folders and memory stay private. The review shows the exact recipient and access scope, plus the email generated from the installation's real template. Inspect its HTML or plain-text view before choosing **Send invitation**.
 
-Sending queues an invitation. **Accepted by email service** means the provider accepted the message, not that it reached an inbox. **Delivered** requires delivery evidence. **Outcome unknown** means the service cannot safely decide whether a send succeeded; it is not automatically replayed. Delivery history offers a retry only when the server marks it safe.
+Sending queues an invitation. **Accepted by email service** means the provider accepted the message, not that it reached an inbox. **Delivered** requires delivery evidence; a provider report of handoff to the recipient's mail server still does not confirm placement in that person's inbox. **Outcome unknown** means the service cannot safely decide whether a send succeeded; it is not automatically replayed. Delivery history offers a retry only when the server marks it safe.
 
 Under **Email invitations**, filter by status, revoke a pending invitation or resend when the server permits it. Grant changes require revoking the old invitation and creating a new one. Reopening an already accepted invitation cannot restore a membership that an administrator later removed.
 
@@ -53,9 +53,13 @@ Choose **Use organization or installation language** to inherit the configured l
 
 **Preview summary email** renders the actual HTML and plain-text message from your draft preferences and a past reporting window. It neither saves preferences nor sends a message. The reporting picker uses explicit UTC date boundaries, includes the start and excludes the end, and groups daily observations in your profile time zone. It accepts at most 366 days and never forecasts future usage.
 
+The current email preview shows **personal activity** and requires a verified directory-backed recipient. It does not yet use an operator-approved administrator contact or preview the administrator-summary audience. Delivery through a supported administrator contact remains a separate capability. **Preview next summary** checks the schedule without establishing email delivery. If only the email preview is unavailable, do not change identity authority or enable an unwanted directory integration to bypass it.
+
 ## Review knowledge and MCP activity
 
-Open the existing **Activity** view. Choose a past reporting window and **View summary** to see your own knowledge created, updated and consulted, current authorized projects, and recorded MCP requests and tool calls. The processing job list remains below the summary.
+Open **My activity** in the main navigation. Choose a past reporting window and **View summary** to see your own knowledge created, updated and consulted, current authorized projects, and recorded MCP requests and tool calls. This personal view does not load organization-wide job history.
+
+For administrative activity, an organization administrator opens the avatar menu and chooses **Activity**. With the required current permissions, that view offers **Summary audience** and the separate processing job history. Selecting **Administrator activity** requests the organization summary; it does not change the scope of **My activity**.
 
 Coverage is explicit. Missing historical observations and unavailable model usage remain unavailable. Requests are distinct from tool calls, latency covers tool execution, and external clients' token consumption is not observed. Recorded cost retains its supplied currency and precision. Current organization administrators with the required audit and activity permissions can choose the administrator audience; the server checks current authority again and never accepts an arbitrary subject from this screen.
 
@@ -68,3 +72,22 @@ Under **Administrator summaries**, independently enable daily, weekly and monthl
 **Delivery history** supports server-side status, event and date filters with pagination. Open a record for its bounded status explanation and attempt timestamps. Current scope and membership restrictions still apply to administrator API tokens.
 
 The operator sets `koinon.public_url` to the canonical installation origin; invitation URLs never come from a request's Host header. Keep the default native acceptance route unless a same-origin custom client route has actually been deployed. Serve all emitted frontend chunks so optional views remain reachable after a rollout.
+
+## Investigate a message that did not arrive
+
+Start in **Settings**, **Communications**, **Delivery history**. Filter the event type and time window, open the existing record, and retain its delivery reference and attempt timestamps. Do not start with another send: first determine which boundary has evidence.
+
+| Recorded observation | Meaning | What to inspect next |
+| --- | --- | --- |
+| **Queued** | A durable event is waiting for preparation or submission. | Check the complete worker process and current recipient eligibility. API readiness alone does not consume the outbox. |
+| **Accepted by email service** (`sent`) | The configured transport accepted submission. | Inspect provider delivery evidence for the same operation; do not assume an inbox result. |
+| **Delivered** or an equivalent provider delivery event | The provider reports its delivery observation, which may be handoff to a recipient protection or mail server. | Confirm actual receipt separately. A recipient mail administrator may need to inspect routing, quarantine or final-folder disposition. |
+| **Outcome unknown** | Submission may have occurred, but its outcome cannot be decided safely. | Preserve the original event and provider reference. An unknown operation is not permission to resend. |
+| **Deferred**, **Failed** or **Suppressed** | Preparation or delivery could not proceed, or the channel was unavailable. | Read the bounded explanation and correct the named prerequisite. A retry is available only when the server explicitly offers it for that workflow. |
+| **Cancelled** | The event no longer qualified for submission. | Review its current identity, invitation or access conditions; do not reset the old record. |
+
+**Delivery history** does not offer a general resend control for welcome, security or summary emails. An eligible invitation can expose its supported retry/resend action after fresh checks. Changing a sender, branding, template or deployment release does not replay unknown messages or create another automatic welcome.
+
+If the provider reports delivery but the person cannot find the email, verify the actual sender, localized subject and send time. A Spanish installation may generate a Spanish subject even when an earlier test used English. Search the intended mailbox's folders using that subject. The deployment operator can correlate the existing delivery reference with the provider's operation and Internet Message-ID for a recipient-side trace. A successful send API response, mail-server handoff and confirmed inbox receipt belong as separate entries in the acceptance record.
+
+When a new independent test is needed, an authorized deployment operator can use the [existing administrator-contact diagnostic](../reference/operator-delivery-contacts.md#queue-one-new-diagnostic). It resolves a current approved contact and queues a new event through the normal worker. It is not a replay of a welcome, an invitation, or an unknown send, and there is no arbitrary-recipient test-send field in organization Settings.

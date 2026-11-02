@@ -26,8 +26,8 @@ Keep personal conversation memory and private attachments separate from shared k
 ## Import and maintain knowledge
 
 1. Confirm the destination space, project, folder and current write authority. Choose **document** for passage retrieval or **dataset** for table processing. Review [formats and effective limits](intake-formats.md) before selecting files.
-2. Use **Add files**, inspect the intake review and submit once. For durable intake, retain the batch identity and its current state. Acceptance of an upload or batch does not mean processing or indexing has finished.
-3. Inspect the resource's processing and availability. If the original was stored but its outcome could not be confirmed, open **Retained uploads** and review that same batch. Signing in or reopening the panel does not submit it again. Follow [bulk intake](bulk-intake.md) and [same-original recovery](../operations/durable-bulk.md) before deciding on an offered action.
+2. Use **Add knowledge**, inspect the intake review and submit once. For durable intake, retain the batch identity and its current state. Acceptance of an upload or batch does not mean processing or indexing has finished.
+3. Inspect the resource's processing and availability. If the original was stored but its outcome could not be confirmed, open **Library**, **Uploads** and inspect that same batch. Signing in or reopening the panel does not submit it again. Follow [bulk intake](bulk-intake.md) and [same-original recovery](../operations/durable-bulk.md) before deciding on an offered action.
 4. Verify the original version, extracted parts or tables, and an independently known answer. Test a reader outside the source's space as well: the excluded source must not appear in their results.
 5. Make a supported metadata edit, move, archive or versioned replacement using the current revision. Reload after a conflict and review the new state. Protected installation roots cannot be moved or archived. A folder move does not grant a new person access. See [Library maintenance](library.md#maintain-and-inspect) and [source history](lineage.md).
 6. After replacing content, ask again. Check that the new answer uses the replacement while the older answer retains its immutable evidence. Preserve failed or partial intake records; an uncertain original is not a reason to upload it again.
@@ -39,7 +39,7 @@ This is controlled example data from the [recorded screenshot provenance](../ass
 
 ## Administer an organization
 
-1. Confirm current organization-wide administrator membership. Open your avatar menu, **Settings**, then the intended organization. A workspace administrator does not automatically receive organization-wide Settings access. Use [the setting map](administration.md#find-a-setting) when locating a control.
+1. Confirm current organization-wide administrator membership. Use the current organization; if several organizations are available, choose the intended one before opening your avatar menu and **Settings**. A workspace administrator does not automatically receive organization-wide Settings access. Use [the setting map](administration.md#find-a-setting) when locating a control.
 2. Review **Access**, people and identity separately. Names, departments and email addresses do not grant membership. Use the supported invitation or membership workflow; do not change an identity-provider subject to repair access. [People and organization](people-and-organization.md) explains these boundaries.
 3. For a new organization, follow [guided configuration](knowledge-setup.md). For an existing one, use [the configuration lifecycle](configuration-lifecycle.md): capture the current provider, role assignments and active targets before changing them.
 4. Verify the organization's chat default and a small source-backed answer. Creating an agent alone does not select it for everyone. Check a permitted reader and a denied source, then inspect source and execution evidence.
