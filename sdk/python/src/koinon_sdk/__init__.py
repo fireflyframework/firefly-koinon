@@ -319,6 +319,8 @@ from koinon_sdk.models import (
     AgentInput,
     AgentUsage,
     AnswerPolicy,
+    AnswerPublication,
+    AnswerSelectionValidation,
     AttachmentEvidence,
     AttachmentEvidenceItem,
     AuditEvent,
@@ -460,6 +462,7 @@ from koinon_sdk.platform_health import (
     SystemInformation,
     SystemLimit,
 )
+from koinon_sdk.product_help import ProductHelpContext
 from koinon_sdk.proposals import (
     CatalogProposal,
     CatalogProposalBefore,
@@ -488,6 +491,9 @@ from koinon_sdk.streaming import (
 )
 
 __all__ = [
+    "AnswerPublication",
+    "AnswerSelectionValidation",
+    "ProductHelpContext",
     "CorporatePresentationSummary",
     "CorporateProfileFieldCapability",
     "CorporateProfileFieldObservation",
@@ -941,7 +947,6 @@ __all__ += [
 ]
 
 __all__ += ["CatalogPrecondition"]
-
 
 
 __all__ += [

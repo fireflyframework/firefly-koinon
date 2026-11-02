@@ -3,7 +3,7 @@
 
 # Wire models
 
-The canonical schema contains 440 definitions and 429 named model aliases. Supporting definitions are included so every schema reference can be followed. Language-specific generated names can differ from wire names; consult the SDK imports in the workflow guides.
+The canonical schema contains 443 definitions and 431 named model aliases. Supporting definitions are included so every schema reference can be followed. Language-specific generated names can differ from wire names; consult the SDK imports in the workflow guides.
 
 Each page lists field presence, nullability, defaults and validation constraints. The downloadable [complete schema](../sdk-schemas.json) remains the machine-readable contract.
 
@@ -24,7 +24,9 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`AgenticCapability`](agenticcapability.md)
 - [`AnswerAudit`](answeraudit.md)
 - [`AnswerPolicy`](answerpolicy.md)
+- [`AnswerPublication`](answerpublication.md)
 - [`AnswerRelease`](answerrelease.md)
+- [`AnswerSelectionValidation`](answerselectionvalidation.md)
 - [`AssetAvailability`](assetavailability.md)
 - [`AttachmentCapabilities`](attachmentcapabilities.md)
 - [`AttachmentEvidence`](attachmentevidence.md)
@@ -408,6 +410,7 @@ Each page lists field presence, nullability, defaults and validation constraints
 - [`ProcessingActivity`](processingactivity.md)
 - [`ProcessingRequest`](processingrequest.md)
 - [`ProcessingResponse`](processingresponse.md)
+- [`ProductHelpContext`](producthelpcontext.md)
 - [`ProfileUpdate`](profileupdate.md)
 - [`ProjectActivity`](projectactivity.md)
 - [`PromotedCatalogEntry`](promotedcatalogentry.md)

@@ -35,6 +35,7 @@ SOURCES = {
     "curated": "backend/src/koinon/knowledge/curated/dtos.py",
     "provenance": "backend/src/koinon/knowledge/provenance/dtos.py",
     "answer_release": "backend/src/koinon/answers/receipts.py",
+    "product_help": "backend/src/koinon/answers/help_dtos.py",
     "answer_audit": "backend/src/koinon/assistants/audit_dtos.py",
     "indexes": "backend/src/koinon/knowledge/indexes/dtos.py",
     "identity": "backend/src/koinon/corporate_identity/dtos.py",
@@ -59,6 +60,10 @@ def render(source):
             elif isinstance(node, ast.ClassDef) and node.name == "Presentation":
                 node.name = "EvidencePresentation"
     declarations = []
+    if source.name == "help_dtos.py":
+        tool_tree = ast.parse((ROOT / "backend/src/koinon/assistants/tool_activity.py").read_text())
+        declarations.extend(node for node in tool_tree.body if isinstance(node, ast.Assign)
+                            and any(isinstance(target, ast.Name) and target.id == "ToolName" for target in node.targets))
     scope_dependency = None
     if source.name == "audit_dtos.py":
         scope_dependency = ROOT / "backend/src/koinon/evidence/rlm_scope.py"
@@ -219,6 +224,7 @@ def render(source):
     available["koinon_sdk.organization_chat"] = ["OrganizationMemoryPolicy"]
     available["koinon_sdk.memory"] = ["MemoryReceipt"]
     available["koinon_sdk.answer_release"] = ["AnswerRelease"]
+    available["koinon_sdk.product_help"] = ["ProductHelpContext"]
     available["koinon_sdk.models"] = ["ClarificationFrame", "UsageSummary"]
     available["koinon_sdk.corporate_profiles"] = [
         "CorporatePresentationSummary", "CorporateProfileFieldCapability", "CorporateProfileSyncPolicy"

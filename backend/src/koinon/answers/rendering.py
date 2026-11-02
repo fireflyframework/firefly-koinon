@@ -10,6 +10,14 @@ from koinon.evidence.dtos import SourceReference
 from koinon.knowledge.answer_evidence import AnswerFact
 
 
+class AnswerSelectionError(ValueError):
+    """A safe selection code; source content never belongs in retry diagnostics."""
+
+    def __init__(self, code: str, *, repairable: bool = False):
+        self.code, self.repairable = code, repairable
+        super().__init__(code)
+
+
 @dataclass(frozen=True, slots=True)
 class RenderedAnswer:
     text: str
@@ -25,6 +33,8 @@ def render_answer(
     *,
     private_fact_ids: frozenset[str] = frozenset(),
 ) -> RenderedAnswer:
+    if plan.outcome == "product_help":
+        raise AnswerSelectionError("PRODUCT_CONTEXT_REQUIRED")
     spanish = language.lower().startswith("es")
     if plan.outcome == "insufficient_evidence":
         text = (
@@ -38,7 +48,7 @@ def render_answer(
     pool = {}
     for fact in facts:
         if fact.id in pool and pool[fact.id] != fact:
-            raise ValueError("A factual identifier cannot refer to different evidence")
+            raise AnswerSelectionError("CONFLICTING_FACT_ID")
         pool[fact.id] = fact
     selected = []
     for choice in plan.quotes:
@@ -50,13 +60,13 @@ def render_answer(
             or not choice.quote.strip()
             or choice.quote not in fact.text
         ):
-            raise ValueError("A selected quotation must occur exactly in its recorded source")
+            raise AnswerSelectionError("QUOTE_NOT_RECORDED", repairable=True)
         if fact.id not in private_fact_ids and not any(
             source.used_revision and source.quote and fact.text in source.quote for source in fact.source_refs
         ):
-            raise ValueError("A source quotation needs an immutable source reference")
+            raise AnswerSelectionError("QUOTE_REFERENCE_UNVERIFIED")
         if fact.id in private_fact_ids and not re.fullmatch(r"[a-f0-9]{64}", fact.lineage_sha256):
-            raise ValueError("A private quotation needs its verified immutable input binding")
+            raise AnswerSelectionError("PRIVATE_REFERENCE_UNVERIFIED")
         selected.append((fact, choice.quote))
     for choice in plan.values:
         fact = pool.get(choice.fact_id)
@@ -66,7 +76,9 @@ def render_answer(
             or not fact.source_refs
             or not re.fullmatch(r"[a-f0-9]{64}", fact.lineage_sha256)
         ):
-            raise ValueError("A selected value needs verified native result and source lineage")
+            raise AnswerSelectionError(
+                "VALUE_LINEAGE_UNVERIFIED", repairable=fact is None or fact.kind == "quote"
+            )
         value = (
             ("Sin valor registrado" if spanish else "No value recorded")
             if fact.value is None
@@ -97,7 +109,7 @@ def render_answer(
             }
     text = "\n\n".join(paragraphs)
     if len(text) > 256000:
-        raise ValueError("The selected factual answer exceeds the publication bound")
+        raise AnswerSelectionError("ANSWER_TOO_LARGE")
     return RenderedAnswer(
         text, tuple(citations.values()), tuple(dict.fromkeys(identifiers)), tuple(sources.values())
     )

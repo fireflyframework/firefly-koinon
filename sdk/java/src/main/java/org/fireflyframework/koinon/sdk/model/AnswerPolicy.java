@@ -9,7 +9,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public record AnswerPolicy(
     @JsonProperty("outcome") AnswerPolicyOutcome outcome,
     @JsonProperty("code") String code,
-    @JsonProperty("reason") String reason
+    @JsonProperty("reason") String reason,
+    @JsonProperty("validation") AnswerSelectionValidation validation,
+    @JsonProperty("publication") AnswerPublication publication
 ) {
+    public AnswerPolicy(AnswerPolicyOutcome outcome, String code, String reason){this(outcome,code,reason,null,null);}
 
 }

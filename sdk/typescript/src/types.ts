@@ -79,16 +79,18 @@ export interface FolderFilter {root_only?:boolean;q?:string;page?:number;page_si
 export interface ThreadFilter {q?:string;page?:number;page_size?:number;folder_id?:string;unfiled?:boolean;project_id?:string;workspace_id?:string;status?:'active'|'archived'|'all';sort?:'title'|'created_at'|'updated_at';order?:'asc'|'desc';[key:string]:string|number|boolean|undefined}
 export type MessageStatus='queued'|'running'|'completed'|'failed'|'cancelled';
 export interface OpenUIArtifact {id:string;kind:'openui';language:string;complete:boolean;run_id:string}
-export interface AnswerPolicy {outcome:'grounded'|'refused'|'review_required';code?:string|null;reason?:string|null}
+export interface AnswerSelectionValidation {repairs:number;errors:string[]}
+export interface AnswerPublication {format:'verified-unicode-v1';chunk_size:128;chunk_count:number;text_sha256:string}
+export interface AnswerPolicy {outcome:'grounded'|'refused'|'review_required'|'product_help';code?:string|null;reason?:string|null;validation?:AnswerSelectionValidation|null;publication?:AnswerPublication|null}
 export interface ChatMessage {tool_activities?:ToolActivity[];tool_activity_count?:number;tool_activity_has_more?:boolean;attachments?:AttachmentHistorySummary[];answer_policy?:AnswerPolicy;presentation?:Presentation;id:string;run_id?:string;event_cursor?:string;role:'user'|'assistant';text:string;status:MessageStatus;citations:Citation[];artifacts:OpenUIArtifact[];created_at:string}
 export interface RunInput {attachment_ids?:string[];agent_id:string;message:string;scope?:KnowledgeScope;client_request_id:string}
 export interface ChatRun {event_cursor?:string;run_id:string;message_id:string;status?:MessageStatus}
-export type ChatEventData = {proposal_update?:ProposalUpdate;tool_activity?:ToolActivity;answer_policy?:AnswerPolicy;presentation?:Presentation;text?:string;stage?:string;message?:string;status?:MessageStatus;code?:string|null;message_id?:string;artifact?:OpenUIArtifact;citation?:Citation};
+export type ChatEventData = {chunk_index?:number;text_offset?:number;chunk_count?:number;proposal_update?:ProposalUpdate;tool_activity?:ToolActivity;answer_policy?:AnswerPolicy;presentation?:Presentation;text?:string;stage?:string;message?:string;status?:MessageStatus;code?:string|null;message_id?:string;artifact?:OpenUIArtifact;citation?:Citation};
 export type EvidenceResult = {id:string;run_id:string}&({kind:'search';data:SearchResponse}|{kind:'query';data:QueryResponse}|{kind:'schema';data:DatasetSchema}|{kind:'lineage';data:Lineage}|{kind:'attachment';data:AttachmentEvidence}|{kind:'proposal';data:CatalogProposal});
 export interface PublicActor {subject:string;display_name:string;avatar_data_url:string|null;avatar_version:string|null}
 export interface UserProfile {subject:string;display_name:string;locale:string;time_zone:string;response_language:string;avatar_url:string|null;avatar_version:string|null}
 export type ProfileInput=Partial<Pick<UserProfile,'display_name'|'locale'|'time_zone'|'response_language'>>;
-export interface Presentation {locale:string;time_zone:string;response_language:string}
+export interface Presentation {locale:string;time_zone:string;response_language:string;effective_language?:'en'|'es'|null}
 export interface PersonalToken {id:string;name:string;tenant_id:string;prefix:string;scopes:string[];workspace_ids:string[]|null;asset_ids:string[]|null;expires_at:string;revoked_at:string|null;last_used_at:string|null;created_at:string}
 export interface PersonalTokenInput {name:string;tenant_id:string;scopes:string[];expires_at:string;workspace_ids?:string[]|null;asset_ids?:string[]|null}
 export interface CreatedPersonalToken extends PersonalToken {token:string}

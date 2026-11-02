@@ -196,6 +196,24 @@ class ChatEventRepository(Repository[ChatEvent, str]):
             result[row.run_id]["total"] = row.total
         return result
 
+    async def publication_range(self, run_id: str, sequence: int, count: int):
+        if not 1 <= count <= 2000:
+            raise ValueError("Invalid sealed publication range")
+        return list(
+            (
+                await self._require_session().scalars(
+                    select(ChatEvent)
+                    .where(
+                        ChatEvent.run_id == run_id,
+                        ChatEvent.sequence >= sequence,
+                        ChatEvent.sequence < sequence + count,
+                    )
+                    .order_by(ChatEvent.sequence)
+                    .limit(count)
+                )
+            ).all()
+        )
+
     async def find_after(self, run_id: str, sequence: int):
         return list(
             (

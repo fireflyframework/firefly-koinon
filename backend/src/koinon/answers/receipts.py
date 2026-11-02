@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from hashlib import sha256
 from typing import Literal
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, ValidationError
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from koinon.assistants.entities import ChatMessage, ToolResult
 from koinon.evidence.dtos import SourceReference
@@ -22,13 +22,13 @@ class ResultPin(BaseModel):
 class AnswerRelease(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     version: Literal[1] = 1
-    policy_version: Literal["knowledge-only-v1"] = "knowledge-only-v1"
+    policy_version: Literal["knowledge-only-v1", "knowledge-only-v2"] = "knowledge-only-v1"
     run_id: str = Field(min_length=1, max_length=64)
     message_id: str = Field(min_length=1, max_length=64)
     tenant_id: str = Field(min_length=1, max_length=64)
     generation_id: str | None = None
     publication_sequence: int = Field(ge=1)
-    outcome: Literal["grounded", "refused", "review_required"]
+    outcome: Literal["grounded", "refused", "review_required", "product_help"]
     text_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     citations_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     artifacts_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
@@ -37,6 +37,12 @@ class AnswerRelease(BaseModel):
     result_pins: tuple[ResultPin, ...] = Field(default=(), max_length=100)
     source_refs: tuple[SourceReference, ...] = Field(default=(), max_length=500)
     created_at: AwareDatetime
+
+    @model_validator(mode="after")
+    def product_policy(self):
+        if (self.outcome == "product_help") != (self.policy_version == "knowledge-only-v2"):
+            raise ValueError("Product help uses its distinct release policy")
+        return self
 
 
 def digest(value: object) -> str:
@@ -84,6 +90,20 @@ def verified_release(message: ChatMessage, rows: Sequence[ToolResult]) -> Answer
                 for pin in receipt.result_pins
             ):
                 continue
+            if receipt.outcome == "product_help":
+                from koinon.answers.help_dtos import ProductHelpContext
+
+                if (
+                    current is None
+                    or receipt.fact_ids
+                    or receipt.source_refs
+                    or len(receipt.result_pins) != 1
+                ):
+                    continue
+                trusted = index[receipt.result_pins[0].id]
+                if trusted.kind != "product_context" or trusted.payload.get("generation_id") != current:
+                    continue
+                ProductHelpContext.model_validate(trusted.payload.get("context"))
             return receipt
         except (ValidationError, ValueError, TypeError, KeyError):
             continue
@@ -99,6 +119,6 @@ def legacy_notice(language: str) -> str:
 
 
 def message_language(message: ChatMessage) -> str:
-    preferences = message.presentation or {}
-    language = preferences.get("response_language", "auto")
-    return preferences.get("locale", "en-US") if language == "auto" else language
+    from koinon.answers.language import effective_language
+
+    return effective_language(message.presentation or {})

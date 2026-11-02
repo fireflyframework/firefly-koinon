@@ -616,7 +616,7 @@ it('projects tool lifecycle once per invocation and ignores older replayed trans
 });
 
 it('discards a delayed thread creation when a new folder draft replaces it', async () => {
-  let registered=false;
+  let registered = false;
   let release: () => void = () => {
     throw Error('Deferred response has not been registered');
   };
@@ -624,7 +624,7 @@ it('discards a delayed thread creation when a new folder draft replaces it', asy
     request: async <T>(method: HttpMethod, path: string) => {
       if (path.endsWith('/chat/threads') && method === 'POST')
         return await new Promise<T>((resolve) => {
-          registered=true;
+          registered = true;
           release = () => resolve({ id: 'old-thread', scope: {}, revision: 1 } as T);
         });
       return (
@@ -650,7 +650,7 @@ it('discards a delayed thread creation when a new folder draft replaces it', asy
   const assistant = TestBed.inject(KoinonAssistant);
   await assistant.initialize();
   const pending = assistant.ensureThread();
-  await vi.waitFor(()=>expect(registered).toBe(true));
+  await vi.waitFor(() => expect(registered).toBe(true));
   expect(assistant.pending()).toBe(true);
   assistant.newConversation({
     id: 'new-folder',
@@ -866,3 +866,128 @@ it('finds the configured organization agent beyond the first authorized agent pa
   expect(assistant.canUseAgent()).toBe(true);
   expect(reads).toEqual([{ workspace_id: 'workspace' }, { workspace_id: 'workspace', page: 2 }]);
 });
+
+for (const malformed of [false, true])
+  it(`reconciles fragmented real SSE with hydrated history; malformed=${malformed}`, async () => {
+    const { FetchTransport } = await import('@fireflyframework/koinon-sdk');
+    const first = 'Árbol 🧭 ' + 'x'.repeat(120),
+      second = 'Segunda parte verificada.';
+    const full = first + second;
+    let submitted = false,
+      completed = false,
+      streams = 0;
+    const cursors: (string | null)[] = [];
+    const policy = {
+      outcome: 'grounded' as const,
+      publication: {
+        format: 'verified-unicode-v1' as const,
+        chunk_size: 128 as const,
+        chunk_count: 2,
+        text_sha256: 'a'.repeat(64),
+      },
+    };
+    const frame = (id: number, type: string, data: object) =>
+      `id: ${id}\nevent: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
+    const parser = new FetchTransport({
+      baseUrl: 'https://controlled.invalid',
+      fetch: async (_url, options) => {
+        cursors.push(new Headers(options?.headers).get('Last-Event-ID'));
+        ++streams;
+        const body =
+          streams === 1
+            ? frame(1, 'message_metadata', { answer_policy: policy }) +
+              frame(2, 'message_delta', {
+                text: first,
+                chunk_index: 0,
+                chunk_count: 2,
+                text_offset: 0,
+              })
+            : frame(2, 'message_delta', {
+                text: first,
+                chunk_index: 0,
+                chunk_count: 2,
+                text_offset: 0,
+              }) +
+              frame(3, 'message_delta', {
+                text: second,
+                chunk_index: 1,
+                chunk_count: 2,
+                text_offset: first.length + (malformed ? 1 : 0),
+              }) +
+              frame(4, 'completed', { status: 'completed' });
+        const bytes = new TextEncoder().encode(body),
+          attempt = streams;
+        let offset = 0;
+        return new Response(
+          new ReadableStream<Uint8Array>({
+            pull(controller) {
+              if (offset < bytes.length) {
+                controller.enqueue(bytes.slice(offset, offset + 3));
+                offset += 3;
+                return;
+              }
+              if (attempt === 1) {
+                controller.error(new TypeError('Controlled disconnect'));
+                return;
+              }
+              completed = true;
+              controller.close();
+            },
+          }),
+          { headers: { 'Content-Type': 'text/event-stream' } },
+        );
+      },
+    });
+    const transport: KoinonTransport = {
+      request: async <T>(_method: HttpMethod, path: string) => {
+        const value = path.endsWith('/chat/settings')
+          ? defaultChatSettings(path)
+          : path.endsWith('/agents')
+            ? { items: [{ id: 'agent', name: 'Guide', status: 'ready' }] }
+            : path.endsWith('/chat/threads')
+              ? { items: [{ id: 'thread', title: 'Research', scope: {} }] }
+              : path.endsWith('/runs')
+                ? ((submitted = true), { run_id: 'run', message_id: 'answer', event_cursor: '0' })
+                : path.endsWith('/messages')
+                  ? {
+                      items: submitted
+                        ? [
+                            {
+                              ...message('answer', full),
+                              event_cursor: '2',
+                              answer_policy: policy,
+                              status: completed ? 'completed' : 'running',
+                            },
+                          ]
+                        : [],
+                    }
+                  : {};
+        return value as T;
+      },
+      stream: async function* <T>(method: HttpMethod, path: string, options?: RequestOptions) {
+        for await (const event of parser.stream<T>(method, path, options)) {
+          yield event;
+          if (event.id === '3' && !malformed) expect(assistant.messages()[0].text).toBe(full);
+        }
+      },
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        KoinonFacade,
+        KoinonAssistant,
+        ...provideKoinonClient(new KoinonClient({ transport }), transport),
+      ],
+    });
+    TestBed.inject(KoinonFacade).tenantId.set('tenant');
+    const assistant = TestBed.inject(KoinonAssistant);
+    await assistant.initialize();
+    await assistant.send('Show verified evidence');
+    expect(streams).toBe(2);
+    expect(cursors).toEqual(['2', '2']);
+    expect(assistant.messages()[0].text).toBe(full);
+    expect(assistant.error()).toBe(
+      malformed
+        ? 'The verified answer stream could not be reconciled. Reopen the conversation.'
+        : '',
+    );
+  });

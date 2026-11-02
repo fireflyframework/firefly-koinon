@@ -167,8 +167,20 @@ class AnswerAudits:
         from koinon.answers.receipts import verified_release
 
         message = await self.assistants.message_repository.find_by_id(run.message_id)
+        release = verified_release(message, rows)
+        product_context = None
+        if release is not None and release.outcome == "product_help":
+            from koinon.answers.help_dtos import ProductHelpContext
+
+            pins = {pin.id for pin in release.result_pins}
+            product_context = next(
+                ProductHelpContext.model_validate(row.payload["context"])
+                for row in rows
+                if row.id in pins and row.kind == "product_context"
+            )
         return AnswerAudit(
-            output_release=verified_release(message, rows),
+            output_release=release,
+            product_context=product_context,
             run_id=run.id,
             memory=memory,
             knowledge_settings_snapshot=snapshot_for_run(run),

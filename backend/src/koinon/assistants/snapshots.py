@@ -143,6 +143,8 @@ class ConversationSnapshots(ConversationSnapshotPort, ConversationOutputPort):
 
         references, result_ids, complete = {}, [], True
         release = verified_release(message, await self.assistants.active_results(run))
+        if release is not None and release.outcome == "product_help":
+            return (), tuple(pin.id for pin in release.result_pins), True
         selected_ids = {pin.id for pin in release.result_pins} if release else None
         selected_sources = {source.id for source in release.source_refs} if release else None
         identifiers = tuple(
@@ -289,6 +291,13 @@ class ConversationSnapshots(ConversationSnapshotPort, ConversationOutputPort):
                 selections.setdefault(run.id, set()).update(results)
             complete = complete and qualified
             private = private_origin is not None and message.created_at >= private_origin
+            presentation = {
+                key: value
+                for key, value in (message.presentation or {}).items()
+                if key in {"locale", "time_zone", "response_language"}
+            }
+            if (message.presentation or {}).get("effective_language") in {"en", "es"}:
+                presentation["response_language"] = message.presentation["effective_language"]
             material = {
                 "id": message.id,
                 "role": message.role,
@@ -298,16 +307,14 @@ class ConversationSnapshots(ConversationSnapshotPort, ConversationOutputPort):
                 "source_ids": tuple(value.id for value in refs),
                 "result_ids": results,
                 "created_at": message.created_at.isoformat(),
-                "presentation": message.presentation or None,
+                "presentation": presentation or None,
             }
             messages.append(
                 ConversationMessage(
                     **{
                         **material,
                         "created_at": message.created_at,
-                        "presentation": Presentation.model_validate(message.presentation)
-                        if message.presentation
-                        else None,
+                        "presentation": Presentation.model_validate(presentation) if presentation else None,
                     },
                     revision=digest(material),
                 )

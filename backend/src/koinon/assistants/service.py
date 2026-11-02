@@ -361,6 +361,24 @@ class AssistantService:
 
         message = await self.message_repository.find_by_id(run.message_id)
         release = verified_release(message, await self.active_results(run))
+        from koinon.answers.publication import verified_fragments
+
+        chunks = verified_fragments(message.text, message.answer_policy) if release else None
+        publication_valid = True
+        publication_end = release.publication_sequence if release else 0
+        if release and "publication" in message.answer_policy:
+            publication_valid = chunks is not None
+            if chunks is not None:
+                stored = await self.events.publication_range(
+                    run.id, release.publication_sequence, len(chunks)
+                )
+                publication_valid = len(stored) == len(chunks) and all(
+                    event.sequence == release.publication_sequence + index
+                    and event.type == "message_delta"
+                    and event.data == chunk
+                    for index, (event, chunk) in enumerate(zip(stored, chunks, strict=True))
+                )
+                publication_end += len(chunks) - 1
         result = []
         legacy_shown = False
         for event in sorted(rows, key=lambda event: event.sequence):
@@ -374,7 +392,15 @@ class AssistantService:
                     data = {"text": legacy_notice(message_language(message))}
                     legacy_shown = True
                 elif event.type == "message_delta":
-                    if event.sequence != release.publication_sequence or data != {"text": message.text}:
+                    if chunks is not None:
+                        index = event.sequence - release.publication_sequence
+                        if not publication_valid or not 0 <= index < len(chunks) or data != chunks[index]:
+                            continue
+                    elif (
+                        not publication_valid
+                        or event.sequence != release.publication_sequence
+                        or data != {"text": message.text}
+                    ):
                         continue
                 elif event.type == "message_metadata":
                     if event.sequence != release.publication_sequence - 1 or data != {
@@ -383,13 +409,15 @@ class AssistantService:
                         continue
                 elif event.type == "citation":
                     if (
-                        event.sequence <= release.publication_sequence
+                        not publication_valid
+                        or event.sequence <= publication_end
                         or data.get("citation") not in message.citations
                     ):
                         continue
                 elif event.type == "openui_delta":
                     if (
-                        event.sequence <= release.publication_sequence
+                        not publication_valid
+                        or event.sequence <= publication_end
                         or data.get("artifact") not in message.artifacts
                     ):
                         continue

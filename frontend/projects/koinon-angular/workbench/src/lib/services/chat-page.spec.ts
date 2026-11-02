@@ -241,38 +241,151 @@ it('preserves the setup output for authorized embedded hosts', async () => {
 it('offers a reviewed knowledge action for one completed assistant reply to an authorized author', async () => {
   const { fixture, assistant } = await mount([agent('ready')]);
   const facade = TestBed.inject(KoinonFacade);
-  facade.context.update((context) => context && ({
-    ...context,
-    tenants: context.tenants.map((tenant) => ({
-      ...tenant,
-      permissions: ['chat:use', 'catalog:read', 'catalog:write', 'ingest:write'],
-    })),
-  }));
+  facade.context.update(
+    (context) =>
+      context && {
+        ...context,
+        tenants: context.tenants.map((tenant) => ({
+          ...tenant,
+          permissions: ['chat:use', 'catalog:read', 'catalog:write', 'ingest:write'],
+        })),
+      },
+  );
   await fixture.whenStable();
   assistant.threadId.set('selected-thread');
-  assistant.messages.set([{
-    id: 'selected-answer', role: 'assistant', text: 'The reviewed threshold is 47.',
-    status: 'completed', citations: [], artifacts: [], created_at: '2026-10-31T00:00:00Z',
-  }]);
+  assistant.messages.set([
+    {
+      id: 'selected-answer',
+      role: 'assistant',
+      text: 'The reviewed threshold is 47.',
+      status: 'completed',
+      citations: [],
+      artifacts: [],
+      created_at: '2026-10-31T00:00:00Z',
+    },
+  ]);
   fixture.detectChanges();
-  expect([...fixture.nativeElement.querySelectorAll('button')].some((button) =>
-    (button as HTMLButtonElement).textContent?.trim() === 'Save as knowledge',
-  )).toBe(true);
+  expect(
+    [...fixture.nativeElement.querySelectorAll('button')].some(
+      (button) => (button as HTMLButtonElement).textContent?.trim() === 'Save as knowledge',
+    ),
+  ).toBe(true);
 });
 
 it('offers curation to a workspace-scoped author in the active chat without tenant write permissions', async () => {
   const { fixture, assistant } = await mount([agent('ready')]);
   const facade = TestBed.inject(KoinonFacade);
-  facade.context.update((context) => context && ({
-    ...context,
-    tenants: context.tenants.map((tenant) => ({ ...tenant, permissions: ['chat:use', 'catalog:read'] })),
-    workspaces: [{ id: 'w', tenant_id: 'tenant', kind: 'workspace', parent_id: null, workspace_id: 'w', project_id: null, name: 'Owned space', status: 'ready', description: '', metadata: {}, created_at: '2026-10-31T00:00:00Z' }],
-    workspace_permissions: { w: ['chat:use', 'catalog:read', 'catalog:write', 'ingest:write'] },
-  }));
+  facade.context.update(
+    (context) =>
+      context && {
+        ...context,
+        tenants: context.tenants.map((tenant) => ({
+          ...tenant,
+          permissions: ['chat:use', 'catalog:read'],
+        })),
+        workspaces: [
+          {
+            id: 'w',
+            tenant_id: 'tenant',
+            kind: 'workspace',
+            parent_id: null,
+            workspace_id: 'w',
+            project_id: null,
+            name: 'Owned space',
+            status: 'ready',
+            description: '',
+            metadata: {},
+            created_at: '2026-10-31T00:00:00Z',
+          },
+        ],
+        workspace_permissions: { w: ['chat:use', 'catalog:read', 'catalog:write', 'ingest:write'] },
+      },
+  );
   await fixture.whenStable();
-  await assistant.selectThread('thread', { id: 'thread', title: 'Owned conversation', title_source: 'manual', revision: 1, folder_id: null, archived_at: null, scope: { workspace_id: 'w' }, created_at: '2026-10-31T00:00:00Z', updated_at: '2026-10-31T00:00:00Z' });
-  assistant.messages.set([{ id: 'reply', role: 'assistant', text: 'Reviewed fact.', status: 'completed', citations: [], artifacts: [], created_at: '2026-10-31T00:00:00Z' }]);
+  await assistant.selectThread('thread', {
+    id: 'thread',
+    title: 'Owned conversation',
+    title_source: 'manual',
+    revision: 1,
+    folder_id: null,
+    archived_at: null,
+    scope: { workspace_id: 'w' },
+    created_at: '2026-10-31T00:00:00Z',
+    updated_at: '2026-10-31T00:00:00Z',
+  });
+  assistant.messages.set([
+    {
+      id: 'reply',
+      role: 'assistant',
+      text: 'Reviewed fact.',
+      status: 'completed',
+      citations: [],
+      artifacts: [],
+      created_at: '2026-10-31T00:00:00Z',
+    },
+  ]);
   fixture.detectChanges();
   expect(facade.tenantPermissions().has('catalog:write')).toBe(false);
   expect(fixture.componentInstance.canArtifact('knowledge')).toBe(true);
 });
+
+it.each(['queued', 'running'] as const)(
+  'does not expose or open Audit for a %s assistant turn',
+  async (status) => {
+    const { fixture, assistant } = await mount([agent('ready')]);
+    assistant.threadId.set('thread');
+    assistant.running.set(true);
+    assistant.messages.set([
+      {
+        id: 'pending-answer',
+        run_id: 'pending-run',
+        role: 'assistant',
+        text: '',
+        status,
+        citations: [],
+        artifacts: [],
+        created_at: '2026-11-02T00:00:00Z',
+      },
+    ]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.answer-actions')).toBeNull();
+    fixture.componentInstance.openArtifact('audit', 'pending-answer');
+    expect(fixture.componentInstance.artifactAction()).toBeNull();
+  },
+);
+
+it.each(['completed', 'failed', 'cancelled'] as const)(
+  'keeps terminal %s Audit available while another turn is running',
+  async (status) => {
+    const { fixture, assistant } = await mount([agent('ready')]);
+    assistant.threadId.set('thread');
+    assistant.running.set(true);
+    assistant.messages.set([
+      {
+        id: 'terminal-answer',
+        run_id: 'past-run',
+        role: 'assistant',
+        text: status === 'completed' ? 'Verified answer' : '',
+        status,
+        citations: [],
+        artifacts: [],
+        created_at: '2026-11-02T00:00:00Z',
+      },
+      {
+        id: 'pending-answer',
+        run_id: 'pending-run',
+        role: 'assistant',
+        text: '',
+        status: 'running',
+        citations: [],
+        artifacts: [],
+        created_at: '2026-11-02T00:00:01Z',
+      },
+    ]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('.answer-actions')).toHaveLength(1);
+    fixture.componentInstance.openArtifact('audit', 'terminal-answer');
+    expect(fixture.componentInstance.artifactAction()).toBe('audit');
+    expect(fixture.componentInstance.artifactSelection()?.message_ids).toEqual(['terminal-answer']);
+  },
+);

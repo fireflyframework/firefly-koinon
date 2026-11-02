@@ -123,6 +123,28 @@ it('shows recorded legacy policy and citations without inventing a run or making
   expect(
     fixture.nativeElement.querySelector('[role=tabpanel]:not([hidden])')?.textContent,
   ).toContain('Review the proposed change before applying it.');
+  fixture.componentRef.setInput('message', {
+    ...message,
+    answer_policy: { outcome: 'grounded', code: 'VERIFIED_EVIDENCE_V1' },
+  });
+  fixture.detectChanges();
+  await fixture.whenStable();
+  fixture.componentInstance.tab.set('overview');
+  fixture.detectChanges();
+  expect(
+    fixture.nativeElement.querySelector('[role=tabpanel]:not([hidden])')?.textContent,
+  ).toContain(
+    'Only exact recorded source quotations or verified values with source lineage were published.',
+  );
+  fixture.componentRef.setInput('message', {
+    ...message,
+    answer_policy: { outcome: 'grounded', code: 'UNKNOWN_POLICY' },
+  });
+  fixture.detectChanges();
+  await fixture.whenStable();
+  expect(fixture.componentInstance.policyExplanation()).toBe(
+    'An answer policy explanation is not available in this record.',
+  );
   denied = true;
   fixture.componentRef.setInput('message', { ...message, id: 'denied-run', run_id: 'run' });
   fixture.detectChanges();
