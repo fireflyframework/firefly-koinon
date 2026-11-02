@@ -6,6 +6,7 @@ from pyfly.container.scanner import scan_package
 from pyfly.context import ApplicationContext
 from pyfly.core import Config
 
+import koinon.bootstrap.entities  # noqa: F401 -- Register communication bootstrap grant references.
 import koinon.jobs.entities  # noqa: F401 -- Register the FK target for jointly collected bulk metadata.
 from koinon.catalog.entities import CatalogEntry, Membership, Tenant
 from koinon.catalog.repositories import CatalogRepository, MembershipRepository, TenantRepository

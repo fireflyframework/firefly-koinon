@@ -67,3 +67,25 @@ async def test_status_projection_is_tenant_scoped_bounded_and_never_loads_privat
         assert empty.states == () and empty.complete
     finally:
         event.remove(engine, "before_cursor_execute", capture)
+
+
+async def test_communication_selection_reads_only_the_current_tenant_policy(authority):
+    from sqlalchemy import insert
+
+    from koinon.communications.entities import CommunicationPolicyRecord
+
+    context, _ = authority
+    await context.get_bean(TenantRepository).save(Tenant(id="other", name="Other"))
+    source = context.get_bean(DataSourceRegistry).primary
+    async with source.engine.begin() as connection:
+        await connection.execute(
+            insert(CommunicationPolicyRecord),
+            [
+                {"tenant_id": "north", "sender_id": "corporate", "default_locale": "es-ES"},
+                {"tenant_id": "other", "sender_id": "other-sender", "default_locale": "en-US"},
+            ],
+        )
+    records = context.get_bean(PlatformRepository)
+    assert await records.communication_policy("north") == ("corporate", "es-ES")
+    assert await records.communication_policy("other") == ("other-sender", "en-US")
+    assert await records.communication_policy("absent") == (None, None)

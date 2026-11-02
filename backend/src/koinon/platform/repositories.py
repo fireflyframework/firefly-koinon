@@ -11,6 +11,7 @@ from sqlalchemy import and_, exists, select
 
 from koinon.assistants.entities import AgentConfiguration, Provider
 from koinon.catalog.entities import CatalogEntry
+from koinon.communications.entities import CommunicationPolicyRecord
 from koinon.knowledge.entities import DomainBinding
 from koinon.knowledge.indexes.entities import KnowledgeIndex
 from koinon.organization_chat.entities import OrganizationChatSetting
@@ -115,6 +116,17 @@ class PlatformRepository(Repository[CatalogEntry, str]):
             )
         ).all()
         return tuple((row[0], row[1]) for row in rows)
+
+    @transactional(read_only=True, read_from_primary=True)
+    async def communication_policy(self, tenant_id: str) -> tuple[str | None, str | None]:
+        row = (
+            await self._require_session().execute(
+                select(CommunicationPolicyRecord.sender_id, CommunicationPolicyRecord.default_locale).where(
+                    CommunicationPolicyRecord.tenant_id == tenant_id
+                )
+            )
+        ).one_or_none()
+        return (row[0], row[1]) if row else (None, None)
 
     @transactional(read_only=True, read_from_primary=True)
     async def model_default_configured(self, tenant_id: str) -> bool:

@@ -91,7 +91,8 @@ class PlatformDiagnostics:
             )
         )
         try:
-            mail = self.readiness.observe()
+            sender_id, locale = await self.records.communication_policy(tenant_id)
+            mail = self.readiness.observe(sender_id=sender_id, organization_locale=locale)
             results.append(
                 component(
                     "communications",
