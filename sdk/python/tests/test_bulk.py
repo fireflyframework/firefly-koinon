@@ -116,7 +116,8 @@ async def test_uncertain_batch_mutation_is_sent_once_and_error_metadata_survives
 
 
 @pytest.mark.parametrize("operation", ["retry_processing", "finalize_publication", "acknowledge_commit"])
-async def test_processing_recovery_keeps_exact_action_and_key_without_retry(operation):
+@pytest.mark.parametrize("native_state", ["prepared", "failed"])
+async def test_processing_recovery_keeps_exact_action_and_key_without_retry(operation, native_state):
     from koinon_sdk import BulkRecoveryAction, FileRecoveryView
 
     requests = []
@@ -130,7 +131,7 @@ async def test_processing_recovery_keeps_exact_action_and_key_without_retry(oper
                     "batch_id": "batch",
                     "item_id": "item",
                     "batch_revision": 9,
-                    "native_state": "prepared",
+                    "native_state": native_state,
                     "operation": operation,
                     "reason_code": None,
                     "attempts": 1,
@@ -148,6 +149,7 @@ async def test_processing_recovery_keeps_exact_action_and_key_without_retry(oper
         descriptor = await client.file_batch_processing_recovery("north/office", "batch/one", "item/one")
         assert isinstance(descriptor, FileRecoveryView)
         assert descriptor.operation == operation
+        assert descriptor.native_state == native_state
         with pytest.raises(ApiError):
             await client.recover_file_batch_processing(
                 "north/office",

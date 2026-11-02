@@ -274,6 +274,7 @@ def test_queue_recheck_preserves_origin_for_actual_native_policy(client, capture
             sha256="a" * 64,
             batch_id="batch",
             recovery_operation=None,
+            recovery_failure=None,
             item_id="item",
             worker_id="worker",
             attempt=1,

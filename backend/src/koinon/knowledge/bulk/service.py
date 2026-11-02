@@ -1351,7 +1351,7 @@ class FileBatches:
                     port,
                 )
             return descriptor("committed", "acknowledge_commit", checked=checked), job, lease, port
-        if observed.status not in {"absent", "prepared"}:
+        if observed.status not in {"absent", "failed", "prepared"}:
             return (
                 descriptor(observed.status, reason="BULK_NATIVE_OUTCOME_UNRESOLVED", checked=checked),
                 job,
@@ -1382,8 +1382,25 @@ class FileBatches:
                 )
             return descriptor("prepared", "finalize_publication", checked=checked), job, lease, port
         if not verified_original:
-            return descriptor("absent", reason="BULK_ORIGINAL_UNAVAILABLE", checked=checked), job, lease, port
-        return descriptor("absent", "retry_processing", checked=checked), job, lease, port
+            return (
+                descriptor(observed.status, reason="BULK_ORIGINAL_UNAVAILABLE", checked=checked),
+                job,
+                lease,
+                port,
+            )
+        if observed.status == "failed" and (
+            item.mode != "document"
+            or observed.failure is None
+            or observed.failure.attempt != job.attempts
+            or observed.failure.attempt_started_at != job.updated_at
+        ):
+            return (
+                descriptor("failed", reason="BULK_NATIVE_OUTCOME_UNRESOLVED", checked=checked),
+                job,
+                lease,
+                port,
+            )
+        return descriptor(observed.status, "retry_processing", checked=checked), job, lease, port
 
     @transactional(
         datasource="primary",
@@ -1449,14 +1466,27 @@ class FileBatches:
                     raise ConflictException("Native outcome changed", code="BULK_RECOVERY_STATE_CHANGED")
                 await port.acknowledge_committed(lease, observed.receipt)
         else:
+            failure = None
+            if descriptor.native_state == "failed":
+                with SecurityContextHolder.using(execution_context(row.subject, row.token_id)):
+                    observed = await port.inspect(lease)
+                if observed.status != "failed" or observed.failure is None:
+                    raise ConflictException("Native failure changed", code="BULK_RECOVERY_STATE_CHANGED")
+                failure = observed.failure
+                if failure.attempt != job.attempts or failure.attempt_started_at != job.updated_at:
+                    raise ConflictException("Native attempt changed", code="BULK_RECOVERY_STATE_CHANGED")
             intent = ProcessingRecoveryIntent(
                 operation=body.operation,
+                native_failure=failure,
                 starting_attempt=job.attempts + 1,
                 expected_revision=body.expected_revision,
                 key_hash=key_digest(key),
                 request_hash=row.actions_json[key_digest(key)],
             )
-            job.result = {**(job.result or {}), "bulk_processing_recovery": intent.model_dump()}
+            job.result = {
+                **(job.result or {}),
+                "bulk_processing_recovery": intent.model_dump(mode="json", exclude_none=True),
+            }
             job.status, job.available_at, job.updated_at = "queued", now(), now()
             job.error = PENDING_RECOVERY
             item.status, item.error_code = "queued", None

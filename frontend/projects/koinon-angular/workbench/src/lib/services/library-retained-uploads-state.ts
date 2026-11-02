@@ -491,7 +491,7 @@ export class RetainedUploadsState {
       !Number.isSafeInteger(result.max_attempts) ||
       result.max_attempts < 1 ||
       result.attempts > result.max_attempts ||
-      !['absent', 'admitted', 'prepared', 'committed', 'unknown', 'not_checked'].includes(
+      !['absent', 'admitted', 'failed', 'prepared', 'committed', 'unknown', 'not_checked'].includes(
         result.native_state,
       ) ||
       !['queued', 'running', 'succeeded', 'failed', 'cancelled', 'unknown'].includes(
@@ -501,13 +501,13 @@ export class RetainedUploadsState {
       (result.operation !== null && !isProcessingRecovery(result.operation)) ||
       (result.operation !== null &&
         (result.job_status !== 'failed' ||
-          (
+          !(
             {
-              retry_processing: 'absent',
-              finalize_publication: 'prepared',
-              acknowledge_commit: 'committed',
-            } as const
-          )[result.operation] !== result.native_state))
+              retry_processing: ['absent', 'failed'],
+              finalize_publication: ['prepared'],
+              acknowledge_commit: ['committed'],
+            } as Record<NonNullable<FileRecoveryView['operation']>, readonly string[]>
+          )[result.operation].includes(result.native_state)))
     )
       throw Error('Recovery observation could not be verified');
     return result;
