@@ -11,6 +11,20 @@ from koinon.communications.settings import InstallationLinks
 from koinon.communications.templates import EmailRenderer
 
 
+async def test_primary_link_preserves_the_recipient_confirmed_template_markup():
+    action = "https://knowledge.example.test/auth/setup"
+    rendered = await EmailRenderer(InstallationLinks(public_url="https://knowledge.example.test")).render(
+        preview(action_label="Open your account"), action_url=action
+    )
+    # Preserve the received baseline's anchor, not merely its visible URL.
+    expected = (
+        f'<a href="{action}" style="display:inline-block;padding:13px 20px;'
+        'color:#10110f;font-size:16px;line-height:1.4;font-weight:700;'
+        f'text-decoration:none;border-radius:8px">{action}</a>'
+    )
+    assert expected in rendered.html
+
+
 class Links(HTMLParser):
     def __init__(self, html):
         super().__init__(convert_charrefs=True)
@@ -57,7 +71,7 @@ async def test_email_links_show_destinations_and_plain_text_preserves_localized_
         value, action_url=action, preferences_url=preferences, locale=locale
     )
     assert Links(rendered.html).links == [(action, action), (preferences, preferences)]
-    assert 'title="' + label + '"' in rendered.html
+    assert 'title="' not in rendered.html
     assert translate(locale, "preferences") in rendered.html
     assert label + ": " + action in rendered.text
     assert "Powered by koinon" in rendered.html and "Firefly Software Foundation" in rendered.html
@@ -70,7 +84,7 @@ async def test_visible_url_escapes_untrusted_text_without_changing_destination()
         preview(action_label='<img src=x onerror="alert(1)">'), action_url=action
     )
     assert Links(rendered.html).links == [(action, action)]
-    assert "&lt;img" in rendered.html and "<img src=x" not in rendered.html
+    assert "<img src=x" not in rendered.html and "onerror" not in rendered.html
     assert "Research&amp;Development" in rendered.html
 
 

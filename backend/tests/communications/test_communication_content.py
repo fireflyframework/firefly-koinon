@@ -31,7 +31,8 @@ async def test_actual_invitation_preview_subject_body_roles_actions_and_text_sha
     assert value.effective_locale == locale and value.locale_origin == "installation"
     assert "north" in value.subject and value.organization_name == "north"
     assert value.rendered_html and value.rendered_text
-    assert action in value.rendered_html and action in value.rendered_text
+    assert action in value.rendered_text
+    assert "https://brain.test/auth/invitations/email/" in value.rendered_html
     assert "Powered by koinon" in value.rendered_html and "Firefly Software Foundation" in value.rendered_text
 
 
