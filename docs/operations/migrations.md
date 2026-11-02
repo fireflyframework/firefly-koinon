@@ -18,6 +18,16 @@ Provisioning refuses an existing role with conflicting superuser/RLS privileges.
 
 An unqualified `alembic_version` table requires reviewed history mapping. Do not stamp, delete version rows or replay migrations to bypass this guard. This deployment does not automatically adopt a separate installation's data. Back up first, test the exact upgrade on a restored copy, then schedule migration and restart separately. Automatic downgrade is disabled; use a reviewed recovery plan.
 
+## Preserve personal preferences during an upgrade
+
+Native revision `koinon_0042_profile_preferences` follows `koinon_0041_email_recovery` and adds an initialization marker to existing profiles. Apply it before starting application code that uses device-based regional preferences. An image-only application update does not apply this migration.
+
+The migration preserves every existing locale and time zone, including explicit `en-US` and `UTC` choices. It marks existing profiles as initialized, so signing in from another device does not replace those choices. Newly created profiles can initialize their regional settings once from the browser; an explicit profile update always remains available. Corporate directory synchronization does not overwrite these personal settings.
+
+After upgrading, open **Your account**, then **Profile & preferences**, and verify that a previously saved locale and time zone are unchanged. Check a new user's first sign-in separately, including a second sign-in from a device with different settings. The [profile guide](profiles-and-tokens.md) explains the controls and the equivalent SDK operations.
+
+## Document index provisioning
+
 Document index provisioning is a product-only extension in `packages/canon/migrations/koinon_versions`. The deployment wrapper combines it with the preserved document history. Standalone document installations retain `0017_embedding_sets`; the product resolves `0018_index_provisioning` on the same parent. Relocating the unchanged source does not change an applied revision or require a rollback or data reset.
 
 The registration table is excluded from ordinary document DML grants. Its runtime role has no registration or provisioning-function privileges. The control role receives registration SELECT/INSERT and the narrow function EXECUTE; UPDATE/DELETE remain denied. Re-run the reviewed role-provisioning command after migrations to establish this boundary.
