@@ -155,7 +155,8 @@ nav:
           - Migrations: operations/migrations.md
           - Backup and restore: operations/backup-restore.md
       - Release evidence:
-          - Release notes: releases/26.11.5.md
+          - Release notes: releases/26.11.6.md
+          - Version 26.11.5: releases/26.11.5.md
           - Version 26.11.4: releases/26.11.4.md
           - Version 26.11.3: releases/26.11.3.md
           - Version 26.11.2: releases/26.11.2.md
