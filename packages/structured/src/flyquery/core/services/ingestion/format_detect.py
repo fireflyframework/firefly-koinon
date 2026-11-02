@@ -16,6 +16,20 @@
 
 from __future__ import annotations
 
+FORMAT_EXTENSIONS = {
+    "csv": (".csv",),
+    "tsv": (".tsv",),
+    "jsonl": (".jsonl", ".ndjson"),
+    "json": (".json",),
+    "parquet": (".parquet",),
+    "avro": (".avro",),
+    "orc": (".orc",),
+    "arrow": (".arrow", ".feather"),
+    "xlsx": (".xlsx",),
+    "xls": (".xls",),
+    "ods": (".ods",),
+}
+
 
 def detect_format(filename: str, head_bytes: bytes) -> tuple[str, str]:
     """Return (format, compression).
@@ -42,28 +56,9 @@ def detect_format(filename: str, head_bytes: bytes) -> tuple[str, str]:
 
 def _format_from_name(name: str, head: bytes) -> str:
     """Detect format from (lower-cased) filename, with magic-byte fallback."""
-    if name.endswith(".csv"):
-        return "csv"
-    if name.endswith(".tsv"):
-        return "tsv"
-    if name.endswith(".jsonl") or name.endswith(".ndjson"):
-        return "jsonl"
-    if name.endswith(".json"):
-        return "json"
-    if name.endswith(".parquet"):
-        return "parquet"
-    if name.endswith(".avro"):
-        return "avro"
-    if name.endswith(".orc"):
-        return "orc"
-    if name.endswith(".arrow") or name.endswith(".feather"):
-        return "arrow"
-    if name.endswith(".xlsx"):
-        return "xlsx"
-    if name.endswith(".xls"):
-        return "xls"
-    if name.endswith(".ods"):
-        return "ods"
+    for file_format, extensions in FORMAT_EXTENSIONS.items():
+        if name.endswith(extensions):
+            return file_format
 
     # Magic-byte fallback
     if head.startswith(b"PAR1"):

@@ -10,3 +10,4 @@ export * from './src/lib/atoms/button';
 export * from './src/lib/atoms/icon';
 export * from './src/lib/atoms/badge';
 export * from './src/lib/atoms/skeleton';
+export * from './src/lib/atoms/file-formats';

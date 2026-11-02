@@ -1,0 +1,43 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+@if (groups().length) {
+  <p class="format-label">{{ 'Supported file types' | ffkText }}</p>
+  <ul class="format-families">
+    @for (group of groups(); track group.label) {
+      <li>
+        <span>{{ group.label | ffkText }}</span>
+        @if (group.summary) {
+          <small>({{ group.summary }})</small>
+        }
+      </li>
+    }
+  </ul>
+}
+@if (showDetails && (groups().length || unavailableGroups().length)) {
+  <details>
+    <summary>{{ 'All file formats' | ffkText }}</summary>
+    <dl>
+      @for (group of groups(); track group.label) {
+        <div>
+          <dt>{{ group.label | ffkText }}</dt>
+          <dd>{{ group.extensions.join(', ') }}</dd>
+        </div>
+      }
+    </dl>
+    @if (unavailableGroups().length) {
+      <p>{{ 'Unavailable on this server' | ffkText }}:</p>
+      <ul>
+        @for (group of unavailableGroups(); track group.label) {
+          <li>{{ group.label | ffkText }} ({{ group.extensions.join(', ') }})</li>
+        }
+      </ul>
+    }
+    @if (legacyPowerPoint()) {
+      <p>
+        {{
+          'For older .ppt files, use Save As in PowerPoint to create a .pptx file. Renaming the file does not convert it.'
+            | ffkText
+        }}
+      </p>
+    }
+  </details>
+}

@@ -3,7 +3,7 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/knowledge/bulk/dtos.py
-SHA256: 1347ec29a877e634daf20294aee288c0f6e70a202cab6b3db689d4e941bd4826
+SHA256: 386e34fbad191b69e53de8fc51d216db6ae4fbdb3101885416f47e7916867062
 
 Server authorization and semantic validation remain authoritative.
 """
@@ -83,9 +83,17 @@ class FileRecoveryView(Output):
     original_receipt_state: Literal["verified", "unavailable", "not_checked"]
 
 
+class UploadFormat(Output):
+    mode: Literal["document", "dataset"]
+    extensions: list[str]
+    available: bool
+    reason: str | None = None
+
+
 class FileBatchCapabilities(Output):
     configured: bool
     modes: list[Literal["document", "dataset"]]
+    formats: list[UploadFormat] = Field(default_factory=list[UploadFormat])
     processing_policy: Literal["extract_only_v1"] = "extract_only_v1"
     staging_backend: Literal["private_local_posix", "private_azure_blob", "private_gcs_object"] = (
         "private_local_posix"

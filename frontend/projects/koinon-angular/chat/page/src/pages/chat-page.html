@@ -337,6 +337,8 @@
         "
         [attachments]="files.attachments()"
         [accept]="files.accept()"
+        [imageFilesEnabled]="files.imagesEnabled()"
+        [fileLimits]="files.capabilities()?.limits || null"
         [hint]="files.error() || files.modelHint() || files.storageHint()"
         (filesSelected)="files.select($event)"
         (attachmentRemoved)="files.remove($event)"

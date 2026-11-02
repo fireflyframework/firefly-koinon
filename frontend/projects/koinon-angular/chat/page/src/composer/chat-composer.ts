@@ -22,12 +22,28 @@ import { FormsModule } from '@angular/forms';
 import { CdkMenu, CdkMenuItem } from '@angular/cdk/menu';
 import { Overlay, type OverlayRef } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
+import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
+import { KoinonFileFormats } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonIcon, KoinonTextPipe } from '@fireflyframework/koinon-angular';
 import type { ComposerAttachment } from './composer-models';
+registerKoinonSpanish({
+  'Some files were not accepted. Review their details before sending.':
+    'Algunos archivos no se han aceptado. Revisa sus detalles antes de enviar.',
+  'Supported file types': 'Tipos de archivo admitidos',
+  'Files per message': 'Archivos por mensaje',
+  'Maximum image size': 'Tamaño máximo de imagen',
+  'Maximum per file': 'Máximo por archivo',
+  'Queued for processing': 'En cola para procesar',
+  'Outcome not confirmed': 'Resultado sin confirmar',
+  'Not accepted': 'No aceptado',
+  'File processing progress': 'Progreso del procesamiento del archivo',
+  'Upload outcome not confirmed. Retry checks the same upload request.':
+    'Resultado de la carga sin confirmar. Reintentar comprueba la misma solicitud.',
+});
 let composerId = 0;
 @Component({
   selector: 'ffk-chat-composer',
-  imports: [FormsModule, CdkMenu, CdkMenuItem, KoinonIcon, KoinonTextPipe],
+  imports: [FormsModule, CdkMenu, CdkMenuItem, KoinonIcon, KoinonTextPipe, KoinonFileFormats],
   templateUrl: './chat-composer.html',
   styleUrl: './chat-composer.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,6 +59,12 @@ export class KoinonChatComposer implements AfterViewInit, OnChanges, OnDestroy {
   @Input() attachmentsEnabled = false;
   @Input() attachmentsUnavailableReason = 'File uploads are not enabled in this workspace.';
   @Input() accept = '';
+  @Input() imageFilesEnabled = false;
+  @Input() fileLimits: {
+    max_selected: number;
+    max_file_bytes: number;
+    max_image_bytes: number;
+  } | null = null;
   @Input() attachments: readonly ComposerAttachment[] = [];
   @Input() locale = 'en-US';
   @Input() hint = '';
@@ -250,7 +272,9 @@ export class KoinonChatComposer implements AfterViewInit, OnChanges, OnDestroy {
     this.failedPreviews.update((keys) => new Set([...keys, item.id + ':' + item.previewUrl]));
   }
   progress(item: ComposerAttachment): number | null {
-    return typeof item.progress === 'number' && Number.isFinite(item.progress)
+    return ['processing', 'ready'].includes(item.state) &&
+      typeof item.progress === 'number' &&
+      Number.isFinite(item.progress)
       ? Math.min(100, Math.max(0, item.progress))
       : null;
   }
@@ -258,7 +282,12 @@ export class KoinonChatComposer implements AfterViewInit, OnChanges, OnDestroy {
     return {
       selected: 'Waiting to upload',
       uploading: 'Uploading',
+      queued: 'Queued for processing',
       processing: 'Reading file',
+      cancelled: 'Cancelled',
+      expired: 'Expired',
+      unknown: 'Outcome not confirmed',
+      rejected: 'Not accepted',
       ready: 'Ready',
       failed: 'Needs attention',
     }[item.state];
