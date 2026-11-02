@@ -328,6 +328,7 @@ class KnowledgeFacade:
         curated_groups = {}
         for asset in assets:
             chain = await self._chain(subject, tenant_id, asset.id, "knowledge:search")
+            asset = chain[0]
             mismatched = (
                 asset.kind not in {"document", "knowledge_item"}
                 or (workspace_id and asset.workspace_id != workspace_id)
@@ -339,6 +340,13 @@ class KnowledgeFacade:
                     raise InvalidHierarchy(
                         "Selected assets disagree with the document search context",
                         code="INVALID_ASSET_SCOPE",
+                    )
+                continue
+            if asset.kind == "document" and asset.status != "ready":
+                if asset_ids is not None:
+                    raise ConflictException(
+                        "Document intake is unfinished; inspect its retained upload before searching",
+                        code="DOCUMENT_NOT_READY",
                     )
                 continue
             binding = await self.binding(tenant_id, asset.id, "canon", entry=asset)
@@ -361,8 +369,27 @@ class KnowledgeFacade:
         curated_selections = []
         policy = await settings_for_operation(self.knowledge_settings, subject, tenant_id)
         receipt: NativeEvidenceReceipt = (
-            _capture if _capture is not None else NativeEvidenceReceipt(subject, tenant_id)
+            _capture
+            if _capture is not None
+            else NativeEvidenceReceipt(subject, tenant_id, operation="search")
         )
+        if not groups:
+            identifiers = tuple(
+                dict.fromkeys(
+                    [entry.id for entry in assets]
+                    + [identifier for identifier in (workspace_id, project_id, collection_id) if identifier]
+                )
+            )
+
+            async def authorize_empty_search():
+                if identifiers:
+                    for identifier in identifiers:
+                        await self._chain(subject, tenant_id, identifier, "knowledge:search")
+                else:
+                    await self.catalog.authorize(subject, tenant_id, "knowledge:search", workspace_id)
+
+            await authorize_empty_search()
+            receipt.empty_catalog_search(subject, tenant_id, authorize_empty_search)
         for (catalog_workspace, native_workspace), admitted in groups.items():
             knowledge = curated_groups.get((catalog_workspace, native_workspace), {})
             admitted_ids = tuple(asset.id for asset, _ in [*admitted.values(), *knowledge.values()])

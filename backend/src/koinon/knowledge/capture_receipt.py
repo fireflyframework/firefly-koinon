@@ -83,7 +83,22 @@ class NativeEvidenceReceipt:
         self.verify_structured: Callable[[Any, dict], Awaitable[bool | NativeDatabaseContext]] | None = None
         self.complete = True
         self.observed = False
+        self.catalog_search_empty = False
+        self.authorize_empty_search: Callable[[], Awaitable[Any]] | None = None
         self.closed = False
+
+    def empty_catalog_search(self, subject, tenant_id, authorize):
+        if (
+            self.closed
+            or current_task() is not self.owner
+            or self.operation != "search"
+            or subject != self.subject
+            or tenant_id != self.tenant_id
+            or self.observed
+        ):
+            raise AccessDenied("Catalog search scope is unavailable", code="EVIDENCE_UNAVAILABLE")
+        self.catalog_search_empty = True
+        self.authorize_empty_search = authorize
 
     def scope(self, tenant_id, workspace_id, actor):
         if (
