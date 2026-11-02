@@ -21,7 +21,7 @@ dependencies = [
     # Firefly Framework runtime (DI, CQRS, EDA, web, observability, resilience,
     # actuator, data-relational, security). Pulled in with the extras we use
     # so a fresh ``uv sync`` is enough to boot the full stack.
-    "pyfly[cache,fastapi,observability,security,data-relational,postgresql,eda,redis,client,scheduling,cli,agentic,agentic-security,agentic-script-execution,agentic-openai-embeddings,agentic-binary,agentic-vectorstores-pgvector]>=26.10.32,<26.11",
+    "pyfly[cache,fastapi,observability,security,data-relational,postgresql,eda,redis,client,scheduling,cli,agentic,agentic-security,agentic-script-execution,agentic-openai-embeddings,agentic-binary,agentic-vectorstores-pgvector]>=26.11.5,<26.12",
 
     # GenAI metaframework -- FireflyAgent over pydantic-ai, the binary
     # normalisation stack (``[binary]`` -> ``content.binary``) and the
@@ -158,7 +158,7 @@ build-backend = "hatchling.build"
 [tool.uv.sources]
 firefly-koinon-storage = { path = "../storage", editable = true }
 # Pin the immutable commit associated with the official framework release tag.
-pyfly = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git", rev = "ff94967f2bd70f48f1a099bb805923a51eb291df" }
+pyfly = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git", rev = "2ada81c420868ca27528bf7673390a95d9deb42b" }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/flycanon"]

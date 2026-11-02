@@ -10,6 +10,7 @@ from urllib.parse import urlencode
 import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
+from native_session_flow import NativeSessionFlow
 from pyfly.security.oauth2 import OAuth2AuthenticationSuccessHandler, OidcTokenValidatorFactory
 from pyfly.security.oauth2.client import ClientRegistration, InMemoryClientRegistrationRepository
 from pyfly.session.session import HttpSession
@@ -134,8 +135,13 @@ async def test_signed_native_oidc_callback_preserves_direct_identity_without_use
             "aud": "forged-audience",
         }
     )
-    response = await login.routes()[1].endpoint(request(session, query))
+    flow = NativeSessionFlow()
+    await flow.persist_challenge(session)
+    incoming = request(session, query)
+    response = await flow.callback(login.routes()[1].endpoint, incoming)
+    session = incoming.state.session
     assert response.status_code == 302
+    assert await flow.store.get("before-auth") is None
     assert userinfo == []
     assert observed[0].subject == ISSUER + "|signed-pairwise-subject"
     assert observed[0].external_subject == OBJECT
