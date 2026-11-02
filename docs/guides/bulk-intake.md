@@ -7,6 +7,42 @@ Use a durable file batch when a multi-file import needs a saved manifest, bounde
 
 The deployment must configure [durable private staging and its supported topology](../operations/durable-bulk.md), the appropriate native databases, readers and an authorized embedding connection. The capability response advertises `document` and `dataset` with `extract_only_v1`: extraction and admitted embeddings, without implicit authored naming or enrichment. Requesting a mode does not configure a provider. Bulk configuration and staging paths are deployment authority, not personal-token settings.
 
+## Reopen a retained upload in Library
+
+Open **Library**, then **Uploads** beside the folder actions. This list reads retained batches for your current account, connection and current access. Page through the results and choose **Inspect upload** to read the batch and all of its current items. No original bytes are uploaded, no processing is submitted and no storage receipt is checked by opening the list or details.
+
+![Retained uploads in Library](../assets/screenshots/retained-uploads-1440.png)
+
+This desktop capture uses controlled example data. In your installation, the list comes from the current authorized batch records.
+
+A batch admitted through a personal API token remains bound to that credential. Signing into the browser as the same user does not transfer that batch into the browser session. Organization administrators do not gain another person's private batch through this view. If access or the original credential is unavailable, use the supported authority and recovery procedures rather than changing the stored owner.
+
+After renewing your session or reloading the page, open **Uploads** again and select the retained batch. The page checks its current destination, item inventory and revision before offering actions. The previous browser file objects and old authorization context are not restored. **Open destination folder** and **Open in Library** resolve the current authorized knowledge resources.
+
+| What the current details show | Deliberate action | What it establishes |
+| --- | --- | --- |
+| An original is not verified and the batch is still staging | Review **Check retained original**, then confirm that check | The server attempts to verify an original it already retained. This can perform storage reads and record a receipt; it does not send another file or start processing. A missing original or active writer remains unresolved. |
+| A received original or an item with a processing job needs an explicit storage check | Choose **Verify staged original** | The server checks the retained original and returns its size/hash-bound receipt. This is an explicit storage operation, not a passive list refresh. |
+| Every current original is received | Review **Submit for processing**, then confirm | The batch can be admitted to the native worker queue using the reviewed revision. It is not a claim that the knowledge is searchable. |
+| A native processing outcome is unresolved and the item has a recorded job | Review **Inspect processing outcome**, then confirm | The native receipt is inspected and recorded when verified. The import is not repeated. |
+| Supported pending work should stop | Review **Request cancellation**, then confirm | Pending cancellation is requested. Already published knowledge and committed effects can remain. |
+
+Original receipt, processing completion and search availability are different states. Inspect the resulting Library item and its availability before using it in an answer. The per-item **Source and upload references** include the source, knowledge item, checksum, job and returned immutable version/extraction identities where available. An identifier being reserved does not mean that its processing has completed.
+
+![Reviewing processing submission on a narrow screen](../assets/screenshots/retained-upload-review-390.png){ width="390" }
+
+This controlled example shows the separate review before submission. It does not indicate that the batch has already been submitted.
+
+### If an action result is uncertain
+
+The panel saves the exact reviewed action key and revision in bounded session storage before sending a mutation. It retains only request identifiers, subject/organization, operation, revision and key. It does not save filenames, document content, file bytes, endpoints or credentials. This tab journal holds at most eight requests and 16 KiB; it is not a durable operator change record. Keep important batch references in your change record separately.
+
+Refreshing, reopening the panel and signing in never repeat a mutation. A saved request becomes visible only after the server authorizes that exact batch under your current account and credential. **Review saved request** shows the original request and its consequences; confirmation explicitly sends the same revision and original key. If that request was not previously accepted, it may start the reviewed operation. No file upload is exposed by this recovery view.
+
+A newly observed desired state can resolve the panel's uncertainty without claiming which request caused it. A changed revision requires fresh inspection. Do not manufacture a new key, reset counters, rewrite an owner or delete a retained batch to bypass a conflict. If no retained original can be verified, preserve the reference and investigate the original upload before choosing a supported next step.
+
+Closing the panel stops its checks and does not cancel submitted work. Current permissions are checked again before each action. A session failure hides the retained details and requires sign-in; a different account or credential cannot restore another connection's saved request.
+
 ## Admit, upload, review and submit
 
 1. Select an existing authorized workspace, its project and a collection or corpus in that project. Current `catalog:write` and `ingest:write` permissions are required. A PAT must also retain those scopes and applicable workspace/resource bounds; it cannot exceed the original subject's current role.
