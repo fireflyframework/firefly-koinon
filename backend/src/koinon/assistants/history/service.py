@@ -16,6 +16,7 @@ from koinon.assistants.lifecycle import identifier, timestamp
 from koinon.assistants.mappers import thread_dto
 from koinon.assistants.service import AssistantService
 from koinon.catalog.errors import AccessDenied
+from koinon.security.authority import primary_authority
 from koinon.web.pagination import sql_page
 
 
@@ -47,7 +48,7 @@ class ChatHistoryService:
             count += 1
         return folder_dto(row, conversation_count=count)
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def get_folder(self, subject, tenant_id, folder_id):
         return await self._describe_folder(
             subject, tenant_id, await self.folder(subject, tenant_id, folder_id)
@@ -79,7 +80,7 @@ class ChatHistoryService:
                     raise ConflictException("Choose a shallower folder", code="FOLDER_DEPTH_LIMIT")
                 node = parents.get(node)
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def folder_page(
         self,
         subject,
@@ -226,7 +227,7 @@ class ChatHistoryService:
         row.folder_id = folder.id if folder else None
         return thread_dto(await self.assistants.threads.save(row))
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def thread_page(
         self,
         subject,
@@ -283,7 +284,7 @@ class ChatHistoryService:
         )
         return {**result, "items": [thread_dto(row) for row in result["items"]]}
 
-    @transactional(read_only=True)
+    @primary_authority()
     async def get_thread(self, subject, tenant_id, thread_id):
         return thread_dto(await self.assistants.thread(subject, tenant_id, thread_id))
 
