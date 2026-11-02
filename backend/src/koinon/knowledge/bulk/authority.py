@@ -1,6 +1,8 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
 from pyfly.container import service
+from pyfly.kernel import ConflictException
+from pyfly.security.context import SecurityContext
 from pyfly.security.context_holder import SecurityContextHolder
 
 from koinon.catalog.errors import AccessDenied
@@ -8,6 +10,20 @@ from koinon.catalog.service import ROLE_PERMISSIONS, CatalogService
 from koinon.knowledge.bulk.dataset_dtos import DatasetReservation
 from koinon.knowledge.bulk.dtos import BulkDestination
 from koinon.knowledge.bulk.repositories import BulkRepository
+
+
+def execution_context(subject: str, token_id: str | None) -> SecurityContext:
+    if not isinstance(subject, str) or not 3 <= len(subject) <= 512:
+        raise ConflictException("Queued origin is unresolved", code="INGEST_EXECUTION_CONTEXT_REQUIRED")
+    issuer, separator, external_subject = subject.partition("|")
+    if not separator or not issuer or not external_subject:
+        raise ConflictException("Queued origin is unresolved", code="INGEST_EXECUTION_CONTEXT_REQUIRED")
+    attributes = {"iss": issuer, "sub": external_subject}
+    if token_id is not None:
+        if not isinstance(token_id, str) or not 1 <= len(token_id) <= 64:
+            raise AccessDenied("Original token cannot be verified", code="TOKEN_UNAVAILABLE")
+        attributes["koinon_token_id"] = token_id
+    return SecurityContext(user_id=external_subject, attributes=attributes)
 
 
 def token_identity() -> str | None:
