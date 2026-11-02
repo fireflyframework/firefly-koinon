@@ -6,6 +6,7 @@ import {
   type HttpMethod,
   type KoinonTransport,
   type RequestOptions,
+  type CatalogEntry,
 } from '@fireflyframework/koinon-sdk';
 import { provideKoinonClient } from './client-provider';
 import { KoinonWorkbench } from './koinon-angular';

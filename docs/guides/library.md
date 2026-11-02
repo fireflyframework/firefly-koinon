@@ -10,7 +10,7 @@ Open a document's filename, or choose **Read document** from its action menu, to
 
 Choose **Download original** to save the same recorded version. Original transfers are limited to 128 MiB; preparing a PDF or image preview is limited to 16 MiB. A larger source can still have readable extracted text. The reader explains a transfer limit without treating the text as unavailable. Your current access is checked by the service when content or original bytes are requested; changing account or scope clears the reader's local content and prepared links.
 
-If processing has not produced a readable version, the reader explains that status and disables original download. Use the item's separate **Details** action to inspect its processing status. Datasets retain their existing table exploration and lineage views; this document reader does not add a dataset-original download endpoint. Press Escape to close the reader and return keyboard focus to its filename.
+If processing has not produced a readable version, the reader explains that status and disables original download. Use the item's separate **Details** action to inspect its processing status. Datasets retain their existing table exploration and lineage views; this document reader does not add a dataset-original download endpoint. Press Escape to close the reader and return keyboard focus to the filename or action button you used to open it.
 
 ## Spaces, projects and folders
 

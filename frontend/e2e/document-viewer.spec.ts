@@ -330,7 +330,8 @@ test('mobile reader labels and safe source details are available in Spanish', as
   await page.goto('/library');
   for (const name of ['Research operations', 'Operations intelligence', 'Reference library'])
     await page.getByRole('button', { name, exact: true }).click();
-  await page.getByRole('button', { name: 'Service operating policy.pdf', exact: true }).click();
+  await page.getByRole('button', { name: 'Acciones de Service operating policy.pdf', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Leer documento', exact: true }).click();
   const panel = page.getByRole('dialog', { name: 'Service operating policy.pdf', exact: true });
   await expect(panel.locator('.document-text')).toContainText(text);
   await expect(
