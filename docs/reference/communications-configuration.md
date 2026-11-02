@@ -44,7 +44,7 @@ Communications encryption uses the existing installation identity master key. Pr
 
 When communications are enabled, required security and access changes admit an in-app notification in the same primary transaction as the mutation. Missing event-recorder bindings fail application preflight. Disabled email, a dummy provider, missing real transport, or absent approved sender produces suppressed email history; the inbox remains available. Enabling email later does not replay that history or backfill digest windows.
 
-`ready` means declared native transport capabilities and approved configuration are present. It does not prove network delivery, sender reputation or mailbox arrival. `sent` means the email service accepted the operation. `delivered` requires a separate proven delivery observation; the submission worker does not infer it. `unknown` means a submission may have happened. Expired sending leases, cancellation, network ambiguity and pending provider operations never become automatic resend permission.
+`ready` means declared native transport capabilities and approved configuration are present. It does not prove network delivery, sender reputation or mailbox arrival. `sent` means the email service accepted the operation. `delivered` requires a separate proven delivery observation; the submission worker does not infer it. A provider-reported handoff to a recipient mail or protection server does not establish inbox placement. Use the [message investigation workflow](../operations/communications.md#investigate-a-message-that-did-not-arrive) to keep those observations separate. `unknown` means a submission may have happened. Expired sending leases, cancellation, network ambiguity and pending provider operations never become automatic resend permission.
 
 The worker freezes one encrypted payload, stable message ID and SHA-256 before persisting the `sending` fence. Both HTML and complete plain text are passed to native `EmailMessage`; trusted raster logos use native inline CID attachments. A preparation retry cannot replace the payload. Current recipient directory identity, sender, provider revision and relevant authority are checked again before submission. A mutation committed after that boundary may race an already in-flight external operation; email delivery cannot retroactively retract a message.
 
@@ -84,5 +84,7 @@ Initial administrator welcomes have one persisted installation UUID and a unique
 For welcome before first sign-in, an operator can instead admit a fresh contact observation tied to an
 existing exact pending bootstrap identity grant. See [initial administrator welcome](bootstrap-welcome.md)
 for the protected-file command, fifteen-minute import freshness, twenty-four-hour delivery boundary,
-required live public origin and signed-login association. This initial contact does not enable ongoing
-security email or digests without the separate verified directory delivery binding.
+required live public origin and signed-login association. This initial contact does not itself enable
+ongoing email. Administrator summaries and supported administrative notices require a separate verified
+directory binding or [operator-approved administrator delivery contact](operator-delivery-contacts.md).
+Ordinary recipient and invitation workflows keep their directory requirements.
