@@ -7,7 +7,8 @@
     w.dialog() === 'account' ||
     w.dialog() === 'query' ||
     w.dialog() === 'lineage' ||
-    w.dialog() === 'archived'
+    w.dialog() === 'archived' ||
+    w.dialog() === 'uploads'
   "
   role="dialog"
   aria-modal="true"
@@ -35,6 +36,8 @@
             ? ('Sign out?' | ffkText)
             : w.dialog() === 'account'
             ? 'Your account'
+            : w.dialog() === 'uploads'
+              ? 'Uploads'
             : w.dialog() === 'archived'
               ? 'Archived items'
               : w.dialog() === 'tree'
@@ -67,6 +70,11 @@
   </header>
   @if (w.dialogError()) {
     <div class="workbench-error" role="alert">{{ w.dialogError() }}</div>
+  }
+  @if (w.dialog() === 'uploads') {
+    @defer (when w.dialog() === 'uploads') {
+      <ffk-library-retained-uploads-panel (folderRequested)="w.closeDialog(); w.openFolder($event)" (resourceRequested)="w.closeDialog(); w.openChatResource($event)" />
+    } @loading {<ffk-skeleton width="65%" height="3px" [label]="'Opening panel' | ffkText"/>} @error {<p role="alert">{{ 'This panel could not be opened. Refresh this page and try again.' | ffkText }}</p>}
   }
   @if (w.dialog() === 'move' && w.f.selected(); as entry) {
     <ffk-move-folder [source]="entry" (closed)="w.closeDialog()" />

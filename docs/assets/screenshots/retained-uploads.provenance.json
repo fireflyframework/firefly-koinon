@@ -1,0 +1,22 @@
+{
+  "copyright": "Copyright 2026 Firefly Software Foundation",
+  "license": "Apache-2.0",
+  "base_commit": "9ebb7ac23864151ab8d30fc4af6dd06d6756ba9a",
+  "capture": "Compiled management application using controlled current-owner batch fixtures; no live organization or cloud-provider data.",
+  "journey": "frontend/e2e/library-retained-uploads.spec.ts",
+  "viewport_widths": [
+    1440,
+    390
+  ],
+  "notes": "File names, sizes, timestamps, batch references and outcomes are illustrative. These captures do not establish live-provider or deployment acceptance.",
+  "source_files": {
+    "frontend/projects/koinon-angular/workbench/src/lib/organisms/library-retained-uploads-panel.html": "7fb3b0575b6c781b991a6b08ac7cc41e0aec4b4aa26ffe40471883900f5899ed",
+    "frontend/projects/koinon-angular/workbench/src/lib/organisms/library-retained-uploads-panel.scss": "ca34e2baec3337db7bfe56c2cd00f4167532a94034ef273e0bc56fbf4de9026d",
+    "frontend/projects/koinon-angular/workbench/src/lib/organisms/library-retained-uploads-panel.ts": "c56f043368f3f77decdf12f78b592f47a0071f56c32345c92816b1827464cf71",
+    "frontend/projects/koinon-angular/workbench/src/lib/organisms/library-retained-uploads-spanish.ts": "b86b42019415a742f6bd1e4aa450898bf4ce187b09c64256726755e8f6c0d49a"
+  },
+  "files": {
+    "retained-uploads-1440.png": "7df9792880462b4f3d52b5a115a774993eae83c58b3c5f00dbe5de2d17bc32d0",
+    "retained-upload-review-390.png": "bfe5ccfd9dcc00ebf2363533ab5efa7f90ac81a8563f02356687fd6a98926807"
+  }
+}

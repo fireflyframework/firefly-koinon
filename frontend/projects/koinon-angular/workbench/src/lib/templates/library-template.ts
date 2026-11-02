@@ -22,6 +22,7 @@ import { friendlyStatus } from '../services/library-tree';
     <div class="breadcrumb">
       <ffk-breadcrumb [items]="trail" (folderSelected)="folderSelected.emit($event)" />
       <div class="location-actions">
+        @if (uploadsAvailable) {<ffk-button variant="neutral" icon="upload" (click)="uploadsRequested.emit()">{{ 'Uploads' | ffkText }}</ffk-button>}
         @if (canAdd) {
           <ffk-button variant="neutral" icon="history" (click)="archivedRequested.emit()">{{
             'Archived' | ffkText
@@ -231,6 +232,8 @@ export class KoinonLibraryTemplate {
     { value: 'created_at.desc', label: 'Recently added' },
   ];
   @Input() allowedKinds: { value: ResourceKind; label: string }[] = [];
+  @Input() uploadsAvailable = false;
+  @Output() uploadsRequested = new EventEmitter<void>();
   @Input() title = 'Library';
   @Input() descriptionIsGeneric = false;
   @Input() description = 'A shared home for your team’s documents and data.';

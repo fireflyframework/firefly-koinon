@@ -29,7 +29,7 @@ import {KoinonButton} from './atoms/button';
 import {KoinonIcon} from './atoms/icon';
 import {KoinonSkeleton} from './atoms/skeleton';
 import type {KoinonScope} from './models';
-type Dialog='move'|'sign-out'|'account'|'archived'|'tree'|'add'|'create'|'edit'|'upload'|'archive'|'query'|'lineage'|'citation';
+type Dialog='uploads'|'move'|'sign-out'|'account'|'archived'|'tree'|'add'|'create'|'edit'|'upload'|'archive'|'query'|'lineage'|'citation';
 @Component({selector:'ffk-workbench',imports:[KoinonSignIn,KoinonAccountPage,CdkTrapFocus,KoinonTableLineagePanel,KoinonTextPipe,KoinonCommandPalette,NgComponentOutlet,KoinonWorkbenchDialogs,KoinonShell,KoinonLibraryTemplate,KoinonInspector,KoinonButton,KoinonIcon,KoinonSkeleton],providers:[KoinonBranding,KoinonTableLineage,KoinonFontLoader,KoinonI18n,KoinonAccount,KoinonClientContext,KoinonFacade,KoinonAssistant],templateUrl:'./workbench.html',styleUrl:'./workbench.scss',host:{'[class.koinon-dark]':"theme==='dark'",'[attr.lang]':'i18n.preferences().locale'},encapsulation:ViewEncapsulation.ShadowDom,changeDetection:ChangeDetectionStrategy.OnPush})
 export class KoinonWorkbench implements OnInit,OnChanges,OnDestroy{
  readonly sharedConversationComponent=signal<Type<unknown>|null>(null);

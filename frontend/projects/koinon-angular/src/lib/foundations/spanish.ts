@@ -7,6 +7,7 @@ import { AUDIT_LINEAGE_SPANISH } from './audit-lineage-spanish';
 import { APPLICATIONS_SPANISH } from './applications-spanish';
 import { MCP_SPANISH } from './mcp-spanish';
 export const SPANISH: Readonly<Record<string, string>> = {
+  Uploads: 'Subidas',
  'Loading details…':'Cargando detalles…','Details could not be opened. Close and try again.':'No se pudieron abrir los detalles. Cierra y vuelve a intentarlo.',
   'Your access context changed. Cancel and start a new token to review its access.':
     'Tu contexto de acceso ha cambiado. Cancela y empieza un nuevo token para revisar su acceso.',
