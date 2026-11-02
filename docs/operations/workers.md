@@ -34,11 +34,34 @@ Keep at least one worker initially, including during periods with no interactive
 
 The internal typed `WorkerBacklog.snapshot()` observation returns bounded counts for ten queues: conversation, index, attachment, profile, document ingestion, structured ingestion, callback, communications, bulk intake and bulk read-only queries. Each includes ready, active, retry, oldest ready age and declared per-replica capacity. Demand is ready plus active work, including jobs waiting for a provider. A missing datasource reports unavailable rather than an empty queue. No identifiers, prompts, source contents or credentials are returned, and this observation adds no public route or grant.
 
-One native `Bulkhead` backs a shared process admission service. `koinon.operations.admission.worker_capacity` defaults to **1** root heavy operation across conversation, index, attachment, profile, document ingestion, structured ingestion, callback delivery, communications and bulk intake/query supervision. A worker acquires capacity before claiming a lease or loading its job payload and keeps it through execution and settlement. Waiting does not increment attempts or spend a lease. Admission is FIFO with at most `max_waiters` (default 64) and `wait_timeout_seconds` (default 30); a full or timed-out wait leaves durable work unclaimed. Shutdown rejects waiting and new roots while active work drains. Nested calls reuse their live root reservation; detached calls cannot reuse it after that root exits.
+Native Pyfly `Bulkhead` instances back process admission. By default, one shared worker budget applies. `koinon.operations.admission.worker_capacity` defaults to **1** root heavy operation across conversation, index, attachment, profile, document ingestion, structured ingestion, callback delivery, communications and bulk intake/query supervision. A worker acquires capacity before claiming a lease or loading its job payload and keeps it through execution and settlement. Waiting does not increment attempts or spend a lease. Admission is FIFO with at most `max_waiters` (default 64) and `wait_timeout_seconds` (default 30); a full or timed-out wait leaves durable work unclaimed. Shutdown rejects waiting and new roots while active work drains. Nested calls reuse their live root reservation; detached calls cannot reuse it after that root exits.
 
-A worker capacity of 1 applies to each process: two worker replicas can admit two root operations. Shared database claim quotas may impose a lower limit for a particular queue.
+With reserved conversation capacity disabled, a worker capacity of 1 applies to each process: two worker replicas can admit two root operations. Shared database claim quotas may impose a lower limit for a particular queue.
 
-API and MCP native model-bound operations use a separate `koinon.operations.admission.api_capacity`, also defaulting to 1. Conversation consumer concurrency still uses `koinon.operations.worker_concurrency` (1 through 16). Index and attachment each process one job at a time, profile synchronization up to two, and durable ingestion one per domain. Managed callbacks claim and deliver one admitted row at a time, with a bounded number of rows visited per poll. The effective capacity for any queue is bounded by both its own limit and the shared process limit. `WorkerBacklog.snapshot()` reports the shared `process_capacity` separately; do not sum per-queue capacities.
+### Reserving capacity for conversations
+
+A conversation waiting for a model retains its admission permit. With one shared permit, it also delays ingestion, indexing and communications. To separate those root workloads, set `koinon.operations.admission.conversation_capacity` to a positive integer from 1 through 16. Zero, the default, retains the shared budget for existing deployments. A positive value reserves a separate conversation pool; other worker roots continue to use `worker_capacity`. Idle reserved capacity is not borrowed by ingestion, so increasing chat capacity does not increase the number of concurrent ingestion roots.
+
+Set the number of conversation consumers as well. For example, this configuration allows two conversation roots and one background root in each worker process:
+
+```yaml
+koinon:
+  operations:
+    worker_concurrency: 2
+    admission:
+      worker_capacity: 1
+      conversation_capacity: 2
+      api_capacity: 1
+      max_waiters: 64
+      wait_timeout_seconds: 30
+```
+
+The example is a concurrency policy, not a validated memory size or throughput promise. Conversations can themselves run memory-intensive queries and nested tools. Size for both reserved conversations and background work at once. Nested work retains its original root permit, including through child drain; a nested tool does not acquire an additional root slot. Root admission happens before queue claims. Each pool keeps its own FIFO wait queue, bounded by `max_waiters` and the admission timeout. Shutdown closes both worker pools and drains existing roots; API admission remains independent.
+
+Worker observations report conversation capacity as the smaller of consumer count and reserved slots. Other queues retain their background limits. `process_capacity` and System information's worker capacity report the sum of the background and reserved conversation budgets. When reservations are disabled, they report the original shared limit. Multiply the total by replicas and deployment overlap when planning database, memory and provider capacity. The counts-only scaler still observes ready and active jobs across all queues; qualify its target against the selected budgets rather than assuming every queue has interchangeable capacity.
+
+
+API and MCP native model-bound operations use a separate `koinon.operations.admission.api_capacity`, also defaulting to 1. Conversation consumer concurrency still uses `koinon.operations.worker_concurrency` (1 through 16). Index and attachment each process one job at a time, profile synchronization up to two, and durable ingestion one per domain. Managed callbacks claim and deliver one admitted row at a time, with a bounded number of rows visited per poll. The effective capacity for any queue is bounded by both its own limit and its admission pool. `WorkerBacklog.snapshot()` reports total `process_capacity` separately; do not sum per-queue capacities.
 
 These limits count root operations, not bytes or every nested provider request. A single operation can contain bounded native parallel subtasks. File limits, parser subprocess limits, DuckDB settings, object prefetch and concurrent HTTP request bodies require their own bounds and measured sizing. Periodic retention and reconciliation remain separate maintenance. A capacity of 1 does not guarantee a 1 GiB memory footprint or qualify an instance size. Multiple queues may use the same provider, and aggregate provider demand grows with the replica count; there is no distributed provider quota. Set replica maxima and provider limits accordingly. Including active work avoids a false zero metric but does not guarantee that a platform retains every busy replica; graceful drain and fencing remain necessary.
 

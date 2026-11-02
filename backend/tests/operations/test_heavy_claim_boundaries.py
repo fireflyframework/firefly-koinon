@@ -143,7 +143,15 @@ async def test_native_composition_injects_one_configured_budget_into_api_and_cal
     from koinon.workers.callbacks import ManagedCallbackWorkAdmission
 
     context = ApplicationContext(
-        Config({"koinon": {"operations": {"admission": {"worker_capacity": 2, "api_capacity": 3}}}})
+        Config(
+            {
+                "koinon": {
+                    "operations": {
+                        "admission": {"worker_capacity": 2, "api_capacity": 3, "conversation_capacity": 4}
+                    }
+                }
+            }
+        )
     )
     for kind in (WorkAdmissionSettings, WorkAdmission, NativeDomains, ManagedCallbackWorkAdmission):
         context.register_bean(kind)
@@ -154,5 +162,6 @@ async def test_native_composition_injects_one_configured_budget_into_api_and_cal
         assert gate is context.get_bean(NativeDomains).admission
         assert context.get_bean(CallbackWorkAdmission).admission is gate
         assert gate._workers.bulkhead.max_concurrent == 2 and gate._api.bulkhead.max_concurrent == 3
+        assert gate._conversations.bulkhead.max_concurrent == 4
     finally:
         await context.stop()

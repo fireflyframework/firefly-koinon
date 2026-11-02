@@ -10,7 +10,8 @@ from koinon.operations.settings import OperationalSettings
 from koinon.workers.admission import WorkAdmission, WorkAdmissionSettings
 
 
-async def test_configured_consumers_bound_inflight_runs_and_cancel_as_one_group():
+@pytest.mark.parametrize("reserved", [False, True])
+async def test_configured_consumers_bound_inflight_runs_and_cancel_as_one_group(reserved):
     pending = list(range(5))
     claimed = []
     active = set()
@@ -38,7 +39,11 @@ async def test_configured_consumers_bound_inflight_runs_and_cancel_as_one_group(
             Queue(),
             Executor(),
             OperationalSettings(worker_concurrency=2),
-            admission=WorkAdmission(WorkAdmissionSettings(worker_capacity=2)),
+            admission=WorkAdmission(
+                WorkAdmissionSettings(worker_capacity=1, conversation_capacity=2)
+                if reserved
+                else WorkAdmissionSettings(worker_capacity=2)
+            ),
         )
     )
     await asyncio.wait_for(entered.wait(), 1)

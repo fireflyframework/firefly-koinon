@@ -42,6 +42,7 @@ class WorkAdmissionUnavailable(ServiceUnavailableException):
 @dataclass
 class WorkAdmissionSettings:
     worker_capacity: int = 1
+    conversation_capacity: int = 0
     api_capacity: int = 1
     max_waiters: int = 64
     wait_timeout_seconds: float = 30
@@ -50,6 +51,8 @@ class WorkAdmissionSettings:
         for value, maximum in ((self.worker_capacity, 32), (self.api_capacity, 64), (self.max_waiters, 1024)):
             if type(value) is not int or not 1 <= value <= maximum:
                 raise ValueError("Work capacities and waiting limits must be bounded positive integers")
+        if type(self.conversation_capacity) is not int or not 0 <= self.conversation_capacity <= 16:
+            raise ValueError("Reserved conversation capacity must be an integer from zero through 16")
         value = self.wait_timeout_seconds
         if (
             isinstance(value, bool)
@@ -58,6 +61,15 @@ class WorkAdmissionSettings:
             or not 0 < value <= 300
         ):
             raise ValueError("Work admission timeout must be finite and between zero and 300 seconds")
+
+    @property
+    def process_capacity(self) -> int:
+        return self.worker_capacity + self.conversation_capacity
+
+    def capacity_for(self, kind: str) -> int:
+        if kind == "conversation" and self.conversation_capacity:
+            return self.conversation_capacity
+        return self.worker_capacity
 
 
 class _Pool:
@@ -132,21 +144,30 @@ class WorkAdmission:
             _Pool(settings.worker_capacity, settings),
             _Pool(settings.api_capacity, settings),
         )
+        self._conversations = (
+            _Pool(settings.conversation_capacity, settings) if settings.conversation_capacity else None
+        )
+
+    def _worker_pools(self):
+        return (self._workers, self._conversations) if self._conversations is not None else (self._workers,)
 
     @property
     def worker_active(self):
-        return self._workers.bulkhead.max_concurrent - self._workers.bulkhead.available_slots
+        return sum(
+            pool.bulkhead.max_concurrent - pool.bulkhead.available_slots for pool in self._worker_pools()
+        )
 
     @property
     def worker_waiting(self):
-        return len(self._workers.waiters)
+        return sum(len(pool.waiters) for pool in self._worker_pools())
 
     @property
     def api_active(self):
         return self._api.bulkhead.max_concurrent - self._api.bulkhead.available_slots
 
     def close_workers(self):
-        self._workers.close()
+        for pool in self._worker_pools():
+            pool.close()
 
     @asynccontextmanager
     async def hold(self, kind: WorkKind, *, api: bool = False):
@@ -174,7 +195,15 @@ class WorkAdmission:
             finally:
                 await current.release()
             return
-        pool = self._api if api else self._workers
+        pool = (
+            self._api
+            if api
+            else (
+                self._conversations
+                if kind == "conversation" and self._conversations is not None
+                else self._workers
+            )
+        )
         await pool.acquire()
         reservation = _Reservation(self, pool)
         token = _current.set(reservation)
