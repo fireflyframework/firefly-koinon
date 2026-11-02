@@ -7,6 +7,7 @@ from pyfly.kernel import InvalidRequestException
 
 from koinon.catalog.errors import AccessDenied
 from koinon.catalog.service import CatalogService
+from koinon.security.policy_reads import policy_read
 
 SCOPE_FIELDS = frozenset({"workspace_id", "project_id", "collection_id", "asset_ids"})
 
@@ -17,6 +18,13 @@ class KnowledgeScopePolicy:
         self.catalog = catalog
 
     async def validate_scope(
+        self, subject: str, tenant_id: str, requested: dict, limit: dict | None = None
+    ) -> dict:
+        await self.catalog._refresh_managed_memberships(subject)
+        async with policy_read():
+            return await self._validate_scope(subject, tenant_id, requested, limit)
+
+    async def _validate_scope(
         self, subject: str, tenant_id: str, requested: dict, limit: dict | None = None
     ) -> dict:
         if set(requested) - SCOPE_FIELDS or (limit is not None and set(limit) - SCOPE_FIELDS):
