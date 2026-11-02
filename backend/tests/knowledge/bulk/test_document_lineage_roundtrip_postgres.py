@@ -80,7 +80,7 @@ async def test_native_lineage_admission_roundtrips_through_bulk_inspection(bulk,
         )
     assert admitted.sha256 == lease.sha256 and admitted.bytes == lease.size_bytes
     observation = await port.inspect(lease)
-    assert observation.status == "failed" and observation.receipt is None
+    assert observation.status == "admitted" and observation.receipt is None
     current = await bulk.service.processing_recovery(lease.subject, lease.tenant_id, batch_id, item_id)
     assert current.native_state == "admitted" and current.operation is None
 
