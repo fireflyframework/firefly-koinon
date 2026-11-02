@@ -3,6 +3,7 @@
 
 from pyfly.container import repository
 from pyfly.data.relational.sqlalchemy import Repository
+from pyfly.data.transaction import transactional
 from sqlalchemy import and_, func, or_, select
 
 from koinon.assistants.entities import (
@@ -35,6 +36,7 @@ class ChatThreadRepository(Repository[ChatThread, str]):
 class ChatMessageRepository(Repository[ChatMessage, str]):
     """Durable visible conversation history."""
 
+    @transactional(read_only=True, read_from_primary=True)
     async def snapshot_messages(self, thread_id: str, message_ids: list[str]):
         return (
             await self._require_session().execute(
@@ -48,6 +50,7 @@ class ChatMessageRepository(Repository[ChatMessage, str]):
             )
         ).all()
 
+    @transactional(read_only=True, read_from_primary=True)
     async def private_context_origin(self, thread_id: str):
         return await self._require_session().scalar(
             select(func.min(ChatMessage.created_at))
@@ -112,6 +115,7 @@ class ChatRunRepository(Repository[ChatRun, str]):
 class ChatEventRepository(Repository[ChatEvent, str]):
     """Ordered replayable stream events."""
 
+    @transactional(read_only=True, read_from_primary=True)
     async def latest_reset(self, run_id: str) -> int | None:
         return await self._require_session().scalar(
             select(func.max(ChatEvent.sequence)).where(

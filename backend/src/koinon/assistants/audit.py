@@ -4,6 +4,7 @@ from contextlib import nullcontext
 
 from pyfly.container import Provider, service
 from pyfly.data import transactional
+from pyfly.data.transaction import Propagation
 from pyfly.kernel import ServiceUnavailableException
 from pyfly.security.context import SecurityContext
 from pyfly.security.context_holder import SecurityContextHolder
@@ -59,7 +60,8 @@ class AnswerAudits:
             await self.assistants.validate_scope(subject, tenant_id, run.scope)
             await self.assistants.authorize_results(subject, tenant_id, run.id)
 
-    @transactional(read_only=True, read_from_primary=True)
+    # Final memory/output checks own fresh primary units; do not retain an enclosing connection.
+    @transactional(propagation=Propagation.NOT_SUPPORTED, read_only=True, read_from_primary=True)
     async def get(self, subject, tenant_id, run_id):
         run = await self.assistants.owned_run(subject, tenant_id, run_id, require_attachment_use=False)
         rows = sorted(
