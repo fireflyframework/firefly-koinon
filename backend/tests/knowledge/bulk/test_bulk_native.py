@@ -23,6 +23,10 @@ async def bulk(tmp_path, request):
         bulk_url = request.getfixturevalue("bulk_url")
     except pytest.FixtureLookupError:
         bulk_url = f"sqlite+aiosqlite:///{tmp_path / 'bulk.db'}"
+    try:
+        schema_migrated = request.getfixturevalue("bulk_schema_migrated")
+    except pytest.FixtureLookupError:
+        schema_migrated = False
     (tmp_path / "private").mkdir(mode=0o700)
     context = ApplicationContext(
         Config(
@@ -33,7 +37,7 @@ async def bulk(tmp_path, request):
                     "data": {
                         "relational": {
                             "enabled": True,
-                            "ddl-auto": "create",
+                            "ddl-auto": "none" if schema_migrated else "create",
                             "url": bulk_url,
                         }
                     },

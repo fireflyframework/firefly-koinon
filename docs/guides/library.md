@@ -41,6 +41,10 @@ At the Library home, the server-paginated list contains spaces only. Open a spac
 
 ## Find and open
 
+Right-click a Library row, or use its actions button, to open the actions available for that item. Keyboard users can focus an item and press **Shift+F10** or the context-menu key. Choose **Open folder** to browse, **Details** to inspect, or **Edit details** to change the name and description. Editors can also move ordinary nested folders within their current project or archive ordinary items after confirmation. System folders never offer move or archive. The separate information button still opens details directly.
+
+Right-click the unused area of a folder list to create the next space, project or folder, or to add knowledge at the current location. These use the same forms and access checks as the toolbar. The toolbar remains available on touch devices. Press **Escape** to close the menu and return focus; actions are checked again against the current item and permissions before a form opens.
+
 Choose the organization and space you have access to. Browse folders with the list, breadcrumb or knowledge tree. Search narrows the current context; clear the search to return to the folder. Opening an item and inspecting its details are separate actions, so a details drawer does not interrupt browsing.
 
 A document keeps its source and extracted evidence. A dataset exposes its table and column definitions, immutable snapshots and governed query results. Names are for people; canonical identifiers and source bindings remain on the server.

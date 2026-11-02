@@ -30,6 +30,8 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 export class KoinonIcon {
   @Input() name = 'file';
   readonly paths: Record<string, string> = {
+    more: 'M5 12h.01M12 12h.01M19 12h.01',
+    archive: 'M3 3h18v5H3zM5 8v13h14V8M9 12h6',
     bell: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4',
     mail: 'M3 5h18v14H3zM3 5l9 8 9-8',
     user: 'M20 21v-2a8 8 0 0 0-16 0v2M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
