@@ -1,0 +1,21 @@
+{
+  "copyright": "Copyright 2026 Firefly Software Foundation",
+  "license": "Apache-2.0",
+  "base_commit": "a3c860e7bbdd6215506ddf48faad8093a910f41a",
+  "capture": "Compiled management application with controlled organization and model configuration fixtures; no live provider calls or deployment acceptance.",
+  "journey": "frontend/e2e/knowledge-settings-journey.spec.ts",
+  "viewport_widths": [
+    1440,
+    390
+  ],
+  "notes": "The fictional organization is not configured with a model connection. Saved record counts and recorded checks are separate; no overall readiness is implied.",
+  "source_files": {
+    "frontend/projects/koinon-angular/settings/src/knowledge-overview.html": "32af110c51dbabf435e2341b454001ba9afec2bd86a995f455071d73b3984d5a",
+    "frontend/projects/koinon-angular/settings/src/knowledge-overview.scss": "c36bed6a94129e045fa5f6850918f60cbe1d48589f53821771fdd63cfd8e5f7b",
+    "frontend/projects/koinon-angular/settings/src/settings-page.html": "9ecacb13e1d9cfc11340f8b79251b8e3009c201ee3f9a99dc0487fd9bd634e52"
+  },
+  "files": {
+    "knowledge-ai-overview.png": "e3592837e03be2e99ebc69ffc8be08c7fe8c9f98609b8d317775c78d856b099c",
+    "knowledge-ai-overview-mobile.png": "b1f97a9f3608fc324161b693be00e86d2dd770e2d7bb8c42215b18c1072d1df9"
+  }
+}

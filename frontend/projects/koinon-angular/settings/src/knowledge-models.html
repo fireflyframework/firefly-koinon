@@ -2,10 +2,10 @@
 @if (!editing()) {
   <header class="heading">
     <div>
-      <h2>{{ 'Knowledge models' | ffkText }}</h2>
+      <h2>{{ 'Model assignments' | ffkText }}</h2>
       <p>
         {{
-          'Choose the models used to process, search and answer questions about your knowledge.'
+          'Choose embedding models for documents and datasets. Expand processing models when you need to configure document answers, analysis or SQL generation.'
             | ffkText
         }}
       </p>
@@ -387,6 +387,52 @@
         }
       </section>
     }
+  }
+  @if (hasProcessingRoles()) {
+    <details class="processing-models" [open]="processingExpanded()" (toggle)="processingExpanded.set($any($event.target).open)">
+      <summary>{{ 'Advanced processing models' | ffkText }}</summary>
+      <p>
+        {{
+          'Configure the roles required by your answer method and enabled features, including RLM analysis and dataset SQL generation.'
+            | ffkText
+        }}
+      </p>
+      @for (domain of domains; track domain.id) {
+        @if (roles(domain.id, 'processing').length) {
+          <section class="domain-group" [attr.aria-label]="domain.label | ffkText">
+            <h3>{{ domain.label | ffkText }}</h3>
+            @for (role of roles(domain.id, 'processing'); track role.id) {
+              <article class="assignment-row">
+                <div class="role-description">
+                  <h4>{{ role.label | ffkText }}</h4>
+                  <p>
+                    {{ modelName(role) | ffkText }}
+                    @if (providerName(role)) {
+                      <span>, {{ providerName(role) }}</span>
+                    }
+                  </p>
+                  <small>{{ originLabel(role) | ffkText }}</small>
+                </div>
+                <ffk-badge tone="neutral">{{ assignmentLabel(role) | ffkText }}</ffk-badge
+                ><ffk-button
+                  variant="quiet"
+                  [attr.data-role]="role.id"
+                  [label]="
+                    ((service.scope() && !assignment(role) ? 'Customize' : 'Configure') | ffkText) +
+                    ' ' +
+                    (role.label | ffkText)
+                  "
+                  (click)="begin(role)"
+                  >{{
+                    (service.scope() && !assignment(role) ? 'Customize' : 'Configure') | ffkText
+                  }}</ffk-button
+                >
+              </article>
+            }
+          </section>
+        }
+      }
+    </details>
   }
   @if (!service.roles()?.roles?.length && !service.pending()) {
     <p class="empty">

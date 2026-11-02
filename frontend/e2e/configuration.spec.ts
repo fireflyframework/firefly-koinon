@@ -2,7 +2,7 @@
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { test, expect, type Page } from '@playwright/test';
-import { openAdministration,  mockService } from './fixtures';
+import { openAdministration, mockService } from './fixtures';
 async function configurationFixture(page: Page) {
   await mockService(page);
   const providers: Record<string, unknown>[] = [],
@@ -94,6 +94,7 @@ test('operator saves and checks a descriptor-backed provider before configuring 
   const service = await configurationFixture(page);
   await page.goto('/library');
   await openAdministration(page, 'Settings');
+  await page.getByRole('button', { name: 'Manage connections', exact: true }).click();
   await page.getByRole('button', { name: 'Connect a model', exact: true }).click();
   await page.getByRole('button', { name: 'Ollama', exact: true }).click();
   await page
@@ -106,7 +107,8 @@ test('operator saves and checks a descriptor-backed provider before configuring 
   await expect(page.getByText('The selected local model is available')).toBeVisible();
   expect(service.providers[0]['validated']).toBe(true);
   await page.getByRole('button', { name: 'Done', exact: true }).click();
-  await page.getByRole('button', { name: 'Agents', exact: true }).click();
+  await page.getByRole('button', { name: 'Assistant', exact: true }).click();
+  await page.getByText('Additional agent configurations', { exact: true }).click();
   await page.getByRole('button', { name: 'Create an agent', exact: true }).click();
   await page.getByRole('textbox', { name: 'Agent name', exact: true }).fill('Research assistant');
   await page
@@ -131,6 +133,7 @@ test('required provider fields are validated before a write is sent', async ({ p
   const service = await configurationFixture(page);
   await page.goto('/library');
   await openAdministration(page, 'Settings');
+  await page.getByRole('button', { name: 'Manage connections', exact: true }).click();
   await page.getByRole('button', { name: 'Connect a model', exact: true }).click();
   await page.getByRole('button', { name: 'Ollama', exact: true }).click();
   await page.getByRole('button', { name: 'Save provider', exact: true }).click();
@@ -146,7 +149,10 @@ for (const width of [1440, 390])
     if (width < 700)
       await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
     await openAdministration(page, 'Settings');
-    await expect(page.getByRole('heading', { name: 'Providers', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Manage connections', exact: true }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Model connections', exact: true }),
+    ).toBeVisible();
     await page.evaluate(() => {
       document
         .querySelector<HTMLElement>('ffk-workbench')
@@ -183,6 +189,7 @@ test('mobile sections retain a visible label and provider Back retains entered d
   await page.goto('/library');
   await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
   await openAdministration(page, 'Settings');
+  await page.getByRole('button', { name: 'Manage connections', exact: true }).click();
   await expect(page.getByRole('combobox', { name: 'Settings section', exact: true })).toHaveValue(
     'providers',
   );
@@ -208,6 +215,7 @@ test('Settings keeps local navigation visible while its form pane scrolls', asyn
   await configurationFixture(page);
   await page.goto('/library');
   await openAdministration(page, 'Settings');
+  await page.getByRole('button', { name: 'Manage connections', exact: true }).click();
   await page.getByRole('button', { name: 'Connect a model', exact: true }).click();
   await page.getByRole('button', { name: 'Ollama', exact: true }).click();
   const navigation = page.getByRole('navigation', { name: 'Settings sections', exact: true });
@@ -292,6 +300,7 @@ test('deployment diagnostics keep an unprobed store unknown and expose no edit a
   );
   await page.goto('/library');
   await openAdministration(page, 'Settings');
+  await page.getByRole('button', { name: 'Manage connections', exact: true }).click();
   await page.getByRole('button', { name: 'Storage & indexing', exact: true }).click();
   await page.getByText('Deployment observations', { exact: true }).click();
   await expect(

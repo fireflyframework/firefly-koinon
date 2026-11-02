@@ -1,7 +1,7 @@
 <!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
 # Organization knowledge behavior
 
-Organization administrators configure document answer behavior and structured-query parameters by opening **Settings** and selecting **Knowledge models**. The Knowledge behavior panel applies to the selected organization. Model assignments beneath it may have a workspace scope; workspace assignment rights do not grant permission to change organization behavior.
+Organization administrators configure document answer behavior and structured-query parameters by opening **Settings** and selecting **Knowledge answers**. This page applies to the selected organization. **Model assignments** is a separate page with organization defaults and workspace overrides; workspace assignment rights do not grant permission to change organization behavior. The model-prerequisites link opens that page through the same unsaved-change review as the settings navigation.
 
 Read the current values and server capabilities before editing. With no saved organization policy, revision `0` and origin `deployment` identify the validated deployment values. Saving the complete policy creates an organization revision. There is no implicit switch from RAG to RLM. Inherited document `answer_top_k` preserves the canonical baseline of `10`.
 

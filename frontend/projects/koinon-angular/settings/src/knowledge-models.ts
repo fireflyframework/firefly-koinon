@@ -79,6 +79,7 @@ export class KoinonKnowledgeModels implements OnInit {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly heading = viewChild<ElementRef<HTMLHeadingElement>>('editorHeading');
   readonly editing = signal<KnowledgeRole | null>(null);
+  readonly processingExpanded = signal(false);
   readonly existing = signal<KnowledgeConnection | null>(null);
   readonly errors = signal<Record<string, string>>({});
   readonly removeConfirmation = signal(false);
@@ -217,8 +218,19 @@ export class KoinonKnowledgeModels implements OnInit {
   scopeName() {
     return this.workspaces().find((workspace) => workspace.id === this.service.scope())?.name ?? '';
   }
-  roles(domain: string) {
-    return this.service.roles()?.roles.filter((role) => role.domain === domain) ?? [];
+  roles(domain: string, kind: 'embedding' | 'processing' = 'embedding') {
+    return (
+      this.service
+        .roles()
+        ?.roles.filter(
+          (role) =>
+            role.domain === domain &&
+            (kind === 'embedding' ? role.kind === 'embedding' : role.kind !== 'embedding'),
+        ) ?? []
+    );
+  }
+  hasProcessingRoles() {
+    return this.service.roles()?.roles.some((role) => role.kind !== 'embedding') ?? false;
   }
   assignment(role: KnowledgeRole) {
     return (
@@ -257,6 +269,7 @@ export class KoinonKnowledgeModels implements OnInit {
         : 'No assignment';
   }
   begin(role: KnowledgeRole) {
+    if (role.kind !== 'embedding') this.processingExpanded.set(true);
     const row = this.assignment(role);
     this.navigationReview.set(null);
     this.existing.set(row);

@@ -29,8 +29,11 @@ for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('/library');
     await openAdministration(page, 'Settings');
+    await page.getByRole('button', { name: 'Manage connections', exact: true }).click();
     const settings = page.locator('ffk-settings-page');
-    await expect(settings.getByRole('heading', { name: 'Providers', exact: true })).toBeVisible();
+    await expect(
+      settings.getByRole('heading', { name: 'Model connections', exact: true }),
+    ).toBeVisible();
     await expect(settings.getByText('Framework provider support', { exact: true })).toHaveCount(0);
     await expect(settings.getByText('framework-only-provider', { exact: true })).toHaveCount(0);
     await expect(settings.getByText('private.module.Provider', { exact: true })).toHaveCount(0);

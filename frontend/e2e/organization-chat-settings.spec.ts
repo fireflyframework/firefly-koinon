@@ -162,7 +162,9 @@ async function openAgents(page: Page, spanish = false) {
   });
   if (await mobile.isVisible()) await mobile.selectOption('agents');
   else
-    await page.getByRole('button', { name: spanish ? 'Agentes' : 'Agents', exact: true }).click();
+    await page
+      .getByRole('button', { name: spanish ? 'Asistente' : 'Assistant', exact: true })
+      .click();
 }
 for (const width of [1440, 390])
   for (const theme of ['light', 'dark'])
@@ -289,6 +291,7 @@ test('clearing the organization setting preserves explicit Settings agent trials
   await editor.getByRole('button', { name: 'Save organization chat', exact: true }).click();
   await expect(editor.getByRole('status')).toContainText('Organization chat saved.');
   expect(service.writes).toEqual([{ default_agent_id: null, expected_revision: 4 }]);
+  await page.getByText('Additional agent configurations', { exact: true }).click();
   await page
     .locator('.agent-list article')
     .filter({ hasText: 'Organization guide' })
@@ -330,4 +333,23 @@ test('organization setting conflicts require reload and Spanish labels remain lo
   await expect(
     editor.getByRole('combobox', { name: 'Agente del chat de la organización', exact: true }),
   ).toHaveValue('second');
+});
+
+test('editing an additional agent requires reviewing unsaved organization memory first', async ({ page }) => {
+  const service = await setup(page, { memory: true });
+  await openAgents(page);
+  const memory = page.locator('ffk-organization-chat-settings').getByRole('spinbutton', { name: 'Total history messages', exact: true });
+  await memory.fill('32');
+  await page.getByText('Additional agent configurations', { exact: true }).click();
+  const edit = page.locator('.agent-list article').filter({ hasText: 'Organization guide' }).getByRole('button', { name: 'Edit', exact: true });
+  await edit.click();
+  const review = page.getByRole('region', { name: 'Leave this settings editor?', exact: true });
+  await expect(review).toBeVisible();
+  await review.getByRole('button', { name: 'Keep editing', exact: true }).click();
+  await expect(memory).toHaveValue('32');
+  expect(service.writes).toEqual([]);
+  await edit.click();
+  await review.getByRole('button', { name: 'Leave editor', exact: true }).click();
+  await expect(page.getByRole('textbox', { name: 'Agent name', exact: true })).toHaveValue('Organization guide');
+  expect(service.writes).toEqual([]);
 });
