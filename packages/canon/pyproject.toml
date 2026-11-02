@@ -4,7 +4,7 @@
 name = "firefly-koinon-documents"
 # CalVer YY.MM.PP -- bumped per release. Note that PEP 440 normalises
 # ``26.05.04`` -> ``26.5.4`` in the built wheel filename.
-version = "26.11.5"
+version = "26.11.6"
 description = "Document knowledge services for firefly koinon: file intake, immutable source versions, retrieval and provenance on native pyfly."
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
@@ -17,7 +17,7 @@ authors = [
 ]
 
 dependencies = [
-    "firefly-koinon-storage==26.11.5",
+    "firefly-koinon-storage==26.11.6",
     # Firefly Framework runtime (DI, CQRS, EDA, web, observability, resilience,
     # actuator, data-relational, security). Pulled in with the extras we use
     # so a fresh ``uv sync`` is enough to boot the full stack.
@@ -97,8 +97,8 @@ dependencies = [
 flycanon = "flycanon.cli:main"
 
 [project.optional-dependencies]
-storage-azure = ["firefly-koinon-storage[azure]==26.11.5"]
-storage-gcs = ["firefly-koinon-storage[gcs]==26.11.5"]
+storage-azure = ["firefly-koinon-storage[azure]==26.11.6"]
+storage-gcs = ["firefly-koinon-storage[gcs]==26.11.6"]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
