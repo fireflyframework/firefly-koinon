@@ -15,6 +15,7 @@ from pyfly.security.context_holder import SecurityContextHolder
 from koinon.knowledge.bulk.authority import BulkAuthority, execution_context
 from koinon.knowledge.bulk.dtos import BulkDestination
 from koinon.knowledge.bulk.entities import BulkTableReservation
+from koinon.knowledge.bulk.recovery_intent import recovery_operation
 from koinon.knowledge.bulk.repositories import BulkRepository
 from koinon.knowledge.bulk.settings import BulkSettings
 from koinon.knowledge.bulk.structured_dtos import StructuredTablePlan
@@ -38,6 +39,7 @@ class BulkLease:
     mode: str
     destination: BulkDestination
     expires_at: datetime | None = None
+    recovery_operation: str | None = None
 
 
 @dataclass(frozen=True)
@@ -91,6 +93,7 @@ class BulkQueue:
             token_id=batch.token_id,
             worker_id=job.worker_id or "",
             attempt=job.attempts,
+            recovery_operation=recovery_operation(job, item, batch),
             source_id=item.source_id,
             asset_id=item.asset_id,
             filename=item.filename,
@@ -184,9 +187,11 @@ class BulkQueue:
                 raise ConflictException("Reserved item is unavailable", code="BULK_LEASE_LOST")
             if candidate.mode == "dataset":
                 await self.authority.dataset(lease.subject, lease.tenant_id, candidate, lease.destination)
-            _, item, batch = await self.records.fenced(
+            job, item, batch = await self.records.fenced(
                 lease.tenant_id, lease.item_id, lease.worker_id, lease.attempt
             )
+            if recovery_operation(job, item, batch) != lease.recovery_operation:
+                raise ConflictException("Recovery action changed", code="BULK_RECOVERY_STATE_CHANGED")
             if item.connection_json != await self.records.connection(
                 batch.tenant_id, batch.workspace_id, item.mode
             ):

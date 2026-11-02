@@ -126,6 +126,8 @@
   "FileBatchController.cancel": "client.fileBatches.cancel",
   "FileBatchController.reconcile": "client.fileBatches.reconcile",
   "FileBatchController.recover_original": "client.fileBatches.recoverOriginal",
+  "FileBatchController.processing_recovery": "client.fileBatches.processingRecovery",
+  "FileBatchController.recover_processing": "client.fileBatches.recoverProcessing",
   "QueryBatchController.capabilities": "client.queryBatches.capabilities",
   "QueryBatchController.create": "client.queryBatches.create",
   "QueryBatchController.list": "client.queryBatches.list",

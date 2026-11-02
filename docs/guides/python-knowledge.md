@@ -220,3 +220,7 @@ async def move_folder(
 ```
 
 `system_managed` identifies retained installation defaults. The server rejects their removal or movement regardless of the SDK. Ordinary collection and corpus folders can move inside their current project and space. A stale decision returns `CATALOG_CHANGED`; a different knowledge boundary returns `KNOWLEDGE_TRANSFER_REQUIRED`. Refresh and obtain a new decision rather than retrying automatically. See [Library hierarchy and permissions](library.md#spaces-projects-and-folders).
+
+### Recover an existing processing attempt
+
+`file_batch_processing_recovery` and `recover_file_batch_processing` separate current inspection from explicit recovery of the same saved original. Review the server-offered operation and current revision before confirming; never invent a retry from a failed HTTP response or a reserved source ID. Preserve the exact reviewed body and idempotency key if the result is uncertain. The [processing recovery walkthrough](bulk-intake.md#recover-processing-without-uploading-the-original-again) includes the Library journey, typed examples, attempt limits and the distinction between an upload receipt, processing and search availability.

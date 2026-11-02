@@ -254,7 +254,11 @@ def test_queue_recheck_preserves_origin_for_actual_native_policy(client, capture
         records = SimpleNamespace(
             item=AsyncMock(return_value=item),
             fenced=AsyncMock(
-                return_value=(None, item, SimpleNamespace(tenant_id="tenant", workspace_id="ws"))
+                return_value=(
+                    SimpleNamespace(result=None),
+                    item,
+                    SimpleNamespace(tenant_id="tenant", workspace_id="ws"),
+                )
             ),
             connection=AsyncMock(return_value=item.connection_json),
         )
@@ -269,6 +273,7 @@ def test_queue_recheck_preserves_origin_for_actual_native_policy(client, capture
             asset_id="asset",
             sha256="a" * 64,
             batch_id="batch",
+            recovery_operation=None,
             item_id="item",
             worker_id="worker",
             attempt=1,

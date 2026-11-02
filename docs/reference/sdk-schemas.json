@@ -2489,6 +2489,32 @@
       "title": "BulkDestination",
       "type": "object"
     },
+    "BulkRecoveryAction": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "maximum": 2147483647,
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "operation": {
+          "enum": [
+            "retry_processing",
+            "finalize_publication",
+            "acknowledge_commit"
+          ],
+          "title": "Operation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "expected_revision",
+        "operation"
+      ],
+      "title": "BulkRecoveryAction",
+      "type": "object"
+    },
     "Capabilities": {
       "additionalProperties": true,
       "properties": {
@@ -9925,6 +9951,129 @@
         "sha256"
       ],
       "title": "FileManifestItem",
+      "type": "object"
+    },
+    "FileRecoveryView": {
+      "additionalProperties": true,
+      "properties": {
+        "batch_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Batch Id",
+          "type": "string"
+        },
+        "item_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Item Id",
+          "type": "string"
+        },
+        "batch_revision": {
+          "maximum": 2147483647,
+          "minimum": 1,
+          "title": "Batch Revision",
+          "type": "integer"
+        },
+        "native_state": {
+          "enum": [
+            "absent",
+            "admitted",
+            "prepared",
+            "committed",
+            "unknown",
+            "not_checked"
+          ],
+          "title": "Native State",
+          "type": "string"
+        },
+        "operation": {
+          "anyOf": [
+            {
+              "enum": [
+                "retry_processing",
+                "finalize_publication",
+                "acknowledge_commit"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Operation"
+        },
+        "reason_code": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason Code"
+        },
+        "attempts": {
+          "maximum": 2147483647,
+          "minimum": 0,
+          "title": "Attempts",
+          "type": "integer"
+        },
+        "max_attempts": {
+          "maximum": 2147483647,
+          "minimum": 1,
+          "title": "Max Attempts",
+          "type": "integer"
+        },
+        "checked_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Checked At"
+        },
+        "job_status": {
+          "enum": [
+            "queued",
+            "running",
+            "succeeded",
+            "failed",
+            "cancelled",
+            "unknown"
+          ],
+          "title": "Job Status",
+          "type": "string"
+        },
+        "original_receipt_state": {
+          "enum": [
+            "verified",
+            "unavailable",
+            "not_checked"
+          ],
+          "title": "Original Receipt State",
+          "type": "string"
+        }
+      },
+      "required": [
+        "batch_id",
+        "item_id",
+        "batch_revision",
+        "native_state",
+        "operation",
+        "attempts",
+        "max_attempts",
+        "checked_at",
+        "job_status",
+        "original_receipt_state"
+      ],
+      "title": "FileRecoveryView",
       "type": "object"
     },
     "FolderCreate": {
@@ -27982,6 +28131,12 @@
     },
     "BulkAction": {
       "$ref": "#/$defs/BulkAction"
+    },
+    "BulkRecoveryAction": {
+      "$ref": "#/$defs/BulkRecoveryAction"
+    },
+    "FileRecoveryView": {
+      "$ref": "#/$defs/FileRecoveryView"
     },
     "FileBatchCapabilities": {
       "$ref": "#/$defs/FileBatchCapabilities"

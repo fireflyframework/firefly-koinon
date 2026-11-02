@@ -134,6 +134,11 @@
     "Manrope",
     "Inter"
   ],
+  "BulkRecoveryActionOperation": [
+    "retry_processing",
+    "finalize_publication",
+    "acknowledge_commit"
+  ],
   "CatalogProposalKind": [
     "catalog"
   ],
@@ -486,6 +491,27 @@
     "failed",
     "cancelled",
     "reconciling"
+  ],
+  "FileRecoveryViewNativeState": [
+    "absent",
+    "admitted",
+    "prepared",
+    "committed",
+    "unknown",
+    "not_checked"
+  ],
+  "FileRecoveryViewJobStatus": [
+    "queued",
+    "running",
+    "succeeded",
+    "failed",
+    "cancelled",
+    "unknown"
+  ],
+  "FileRecoveryViewOriginalReceiptState": [
+    "verified",
+    "unavailable",
+    "not_checked"
   ],
   "ProviderKind": [
     "ollama",

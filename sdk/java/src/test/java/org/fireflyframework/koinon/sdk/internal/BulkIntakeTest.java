@@ -141,4 +141,23 @@ final class BulkIntakeTest {
       assertEquals("changed!", java.nio.file.Files.readString(file));
     }
   }
+  @Test void processingRecoveryUsesExactActionKeyAndTypedObservationWithoutRetry() throws Exception {
+    var http=new InertHttp();
+    try(var transport=new Transport(URI.create("https://inert.test/api/v1"),http,false,()->"fresh",new JsonCodec())){
+      var api=new FileBatchesApi(transport,"north/office");
+      http.response="{\"batch_id\":\"batch\",\"item_id\":\"item\",\"batch_revision\":9,\"native_state\":\"prepared\",\"operation\":\"finalize_publication\",\"attempts\":1,\"max_attempts\":3,\"job_status\":\"failed\",\"original_receipt_state\":\"verified\"}";
+      var observed=api.processingRecovery("batch/one","item/one");
+      assertEquals(FileRecoveryViewNativeState.PREPARED,observed.nativeState());
+      assertEquals(FileRecoveryViewJobStatus.FAILED,observed.jobStatus());
+      http.status=503;http.response="{\"code\":\"BULK_NATIVE_OUTCOME_UNRESOLVED\"}";
+      var action=new BulkRecoveryAction(9,BulkRecoveryActionOperation.FINALIZE_PUBLICATION);
+      assertThrows(ApiException.class,()->api.recoverProcessing("batch/one","item/one",action,"reviewed-key"));
+      assertEquals(2,http.requests.size());
+      assertTrue(http.requests.getFirst().uri().getRawPath().endsWith("/batch%2Fone/items/item%2Fone/recovery"));
+      assertTrue(http.requests.getLast().uri().getRawPath().endsWith("/batch%2Fone/items/item%2Fone/recover"));
+      assertEquals("reviewed-key",http.requests.getLast().headers().firstValue("Idempotency-Key").orElseThrow());
+      assertEquals("{\"expected_revision\":9,\"operation\":\"finalize_publication\"}",new String(http.bodies.getLast(),StandardCharsets.UTF_8));
+    }
+  }
+
 }

@@ -46,3 +46,19 @@ test('explicit original key and content type replace inherited case variants',as
   headers:{'idempotency-key':'stale-key','content-type':'text/plain','CONTENT-TYPE':'application/json'},
  });
 });
+
+
+test('processing recovery preserves the selected operation, exact key and abort signal without implicit retry', async()=>{
+ const calls=[];const controller=new AbortController();
+ const transport={request:async(method,path,options={})=>{calls.push({method,path,options});if(method==='POST')throw new TypeError('uncertain');return {operation:'finalize_publication',batch_revision:9};}};
+ const api=new KoinonClient({transport}).fileBatches;
+ const descriptor=await api.processingRecovery('north/office','batch/one','item/one',{signal:controller.signal});
+ assert.equal(descriptor.operation,'finalize_publication');
+ const input={expected_revision:9,operation:'finalize_publication'};
+ await assert.rejects(()=>api.recoverProcessing('north/office','batch/one','item/one',input,'exact-reviewed-key',{signal:controller.signal,headers:{'idempotency-key':'old'}}),TypeError);
+ assert.equal(calls.length,2);
+ assert.equal(calls[0].path,'/tenants/north%2Foffice/sources/batches/batch%2Fone/items/item%2Fone/recovery');
+ assert.equal(calls[1].path,'/tenants/north%2Foffice/sources/batches/batch%2Fone/items/item%2Fone/recover');
+ assert.deepEqual(calls[1].options.body,input);assert.equal(calls[1].options.headers['Idempotency-Key'],'exact-reviewed-key');assert.equal(calls[1].options.headers['idempotency-key'],undefined);
+ assert.ok(calls.every(call=>call.options.signal===controller.signal));
+});

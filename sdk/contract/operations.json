@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "api_prefix": "/api/v1",
   "status": "Canonical API contract; development snapshot",
-  "canonical_operation_count": 242,
+  "canonical_operation_count": 244,
   "qualified_compatibility_operations": [
     {
       "operation": "GlossaryController.list_terms",
@@ -4922,7 +4922,7 @@
       "category": "canonical",
       "operation": "FileBatchController.capabilities",
       "source": "backend/src/koinon/knowledge/bulk/controllers.py",
-      "line": 50,
+      "line": 52,
       "parameters": [
         {
           "name": "tenant_id",
@@ -4944,7 +4944,7 @@
       "request_schema": null,
       "response_schema": "FileBatchCapabilities",
       "success_status": 200,
-      "source_sha256": "54f5459584a35c2a907fee35d64ab4f9683bff0773d688010e2efdb87ad96be6",
+      "source_sha256": "06f34d914ed508cade2d37fcf5450fa59f251925fcb0bf77ab70aff705300ca7",
       "encoding": "application/json",
       "headers": []
     },
@@ -4954,7 +4954,7 @@
       "category": "canonical",
       "operation": "FileBatchController.create",
       "source": "backend/src/koinon/knowledge/bulk/controllers.py",
-      "line": 56,
+      "line": 58,
       "parameters": [
         {
           "name": "tenant_id",
@@ -4976,7 +4976,7 @@
       "request_schema": "FileBatchCreate",
       "response_schema": "FileBatchView",
       "success_status": 201,
-      "source_sha256": "54f5459584a35c2a907fee35d64ab4f9683bff0773d688010e2efdb87ad96be6",
+      "source_sha256": "06f34d914ed508cade2d37fcf5450fa59f251925fcb0bf77ab70aff705300ca7",
       "encoding": "application/json",
       "headers": [
         "Idempotency-Key (required; caller-supplied stable operation key)"
@@ -4988,7 +4988,7 @@
       "category": "canonical",
       "operation": "FileBatchController.list",
       "source": "backend/src/koinon/knowledge/bulk/controllers.py",
-      "line": 64,
+      "line": 66,
       "parameters": [
         {
           "name": "tenant_id",
@@ -5018,7 +5018,7 @@
       "request_schema": null,
       "response_schema": "FileBatchPage",
       "success_status": 200,
-      "source_sha256": "54f5459584a35c2a907fee35d64ab4f9683bff0773d688010e2efdb87ad96be6",
+      "source_sha256": "06f34d914ed508cade2d37fcf5450fa59f251925fcb0bf77ab70aff705300ca7",
       "encoding": "application/json",
       "headers": []
     },
@@ -5028,7 +5028,7 @@
       "category": "canonical",
       "operation": "FileBatchController.get",
       "source": "backend/src/koinon/knowledge/bulk/controllers.py",
-      "line": 76,
+      "line": 78,
       "parameters": [
         {
           "name": "tenant_id",
@@ -5050,7 +5050,7 @@
       "request_schema": null,
       "response_schema": "FileBatchView",
       "success_status": 200,
-      "source_sha256": "54f5459584a35c2a907fee35d64ab4f9683bff0773d688010e2efdb87ad96be6",
+      "source_sha256": "06f34d914ed508cade2d37fcf5450fa59f251925fcb0bf77ab70aff705300ca7",
       "encoding": "application/json",
       "headers": []
     },
@@ -5060,7 +5060,7 @@
       "category": "canonical",
       "operation": "FileBatchController.items",
       "source": "backend/src/koinon/knowledge/bulk/controllers.py",
-      "line": 80,
+      "line": 82,
       "parameters": [
         {
           "name": "tenant_id",
@@ -5096,7 +5096,7 @@
       "request_schema": null,
       "response_schema": "FileItemPage",
       "success_status": 200,
-      "source_sha256": "54f5459584a35c2a907fee35d64ab4f9683bff0773d688010e2efdb87ad96be6",
+      "source_sha256": "06f34d914ed508cade2d37fcf5450fa59f251925fcb0bf77ab70aff705300ca7",
       "encoding": "application/json",
       "headers": []
     },
@@ -5106,7 +5106,7 @@
       "category": "canonical",
       "operation": "FileBatchController.content",
       "source": "backend/src/koinon/knowledge/bulk/controllers.py",
-      "line": 93,
+      "line": 95,
       "parameters": [
         {
           "name": "tenant_id",
@@ -5134,7 +5134,7 @@
       "request_schema": "BulkFileUpload",
       "response_schema": "StagedFileReceipt",
       "success_status": 200,
-      "source_sha256": "54f5459584a35c2a907fee35d64ab4f9683bff0773d688010e2efdb87ad96be6",
+      "source_sha256": "06f34d914ed508cade2d37fcf5450fa59f251925fcb0bf77ab70aff705300ca7",
       "encoding": "application/octet-stream",
       "headers": [
         "Idempotency-Key (required; caller-supplied stable operation key)"
@@ -5146,7 +5146,7 @@
       "category": "canonical",
       "operation": "FileBatchController.receipt",
       "source": "backend/src/koinon/knowledge/bulk/controllers.py",
-      "line": 132,
+      "line": 134,
       "parameters": [
         {
           "name": "tenant_id",
@@ -5174,7 +5174,7 @@
       "request_schema": null,
       "response_schema": "StagedFileReceipt",
       "success_status": 200,
-      "source_sha256": "54f5459584a35c2a907fee35d64ab4f9683bff0773d688010e2efdb87ad96be6",
+      "source_sha256": "06f34d914ed508cade2d37fcf5450fa59f251925fcb0bf77ab70aff705300ca7",
       "encoding": "application/json",
       "headers": []
     },
@@ -5184,7 +5184,7 @@
       "category": "canonical",
       "operation": "FileBatchController.submit",
       "source": "backend/src/koinon/knowledge/bulk/controllers.py",
-      "line": 138,
+      "line": 140,
       "parameters": [
         {
           "name": "tenant_id",
@@ -5212,7 +5212,7 @@
       "request_schema": "BulkAction",
       "response_schema": "FileBatchView",
       "success_status": 202,
-      "source_sha256": "54f5459584a35c2a907fee35d64ab4f9683bff0773d688010e2efdb87ad96be6",
+      "source_sha256": "06f34d914ed508cade2d37fcf5450fa59f251925fcb0bf77ab70aff705300ca7",
       "encoding": "application/json",
       "headers": [
         "Idempotency-Key (required; caller-supplied stable operation key)"
@@ -5224,7 +5224,7 @@
       "category": "canonical",
       "operation": "FileBatchController.cancel",
       "source": "backend/src/koinon/knowledge/bulk/controllers.py",
-      "line": 146,
+      "line": 148,
       "parameters": [
         {
           "name": "tenant_id",
@@ -5252,7 +5252,7 @@
       "request_schema": "BulkAction",
       "response_schema": "FileBatchView",
       "success_status": 200,
-      "source_sha256": "54f5459584a35c2a907fee35d64ab4f9683bff0773d688010e2efdb87ad96be6",
+      "source_sha256": "06f34d914ed508cade2d37fcf5450fa59f251925fcb0bf77ab70aff705300ca7",
       "encoding": "application/json",
       "headers": [
         "Idempotency-Key (required; caller-supplied stable operation key)"
@@ -5264,7 +5264,7 @@
       "category": "canonical",
       "operation": "FileBatchController.reconcile",
       "source": "backend/src/koinon/knowledge/bulk/controllers.py",
-      "line": 154,
+      "line": 156,
       "parameters": [
         {
           "name": "tenant_id",
@@ -5298,7 +5298,7 @@
       "request_schema": "BulkAction",
       "response_schema": "FileBatchView",
       "success_status": 200,
-      "source_sha256": "54f5459584a35c2a907fee35d64ab4f9683bff0773d688010e2efdb87ad96be6",
+      "source_sha256": "06f34d914ed508cade2d37fcf5450fa59f251925fcb0bf77ab70aff705300ca7",
       "encoding": "application/json",
       "headers": [
         "Idempotency-Key (required; caller-supplied stable operation key)"
@@ -5310,7 +5310,7 @@
       "category": "canonical",
       "operation": "FileBatchController.recover_original",
       "source": "backend/src/koinon/knowledge/bulk/controllers.py",
-      "line": 167,
+      "line": 169,
       "parameters": [
         {
           "name": "tenant_id",
@@ -5344,7 +5344,91 @@
       "request_schema": "BulkAction",
       "response_schema": "FileBatchView",
       "success_status": 200,
-      "source_sha256": "54f5459584a35c2a907fee35d64ab4f9683bff0773d688010e2efdb87ad96be6",
+      "source_sha256": "06f34d914ed508cade2d37fcf5450fa59f251925fcb0bf77ab70aff705300ca7",
+      "encoding": "application/json",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/items/{item_id}/recovery",
+      "category": "canonical",
+      "operation": "FileBatchController.processing_recovery",
+      "source": "backend/src/koinon/knowledge/bulk/controllers.py",
+      "line": 182,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "batch_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "item_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "FileRecoveryView",
+      "sdk_python": "file_batch_processing_recovery",
+      "sdk_typescript": "fileBatches.processingRecovery",
+      "sdk_java": "client.fileBatches.processingRecovery",
+      "request_schema": null,
+      "response_schema": "FileRecoveryView",
+      "success_status": 200,
+      "source_sha256": "06f34d914ed508cade2d37fcf5450fa59f251925fcb0bf77ab70aff705300ca7",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/sources/batches/{batch_id}/items/{item_id}/recover",
+      "category": "canonical",
+      "operation": "FileBatchController.recover_processing",
+      "source": "backend/src/koinon/knowledge/bulk/controllers.py",
+      "line": 190,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "batch_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "item_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[BulkRecoveryAction]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "FileBatchView",
+      "sdk_python": "recover_file_batch_processing",
+      "sdk_typescript": "fileBatches.recoverProcessing",
+      "sdk_java": "client.fileBatches.recoverProcessing",
+      "request_schema": "BulkRecoveryAction",
+      "response_schema": "FileBatchView",
+      "success_status": 202,
+      "source_sha256": "06f34d914ed508cade2d37fcf5450fa59f251925fcb0bf77ab70aff705300ca7",
       "encoding": "application/json",
       "headers": [
         "Idempotency-Key (required; caller-supplied stable operation key)"

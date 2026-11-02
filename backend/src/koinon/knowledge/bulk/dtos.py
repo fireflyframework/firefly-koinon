@@ -63,8 +63,32 @@ class BulkAction(Input):
     expected_revision: int = Field(strict=True, ge=1, le=2147483647)
 
 
+RecoveryOperation = Literal["retry_processing", "finalize_publication", "acknowledge_commit"]
+
+
+class BulkRecoveryAction(BulkAction):
+    operation: RecoveryOperation
+
+
 class Output(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
+
+
+NativeRecoveryState = Literal["absent", "admitted", "prepared", "committed", "unknown", "not_checked"]
+
+
+class FileRecoveryView(Output):
+    batch_id: Identifier
+    item_id: Identifier
+    batch_revision: int = Field(ge=1, le=2147483647)
+    native_state: NativeRecoveryState
+    operation: RecoveryOperation | None
+    reason_code: str | None = Field(default=None, max_length=64)
+    attempts: int = Field(ge=0, le=2147483647)
+    max_attempts: int = Field(ge=1, le=2147483647)
+    checked_at: datetime | None
+    job_status: Literal["queued", "running", "succeeded", "failed", "cancelled", "unknown"]
+    original_receipt_state: Literal["verified", "unavailable", "not_checked"]
 
 
 class FileBatchCapabilities(Output):

@@ -313,3 +313,7 @@ public final class FolderOperations {
 ```
 
 `Boolean.TRUE.equals(folder.systemManaged())` identifies retained installation defaults. The server protects these even when a host does not inspect the flag. An ordinary collection or corpus folder can move inside its existing project and space. Reload and request a new decision after `CATALOG_CHANGED`; do not retry a stale move. A different boundary returns `KNOWLEDGE_TRANSFER_REQUIRED`, because a native knowledge transfer is a separate operation. See [Library hierarchy and permissions](library.md#spaces-projects-and-folders).
+
+### Recover an existing processing attempt
+
+`fileBatches(tenant).processingRecovery` and `recoverProcessing` separate current inspection from explicit recovery of the same saved original. Review the server-offered operation and current revision before confirming; never invent a retry from a failed HTTP response or a reserved source ID. Preserve the exact reviewed body and idempotency key if the result is uncertain. The [processing recovery walkthrough](bulk-intake.md#recover-processing-without-uploading-the-original-again) includes the Library journey, typed examples, attempt limits and the distinction between an upload receipt, processing and search availability.
