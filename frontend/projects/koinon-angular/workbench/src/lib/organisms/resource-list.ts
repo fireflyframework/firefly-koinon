@@ -21,6 +21,11 @@ import { KoinonSkeleton } from '@fireflyframework/koinon-angular/workbench/core'
 import { KoinonKnowledgeAvailability } from '@fireflyframework/koinon-angular/workbench/availability';
 import { friendlyStatus, friendlyKind, isFolder, isSystemManaged, resourceIcon } from '@fireflyframework/koinon-angular/workbench/core';
 import type { LibraryContextRequest } from '../services/library-context-actions';
+// Native availability replaces these processing markers, never catalog lifecycle or custom states.
+const ingestionStatuses = new Set([
+  'pending', 'processing', 'running', 'queued', 'indexing', 'failed', 'error',
+  'cancelled', 'completed', 'succeeded',
+]);
 @Component({
   selector: 'ffk-resource-list',
   imports: [KoinonTextPipe, KoinonDatePipe, KoinonIcon, KoinonBadge, KoinonSkeleton, KoinonKnowledgeAvailability],
@@ -132,4 +137,12 @@ export class KoinonResourceList {
   readonly kind = friendlyKind;
   readonly icon = resourceIcon;
   readonly isFolder = isFolder;
+  hasKnowledgeAvailability(item: CatalogEntry) {
+    return ['source', 'document', 'dataset', 'table'].includes(item.kind);
+  }
+  showCatalogStatus(item: CatalogEntry) {
+    const status = item.status?.toLowerCase();
+    return !!status && !['ready', 'active'].includes(status) &&
+      (!this.hasKnowledgeAvailability(item) || !ingestionStatuses.has(status));
+  }
 }
