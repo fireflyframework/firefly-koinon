@@ -25,9 +25,10 @@ export function canRunLibraryAction(
   canEdit: boolean,
   canAdd = false,
   createLabel = '',
+  canRead = true,
 ): boolean {
   if (!entry) return action === 'create' ? canEdit && !!createLabel : action === 'add' && canAdd;
-  if (action === 'open') return isFolder(entry);
+  if (action === 'open') return isFolder(entry) || (entry.kind === 'document' && canRead);
   if (action === 'details') return true;
   return (
     canEdit &&

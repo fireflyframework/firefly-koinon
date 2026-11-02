@@ -4,13 +4,13 @@ The library is the main place to find organizational knowledge. A space contains
 
 ## Read a document or download its original
 
-Open a document's filename to read the version currently available to your account. The reader loads when opened and checks availability before requesting its recorded version and extraction. A failed replacement can leave an earlier version readable. Expand **Document version** to inspect the source version, original SHA256 and extraction used by the reader.
+Open a document's filename, or choose **Read document** from its action menu, to read the version currently available to your account. With the document focused, Shift+F10 opens the same menu; Enter selects its focused action. The reader loads when opened and checks availability before requesting its recorded version and extraction. A failed replacement can leave an earlier version readable. Expand **Document version** to inspect the source version, original SHA256 and extraction used by the reader.
 
 **Extracted text** shows recorded text parts, not the original Office or PDF page layout. Choose a part or use **Previous parts** and **Next parts** to read further. Source text is displayed as text; embedded HTML is not executed. **Preview original** displays supported PNG, JPEG, WebP and GIF images locally. For a PDF, choose **Prepare PDF**, then **Open PDF in browser tab**. This explicit link opens the verified original in your browser's PDF viewer, separately from the application. It does not provide an in-application PDF renderer or send the file to an external viewer service.
 
 Choose **Download original** to save the same recorded version. Original transfers are limited to 128 MiB; preparing a PDF or image preview is limited to 16 MiB. A larger source can still have readable extracted text. The reader explains a transfer limit without treating the text as unavailable. Your current access is checked by the service when content or original bytes are requested; changing account or scope clears the reader's local content and prepared links.
 
-If processing has not produced a readable version, the reader explains that status and disables original download. Use the item's separate **Details** action to inspect its processing status. Datasets retain their existing table exploration and lineage views; this document reader does not add a dataset-original download endpoint. Press Escape to close the reader and return keyboard focus to its filename.
+If processing has not produced a readable version, the reader explains that status and disables original download. Use the item's separate **Details** action to inspect its processing status. Datasets retain their existing table exploration and lineage views; this document reader does not add a dataset-original download endpoint. Press Escape to close the reader and return keyboard focus to the filename or action button you used to open it.
 
 ## Spaces, projects and folders
 
@@ -120,6 +120,8 @@ After confirmation, refresh the upload and open the Library item to inspect its 
 ## Understand availability
 
 A successful upload records the result of that request. It does not establish that a source is searchable. Library rows and details observe the current native source, extraction or table snapshot separately from catalog metadata.
+
+Documents, datasets, tables and source records show one observed ingestion status rather than a second, potentially older catalog processing marker. Explicit lifecycle labels such as **Draft**, **Disabled** and **Archived**, and other catalog states, remain visible independently. If a replacement fails while an earlier version remains readable, the row keeps both the attention status and the explanation that the observed version is still available. An unavailable observation stays **Availability not checked**; it does not become ready because catalog metadata says so.
 
 - **Text available** means that the current document has a recorded extraction and matching text chunks. It does not promise complete extraction of every page or image.
 - **Searchable** additionally requires matching vectors in the active embedding set and its qualified native search index. A queued or running index job can show **Queued** or **Indexing** while text remains readable.

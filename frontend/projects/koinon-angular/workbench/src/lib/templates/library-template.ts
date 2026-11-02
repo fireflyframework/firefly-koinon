@@ -223,7 +223,7 @@ import { canRunLibraryAction, type LibraryAction, type LibraryActionRequest, typ
   </section>
   @defer (when contextMenu) {
     @if (contextMenu; as request) {
-      <ffk-library-context-menu [request]="request" [canEdit]="canEdit" [canAdd]="canAdd" [createLabel]="createLabel" (chosen)="chooseContext($event)" (dismissed)="closeContext($event)"/>
+      <ffk-library-context-menu [request]="request" [canRead]="canRead" [canEdit]="canEdit" [canAdd]="canAdd" [createLabel]="createLabel" (chosen)="chooseContext($event)" (dismissed)="closeContext($event)"/>
     }
   }`,
   styleUrl: './library-template.scss',
@@ -231,6 +231,7 @@ import { canRunLibraryAction, type LibraryAction, type LibraryActionRequest, typ
 })
 export class KoinonLibraryTemplate implements OnChanges {
   @Input() canEdit = false;
+  @Input() canRead = true;
   @Output() actionRequested = new EventEmitter<LibraryActionRequest>();
   contextMenu: LibraryContextRequest | null = null;
   ngOnChanges() { this.closeContext(false); }
@@ -247,7 +248,7 @@ export class KoinonLibraryTemplate implements OnChanges {
     if (restoreFocus) trigger?.focus();
   }
   chooseContext(action: LibraryAction) {
-    if (!this.contextMenu || !canRunLibraryAction(this.contextMenu.entry, action, this.canEdit, this.canAdd, this.createLabel)) return;
+    if (!this.contextMenu || !canRunLibraryAction(this.contextMenu.entry, action, this.canEdit, this.canAdd, this.createLabel, this.canRead)) return;
     const entry = this.contextMenu.entry;
     this.closeContext(true);
     if (action === 'create') this.createRequested.emit();

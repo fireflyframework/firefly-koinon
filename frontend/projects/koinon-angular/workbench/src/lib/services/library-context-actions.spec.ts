@@ -99,3 +99,32 @@ it('rejects stale mutation choices against current permissions and protected ite
   expect(canRunLibraryAction(folder, 'create', true, true, 'Create a folder')).toBe(false);
   expect(canRunLibraryAction(folder, 'details', false)).toBe(true);
 });
+
+it('offers the document reader without requiring catalog mutation permission', () => {
+  const actions = libraryActions({ ...folder, kind: 'document' }, false, false, '');
+  expect(actions[0]).toMatchObject({ id: 'open', label: 'Read document', icon: 'file' });
+  expect(actions.map((action) => action.id)).toEqual(['open', 'details']);
+});
+
+it('withdraws the document action when current read permission is removed', () => {
+  const document: CatalogEntry = { ...folder, kind: 'document' };
+  expect(libraryActions(document, true, true, '', false).map((action) => action.id)).not.toContain(
+    'open',
+  );
+  const fixture = TestBed.createComponent(KoinonLibraryTemplate);
+  fixture.componentRef.setInput('canRead', true);
+  fixture.detectChanges();
+  const opened: CatalogEntry[] = [];
+  fixture.componentInstance.opened.subscribe((entry) => opened.push(entry));
+  fixture.componentInstance.contextMenu = {
+    entry: document,
+    trigger: fixture.nativeElement,
+    x: 0,
+    y: 0,
+  };
+  fixture.componentRef.setInput('canRead', false);
+  fixture.detectChanges();
+  fixture.componentInstance.chooseContext('open');
+  expect(opened).toEqual([]);
+  expect(canRunLibraryAction(document, 'open', false, false, '', false)).toBe(false);
+});

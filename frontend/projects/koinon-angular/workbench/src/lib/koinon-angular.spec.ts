@@ -6,6 +6,7 @@ import {
   type HttpMethod,
   type KoinonTransport,
   type RequestOptions,
+  type CatalogEntry,
 } from '@fireflyframework/koinon-sdk';
 import { provideKoinonClient } from './client-provider';
 import { KoinonWorkbench } from './koinon-angular';
@@ -41,6 +42,51 @@ async function mount(
   return fixture;
 }
 describe('embedded knowledge workbench', () => {
+  it('rechecks document read permission and current Library membership before opening the reader', async () => {
+    const fixture = await mount(async (_method, path) =>
+      path === '/context'
+        ? {
+            subject: 'reader',
+            tenants: [
+              {
+                id: 'tenant-one',
+                name: 'Synthetic tenant',
+                roles: ['viewer'],
+                permissions: ['catalog:read'],
+              },
+            ],
+            memberships: [],
+            workspaces: [workspace],
+          }
+        : path === '/capabilities'
+          ? { providers: [], features: [] }
+          : { items: [] },
+    );
+    const workbench = fixture.componentInstance;
+    const document: CatalogEntry = {
+      ...workspace,
+      id: 'document',
+      kind: 'document',
+      name: 'Reviewed policy.pdf',
+    };
+    workbench.f.libraryPage.set({ items: [document] });
+    await workbench.open(document);
+    expect(workbench.viewerEntry()?.id).toBe(document.id);
+    workbench.viewerEntry.set(null);
+    workbench.f.context.update((context) => ({
+      ...context!,
+      tenants: context!.tenants.map((tenant) => ({ ...tenant, permissions: [] })),
+    }));
+    await workbench.open(document);
+    expect(workbench.viewerEntry()).toBeNull();
+    workbench.f.context.update((context) => ({
+      ...context!,
+      tenants: context!.tenants.map((tenant) => ({ ...tenant, permissions: ['catalog:read'] })),
+    }));
+    workbench.f.libraryPage.set({ items: [] });
+    await workbench.open(document);
+    expect(workbench.viewerEntry()).toBeNull();
+  });
   it('renders observed catalog resources and withholds editing from viewers', async () => {
     const fixture = await mount(async (_method, path) =>
       path === '/context'
