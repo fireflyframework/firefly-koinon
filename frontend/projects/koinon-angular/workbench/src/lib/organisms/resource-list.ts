@@ -132,4 +132,7 @@ export class KoinonResourceList {
   readonly kind = friendlyKind;
   readonly icon = resourceIcon;
   readonly isFolder = isFolder;
+  hasKnowledgeAvailability(item: CatalogEntry) {
+    return ['source', 'document', 'dataset', 'table'].includes(item.kind);
+  }
 }

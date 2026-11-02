@@ -4,7 +4,7 @@ The library is the main place to find organizational knowledge. A space contains
 
 ## Read a document or download its original
 
-Open a document's filename to read the version currently available to your account. The reader loads when opened and checks availability before requesting its recorded version and extraction. A failed replacement can leave an earlier version readable. Expand **Document version** to inspect the source version, original SHA256 and extraction used by the reader.
+Open a document's filename, or choose **Read document** from its action menu, to read the version currently available to your account. With the document focused, Shift+F10 opens the same menu; Enter selects its focused action. The reader loads when opened and checks availability before requesting its recorded version and extraction. A failed replacement can leave an earlier version readable. Expand **Document version** to inspect the source version, original SHA256 and extraction used by the reader.
 
 **Extracted text** shows recorded text parts, not the original Office or PDF page layout. Choose a part or use **Previous parts** and **Next parts** to read further. Source text is displayed as text; embedded HTML is not executed. **Preview original** displays supported PNG, JPEG, WebP and GIF images locally. For a PDF, choose **Prepare PDF**, then **Open PDF in browser tab**. This explicit link opens the verified original in your browser's PDF viewer, separately from the application. It does not provide an in-application PDF renderer or send the file to an external viewer service.
 
@@ -120,6 +120,8 @@ After confirmation, refresh the upload and open the Library item to inspect its 
 ## Understand availability
 
 A successful upload records the result of that request. It does not establish that a source is searchable. Library rows and details observe the current native source, extraction or table snapshot separately from catalog metadata.
+
+Documents, datasets, tables and source records show one observed ingestion status rather than a second, potentially older catalog status. **Archived** remains a separate lifecycle label. If a replacement fails while an earlier version remains readable, the row keeps both the attention status and the explanation that the observed version is still available. An unavailable observation stays **Availability not checked**; it does not become ready because catalog metadata says so.
 
 - **Text available** means that the current document has a recorded extraction and matching text chunks. It does not promise complete extraction of every page or image.
 - **Searchable** additionally requires matching vectors in the active embedding set and its qualified native search index. A queued or running index job can show **Queued** or **Indexing** while text remains readable.

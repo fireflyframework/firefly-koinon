@@ -178,6 +178,41 @@ for (const width of [1440, 390])
     await expect(panel).toHaveCount(0);
     await expect(trigger).toBeFocused();
   });
+for (const width of [1440, 390])
+  test(`document context action opens the same authorized reader at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    const service = await fixture(page);
+    const trigger = page.getByRole('button', {
+      name: 'Actions for Service operating policy.pdf',
+      exact: true,
+    });
+    if (width === 1440) {
+      await trigger.focus();
+      await page.keyboard.press('Shift+F10');
+    } else await trigger.click();
+    const menu = page.getByRole('menu', { name: 'Library actions', exact: true });
+    const read = menu.getByRole('menuitem', { name: 'Read document', exact: true });
+    await expect(read).toBeFocused();
+    const dir = process.env['KOINON_LIBRARY_STATE_SCREENSHOTS'];
+    if (dir) {
+      await mkdir(dir, { recursive: true });
+      await page.screenshot({
+        path: `${dir}/document-context-${width}.png`,
+        animations: 'disabled',
+      });
+    }
+    if (width === 1440) await page.keyboard.press('Enter');
+    else await read.click();
+    const panel = page.getByRole('dialog', { name: 'Service operating policy.pdf', exact: true });
+    await expect(panel.locator('.document-text')).toContainText(text);
+    expect(service.originals()).toBe(0);
+    await page.keyboard.press('Escape');
+    await expect(panel).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+  });
+
 test('pending source offers truthful read status and no original request', async ({ page }) => {
   const service = await fixture(page, { pending: true });
   await page.getByRole('button', { name: 'Service operating policy.pdf', exact: true }).click();

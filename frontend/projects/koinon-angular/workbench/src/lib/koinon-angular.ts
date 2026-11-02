@@ -118,7 +118,7 @@ export class KoinonWorkbench implements OnInit,OnChanges,OnDestroy{
   else if(request.action==='move')this.showDialog('move');
   else if(request.action==='archive')this.showDialog('archive');
  }
- async open(entry:CatalogEntry){if(isFolder(entry))await this.openFolder(entry.id);else if(entry.kind==='document'){this.select(entry);this.viewerEntry.set({...entry});}else this.select(entry);}
+ async open(entry:CatalogEntry){if(isFolder(entry))await this.openFolder(entry.id);else if(entry.kind==='document'){const current=this.entries().find(row=>row.id===entry.id&&row.kind==='document'&&row.tenant_id===this.f.tenantId());if(!current||this.f.authRequired()||!this.f.permissions().has('catalog:read'))return;this.select(current);this.viewerEntry.set({...current});}else this.select(entry);}
  select(entry:CatalogEntry){this.inspectorTrigger=this.host.nativeElement.shadowRoot?.activeElement as HTMLElement;this.f.selected.set(entry);this.selectionChange.emit(entry);this.emitContext();if(entry.kind==='dataset')void this.f.loadSchema(entry.id);}
  parentName(entry:CatalogEntry){if(this.f.libraryPage().items.some(row=>row.id===entry.id))return this.currentFolder()?.name||'Library';const parent=this.allEntries().find(x=>x.id===entry.parent_id);if(parent?.kind==='source')return this.allEntries().find(x=>x.id===parent.parent_id)?.name||parent.name;return parent?.name||'Library';}
  folderLabel(entry:CatalogEntry){return folderTrail(this.allEntries(),entry.id).map(x=>x.name).join(' / ');}

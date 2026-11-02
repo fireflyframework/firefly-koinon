@@ -14,23 +14,29 @@ import {
 } from '@angular/core';
 import { CdkMenu, CdkMenuItem } from '@angular/cdk/menu';
 import { KoinonIcon } from '../atoms/icon';
-import { KoinonTextPipe } from '../foundations/i18n';
+import { KoinonTextPipe, registerKoinonSpanish } from '../foundations/i18n';
 import {
   canRunLibraryAction,
   type LibraryAction,
   type LibraryContextRequest,
   type LibraryMenuAction,
 } from '../services/library-context-actions';
+registerKoinonSpanish({ 'Read document': 'Leer documento' });
 
 export function libraryActions(
   entry: LibraryContextRequest['entry'],
   canEdit: boolean,
   canAdd: boolean,
   createLabel: string,
+  canRead = true,
 ): LibraryMenuAction[] {
   const actions: LibraryMenuAction[] = entry
     ? [
-        { id: 'open', label: 'Open folder', icon: 'folder' },
+        {
+          id: 'open',
+          label: entry.kind === 'document' ? 'Read document' : 'Open folder',
+          icon: entry.kind === 'document' ? 'file' : 'folder',
+        },
         { id: 'details', label: 'Details', icon: 'info' },
         { id: 'edit', label: 'Edit details', icon: 'edit' },
         { id: 'move', label: 'Move Library folder', icon: 'folder' },
@@ -41,7 +47,7 @@ export function libraryActions(
         { id: 'add', label: 'Add knowledge', icon: 'plus' },
       ];
   return actions.filter((action) =>
-    canRunLibraryAction(entry, action.id, canEdit, canAdd, createLabel),
+    canRunLibraryAction(entry, action.id, canEdit, canAdd, createLabel, canRead),
   );
 }
 
@@ -70,6 +76,7 @@ export function libraryActions(
 export class KoinonLibraryContextMenu implements AfterViewInit, OnChanges, OnDestroy {
   @Input({ required: true }) request!: LibraryContextRequest;
   @Input() canEdit = false;
+  @Input() canRead = true;
   @Input() canAdd = false;
   @Input() createLabel = '';
   actions: LibraryMenuAction[] = [];
@@ -83,7 +90,13 @@ export class KoinonLibraryContextMenu implements AfterViewInit, OnChanges, OnDes
   private readonly resize = () => this.dismissed.emit(true);
   private ready = false;
   ngOnChanges(changes: SimpleChanges) {
-    this.actions = libraryActions(this.request.entry, this.canEdit, this.canAdd, this.createLabel);
+    this.actions = libraryActions(
+      this.request.entry,
+      this.canEdit,
+      this.canAdd,
+      this.createLabel,
+      this.canRead,
+    );
     if (this.ready && changes['request'])
       queueMicrotask(() => {
         if (this.ready) this.position();
