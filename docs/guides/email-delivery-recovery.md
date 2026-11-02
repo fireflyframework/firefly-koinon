@@ -82,7 +82,7 @@ The same four endpoints are available through Python, TypeScript and Java 21 or 
 
 Both POST operations require `Idempotency-Key`. Generate one operation key after human review, retain it with the exact request before sending, and reuse it only to reconcile that same uncertain request. Do not put a retry loop around these calls. A new key represents a new action.
 
-The following helpers first read the current descriptor. They do not run until the caller invokes them. The welcome helper requires explicit caller consent and takes the retained operation key as an argument; it never generates a replacement key after an error.
+The preparation helpers read the current descriptor and return a typed request without performing the inspection or queuing email. After human review, retain that request with one operation key before invoking the separate submission helper. If a submission result is unknown, reuse the retained request and key; do not run preparation again to reconstruct it from a newer generation.
 
 === "Python"
 
@@ -95,46 +95,58 @@ The following helpers first read the current descriptor. They do not run until t
         WelcomeRecoveryInput,
     )
 
-    async def inspect_delivery(
-        client: KoinonClient, tenant_id: str, delivery_id: str, operation_key: str
-    ) -> DeliveryOperationObservation:
+    async def prepare_inspection(
+        client: KoinonClient, tenant_id: str, delivery_id: str
+    ) -> DeliveryInspectionInput:
         options = await client.communication_delivery_recovery(tenant_id, delivery_id)
         await client.communication_delivery_observations(tenant_id, delivery_id)
         if not options.can_inspect:
             raise ValueError("Review current inspection eligibility before continuing")
-        request = DeliveryInspectionInput(expected_generation=options.generation)
+        return DeliveryInspectionInput(expected_generation=options.generation)
+
+    async def submit_inspection(
+        client: KoinonClient, tenant_id: str, delivery_id: str,
+        request: DeliveryInspectionInput, operation_key: str,
+    ) -> DeliveryOperationObservation:
         return await client.inspect_communication_delivery(
             tenant_id, delivery_id, request, operation_key
         )
 
-    async def recover_reviewed_welcome(
+    async def prepare_reviewed_welcome(
         client: KoinonClient, tenant_id: str, delivery_id: str,
-        operation_key: str, *, duplicate_consent: bool,
-    ) -> WelcomeRecoveryAcknowledgement:
+        *, duplicate_consent: bool,
+    ) -> WelcomeRecoveryInput:
         if not duplicate_consent:
             raise ValueError("Explicit recovery and possible-duplicate consent are required")
         options = await client.communication_delivery_recovery(tenant_id, delivery_id)
         if not options.can_recover_welcome or not options.contact_id or not options.contact_revision:
             raise ValueError("No current approved welcome recovery is available")
-        request = WelcomeRecoveryInput(
+        return WelcomeRecoveryInput(
             expected_generation=options.generation,
             contact_id=options.contact_id,
             expected_contact_revision=options.contact_revision,
             reason="recipient_reported_not_received",
             acknowledge_possible_duplicate=True,
         )
+
+    async def submit_reviewed_welcome(
+        client: KoinonClient, tenant_id: str, delivery_id: str,
+        request: WelcomeRecoveryInput, operation_key: str,
+    ) -> WelcomeRecoveryAcknowledgement:
         return await client.recover_welcome_delivery(
             tenant_id, delivery_id, request, operation_key
         )
     ```
 
-    Construct `KoinonClient` with the authenticated asynchronous lifecycle explained in the [Python getting-started guide](headless-python.md). The methods return validated response models. Preserve the `request` and `operation_key` if transport failure leaves the POST outcome unknown; rebuilding a request from a newer descriptor is a different operation.
+    Construct `KoinonClient` with the authenticated asynchronous lifecycle explained in the [Python getting-started guide](headless-python.md). The methods return validated response models. Persist the returned `request` with `operation_key` before calling a submission helper. An application-owned durable operation record can retain both through a timeout or process restart. Rebuilding from a newer descriptor is a different request, so do not use preparation as an automatic retry.
 
 === "TypeScript"
 
     ```typescript
     import { FetchTransport } from '@fireflyframework/koinon-sdk';
-    import { createCommunicationsApi } from '@fireflyframework/koinon-sdk/communications';
+    import {
+      createCommunicationsApi, type DeliveryInspectionInput, type WelcomeRecoveryInput,
+    } from '@fireflyframework/koinon-sdk/communications';
 
     export function communicationClient(apiRoot: string, accessToken: () => Promise<string>) {
       const transport = new FetchTransport({ baseUrl: apiRoot, accessToken });
@@ -143,32 +155,43 @@ The following helpers first read the current descriptor. They do not run until t
 
     type Communications = ReturnType<typeof communicationClient>;
 
-    export async function inspectDelivery(
-      api: Communications, tenantId: string, deliveryId: string, operationKey: string,
-    ) {
+    export async function prepareInspection(
+      api: Communications, tenantId: string, deliveryId: string,
+    ): Promise<DeliveryInspectionInput> {
       const options = await api.administration.recovery(tenantId, deliveryId);
       await api.administration.observations(tenantId, deliveryId);
       if (!options.can_inspect) throw new Error('Review current inspection eligibility');
-      const request = { expected_generation: options.generation };
+      return { expected_generation: options.generation };
+    }
+
+    export function submitInspection(
+      api: Communications, tenantId: string, deliveryId: string,
+      request: DeliveryInspectionInput, operationKey: string,
+    ) {
       return api.administration.inspectDelivery(tenantId, deliveryId, request, operationKey);
     }
 
-    export async function recoverReviewedWelcome(
-      api: Communications, tenantId: string, deliveryId: string,
-      operationKey: string, duplicateConsent: boolean,
-    ) {
+    export async function prepareReviewedWelcome(
+      api: Communications, tenantId: string, deliveryId: string, duplicateConsent: boolean,
+    ): Promise<WelcomeRecoveryInput> {
       if (!duplicateConsent) throw new Error('Explicit recovery and duplicate consent are required');
       const options = await api.administration.recovery(tenantId, deliveryId);
       if (!options.can_recover_welcome || !options.contact_id || !options.contact_revision) {
         throw new Error('No current approved welcome recovery is available');
       }
-      const request = {
+      return {
         expected_generation: options.generation,
         contact_id: options.contact_id,
         expected_contact_revision: options.contact_revision,
         reason: 'recipient_reported_not_received' as const,
         acknowledge_possible_duplicate: true as const,
       };
+    }
+
+    export function submitReviewedWelcome(
+      api: Communications, tenantId: string, deliveryId: string,
+      request: WelcomeRecoveryInput, operationKey: string,
+    ) {
       return api.administration.recoverWelcome(tenantId, deliveryId, request, operationKey);
     }
     ```
@@ -188,20 +211,24 @@ The following helpers first read the current descriptor. They do not run until t
     public final class WelcomeRecoveryExample {
         private WelcomeRecoveryExample() {}
 
-        public static DeliveryOperationObservation inspect(
-                CommunicationsApi api, String deliveryId, String operationKey) {
+        public static DeliveryInspectionInput prepareInspection(
+                CommunicationsApi api, String deliveryId) {
             var options = api.recovery(deliveryId);
             api.observations(deliveryId);
             if (!Boolean.TRUE.equals(options.canInspect())) {
                 throw new IllegalStateException("Review current inspection eligibility");
             }
-            return api.inspectDelivery(
-                deliveryId, new DeliveryInspectionInput(options.generation()), operationKey);
+            return new DeliveryInspectionInput(options.generation());
         }
 
-        public static WelcomeRecoveryAcknowledgement recoverReviewed(
-                CommunicationsApi api, String deliveryId, String operationKey,
-                boolean duplicateConsent) {
+        public static DeliveryOperationObservation submitInspection(
+                CommunicationsApi api, String deliveryId, DeliveryInspectionInput input,
+                String operationKey) {
+            return api.inspectDelivery(deliveryId, input, operationKey);
+        }
+
+        public static WelcomeRecoveryInput prepareReviewed(
+                CommunicationsApi api, String deliveryId, boolean duplicateConsent) {
             if (!duplicateConsent) {
                 throw new IllegalArgumentException("Explicit recovery and duplicate consent are required");
             }
@@ -210,9 +237,14 @@ The following helpers first read the current descriptor. They do not run until t
                     || options.contactId() == null || options.contactRevision() == null) {
                 throw new IllegalStateException("No current approved welcome recovery is available");
             }
-            var input = new WelcomeRecoveryInput(
+            return new WelcomeRecoveryInput(
                 options.generation(), options.contactId(), options.contactRevision(),
                 WelcomeRecoveryInputReason.RECIPIENT_REPORTED_NOT_RECEIVED, true);
+        }
+
+        public static WelcomeRecoveryAcknowledgement submitReviewed(
+                CommunicationsApi api, String deliveryId, WelcomeRecoveryInput input,
+                String operationKey) {
             return api.recoverWelcome(deliveryId, input, operationKey);
         }
     }
