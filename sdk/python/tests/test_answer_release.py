@@ -63,3 +63,46 @@ def test_release_fields_retain_wire_constraints_and_timezone_requirement():
     ):
         with pytest.raises(ValidationError):
             AnswerRelease.model_validate({**release(), **change})
+
+
+def test_product_help_and_verified_publication_are_distinct_typed_contracts():
+    from koinon_sdk import AnswerPolicy, ProductHelpContext
+    from koinon_sdk.models import ChatEventData, Presentation
+
+    help_release = AnswerRelease.model_validate(
+        {
+            **release(),
+            "policy_version": "knowledge-only-v2",
+            "outcome": "product_help",
+            "fact_ids": [],
+            "source_refs": [],
+        }
+    )
+    assert help_release.outcome == "product_help" and help_release.source_refs == ()
+    context = ProductHelpContext.model_validate(
+        {
+            "product_name": "Corporate Brain",
+            "assistant_name": "Research guide",
+            "branding_revision": 3,
+            "tools": ["search_knowledge"],
+        }
+    )
+    assert context.kind == "product_configuration" and context.tools == ("search_knowledge",)
+    policy = AnswerPolicy.model_validate(
+        {
+            "outcome": "product_help",
+            "validation": {"repairs": 1, "errors": ["QUOTE_NOT_RECORDED"]},
+            "publication": {
+                "format": "verified-unicode-v1",
+                "chunk_size": 128,
+                "chunk_count": 2,
+                "text_sha256": "a" * 64,
+            },
+        }
+    )
+    assert policy.publication.chunk_count == 2 and policy.validation.repairs == 1
+    event = ChatEventData.model_validate(
+        {"text": "Exacto", "chunk_index": 1, "chunk_count": 2, "text_offset": 129}
+    )
+    assert event.text_offset == 129
+    assert Presentation.model_validate({"effective_language": "es"}).effective_language == "es"

@@ -436,8 +436,16 @@ export class KoinonAnswerAudit implements OnChanges, OnDestroy {
       grounded: 'Grounded in recorded evidence',
       refused: 'Answer withheld',
       review_required: 'Review required',
+      product_help: 'Product help from recorded configuration',
     };
     return labels[value] ?? 'Not recorded';
+  }
+  policyExplanation() {
+    const policy = this.message?.answer_policy;
+    if (policy?.reason) return policy.reason;
+    if (policy?.outcome === 'grounded' && policy.code === 'VERIFIED_EVIDENCE_V1')
+      return 'Only exact recorded source quotations or verified values with source lineage were published.';
+    return 'An answer policy explanation is not available in this record.';
   }
   fallbackCitations() {
     return this.message?.run_id || this.state.sources().length

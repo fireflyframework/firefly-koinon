@@ -50,6 +50,7 @@ export interface AnswerAudit {
  "provenance_status": "recorded" | "not_recorded";
  "source_provenance_complete"?: boolean | null;
  "output_release"?: AnswerRelease | null;
+ "product_context"?: ProductHelpContext | null;
  "knowledge_settings_snapshot"?: OrganizationKnowledgeSnapshot | null;
  "memory"?: MemoryReceipt | null;
  "generations"?: Array<GenerationReceipt>;
@@ -61,13 +62,13 @@ export interface AnswerAudit {
 }
 export interface AnswerRelease {
  "version"?: 1;
- "policy_version"?: "knowledge-only-v1";
+ "policy_version"?: "knowledge-only-v1" | "knowledge-only-v2";
  "run_id": string;
  "message_id": string;
  "tenant_id": string;
  "generation_id"?: string | null;
  "publication_sequence": number;
- "outcome": "grounded" | "refused" | "review_required";
+ "outcome": "grounded" | "refused" | "review_required" | "product_help";
  "text_sha256": string;
  "citations_sha256": string;
  "artifacts_sha256": string;
@@ -1823,6 +1824,15 @@ export interface ProcessingResponse {
  "observed_at": string;
  "items": Array<ProcessingActivity>;
  "next_page"?: number | null;
+}
+export interface ProductHelpContext {
+ "kind"?: "product_configuration";
+ "product_name": string;
+ "assistant_name": string;
+ "branding_revision": number;
+ "branding_origin"?: "organization" | "deployment";
+ "selection"?: "explicit_selection" | "broader_scope" | "private_attachments";
+ "tools"?: Array<"search_knowledge" | "inspect_schema" | "query_dataset" | "propose_catalog_update" | "search_private_attachments">;
 }
 export interface ProjectActivity {
  "project_id": string;

@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /** Typed canonical ToolActivity contract. */
 public record ToolActivity(
     @JsonProperty("call_id") String callId,
-    @JsonProperty("tool_name") ToolActivityToolName toolName,
+    @JsonProperty("tool_name") ProductHelpContextTools toolName,
     @JsonProperty("status") MessageStatus status,
     @JsonProperty("occurred_at") String occurredAt,
     @JsonProperty("started_at") String startedAt,

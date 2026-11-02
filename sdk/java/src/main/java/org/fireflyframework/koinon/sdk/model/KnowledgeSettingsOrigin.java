@@ -7,8 +7,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 
 public enum KnowledgeSettingsOrigin {
-    DEPLOYMENT("deployment"),
-    ORGANIZATION("organization");
+    ORGANIZATION("organization"),
+    DEPLOYMENT("deployment");
     private final String value;
     KnowledgeSettingsOrigin(String value){this.value=value;}
     @JsonValue public String value(){return value;}

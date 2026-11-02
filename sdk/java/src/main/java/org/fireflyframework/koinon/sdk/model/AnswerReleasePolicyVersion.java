@@ -7,7 +7,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 
 public enum AnswerReleasePolicyVersion {
-    KNOWLEDGE_ONLY_V1("knowledge-only-v1");
+    KNOWLEDGE_ONLY_V1("knowledge-only-v1"),
+    KNOWLEDGE_ONLY_V2("knowledge-only-v2");
     private final String value;
     AnswerReleasePolicyVersion(String value){this.value=value;}
     @JsonValue public String value(){return value;}

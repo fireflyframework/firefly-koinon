@@ -23,7 +23,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import type { Citation, ChatThread, ChatFolder } from '@fireflyframework/koinon-sdk';
+import type { Citation, ChatThread, ChatFolder, ChatMessage } from '@fireflyframework/koinon-sdk';
 import {
   KoinonAssistant,
   KoinonFacade,
@@ -229,7 +229,8 @@ export class KoinonChatPage implements OnInit, AfterViewInit, OnDestroy {
     this.actions?.resource(id);
   }
   canArtifact(action: 'audit' | 'export' | 'share' | 'knowledge') {
-    if (action === 'knowledge') return canCurateKnowledge(this.f, this.a.scope().workspace_id || this.f.workspaceId());
+    if (action === 'knowledge')
+      return canCurateKnowledge(this.f, this.a.scope().workspace_id || this.f.workspaceId());
     const permissions = this.f.permissions();
     const required =
       action === 'audit'
@@ -239,6 +240,14 @@ export class KoinonChatPage implements OnInit, AfterViewInit, OnDestroy {
           : ['shares:read', 'shares:write'];
     return !this.f.authRequired() && required.every((permission) => permissions.has(permission));
   }
+  canAuditMessage(message: ChatMessage) {
+    return (
+      this.canArtifact('audit') &&
+      message.role === 'assistant' &&
+      (message.status === 'completed' ||
+        (!!message.run_id && (message.status === 'failed' || message.status === 'cancelled')))
+    );
+  }
   openArtifact(action: 'audit' | 'export' | 'share' | 'knowledge', messageId: string) {
     const message = this.a.messages().find((item) => item.id === messageId);
     if (
@@ -246,6 +255,7 @@ export class KoinonChatPage implements OnInit, AfterViewInit, OnDestroy {
       !this.a.threadId() ||
       (action !== 'audit' && this.a.running()) ||
       message?.role !== 'assistant' ||
+      (action === 'audit' && !this.canAuditMessage(message)) ||
       (action !== 'audit' && message.status !== 'completed')
     )
       return;

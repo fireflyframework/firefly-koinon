@@ -246,7 +246,7 @@
                 </p>
               }
             }
-            @if (message.role === 'assistant') {
+            @if (canAuditMessage(message)) {
               <div class="answer-actions" [attr.aria-label]="'Answer actions' | ffkText">
                 <ffk-button
                   compact
@@ -276,7 +276,14 @@
                   />
                 }
                 @if (message.status === 'completed' && canArtifact('knowledge')) {
-                  <ffk-button compact variant="quiet" icon="file" [disabled]="a.running() || a.pending()" (click)="openArtifact('knowledge', message.id)">{{ 'Save as knowledge' | ffkText }}</ffk-button>
+                  <ffk-button
+                    compact
+                    variant="quiet"
+                    icon="file"
+                    [disabled]="a.running() || a.pending()"
+                    (click)="openArtifact('knowledge', message.id)"
+                    >{{ 'Save as knowledge' | ffkText }}</ffk-button
+                  >
                 }
               </div>
             }
@@ -366,7 +373,18 @@
 />
 
 @defer (when artifactAction() === 'knowledge') {
-  <ffk-knowledge-review [workspaceId]="a.scope().workspace_id || f.workspaceId()" [open]="artifactAction() === 'knowledge'" [selection]="artifactSelection()" [message]="artifactMessage()" (closed)="closeArtifact()" (resourceRequested)="auditResource($event)" />
+  <ffk-knowledge-review
+    [workspaceId]="a.scope().workspace_id || f.workspaceId()"
+    [open]="artifactAction() === 'knowledge'"
+    [selection]="artifactSelection()"
+    [message]="artifactMessage()"
+    (closed)="closeArtifact()"
+    (resourceRequested)="auditResource($event)"
+  />
 } @error {
-  @if (artifactAction() === 'knowledge') { <p role="alert">{{ 'This panel could not be opened. Refresh this page and try again.' | ffkText }}</p> }
+  @if (artifactAction() === 'knowledge') {
+    <p role="alert">
+      {{ 'This panel could not be opened. Refresh this page and try again.' | ffkText }}
+    </p>
+  }
 }

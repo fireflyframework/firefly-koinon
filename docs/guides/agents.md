@@ -52,6 +52,18 @@ When the preview includes remembered context, an additional consent checkbox sta
 
 A denied preview preserves the edited form so you can correct the destination or access. A changed or expired review requires a new preview and decision. If the saved outcome is pending or unknown, use **Check save status**; the interface does not automatically repeat confirmation. Changing organization, knowledge scope or selected reply clears the private review and consent.
 
+## Identity, language and answer publication
+
+Questions about the assistant's identity, permitted capabilities or navigation use a finite product-help response. Names come from the current server branding configuration; capabilities come from the current authorized tool offering. Audit identifies this as **Product help from recorded configuration**, with the recorded branding revision. It is not organization knowledge evidence and has no fabricated source citations. Help does not grant access or enable a tool.
+
+Chat supports English and Spanish answer presentation. An explicit language request in the current question takes priority over the profile preference, including an English request inside a Spanish question and the reverse. The selected effective language is recorded on the reply. Server headings and explanations use that language; quoted source passages remain verbatim in their original language.
+
+For knowledge answers, the model selects recorded fact IDs and exact quotations or lineaged values. Two noncontiguous sentences require separate quotation selections, even when both belong to the same fact. A native output validator allows one bounded correction of an invalid selection within the existing request and tool limits. It never repairs missing authority, source provenance or a changed revision. The final publication rechecks current authorization and seals the complete answer. Invalid selections after repair are recorded as `ANSWER_SELECTION_INVALID`; `MODEL_ABSTAINED` means usable facts were recorded but the model selected no answer. Neither is reported as an empty search.
+
+Answer text is published progressively **after** that verification and seal. The versioned `verified-unicode-v1` descriptor, fragment size, count and full text hash are part of the sealed answer policy. Events carry contiguous fragment indices and UTF-16 offsets for browser reconciliation. Reconnection uses the durable event cursor and does not repeat a question, tool call or text already loaded from message history. These are verified fragments, not live unverified model tokens, and there is no artificial typing delay. Historical single-delta releases retain their original interpretation.
+
+**Audit** appears after a reply reaches a terminal state. A failed or cancelled run with a persisted execution record remains inspectable after its error. An earlier completed reply remains inspectable while a later turn runs. Pending replies do not expose the Audit action.
+
 ## Tool activity
 
 Open **Audit** below an answer to inspect the tools invoked, their queued/running/final status and a short result summary, including after reopening the conversation. Longer histories are paged from the server. Select a recorded tool result to inspect its typed evidence; a query result includes the recorded SQL and whether execution completed or was blocked. This is a read of saved execution data. Tool credentials and internal reasoning are excluded. Retrying an answer resets its activity to the current attempt.

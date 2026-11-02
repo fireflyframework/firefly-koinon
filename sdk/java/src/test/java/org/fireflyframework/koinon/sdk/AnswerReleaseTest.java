@@ -47,4 +47,17 @@ final class AnswerReleaseTest {
         assertNull(beforeMemory.outputRelease());
         assertNull(beforeMemory.memory());
     }
+    @Test
+    void productHelpAndVerifiedChunksRemainTypedWithoutInventingKnowledgeSources() throws Exception {
+        var codec = new JsonCodec();
+        var policy = codec.<AnswerPolicy>decode(("{\"outcome\":\"product_help\",\"publication\":{"
+            + "\"format\":\"verified-unicode-v1\",\"chunk_size\":128,\"chunk_count\":2,\"text_sha256\":\"" + "a".repeat(64)
+            + "\"},\"validation\":{\"repairs\":1,\"errors\":[\"QUOTE_NOT_RECORDED\"]}}")
+            .getBytes(StandardCharsets.UTF_8), codec.type(AnswerPolicy.class));
+        assertEquals(AnswerPolicyOutcome.PRODUCT_HELP, policy.outcome());
+        assertEquals(AnswerPublicationFormat.VERIFIED_UNICODE_V1, policy.publication().format());
+        assertEquals(2L, policy.publication().chunkCount());
+        assertEquals(1L, policy.validation().repairs());
+        assertNull(new AnswerPolicy(AnswerPolicyOutcome.GROUNDED, "VERIFIED_EVIDENCE_V1", null).publication());
+    }
 }

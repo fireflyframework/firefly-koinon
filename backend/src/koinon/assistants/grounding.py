@@ -67,6 +67,18 @@ def has_evidence(kind: str, view: dict) -> bool:
 
 def refusal_message(language: str, code: str = "KNOWLEDGE_ONLY") -> str:
     messages = {
+        "MODEL_ABSTAINED": (
+            "The model did not select an answer from the recorded evidence. "
+            "Refine the question or inspect the sources.",
+            "El modelo no seleccionó una respuesta de la evidencia registrada. "
+            "Precisa la pregunta o revisa las fuentes.",
+        ),
+        "ANSWER_SELECTION_INVALID": (
+            "The selected answer could not be verified exactly against its recorded evidence. "
+            "No unverified answer was published.",
+            "No se pudo verificar la respuesta seleccionada exactamente contra la evidencia registrada. "
+            "No se publicó una respuesta sin verificar.",
+        ),
         "RLM_DOCUMENT_VIEWS_REQUIRED": (
             "The selected documents do not have the recorded views required for RLM. "
             "Ask an administrator to review the source prerequisites.",

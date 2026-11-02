@@ -40,8 +40,24 @@
         <p class="policy-reason">{{ answer.answer_policy.reason }}</p>
       } @else {
         <p class="help">
-          {{ 'An answer policy explanation is not available in this record.' | ffkText }}
+          {{ policyExplanation() | ffkText }}
         </p>
+      }
+      @if (state.audit()?.product_context; as product) {
+        <h4 class="overview-heading">{{ 'Recorded product configuration' | ffkText }}</h4>
+        <p class="help">
+          {{
+            'Product identity and permitted capabilities, not knowledge source evidence.' | ffkText
+          }}
+        </p>
+        <dl class="references">
+          <dt>{{ 'Product' | ffkText }}</dt>
+          <dd>{{ product.product_name }}</dd>
+          <dt>{{ 'Assistant' | ffkText }}</dt>
+          <dd>{{ product.assistant_name }}</dd>
+          <dt>{{ 'Branding revision' | ffkText }}</dt>
+          <dd>{{ product.branding_revision }}</dd>
+        </dl>
       }
       <h4 class="overview-heading">{{ 'Recorded generation' | ffkText }}</h4>
       @if (state.auditPending()) {

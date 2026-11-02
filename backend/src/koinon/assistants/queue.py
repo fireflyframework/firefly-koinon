@@ -3,21 +3,27 @@
 from contextlib import suppress
 from datetime import timedelta
 
-from pyfly.container import service
+from pyfly.container import Provider, service
 from pyfly.data.relational.sqlalchemy import LockMode, transactional
 from pyfly.kernel import ConflictException, InvalidRequestException
 from sqlalchemy import and_, or_, select
 
 from koinon.assistants.entities import ChatRun
 from koinon.assistants.lifecycle import timestamp
+from koinon.assistants.product_context import AssistantProductContext
 from koinon.assistants.service import AssistantService
 from koinon.knowledge.capture_dtos import CapturedEvidence
 
 
 @service(name="assistants.queue")
 class AssistantQueue:
-    def __init__(self, assistants: AssistantService):
+    def __init__(
+        self,
+        assistants: AssistantService,
+        product_context: Provider[AssistantProductContext | None] | None = None,
+    ):
         self.assistants = assistants
+        self.product_context = product_context
 
     @transactional
     async def claim(self, worker_id: str) -> ChatRun | None:
@@ -186,13 +192,15 @@ class AssistantQueue:
 
         message = await self.assistants.message_repository.find_by_id(run.message_id)
         preferences = message.presentation or {}
-        language = preferences.get("response_language", "auto")
+        from koinon.answers.language import effective_language
+
+        language = effective_language(preferences)
         with suppress(AccessDenied):
             await self.release_answer(
                 run_id,
                 worker_id,
                 EvidenceAnswerPlan(outcome="insufficient_evidence"),
-                preferences.get("locale", "en-US") if language == "auto" else language,
+                language,
                 refusal_code=code,
             )
         await self.finish(run_id, worker_id, code=code)
@@ -643,6 +651,8 @@ class AssistantQueue:
         run = await self.locked(run_id, worker_id)
         message = await self.assistants.message_repository.find_by_id(run.message_id)
         message.presentation = {key: preferences[key] for key in ("locale", "time_zone", "response_language")}
+        if preferences.get("effective_language") in {"en", "es"}:
+            message.presentation["effective_language"] = preferences["effective_language"]
         await self.assistants.message_repository.save(message)
         await self.assistants.record_event(run, "message_metadata", {"presentation": message.presentation})
 
@@ -671,8 +681,34 @@ class AssistantQueue:
         )
 
     @transactional
+    async def validate_answer_plan(self, run_id, worker_id, plan, language, *, private_facts=()):
+        from koinon.answers.private import verified_private_facts
+        from koinon.answers.rendering import render_answer
+
+        run = await self.locked(run_id, worker_id)
+        thread = await self.assistants.threads.find_by_id(run.thread_id)
+        await self.assistants.validate_scope(thread.subject, run.tenant_id, run.scope)
+        await self.assistants.authorize_results(thread.subject, run.tenant_id, run.id)
+        rows = await self.assistants.active_results(run)
+        access = self.assistants._attachment_access()
+        refs = await access.for_run(thread.subject, run.tenant_id, thread.id, run.id) if access else ()
+        private = verified_private_facts(private_facts, rows, refs)
+        facts = (*await self.fact_pool(run_id, worker_id), *private)
+        if plan.outcome != "product_help":
+            render_answer(plan, facts, language, private_fact_ids=frozenset(fact.id for fact in private))
+        return bool(facts)
+
+    @transactional
     async def release_answer(
-        self, run_id, worker_id, plan, language, *, private_facts=(), refusal_code="NO_MATCHING_EVIDENCE"
+        self,
+        run_id,
+        worker_id,
+        plan,
+        language,
+        *,
+        private_facts=(),
+        refusal_code="NO_MATCHING_EVIDENCE",
+        validation=None,
     ):
         from koinon.answers.receipts import AnswerRelease, ResultPin, digest, text_digest
         from koinon.answers.rendering import render_answer
@@ -705,9 +741,43 @@ class AssistantQueue:
         refs = await access.for_run(thread.subject, run.tenant_id, thread.id, run.id) if access else ()
         private = verified_private_facts(private_facts, rows, refs)
         facts = (*await self.fact_pool(run_id, worker_id), *private)
-        rendered = render_answer(
-            plan, facts, language, private_fact_ids=frozenset(fact.id for fact in private)
-        )
+        product_result_id = None
+        if plan.outcome == "product_help":
+            from koinon.answers.product_help import render_product_help
+
+            resolver = self.product_context.get() if self.product_context is not None else None
+            if resolver is None or plan.help_topic is None:
+                raise ValueError("Trusted product configuration is unavailable")
+            product_context = await resolver.resolve(
+                thread.subject, run.tenant_id, run.scope, agent, provider, refs
+            )
+            generations = [row for row in rows if row.kind == "generation"]
+            if not generations or any(row.kind == "proposal" for row in rows):
+                raise ValueError(
+                    "Product help requires its current generation and cannot mix change proposals"
+                )
+            current_generation = max(
+                generations, key=lambda row: (row.payload["generation"]["start_sequence"], row.created_at)
+            ).id
+            record = await self.assistants.results.save(
+                ToolResult(
+                    id=identifier(),
+                    run_id=run.id,
+                    kind="product_context",
+                    payload={
+                        "context": product_context.model_dump(mode="json"),
+                        "generation_id": current_generation,
+                        "origin_token_id": run.access_token_id,
+                    },
+                )
+            )
+            rows.append(record)
+            product_result_id = record.id
+            rendered = render_product_help(plan.help_topic, product_context, language)
+        else:
+            rendered = render_answer(
+                plan, facts, language, private_fact_ids=frozenset(fact.id for fact in private)
+            )
         if plan.outcome == "insufficient_evidence" and refusal_code != "NO_MATCHING_EVIDENCE":
             from dataclasses import replace
 
@@ -715,6 +785,8 @@ class AssistantQueue:
 
             allowed_codes = {
                 "KNOWLEDGE_ONLY",
+                "MODEL_ABSTAINED",
+                "ANSWER_SELECTION_INVALID",
                 "FACTUAL_EVIDENCE_REQUIRED",
                 "EVIDENCE_PROVENANCE_REQUIRED",
                 "EVIDENCE_UNAVAILABLE",
@@ -740,17 +812,33 @@ class AssistantQueue:
         message = await self.assistants.message_repository.find_by_id(run.message_id)
         if message.text:
             raise ConflictException("Unreleased draft text cannot be promoted", code="ANSWER_DRAFT_PRESENT")
-        policy = {
-            "outcome": "grounded" if plan.outcome == "answer" else "refused",
-            "code": "VERIFIED_EVIDENCE_V1" if plan.outcome == "answer" else refusal_code,
+        policy: dict[str, object] = {
+            "outcome": "product_help"
+            if product_result_id
+            else "grounded"
+            if plan.outcome == "answer"
+            else "refused",
+            "code": "PRODUCT_CONFIGURATION_V1"
+            if product_result_id
+            else "VERIFIED_EVIDENCE_V1"
+            if plan.outcome == "answer"
+            else refusal_code,
         }
+        if validation is not None:
+            policy["validation"] = validation
         selected = {fact.result_id for fact in facts if fact.id in rendered.fact_ids}
+        if product_result_id:
+            selected.add(product_result_id)
         proposals = {
             row.id for row in rows if row.kind == "proposal" and row.payload.get("attempt") == run.attempts
         }
-        if proposals and (
-            rendered.fact_ids
-            or refusal_code in {"NO_MATCHING_EVIDENCE", "KNOWLEDGE_ONLY", "FACTUAL_EVIDENCE_REQUIRED"}
+        if (
+            not product_result_id
+            and proposals
+            and (
+                rendered.fact_ids
+                or refusal_code in {"NO_MATCHING_EVIDENCE", "KNOWLEDGE_ONLY", "FACTUAL_EVIDENCE_REQUIRED"}
+            )
         ):
             from dataclasses import replace
 
@@ -768,16 +856,30 @@ class AssistantQueue:
                 "FACTUAL_EVIDENCE_REQUIRED",
             }:
                 policy = {"outcome": "review_required", "code": "REVIEW_REQUIRED"}
-        if policy["outcome"] != "grounded":
+        if product_result_id:
+            policy["reason"] = (
+                "Identidad y capacidades a partir de la configuración registrada del producto; "
+                "no son evidencia de fuentes de conocimiento."
+                if language.lower().startswith("es")
+                else "Identity and capabilities from recorded product configuration; "
+                "these are not knowledge source evidence."
+            )
+        elif policy["outcome"] != "grounded":
             policy["reason"] = rendered.text
+        from koinon.answers.publication import descriptor, fragments
+
+        policy["publication"] = descriptor(rendered.text)
         artifacts = [value for value in message.artifacts if value.get("id") in selected | proposals]
         receipt = AnswerRelease(
+            policy_version="knowledge-only-v2" if product_result_id else "knowledge-only-v1",
             run_id=run.id,
             message_id=message.id,
             tenant_id=run.tenant_id,
             generation_id=generation_id,
             publication_sequence=run.sequence + 2,
-            outcome="grounded"
+            outcome="product_help"
+            if product_result_id
+            else "grounded"
             if policy["outcome"] == "grounded"
             else "review_required"
             if policy["outcome"] == "review_required"
@@ -824,7 +926,8 @@ class AssistantQueue:
         message.artifacts = artifacts
         await self.assistants.message_repository.save(message)
         await self.assistants.record_event(run, "message_metadata", {"answer_policy": policy})
-        await self.assistants.record_event(run, "message_delta", {"text": rendered.text})
+        for chunk in fragments(rendered.text):
+            await self.assistants.record_event(run, "message_delta", chunk)
         for citation in rendered.citations:
             await self.assistants.record_event(run, "citation", {"citation": citation})
         for artifact in message.artifacts:

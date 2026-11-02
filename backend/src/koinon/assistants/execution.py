@@ -11,7 +11,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 from pydantic_ai import Tool as PydanticTool
-from pydantic_ai.exceptions import UnexpectedModelBehavior
+from pydantic_ai.exceptions import ModelRetry, UnexpectedModelBehavior
 from pydantic_ai.messages import ModelRequest, SystemPromptPart, UserPromptPart
 from pydantic_ai.models import ModelRequestParameters
 from pydantic_ai.usage import UsageLimits
@@ -714,48 +714,94 @@ class AssistantExecutor:
                 )
                 await self.authority(run_id, worker_id)
                 await self.memory.authorize(thread.subject, run.tenant_id, run.id)
+                from koinon.answers.language import effective_language
+                from koinon.answers.rendering import AnswerSelectionError
+
+                selection_errors: list[str] = []
+                selected_language = effective_language(preferences)
+                has_facts = False
+
+                @agent.agent.output_validator
+                async def validate_selection(plan: EvidenceAnswerPlan) -> EvidenceAnswerPlan:
+                    nonlocal selected_language, has_facts
+                    selected_language = effective_language(preferences, turn=plan.language)
+                    await self.authority(run_id, worker_id)
+                    await self.memory.authorize(thread.subject, run.tenant_id, run.id)
+                    try:
+                        has_facts = await self.queue.validate_answer_plan(
+                            run_id,
+                            worker_id,
+                            plan,
+                            selected_language,
+                            private_facts=tuple(private_facts),
+                        )
+                    except AnswerSelectionError as error:
+                        if not error.repairable:
+                            raise
+                        selection_errors.append(error.code)
+                        raise ModelRetry(
+                            "Select only existing fact IDs and exact contiguous source quotations. "
+                            "For separated sentences, use separate QuoteSelections, "
+                            "even with the same fact_id. "
+                            "Never paraphrase or join noncontiguous passages into a quotation. "
+                            "Use insufficient_evidence when no selection answers the question."
+                        ) from error
+                    return plan
+
+                async def observe_model_events(_context, events):
+                    # Native graph streaming enables output-validator retries; tokens stay private.
+                    async for _ in events:
+                        pass
+
+                invalid_selection = False
                 try:
-                    async with await agent.run_stream(
+                    result = await agent.run(
                         user_prompt,
                         message_history=history,
+                        event_stream_handler=observe_model_events,
                         usage_limits=UsageLimits(
                             request_limit=12,
                             tool_calls_limit=12,
                             input_tokens_limit=self.assistants.settings.max_context_tokens,
                         ),
-                    ) as stream:
-                        plan = EvidenceAnswerPlan.model_validate(await stream.get_output())
+                    )
+                    plan = EvidenceAnswerPlan.model_validate(result.output)
                 except (UnexpectedModelBehavior, ValidationError):
+                    invalid_selection = True
                     plan = EvidenceAnswerPlan(outcome="insufficient_evidence")
+                    has_facts = await self.queue.validate_answer_plan(
+                        run_id, worker_id, plan, selected_language, private_facts=tuple(private_facts)
+                    )
                 await self.authority(run_id, worker_id)
                 await self.memory.authorize(thread.subject, run.tenant_id, run.id)
-                language = preferences["response_language"]
-                language = preferences["locale"] if language == "auto" else language
+                language = effective_language(preferences, turn=plan.language or selected_language)
+                preferences["effective_language"] = language
+                await self.queue.presentation(run_id, worker_id, preferences)
                 refusal_code = (
-                    "NO_MATCHING_EVIDENCE"
+                    "ANSWER_SELECTION_INVALID"
+                    if invalid_selection and (selection_errors or has_facts)
+                    else "MODEL_ABSTAINED"
+                    if plan.outcome == "insufficient_evidence" and has_facts
+                    else "NO_MATCHING_EVIDENCE"
                     if observed_tools & {"search_knowledge", "query_dataset", "search_private_attachments"}
                     or refs
                     else "FACTUAL_EVIDENCE_REQUIRED"
                     if "inspect_schema" in observed_tools
                     else "KNOWLEDGE_ONLY"
                 )
-                try:
-                    await self.queue.release_answer(
-                        run_id,
-                        worker_id,
-                        plan,
-                        language,
-                        private_facts=tuple(private_facts),
-                        refusal_code=refusal_code,
-                    )
-                except ValueError:
-                    await self.queue.release_answer(
-                        run_id,
-                        worker_id,
-                        EvidenceAnswerPlan(outcome="insufficient_evidence"),
-                        language,
-                        refusal_code=refusal_code,
-                    )
+                await self.queue.release_answer(
+                    run_id,
+                    worker_id,
+                    plan,
+                    language,
+                    private_facts=tuple(private_facts),
+                    refusal_code=refusal_code,
+                    validation={
+                        "repairs": min(1, len(selection_errors)),
+                        "errors": selection_errors
+                        or (["OUTPUT_SCHEMA_INVALID"] if invalid_selection else []),
+                    },
+                )
                 remaining = (
                     self.assistants.settings.run_timeout_seconds
                     - (asyncio.get_running_loop().time() - started)

@@ -18,6 +18,8 @@ Required means the key must be present. Nullable means its value may be `null`; 
 | `outcome` | `string` | Yes | Not specified |
 | `code` | `string` or `null` | No | `null` |
 | `reason` | `string` or `null` | No | `null` |
+| `validation` | [`AnswerSelectionValidation`](answerselectionvalidation.md) or `null` | No | `null` |
+| `publication` | [`AnswerPublication`](answerpublication.md) or `null` | No | `null` |
 
 ## Model constraints
 
@@ -27,7 +29,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 
 ### outcome
 
-- Allowed values: `"grounded"`, `"refused"`, `"review_required"`
+- Allowed values: `"grounded"`, `"refused"`, `"review_required"`, `"product_help"`
 
 
 ## Exact JSON Schema
@@ -44,7 +46,8 @@ This is a schema definition, not an example request. It preserves all declared k
           "enum": [
             "grounded",
             "refused",
-            "review_required"
+            "review_required",
+            "product_help"
           ],
           "title": "Outcome",
           "type": "string"
@@ -72,6 +75,28 @@ This is a schema definition, not an example request. It preserves all declared k
           ],
           "default": null,
           "title": "Reason"
+        },
+        "validation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AnswerSelectionValidation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "publication": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AnswerPublication"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [

@@ -18,10 +18,18 @@ Required means the key must be present. Nullable means its value may be `null`; 
 | `locale` | `string` or `null` | No | `null` |
 | `time_zone` | `string` or `null` | No | `null` |
 | `response_language` | `string` or `null` | No | `null` |
+| `effective_language` | `string` or `null` | No | `null` |
 
 ## Model constraints
 
 - Additional properties: permitted
+
+## Field constraints
+
+### effective_language
+
+- anyOf branch 1 (`string`): Allowed values: `"en"`, `"es"`
+
 
 ## Exact JSON Schema
 
@@ -68,6 +76,22 @@ This is a schema definition, not an example request. It preserves all declared k
           ],
           "default": null,
           "title": "Response Language"
+        },
+        "effective_language": {
+          "anyOf": [
+            {
+              "enum": [
+                "en",
+                "es"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Effective Language"
         }
       },
       "title": "Presentation",

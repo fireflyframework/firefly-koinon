@@ -97,11 +97,15 @@ def test_sealed_unicode_response_is_released_once_and_last_event_cursor_does_not
         ]
 
     response = client.get(url, headers=bearer())
-    assert response.status_code == 200 and deltas(response) == [text]
+    assert response.status_code == 200 and "".join(deltas(response)) == text
     resumed_before = client.get(url, headers={**bearer(), "Last-Event-ID": str(sequence - 1)})
-    assert deltas(resumed_before) == [text] and "event: completed" in resumed_before.text
+    assert "".join(deltas(resumed_before)) == text and "event: completed" in resumed_before.text
     resumed_after = client.get(url, headers={**bearer(), "Last-Event-ID": str(sequence)})
-    assert deltas(resumed_after) == [] and "event: completed" in resumed_after.text
+    assert deltas(response)[0] + "".join(deltas(resumed_after)) == text
+    assert len(deltas(response)) > 1 and "event: completed" in resumed_after.text
+    assert "".join(deltas(response)) == "".join(deltas(resumed_before))
+    final_cursor = sequence + len(deltas(response)) - 1
+    assert deltas(client.get(url, headers={**bearer(), "Last-Event-ID": str(final_cursor)})) == []
 
 
 def test_sse_denies_foreign_owner_scope_and_bad_cursor_before_stream_headers(client):
