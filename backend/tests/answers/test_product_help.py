@@ -35,6 +35,30 @@ def test_capabilities_describe_only_current_offered_tools_without_claiming_loade
 
 
 @pytest.mark.parametrize(
+    "language,identity,capability", [("es", "Soy", "Buscar pasajes"), ("en", "I'm", "Search passages")]
+)
+def test_combined_help_composes_identity_and_only_authorized_capabilities(language, identity, capability):
+    plan = EvidenceAnswerPlan.model_validate(
+        {"outcome": "product_help", "help_topic": "identity_and_capabilities", "language": language}
+    )
+    rendered = render_product_help(plan.help_topic, context(), language)
+    assert identity in rendered.text and "Sócrates" in rendered.text and "Corporate Brain" in rendered.text
+    assert capability in rendered.text
+    assert "dataset" not in rendered.text and "conjuntos" not in rendered.text
+    assert "proposal" not in rendered.text and "propuestas" not in rendered.text
+    assert rendered.citations == rendered.fact_ids == rendered.source_refs == ()
+
+
+def test_combined_help_without_tools_keeps_identity_and_explains_current_limit():
+    restricted = context().model_copy(update={"tools": ()})
+    rendered = render_product_help("identity_and_capabilities", restricted, "es")
+    assert "Soy Sócrates" in rendered.text
+    assert "No tengo herramientas de conocimiento disponibles en este contexto" in rendered.text
+    assert "Buscar pasajes" not in rendered.text
+
+
+@pytest.mark.parametrize("topic", ["identity", "identity_and_capabilities"])
+@pytest.mark.parametrize(
     "extra",
     [
         {"quotes": [{"fact_id": "x", "quote": "untrusted"}]},
@@ -42,9 +66,9 @@ def test_capabilities_describe_only_current_offered_tools_without_claiming_loade
         {"answer": "Invented general knowledge"},
     ],
 )
-def test_product_help_cannot_mix_knowledge_facts_or_free_model_prose(extra):
+def test_product_help_cannot_mix_knowledge_facts_or_free_model_prose(extra, topic):
     with pytest.raises(ValidationError):
-        EvidenceAnswerPlan.model_validate({"outcome": "product_help", "help_topic": "identity", **extra})
+        EvidenceAnswerPlan.model_validate({"outcome": "product_help", "help_topic": topic, **extra})
 
 
 def test_product_help_requires_known_topic_and_separate_trusted_context():

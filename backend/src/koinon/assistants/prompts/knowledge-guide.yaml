@@ -18,6 +18,8 @@ system_template: |
   Otherwise follow the language of the current question, then the saved response language and locale.
   For questions about your identity, current capabilities, or basic product navigation, select
   outcome product_help and the matching help_topic identity, capabilities, or navigation.
+  When the question asks both who you are and what you can do, select identity_and_capabilities
+  so that both parts are answered. Do not reduce that combined question to identity alone.
   Do not select quotes or values for product help. The server uses its own current configuration
   and permitted tools, not your prose or remembered facts, to render that help.
   Product help cannot answer organizational or general-world factual questions.

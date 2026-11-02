@@ -33,14 +33,21 @@ async def assistants(tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "question,language,profile_language,expected",
+    "question,language,profile_language,expected,topic",
     [
-        ("Hola, ¿quién eres? Please answer in English.", "en", "es", "I'm"),
-        ("Who are you? Responde en español.", "es", "en", "Soy"),
+        ("Hola, ¿quién eres? Please answer in English.", "en", "es", "I'm", "identity"),
+        ("Who are you? Responde en español.", "es", "en", "Soy", "identity"),
+        (
+            "¿Quién eres y qué puedes hacer en esta plataforma? Responde en español.",
+            "es",
+            "en",
+            "Soy",
+            "identity_and_capabilities",
+        ),
     ],
 )
 async def test_help_uses_current_brand_and_explicit_turn_language_without_fake_sources(
-    assistants, monkeypatch, question, language, profile_language, expected
+    assistants, monkeypatch, question, language, profile_language, expected, topic
 ):
     service, context = assistants
     monkeypatch.setattr(
@@ -77,7 +84,7 @@ async def test_help_uses_current_brand_and_explicit_turn_language_without_fake_s
         call_tools=[],
         custom_output_args={
             "outcome": "product_help",
-            "help_topic": "identity",
+            "help_topic": topic,
             "language": language,
         },
     )
@@ -98,17 +105,26 @@ async def test_help_uses_current_brand_and_explicit_turn_language_without_fake_s
     message = (await service.messages("issuer|viewer", "north", thread["id"]))[-1]
     assert message["status"] == "completed" and expected in message["text"]
     assert "Sócrates" in message["text"] and "Corporate Brain" in message["text"]
+    if topic == "identity_and_capabilities":
+        assert "Buscar pasajes en el conocimiento autorizado" in message["text"]
+        assert "conjuntos de datos" not in message["text"] and "propuestas" not in message["text"]
     assert message["answer_policy"]["outcome"] == "product_help"
     assert message["presentation"]["effective_language"] == language
     assert message["citations"] == [] and message["artifacts"] == []
     rows = await service.active_results(await service.runs.find_by_id(submitted["run_id"]))
     trusted = [row for row in rows if row.kind == "product_context"]
     assert len(trusted) == 1 and trusted[0].payload["context"]["kind"] == "product_configuration"
+    assert trusted[0].payload["context"]["tools"] == ["search_knowledge"]
     assert not [row for row in rows if row.kind in {"search", "query", "schema"}]
     release = next(row.payload["release"] for row in rows if row.kind == "answer_release")
     assert release["outcome"] == "product_help" and release["policy_version"] == "knowledge-only-v2"
     assert release["fact_ids"] == [] and release["source_refs"] == []
     assert [pin["id"] for pin in release["result_pins"]] == [trusted[0].id]
+    events = await service.run_events("issuer|viewer", "north", run.id)
+    assert (
+        "".join(event["data"]["text"] for event in events if event["type"] == "message_delta")
+        == message["text"]
+    )
     from koinon.assistants.audit import AnswerAudits
 
     audit = await context.get_bean(AnswerAudits).get("issuer|viewer", "north", run.id)

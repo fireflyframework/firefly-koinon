@@ -3,7 +3,7 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/answers/help_dtos.py
-SHA256: 5a45ff1dffd4c76a8a98d6c71e0c8027674a9cfa7a087d5288351d9731be2edf
+SHA256: 82146745c76f3729cd0d33c76468171ed5dc6dba12fda73e416ef8c5fa8eaa69
 
 Server authorization and semantic validation remain authoritative.
 """
@@ -21,7 +21,7 @@ ToolName = Literal[
     "propose_catalog_update",
     "search_private_attachments",
 ]
-HelpTopic = Literal["identity", "capabilities", "navigation"]
+HelpTopic = Literal["identity", "capabilities", "identity_and_capabilities", "navigation"]
 
 
 class ProductHelpContext(ResponseModel):
