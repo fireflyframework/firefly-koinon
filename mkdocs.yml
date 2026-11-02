@@ -66,6 +66,7 @@ nav:
   - Start here: index.md
   - Use koinon:
       - Overview: guides/index.md
+      - Workflows by role: guides/user-journeys.md
       - Getting oriented:
           - Visual walkthrough: guides/interface-tour.md
           - Your profile and API tokens: operations/profiles-and-tokens.md
@@ -89,6 +90,7 @@ nav:
           - Authorized applications: guides/authorized-applications.md
           - Register applications: guides/register-applications.md
       - Knowledge behavior:
+          - Change providers and models: guides/configuration-lifecycle.md
           - Organization defaults: operations/organization-knowledge.md
           - Knowledge-only responses: reference/knowledge-only-responses.md
           - Curated RLM evidence: reference/curated-rlm-evidence.md
@@ -132,6 +134,7 @@ nav:
           - First start in production: operations/first-start.md
           - Initial knowledge provisioning: operations/installation-knowledge.md
           - Initial administrator welcome: reference/bootstrap-welcome.md
+          - Administrator delivery contacts: reference/operator-delivery-contacts.md
           - Production: operations/production.md
           - Worker roles and scaling: operations/workers.md
           - Shared PostgreSQL cache: operations/postgresql-cache.md

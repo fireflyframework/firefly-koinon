@@ -4,6 +4,8 @@
 
 Start with the knowledge shared with you. Library organizes the organization's sources; Chat helps you ask questions and inspect the evidence behind an answer. Your permissions determine which content and actions are available.
 
+For a complete sequence, choose a [workflow by role](user-journeys.md): read and inspect an answer, import and maintain knowledge, administer an organization, operate its deployment or connect an application. Each sequence ends with the evidence to check, including failures and uncertain outcomes.
+
 ## Find your way around
 
 Chat opens after sign-in. Library is the second navigation item. Organization administrators open Settings and Activity from their avatar menu; those pages are unavailable to other roles. Your personal account and notification preferences remain in the avatar menu.

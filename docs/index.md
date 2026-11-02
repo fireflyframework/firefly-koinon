@@ -34,7 +34,7 @@ Installation and organization configuration are separate tasks. An operator prep
 3. [Complete a small acceptance exercise](guides/knowledge-setup.md#complete-the-first-acceptance-exercise). Import a fictional document and dataset, ask questions with known answers, check source evidence and repeat with a restricted reader.
 4. [Inspect health and diagnose failures](operations/platform-health.md#diagnose-a-problem-in-order). Distinguish saved configuration, current observations and successful operations, then keep a tested [recovery procedure](operations/backup-restore.md).
 
-Already operating an organization? The [administration guide](guides/administration.md#find-a-setting) maps each setting to its task and explains permissions, revisions and common failures.
+Already operating an organization? Follow a [complete workflow by role](guides/user-journeys.md), or use [the configuration lifecycle](guides/configuration-lifecycle.md) to change a provider, model, index or delivery policy. The [administration guide](guides/administration.md#find-a-setting) maps each setting to its task and explains permissions, revisions and common failures.
 
 ## Connect your tools
 
