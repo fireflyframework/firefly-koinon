@@ -189,7 +189,7 @@ class WorkerBacklog:
         rows = []
 
         async def observe(name, source, table, ready, active, retry, created, capacity):
-            capacity = min(capacity, self.admission.worker_capacity)
+            capacity = min(capacity, self.admission.capacity_for(name))
             if source not in self.datasources.names():
                 rows.append(QueueObservation(name, None, None, None, None, capacity, available=False))
                 return
@@ -232,7 +232,7 @@ class WorkerBacklog:
                 spec.created,
                 spec.capacity,
             )
-        return WorkerObservation(now, tuple(rows), self.admission.worker_capacity)
+        return WorkerObservation(now, tuple(rows), self.admission.process_capacity)
 
 
 def queue_specifications(now, settings, *, canon=None, structured=None, bulk=None, schema=None):

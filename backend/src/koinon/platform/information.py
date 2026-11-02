@@ -139,7 +139,7 @@ class PlatformInformation:
             ]
         ] = [
             ("api_capacity", self.work.api_capacity, "operations", "process"),
-            ("worker_capacity", self.work.worker_capacity, "operations", "process"),
+            ("worker_capacity", self.work.process_capacity, "operations", "process"),
             ("worker_concurrency", self.operations.worker_concurrency, "operations", "process"),
             ("max_index_workspaces", self.operations.max_index_workspaces, "workspaces", "process"),
             ("mcp_max_concurrency", self.mcp.max_concurrency, "operations", "process"),

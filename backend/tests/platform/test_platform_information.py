@@ -36,6 +36,13 @@ def test_information_uses_only_known_installed_metadata_not_configuration_or_env
     assert all(value.present is None for value in result.artifacts if value.kind == "sbom")
 
 
+def test_information_includes_reserved_conversations_in_total_worker_capacity():
+    information = reader()
+    information.work = WorkAdmissionSettings(worker_capacity=1, conversation_capacity=2)
+    values = {item.id: item.value for item in information.read("north").limits}
+    assert values["worker_capacity"] == 3
+
+
 def test_artifact_reader_rejects_large_files_and_paths_outside_installed_distribution(tmp_path):
     root = tmp_path / "site"
     root.mkdir()
