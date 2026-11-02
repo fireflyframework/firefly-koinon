@@ -87,6 +87,7 @@ jobs:
       PYTHONPATH: src:../packages/canon/src:../packages/structured/src
       KOINON_INSTALLATION_ANN_TEST_PG_URL: postgresql://postgres@127.0.0.1:5439/postgres
       KOINON_ANSWER_RELEASE_TEST_PG_URL: postgresql://postgres@127.0.0.1:5439/postgres
+      KOINON_MEMORY_AUTHORITY_TEST_PG_URL: postgresql://postgres@127.0.0.1:5439/postgres
       KOINON_TEST_BULK_POSTGRES_URL: postgresql://postgres@127.0.0.1:5439/postgres
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -101,7 +102,7 @@ jobs:
           uv sync --project backend --locked --extra dev
       - name: Verify real indexes, recovery and scope fences
         working-directory: backend
-        run: .venv/bin/python -m pytest -q tests/installation/test_installation_native_postgres.py tests/answers/test_release_postgres.py tests/knowledge/bulk/test_bulk_pinned_postgres.py ../deploy/tests/test_operator_contacts.py ../deploy/tests/test_operator_cli_postgres.py
+        run: .venv/bin/python -m pytest -q tests/installation/test_installation_native_postgres.py tests/answers/test_release_postgres.py tests/assistants/test_memory_authority_postgres.py tests/knowledge/bulk/test_bulk_pinned_postgres.py ../deploy/tests/test_operator_contacts.py ../deploy/tests/test_operator_cli_postgres.py
 
   native-units:
     runs-on: ubuntu-latest
