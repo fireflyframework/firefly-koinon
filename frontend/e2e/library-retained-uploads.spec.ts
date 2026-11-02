@@ -15,6 +15,8 @@ async function fixture(page: Page) {
   let recoveryOperation: 'retry_processing' | 'finalize_publication' | 'acknowledge_commit' | null =
     'retry_processing';
   let lostRecovery = false;
+  let failedRecoveryRefresh = false,
+    recoveryAcknowledged = false;
   let batch: FileBatchView = {
     id: 'retained-batch',
     tenant_id: 'tenant-one',
@@ -95,6 +97,8 @@ async function fixture(page: Page) {
         { code: 'ACCESS_DENIED', message: 'Private original exception' },
         denyDetail || 403,
       );
+    if (method === 'GET' && failedRecoveryRefresh && recoveryAcknowledged)
+      return json({ code: 'STATUS_UNAVAILABLE', message: 'Private upstream failure' }, 503);
     if (path.endsWith('/items'))
       return json({ items: [item], total: 1, page: 1, page_size: 50, pages: 1 });
     if (path.endsWith('/recovery'))
@@ -141,6 +145,7 @@ async function fixture(page: Page) {
           lostRecovery = false;
           return route.abort('failed');
         }
+        recoveryAcknowledged = true;
         item = {
           ...item,
           status: body?.['operation'] === 'acknowledge_commit' ? 'succeeded' : 'queued',
@@ -165,7 +170,7 @@ async function fixture(page: Page) {
       } else throw Error('Unexpected retained upload mutation');
       batch = { ...batch, revision: batch.revision + 1, counts: { [item.status]: 1 } };
     }
-    return json(batch);
+    return json(batch, method === 'POST' && path.endsWith('/recover') ? 202 : 200);
   });
   return {
     calls,
@@ -191,6 +196,9 @@ async function fixture(page: Page) {
         error_code: 'INGEST_EXECUTION_CONTEXT_REQUIRED',
       };
       batch = { ...batch, status: 'reconciling', counts: { reconciling: 1 } };
+    },
+    failRecoveryRefresh: () => {
+      failedRecoveryRefresh = true;
     },
     loseRecovery: () => {
       lostRecovery = true;
@@ -533,3 +541,38 @@ test('Spanish recovery separates a confirmed upload from failed processing on mo
   expect(service.calls.every((c) => c.method === 'GET' && !c.path.endsWith('/receipt'))).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+for (const width of [1440, 390])
+  test(`keeps an acknowledged recovery separate from status refresh failure at ${width}px`, async ({
+    page,
+  }) => {
+    const service = await fixture(page);
+    service.recovery();
+    service.failRecoveryRefresh();
+    await page.setViewportSize({ width, height: 1000 });
+    const panel = await open(page);
+    await select(panel);
+    await panel.getByRole('button', { name: 'Inspect recovery', exact: true }).click();
+    await panel.getByRole('button', { name: 'Retry processing', exact: true }).click();
+    await panel
+      .getByRole('region', { name: 'Review upload action', exact: true })
+      .getByRole('button', { name: 'Retry processing', exact: true })
+      .click();
+    await expect(panel.getByRole('alert')).toContainText('The action was acknowledged');
+    await expect(panel.getByRole('alert')).toContainText('current status could not be refreshed');
+    await expect(panel.locator('p.feedback[role="status"]')).toHaveCount(0);
+    await expect(panel).not.toContainText('An administrator must update the processing service');
+    await expect(panel).not.toContainText('Some action results are not confirmed');
+    await expect(panel).not.toContainText('Private upstream failure');
+    await expect(
+      panel.getByRole('button', { name: 'Review saved request', exact: true }),
+    ).toHaveCount(0);
+    expect(
+      await page.evaluate(() => sessionStorage.getItem('koinon:retained-upload-actions:v1')),
+    ).toBeNull();
+    expect(service.calls.filter((call) => call.method === 'POST')).toHaveLength(1);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    await capture(page, `acknowledged-refresh-failed-${width}`);
+  });
