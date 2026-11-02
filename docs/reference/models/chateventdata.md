@@ -15,6 +15,9 @@ Required means the key must be present. Nullable means its value may be `null`; 
 
 | Field | Type | Required | Default |
 | --- | --- | --- | --- |
+| `chunk_index` | `integer` or `null` | No | `null` |
+| `chunk_count` | `integer` or `null` | No | `null` |
+| `text_offset` | `integer` or `null` | No | `null` |
 | `proposal_update` | [`ProposalUpdate`](proposalupdate.md) or `null` | No | `null` |
 | `tool_activity` | [`ToolActivity`](toolactivity.md) or `null` | No | `null` |
 | `answer_policy` | [`AnswerPolicy`](answerpolicy.md) or `null` | No | `null` |
@@ -49,6 +52,42 @@ This is a schema definition, not an example request. It preserves all declared k
     {
       "additionalProperties": true,
       "properties": {
+        "chunk_index": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chunk Index"
+        },
+        "chunk_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chunk Count"
+        },
+        "text_offset": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Text Offset"
+        },
         "proposal_update": {
           "anyOf": [
             {

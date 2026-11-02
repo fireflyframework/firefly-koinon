@@ -640,12 +640,28 @@ class Presentation(ResponseModel):
     locale: str | None = None
     time_zone: str | None = None
     response_language: str | None = None
+    effective_language: Literal["en", "es"] | None = None
+
+
+class AnswerSelectionValidation(ResponseModel):
+    repairs: int
+    errors: list[str]
+
+
+class AnswerPublication(ResponseModel):
+    format: Literal["verified-unicode-v1"]
+    chunk_size: Literal[128]
+    chunk_count: int
+    text_sha256: str
 
 
 class AnswerPolicy(ResponseModel):
-    outcome: Literal["grounded", "refused", "review_required"]
+    outcome: Literal["grounded", "refused", "review_required", "product_help"]
     code: str | None = None
     reason: str | None = None
+
+    validation: AnswerSelectionValidation | None = None
+    publication: AnswerPublication | None = None
 
 
 class AttachmentHistorySummary(ResponseModel):
@@ -722,6 +738,9 @@ class AttachmentEvidence(ResponseModel):
 
 
 class ChatEventData(ResponseModel):
+    chunk_index: int | None = None
+    chunk_count: int | None = None
+    text_offset: int | None = None
     proposal_update: ProposalUpdate | None = None
     tool_activity: ToolActivity | None = None
     answer_policy: AnswerPolicy | None = None

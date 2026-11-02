@@ -62,10 +62,15 @@
   "AnswerPolicyOutcome": [
     "grounded",
     "refused",
-    "review_required"
+    "review_required",
+    "product_help"
+  ],
+  "AnswerPublicationFormat": [
+    "verified-unicode-v1"
   ],
   "AnswerReleasePolicyVersion": [
-    "knowledge-only-v1"
+    "knowledge-only-v1",
+    "knowledge-only-v2"
   ],
   "AssetAvailabilityPhase": [
     "unknown",
@@ -199,8 +204,8 @@
     "json"
   ],
   "KnowledgeSettingsOrigin": [
-    "deployment",
-    "organization"
+    "organization",
+    "deployment"
   ],
   "ConversationMessageStatus": [
     "completed",
@@ -884,6 +889,10 @@
   "PendingKnowledgeCommitReason": [
     "commit_outcome_unresolved"
   ],
+  "PresentationEffectiveLanguage": [
+    "en",
+    "es"
+  ],
   "PrivateChunkViewOffsetBasis": [
     "normalized_text_code_points"
   ],
@@ -893,6 +902,21 @@
     "deleted",
     "changed",
     "unavailable"
+  ],
+  "ProductHelpContextKind": [
+    "product_configuration"
+  ],
+  "ProductHelpContextSelection": [
+    "explicit_selection",
+    "broader_scope",
+    "private_attachments"
+  ],
+  "ProductHelpContextTools": [
+    "search_knowledge",
+    "inspect_schema",
+    "query_dataset",
+    "search_private_attachments",
+    "propose_catalog_update"
   ],
   "ProposalUpdateStatus": [
     "applied",
@@ -1072,13 +1096,6 @@
     "upload",
     "replace",
     "reingest"
-  ],
-  "ToolActivityToolName": [
-    "search_knowledge",
-    "inspect_schema",
-    "query_dataset",
-    "search_private_attachments",
-    "propose_catalog_update"
   ],
   "UserStatementEvidenceKind": [
     "user_statement"

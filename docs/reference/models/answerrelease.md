@@ -44,7 +44,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 
 ### policy_version
 
-- Exact value: `"knowledge-only-v1"`
+- Allowed values: `"knowledge-only-v1"`, `"knowledge-only-v2"`
 
 ### run_id
 
@@ -67,7 +67,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 
 ### outcome
 
-- Allowed values: `"grounded"`, `"refused"`, `"review_required"`
+- Allowed values: `"grounded"`, `"refused"`, `"review_required"`, `"product_help"`
 
 ### text_sha256
 
@@ -119,8 +119,11 @@ This is a schema definition, not an example request. It preserves all declared k
           "type": "integer"
         },
         "policy_version": {
-          "const": "knowledge-only-v1",
           "default": "knowledge-only-v1",
+          "enum": [
+            "knowledge-only-v1",
+            "knowledge-only-v2"
+          ],
           "title": "Policy Version",
           "type": "string"
         },
@@ -163,7 +166,8 @@ This is a schema definition, not an example request. It preserves all declared k
           "enum": [
             "grounded",
             "refused",
-            "review_required"
+            "review_required",
+            "product_help"
           ],
           "title": "Outcome",
           "type": "string"

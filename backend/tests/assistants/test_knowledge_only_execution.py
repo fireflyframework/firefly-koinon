@@ -22,7 +22,19 @@ from koinon.knowledge.evidence_capture import NativeKnowledgeEvidence
 
 
 @pytest.mark.parametrize(
-    "case", ["valid", "raw_draft", "forged_id", "mixed", "forged_quote", "free_prose", "empty"]
+    "case",
+    [
+        "valid",
+        "raw_draft",
+        "forged_id",
+        "mixed",
+        "forged_quote",
+        "free_prose",
+        "empty",
+        "repaired",
+        "abstained",
+        "two_quotes",
+    ],
 )
 async def test_real_executor_releases_only_valid_current_source_plan(assistants, monkeypatch, case):
     service, context = assistants
@@ -46,7 +58,11 @@ async def test_real_executor_releases_only_valid_current_source_plan(assistants,
         )
         if kind == "source":
             source = parent
-    passage = "The approved maintenance window is Tuesday at 09:00 UTC."
+    passage = (
+        "Su código de validación es BRUJULA-8642.\nEl plazo de revisión de esta prueba es de siete días."
+        if case == "two_quotes"
+        else "The approved maintenance window is Tuesday at 09:00 UTC."
+    )
     reference = SourceReference(
         id="native-proof",
         asset_id=parent.id,
@@ -73,7 +89,13 @@ async def test_real_executor_releases_only_valid_current_source_plan(assistants,
         thread["id"],
         {
             "agent_id": agent["id"],
-            "message": "When is the maintenance window?",
+            "message": (
+                "¿Cuál es el código de validación y cuál es el plazo de revisión?"
+                if case == "two_quotes"
+                else "What is the approved deployment region?"
+                if case == "abstained"
+                else "When is the maintenance window?"
+            ),
             "scope": {"asset_ids": [parent.id]},
             "client_request_id": case,
         },
@@ -81,7 +103,10 @@ async def test_real_executor_releases_only_valid_current_source_plan(assistants,
     queue = context.get_bean(AssistantQueue)
     run = await queue.claim("knowledge-only")
 
+    output_attempts = 0
+
     async def streamed(messages, info):
+        nonlocal output_attempts
         returns = [
             part
             for message in messages
@@ -103,8 +128,22 @@ async def test_real_executor_releases_only_valid_current_source_plan(assistants,
         if case == "raw_draft":
             yield "UNSUPPORTED_TRAINING_FACT: Jupiter has 999 moons."
             return
+        output_attempts += 1
         selection = {"fact_id": facts[0]["id"] if facts else "missing", "quote": passage}
         plan = {"outcome": "answer", "quotes": [selection], "values": []}
+        if case == "repaired" and output_attempts == 1:
+            selection["quote"] = "The window is Tuesday morning."
+        if case in {"abstained", "empty"}:
+            plan = {"outcome": "insufficient_evidence"}
+        if case == "two_quotes":
+            plan["language"] = "es"
+            plan["quotes"] = (
+                [{"fact_id": selection["fact_id"], "quote": passage.replace("\n", " ")}]
+                if output_attempts == 1
+                else [
+                    {"fact_id": selection["fact_id"], "quote": sentence} for sentence in passage.split("\n")
+                ]
+            )
         if case == "forged_id":
             selection["fact_id"] = "forged-source"
         if case == "mixed":
@@ -123,10 +162,26 @@ async def test_real_executor_releases_only_valid_current_source_plan(assistants,
     assert message.status == "completed", (await service.runs.find_by_id(run.id)).error_code
     assert knowledge.search.await_count == 1
     assert "UNSUPPORTED_TRAINING_FACT" not in message.text
-    assert message.answer_policy["outcome"] == ("grounded" if case == "valid" else "refused")
-    assert (passage in message.text) is (case == "valid")
+    assert message.answer_policy["outcome"] == (
+        "grounded" if case in {"valid", "repaired", "two_quotes"} else "refused"
+    )
+    if case == "two_quotes":
+        assert all(sentence in message.text for sentence in passage.split("\n"))
+        assert message.text.startswith("El conocimiento seleccionado")
+    else:
+        assert (passage in message.text) is (case in {"valid", "repaired"})
+    if case in {"repaired", "two_quotes"}:
+        assert output_attempts == 2
+        assert message.answer_policy["validation"]["repairs"] == 1
+    if case in {"forged_id", "forged_quote", "mixed"}:
+        assert message.answer_policy["code"] == "ANSWER_SELECTION_INVALID"
+        assert message.answer_policy["validation"]["errors"]
+    if case == "abstained":
+        assert message.answer_policy["code"] == "MODEL_ABSTAINED"
+    if case == "empty":
+        assert message.answer_policy["code"] == "NO_MATCHING_EVIDENCE"
     events = await service.run_events("issuer|viewer", "north", run.id)
-    assert [item["data"]["text"] for item in events if item["type"] == "message_delta"] == [message.text]
+    assert "".join(item["data"]["text"] for item in events if item["type"] == "message_delta") == message.text
     assert "UNSUPPORTED_TRAINING_FACT" not in str(events)
     assert (
         len([row for row in await service.results.find_all(run_id=run.id) if row.kind == "answer_release"])

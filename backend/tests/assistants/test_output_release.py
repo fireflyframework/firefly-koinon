@@ -1,5 +1,6 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
+import asyncio
 from hashlib import sha256
 
 import pytest
@@ -115,18 +116,21 @@ async def test_replay_rechecks_sealed_text_and_all_selected_source_pins(assistan
     assert "Verified native chunk" not in page[-1]["text"]
 
 
-async def test_event_publication_failure_rolls_back_the_entire_answer_release(assistants, monkeypatch):
+@pytest.mark.parametrize("interruption", [RuntimeError, asyncio.CancelledError])
+async def test_event_publication_failure_rolls_back_the_entire_answer_release(
+    assistants, monkeypatch, interruption
+):
     service, _, queue, run, _ = await prepared(assistants)
     fact = (await queue.fact_pool(run.id, "proposal-worker"))[0]
     original = service.record_event
 
     async def failed(run, kind, data):
         if kind == "message_delta":
-            raise RuntimeError("Controlled publication interruption")
+            raise interruption("Controlled publication interruption")
         return await original(run, kind, data)
 
     monkeypatch.setattr(service, "record_event", failed)
-    with pytest.raises(RuntimeError, match="Controlled publication"):
+    with pytest.raises(interruption, match="Controlled publication"):
         await queue.release_answer(
             run.id,
             "proposal-worker",
@@ -269,7 +273,7 @@ async def test_retry_can_publish_a_current_sealed_refusal_before_a_generation_ex
     page = await service.messages("issuer|admin", "north", current.thread_id)
     assert page[-1]["text"] == message.text and "organización" in page[-1]["text"]
     events = await service.run_events("issuer|admin", "north", current.id)
-    assert [item["data"]["text"] for item in events if item["type"] == "message_delta"] == [message.text]
+    assert "".join(item["data"]["text"] for item in events if item["type"] == "message_delta") == message.text
     assert (
         len([row for row in await service.results.find_all(run_id=run.id) if row.kind == "answer_release"])
         == 2
@@ -354,3 +358,100 @@ async def test_forged_reset_does_not_relabel_a_pre_reset_seal_as_current(assista
         await service.active_results(current, [SimpleNamespace(id=row.id, kind=row.kind, payload=payload)])
         == []
     )
+
+
+async def test_final_release_rechecks_authority_after_successful_selection_preview(assistants):
+    from koinon.catalog.repositories import MembershipRepository
+
+    service, context, queue, run, _ = await prepared(assistants)
+    fact = (await queue.fact_pool(run.id, "proposal-worker"))[0]
+    plan = EvidenceAnswerPlan(
+        outcome="answer", quotes=[{"fact_id": fact.id, "quote": "Verified native chunk"}]
+    )
+    assert await queue.validate_answer_plan(run.id, "proposal-worker", plan, "en")
+    await context.get_bean(MembershipRepository).delete_by_id("admin")
+    with pytest.raises(AccessDenied):
+        await queue.release_answer(run.id, "proposal-worker", plan, "en")
+    assert not (await service.message_repository.find_by_id(run.message_id)).text
+    assert not any(event.type == "message_delta" for event in await service.events.find_after(run.id, 0))
+
+
+@pytest.mark.parametrize("mutation", ["missing", "altered", "shifted"])
+async def test_chunk_replay_requires_the_entire_sealed_contiguous_publication(assistants, mutation):
+    service, _, queue, run, _ = await prepared(assistants)
+    fact = (await queue.fact_pool(run.id, "proposal-worker"))[0]
+    await queue.release_answer(
+        run.id,
+        "proposal-worker",
+        EvidenceAnswerPlan(outcome="answer", quotes=[{"fact_id": fact.id, "quote": "Verified native chunk"}]),
+        "en",
+    )
+    message = await service.message_repository.find_by_id(run.message_id)
+    assert message.answer_policy["publication"]["format"] == "verified-unicode-v1"
+    rows = [row for row in await service.events.find_after(run.id, 0) if row.type == "message_delta"]
+    if mutation == "missing":
+        await service.events.delete_by_id(rows[0].id)
+    elif mutation == "altered":
+        rows[0].data = {**rows[0].data, "text": "UNSEALED"}
+        await service.events.save(rows[0])
+    else:
+        rows[0].sequence += 100
+        await service.events.save(rows[0])
+    visible = await service.run_events("issuer|admin", "north", run.id)
+    assert not any(row["type"] in {"message_delta", "citation", "openui_delta"} for row in visible)
+
+
+async def test_historical_v1_single_delta_replays_without_changing_its_canonical_receipt(assistants):
+    from koinon.answers.contexts import context_hash
+    from koinon.answers.receipts import AnswerRelease, ResultPin, digest, text_digest
+    from koinon.assistants.entities import ToolResult
+    from koinon.assistants.lifecycle import timestamp
+
+    service, _, _, run, result_id = await prepared(assistants)
+    run = await service.runs.find_by_id(run.id)
+    rows = await service.active_results(run)
+    generation = next(row.id for row in rows if row.kind == "generation")
+    result = next(row for row in rows if row.id == result_id)
+    message = await service.message_repository.find_by_id(run.message_id)
+    text, policy = "Historical exact answer", {"outcome": "grounded", "code": "VERIFIED_EVIDENCE_V1"}
+    receipt = AnswerRelease(
+        run_id=run.id,
+        message_id=message.id,
+        tenant_id=run.tenant_id,
+        generation_id=generation,
+        publication_sequence=run.sequence + 2,
+        outcome="grounded",
+        text_sha256=text_digest(text),
+        citations_sha256=digest([]),
+        artifacts_sha256=digest([]),
+        policy_sha256=digest(policy),
+        fact_ids=("historical-fact",),
+        result_pins=(
+            ResultPin(id=result.id, sha256=digest({"kind": result.kind, "payload": result.payload})),
+        ),
+        created_at=timestamp(),
+    )
+    data = receipt.model_dump(mode="json")
+    seal = digest(data)
+    await service.results.save(
+        ToolResult(
+            id="historical-release",
+            run_id=run.id,
+            kind="answer_release",
+            payload={
+                "release": data,
+                "seal_sha256": seal,
+                "generation_id": generation,
+                "reset_sequence": 0,
+                "context_sha256": context_hash(seal, 0),
+            },
+        )
+    )
+    message.text, message.answer_policy = text, policy
+    message.artifacts, message.citations = [], []
+    await service.message_repository.save(message)
+    await service.record_event(run, "message_metadata", {"answer_policy": policy})
+    await service.record_event(run, "message_delta", {"text": text})
+    events = await service.run_events("issuer|admin", "north", run.id)
+    assert [row["data"] for row in events if row["type"] == "message_delta"] == [{"text": text}]
+    assert (await service.results.find_by_id("historical-release")).payload["release"] == data

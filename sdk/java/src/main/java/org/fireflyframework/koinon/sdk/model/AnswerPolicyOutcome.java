@@ -9,7 +9,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public enum AnswerPolicyOutcome {
     GROUNDED("grounded"),
     REFUSED("refused"),
-    REVIEW_REQUIRED("review_required");
+    REVIEW_REQUIRED("review_required"),
+    PRODUCT_HELP("product_help");
     private final String value;
     AnswerPolicyOutcome(String value){this.value=value;}
     @JsonValue public String value(){return value;}

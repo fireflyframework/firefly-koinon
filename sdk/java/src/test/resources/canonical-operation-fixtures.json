@@ -2056,12 +2056,25 @@
           "answer_policy": {
             "outcome": "grounded",
             "code": "code-value",
-            "reason": "reason-value"
+            "reason": "reason-value",
+            "validation": {
+              "repairs": 1,
+              "errors": [
+                "errors-value"
+              ]
+            },
+            "publication": {
+              "format": "verified-unicode-v1",
+              "chunk_size": 128,
+              "chunk_count": 1,
+              "text_sha256": "text_sha256-value"
+            }
           },
           "presentation": {
             "locale": "locale-value",
             "time_zone": "time_zone-value",
-            "response_language": "response_language-value"
+            "response_language": "response_language-value",
+            "effective_language": "en"
           },
           "event_cursor": "event_cursor-value",
           "id": "id-value",
@@ -2199,6 +2212,9 @@
       "id": "id-value",
       "type": "type-value",
       "data": {
+        "chunk_index": 1,
+        "chunk_count": 1,
+        "text_offset": 1,
         "proposal_update": {
           "id": "id-value",
           "status": "applied",
@@ -2218,12 +2234,25 @@
         "answer_policy": {
           "outcome": "grounded",
           "code": "code-value",
-          "reason": "reason-value"
+          "reason": "reason-value",
+          "validation": {
+            "repairs": 1,
+            "errors": [
+              "errors-value"
+            ]
+          },
+          "publication": {
+            "format": "verified-unicode-v1",
+            "chunk_size": 128,
+            "chunk_count": 1,
+            "text_sha256": "text_sha256-value"
+          }
         },
         "presentation": {
           "locale": "locale-value",
           "time_zone": "time_zone-value",
-          "response_language": "response_language-value"
+          "response_language": "response_language-value",
+          "effective_language": "en"
         },
         "text": "text-value",
         "stage": "stage-value",
@@ -2517,6 +2546,17 @@
           }
         ],
         "created_at": "2026-10-27T12:34:56Z"
+      },
+      "product_context": {
+        "kind": "product_configuration",
+        "product_name": "product_name-value",
+        "assistant_name": "assistant_name-value",
+        "branding_revision": 1,
+        "branding_origin": "organization",
+        "selection": "explicit_selection",
+        "tools": [
+          "search_knowledge"
+        ]
       },
       "knowledge_settings_snapshot": {
         "tenant_id": "tenant_id-value",

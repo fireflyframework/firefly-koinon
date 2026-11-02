@@ -265,7 +265,7 @@ for name, definition in defs.items():
         "KnowledgeConfirmation": "include_remembered_context", "DocumentEvidence": "basis", "StructuredEvidence": "basis",
     }
     if name == "AnswerAudit":
-        for omitted in ({"output_release"}, {"output_release", "memory"}):
+        for omitted in ({"output_release", "product_context"}, {"output_release", "memory", "product_context"}):
             previous = [field for field in fields if field[0] not in omitted]
             body += (
                 "    public AnswerAudit("
@@ -274,6 +274,10 @@ for name, definition in defs.items():
                 + ",".join("null" if wire in omitted else key for wire, key, _, _, _ in fields)
                 + ");}\n"
             )
+    if name in {"AnswerPolicy", "Presentation", "ChatEventData", "AnswerAudit"}:
+        additions = {"AnswerPolicy": {"validation", "publication"}, "Presentation": {"effective_language"}, "ChatEventData": {"chunk_index", "chunk_count", "text_offset"}, "AnswerAudit": {"product_context"}}[name]
+        previous = [field for field in fields if field[0] not in additions]
+        body += "    public " + name + "(" + ", ".join(kind + " " + key for _, key, kind, _, _ in previous) + "){this(" + ",".join("null" if wire in additions else key for wire, key, _, _, _ in fields) + ");}\n"
     if name in added_memory_fields:
         added = added_memory_fields[name]
         previous = [field for field in fields if field[0] != added]

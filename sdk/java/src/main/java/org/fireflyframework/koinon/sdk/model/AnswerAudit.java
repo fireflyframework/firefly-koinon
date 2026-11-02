@@ -12,6 +12,7 @@ public record AnswerAudit(
     @JsonProperty("provenance_status") AnswerAuditProvenanceStatus provenanceStatus,
     @JsonProperty("source_provenance_complete") Boolean sourceProvenanceComplete,
     @JsonProperty("output_release") AnswerRelease outputRelease,
+    @JsonProperty("product_context") ProductHelpContext productContext,
     @JsonProperty("knowledge_settings_snapshot") OrganizationKnowledgeSnapshot knowledgeSettingsSnapshot,
     @JsonProperty("memory") MemoryReceipt memory,
     @JsonProperty("generations") List<GenerationReceipt> generations,
@@ -21,8 +22,9 @@ public record AnswerAudit(
     @JsonProperty("sql_attempts") List<SqlAttemptReceipt> sqlAttempts,
     @JsonProperty("rlm_tools") List<RlmToolReceipt> rlmTools
 ) {
-    public AnswerAudit(String runId, AnswerAuditProvenanceStatus provenanceStatus, Boolean sourceProvenanceComplete, OrganizationKnowledgeSnapshot knowledgeSettingsSnapshot, MemoryReceipt memory, List<GenerationReceipt> generations, List<SourceReference> sources, List<PrivateFileReceipt> privateFiles, List<NativeReadReceipt> nativeReads, List<SqlAttemptReceipt> sqlAttempts, List<RlmToolReceipt> rlmTools){this(runId,provenanceStatus,sourceProvenanceComplete,null,knowledgeSettingsSnapshot,memory,generations,sources,privateFiles,nativeReads,sqlAttempts,rlmTools);}
-    public AnswerAudit(String runId, AnswerAuditProvenanceStatus provenanceStatus, Boolean sourceProvenanceComplete, OrganizationKnowledgeSnapshot knowledgeSettingsSnapshot, List<GenerationReceipt> generations, List<SourceReference> sources, List<PrivateFileReceipt> privateFiles, List<NativeReadReceipt> nativeReads, List<SqlAttemptReceipt> sqlAttempts, List<RlmToolReceipt> rlmTools){this(runId,provenanceStatus,sourceProvenanceComplete,null,knowledgeSettingsSnapshot,null,generations,sources,privateFiles,nativeReads,sqlAttempts,rlmTools);}
+    public AnswerAudit(String runId, AnswerAuditProvenanceStatus provenanceStatus, Boolean sourceProvenanceComplete, OrganizationKnowledgeSnapshot knowledgeSettingsSnapshot, MemoryReceipt memory, List<GenerationReceipt> generations, List<SourceReference> sources, List<PrivateFileReceipt> privateFiles, List<NativeReadReceipt> nativeReads, List<SqlAttemptReceipt> sqlAttempts, List<RlmToolReceipt> rlmTools){this(runId,provenanceStatus,sourceProvenanceComplete,null,null,knowledgeSettingsSnapshot,memory,generations,sources,privateFiles,nativeReads,sqlAttempts,rlmTools);}
+    public AnswerAudit(String runId, AnswerAuditProvenanceStatus provenanceStatus, Boolean sourceProvenanceComplete, OrganizationKnowledgeSnapshot knowledgeSettingsSnapshot, List<GenerationReceipt> generations, List<SourceReference> sources, List<PrivateFileReceipt> privateFiles, List<NativeReadReceipt> nativeReads, List<SqlAttemptReceipt> sqlAttempts, List<RlmToolReceipt> rlmTools){this(runId,provenanceStatus,sourceProvenanceComplete,null,null,knowledgeSettingsSnapshot,null,generations,sources,privateFiles,nativeReads,sqlAttempts,rlmTools);}
+    public AnswerAudit(String runId, AnswerAuditProvenanceStatus provenanceStatus, Boolean sourceProvenanceComplete, AnswerRelease outputRelease, OrganizationKnowledgeSnapshot knowledgeSettingsSnapshot, MemoryReceipt memory, List<GenerationReceipt> generations, List<SourceReference> sources, List<PrivateFileReceipt> privateFiles, List<NativeReadReceipt> nativeReads, List<SqlAttemptReceipt> sqlAttempts, List<RlmToolReceipt> rlmTools){this(runId,provenanceStatus,sourceProvenanceComplete,outputRelease,null,knowledgeSettingsSnapshot,memory,generations,sources,privateFiles,nativeReads,sqlAttempts,rlmTools);}
     public AnswerAudit {
         generations=generations==null?null:List.copyOf(generations);
         sources=sources==null?null:List.copyOf(sources);

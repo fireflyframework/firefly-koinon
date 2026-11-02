@@ -3,7 +3,7 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/assistants/audit_dtos.py
-SHA256: aeac5c81ec320bd7dd3dae054ecd8b0250fbd649b5d8cbcb1a82a9352e0c6066
+SHA256: 1589795da8ece59e78c016a5fe49856ba2f83560b45a8875d4d4c5db1802c70b
 
 Source dependency: backend/src/koinon/evidence/rlm_scope.py
 SHA256: 5f018f523275c77d97aef6c6c82ff4015b0b5c46dcda0be2cd51eae09df2f0d4
@@ -21,6 +21,7 @@ from koinon_sdk.answer_release import AnswerRelease
 from koinon_sdk.evidence import SourceReference
 from koinon_sdk.memory import MemoryReceipt
 from koinon_sdk.organization_knowledge import OrganizationKnowledgeSnapshot
+from koinon_sdk.product_help import ProductHelpContext
 
 RlmResourceIdentifier = Annotated[str, Field(min_length=1, max_length=64, strict=True)]
 
@@ -192,6 +193,7 @@ class AnswerAudit(AuditValue):
     provenance_status: Literal["recorded", "not_recorded"]
     source_provenance_complete: bool | None = None
     output_release: AnswerRelease | None = None
+    product_context: ProductHelpContext | None = None
     knowledge_settings_snapshot: OrganizationKnowledgeSnapshot | None = None
     memory: MemoryReceipt | None = None
     generations: list[GenerationReceipt] = Field(default_factory=list[GenerationReceipt], max_length=100)

@@ -582,11 +582,44 @@ export class KoinonAssistant implements OnDestroy {
       }));
     }
     if (event.type === 'message_delta' && data.text) {
-      this.streamText += data.text;
-      this.updateMessage(run.message_id, (message) => ({
-        ...message,
-        text: message.text.startsWith(this.streamText) ? message.text : this.streamText,
-      }));
+      const publication = this.messages().find((message) => message.id === run.message_id)
+        ?.answer_policy?.publication;
+      if (publication || data.chunk_index !== undefined || data.text_offset !== undefined) {
+        const index = data.chunk_index,
+          offset = data.text_offset;
+        if (
+          publication?.format !== 'verified-unicode-v1' ||
+          publication.chunk_size !== 128 ||
+          !Number.isInteger(index) ||
+          index! < 0 ||
+          index! >= publication.chunk_count ||
+          data.chunk_count !== publication.chunk_count ||
+          !Number.isInteger(offset) ||
+          offset! < 0 ||
+          (index === 0 && offset !== 0)
+        )
+          throw new Error(
+            'The verified answer stream could not be reconciled. Reopen the conversation.',
+          );
+        const current =
+          this.messages().find((message) => message.id === run.message_id)?.text ?? '';
+        if (
+          current.length < offset! ||
+          (current.length > offset! &&
+            current.slice(offset!, offset! + data.text.length) !== data.text)
+        )
+          throw new Error(
+            'The verified answer stream could not be reconciled. Reopen the conversation.',
+          );
+        this.streamText = current.length === offset! ? current + data.text : current;
+        this.updateMessage(run.message_id, (message) => ({ ...message, text: this.streamText }));
+      } else {
+        this.streamText += data.text;
+        this.updateMessage(run.message_id, (message) => ({
+          ...message,
+          text: message.text.startsWith(this.streamText) ? message.text : this.streamText,
+        }));
+      }
     }
     if (event.type === 'tool_activity') {
       this.toolActivity.set(data.message ?? data.stage ?? '');

@@ -42,3 +42,11 @@ test('audit preserves exact optional answer publication pins without backfilling
  const oldClient=new KoinonClient({transport:{request:async()=>({run_id:'old',provenance_status:'not_recorded'})}});
  assert.equal((await oldClient.chat.audit('north','old')).output_release,undefined);
 });
+
+test('product help has separate configuration provenance and preserves sealed stream metadata',async()=>{
+ const value={run_id:'run',provenance_status:'recorded',product_context:{kind:'product_configuration',product_name:'Corporate Brain',assistant_name:'Research guide',branding_revision:3,tools:['search_knowledge']},sources:[]};
+ const client=new KoinonClient({transport:{request:async()=>value}});
+ const audit=await client.chat.audit('north','run');
+ assert.equal(audit.product_context.kind,'product_configuration');
+ assert.deepEqual(audit.sources,[]);assert.deepEqual(audit.product_context.tools,['search_knowledge']);
+});

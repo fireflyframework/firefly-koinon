@@ -14,6 +14,8 @@ async function assistantFixture(
     audit?: boolean;
     multipleAgents?: boolean;
     answerActions?: boolean;
+    helpLanguage?: 'en' | 'es';
+    hold?: Promise<void>;
   } = {},
 ) {
   await mockService(page, { organizationAgent: 'agent-one' });
@@ -39,6 +41,18 @@ async function assistantFixture(
         },
       }),
     );
+  const helpText =
+    options.helpLanguage === 'es'
+      ? 'Soy koinon, el asistente de koinon. Te ayudo a trabajar con el conocimiento al que tienes acceso.'
+      : "I'm koinon, the assistant in koinon. I help you work with the knowledge you are allowed to access.";
+  const helpPolicy = {
+    outcome: 'product_help',
+    code: 'PRODUCT_CONFIGURATION_V1',
+    reason:
+      options.helpLanguage === 'es'
+        ? 'Identidad y capacidades a partir de la configuración registrada del producto; no son evidencia de fuentes de conocimiento.'
+        : 'Identity and capabilities from recorded product configuration; these are not knowledge source evidence.',
+  };
   let sent = false,
     completed = false;
   const resultReads: string[] = [];
@@ -108,7 +122,11 @@ async function assistantFixture(
   ];
   const threadView = () => ({
     id: 'thread-one',
-    title: completed ? 'Service review' : 'New conversation',
+    title: completed
+      ? options.helpLanguage
+        ? 'Assistant help'
+        : 'Service review'
+      : 'New conversation',
     title_source: completed ? 'ai' : 'default',
     revision: completed ? 2 : 1,
     folder_id: null,
@@ -145,7 +163,20 @@ async function assistantFixture(
               },
             ]
           : [],
-        sources: options.audit ? auditSources : [],
+        ...(options.helpLanguage
+          ? {
+              product_context: {
+                kind: 'product_configuration',
+                product_name: 'koinon',
+                assistant_name: 'koinon',
+                branding_revision: 3,
+                branding_origin: 'organization',
+                selection: 'broader_scope',
+                tools: ['search_knowledge'],
+              },
+            }
+          : {}),
+        sources: options.helpLanguage ? [] : options.audit ? auditSources : [],
         private_files: [],
         native_reads: [],
         sql_attempts: [],
@@ -159,10 +190,10 @@ async function assistantFixture(
       });
     if (path.endsWith('/chat/runs/run-one/activity'))
       return json({
-        items: activities,
+        items: options.helpLanguage ? [] : activities,
         page: 1,
         page_size: 25,
-        total: activities.length,
+        total: options.helpLanguage ? 0 : activities.length,
         pages: 1,
       });
     if (path.endsWith('/agents'))
@@ -222,7 +253,11 @@ async function assistantFixture(
               {
                 id: 'question',
                 role: 'user',
-                text: 'Compare service activity by region and show the policy source.',
+                text: options.helpLanguage
+                  ? options.helpLanguage === 'es'
+                    ? 'Who are you? Responde en español.'
+                    : '¿Quién eres? Please answer in English.'
+                  : 'Compare service activity by region and show the policy source.',
                 status: 'completed',
                 citations: [],
                 artifacts: [],
@@ -232,25 +267,33 @@ async function assistantFixture(
                 id: 'answer',
                 role: 'assistant',
                 run_id: 'run-one',
-                presentation: { locale: 'en-US', time_zone: 'UTC', response_language: 'en' },
+                presentation: {
+                  locale: options.helpLanguage === 'es' ? 'es-ES' : 'en-US',
+                  time_zone: 'UTC',
+                  response_language: options.helpLanguage ?? 'en',
+                  effective_language: options.helpLanguage ?? 'en',
+                },
                 ...(options.audit
                   ? {
                       answer_policy: {
-                        outcome: 'grounded',
-                        reason:
-                          'The response used a recorded policy passage and a completed query over service activity.',
+                        ...(options.helpLanguage ? helpPolicy : { outcome: 'grounded' }),
+                        reason: options.helpLanguage
+                          ? helpPolicy.reason
+                          : 'The response used a recorded policy passage and a completed query over service activity.',
                       },
                     }
                   : {}),
-                tool_activities: completed ? activities : [],
-                tool_activity_count: completed ? 2 : 0,
+                tool_activities: completed && !options.helpLanguage ? activities : [],
+                tool_activity_count: completed && !options.helpLanguage ? 2 : 0,
                 tool_activity_has_more: false,
                 text: completed
-                  ? 'North has 18 service cases; South has 12. The policy assigns review to the service owner.'
+                  ? options.helpLanguage
+                    ? helpText
+                    : 'North has 18 service cases; South has 12. The policy assigns review to the service owner.'
                   : '',
                 status: completed ? 'completed' : 'queued',
-                citations: completed ? [citation] : [],
-                artifacts: completed ? [artifact] : [],
+                citations: completed && !options.helpLanguage ? [citation] : [],
+                artifacts: completed && !options.helpLanguage ? [artifact] : [],
                 created_at: '2026-10-26T10:00:01Z',
               },
             ]
@@ -262,7 +305,43 @@ async function assistantFixture(
       return json({ run_id: 'run-one', message_id: 'answer', event_cursor: '0' });
     }
     if (path.endsWith('/events')) {
+      if (options.hold) await options.hold;
       completed = true;
+      if (options.helpLanguage) {
+        const chars = [...helpText],
+          chunks = Array.from({ length: Math.ceil(chars.length / 128) }, (_, index) =>
+            chars.slice(index * 128, (index + 1) * 128).join(''),
+          );
+        const policy = {
+          ...helpPolicy,
+          publication: {
+            format: 'verified-unicode-v1',
+            chunk_size: 128,
+            chunk_count: chunks.length,
+            text_sha256: createHash('sha256').update(helpText).digest('hex'),
+          },
+        };
+        let offset = 0;
+        const events = [
+          ['message_metadata', { answer_policy: policy }],
+          ...chunks.map((text, chunk_index) => {
+            const data = { text, chunk_index, chunk_count: chunks.length, text_offset: offset };
+            offset += text.length;
+            return ['message_delta', data];
+          }),
+          ['completed', { status: 'completed' }],
+        ];
+        return route.fulfill({
+          status: 200,
+          contentType: 'text/event-stream',
+          body: events
+            .map(
+              ([type, data], index) =>
+                `id: ${index + 1}\nevent: ${type}\ndata: ${JSON.stringify(data)}\n\n`,
+            )
+            .join(''),
+        });
+      }
       const events = [
         ['tool_activity', { message: 'Reading selected sources' }],
         [
@@ -875,3 +954,55 @@ for (const width of [1440, 390])
       animations: 'disabled',
     });
   });
+
+for (const [width, height, language] of [
+  [1440, 1000, 'en'],
+  [390, 844, 'es'],
+] as const) {
+  test(`trusted product help has terminal-only Audit at ${width}px (${language})`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height });
+    let finish!: () => void;
+    const hold = new Promise<void>((resolve) => (finish = resolve));
+    await assistantFixture(page, { audit: true, helpLanguage: language, hold });
+    await page.goto('/chat');
+    await expect(page.locator('ffk-shell .topbar')).toBeVisible();
+    const composer = page.getByRole('textbox', { name: 'Message koinon' });
+    await composer.fill(
+      language === 'es'
+        ? 'Who are you? Responde en español.'
+        : '¿Quién eres? Please answer in English.',
+    );
+    await page.getByRole('button', { name: 'Send', exact: true }).click();
+    try {
+      await expect(page.locator('.assistant-message')).toBeVisible();
+      await expect(page.locator('.assistant-message .answer-actions')).toHaveCount(0);
+    } finally {
+      finish();
+    }
+    await expect(page.locator('.assistant-message')).toContainText(
+      language === 'es' ? 'Soy koinon' : "I'm koinon",
+    );
+    const capture = process.env['KOINON_HELP_CAPTURE_DIR'];
+    if (capture) {
+      await mkdir(capture, { recursive: true });
+      await page.screenshot({
+        path: resolve(capture, `product-help-turn-${language}-${width}.png`),
+      });
+    }
+    await page.getByRole('button', { name: 'Audit', exact: true }).click();
+    await expect(page.getByText('Recorded product configuration', { exact: true })).toBeVisible();
+    await expect(
+      page.getByText(
+        'Product identity and permitted capabilities, not knowledge source evidence.',
+        { exact: true },
+      ),
+    ).toBeVisible();
+    const output = process.env['KOINON_HELP_CAPTURE_DIR'];
+    if (output) {
+      await mkdir(output, { recursive: true });
+      await page.screenshot({ path: resolve(output, `product-help-${language}-${width}.png`) });
+    }
+  });
+}
