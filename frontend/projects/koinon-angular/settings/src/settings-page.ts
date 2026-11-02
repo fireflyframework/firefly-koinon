@@ -9,6 +9,10 @@ import {
   inject,
   signal,
   computed,
+  viewChild,
+  ElementRef,
+  Injector,
+  afterNextRender,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
@@ -32,6 +36,7 @@ import { KoinonOrganizationStructure } from './organization-structure';
 import { KoinonPeopleAccess } from './people-access';
 import { KoinonAuditPanel } from './audit-panel';
 import { knowledgeDomainRegistered, type KnowledgeSectionRequest } from './knowledge-navigation';
+import { KoinonKnowledgeOverview } from './knowledge-overview';
 import { KoinonKnowledgeModels } from './knowledge-models';
 import { KoinonKnowledgeBehavior } from './knowledge-behavior';
 import { KoinonDeploymentPanel } from './deployment-panel';
@@ -57,9 +62,11 @@ import { platformHealthAccess } from './platform-health-access';
 import { KoinonPlatformHealthPanel } from './platform-health-panel';
 import { KoinonIndexManagementPanel } from './index-management-panel';
 import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
+import { KNOWLEDGE_JOURNEYS_SPANISH } from './knowledge-journeys-spanish';
 import { ORGANIZATION_SPANISH } from './organization-spanish';
 registerKoinonSpanish({
   ...ORGANIZATION_SPANISH,
+  ...KNOWLEDGE_JOURNEYS_SPANISH,
   Applications: 'Aplicaciones',
   'Platform health': 'Salud de la plataforma',
 });
@@ -83,6 +90,7 @@ registerKoinonSpanish({
     KoinonPagination,
     KoinonFolderTree,
     KoinonDeploymentPanel,
+    KoinonKnowledgeOverview,
     KoinonKnowledgeModels,
     KoinonKnowledgeBehavior,
     KoinonPeopleAccess,
@@ -183,10 +191,11 @@ export class KoinonSettingsPage implements OnInit {
           ? { workspaceId: request.workspaceId ?? '', domain: request.domain }
           : null,
     });
-    await this.openSection(request.section);
+    await this.openSection(request.section, true);
   }
   readonly section = signal('providers');
   readonly editor = signal<'provider' | 'agent' | null>(null);
+  readonly additionalAgentsExpanded = signal(false);
   readonly step = signal(1);
   readonly providerRecord = signal<ModelProvider | null>(null);
   readonly agentRecord = signal<AgentConfiguration | null>(null);
@@ -237,9 +246,13 @@ export class KoinonSettingsPage implements OnInit {
     {
       id: 'knowledge',
       label: 'Knowledge & AI',
-      sections: ['sources', 'providers', 'models', 'agents', 'storage'],
+      sections: ['knowledge', 'providers', 'models', 'answers', 'agents', 'storage'],
     },
-    { id: 'operations', label: 'Operations', sections: ['health', 'audit', 'operations'] },
+    {
+      id: 'operations',
+      label: 'Operations',
+      sections: ['health', 'sources', 'audit', 'operations'],
+    },
   ];
   readonly tabs = [
     {
@@ -260,13 +273,15 @@ export class KoinonSettingsPage implements OnInit {
     { id: 'applications', label: 'Applications', permission: 'identity:manage', icon: 'grid' },
     {
       id: 'sources',
-      label: 'Sources & connections',
+      label: 'Source processing',
       permission: 'sources:configure',
       icon: 'link',
     },
-    { id: 'providers', label: 'Providers', permission: 'providers:write', icon: 'spark' },
-    { id: 'models', label: 'Knowledge models', permission: 'providers:write', icon: 'link' },
-    { id: 'agents', label: 'Agents', permission: 'agents:write', icon: 'chat' },
+    { id: 'knowledge', label: 'Overview', permission: 'providers:write', icon: 'spark' },
+    { id: 'providers', label: 'Model connections', permission: 'providers:write', icon: 'spark' },
+    { id: 'models', label: 'Model assignments', permission: 'providers:write', icon: 'link' },
+    { id: 'answers', label: 'Knowledge answers', permission: 'settings:write', icon: 'search' },
+    { id: 'agents', label: 'Assistant', permission: 'agents:write', icon: 'chat' },
     { id: 'storage', label: 'Storage & indexing', permission: 'indexes:manage', icon: 'table' },
     { id: 'health', label: 'Platform health', permission: 'audit:read', icon: 'info' },
     { id: 'audit', label: 'Audit', permission: 'audit:read', icon: 'shield' },
@@ -274,7 +289,7 @@ export class KoinonSettingsPage implements OnInit {
   ];
   ngOnInit() {
     this.tasks.run(async () => {
-      const requested = this.actions?.section?.() || 'providers';
+      const requested = this.actions?.section?.() || 'knowledge';
       const initial =
         this.tabs.find((tab) => tab.id === requested && this.tabAllowed(tab)) ??
         this.tabs.find((tab) => this.tabAllowed(tab));
@@ -293,23 +308,117 @@ export class KoinonSettingsPage implements OnInit {
     );
   }
   tabAllowed(tab: { id: string; permission: string }) {
+    if (tab.id === 'knowledge')
+      return ['providers:write', 'settings:write', 'agents:write', 'indexes:manage'].some(
+        (permission) => this.allowed(permission),
+      );
+    if (tab.id === 'answers')
+      return this.allowed('settings:write') || (this.allowed('providers:write') && ['knowledge:search', 'query:execute', 'chat:use'].some((permission) => this.allowed(permission)));
     if (tab.id === 'health') return platformHealthAccess(this.f.context(), this.f.tenantId());
     if (['people', 'structure'].includes(tab.id))
       return this.f.tenantPermissions().has('members:write');
-    return this.allowed(tab.permission) || (tab.id === 'models' && this.allowed('settings:write'));
+    return this.allowed(tab.permission);
+  }
+  knowledgeConnectionSummary() {
+    const configuration = this.c.configuration();
+    return this.allowed('providers:write') && configuration
+      ? {
+          saved: configuration.providers.length,
+          checked: configuration.providers.filter((provider) => this.generationVerified(provider))
+            .length,
+        }
+      : null;
+  }
+  knowledgeTaskSections() {
+    return this.tabsFor(this.groups.find((group) => group.id === 'knowledge')!).map(
+      (tab) => tab.id,
+    );
   }
   tabsFor(group: { sections: string[] }) {
     return this.tabs.filter((tab) => group.sections.includes(tab.id) && this.tabAllowed(tab));
   }
-  async openSection(section: string) {
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
+  private readonly modelEditor = viewChild(KoinonKnowledgeModels);
+  private readonly answerEditor = viewChild(KoinonKnowledgeBehavior);
+  private readonly chatEditor = viewChild(KoinonOrganizationChatSettings);
+  private readonly requestedDeparture = signal<{
+    section: string;
+    agentId?: string | null;
+    owner: ReturnType<KoinonFacade['context']>;
+    tenantId: string;
+    revision: number;
+  } | null>(null);
+  readonly departureReview = computed(() => {
+    const request = this.requestedDeparture();
+    return request &&
+      request.owner === this.f.context() &&
+      request.tenantId === this.f.tenantId() &&
+      request.revision === this.clients.revision()
+      ? request
+      : null;
+  });
+  private hasSettingsDraft() {
+    const chat = this.chatEditor();
+    return (
+      this.editor() === 'agent' ||
+      (this.editor() === 'provider' && this.step() !== 3) ||
+      !!this.modelEditor()?.editing() ||
+      this.answerEditor()?.c.dirty() ||
+      !!(
+        chat?.settings() &&
+        (chat.memoryChanged() || (chat.selectedId() || null) !== chat.settings()?.default_agent_id)
+      )
+    );
+  }
+  keepSectionEditing() {
+    this.requestedDeparture.set(null);
+    queueMicrotask(() =>
+      this.host.nativeElement
+        .querySelector<HTMLElement>(
+          'form input:not([disabled]), form select:not([disabled]), form textarea:not([disabled])',
+        )
+        ?.focus(),
+    );
+  }
+  async confirmSectionDeparture() {
+    const request = this.departureReview();
+    this.requestedDeparture.set(null);
+    if (
+      !request ||
+      request.owner !== this.f.context() ||
+      request.tenantId !== this.f.tenantId() ||
+      request.revision !== this.clients.revision()
+    )
+      return;
+    if (request.agentId !== undefined) {
+      if (!this.allowed('agents:write')) return;
+      const agent = request.agentId ? this.c.agents().items.find((row) => row.id === request.agentId) : undefined;
+      if (request.agentId && !agent) {
+        this.formError.set('This agent configuration is no longer available. Reload this section before editing.');
+        return;
+      }
+      this.beginAgent(agent, true);
+    } else await this.openSection(request.section, true);
+  }
+  private reviewDeparture(section: string, agentId?: string | null) {
+    this.requestedDeparture.set({ section, ...(agentId !== undefined ? { agentId } : {}), owner: this.f.context(), tenantId: this.f.tenantId(), revision: this.clients.revision() });
+    afterNextRender(() => this.host.nativeElement.querySelector<HTMLButtonElement>('[data-keep-settings] button')?.focus(), { injector: this.injector });
+  }
+  async openSection(section: string, reviewed = false) {
     if (!this.tabs.some((tab) => tab.id === section && this.tabAllowed(tab))) return;
+    if (!reviewed && this.hasSettingsDraft()) {
+      this.reviewDeparture(section);
+      return;
+    }
+    this.requestedDeparture.set(null);
     this.providerValues['secret'] = '';
     this.section.set(section);
     this.editor.set(null);
     this.formError.set('');
     const metadata =
       this.deferredProviderMetadata &&
-      ['providers', 'agents', 'models', 'sources'].includes(section) &&
+      ['knowledge', 'providers', 'agents', 'models', 'sources'].includes(section) &&
       this.allowed('providers:write') &&
       !this.c.configuration() &&
       !this.c.pending()
@@ -449,7 +558,13 @@ export class KoinonSettingsPage implements OnInit {
     this.editor.set(null);
     this.formError.set('');
   }
-  beginAgent(agent?: AgentConfiguration) {
+  beginAgent(agent?: AgentConfiguration, reviewed = false) {
+    if (!this.allowed('agents:write')) return;
+    if (!reviewed && this.hasSettingsDraft()) {
+      this.reviewDeparture('agents', agent?.id ?? null);
+      return;
+    }
+    this.additionalAgentsExpanded.set(true);
     this.agentRecord.set(agent ?? null);
     this.agentName = agent?.name ?? '';
     this.agentDescription = agent?.description ?? '';

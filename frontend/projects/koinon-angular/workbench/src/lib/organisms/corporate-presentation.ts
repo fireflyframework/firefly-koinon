@@ -12,8 +12,8 @@ import { FormsModule } from '@angular/forms';
 import type { KoinonCorporatePresentation } from '../services/corporate-presentation';
 import { KoinonAccount } from '../services/account';
 import { KoinonOrganizationDirectory } from '../services/organization-directory';
-import { KoinonButton } from '../atoms/button';
-import { KoinonTextPipe, KoinonDatePipe } from '../foundations/i18n';
+import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonTextPipe, KoinonDatePipe } from '@fireflyframework/koinon-angular/workbench/core';
 @Component({
   selector: 'ffk-corporate-presentation',
   imports: [FormsModule, KoinonButton, KoinonTextPipe, KoinonDatePipe],

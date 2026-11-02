@@ -1,7 +1,7 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 import { Component, inject, signal } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
-import { KoinonFontLoader, KoinonWorkbench } from '@fireflyframework/koinon-angular/workbench';
+import { KoinonFontLoader, KoinonWorkbench } from '@fireflyframework/koinon-angular/workbench/page';
 import { SessionService } from './session.service';
 import type { BrandingValues } from '@fireflyframework/koinon-sdk';
 import { PendingInvitation } from './pending-invitation';

@@ -3,7 +3,7 @@
 import { expect, test } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { openAdministration,  mockService } from './fixtures';
+import { openAdministration, mockService } from './fixtures';
 for (const width of [1440, 390])
   for (const failed of [false, true])
     test(`later Agents navigation survives initial provider metadata ${failed ? 'failure' : 'completion'} at ${width}px`, async ({
@@ -75,8 +75,8 @@ for (const width of [1440, 390])
       await expect(page.locator('ffk-settings-page')).toBeVisible();
       const mobile = page.getByRole('combobox', { name: 'Settings section', exact: true });
       if (width < 700) await mobile.selectOption('agents');
-      else await page.getByRole('button', { name: 'Agents', exact: true }).click();
-      await expect(page.getByRole('heading', { name: 'Agents', exact: true })).toBeVisible();
+      else await page.getByRole('button', { name: 'Assistant', exact: true }).click();
+      await expect(page.getByRole('heading', { name: 'Assistant', exact: true })).toBeVisible();
       await expect(page.locator('ffk-organization-chat-settings')).toBeVisible();
       await expect.poll(() => settingsReads).toBe(1);
       const completed = page.waitForResponse(
@@ -85,17 +85,20 @@ for (const width of [1440, 390])
       );
       release();
       await completed;
+      await page.getByText('Additional agent configurations', { exact: true }).click();
       if (failed)
         await expect(page.getByRole('alert')).toContainText('Initial metadata unavailable');
       else
         await expect(
           page.getByRole('button', { name: 'Create an agent', exact: true }),
         ).toBeEnabled();
-      await expect(page.getByRole('heading', { name: 'Agents', exact: true })).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'Providers', exact: true })).toHaveCount(0);
+      await expect(page.getByRole('heading', { name: 'Assistant', exact: true })).toBeVisible();
+      await expect(
+        page.getByRole('heading', { name: 'Model connections', exact: true }),
+      ).toHaveCount(0);
       if (width < 700) await expect(mobile).toHaveValue('agents');
       else
-        await expect(page.getByRole('button', { name: 'Agents', exact: true })).toHaveAttribute(
+        await expect(page.getByRole('button', { name: 'Assistant', exact: true })).toHaveAttribute(
           'aria-current',
           'page',
         );
@@ -125,9 +128,9 @@ for (const width of [1440, 390])
     await page.goto('/library');
     const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
     if (width < 700) {
-        await expect(menu).toBeVisible();
-        await menu.click();
-      }
+      await expect(menu).toBeVisible();
+      await menu.click();
+    }
     await page.getByRole('button', { name: 'Chat', exact: true }).click();
     await expect(
       page.getByRole('heading', { name: 'koinon is unavailable right now.', exact: true }),
@@ -186,7 +189,7 @@ for (const width of [1440, 390])
     });
     await page.getByRole('button', { name: 'Configure koinon', exact: true }).click();
     await agentsStarted;
-    await expect(page.getByRole('heading', { name: 'Agents', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Assistant', exact: true })).toBeVisible();
     const agentResponse = page.waitForResponse(
       (response) =>
         new URL(response.url()).pathname.endsWith('/agents') && response.status() === 503,
@@ -199,6 +202,7 @@ for (const width of [1440, 390])
     );
     releaseMetadata();
     await metadataResponse;
+    await page.getByText('Additional agent configurations', { exact: true }).click();
     await expect(page.getByRole('button', { name: 'Create an agent', exact: true })).toBeEnabled();
     await expect(page.locator('.settings-content > .error')).toContainText(
       'Agents are temporarily unavailable',
@@ -206,7 +210,7 @@ for (const width of [1440, 390])
     await expect(
       page.getByRole('heading', { name: 'No agents in this view', exact: true }),
     ).toHaveCount(0);
-    await expect(page.getByRole('heading', { name: 'Agents', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Assistant', exact: true })).toBeVisible();
     const directory = resolve(process.cwd(), '.qualification-v23-settings-errors/captures');
     await mkdir(directory, { recursive: true });
     await page.screenshot({

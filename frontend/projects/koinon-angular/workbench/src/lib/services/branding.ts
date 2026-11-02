@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Injectable, PendingTasks, computed, effect, inject, signal } from '@angular/core';
 import type { BrandingValues, OrganizationBranding } from '@fireflyframework/koinon-sdk';
-import { KoinonClientContext } from './client-context';
-import { KoinonFacade } from '../koinon-facade';
+import { KoinonClientContext } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
 import { DEFAULT_BRANDING, resolveBranding, validateBranding } from './branding-values';
 @Injectable({ providedIn: 'root' })
 export class KoinonBranding {

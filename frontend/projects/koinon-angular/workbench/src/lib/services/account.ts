@@ -17,11 +17,10 @@ import type {
   TokenScopeOptions,
   Page,
 } from '@fireflyframework/koinon-sdk';
-import { organizationContextKey } from './organization-directory-context';
-import { KoinonClientContext } from './client-context';
-import { KoinonFacade } from '../koinon-facade';
+import { KoinonClientContext, organizationContextKey } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
 import type { AccountOrganization } from './account-organization';
-import { KoinonI18n } from '../foundations/i18n';
+import { KoinonI18n } from '@fireflyframework/koinon-angular/workbench/core';
 const ACCOUNT_ERROR = 'Your account could not be updated.';
 @Injectable()
 export class KoinonAccount implements OnDestroy {

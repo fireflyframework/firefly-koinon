@@ -1,5 +1,5 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
-import { codeTokens } from './code-tokens';
+import { codeTokens } from '../../../panels/src/lib/foundations/code-tokens';
 
 it('highlights explicit common languages without changing whitespace or untrusted markup', async () => {
   for (const [language, code] of [

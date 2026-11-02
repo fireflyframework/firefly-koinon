@@ -10,8 +10,8 @@ import {
   inject,
 } from '@angular/core';
 import { CdkMenu, CdkMenuItem } from '@angular/cdk/menu';
-import { KoinonTextPipe } from '../foundations/i18n';
-import { KoinonIcon } from '../atoms/icon';
+import { KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonIcon } from '@fireflyframework/koinon-angular/workbench/core';
 @Component({
   selector: 'ffk-account-menu',
   imports: [CdkMenu, CdkMenuItem, KoinonTextPipe, KoinonIcon],

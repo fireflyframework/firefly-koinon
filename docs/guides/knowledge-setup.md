@@ -45,7 +45,7 @@ Follow [identity and appearance](../operations/identity-appearance.md) for image
 
 ## 4. Connect and validate model providers
 
-Open **Providers**, connect an approved endpoint, select the actual protocol and provide credentials when required. Save, then run the offered checks. A model being listed establishes discovery, not successful streaming, tool calling or vision.
+Open **Model connections**, connect an approved endpoint, select the actual protocol and provide credentials when required. Save, then run the offered checks. A model being listed establishes discovery, not successful streaming, tool calling or vision.
 
 [![Provider configuration before its connection and model checks](../assets/screenshots/provider-connection.png)](../assets/screenshots/provider-connection.png)
 
@@ -55,15 +55,15 @@ The operator must approve the provider origin and supply any required encryption
 
 ## 5. Assign processing models and choose RAG or RLM
 
-Open **Knowledge models**. Configure the document and structured roles needed by your selected workflow. Embeddings require an explicit compatible model, dimensions and space. Organization defaults and workspace overrides have different authority and behavior; a disabled override blocks fallback.
+Open **Model assignments**. Embedding assignments appear first. Expand **Advanced processing models** to configure the document and structured roles required by your selected workflow. Embeddings require an explicit compatible model, dimensions and space. Organization defaults and workspace overrides have different authority and behavior; a disabled override blocks fallback.
 
-Assignment editors include links to the next configuration screen when you have permission to use it. **Open Providers** opens model connections when no compatible provider is listed. **Review indexes** opens **Storage & indexing** in the selected domain and, if you explicitly chose one, workspace. Starting from **Organization default** leaves the index workspace unselected; choose it deliberately instead of assuming that the current Library location is the assignment target. **Review organization chat** opens **Agents** for the chat configuration used by the current-agent option.
+Assignment editors include links to the next configuration screen when you have permission to use it. **Open Providers** opens model connections when no compatible provider is listed. **Review indexes** opens **Storage & indexing** in the selected domain and, if you explicitly chose one, workspace. Starting from **Organization default** leaves the index workspace unselected; choose it deliberately instead of assuming that the current Library location is the assignment target. **Review organization chat** opens **Assistant** for the chat configuration used by the current-agent option.
 
-Before leaving an open assignment, choose **Keep editing** to retain the form values or **Leave editor** to discard unsaved changes. Returning to **Knowledge models** keeps the selected assignment scope during the same authenticated connection. A change of account, organization context or connection clears that retained selection. Navigation does not save an assignment, test a provider, build an index or activate one.
+Before leaving an open assignment, choose **Keep editing** to retain the form values or **Leave editor** to discard unsaved changes. Returning to **Model assignments** keeps the selected assignment scope during the same authenticated connection. A change of account, organization context or connection clears that retained selection. Navigation does not save an assignment, test a provider, build an index or activate one.
 
-At the top of **Knowledge models**, the **Knowledge behavior** panel contains the current policy, capabilities and bounds. It is not a separate navigation page. Choose **RAG** for the document retrieval path or **RLM** only after its recorded-view, secure execution and model prerequisites are met. Review both the document and structured policy before saving. Reload and review a revision conflict rather than overwriting another administrator's changes.
+Open **Knowledge answers** for the organization policy, supported capabilities and bounds. It is separate from **Model assignments**, which contains embedding and specialized processing bindings. Choose **RAG** for the document retrieval path or **RLM** only after its recorded-view, secure execution and model prerequisites are met. Review both the document and structured policy before saving. Reload and review a revision conflict rather than overwriting another administrator's changes.
 
-Continue to the model assignments below that panel. Choose **Organization default** for a shared baseline, or an authorized workspace for an explicit override. A disabled override blocks inheritance rather than falling back silently. Assign generative roles needed by the workflow and an explicit compatible embedding model and space. The [role catalog](../concepts/knowledge-runtime.md#how-embeddings-and-indexes-fit-together) explains document answers, ingestion, SQL generation and structured schema embeddings.
+Open **Model assignments** separately to review processing bindings. Choose **Organization default** for a shared baseline, or an authorized workspace for an explicit override. A disabled override blocks inheritance rather than falling back silently. Assign generative roles needed by the workflow and an explicit compatible embedding model and space. The [role catalog](../concepts/knowledge-runtime.md#how-embeddings-and-indexes-fit-together) explains document answers, ingestion, SQL generation and structured schema embeddings.
 
 **Use the current chat agent** is useful only where the role descriptor permits it and an active chat run exists. Headless ingestion or a direct query outside Chat needs its own usable assignment. Do not use a chat-only model selection as evidence that background processing is configured.
 
@@ -81,7 +81,7 @@ After saving, reload the assignment and perform its intended operation. A revisi
 
 ## 6. Configure the organization's chat agent
 
-In **Agents**, choose a provider/model, allowed knowledge tools and instructions. Validate the agent, then set the organization default. Standard chat resolves that central setting for the current caller. No agent can broaden the caller's memberships or token resource bounds.
+In **Assistant**, first review **Organization chat** and its conversation-memory limits. To create or edit an agent configuration, expand **Additional agent configurations** and choose its provider/model, allowed knowledge tools and instructions. Validate the agent, then set the organization default. Standard chat resolves that central setting for the current caller. No agent can broaden the caller's memberships or token resource bounds.
 
 Check a reader account as well as an administrator. Verify that the reader can ask about an allowed source and cannot access a source outside its workspace. [Agents and chat](agents.md) covers conversation folders, private files, memory, SSE and audit.
 

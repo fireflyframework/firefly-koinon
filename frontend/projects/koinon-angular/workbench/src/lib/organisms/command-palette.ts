@@ -3,7 +3,7 @@
 import { Component, ChangeDetectionStrategy, Input, Output, EventEmitter } from '@angular/core';
 import type { CatalogEntry } from '@fireflyframework/koinon-sdk';
 import { KoinonCommandPaletteContent } from './command-palette-content';
-import { KoinonTextPipe } from '../foundations/i18n';
+import { KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench/core';
 export interface KoinonCommand {
   id: string;
   title: string;

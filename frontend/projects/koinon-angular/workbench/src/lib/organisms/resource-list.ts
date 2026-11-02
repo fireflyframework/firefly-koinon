@@ -1,5 +1,5 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
-import { KoinonTextPipe, KoinonDatePipe } from '../foundations/i18n';
+import { KoinonTextPipe, KoinonDatePipe } from '@fireflyframework/koinon-angular/workbench/core';
 import {
   Component,
   Input,
@@ -14,12 +14,12 @@ import type {
   CatalogSummary,
   PublicActor,
 } from '@fireflyframework/koinon-sdk';
-import { KoinonI18n } from '../foundations/i18n';
-import { KoinonIcon } from '../atoms/icon';
-import { KoinonBadge } from '../atoms/badge';
-import { KoinonSkeleton } from '../atoms/skeleton';
-import { KoinonKnowledgeAvailability } from './knowledge-availability';
-import { friendlyStatus, friendlyKind, isFolder, isSystemManaged, resourceIcon } from '../services/library-tree';
+import { KoinonI18n } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonIcon } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonBadge } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonSkeleton } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonKnowledgeAvailability } from '@fireflyframework/koinon-angular/workbench/availability';
+import { friendlyStatus, friendlyKind, isFolder, isSystemManaged, resourceIcon } from '@fireflyframework/koinon-angular/workbench/core';
 import type { LibraryContextRequest } from '../services/library-context-actions';
 @Component({
   selector: 'ffk-resource-list',

@@ -1,5 +1,5 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
-import { KoinonTextPipe, KoinonI18n } from '../foundations/i18n';
+import { KoinonTextPipe, KoinonI18n } from '@fireflyframework/koinon-angular/workbench/core';
 import {
   Component,
   Input,
@@ -9,7 +9,7 @@ import {
   inject,
 } from '@angular/core';
 import type { Page } from '@fireflyframework/koinon-sdk';
-import { KoinonButton } from '../atoms/button';
+import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
 @Component({
   selector: 'ffk-pagination',
   imports: [KoinonTextPipe, KoinonButton],

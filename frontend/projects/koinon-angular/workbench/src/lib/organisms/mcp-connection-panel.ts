@@ -13,10 +13,10 @@ import {
 import { DOCUMENT } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import type { McpConnectionDescriptor, McpRegisteredClient } from '@fireflyframework/koinon-sdk';
-import { KoinonClientContext } from '../services/client-context';
-import { KoinonFacade } from '../koinon-facade';
-import { KoinonButton } from '../atoms/button';
-import { KoinonTextPipe } from '../foundations/i18n';
+import { KoinonClientContext } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench/core';
 let panelId = 0;
 @Component({
   selector: 'ffk-mcp-connection-panel',

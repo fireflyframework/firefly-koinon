@@ -1,13 +1,13 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
-import { KoinonTextPipe } from '../foundations/i18n';
+import { KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench/core';
 import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, OnChanges } from '@angular/core';
 import type { CatalogEntry, CatalogFilter, Page, ResourceKind } from '@fireflyframework/koinon-sdk';
 import { KoinonPagination } from '../molecules/pagination';
-import { KoinonButton } from '../atoms/button';
+import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonBreadcrumb } from '../molecules/breadcrumb';
 import { KoinonSearchField } from '../molecules/search-field';
 import { KoinonResourceList } from '../organisms/resource-list';
-import { friendlyStatus } from '../services/library-tree';
+import { friendlyStatus } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonLibraryContextMenu } from '../organisms/library-context-menu';
 import { canRunLibraryAction, type LibraryAction, type LibraryActionRequest, type LibraryContextRequest } from '../services/library-context-actions';
 @Component({

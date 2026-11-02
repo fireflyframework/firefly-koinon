@@ -1,7 +1,7 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
-import { KoinonTextPipe } from '../foundations/i18n';
+import { KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench/core';
 @Component({
   selector: 'ffk-powered-by',
   imports: [KoinonTextPipe],
