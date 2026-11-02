@@ -4,6 +4,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import officeFormats from './office-format-capabilities.json';
 import { openAdministration, mockService } from './fixtures';
 const output = resolve(__dirname, '../../../../outputs/documentation-tour');
 async function capture(page: Page, name: string) {
@@ -32,6 +33,7 @@ async function capture(page: Page, name: string) {
 test('captures the library, upload, settings and profile walkthrough', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1050 });
   await mockService(page);
+  await page.route('**/source-batch-capabilities*',route=>route.fulfill({json:{configured:true,modes:['document','dataset'],formats:officeFormats,max_files:100,max_file_bytes:134217728,max_batch_bytes:536870912,max_active_batches_per_subject:3}}));
   await page.route('**/bff/api/v1/branding/defaults', (route) => route.fulfill({ json: {} }));
   await page.goto('/library');
   await expect(
@@ -51,12 +53,12 @@ test('captures the library, upload, settings and profile walkthrough', async ({ 
     .getByRole('dialog')
     .getByRole('button', { name: /Upload files/ })
     .click();
-  await page.getByLabel('Use these files as', { exact: true }).selectOption('dataset');
   await page.getByLabel('Choose files').setInputFiles({
     name: 'team-records.csv',
     mimeType: 'text/csv',
     buffer: Buffer.from('team,records\nOperations,24\n'),
   });
+  await expect(page.getByLabel('How to use: team-records.csv',{exact:true})).toHaveValue('dataset');
   await capture(page, 'upload-review');
   await page.keyboard.press('Escape');
   await openAdministration(page, 'Settings');

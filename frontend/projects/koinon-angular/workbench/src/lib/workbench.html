@@ -18,6 +18,7 @@
  <div ffkHeaderNotifications><ng-container *ngComponentOutlet="notificationComponent();inputs:{actions:notificationActions}"/></div>
  @if(f.pending()){<div class="workbench-status-line" role="status" aria-label="Working"></div>}
  @if(f.error()){<div class="workbench-error" role="alert"><ffk-icon name="alert"/><span>{{f.error()}}</span><ffk-button variant="quiet" icon="close" label="Dismiss error" (click)="f.error.set('')"/></div>}
+ @if(uploadActivity();as upload){<aside class="upload-activity" role="status"><ffk-icon name="upload"/><span>{{upload.label|ffkText}}: {{upload.count}} {{(upload.count===1?'file':'files')|ffkText}}</span><ffk-button variant="quiet" (click)="showDialog(upload.transferring?'upload':'uploads')">{{(upload.transferring?'View upload':'View uploads')|ffkText}}</ffk-button>@if(!upload.transferring){<ffk-button variant="quiet" icon="close" [label]="'Dismiss'|ffkText" (click)="uploadActivity.set(null)"/>}</aside>}
  @if(f.notice()){<p class="workbench-notice" role="status">{{f.notice()}}</p>}
  @if(accountScreen();as section){
  @defer (when !!accountScreen()) {<ffk-account-page [section]="section" (sectionChange)="openAccount($event)" (libraryRequested)="navigate('library')" (signOutRequested)="showDialog('sign-out')"/>} @loading {<ffk-skeleton width="60%" height="14px" label="Loading profile"/>} @error {<p role="alert">{{'This panel could not be opened. Refresh this page and try again.'|ffkText}}</p>}

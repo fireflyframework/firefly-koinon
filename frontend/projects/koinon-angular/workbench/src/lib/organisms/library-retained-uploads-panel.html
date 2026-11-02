@@ -4,10 +4,7 @@
 <section [attr.aria-busy]="v.busy">
   <div class="intro">
     <p>
-      {{
-        'Inspect uploads retained by this organization for your current account and connection. Opening this view never uploads files or repeats processing.'
-          | ffkText
-      }}
+      {{ 'Follow your uploads and manage files that need attention.' | ffkText }}
     </p>
     <ffk-button
       variant="quiet"
@@ -32,7 +29,7 @@
     <ffk-skeleton width="65%" height="3px" [label]="'Loading uploads' | ffkText" />
   }
   @if (!v.selected && allowed() && !v.denied) {
-    <h3 id="retained-upload-list" tabindex="-1">{{ 'Your retained uploads' | ffkText }}</h3>
+    <h3 id="retained-upload-list" tabindex="-1">{{ 'Your uploads' | ffkText }}</h3>
     <div class="table-wrap">
       <table>
         <thead>
@@ -50,8 +47,7 @@
           @for (batch of v.rows; track batch.id) {
             <tr>
               <td>
-                <span>{{ batch.created_at | ffkDate: undefined : 'datetime' }}</span
-                ><small class="identifier">{{ batch.id }}</small>
+                <span>{{ batch.created_at | ffkDate: undefined : 'datetime' }}</span>
               </td>
               <td>{{ batch.total_items | number }}</td>
               <td class="size">{{ size(batch.total_bytes) }}</td>
@@ -89,18 +85,15 @@
             >{{ batch.total_items | number }}
             {{ (batch.total_items === 1 ? 'file' : 'files') | ffkText }} /
             {{ size(batch.total_bytes) }}</small
-          ><code>{{ batch.id }}</code>
+          >
         </button>
       }
     </div>
     @if (!v.rows.length && !v.busy) {
       <div class="empty">
-        <h4>{{ 'No retained uploads were returned' | ffkText }}</h4>
+        <h4>{{ 'No uploads yet' | ffkText }}</h4>
         <p>
-          {{
-            'Uploads made with another account or connection may not be visible here. This does not prove that no work exists elsewhere.'
-              | ffkText
-          }}
+          {{ 'Uploads for your current account and organization will appear here.' | ffkText }}
         </p>
       </div>
     }
@@ -121,9 +114,6 @@
         <h3 id="retained-upload-details" tabindex="-1">{{ 'Upload details' | ffkText }}</h3>
         <ffk-badge [tone]="tone(batch.status)">{{ batchStatus(batch) | ffkText }}</ffk-badge>
       </header>
-      <p class="reference">
-        {{ 'Reference' | ffkText }}: <code>{{ batch.id }}</code>
-      </p>
       <dl class="summary">
         <div>
           <dt>{{ 'Created' | ffkText }}</dt>
@@ -136,10 +126,6 @@
         <div>
           <dt>{{ 'Total size' | ffkText }}</dt>
           <dd>{{ size(batch.total_bytes) }}</dd>
-        </div>
-        <div>
-          <dt>{{ 'Revision' | ffkText }}</dt>
-          <dd>{{ batch.revision | number }}</dd>
         </div>
       </dl>
       <div class="actions">
@@ -191,9 +177,17 @@
           <article>
             <header>
               <div>
-                <h4>{{ item.filename }}</h4>
+                <h4 class="file-heading">
+                  <ffk-file-type-icon [filename]="item.filename" />{{ item.filename }}
+                </h4>
                 <p>
-                  {{ (item.mode === 'dataset' ? 'Dataset' : 'Document') | ffkText }} /
+                  {{
+                    (item.mode === 'dataset'
+                      ? 'Analyze rows and columns'
+                      : 'Search document content'
+                    ) | ffkText
+                  }}
+                  /
                   {{ size(item.size_bytes) }}
                 </p>
               </div>
@@ -363,6 +357,13 @@
           </article>
         }
       </div>
+      <details class="boundary">
+        <summary>{{ 'Technical details' | ffkText }}</summary>
+        <p>
+          {{ 'Reference' | ffkText }}: <code>{{ batch.id }}</code>
+        </p>
+        <p>{{ 'Revision' | ffkText }}: {{ batch.revision | number }}</p>
+      </details>
       <p class="boundary">
         {{
           'Original receipt, processing completion and search availability are different states. Inspect the Library item before relying on its knowledge.'

@@ -6,6 +6,14 @@ koinon accepts queued Library originals up to **128 MiB per file**, in batches u
 
 Chat attachment limits are separate. A Library limit does not raise the chat, image, MCP request-body or synchronous upload limit. External application review follows its separately advertised effective capability and approval flow.
 
+## Library upload experience
+
+Choose a destination and add files. The picker uses actual server capability descriptors; unsupported or unavailable formats are reported before transfer. There is no batch-wide processing choice. Spreadsheets and delimited/columnar data (`xlsx`, `xls`, `ods`, `csv`, `tsv`, `parquet`, `orc`, `arrow`, `ipc`, `feather`, `avro`, and advertised compressed variants) default to analysis when supported. Other files, including dual-use JSON and HTML, default to document content when supported. A file with only one available use takes that use. Files with both choices offer “Search document content” and “Analyze rows and columns” individually. The backend still validates bytes, format, limits and current permissions.
+
+One mixed manifest preserves each file's selected use. Upload transfer remains bounded and sequential. Its progress bar counts acknowledged original bytes, without estimating in-flight bytes or parser progress. Processed file counts and search/query readiness are separate observations.
+
+You can close the panel or navigate within the app while an upload runs; its captured destination stays fixed. **Keep the browser tab open until transfer finishes.** Submitted server jobs continue independently. The runtime checks active uploads every five seconds while visible and every thirty seconds while hidden. The Uploads inbox updates active jobs while open and pauses detail refresh during recovery review. Account, tenant, client and permission changes invalidate old observations and abort pending requests; ambiguous writes are never automatically replayed.
+
 ## Installation policy
 
 The actual installation profile is `koinon.knowledge.ingestion`. koinon binds this typed policy before native document and structured settings. A lower explicit bulk admission limit can further restrict the profile; a higher limit is rejected.

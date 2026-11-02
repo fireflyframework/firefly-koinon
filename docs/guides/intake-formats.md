@@ -1,8 +1,8 @@
 <!-- Copyright 2026 Firefly Software Foundation -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-# Choose an intake mode and file format
+# Add files and review supported formats
 
-Choose the destination by what you want to do with the content. Use a **document** to read and search passages, a **dataset** to explore tables and calculate results, or a **private chat attachment** to supply context to one conversation. A filename alone does not choose the mode or grant access.
+Choose an authorized Library destination and add your files, or attach a private file to one conversation. Library automatically selects content search for Word, PDF and presentations, and row analysis for supported spreadsheet, delimited and columnar files. These defaults use the server capability response; the backend still validates actual file contents and permissions. JSON and HTML default to content search when both uses are supported.
 
 ## Pick the right path
 
@@ -14,7 +14,7 @@ Choose the destination by what you want to do with the content. Use a **document
 
 These are implemented format families, not a claim that every deployment has every converter or model capability enabled. An encrypted or corrupt file, a content/extension mismatch or a missing parser can still fail processing. Review the reported reason before retrying. Do not rename an unsupported binary file to a supported extension.
 
-For a spreadsheet, choose **Data to explore with queries** when you need row filters, aggregation or SQL. Choose **Documents to read and search** when you need its extracted text. These paths create different knowledge resources; choosing one does not automatically create the other. The structured spreadsheet reader can identify multiple sections in a sheet instead of treating every workbook as one CSV-like table.
+A spreadsheet defaults to row analysis when supported. Its optional **Analyze rows and columns** choice supports filters, aggregation and SQL; **Search document content** uses extracted text. The override appears only when both uses are available for that file. These paths create different knowledge resources; choosing one does not automatically create the other. The structured spreadsheet reader can identify multiple sections in a sheet instead of treating every workbook as one CSV-like table.
 
 Structured compression supports gzip, bzip2 and ZIP around a detected data file. A structured ZIP must contain exactly one data file; it is not a multi-file batch. Expansion limits, parsing resources and object-storage limits remain separate from the compressed upload size.
 
@@ -52,7 +52,7 @@ Model context has its own bounds. A large accepted file is not necessarily inser
 For Library content:
 
 1. Choose the organization, workspace and destination folder you are authorized to maintain.
-2. Review the mode and files, then upload. Follow the observed processing state rather than assuming accepted bytes are searchable.
+2. Review the destination, files and optional individual uses, then upload. Status updates automatically. You can close the panel or navigate within the app, but keep the browser tab open until transfer finishes. Submitted server processing continues independently; open **Uploads** to follow each file. Confirmed transferred bytes do not establish search readiness.
 3. Open the resulting document passages or dataset schema. Verify extraction and table boundaries against the original.
 4. Ask a small question, then inspect the answer's audit and source references. [Versions and lineage](lineage.md) explains the original file, extraction, source parts and table snapshots.
 

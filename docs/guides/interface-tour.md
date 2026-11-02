@@ -34,12 +34,9 @@ Use [Versions and lineage](lineage.md) to follow the original file, source versi
 
 Choose **Add knowledge**, select **Upload files** and review the destination folder. Use **Change** if it is not the intended location.
 
-Choose how the files will be used:
+Drag files into the drop area or choose them from your computer. Each file gets an automatic use based on the supported server capabilities: Word, PDF and presentations for content search; spreadsheets and CSV for row analysis. Where both uses are supported, the file's optional selector offers **Search document content** or **Analyze rows and columns**. You can mix these files in one upload.
 
-- **Documents to read and search** uses the document ingestion capabilities enabled by the operator.
-- **Data to explore with queries** uses structured dataset ingestion. CSV is one supported case; the actual accepted formats, including spreadsheet support, depend on the connected ingestion service.
-
-Drag files into the drop area or select them from your computer. Review the file list and upload it. A successful upload and a ready knowledge resource are separate states. Follow the source processing status; organization administrators can also open **Activity** from their avatar menu to inspect processing details. Failed files need review; the interface must not imply that an incomplete file is searchable.
+Review the destination, filenames, sizes and any reported problems, then upload. Transfer progress counts confirmed bytes; processing and search readiness are separate. You can close the panel or navigate within the app while it works. Keep the browser tab open until transfer finishes. Submitted processing continues on the server, and **Uploads** shows updated file status without repeated manual checks. Failed or unconfirmed files need review before retrying.
 
 [![Reviewing a dataset upload and its destination before sending it](../assets/screenshots/upload-review.png)](../assets/screenshots/upload-review.png)
 

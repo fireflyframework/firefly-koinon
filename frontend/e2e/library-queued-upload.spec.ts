@@ -10,7 +10,7 @@ import type {
   FileBatchCreate,
   FileBatchItemView,
 } from '@fireflyframework/koinon-sdk';
-import { entry, mockService } from './fixtures';
+import { context, entry, mockService } from './fixtures';
 import { officeFile } from './office-fixtures';
 import officeFormats from './office-format-capabilities.json';
 test.use({ trace: 'off' });
@@ -30,6 +30,23 @@ async function fixture(page: Page, options: { configured?: boolean; loseSubmit?:
         max_batch_bytes: 536870912,
         synchronous_max_file_bytes: 33554432,
       } satisfies FileBatchCapabilities,
+    }),
+  );
+  await page.route('**/bff/api/v1/context', (route) =>
+    route.fulfill({
+      json: {
+        ...context,
+        memberships: [
+          {
+            id: 'upload-grant',
+            subject: context.subject,
+            tenant_id: 'tenant-one',
+            workspace_id: null,
+            role: 'admin',
+            active: true,
+          },
+        ],
+      },
     }),
   );
   let status = 'staging',
@@ -85,6 +102,14 @@ async function fixture(page: Page, options: { configured?: boolean; loseSubmit?:
       }
       return json(batch(), 201);
     }
+    if (method === 'GET' && path.endsWith('/batches'))
+      return json({
+        items: input ? [batch()] : [],
+        total: input ? 1 : 0,
+        page: 1,
+        page_size: 25,
+        pages: 1,
+      });
     if (method === 'GET' && path.endsWith('/items'))
       return json({ items, total: items.length, page: 1, page_size: 50, pages: 1 });
     if (method === 'PUT' && path.endsWith('/content')) {
@@ -225,17 +250,12 @@ for (const width of [1440, 390]) {
     expect(state.transferred).toBeGreaterThan(0);
     await capture(page, 'queue-observed-' + width);
     state.advance('running');
-    await dialog.getByRole('button', { name: 'Check status', exact: true }).click();
     await expect(dialog.getByText('Worker state not verified', { exact: true })).toBeVisible();
     state.advance('running', true);
-    await dialog.getByRole('button', { name: 'Check status', exact: true }).click();
     await expect(dialog.getByText('Processing', { exact: true }).first()).toBeVisible();
     state.advance('succeeded');
-    await dialog.getByRole('button', { name: 'Check status', exact: true }).click();
     await expect(dialog.getByText('Extraction complete', { exact: true }).first()).toBeVisible();
-    await expect(
-      dialog.getByText('Current availability: Text available; search pending', { exact: true }),
-    ).toBeVisible();
+    await expect(dialog.getByText('Text available; search pending', { exact: true })).toBeVisible();
     await expect(dialog.getByText('Searchable', { exact: true })).toHaveCount(0);
     await capture(page, 'queue-extracted-' + width);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
@@ -257,10 +277,15 @@ for (const width of [1440, 390]) {
     await expect(
       dialog.getByRole('heading', { name: 'Upload outcome not confirmed', exact: true }),
     ).toBeVisible();
-    await dialog.getByRole('button', { name: 'Check status', exact: true }).click();
-    await expect(dialog.getByText('Queued', { exact: true }).first()).toBeVisible();
+    await expect(dialog.getByText('Queued', { exact: true }).first()).toBeVisible({
+      timeout: 12000,
+    });
+    await expect(
+      dialog.getByRole('button', { name: 'Try updating status', exact: true }),
+    ).toHaveCount(0);
     expect(state.calls.filter((call) => call.path.endsWith('/submit'))).toHaveLength(1);
     expect(state.calls.filter((call) => call.method === 'PUT')).toHaveLength(1);
+    await dialog.getByText('Upload details', { exact: true }).click();
     await dialog.getByRole('button', { name: 'Request cancellation', exact: true }).click();
     await expect(dialog.getByText('Cancelled', { exact: true }).first()).toBeVisible();
     expect(state.calls.filter((call) => call.path.endsWith('/cancel'))).toHaveLength(1);
@@ -317,7 +342,9 @@ test('observed larger server limits display the same effective bounds enforced b
     .getByLabel('Choose files')
     .setInputFiles({ name: 'policy.txt', mimeType: 'text/plain', buffer: Buffer.from('bounded') });
   await expect(dialog.getByRole('button', { name: 'Upload 1 file', exact: true })).toBeDisabled();
-  await expect(dialog.getByRole('alert')).toContainText('This processing mode is unavailable.');
+  await expect(dialog.getByRole('alert')).toContainText(
+    'Remove files that cannot be uploaded before continuing.',
+  );
   await expect(dialog).toContainText('Maximum per file: 128 MiB.');
   await expect(dialog).toContainText('Maximum batch: 512 MiB.');
   expect(state.transferred).toBe(0);
@@ -365,8 +392,10 @@ for (const width of [1440, 390]) {
     const secondRemove = await rows.nth(1).getByRole('button').boundingBox();
     expect(Math.abs(firstRemove!.x - secondRemove!.x)).toBeLessThan(2);
     const name = await rows.nth(0).getByText('Policy.txt', { exact: true }).boundingBox();
+    const size = await rows.nth(0).locator('.file-size').boundingBox();
+    const labelBottom = width < 600 ? size!.y + size!.height : name!.y + name!.height;
     expect(
-      Math.abs(firstRemove!.y + firstRemove!.height / 2 - name!.y - name!.height / 2),
+      Math.abs(firstRemove!.y + firstRemove!.height / 2 - (name!.y + labelBottom) / 2),
     ).toBeLessThan(2);
     if (width < 600) expect((await rows.nth(0).boundingBox())!.height).toBeLessThan(100);
     await capture(page, 'formats-rejected-' + width);
@@ -394,7 +423,7 @@ test('empty Library upload explains how to create a destination without a bootst
   await expect(dialog).toContainText(
     'Create a space, project and folder in Library, then return to upload.',
   );
-  await expect(dialog.getByRole('button', { name: 'Upload 0 files', exact: true })).toBeDisabled();
+  await expect(dialog.getByRole('button', { name: 'Upload files', exact: true })).toBeDisabled();
   await dialog.getByRole('button', { name: 'Back to Library', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Create a space', exact: true })).toBeVisible();
   expect(service.writes).toHaveLength(0);
@@ -420,20 +449,23 @@ test('multiple originals show confirmed per-file transfer progress before queued
   await dialog.getByRole('button', { name: 'Upload 2 files', exact: true }).click();
   await expect(dialog.getByText('Original staged', { exact: true })).toBeVisible();
   await expect(dialog.getByText('Transferring original', { exact: true })).toBeVisible();
-  await expect(dialog.getByRole('progressbar', { name: 'Files transferred' })).toHaveAttribute(
+  await expect(dialog.getByRole('progressbar', { name: 'Bytes transferred' })).toHaveAttribute(
     'value',
-    '1',
+    '5',
   );
   await expect(dialog.getByText('5 bytes', { exact: true })).toBeVisible();
   await expect(dialog.getByText('6 bytes', { exact: true })).toBeVisible();
   await capture(page, 'multi-file-transfer');
   release();
   await expect(dialog.getByText('Queued', { exact: true }).first()).toBeVisible();
-  await expect(dialog.getByRole('progressbar', { name: 'Files transferred' })).toHaveCount(0);
+  await expect(dialog.getByRole('progressbar', { name: 'Bytes transferred' })).toHaveAttribute(
+    'value',
+    '11',
+  );
 });
 
 for (const width of [1440, 390]) {
-  test(`Office files explain supported formats and one processing choice at ${width}px`, async ({
+  test(`Office files explain supported formats and automatic individual uses at ${width}px`, async ({
     page,
   }) => {
     await page.setViewportSize({ width, height: width < 600 ? 844 : 1000 });
@@ -443,7 +475,10 @@ for (const width of [1440, 390]) {
     for (const family of ['Word', 'Excel', 'PowerPoint', 'PDF'])
       await expect(formats.locator('.format-families')).toContainText(family);
     await expect(formats.locator('.format-families')).not.toContainText('.gz');
-    await expect(dialog).toContainText('This choice applies to every file in this upload.');
+    await expect(dialog.getByLabel('Use these files as')).toHaveCount(0);
+    await expect(dialog).toContainText(
+      'Spreadsheets and CSV are prepared for questions about rows and totals.',
+    );
     await capture(page, 'office-types-' + width);
     await formats.getByText('All file formats', { exact: true }).focus();
     await formats.getByText('All file formats', { exact: true }).press('Enter');
@@ -471,28 +506,36 @@ for (const width of [1440, 390]) {
     await expect(dialog.locator('.upload-file')).toHaveCount(4);
     const submit = dialog.getByRole('button', { name: 'Upload 4 files', exact: true });
     await expect(submit).toBeEnabled();
-    await submit.scrollIntoViewIfNeeded();
+    await expect(dialog.getByRole('heading', { name: 'Add files', exact: true })).toBeInViewport();
+    await expect(
+      dialog.getByRole('button', { name: 'Close dialog', exact: true }),
+    ).toBeInViewport();
+    await expect(submit).toBeInViewport();
+    await dialog.locator('.upload-preview').evaluate((element) => (element.scrollTop = 0));
     await capture(page, 'office-files-' + width);
+    const lastUse = dialog.getByLabel('How to use: review.csv', { exact: true });
+    if (width < 600) await lastUse.focus();
+    await expect(lastUse).toBeInViewport({ ratio: 1 });
+    if (width === 1440) expect((await dialog.boundingBox())!.height).toBeLessThan(750);
     await submit.click();
     await expect(dialog.getByText('Queued', { exact: true }).first()).toBeVisible();
     expect(state.input?.items.map((item) => item.mode)).toEqual([
       'document',
       'document',
-      'document',
-      'document',
+      'dataset',
+      'dataset',
     ]);
     expect(state.transferred).toBe(files.reduce((size, file) => size + file.buffer.length, 0));
     for (const kind of kinds) await expect(dialog).toContainText('review.' + kind);
     await capture(page, 'office-queued-' + width);
   });
 }
-test('Excel and CSV become datasets only after an explicit batch-mode choice', async ({ page }) => {
+test('an individual spreadsheet can be read as text while CSV keeps automatic analysis', async ({
+  page,
+}) => {
   const state = await fixture(page),
     dialog = await open(page);
-  await dialog.getByLabel('Use these files as').selectOption('dataset');
-  await expect(dialog).toContainText('Query rows and columns');
   await expect(dialog.locator('ffk-file-formats .format-families')).toContainText('Excel');
-  await expect(dialog.locator('ffk-file-formats .format-families')).not.toContainText('PowerPoint');
   await dialog.getByLabel('Choose files').setInputFiles(
     ['xlsx', 'csv'].map((kind) => ({
       name: 'review.' + kind,
@@ -500,7 +543,60 @@ test('Excel and CSV become datasets only after an explicit batch-mode choice', a
       buffer: officeFile(kind as 'xlsx' | 'csv'),
     })),
   );
+  await dialog.getByLabel('How to use: review.xlsx', { exact: true }).selectOption('document');
   await dialog.getByRole('button', { name: 'Upload 2 files', exact: true }).click();
   await expect(dialog.getByText('Queued', { exact: true }).first()).toBeVisible();
-  expect(state.input?.items.map((item) => item.mode)).toEqual(['dataset', 'dataset']);
+  expect(state.input?.items.map((item) => item.mode)).toEqual(['document', 'dataset']);
 });
+
+for (const width of [1440, 390]) {
+  test(`a closed upload keeps its destination and completes through the inbox at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: width < 600 ? 844 : 1000 });
+    const state = await fixture(page);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route('**/queued-item-0/content', async (route) => {
+      await gate;
+      await route.fallback();
+    });
+    const dialog = await open(page);
+    await dialog.getByLabel('Choose files').setInputFiles({
+      name: 'review.docx',
+      mimeType: 'application/octet-stream',
+      buffer: officeFile('docx'),
+    });
+    await dialog.getByRole('button', { name: 'Upload 1 file', exact: true }).click();
+    await expect(dialog.getByText('Transferring original', { exact: true })).toBeVisible();
+    const destination = state.input!.destination;
+    await dialog.getByRole('button', { name: 'Continue in background', exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    if (width < 600)
+      await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
+    await page.getByRole('button', { name: 'Chat', exact: true }).first().click();
+    await expect(page.locator('.upload-activity')).toContainText('Uploading files');
+    await capture(page, 'background-transfer-' + width);
+    release();
+    await expect(page.locator('.upload-activity')).toContainText('Processing files');
+    expect(state.input!.destination).toEqual(destination);
+    await page
+      .locator('.upload-activity')
+      .getByRole('button', { name: 'View uploads', exact: true })
+      .click();
+    const inbox = page.locator('ffk-library-retained-uploads-panel');
+    await inbox.getByRole('button', { name: 'Inspect upload queue-batch', exact: true }).click();
+    await expect(inbox).toContainText('review.docx');
+    state.advance('succeeded');
+    await expect(inbox.getByText('Processing completed', { exact: true }).first()).toBeVisible({
+      timeout: 12000,
+    });
+    await capture(page, 'background-complete-' + width);
+    expect(state.calls.filter((call) => call.method === 'PUT')).toHaveLength(1);
+    expect(
+      state.calls.filter((call) => call.method === 'POST' && call.path.endsWith('/submit')),
+    ).toHaveLength(1);
+  });
+}

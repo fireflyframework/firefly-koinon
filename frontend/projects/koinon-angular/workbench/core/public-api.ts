@@ -11,3 +11,4 @@ export * from './src/lib/atoms/icon';
 export * from './src/lib/atoms/badge';
 export * from './src/lib/atoms/skeleton';
 export * from './src/lib/atoms/file-formats';
+export * from './src/lib/atoms/file-type-icon';
