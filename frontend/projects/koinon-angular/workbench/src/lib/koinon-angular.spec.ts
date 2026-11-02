@@ -531,7 +531,7 @@ it('reopens the ordinary-folder upload action without replacing a transfer alrea
         : { items: [] },
   );
   const w = fixture.componentInstance;
-  const show = vi.spyOn(w, 'showDialog').mockImplementation(() => {});
+  const show = vi.spyOn(w, 'showDialog').mockImplementation(() => undefined);
   const file = new File(['private'], 'captured.docx');
   w.files = [file];
   w.formParent = 'captured-folder';
