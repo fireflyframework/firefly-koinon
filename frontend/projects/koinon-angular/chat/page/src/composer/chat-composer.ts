@@ -23,13 +23,13 @@ import { CdkMenu, CdkMenuItem } from '@angular/cdk/menu';
 import { Overlay, type OverlayRef } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
+import { KoinonFileFormats } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonIcon, KoinonTextPipe } from '@fireflyframework/koinon-angular';
 import type { ComposerAttachment } from './composer-models';
 registerKoinonSpanish({
   'Some files were not accepted. Review their details before sending.':
     'Algunos archivos no se han aceptado. Revisa sus detalles antes de enviar.',
   'Supported file types': 'Tipos de archivo admitidos',
-  'Not reported': 'Sin informar',
   'Files per message': 'Archivos por mensaje',
   'Maximum image size': 'Tamaño máximo de imagen',
   'Maximum per file': 'Máximo por archivo',
@@ -43,7 +43,7 @@ registerKoinonSpanish({
 let composerId = 0;
 @Component({
   selector: 'ffk-chat-composer',
-  imports: [FormsModule, CdkMenu, CdkMenuItem, KoinonIcon, KoinonTextPipe],
+  imports: [FormsModule, CdkMenu, CdkMenuItem, KoinonIcon, KoinonTextPipe, KoinonFileFormats],
   templateUrl: './chat-composer.html',
   styleUrl: './chat-composer.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

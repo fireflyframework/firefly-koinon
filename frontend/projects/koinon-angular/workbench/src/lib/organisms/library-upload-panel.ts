@@ -19,6 +19,7 @@ import type { LibraryUploadRuntime } from '../services/library-upload';
 import { effectiveUploadLimits } from '../services/library-upload-coordinator';
 import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonIcon } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonFileFormats } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonBadge } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonSkeleton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonFolderTree } from '@fireflyframework/koinon-angular/workbench/panels';
@@ -29,6 +30,14 @@ import {
 } from '@fireflyframework/koinon-angular/workbench/core';
 registerKoinonSpanish({
   Upload: 'Subir',
+  'Read and search the text in your files. Excel and CSV can also be uploaded this way.':
+    'Lee y busca el texto de tus archivos. También puedes cargar Excel y CSV de esta forma.',
+  'Query rows and columns in spreadsheets and data files. Word and PowerPoint belong in Documents for reading.':
+    'Consulta filas y columnas de hojas de cálculo y archivos de datos. Word y PowerPoint corresponden a Documentos para leer.',
+  'This choice applies to every file in this upload.':
+    'Esta elección se aplica a todos los archivos de esta carga.',
+  'Open this .ppt file in PowerPoint and use Save As .pptx, then upload the converted file.':
+    'Abre este archivo .ppt en PowerPoint y usa Guardar como .pptx; después carga el archivo convertido.',
   Failed: 'Error',
   Cancelled: 'Cancelado',
   'Review recovery options': 'Revisar opciones de recuperación',
@@ -122,8 +131,8 @@ registerKoinonSpanish({
     'Los archivos solo se procesan después de preparar sus originales y enviar el lote.',
   'No accepted batch could be confirmed. The original request was not repeated. Keep this page open and ask an administrator to inspect retained uploads.':
     'No se ha podido confirmar un lote aceptado. La solicitud original no se ha repetido. Mantén esta página abierta y pide a un administrador que revise las cargas conservadas.',
-  'Worker extraction records text or tables. Search availability is checked separately.':
-    'La extracción en segundo plano registra texto o tablas. La disponibilidad para buscar se comprueba por separado.',
+  'After upload, files are processed for reading or queries. Search availability is checked separately.':
+    'Después de la carga, los archivos se procesan para lectura o consultas. La disponibilidad para buscar se comprueba por separado.',
   'Configured limits are checked before transfer.':
     'Los límites configurados se comprueban antes de transferir.',
   'Maximum per file': 'Máximo por archivo',
@@ -142,6 +151,7 @@ registerKoinonSpanish({
     KoinonButton,
     KoinonIcon,
     KoinonBadge,
+    KoinonFileFormats,
     KoinonSkeleton,
     KoinonFolderTree,
     KoinonTextPipe,
@@ -171,6 +181,15 @@ export class KoinonLibraryUploadPanel implements OnInit, DoCheck {
       void this.runtime()?.coordinator.inspect();
     }
   }
+  unavailableFormats() {
+    return (
+      this.view()
+        ?.capabilities?.formats?.filter(
+          (format) => format.mode === this.w.uploadMode && !format.available,
+        )
+        .flatMap((format) => format.extensions) || []
+    );
+  }
   accept() {
     return (
       this.view()
@@ -186,6 +205,8 @@ export class KoinonLibraryUploadPanel implements OnInit, DoCheck {
       limits = this.limits();
     if (!caps || !limits) return '';
     if (!file.size) return 'This file is empty.';
+    if (file.name.toLowerCase().endsWith('.ppt') && !this.accept().split(',').includes('.ppt'))
+      return 'Open this .ppt file in PowerPoint and use Save As .pptx, then upload the converted file.';
     if (file.size > limits.max_file_bytes) return 'This file exceeds the maximum file size.';
     if (
       caps.formats?.length &&

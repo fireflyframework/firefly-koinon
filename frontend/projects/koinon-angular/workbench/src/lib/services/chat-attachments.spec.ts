@@ -272,3 +272,15 @@ it.each(['queued', 'cancelled', 'expired'] as const)(
     expect(files.attachments()[0].state).toBe(status);
   },
 );
+
+it('explains conversion for legacy PowerPoint without uploading or suggesting a rename', async () => {
+  let uploads = 0;
+  const { files } = setup(async () => {
+    uploads++;
+    return remote();
+  });
+  await files.select([new File(['legacy'], 'slides.ppt')]);
+  expect(files.attachments()[0].state).toBe('rejected');
+  expect(files.attachments()[0].detail).toContain('use Save As .pptx');
+  expect(uploads).toBe(0);
+});
