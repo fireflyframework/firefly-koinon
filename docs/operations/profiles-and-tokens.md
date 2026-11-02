@@ -8,7 +8,7 @@ A profile belongs to the canonical verified issuer/subject pair. Initial display
 
 ## Choose language, calendar and time zone
 
-Open your avatar menu and choose **Your profile**. The regional controls sit below your display name and photo.
+Open your avatar menu and choose **Your account**, then **Profile & preferences**. The regional controls sit below your display name and photo.
 
 1. Choose **Language and region** to set interface language, number formatting and regional conventions. The interface currently supports English and Spanish; other locales still control formatting.
 2. Choose your **Time zone** using its IANA name, such as `Europe/Madrid`. This also accounts for daylight-saving changes.
