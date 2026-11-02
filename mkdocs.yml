@@ -117,6 +117,7 @@ nav:
           - Conversations: guides/java-conversations.md
           - Administration and operations: guides/java-operations.md
       - AI clients and MCP:
+          - Start with your AI assistant: guides/connect-ai-assistants.md
           - Connect Claude: guides/connect-claude.md
           - Connect ChatGPT: guides/connect-chatgpt.md
           - Connect Grok: guides/connect-grok.md
