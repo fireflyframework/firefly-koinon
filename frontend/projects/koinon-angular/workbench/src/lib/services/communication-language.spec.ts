@@ -45,3 +45,18 @@ it('announces unread notifications in the profile language', () => {
     'Notificaciones, 3 sin leer',
   );
 });
+
+it('loads delivery inspection and duplicate-consent vocabulary in the lazy administration feature', () => {
+  TestBed.createComponent(KoinonCommunicationsAdmin);
+  spanish();
+  const i18n = TestBed.inject(KoinonI18n);
+  expect(i18n.text('Check email service')).toBe('Comprobar servicio de correo');
+  expect(i18n.text('Queue new welcome')).toBe('Preparar nueva bienvenida');
+  expect(
+    i18n.text(
+      'The recipient reported that the welcome did not arrive. I understand both messages may arrive.',
+    ),
+  ).toBe(
+    'La persona destinataria ha indicado que no recibió la bienvenida. Entiendo que pueden llegar ambos mensajes.',
+  );
+});

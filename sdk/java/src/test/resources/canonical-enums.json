@@ -258,6 +258,20 @@
   "DatasetFileAppendResultStatus": [
     "ready"
   ],
+  "DeliveryOperationObservationSource": [
+    "operation_lookup"
+  ],
+  "DeliveryOperationObservationOperationState": [
+    "checking",
+    "pending",
+    "accepted",
+    "rejected",
+    "unknown",
+    "unavailable"
+  ],
+  "DeliveryOperationObservationRecipientState": [
+    "not_observed"
+  ],
   "DeliveryRecordKind": [
     "invitation",
     "access_granted",
@@ -280,6 +294,11 @@
     "suppressed",
     "cancelled",
     "unknown"
+  ],
+  "DeliveryRecoveryOptionsProviderBindingState": [
+    "verified",
+    "operator_verification_required",
+    "unavailable"
   ],
   "DeploymentConfigurationOwnership": [
     "deployment"
@@ -1071,6 +1090,9 @@
     "ready",
     "needs_setup",
     "unverified"
+  ],
+  "WelcomeRecoveryInputReason": [
+    "recipient_reported_not_received"
   ],
   "EvidenceKind": [
     "search",

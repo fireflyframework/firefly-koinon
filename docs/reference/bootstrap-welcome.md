@@ -91,3 +91,7 @@ without receiving another enrollment email. For a later independent delivery che
 authorized [administrator-contact diagnostic](operator-delivery-contacts.md#queue-one-new-diagnostic)
 after its current eligibility checks. See [message investigation](../operations/communications.md#investigate-a-message-that-did-not-arrive)
 for the provider and recipient-side handoff.
+
+## Inspect a delivery or request another welcome
+
+For explicit provider-operation checks and a separately authorized new welcome, follow [email delivery and welcome recovery](../guides/email-delivery-recovery.md). The original delivery and its attempts are retained. Provider acceptance does not establish mailbox receipt, and an unknown action is never repeated automatically.

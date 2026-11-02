@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { KoinonTransport, RequestOptions } from "./transport.js";
 import type { Membership } from "./types.js";
+import type { DeliveryInspectionInput, DeliveryObservationPage, DeliveryOperationObservation, DeliveryRecoveryOptions, WelcomeRecoveryAcknowledgement, WelcomeRecoveryInput } from "./generated.js";
+export type { DeliveryInspectionInput, DeliveryObservationPage, DeliveryOperationObservation, DeliveryRecoveryOptions, WelcomeRecoveryAcknowledgement, WelcomeRecoveryInput } from "./generated.js";
 import type * as C from "./communications-models.js";
 type Options = Pick<RequestOptions, "signal" | "headers">;
 export interface CommunicationPageFilter {
@@ -33,6 +35,11 @@ export interface NotificationFilter extends CommunicationPageFilter {
   read?: "all" | "unread" | "read";
 }
 const id = encodeURIComponent;
+const keyed = (options: Options, key: string): Options => {
+ const headers = {...options.headers};
+ for (const name of Object.keys(headers)) if (name.toLowerCase() === 'idempotency-key') delete headers[name];
+ return {...options, headers: {...headers, 'Idempotency-Key': key}};
+};
 const tenant = (value: string) => `/tenants/${id(value)}`;
 function invitationId(value: string) {
   if (
@@ -148,6 +155,10 @@ export function createCommunicationsApi(transport: KoinonTransport) {
         ),
     },
     administration: {
+      recovery: (tenantId:string, deliveryId:string, options:Options={}) => transport.request<DeliveryRecoveryOptions>('GET',admin(tenantId)+'/deliveries/'+id(deliveryId)+'/recovery',options),
+      observations: (tenantId:string, deliveryId:string, options:Options={}) => transport.request<DeliveryObservationPage>('GET',admin(tenantId)+'/deliveries/'+id(deliveryId)+'/observations',options),
+      inspectDelivery: (tenantId:string, deliveryId:string, input:DeliveryInspectionInput, key:string, options:Options={}) => transport.request<DeliveryOperationObservation>('POST',admin(tenantId)+'/deliveries/'+id(deliveryId)+'/observations',{...keyed(options,key),body:{expected_generation:input.expected_generation}}),
+      recoverWelcome: (tenantId:string, deliveryId:string, input:WelcomeRecoveryInput, key:string, options:Options={}) => transport.request<WelcomeRecoveryAcknowledgement>('POST',admin(tenantId)+'/deliveries/'+id(deliveryId)+'/welcome-recovery',{...keyed(options,key),body:{expected_generation:input.expected_generation,contact_id:input.contact_id,expected_contact_revision:input.expected_contact_revision,reason:input.reason,acknowledge_possible_duplicate:input.acknowledge_possible_duplicate}}),
       capabilities: (tenantId: string, options: Options = {}) =>
         transport.request<C.CommunicationCapabilities>(
           "GET",

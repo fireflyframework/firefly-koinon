@@ -36,12 +36,16 @@ import type {
   SourceReference,
   ToolActivity,
 } from '@fireflyframework/koinon-sdk';
+import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
+import { AUDIT_RESULT_SPANISH } from './answer-audit-spanish';
 import { KoinonOpenUiArtifact } from '@fireflyframework/koinon-angular/chat/evidence';
 import { KoinonAnswerAuditState } from './answer-audit-state';
 import { KoinonRecordedOrigin } from './recorded-origin';
 import { KoinonRecordedDocumentSource } from './recorded-document-source';
 import { hasRecordedDocumentIdentity } from './recorded-document-source-state';
 import { KoinonRecordedMemory } from './recorded-memory';
+registerKoinonSpanish(AUDIT_RESULT_SPANISH);
+
 @Component({
   selector: 'ffk-answer-audit',
   imports: [

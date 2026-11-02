@@ -18,7 +18,27 @@ ROLES = (
 )
 
 
+EMAIL_RECOVERY_TABLES = (
+    "koinon_welcome_recoveries", "koinon_email_provider_bindings",
+    "koinon_email_operation_inspections", "koinon_email_operation_observations",
+)
+
+
 def grant_table(connection, table, role, *, document_control=False):
+    if table in EMAIL_RECOVERY_TABLES:
+        target = sql.Identifier(role)
+        relation = sql.Identifier(table)
+        connection.execute(sql.SQL("REVOKE ALL ON TABLE public.{} FROM {}").format(relation, target))
+        names = connection.execute(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name=%s ORDER BY ordinal_position", (table,)
+        ).fetchall()
+        if not names:
+            raise RuntimeError("Apply the email recovery migration before provisioning its privileges")
+        columns = sql.SQL(", ").join(sql.Identifier(name) for (name,) in names)
+        connection.execute(sql.SQL("REVOKE UPDATE ({}) ON TABLE public.{} FROM {}").format(columns, relation, target))
+        connection.execute(sql.SQL("GRANT SELECT, INSERT ON TABLE public.{} TO {}").format(relation, target))
+        return
     if table == "koinon_operator_delivery_contacts":
         from koinon.communications.contact_guards import (
             BINDING_COLUMNS,
@@ -161,6 +181,10 @@ def grant_table(connection, table, role, *, document_control=False):
             "koinon_activity_coverage",
             "koinon_bulk_table_reservations",
             "koinon_query_batch_references",
+            "koinon_welcome_recoveries",
+            "koinon_email_provider_bindings",
+            "koinon_email_operation_inspections",
+            "koinon_email_operation_observations",
         }
     )
     receipt = table in {
@@ -287,9 +311,14 @@ CONTACT_OPERATOR_READ_TABLES = (
     "koinon_identity_mappings",
     "koinon_identity_grants",
     "koinon_bootstrap_identity_grants",
+    "koinon_bootstrap_contacts",
     "koinon_communication_policies",
 )
-CONTACT_OPERATOR_APPEND_TABLES = ("lattice_audit", "koinon_communication_outbox")
+CONTACT_OPERATOR_APPEND_TABLES = (
+    "lattice_audit", "koinon_communication_outbox", "koinon_welcome_recoveries",
+    "koinon_email_provider_bindings", "koinon_email_operation_inspections",
+    "koinon_email_operation_observations",
+)
 
 
 def _contact_operator_role(connection, role):

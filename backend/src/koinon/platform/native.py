@@ -85,35 +85,36 @@ class PlatformNativeObservations:
                 return False
             target = serving[0]
             native = "canon" if target.domain == "documents" else "structured"
-            async with TransactionTemplate(
-                native,
-                propagation=Propagation.REQUIRES_NEW,
-                read_only=True,
-                read_from_primary=True,
-                isolation=Isolation.SERIALIZABLE,
-            ).transaction():
-                value = await adapter.get_native(
-                    tenant_id=tenant_id,
-                    native_workspace_id=target.native_workspace_id,
-                    catalog_workspace_id=target.workspace_id,
-                    domain=target.domain,
-                    actor=subject,
-                    identifier=index_id(tenant_id, target.workspace_id, target.domain, target.native_id),
-                )
-                if (
-                    not value
-                    or value.get("status") != "active"
-                    or value.get("active") is not True
-                    or value.get("indexed") is not True
-                ):
-                    return False
-                chunks, vectors = value.get("chunk_count"), value.get("vector_count")
-                if (
-                    type(chunks) is not int
-                    or type(vectors) is not int
-                    or chunks < 0
-                    or chunks != vectors
-                    or value.get("dimensions") != target.dimensions
-                ):
-                    return False
+            with native_scope(native, tenant_id, target.native_workspace_id, subject):
+                async with TransactionTemplate(
+                    native,
+                    propagation=Propagation.REQUIRES_NEW,
+                    read_only=True,
+                    read_from_primary=True,
+                    isolation=Isolation.SERIALIZABLE,
+                ).transaction():
+                    value = await adapter.get_native(
+                        tenant_id=tenant_id,
+                        native_workspace_id=target.native_workspace_id,
+                        catalog_workspace_id=target.workspace_id,
+                        domain=target.domain,
+                        actor=subject,
+                        identifier=index_id(tenant_id, target.workspace_id, target.domain, target.native_id),
+                    )
+                    if (
+                        not value
+                        or value.get("status") != "active"
+                        or value.get("active") is not True
+                        or value.get("indexed") is not True
+                    ):
+                        return False
+                    chunks, vectors = value.get("chunk_count"), value.get("vector_count")
+                    if (
+                        type(chunks) is not int
+                        or type(vectors) is not int
+                        or chunks < 0
+                        or chunks != vectors
+                        or value.get("dimensions") != target.dimensions
+                    ):
+                        return False
         return bool(targets)

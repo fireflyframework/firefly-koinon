@@ -405,6 +405,14 @@
         @if (delivery.safe_explanation) {
           <p class="feedback">{{ delivery.safe_explanation }}</p>
         }
+        @if (deliverySession; as session) {
+          <ffk-delivery-recovery
+            [session]="session"
+            [delivery]="delivery"
+            (deliveryRequested)="deliveryRequested.emit($event)"
+            (accessDenied)="deliveryAccessDenied.emit()"
+          />
+        }
         @if (delivery.can_retry) {
           @if (confirmingRetry() === delivery.id) {
             <div class="retry-confirmation">

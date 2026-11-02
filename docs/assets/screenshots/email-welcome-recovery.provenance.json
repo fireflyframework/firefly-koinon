@@ -1,0 +1,20 @@
+{
+  "copyright": "Copyright 2026 Firefly Software Foundation",
+  "license": "Apache-2.0",
+  "base_commit": "09ec8400293f7776ffec3d44344d5137e2fcb9dd",
+  "capture": "Compiled management application with controlled delivery/observation fixtures; no external email service or real recipient.",
+  "journey": "frontend/e2e/communication-delivery-recovery.spec.ts",
+  "viewport_widths": [
+    1440,
+    390
+  ],
+  "notes": "Names, timestamps, provider outcomes and references are illustrative. These screenshots do not establish external provider or mailbox acceptance. Template and style hashes below match the captured renderers.",
+  "source_files": {
+    "frontend/projects/koinon-angular/communications/admin/delivery-recovery.html": "2f2401d9525c49caa846558f475397143f895bb9c9da8632231ba1d448764c94",
+    "frontend/projects/koinon-angular/communications/admin/delivery-recovery.scss": "ac62ce73fc3131dbc0e4f5bbdff814d12de47fbaf62470cc4adaa0fdbfc6b3af"
+  },
+  "files": {
+    "email-welcome-recovery-review-1440.png": "7a4b5f4288d99d2bdb13d1ea4ba24d76e82af1ac2a010921af8522e70a2929ce",
+    "email-welcome-recovery-review-390.png": "0bea387bdd5c197503531b1dc4bc56ad47d32e795a1ce4114bb6967ab58aed1c"
+  }
+}

@@ -37,6 +37,14 @@ from koinon_sdk.communications import (
     OwnNotificationPage,
     RecipientProviderPage,
 )
+from koinon_sdk.communications_recovery import (
+    DeliveryInspectionInput,
+    DeliveryObservationPage,
+    DeliveryOperationObservation,
+    DeliveryRecoveryOptions,
+    WelcomeRecoveryAcknowledgement,
+    WelcomeRecoveryInput,
+)
 from koinon_sdk.models import Membership
 
 Result = TypeVar("Result", bound=BaseModel)
@@ -174,6 +182,52 @@ class CommunicationsClientMixin(ABC):
             DeliveryRecord,
             "POST",
             self._communication_path(tenant_id, "/deliveries/" + quote(delivery_id, safe="") + "/retry"),
+        )
+
+    async def communication_delivery_recovery(
+        self, tenant_id: str, delivery_id: str
+    ) -> DeliveryRecoveryOptions:
+        return await self._communication(
+            DeliveryRecoveryOptions,
+            "GET",
+            self._communication_path(tenant_id, "/deliveries/" + quote(delivery_id, safe="") + "/recovery"),
+        )
+
+    async def communication_delivery_observations(
+        self, tenant_id: str, delivery_id: str
+    ) -> DeliveryObservationPage:
+        return await self._communication(
+            DeliveryObservationPage,
+            "GET",
+            self._communication_path(
+                tenant_id, "/deliveries/" + quote(delivery_id, safe="") + "/observations"
+            ),
+        )
+
+    async def inspect_communication_delivery(
+        self, tenant_id: str, delivery_id: str, value: DeliveryInspectionInput, idempotency_key: str
+    ) -> DeliveryOperationObservation:
+        return await self._communication(
+            DeliveryOperationObservation,
+            "POST",
+            self._communication_path(
+                tenant_id, "/deliveries/" + quote(delivery_id, safe="") + "/observations"
+            ),
+            json=value.model_dump(mode="json", exclude_unset=True),
+            headers={"Idempotency-Key": idempotency_key},
+        )
+
+    async def recover_welcome_delivery(
+        self, tenant_id: str, delivery_id: str, value: WelcomeRecoveryInput, idempotency_key: str
+    ) -> WelcomeRecoveryAcknowledgement:
+        return await self._communication(
+            WelcomeRecoveryAcknowledgement,
+            "POST",
+            self._communication_path(
+                tenant_id, "/deliveries/" + quote(delivery_id, safe="") + "/welcome-recovery"
+            ),
+            json=value.model_dump(mode="json", exclude_unset=True),
+            headers={"Idempotency-Key": idempotency_key},
         )
 
     async def notifications(self, **filters: Unpack[NotificationFilter]) -> OwnNotificationPage:

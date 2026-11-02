@@ -53,7 +53,7 @@ Choose **Use organization or installation language** to inherit the configured l
 
 **Preview summary email** renders the actual HTML and plain-text message from your draft preferences and a past reporting window. It neither saves preferences nor sends a message. The reporting picker uses explicit UTC date boundaries, includes the start and excludes the end, and groups daily observations in your profile time zone. It accepts at most 366 days and never forecasts future usage.
 
-The current email preview shows **personal activity** and requires a verified directory-backed recipient. It does not yet use an operator-approved administrator contact or preview the administrator-summary audience. Delivery through a supported administrator contact remains a separate capability. **Preview next summary** checks the schedule without establishing email delivery. If only the email preview is unavailable, do not change identity authority or enable an unwanted directory integration to bypass it.
+The current email preview shows **personal activity** and uses a verified directory-backed recipient or the same currently validated, signed-in operator-approved administrator contact. It rechecks that contact before releasing the preview. It does not yet preview the administrator-summary audience. **Preview next summary** checks the schedule without establishing email delivery. If only the email preview is unavailable, do not change identity authority or enable an unwanted directory integration to bypass it.
 
 ## Review knowledge and MCP activity
 
@@ -86,8 +86,12 @@ Start in **Settings**, **Communications**, **Delivery history**. Filter the even
 | **Deferred**, **Failed** or **Suppressed** | Preparation or delivery could not proceed, or the channel was unavailable. | Read the bounded explanation and correct the named prerequisite. A retry is available only when the server explicitly offers it for that workflow. |
 | **Cancelled** | The event no longer qualified for submission. | Review its current identity, invitation or access conditions; do not reset the old record. |
 
-**Delivery history** does not offer a general resend control for welcome, security or summary emails. An eligible invitation can expose its supported retry/resend action after fresh checks. Changing a sender, branding, template or deployment release does not replay unknown messages or create another automatic welcome.
+**Delivery history** does not offer a general resend control for welcome, security or summary emails. An eligible initial welcome can instead offer the separately reviewed **Send a new welcome** workflow, preserving the original delivery. An eligible invitation can expose its supported retry/resend action after fresh checks. Changing a sender, branding, template or deployment release does not replay unknown messages or create another automatic welcome.
 
 If the provider reports delivery but the person cannot find the email, verify the actual sender, localized subject and send time. A Spanish installation may generate a Spanish subject even when an earlier test used English. Search the intended mailbox's folders using that subject. The deployment operator can correlate the existing delivery reference with the provider's operation and Internet Message-ID for a recipient-side trace. A successful send API response, mail-server handoff and confirmed inbox receipt belong as separate entries in the acceptance record.
 
 When a new independent test is needed, an authorized deployment operator can use the [existing administrator-contact diagnostic](../reference/operator-delivery-contacts.md#queue-one-new-diagnostic). It resolves a current approved contact and queues a new event through the normal worker. It is not a replay of a welcome, an invitation, or an unknown send, and there is no arbitrary-recipient test-send field in organization Settings.
+
+## Inspect a delivery or request another welcome
+
+For explicit provider-operation checks and a separately authorized new welcome, follow [email delivery and welcome recovery](../guides/email-delivery-recovery.md). The original delivery and its attempts are retained. Provider acceptance does not establish mailbox receipt, and an unknown action is never repeated automatically.
