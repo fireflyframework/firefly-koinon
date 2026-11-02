@@ -1,6 +1,7 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 import {
+  FetchTransport,
   KoinonClient,
   KoinonError,
   type FileBatchView,
@@ -12,7 +13,7 @@ import {
 import { RetainedUploadsState } from './library-retained-uploads-state';
 import { RetainedUploadJournal } from './library-retained-uploads-journal';
 import type { RetainedUploadScope } from './library-retained-uploads-contract';
-function setup() {
+function setup(httpTransport?: KoinonTransport) {
   let scope: RetainedUploadScope = {
     owner: {},
     subject: 'alex',
@@ -103,7 +104,7 @@ function setup() {
     },
   });
   let writeAccess = true;
-  const client = new KoinonClient({ transport });
+  const client = new KoinonClient({ transport: httpTransport ?? transport });
   const make = () =>
     new RetainedUploadsState({
       scope: () => scope,
@@ -469,3 +470,111 @@ it.each([
   expect(f.state.canAct('retry_processing', 'item')).toBe(false);
   expect(f.calls.some((c) => c.method === 'POST')).toBe(false);
 });
+
+it.each(['unavailable', 'revision-change', 'denied', 'invalid-destination'])(
+  'clears an acknowledged HTTP202 recovery before a failed status refresh: %s',
+  async (failure) => {
+    const batch = {
+      id: 'batch',
+      tenant_id: 'north',
+      destination: { workspace_id: 'space', project_id: 'project', parent_id: 'folder' },
+      status: 'reconciling',
+      revision: 1,
+      total_items: 1,
+      total_bytes: 8,
+      counts: { reconciling: 1 },
+      cancellation_requested: false,
+      created_at: '2026-11-02T01:00:00.000000Z',
+      expires_at: '2026-11-09T01:00:00.000000Z',
+    };
+    const item = {
+      id: 'item',
+      client_item_id: 'one',
+      filename: 'facts.md',
+      mode: 'document',
+      size_bytes: 8,
+      sha256: 'a'.repeat(64),
+      status: 'reconciling',
+      source_id: 'source',
+      asset_id: 'asset',
+      job_id: 'job',
+      table_ids: [],
+      error_code: 'INGEST_EXECUTION_CONTEXT_REQUIRED',
+    };
+    let acknowledged = false;
+    let readsAfterAck = 0;
+    const writes: unknown[] = [];
+    const fetcher: typeof fetch = async (input, init) => {
+      const path = new URL(String(input));
+      let body: unknown;
+      let status = 200;
+      if (init?.method === 'POST') {
+        writes.push(JSON.parse(String(init.body)));
+        acknowledged = true;
+        status = 202;
+        body = {
+          ...batch,
+          revision: 2,
+          status: 'queued',
+          counts: { queued: 1 },
+          ...(failure === 'invalid-destination'
+            ? { destination: { ...batch.destination, workspace_id: 'other-space' } }
+            : {}),
+        };
+      } else if (acknowledged) {
+        if (failure === 'denied') {
+          status = 401;
+          body = { code: 'SESSION_REQUIRED', detail: 'Private account failure' };
+        } else if (failure === 'unavailable') {
+          status = 503;
+          body = { code: 'STATUS_UNAVAILABLE', detail: 'Private upstream failure' };
+        } else if (path.pathname.endsWith('/items')) {
+          body = { items: [item], total: 1, page: 1, page_size: 50, pages: 1 };
+        } else {
+          body = { ...batch, revision: 2 + readsAfterAck++, counts: { reconciling: 1 } };
+        }
+      } else if (path.pathname.endsWith('/recovery')) body = recovery();
+      else if (path.pathname.endsWith('/items'))
+        body = { items: [item], total: 1, page: 1, page_size: 50, pages: 1 };
+      else body = batch;
+      return new Response(JSON.stringify(body), {
+        status,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    };
+    const f = setup(new FetchTransport({ baseUrl: 'http://127.0.0.1/bff/api/v1', fetch: fetcher }));
+    try {
+      await f.state.select('batch');
+      await f.state.inspectRecovery('item');
+      await f.state.review('retry_processing', 'item');
+      await f.state.confirm();
+      expect(writes).toEqual([{ expected_revision: 1, operation: 'retry_processing' }]);
+      if (failure === 'invalid-destination') {
+        expect(f.state.view().pending).toHaveLength(1);
+        expect(f.journal.forBatch('alex', 'north', 'batch')).toHaveLength(1);
+        expect(f.state.view().notice).toBe('');
+        expect(f.state.view().error).toContain('could not be confirmed');
+        return;
+      }
+      expect(f.state.view().pending).toEqual([]);
+      expect(f.journal.forBatch('alex', 'north', 'batch')).toEqual([]);
+      if (failure === 'denied') {
+        expect(f.state.view().denied).toBe(true);
+        expect(f.state.view().selected).toBeNull();
+        expect(f.state.view().items).toEqual([]);
+        expect(f.state.view().notice).toBe('');
+        expect(f.state.view().error).not.toContain('Private account');
+        return;
+      }
+      expect(f.state.view().selected?.revision).toBe(2);
+      expect(f.state.view().notice).toBe('');
+      expect(f.state.view().items).toEqual([]);
+      expect(f.state.view().error).toBe(
+        'The action was acknowledged, but the current status could not be refreshed. Inspect the upload again; do not repeat the action.',
+      );
+      expect(f.state.view().error).not.toContain('Private upstream');
+    } finally {
+      f.state.dispose();
+    }
+  },
+);
