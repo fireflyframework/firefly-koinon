@@ -268,6 +268,7 @@ class AssistantExecutor:
                         [
                             *(hit["asset_id"] for hit in capture.data.get("hits", [])),
                             *(source.asset_id for source in capture.sources),
+                            *(read.entity_id for read in capture.native_reads),
                         ]
                     )
                 )

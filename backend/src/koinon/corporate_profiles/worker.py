@@ -11,7 +11,7 @@ from pyfly.scheduling import scheduled
 
 from koinon.corporate_profiles.refresh import CorporateProfileRefresher
 from koinon.corporate_profiles.settings import CorporateProfileSettings
-from koinon.workers.admission import WorkAdmission
+from koinon.workers.admission import WorkAdmission, WorkAdmissionUnavailable
 
 
 @service(name="corporate_profiles.worker")
@@ -37,15 +37,22 @@ class CorporateProfileWorker:
         async def consume():
             nonlocal remaining
             while remaining:
-                async with self.admission.hold("profile"):
-                    if remaining == 0:
-                        return
-                    remaining -= 1
-                    leases = await self.refresher.claim(self.worker_id, limit=1)
-                    if not leases:
-                        remaining = 0
-                        return
-                    await self.refresher.execute(leases[0])
+                admitted = False
+                try:
+                    async with self.admission.hold("profile"):
+                        admitted = True
+                        if remaining == 0:
+                            return
+                        remaining -= 1
+                        leases = await self.refresher.claim(self.worker_id, limit=1)
+                        if not leases:
+                            remaining = 0
+                            return
+                        await self.refresher.execute(leases[0])
+                except WorkAdmissionUnavailable:
+                    if admitted:
+                        raise
+                    return
 
         try:
             async with asyncio.TaskGroup() as tasks:

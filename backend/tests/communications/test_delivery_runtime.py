@@ -1,14 +1,18 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
+import asyncio
+import contextvars
 from contextlib import asynccontextmanager
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
+import pytest
 from pyfly.notifications import EmailMessage, EmailStatus, NotificationResult
 
 from koinon.communications.delivery import EmailDispatcher
 from koinon.communications.settings import CommunicationsSettings
 from koinon.communications.worker import CommunicationsWorker
+from koinon.workers.admission import WorkAdmission, WorkAdmissionSettings, WorkAdmissionUnavailable
 
 
 class OwnedAdmission:
@@ -44,6 +48,36 @@ async def test_shared_admission_covers_claim_and_complete_transport_lifetime():
     )
     await worker.tick()
     assert not claims and not admission.held
+
+
+async def test_capacity_deferral_keeps_digest_and_delivery_unclaimed_until_a_later_tick():
+    gate = WorkAdmission(WorkAdmissionSettings(wait_timeout_seconds=0.01))
+    state = SimpleNamespace(claim=AsyncMock(return_value=None))
+    submission = SimpleNamespace(execute=AsyncMock())
+    digests = SimpleNamespace(reconcile=AsyncMock(), admit_due=AsyncMock())
+    worker = CommunicationsWorker(state, submission, CommunicationsSettings(enabled=True), gate, digests)
+    async with gate.hold("conversation"):
+        await asyncio.create_task(worker.tick(), context=contextvars.Context())
+    state.claim.assert_not_awaited()
+    submission.execute.assert_not_awaited()
+    digests.reconcile.assert_not_awaited()
+    digests.admit_due.assert_not_awaited()
+    assert not worker._running and gate.worker_active == gate.worker_waiting == 0
+    await worker.tick()
+    state.claim.assert_awaited_once()
+    digests.reconcile.assert_awaited_once()
+    digests.admit_due.assert_awaited_once()
+
+
+async def test_capacity_error_after_delivery_admission_is_not_silenced():
+    state = SimpleNamespace(claim=AsyncMock(side_effect=WorkAdmissionUnavailable()))
+    worker = CommunicationsWorker(
+        state, SimpleNamespace(), CommunicationsSettings(enabled=True), WorkAdmission(WorkAdmissionSettings())
+    )
+    with pytest.raises(WorkAdmissionUnavailable):
+        await worker.tick()
+    state.claim.assert_awaited_once()
+    assert not worker._running
 
 
 async def test_provider_pending_and_transport_failure_are_unknown_without_automatic_retry():

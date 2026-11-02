@@ -14,7 +14,7 @@ from pyfly.data.transaction import Isolation, Propagation, TransactionTemplate
 from pyfly.scheduling import scheduled
 
 from koinon.knowledge.adapters import native_scope
-from koinon.workers.admission import WorkAdmission
+from koinon.workers.admission import WorkAdmission, WorkAdmissionUnavailable
 from koinon.workers.execution import IngestionExecutionAuthority
 
 logger = logging.getLogger(__name__)
@@ -69,8 +69,14 @@ class IngestionDrain:
                 tasks.create_task(self._one(domain))
 
     async def _one(self, domain):
-        async with self.admission.hold("document" if domain == "canon" else "structured"):
-            await self._execute_one(domain)
+        admitted = False
+        try:
+            async with self.admission.hold("document" if domain == "canon" else "structured"):
+                admitted = True
+                await self._execute_one(domain)
+        except WorkAdmissionUnavailable:
+            if admitted:
+                raise
 
     async def _execute_one(self, domain):
         from flycanon.config import CanonSettings

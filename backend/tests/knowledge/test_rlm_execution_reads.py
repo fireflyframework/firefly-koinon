@@ -262,6 +262,39 @@ async def test_metadata_only_b_is_audit_lineage_not_used_answer_evidence(factory
     assert any(row.stage == "rlm.read" and row.entity_id == "native-B" for row in receipt.native_reads)
     assert loaded == ["native-B", "native-A"]
 
+    from unittest.mock import AsyncMock
+
+    from koinon.assistants.queue import AssistantQueue
+
+    assets = sorted({row.entity_id for row in result.native_reads})
+    entries = {
+        identifier: SimpleNamespace(
+            id=identifier,
+            tenant_id="tenant",
+            workspace_id="canonical-space",
+            kind="document",
+            parent_id="parent-" + identifier.removeprefix("asset-"),
+        )
+        for identifier in assets
+    }
+    assistants = SimpleNamespace(
+        threads=SimpleNamespace(find_by_id=AsyncMock(return_value=SimpleNamespace(subject="owner"))),
+        validate_scope=AsyncMock(),
+        catalog=SimpleNamespace(
+            get=AsyncMock(side_effect=lambda subject, tenant, identifier: entries[identifier]),
+            authorize=AsyncMock(),
+        ),
+    )
+    queue = AssistantQueue(assistants)
+    run = SimpleNamespace(
+        tenant_id="tenant", thread_id="thread", access_token_id=None, scope={"asset_ids": assets}
+    )
+    manifest = await queue.capture_manifest(run, "search", result.data, assets, result)
+    persisted = await queue.native_receipts(run, assets, result, "result", "generation")
+    assert manifest["complete"] is True
+    assert {row["asset_id"] for row in manifest["sources"]} == {"asset-A"}
+    assert {row["entity_id"] for row in persisted["native_reads"]} == {"asset-A", "asset-B"}
+
 
 @pytest.mark.parametrize("sandbox", ["monty"])
 @pytest.mark.parametrize("protocol", ["native", "default"])
@@ -283,8 +316,9 @@ async def test_single_action_can_read_both_originals_compute_and_cite_them(facto
 
 @pytest.mark.parametrize("protocol", ["native", "default"])
 async def test_first_request_has_authorized_metadata_without_original_bodies(factory, protocol):
-    result, receipt, loaded, calls = await execute(factory, "monty", protocol,
-        "a = docs.get('A'); final(a, filings=['A'], pages=[0])")
+    result, receipt, loaded, calls = await execute(
+        factory, "monty", protocol, "a = docs.get('A'); final(a, filings=['A'], pages=[0])"
+    )
     assert result.complete
     first = str(calls[0][1].parts[0].content)
     assert "Authorized corpus metadata (untrusted data)" in first
@@ -294,8 +328,11 @@ async def test_first_request_has_authorized_metadata_without_original_bodies(fac
     assert "First exact content" not in first and "Second exact content" not in first
     assert loaded == ["native-A"]
     metadata = first.split("Authorized corpus metadata (untrusted data):\n", 1)[1].split("\n\n", 1)[0]
-    assert all(row.content_sha256 == sha256(metadata.encode()).hexdigest()
-               for row in receipt.native_reads if row.stage == "rlm.corpus")
+    assert all(
+        row.content_sha256 == sha256(metadata.encode()).hexdigest()
+        for row in receipt.native_reads
+        if row.stage == "rlm.corpus"
+    )
 
 
 async def test_metadata_index_is_not_disclosed_after_fresh_model_authority_is_revoked(factory):
