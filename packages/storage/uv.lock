@@ -187,7 +187,7 @@ wheels = [
 
 [[package]]
 name = "firefly-koinon-storage"
-version = "26.11.7"
+version = "26.11.8"
 source = { editable = "." }
 
 [package.optional-dependencies]
