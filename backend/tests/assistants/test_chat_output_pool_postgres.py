@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock
 import pytest
 from pyfly.container.scanner import scan_package
 from pyfly.data.relational.datasource_registry import DataSourceRegistry
-from pyfly.data.transaction import TransactionTemplate, current_unit_of_work
+from pyfly.data.transaction import Propagation, TransactionTemplate, current_unit_of_work
 from pyfly.security.context import SecurityContext
 from pyfly.security.context_holder import SecurityContextHolder
 from release_helpers import seal_first_quote
@@ -33,6 +33,7 @@ from koinon.catalog.service import ROLE_PERMISSIONS
 from koinon.evidence.dtos import SourceReference
 from koinon.evidence.ports import SourceResolverPort
 from koinon.knowledge.capture_dtos import CapturedEvidence
+from koinon.security.authority import primary_authority
 from koinon.tokens.authorization import TokenRestriction
 from koinon.tokens.entities import PersonalToken
 from koinon.tokens.repositories import PersonalTokenRepository
@@ -146,7 +147,7 @@ async def pg_outputs(pg_assistants, request):
                             "enabled": True,
                             "ddl-auto": "none",
                             "url": str(database),
-                            "pool": {"size": options["size"], "max-overflow": 0, "timeout": 0.5},
+                            "pool": {"size": options["size"], "max-overflow": 0, "timeout": 2},
                             **replica,
                         }
                     },
@@ -207,6 +208,24 @@ async def test_audit_validates_memory_once_at_the_final_output_boundary(pg_outpu
     assert authorize.await_args.kwargs["captures"][0].run_id == run.id
 
 
+@pytest.mark.parametrize("pg_outputs", [1], indirect=True)
+async def test_audit_origin_checks_share_one_bounded_policy_snapshot(pg_outputs):
+    _, context, run = pg_outputs
+    engine = context.get_bean(DataSourceRegistry).primary.engine.sync_engine
+    statements = []
+
+    def capture(connection, cursor, statement, parameters, execution, many):
+        statements.append(statement)
+
+    event.listen(engine, "before_cursor_execute", capture)
+    try:
+        await context.get_bean(AnswerAudits).origin("issuer|admin", "north", run, run.access_token_id)
+    finally:
+        event.remove(engine, "before_cursor_execute", capture)
+    assert len(statements) <= 12, f"Origin check issued {len(statements)} SQL statements"
+    assert engine.pool.checkedout() == 0
+
+
 @pytest.mark.parametrize("pg_outputs", POOLS, indirect=True)
 async def test_sealed_memory_output_reads_complete_at_pool_capacity(pg_outputs, monkeypatch):
     service, context, run = pg_outputs
@@ -223,14 +242,65 @@ async def test_sealed_memory_output_reads_complete_at_pool_capacity(pg_outputs, 
         return await validate(*args, **kwargs)
 
     monkeypatch.setattr(policy, "validate_scope", synchronized)
-    async with asyncio.timeout(15):
-        values = await asyncio.gather(
-            *(call() for call in reads(service, context, run).values()), return_exceptions=True
+    holders = {}
+    acquire = pool._do_get
+
+    def checked_out(connection, record, proxy):
+        holders[record] = asyncio.current_task()
+
+    def checked_in(connection, record):
+        holders.pop(record, None)
+
+    def independent_acquire():
+        assert asyncio.current_task() not in holders.values(), (
+            "Output authorization requested another connection while retaining its current one"
         )
+        return acquire()
+
+    # Detect recursive checkout directly rather than inferring it from a short timing window.
+    monkeypatch.setattr(pool, "_do_get", independent_acquire)
+    event.listen(pool, "checkout", checked_out)
+    event.listen(pool, "checkin", checked_in)
+    try:
+        async with asyncio.timeout(15):
+            values = await asyncio.gather(
+                *(call() for call in reads(service, context, run).values()), return_exceptions=True
+            )
+    finally:
+        event.remove(pool, "checkout", checked_out)
+        event.remove(pool, "checkin", checked_in)
     assert not [value for value in values if isinstance(value, BaseException)], values
     assert values[2]["memory"] is not None and values[2]["output_release"] is not None
     assert values[3].messages[0].role == "assistant" and values[3].memory_bindings
     assert pool.checkedout() == 0
+
+
+@pytest.mark.parametrize("pg_outputs", [5], indirect=True)
+async def test_fresh_output_authority_does_not_reuse_observed_credentials(pg_outputs):
+    service, context, run = pg_outputs
+    restriction = service.catalog.restriction
+    assert restriction is not None
+    with SecurityContextHolder.using(
+        SecurityContext(
+            user_id="admin",
+            attributes={"iss": "issuer", "sub": "admin", "koinon_token_id": run.access_token_id},
+        )
+    ):
+        async with primary_authority() as outer:
+            assert (await restriction.grant("issuer|admin")).id == run.access_token_id
+            async with TransactionTemplate(
+                "primary", propagation=Propagation.REQUIRES_NEW
+            ).transaction() as writer:
+                await writer.resource.execute(
+                    update(PersonalToken)
+                    .where(PersonalToken.id == run.access_token_id)
+                    .values(revoked_at=timestamp())
+                )
+            with pytest.raises(AccessDenied):
+                async with primary_authority(fresh=True):
+                    await restriction.grant("issuer|admin")
+            assert current_unit_of_work("primary") is outer
+    assert context.get_bean(DataSourceRegistry).primary.engine.pool.checkedout() == 0
 
 
 @pytest.mark.parametrize("pg_outputs", [POOLS[0]], indirect=True)

@@ -14,6 +14,7 @@ from koinon.catalog.repositories import TenantRepository
 from koinon.mcp_applications.repositories import McpOAuthClientRepository
 from koinon.mcp_auth.settings import McpOAuthSettings
 from koinon.security.authority import primary_authority
+from koinon.security.policy_reads import snapshot_values
 
 
 @service(name="mcp.applications.authority")
@@ -26,7 +27,13 @@ class McpOAuthClientAuthority:
     @primary_authority()
     async def resolve(self, identifier: str) -> dict:
         static = [value for value in self.settings.clients if value["client_id"] == identifier]
-        rows = await self.repository.find_all(client_id=identifier)
+        observed = snapshot_values(self, "registrations")
+        if observed is not None and identifier in observed:
+            rows = observed[identifier]
+        else:
+            rows = await self.repository.find_all(client_id=identifier)
+            if observed is not None:
+                observed[identifier] = rows
         if len(static) + len(rows) != 1:
             raise ValueError("OAuth client is unavailable")
         if static:
