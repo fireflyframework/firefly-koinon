@@ -18,7 +18,8 @@
   {
     "mode": "document",
     "extensions": [
-      ".html"
+      ".html",
+      ".htm"
     ],
     "available": true,
     "reason": null
