@@ -1,0 +1,463 @@
+<!-- Copyright 2026 Firefly Software Foundation -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+@let v = state.view();
+<section aria-labelledby="index-management-title" [attr.aria-busy]="v.loading || v.busy">
+  <header class="heading">
+    <div>
+      <h3 id="index-management-title">{{ 'Knowledge indexes' | ffkText }}</h3>
+      <p>
+        {{
+          'Inspect the active target, build a separate version and activate it after review.'
+            | ffkText
+        }}
+      </p>
+    </div>
+    <div class="heading-actions">
+      @if (canManage()) {
+        <ffk-button
+          variant="primary"
+          icon="plus"
+          [disabled]="v.loading || v.busy || !!v.unknown"
+          (click)="startPlan()"
+          >{{ 'Plan a new index' | ffkText }}</ffk-button
+        >
+      }
+      <ffk-button
+        variant="quiet"
+        icon="refresh"
+        [label]="'Refresh indexes' | ffkText"
+        [disabled]="!canRead() || v.loading || v.busy"
+        (click)="refresh()"
+      />
+    </div>
+  </header>
+  <div class="filters">
+    <label
+      >{{ 'Knowledge space' | ffkText
+      }}<select
+        [attr.aria-label]="'Index workspace' | ffkText"
+        [ngModel]="workspace()"
+        (ngModelChange)="workspace.set($event)"
+      >
+        <option value="">{{ 'Choose a knowledge space' | ffkText }}</option>
+        @for (space of workspaces(); track space.id) {
+          <option [value]="space.id">{{ space.name }}</option>
+        }
+      </select></label
+    >
+    <label
+      >{{ 'Knowledge type' | ffkText
+      }}<select
+        [attr.aria-label]="'Index domain' | ffkText"
+        [ngModel]="domain()"
+        (ngModelChange)="domain.set($event)"
+      >
+        <option value="documents">{{ 'Documents' | ffkText }}</option>
+        <option value="structured">{{ 'Datasets' | ffkText }}</option>
+      </select></label
+    >
+    <label
+      >{{ 'Build state' | ffkText
+      }}<select
+        [attr.aria-label]="'Index status' | ffkText"
+        [ngModel]="filter()"
+        (ngModelChange)="changeFilter($event)"
+        [disabled]="v.loading || v.busy"
+      >
+        <option value="">{{ 'All states' | ffkText }}</option>
+        @for (statusValue of statuses; track statusValue) {
+          <option [value]="statusValue">{{ status(statusValue) | ffkText }}</option>
+        }
+      </select></label
+    >
+  </div>
+  @if (!canRead()) {
+    <p class="feedback" role="status">
+      {{
+        'Current workspace access is required. Choose an authorized space or refresh your account access.'
+          | ffkText
+      }}
+    </p>
+  }
+  @if (v.error) {
+    <p class="feedback error" role="alert">{{ v.error | ffkText }}</p>
+  }
+  @if (v.notice) {
+    <p class="feedback" role="status">{{ v.notice | ffkText }}</p>
+  }
+  @if (v.loading) {
+    <ffk-skeleton width="70%" height="3px" [label]="'Loading indexes' | ffkText" />
+  }
+  @if (v.unknown; as saved) {
+    <section class="uncertain" aria-labelledby="uncertain-index-title">
+      <h4 id="uncertain-index-title">{{ 'Index action not confirmed' | ffkText }}</h4>
+      <p>
+        {{
+          'The saved request is retained in this browser tab. Refreshing or signing in does not repeat it.'
+            | ffkText
+        }}
+      </p>
+      <div class="actions">
+        <ffk-button
+          variant="quiet"
+          icon="search"
+          [disabled]="v.loading || v.busy || !canRead()"
+          (click)="inspect()"
+          >{{ 'Inspect current state' | ffkText }}</ffk-button
+        >
+        @if (
+          canManage() && (saved.write.operation === 'create' || saved.write.operation === 'resume')
+        ) {
+          <ffk-button
+            variant="quiet"
+            [disabled]="v.loading || v.busy"
+            (click)="replayReview.set(!replayReview())"
+            >{{ 'Review saved request' | ffkText }}</ffk-button
+          >
+        }
+      </div>
+      @if (replayReview()) {
+        <div class="saved-review">
+          <h4>{{ 'Submit the same saved request' | ffkText }}</h4>
+          <p>
+            {{
+              'This uses the original request key and preconditions. An already accepted request returns its recorded result; an unaccepted request may start work. Provider usage may apply.'
+                | ffkText
+            }}
+          </p>
+          @if (saved.write.operation === 'create') {
+            <dl>
+              <dt>{{ 'Model' | ffkText }}</dt>
+              <dd>{{ saved.write.input.model_id }}</dd>
+              <dt>{{ 'Dimensions' | ffkText }}</dt>
+              <dd>{{ saved.write.input.expected_dimensions | ffkValue }}</dd>
+            </dl>
+          }
+          <div class="actions">
+            <ffk-button variant="quiet" (click)="replayReview.set(false)">{{
+              'Keep inspecting' | ffkText
+            }}</ffk-button
+            ><ffk-button
+              variant="primary"
+              [disabled]="v.loading || v.busy || !canManage()"
+              [loading]="v.busy"
+              (click)="repeat()"
+              >{{ 'Submit saved request' | ffkText }}</ffk-button
+            >
+          </div>
+        </div>
+      }
+    </section>
+  }
+  @if (canRead()) {
+    @if (v.activeKnown) {
+      <div class="active-target">
+        <span>{{ 'Active native target' | ffkText }}</span>
+        @if (v.active; as active) {
+          <strong>{{ active.model_id || ('Model not reported' | ffkText) }}</strong
+          ><span>{{ active.dimensions | ffkValue }} {{ 'dimensions' | ffkText }}</span>
+          @if (!active.managed_id) {
+            <small>{{ 'This retained target has no managed lifecycle record.' | ffkText }}</small>
+          }
+        } @else {
+          <strong>{{ 'No active target observed' | ffkText }}</strong>
+        }
+      </div>
+    }
+    <div class="results" [class.has-selection]="!!v.selected">
+      <div class="listing">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>{{ 'Model' | ffkText }}</th>
+                <th>{{ 'Dimensions' | ffkText }}</th>
+                <th>{{ 'State' | ffkText }}</th>
+                <th>{{ 'Recorded vectors' | ffkText }}</th>
+                <th>
+                  <span class="sr-only">{{ 'Details' | ffkText }}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of v.rows; track row.id) {
+                <tr [class.selected]="v.selected?.id === row.id">
+                  <td>
+                    <strong>{{ row.model_id }}</strong
+                    ><small>{{ row.created_at | ffkDate: undefined : 'datetime' }}</small>
+                  </td>
+                  <td>{{ row.dimensions | ffkValue }}</td>
+                  <td>
+                    <ffk-badge [tone]="tone(row)">{{ rowStatus(row) | ffkText }}</ffk-badge>
+                  </td>
+                  <td>{{ row.vector_count | ffkValue }} / {{ row.chunk_count | ffkValue }}</td>
+                  <td>
+                    <ffk-button
+                      variant="quiet"
+                      icon="chevron"
+                      [label]="('Inspect index' | ffkText) + ' ' + row.model_id"
+                      [disabled]="v.loading || v.busy"
+                      (click)="select(row.id)"
+                    />
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="mobile-list">
+          @for (row of v.rows; track row.id) {
+            <button
+              class="index-row"
+              type="button"
+              [attr.aria-label]="('Inspect index' | ffkText) + ' ' + row.model_id"
+              [attr.aria-current]="v.selected?.id === row.id ? 'true' : null"
+              [disabled]="v.loading || v.busy"
+              (click)="select(row.id)"
+            >
+              <strong>{{ row.model_id }}</strong
+              ><ffk-badge [tone]="tone(row)">{{ rowStatus(row) | ffkText }}</ffk-badge
+              ><span>{{ row.dimensions | ffkValue }} {{ 'dimensions' | ffkText }}</span
+              ><span
+                >{{ row.vector_count | ffkValue }} / {{ row.chunk_count | ffkValue }}
+                {{ 'recorded vectors' | ffkText }}</span
+              >
+            </button>
+          }
+        </div>
+        @if (!v.rows.length && !v.loading) {
+          <div class="empty">
+            <h4>{{ 'No managed indexes in this view' | ffkText }}</h4>
+            <p>
+              {{
+                'An existing native target may still serve this space. Review the scope and filter, or plan a separate index version.'
+                  | ffkText
+              }}
+            </p>
+          </div>
+        }
+        <ffk-pagination
+          [page]="page()"
+          [showPageSize]="false"
+          [loading]="v.loading || v.busy"
+          [label]="'Indexes' | ffkText"
+          (pageChanged)="changePage($event)"
+        />
+      </div>
+      @if (v.selected; as selected) {
+        <aside class="details" aria-labelledby="index-details-title">
+          <h4 id="index-details-title">{{ 'Index details' | ffkText }}</h4>
+          <strong class="model-name">{{ selected.model_id }}</strong
+          ><ffk-badge [tone]="tone(selected)">{{ rowStatus(selected) | ffkText }}</ffk-badge>
+          <p>{{ qualification(selected.qualification) | ffkText }}</p>
+          <dl>
+            <dt>{{ 'Dimensions' | ffkText }}</dt>
+            <dd>{{ selected.dimensions | ffkValue }}</dd>
+            <dt>{{ 'Storage dimensions' | ffkText }}</dt>
+            <dd>{{ selected.storage_dimensions | ffkValue }}</dd>
+            <dt>{{ 'Recorded chunks' | ffkText }}</dt>
+            <dd>{{ selected.chunk_count | ffkValue }}</dd>
+            <dt>{{ 'Recorded vectors' | ffkText }}</dt>
+            <dd>{{ selected.vector_count | ffkValue }}</dd>
+            <dt>{{ 'Revision' | ffkText }}</dt>
+            <dd>{{ selected.revision | ffkValue }}</dd>
+          </dl>
+          @if (selected.error_code) {
+            <p class="feedback">
+              {{
+                'The recorded build needs attention. Inspect its processing outcome before deciding whether to resume.'
+                  | ffkText
+              }}
+            </p>
+          }
+          <details>
+            <summary>{{ 'Recorded identities' | ffkText }}</summary>
+            <dl>
+              <dt>{{ 'Index' | ffkText }}</dt>
+              <dd class="identifier">{{ selected.id }}</dd>
+              <dt>{{ 'Space' | ffkText }}</dt>
+              <dd class="identifier">{{ selected.space_id }}</dd>
+              @if (selected.job_id) {
+                <dt>{{ 'Job' | ffkText }}</dt>
+                <dd class="identifier">{{ selected.job_id }}</dd>
+              }
+            </dl>
+          </details>
+          <div class="actions">
+            @for (action of actions(selected); track action) {
+              <ffk-button
+                variant="quiet"
+                [disabled]="v.loading || v.busy"
+                (click)="review(action)"
+                >{{ actionLabels[action] | ffkText }}</ffk-button
+              >
+            }
+          </div>
+        </aside>
+      }
+    </div>
+  }
+  @if (editing() && canManage()) {
+    <section class="editor" aria-labelledby="index-plan-title">
+      @if (!v.plan) {
+        <h4 id="index-plan-title" tabindex="-1">{{ 'Plan an index for this space' | ffkText }}</h4>
+        <p>
+          {{
+            'The selected model must support embeddings. Preparing a plan contacts that provider with bounded test inputs and may incur provider usage.'
+              | ffkText
+          }}
+        </p>
+        <form class="plan-form" (ngSubmit)="prepare()">
+          <div class="form-grid">
+            <label
+              >{{ 'Embedding provider' | ffkText
+              }}<select
+                [attr.aria-label]="'Embedding provider' | ffkText"
+                name="embedding-provider"
+                [ngModel]="providerId()"
+                (ngModelChange)="providerChanged($event)"
+                [disabled]="v.busy || !!v.plan"
+                required
+              >
+                <option value="">{{ 'Choose a provider' | ffkText }}</option>
+                @for (provider of providers(); track provider.id) {
+                  <option [value]="provider.id">{{ provider.name }}</option>
+                }
+              </select></label
+            ><label
+              >{{ 'Embedding model' | ffkText
+              }}<select
+                [attr.aria-label]="'Embedding model' | ffkText"
+                name="embedding-model"
+                [ngModel]="modelId()"
+                (ngModelChange)="modelId.set($event)"
+                [disabled]="v.busy || !!v.plan || !providerId()"
+                required
+              >
+                <option value="">{{ 'Choose a model' | ffkText }}</option>
+                @for (model of models(); track model) {
+                  <option [value]="model">{{ model }}</option>
+                }
+              </select></label
+            >
+          </div>
+          @if (!providers().length) {
+            <p>
+              {{
+                'Configure an enabled embedding provider in Providers before planning an index.'
+                  | ffkText
+              }}
+            </p>
+          }
+          <div class="actions">
+            <ffk-button
+              variant="quiet"
+              [disabled]="v.busy"
+              (click)="editing.set(false); state.closeReview()"
+              >{{ 'Close plan' | ffkText }}</ffk-button
+            >
+            @if (!v.plan) {
+              <ffk-button
+                type="submit"
+                variant="primary"
+                [disabled]="v.busy || !providerId() || !modelId() || !!v.unknown || !v.activeKnown"
+                [loading]="v.busy"
+                >{{ 'Check embeddings and prepare plan' | ffkText }}</ffk-button
+              >
+            }
+          </div>
+        </form>
+      }
+      @if (v.plan; as plan) {
+        <div class="plan-review">
+          <h4 id="index-plan-title" tabindex="-1">{{ 'Review before building' | ffkText }}</h4>
+          <p>
+            {{
+              'Building creates a separate version. It does not replace the active target until you explicitly activate it.'
+                | ffkText
+            }}
+          </p>
+          <dl>
+            <dt>{{ 'Embedding provider' | ffkText }}</dt>
+            <dd>{{ providerName(plan.provider_id) }}</dd>
+            <dt>{{ 'Model' | ffkText }}</dt>
+            <dd>{{ plan.model_id }}</dd>
+            <dt>{{ 'Dimensions' | ffkText }}</dt>
+            <dd>{{ plan.dimensions | ffkValue }}</dd>
+            <dt>{{ 'Storage dimensions' | ffkText }}</dt>
+            <dd>{{ plan.storage_dimensions | ffkValue }}</dd>
+            <dt>{{ 'Recorded chunks' | ffkText }}</dt>
+            <dd>{{ plan.chunk_count | ffkValue }}</dd>
+            <dt>{{ 'Qualification' | ffkText }}</dt>
+            <dd>{{ qualification(plan.qualification) | ffkText }}</dd>
+          </dl>
+          @if (plan.warnings.length) {
+            <ul>
+              @for (warning of plan.warnings; track $index) {
+                <li>{{ warning }}</li>
+              }
+            </ul>
+          }
+          <div class="actions">
+            <ffk-button
+              variant="quiet"
+              [disabled]="v.busy"
+              (click)="editing.set(false); state.closeReview()"
+              >{{ 'Close plan' | ffkText }}</ffk-button
+            >
+            <ffk-button variant="quiet" [disabled]="v.busy" (click)="changeModel()">{{
+              'Change model' | ffkText
+            }}</ffk-button>
+            <ffk-button
+              variant="primary"
+              [disabled]="v.busy || !!v.unknown"
+              [loading]="v.busy"
+              (click)="build()"
+              >{{ 'Build this index' | ffkText }}</ffk-button
+            >
+          </div>
+        </div>
+      }
+    </section>
+  }
+  @if (v.review; as review) {
+    <section class="action-review" aria-labelledby="index-action-title">
+      <h4 id="index-action-title" tabindex="-1">{{ actionLabels[review.action] | ffkText }}</h4>
+      <p>{{ actionHelp[review.action] | ffkText }}</p>
+      <dl>
+        <dt>{{ 'Model' | ffkText }}</dt>
+        <dd>{{ review.target.model_id }}</dd>
+        <dt>{{ 'Target revision' | ffkText }}</dt>
+        <dd>{{ review.target.revision | ffkValue }}</dd>
+        <dt>{{ 'Current active target' | ffkText }}</dt>
+        <dd class="identifier">{{ review.before.activeId || ('None observed' | ffkText) }}</dd>
+        <dt>{{ 'Assignment revision' | ffkText }}</dt>
+        <dd>
+          {{
+            review.before.connectionRevision === null
+              ? ('Not assigned' | ffkText)
+              : review.before.connectionRevision
+          }}
+        </dd>
+      </dl>
+      <p>
+        {{
+          'The current target and assignment are checked again before this action is sent.'
+            | ffkText
+        }}
+      </p>
+      <div class="actions">
+        <ffk-button variant="quiet" [disabled]="v.busy" (click)="state.closeReview()">{{
+          'Keep current state' | ffkText
+        }}</ffk-button
+        ><ffk-button
+          variant="primary"
+          [disabled]="v.busy || !canManage()"
+          [loading]="v.busy"
+          (click)="confirm()"
+          >{{ actionLabels[review.action] | ffkText }}</ffk-button
+        >
+      </div>
+    </section>
+  }
+</section>

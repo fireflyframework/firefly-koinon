@@ -31,7 +31,7 @@ import { friendlyStatus, friendlyKind, resourceIcon, isSystemManaged } from '../
         'Close details' | ffkText
       }}</ffk-button>
     }`,
-  styles: ':host{display:block;min-width:0}',
+  styles: ':host{display:flex;flex-direction:column;min-width:0;min-height:0}',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KoinonInspector {

@@ -29,7 +29,7 @@ The document, structured and private-chat stores can each use local storage, S3,
 
 ## Configure the installation
 
-Storage belongs to protected deployment configuration. Organization administrators can inspect observations in **Settings**, under **Storage & indexing**; model-provider settings and personal API tokens do not change a bucket, container, mount or cloud identity.
+Storage belongs to protected deployment configuration. Organization administrators can inspect observations in **Settings**, under **Storage & indexing**, in **Deployment observations**; model-provider settings and personal API tokens do not change a bucket, container, mount or cloud identity.
 
 For one machine, use private persistent volumes. Multiple instances need the same intended shared stores and database bindings; separate node-local directories do not provide shared storage. Provision cloud namespaces and their least required permissions before qualifying the deployment.
 
