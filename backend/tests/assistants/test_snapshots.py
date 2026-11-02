@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
+from pyfly.data.transaction import TransactionTemplate, current_unit_of_work
 from pyfly.kernel import InvalidRequestException
 from test_service import assistants as assistants
 from test_service import configured
@@ -63,6 +64,24 @@ async def test_native_snapshot_port_is_owner_scoped_final_and_revision_stable(as
     other, foreign, _ = await final_turn(service, context)
     with pytest.raises(AccessDenied):
         await port.snapshot("issuer|viewer", "north", thread["id"], [foreign.message_id])
+
+
+async def test_snapshot_reads_committed_messages_without_joining_suspended_sqlite_writer(assistants):
+    service, context = assistants
+    thread, run, _ = await final_turn(service, context)
+    port = context.get_bean(ConversationSnapshotPort)
+    async with TransactionTemplate("primary").transaction() as writer:
+        pending = await service.threads.find_by_id(thread["id"])
+        pending.title = "Uncommitted title"
+        await service.threads.save(pending)
+        snapshot = await port.snapshot(
+            "issuer|viewer", "north", thread["id"], [run.user_message_id, run.message_id]
+        )
+        assert snapshot.title == thread["title"]
+        assert snapshot.source_manifest_complete is True
+        assert [message.id for message in snapshot.messages] == [run.user_message_id, run.message_id]
+        assert current_unit_of_work("primary") is writer
+    assert (await service.threads.find_by_id(thread["id"])).title == "Uncommitted title"
 
 
 async def test_private_derivation_is_transitive_even_without_current_selection_and_legacy_is_incomplete(
