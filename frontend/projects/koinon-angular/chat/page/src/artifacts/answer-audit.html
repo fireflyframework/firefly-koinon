@@ -788,12 +788,14 @@
                     [disabled]="state.activityPending()"
                     [attr.aria-expanded]="state.selected()?.call_id === row.call_id"
                     [attr.aria-controls]="resultId($index)"
-                    (click)="select(row)"
-                  >
-                    {{
+                    [attr.aria-label]="
                       (state.selected()?.call_id === row.call_id ? 'Hide result' : 'View result')
                         | ffkText
-                    }}
+                    "
+                    (click)="select(row)"
+                  >
+                    <ffk-icon name="chevron" />
+                    <span>{{ 'Tool result' | ffkText }}</span>
                   </button>
                 }
                 @if (state.selected()?.call_id === row.call_id) {
