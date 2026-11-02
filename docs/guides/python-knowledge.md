@@ -219,7 +219,7 @@ async def move_folder(
     ))
 ```
 
-`system_managed` identifies retained installation defaults. The server rejects their removal or movement regardless of the SDK. Ordinary collection and corpus folders can move inside their current project and space. A stale decision returns `CATALOG_CHANGED`; a different knowledge boundary returns `KNOWLEDGE_TRANSFER_REQUIRED`. Refresh and obtain a new decision rather than retrying automatically. See [Library hierarchy and permissions](library.md#spaces-projects-and-folders).
+`system_managed` is a read-only compatibility field that now returns `false`. Previously installed folders follow the same permissions and lifecycle rules as folders you create; their contents and installation history are retained. Ordinary collection and corpus folders can move inside their current project and space. A stale decision returns `CATALOG_CHANGED`; a different knowledge boundary returns `KNOWLEDGE_TRANSFER_REQUIRED`. Refresh and obtain a new decision rather than retrying automatically. See [Library hierarchy and permissions](library.md#spaces-projects-and-folders).
 
 ### Recover an existing processing attempt
 

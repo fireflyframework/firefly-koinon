@@ -250,7 +250,7 @@ def test_real_committed_folder_with_lost_response_remains_unknown_without_replay
     assert actual.status_code == 200 and actual.json()["name"] == "Lost response"
 
 
-def test_protected_roots_and_stale_lifecycle_cannot_be_changed_through_tools(client):
+def test_legacy_installed_roots_use_ordinary_lifecycle_and_require_current_decisions(client):
     from koinon.catalog.service import CatalogService
 
     async def provision_fixture():
@@ -269,20 +269,22 @@ def test_protected_roots_and_stale_lifecycle_cannot_be_changed_through_tools(cli
     identifier = client.portal.call(provision_fixture)
     row = client.get("/api/v1/tenants/north/catalog/" + identifier, headers=bearer()).json()
     token = create_pat(client, scopes=["catalog:read", "catalog:write"])["token"]
-    denied = call(
-        client,
-        token,
-        "koinon_archive_catalog",
-        {"tenant_id": "north", "entry_id": identifier, "expected_updated_at": row["updated_at"]},
-    ).json()["result"]
-    assert denied["isError"] and "SYSTEM_SPACE_PROTECTED" in str(denied)
+    archived = result(
+        call(
+            client,
+            token,
+            "koinon_archive_catalog",
+            {"tenant_id": "north", "entry_id": identifier, "expected_updated_at": row["updated_at"]},
+        )
+    )
+    assert archived["status"] == "archived"
     missing = call(
         client, token, "koinon_archive_catalog", {"tenant_id": "north", "entry_id": identifier}
     ).json()["result"]
     assert missing["isError"]
     assert (
         client.get("/api/v1/tenants/north/catalog/" + identifier, headers=bearer()).json()["status"]
-        == "ready"
+        == "archived"
     )
 
 

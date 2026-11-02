@@ -89,7 +89,7 @@ Creating an agent does not select it for everyone. In **Organization chat**, cho
 
 ## 7. Import representative knowledge and inspect an answer
 
-Use an existing authorized space, Library project and destination folder. Installation-provided system spaces and folders cannot be deleted, archived or moved; ordinary subfolders remain manageable within that hierarchy. A Library folder and a private chat project serve different purposes. See [initial knowledge provisioning](../operations/installation-knowledge.md) for the retained defaults.
+Use an existing authorized space, Library project and destination folder. New installations have no predefined spaces or folders. Create a structure that matches your team before uploading, then qualify the workspace’s embedding index. Earlier default folders are managed like other folders after migration. A Library folder and a private chat project serve different purposes. See [initial knowledge provisioning](../operations/installation-knowledge.md) for model provisioning and optional initial folders.
 
 Upload a small fictional document and a representative dataset in the actual format you will use, such as XLSX. Choose **document** for passage retrieval or **dataset** for table queries. Confirm the destination and the effective limits in the upload review. Inspect processing, extracted sections, schema and immutable source history before asking a question. A submitted batch is accepted work, not proof that the files are searchable.
 

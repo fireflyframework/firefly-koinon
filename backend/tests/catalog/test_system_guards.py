@@ -1,6 +1,6 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
-"""System spaces remain protected even outside ordinary catalog service calls."""
+"""Migration 0037 retains its historical folder protections until the retirement upgrade."""
 
 import importlib.util
 from pathlib import Path
@@ -22,33 +22,30 @@ def migration():
     return module
 
 
-@pytest.fixture(params=["runtime", "migration"])
-def database(request):
+@pytest.fixture
+def database():
     engine = sa.create_engine("sqlite://", hide_parameters=True)
     with engine.begin() as connection:
         Tenant.__table__.create(connection)
         connection.execute(Tenant.__table__.insert().values(id="org", name="Retained organization"))
-        if request.param == "runtime":
-            CatalogEntry.__table__.create(connection)
-        else:
-            connection.execute(
-                sa.text(
-                    "CREATE TABLE lattice_catalog (id VARCHAR(64) PRIMARY KEY, tenant_id VARCHAR(64), "
-                    "kind VARCHAR(32), name VARCHAR(255), parent_id VARCHAR(64), workspace_id VARCHAR(64), "
-                    "project_id VARCHAR(64), status VARCHAR(32), metadata_json JSON, "
-                    "description VARCHAR(4000), "
-                    "created_by VARCHAR(512), updated_by VARCHAR(512), "
-                    "created_at DATETIME, updated_at DATETIME)"
-                )
+        connection.execute(
+            sa.text(
+                "CREATE TABLE lattice_catalog (id VARCHAR(64) PRIMARY KEY, tenant_id VARCHAR(64), "
+                "kind VARCHAR(32), name VARCHAR(255), parent_id VARCHAR(64), workspace_id VARCHAR(64), "
+                "project_id VARCHAR(64), status VARCHAR(32), metadata_json JSON, "
+                "description VARCHAR(4000), "
+                "created_by VARCHAR(512), updated_by VARCHAR(512), "
+                "created_at DATETIME, updated_at DATETIME)"
             )
-            connection.execute(
-                sa.text(
-                    "INSERT INTO lattice_catalog(id,tenant_id,kind,name,workspace_id,status) "
-                    "VALUES('retained','org','workspace','Retained user space','retained','ready')"
-                )
+        )
+        connection.execute(
+            sa.text(
+                "INSERT INTO lattice_catalog(id,tenant_id,kind,name,workspace_id,status) "
+                "VALUES('retained','org','workspace','Retained user space','retained','ready')"
             )
-            with Operations.context(MigrationContext.configure(connection)):
-                migration().upgrade()
+        )
+        with Operations.context(MigrationContext.configure(connection)):
+            migration().upgrade()
         connection.execute(
             CatalogEntry.__table__.insert().values(
                 id="system",
@@ -71,9 +68,9 @@ def database(request):
     "statement",
     [
         "DELETE FROM lattice_catalog WHERE id='system'",
+        "UPDATE lattice_catalog SET status='archived' WHERE id='system'",
         "UPDATE lattice_catalog SET system_key=NULL WHERE id='system'",
         "UPDATE lattice_catalog SET installation_run_id=NULL WHERE id='system'",
-        "UPDATE lattice_catalog SET status='archived' WHERE id='system'",
         "UPDATE lattice_catalog SET parent_id='another' WHERE id='system'",
         "UPDATE lattice_catalog SET workspace_id='another' WHERE id='system'",
     ],

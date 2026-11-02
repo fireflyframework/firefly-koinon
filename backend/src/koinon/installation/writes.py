@@ -176,7 +176,6 @@ class NativeInstallationWrites:
             **wanted,
             create_id=identifier,
             installation_run_id=permit.run_id,
-            system_key=value.key,
         )
         receipt = {"status": "done", "resource_id": row.id, "fingerprint": fingerprint(wanted)}
         await self.admissions.checkpoint(permit, key, receipt)

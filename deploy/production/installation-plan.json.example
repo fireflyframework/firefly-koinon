@@ -26,31 +26,7 @@
       "secret_env": "INSTALL_EMBEDDING_KEY"
     }
   ],
-  "catalog": [
-    {
-      "key": "company",
-      "kind": "workspace",
-      "name": "Company knowledge"
-    },
-    {
-      "key": "company-general",
-      "kind": "project",
-      "name": "General",
-      "parent_key": "company"
-    },
-    {
-      "key": "company-documents",
-      "kind": "collection",
-      "name": "Documents",
-      "parent_key": "company-general"
-    },
-    {
-      "key": "company-tables",
-      "kind": "corpus",
-      "name": "Tables",
-      "parent_key": "company-general"
-    }
-  ],
+  "catalog": [],
   "connections": [
     {
       "key": "documents-answer",
@@ -113,24 +89,7 @@
       "model_id": "gpt-4o-mini"
     }
   ],
-  "indexes": [
-    {
-      "key": "company-documents",
-      "workspace_key": "company",
-      "domain": "documents",
-      "provider_key": "embedding",
-      "model_id": "text-embedding-3-small",
-      "dimensions": 1536
-    },
-    {
-      "key": "company-structured",
-      "workspace_key": "company",
-      "domain": "structured",
-      "provider_key": "embedding",
-      "model_id": "text-embedding-3-small",
-      "dimensions": 1536
-    }
-  ],
+  "indexes": [],
   "agent": {
     "key": "knowledge-guide",
     "name": "Knowledge guide",

@@ -108,7 +108,7 @@ class InstallationPlan(Input):
     plan_key: Key = Field(pattern=r"^[a-z][a-z0-9_-]{0,63}$")
     tenant_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
     providers: list[ProviderInstallation] = Field(min_length=1, max_length=8)
-    catalog: list[CatalogInstallation] = Field(min_length=1, max_length=32)
+    catalog: list[CatalogInstallation] = Field(default_factory=list, max_length=32)
     connections: list[ConnectionInstallation] = Field(default_factory=list, max_length=32)
     indexes: list[IndexInstallation] = Field(default_factory=list, max_length=8)
     agent: AgentInstallation

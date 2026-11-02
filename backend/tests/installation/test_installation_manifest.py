@@ -98,5 +98,25 @@ def test_shipped_installation_example_is_a_valid_native_plan():
     plan = InstallationPlan.model_validate_json(
         (Path(__file__).parents[3] / "deploy/production/installation-plan.json.example").read_bytes()
     )
-    assert {node.kind for node in plan.catalog} == {"workspace", "project", "collection", "corpus"}
-    assert len(plan.indexes) == 2
+    assert plan.catalog == []
+    assert plan.indexes == []
+    assert plan.providers and plan.connections and plan.agent
+
+
+@pytest.mark.parametrize("omitted", [False, True])
+def test_model_setup_does_not_require_predefined_library_folders(omitted):
+    value = example()
+    value["catalog"] = []
+    value["indexes"] = []
+    if omitted:
+        del value["catalog"]
+    plan = InstallationPlan.model_validate(value)
+    assert plan.catalog_order() == []
+    assert plan.connections[0].workspace_key is None
+
+
+def test_empty_library_rejects_index_references_to_nonexistent_spaces():
+    value = example()
+    value["catalog"] = []
+    with pytest.raises(ValidationError, match="Select a declared workspace"):
+        InstallationPlan.model_validate(value)

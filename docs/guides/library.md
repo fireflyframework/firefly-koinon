@@ -18,9 +18,7 @@ A **space** is a knowledge boundary. Its documents and datasets keep that space'
 
 Inside a space, Library projects and nested folders organize content. They inherit the space's permissions. A Library project is different from a chat project, which groups conversations and can enable the owner's shared conversation memory. Moving a Library folder does not move a conversation or publish conversation memory.
 
-The installation can provide system spaces and system folders. **System space** or **System folder** identifies these retained defaults. Their names and descriptions can be maintained with the appropriate permission, but their system identity cannot be removed. They cannot be deleted, archived or moved, even through an administrator's API token. Creating a subfolder beneath a system folder does not make the new folder a system folder.
-
-The supplied installation manifest starts with a **Company knowledge** space, a **General** Library project and two folders, **Documents** and **Tables**. Your administrator can choose localized names before installation. Documents is a useful starting point for reading and search; Tables is a useful starting point for datasets and SQL exploration. These folders organize the same knowledge space. They do not provide separate access controls. The [initial provisioning guide](../operations/installation-knowledge.md#understand-the-initial-structure) explains the complete hierarchy and its protections.
+New installations start with an empty Library. Create the spaces, projects and folders your team needs; no predefined names or protected system folders are imposed. Earlier installation-created folders become ordinary folders after the upgrade, with their content, access and history retained. The [initial provisioning guide](../operations/installation-knowledge.md#choose-your-initial-structure) explains optional operator-created folders and index setup.
 
 Choose the current destination, then create the next project or folder. Nested collection and corpus folders can contain further folders, documents and datasets. Nesting is bounded so the complete path can always be checked; a rejected depth limit requires a shallower destination. Ordinary empty folders can be deleted. Archive retains ordinary content and hides it until restored.
 
@@ -41,7 +39,7 @@ At the Library home, the server-paginated list contains spaces only. Open a spac
 
 ## Find and open
 
-Right-click a Library row, or use its actions button, to open the actions available for that item. Keyboard users can focus an item and press **Shift+F10** or the context-menu key. Choose **Open folder** to browse, **Details** to inspect, or **Edit details** to change the name and description. Editors can also move ordinary nested folders within their current project or archive ordinary items after confirmation. System folders never offer move or archive. The separate information button still opens details directly.
+Right-click a Library row, or use its actions button, to open the actions available for that item. Keyboard users can focus an item and press **Shift+F10** or the context-menu key. Choose **Open folder** to browse, **Details** to inspect, or **Edit details** to change the name and description. Editors can also move ordinary nested folders within their current project or archive ordinary items after confirmation. Available actions follow your current access and the folder’s contents. The separate information button still opens details directly.
 
 Right-click the unused area of a folder list to create the next space, project or folder, or to add knowledge at the current location. These use the same forms and access checks as the toolbar. The toolbar remains available on touch devices. Press **Escape** to close the menu and return focus; actions are checked again against the current item and permissions before a form opens.
 
