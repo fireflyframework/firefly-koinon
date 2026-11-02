@@ -56,6 +56,23 @@ def arguments(argv=None):
             command.add_argument("--expected-revision", type=int, required=True)
         if name == "diagnostic":
             command.add_argument("--operation-id", type=UUID, required=True)
+    for name in ("welcome-recovery", "welcome-recovery-status", "inspect-delivery", "bind-delivery-provider"):
+        command = commands.add_parser(name)
+        command.add_argument("--delivery-id", type=UUID, required=True)
+        if name == "welcome-recovery-status":
+            command.add_argument("--contact-id", type=UUID, required=True)
+            continue
+        if name == "bind-delivery-provider":
+            command.add_argument("--expected-provider-reference", required=True)
+            command.add_argument("--evidence-sha256", required=True)
+        else:
+            command.add_argument("--expected-generation", type=int, required=True)
+            command.add_argument("--operation-id", type=UUID, required=True)
+        if name == "welcome-recovery":
+            command.add_argument("--contact-id", type=UUID, required=True)
+            command.add_argument("--expected-contact-revision", type=int, required=True)
+            command.add_argument("--reason", choices=("recipient_reported_not_received",), required=True)
+            command.add_argument("--acknowledge-possible-duplicate", action="store_true", required=True)
     return parser.parse_args(argv)
 
 
@@ -77,6 +94,27 @@ async def execute(context, args, values=()):
                     row = await service.provision(value)
                     result.append({"contact_id": row.id, "revision": row.revision})
             return {"status": "provisioned", "contacts": result}
+        if args.command == "welcome-recovery-status":
+            from koinon.communications.recovery import WelcomeRecoveryService
+            return await context.get_bean(WelcomeRecoveryService).operator_status(str(args.delivery_id),str(args.contact_id))
+        if args.command == "welcome-recovery":
+            from koinon.communications.recovery import WelcomeRecoveryService
+            from koinon.communications.recovery_dtos import WelcomeRecoveryInput
+            body = WelcomeRecoveryInput(expected_generation=args.expected_generation,
+                contact_id=str(args.contact_id),expected_contact_revision=args.expected_contact_revision,
+                reason=args.reason,acknowledge_possible_duplicate=args.acknowledge_possible_duplicate)
+            result=await context.get_bean(WelcomeRecoveryService).operator_recover(
+                str(args.delivery_id),body,str(args.operation_id))
+            return result.model_dump(mode="json")
+        if args.command in {"inspect-delivery","bind-delivery-provider"}:
+            from koinon.communications.observations import EmailOperationObservations
+            observations=context.get_bean(EmailOperationObservations)
+            if args.command == "bind-delivery-provider":
+                row=await observations.bind_legacy(str(args.delivery_id),args.expected_provider_reference,args.evidence_sha256)
+                return {"status":"provider_binding_recorded","delivery_id":row.id,
+                    "provider":row.provider,"evidence_sha256":row.evidence_sha256}
+            result=await observations.operator_inspect(str(args.delivery_id),args.expected_generation,str(args.operation_id))
+            return result.model_dump(mode="json")
         identifier = str(args.contact_id)
         if args.command == "renew":
             if len(values) != 1:

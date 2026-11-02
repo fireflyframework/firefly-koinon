@@ -12,7 +12,9 @@ from koinon.activity.ports import ActivitySummaryReader
 from koinon.catalog.service import CatalogService
 from koinon.communications.content import CommunicationContent
 from koinon.communications.dtos import ActivityEmailPreviewInput
+from koinon.communications.entities import OutboxRecord
 from koinon.communications.locales import effective_locale
+from koinon.communications.operator_contacts import OperatorContacts, PreparedOperatorContact
 from koinon.communications.recipients import RecipientService, recipient_unavailable
 from koinon.communications.repositories import (
     CommunicationPolicyRepository,
@@ -38,7 +40,9 @@ class ActivityEmailPreviewService:
         renderer: EmailRenderer,
         catalog: CatalogService,
         summaries: ActivitySummaryReader | None = None,
+        operator_contacts: OperatorContacts | None = None,
     ):
+        self.operator_contacts = operator_contacts
         self.content, self.recipients, self.identities, self.outbox, self.policies = (
             content,
             recipients,
@@ -64,13 +68,19 @@ class ActivityEmailPreviewService:
             raise InvalidRequestException(
                 "Choose a cadence for the email preview", code="ACTIVITY_PREVIEW_CADENCE"
             )
-        rows = await self.identities.find_all(tenant_id=body.tenant_id, subject=owner)
-        if len(rows) != 1:
-            raise recipient_unavailable()
-        row = rows[0]
-        provider = await self.recipients.snapshot(body.tenant_id, row.provider_id)
-        if provider.revision != row.provider_revision:
-            raise recipient_unavailable()
+        event = OutboxRecord(tenant_id=body.tenant_id, owner_subject=owner, kind="digest", event_json={})
+        prepared = await self.operator_contacts.prepare(event) if self.operator_contacts else None
+        if prepared is not None:
+            provider, external = prepared, event
+        else:
+            rows = await self.identities.find_all(tenant_id=body.tenant_id, subject=owner)
+            if len(rows) != 1:
+                raise recipient_unavailable()
+            row = rows[0]
+            provider = await self.recipients.snapshot(body.tenant_id, row.provider_id)
+            if provider.revision != row.provider_revision:
+                raise recipient_unavailable()
+            external = row.external_subject
         tenant = await self.catalog.tenant_repository.find_by_id(body.tenant_id)
         policy = await self.policies.find_by_id(body.tenant_id)
         locale = effective_locale(
@@ -78,7 +88,7 @@ class ActivityEmailPreviewService:
             organization=policy.default_locale if policy else None,
             installation=self.settings.default_locale,
         )
-        return provider, row.external_subject, tenant.name, locale
+        return provider, external, tenant.name, locale
 
     async def preview(self, owner, body: ActivityEmailPreviewInput):
         body = ActivityEmailPreviewInput.model_validate(body)
@@ -88,7 +98,11 @@ class ActivityEmailPreviewService:
             )
         provider, external, organization, locale = await self._target(owner, body)
         summary = await self.summaries.personal(owner, body.tenant_id, body.window)
-        observed = await self.recipients.observe(provider, external)
+        observed = (
+            provider
+            if isinstance(provider, PreparedOperatorContact)
+            else await self.recipients.observe(provider, external)
+        )
         event = SimpleNamespace(
             id=str(uuid4()),
             tenant_id=body.tenant_id,
@@ -102,6 +116,13 @@ class ActivityEmailPreviewService:
             preferences_url=self.links.public_url + "/auth/notifications/preferences",
             locale=value.effective_locale,
         )
+        if isinstance(provider, PreparedOperatorContact):
+            await self._current_operator_contact(external, provider)
         return value.model_copy(
             update={"rendered_html": self.renderer.preview_html(rendered), "rendered_text": rendered.text}
         )
+
+    @primary_authority(fresh=True)
+    async def _current_operator_contact(self, event, prepared):
+        if self.operator_contacts is None or await self.operator_contacts.prepare(event) != prepared:
+            raise recipient_unavailable()
