@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import type { CatalogEntry, ContextResponse, Page } from '@fireflyframework/koinon-sdk';
-import { KoinonI18n } from '../foundations/i18n';
-import { KoinonFacade } from '../koinon-facade';
-import { KoinonClientContext } from './client-context';
+import { KoinonI18n } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonClientContext } from '@fireflyframework/koinon-angular/workbench/core';
 
 interface SearchSnapshot {
   key: string;

@@ -21,7 +21,7 @@
     "build:catalog": "npm run build:library && ng build catalog",
     "sync:locale": "node scripts/sync-workbench-locale.mjs",
     "check:locale": "node scripts/sync-workbench-locale.mjs --check",
-    "check:bundle": "node scripts/check-initial-bundle.mjs"
+    "check:bundle": "node --test scripts/initial-assets.test.mjs && node scripts/check-initial-bundle.mjs"
   },
   "private": true,
   "packageManager": "npm@11.16.0",

@@ -16,12 +16,12 @@ import type { FileBatchItemView } from '@fireflyframework/koinon-sdk';
 import type { KoinonWorkbench } from '../koinon-angular';
 import type { LibraryUploadRuntime } from '../services/library-upload';
 import { effectiveUploadLimits } from '../services/library-upload-coordinator';
-import { KoinonButton } from '../atoms/button';
-import { KoinonIcon } from '../atoms/icon';
-import { KoinonBadge } from '../atoms/badge';
-import { KoinonSkeleton } from '../atoms/skeleton';
-import { KoinonFolderTree } from './folder-tree';
-import { KoinonTextPipe, KoinonDatePipe, registerKoinonSpanish } from '../foundations/i18n';
+import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonIcon } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonBadge } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonSkeleton } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonFolderTree } from '@fireflyframework/koinon-angular/workbench/panels';
+import { KoinonTextPipe, KoinonDatePipe, registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench/core';
 registerKoinonSpanish({
   Upload: 'Subir',
   Indexing: 'Indexando',

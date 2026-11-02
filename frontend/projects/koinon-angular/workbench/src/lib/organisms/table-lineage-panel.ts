@@ -1,6 +1,6 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
-import {registerKoinonSpanish} from '../foundations/i18n';
+import {registerKoinonSpanish} from '@fireflyframework/koinon-angular/workbench/core';
 import {PANEL_SPANISH} from '../foundations/panel-spanish.generated';
 import {
   ChangeDetectionStrategy,
@@ -13,13 +13,13 @@ import {
 } from '@angular/core';
 import type { ProvenanceTransformStep } from '@fireflyframework/koinon-sdk';
 import { KoinonTableLineage } from '../services/table-lineage';
-import { KoinonI18n, KoinonTextPipe, KoinonDatePipe, KoinonValuePipe } from '../foundations/i18n';
-import { KoinonSidePanel } from '../molecules/side-panel';
+import { KoinonI18n, KoinonTextPipe, KoinonDatePipe, KoinonValuePipe } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonSidePanel } from '@fireflyframework/koinon-angular/workbench/panels';
 import { KoinonPagination } from '../molecules/pagination';
-import { KoinonButton } from '../atoms/button';
-import { KoinonBadge } from '../atoms/badge';
-import { KoinonIcon } from '../atoms/icon';
-import { KoinonSkeleton } from '../atoms/skeleton';
+import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonBadge } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonIcon } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonSkeleton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonTableCoordinatesView } from './table-coordinates';
 import type { CoordinateTarget } from '../services/table-coordinates';
 registerKoinonSpanish(PANEL_SPANISH);

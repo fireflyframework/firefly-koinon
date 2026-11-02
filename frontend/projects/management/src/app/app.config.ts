@@ -10,7 +10,7 @@ import {
   KOINON_SHARED_CONVERSATION_LOADER,
   KOINON_TENANT_RESOLVER,
   provideKoinonClient,
-} from '@fireflyframework/koinon-angular/workbench';
+} from '@fireflyframework/koinon-angular/workbench/page';
 import { OrganizationSelection } from './organization-selection';
 export function csrfToken(): string | null {
   const value = document.cookie

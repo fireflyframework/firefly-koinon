@@ -1,7 +1,7 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 import { DOCUMENT } from '@angular/common';
 import { Injectable, OnDestroy, inject, signal } from '@angular/core';
-import type { PrimaryDestination } from '@fireflyframework/koinon-angular/workbench';
+import type { PrimaryDestination } from '@fireflyframework/koinon-angular/workbench/page';
 type AccountSection =
   'profile' | 'tokens' | 'applications' | 'notifications' | 'notification-preferences';
 const pendingKey = 'koinon.pending-account-navigation';

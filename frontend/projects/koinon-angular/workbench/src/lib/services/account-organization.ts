@@ -2,8 +2,8 @@
 import { EnvironmentInjector, createEnvironmentInjector } from '@angular/core';
 import { KoinonCorporatePresentation } from './corporate-presentation';
 import { KoinonOrganizationDirectory } from './organization-directory';
-import { KoinonFacade } from '../koinon-facade';
-import { KoinonClientContext } from './client-context';
+import { KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonClientContext } from '@fireflyframework/koinon-angular/workbench/core';
 export function createAccountOrganization(
   parent: EnvironmentInjector,
   facade: KoinonFacade,

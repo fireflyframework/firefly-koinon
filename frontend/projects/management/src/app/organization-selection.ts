@@ -2,7 +2,7 @@
 import { DOCUMENT } from '@angular/common';
 import { inject, Injectable } from '@angular/core';
 import type { ContextResponse } from '@fireflyframework/koinon-sdk';
-import type { KoinonScope } from '@fireflyframework/koinon-angular/workbench';
+import type { KoinonScope } from '@fireflyframework/koinon-angular/workbench/page';
 
 @Injectable({ providedIn: 'root' })
 export class OrganizationSelection {

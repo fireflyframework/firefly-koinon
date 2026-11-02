@@ -1,0 +1,151 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<ffk-side-panel
+  [open]="!!state.target()"
+  [heading]="entry().name"
+  [description]="'Read document' | ffkText"
+  (closed)="close()"
+>
+  <div class="document-toolbar">
+    <div class="view-switch" [attr.aria-label]="'Read document' | ffkText">
+      <ffk-button variant="neutral" [disabled]="!state.preview()" (click)="state.clearPreview()">{{
+        'Extracted text' | ffkText
+      }}</ffk-button>
+      @if (state.canPreview()) {
+        <ffk-button
+          variant="neutral"
+          [disabled]="state.pending() || !!state.preview()"
+          (click)="state.previewOriginal()"
+          >{{
+            (state.version()?.media_type === 'application/pdf' ? 'Prepare PDF' : 'Preview original')
+              | ffkText
+          }}</ffk-button
+        >
+      }
+    </div>
+    <ffk-button
+      variant="primary"
+      icon="download"
+      [disabled]="state.pending() || !state.canDownload()"
+      (click)="state.downloadOriginal()"
+      >{{ 'Download original' | ffkText }}</ffk-button
+    >
+  </div>
+  @if (state.transferLimited()) {
+    <p class="explanation">
+      {{
+        'This original exceeds the 128 MiB download limit. Its extracted text remains readable. Contact your administrator for an approved transfer.'
+          | ffkText
+      }}
+    </p>
+  }
+  @if (state.error()) {
+    <p role="alert" class="notice">{{ state.error() | ffkText }}</p>
+  }
+  @if (state.pending()) {
+    <div class="loading" role="status">
+      <ffk-skeleton width="70%" height="10px" label="Loading document" /><span>{{
+        'Loading document' | ffkText
+      }}</span>
+    </div>
+  }
+  @if (state.version(); as version) {
+    <details class="provenance">
+      <summary>{{ 'Document version' | ffkText }}</summary>
+      <dl>
+        <div>
+          <dt>{{ 'Document version' | ffkText }}</dt>
+          <dd>{{ version.source_version_id }}</dd>
+        </div>
+        <div>
+          <dt>{{ 'Original SHA256' | ffkText }}</dt>
+          <dd>{{ version.sha256 }}</dd>
+        </div>
+        <div>
+          <dt>{{ 'Created' | ffkText }}</dt>
+          <dd>{{ version.created_at | ffkDate }}</dd>
+        </div>
+        @if (state.content(); as content) {
+          <div>
+            <dt>{{ 'Extraction' | ffkText }}</dt>
+            <dd>{{ content.extraction_id }}</dd>
+          </div>
+        }
+      </dl>
+    </details>
+    @if (state.preview(); as preview) {
+      <section class="original" [attr.aria-label]="'Original preview' | ffkText">
+        @if (preview.type === 'application/pdf') {
+          <p class="explanation">
+            {{
+              'This PDF opens in a separate browser tab. You can also download the original or return to its extracted text.'
+                | ffkText
+            }}
+          </p>
+          <a class="pdf-open" [href]="preview.url" target="_blank" rel="noopener noreferrer">{{
+            'Open PDF in browser tab' | ffkText
+          }}</a>
+        } @else {
+          <img [src]="preview.url" [alt]="entry().name" />
+        }
+      </section>
+    } @else {
+      <p class="explanation">
+        {{ 'This is extracted text, not the original page layout.' | ffkText }}
+      </p>
+      <div class="reader" [class.has-parts]="!!state.parts()?.items?.length">
+        @if (state.parts(); as parts) {
+          @if (parts.items.length) {
+            <nav class="parts" [attr.aria-label]="'Text parts' | ffkText">
+              @for (part of parts.items; track part.source_part_id) {
+                <button
+                  type="button"
+                  [disabled]="state.pending()"
+                  [attr.aria-current]="
+                    state.content()?.source_part_id === part.source_part_id ? 'true' : null
+                  "
+                  (click)="state.selectPart(part)"
+                >
+                  {{ 'Text part' | ffkText }} {{ part.ordinal + 1 }}
+                  @if (part.recorded_page !== null && part.recorded_page !== undefined) {
+                    <small>{{ 'Recorded page' | ffkText }} {{ part.recorded_page }}</small>
+                  }
+                </button>
+              }
+            </nav>
+          }
+        }
+        <article class="document-text" [attr.aria-label]="'Extracted text' | ffkText" tabindex="0">
+          @if (state.content(); as content) {
+            <p>{{ content.text }}</p>
+          } @else if (!state.pending() && !state.error()) {
+            <p class="explanation">
+              {{
+                'No extracted text is available for this version. You can download the original.'
+                  | ffkText
+              }}
+            </p>
+          }
+        </article>
+      </div>
+      @if (state.parts(); as parts) {
+        @if (parts.pages > 1) {
+          <nav class="paging" [attr.aria-label]="'Text parts' | ffkText">
+            <ffk-button
+              variant="neutral"
+              [disabled]="state.pending() || parts.page <= 1"
+              (click)="state.loadPage(parts.page - 1)"
+              >{{ 'Previous parts' | ffkText }}</ffk-button
+            >
+            <span>{{ parts.page }} / {{ parts.pages }}</span>
+            <ffk-button
+              variant="neutral"
+              [disabled]="state.pending() || parts.page >= parts.pages"
+              (click)="state.loadPage(parts.page + 1)"
+              >{{ 'Next parts' | ffkText }}</ffk-button
+            >
+          </nav>
+        }
+      }
+    }
+  }
+</ffk-side-panel>

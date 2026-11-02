@@ -1,4 +1,4 @@
-import {KoinonTextPipe} from './foundations/i18n';
+import {KoinonTextPipe} from '@fireflyframework/koinon-angular/workbench/core';
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 import {CdkTrapFocus} from '@angular/cdk/a11y';
 import type {OverlayRef} from '@angular/cdk/overlay';
@@ -8,31 +8,33 @@ import {KoinonAccountPage} from './organisms/account-page';
 import {KoinonWorkbenchDialogs} from './organisms/workbench-dialogs';
 import {ChangeDetectionStrategy,Component,HostListener,Input,Output,EventEmitter,OnInit,OnChanges,OnDestroy,PendingTasks,ViewChild,TemplateRef,ViewContainerRef,ElementRef,ViewEncapsulation,booleanAttribute,computed,effect,inject,signal,type SimpleChanges,type Type,Injector,afterNextRender} from '@angular/core';
 import type {BrandingValues,CatalogEntry,Citation,KoinonClient,KoinonTransport,QueryResponse,ResourceKind,Membership} from '@fireflyframework/koinon-sdk';
-import {KoinonI18n} from './foundations/i18n';
+import {KoinonI18n} from '@fireflyframework/koinon-angular/workbench/core';
 import {KoinonAccount} from './services/account';
 import {KoinonBranding} from './services/branding';
 import {brandStyles,brandImage,brandSymbol} from './services/branding-values';
 import {KoinonFontLoader} from './services/font-loader';
-import {KoinonFacade} from './koinon-facade';
+import {KoinonFacade} from '@fireflyframework/koinon-angular/workbench/core';
 import {KOINON_ACTIVITY_LOADER,KOINON_COMMUNICATIONS_LOADER,KOINON_CHAT_LOADER,KOINON_SETTINGS_LOADER,KOINON_INVITATION_LOADER,KOINON_SHARED_CONVERSATION_LOADER} from './services/chat-loader';
 import {KoinonAssistant} from './services/assistant';
-import {KoinonClientContext} from './services/client-context';
-import {folderTrail,isSystemManaged,friendlyKind,isFolder,nextFolderKind} from './services/library-tree';
+import {KoinonClientContext} from '@fireflyframework/koinon-angular/workbench/core';
+import {folderTrail,isSystemManaged,friendlyKind,isFolder,nextFolderKind} from '@fireflyframework/koinon-angular/workbench/core';
 import {KoinonCommandPalette,type KoinonCommand} from './organisms/command-palette';
 import {KoinonSignIn} from './organisms/sign-in';
 import {KoinonShell,type PrimaryDestination} from './organisms/shell';
 import {KoinonLibraryTemplate} from './templates/library-template';
-import {KoinonInspector} from './organisms/inspector';
+import {KoinonInspector} from '@fireflyframework/koinon-angular/workbench/panels';
+import {KoinonDocumentViewerPanel} from './organisms/document-viewer';
 import {KoinonTableLineagePanel} from './organisms/table-lineage-panel';
 import {KoinonTableLineage} from './services/table-lineage';
-import {KoinonButton} from './atoms/button';
-import {KoinonIcon} from './atoms/icon';
-import {KoinonSkeleton} from './atoms/skeleton';
-import type {KoinonScope} from './models';
+import {KoinonButton} from '@fireflyframework/koinon-angular/workbench/core';
+import {KoinonIcon} from '@fireflyframework/koinon-angular/workbench/core';
+import {KoinonSkeleton} from '@fireflyframework/koinon-angular/workbench/core';
+import type {KoinonScope} from '@fireflyframework/koinon-angular/workbench/core';
 import {canRunLibraryAction,type LibraryActionRequest} from './services/library-context-actions';
 type Dialog='uploads'|'move'|'sign-out'|'account'|'archived'|'tree'|'add'|'create'|'edit'|'upload'|'archive'|'query'|'lineage'|'citation';
-@Component({selector:'ffk-workbench',imports:[KoinonSignIn,KoinonAccountPage,CdkTrapFocus,KoinonTableLineagePanel,KoinonTextPipe,KoinonCommandPalette,NgComponentOutlet,KoinonWorkbenchDialogs,KoinonShell,KoinonLibraryTemplate,KoinonInspector,KoinonButton,KoinonIcon,KoinonSkeleton],providers:[KoinonBranding,KoinonTableLineage,KoinonFontLoader,KoinonI18n,KoinonAccount,KoinonClientContext,KoinonFacade,KoinonAssistant],templateUrl:'./workbench.html',styleUrl:'./workbench.scss',host:{'[class.koinon-dark]':"theme==='dark'",'[attr.lang]':'i18n.preferences().locale'},encapsulation:ViewEncapsulation.ShadowDom,changeDetection:ChangeDetectionStrategy.OnPush})
+@Component({selector:'ffk-workbench',imports:[KoinonDocumentViewerPanel,KoinonSignIn,KoinonAccountPage,CdkTrapFocus,KoinonTableLineagePanel,KoinonTextPipe,KoinonCommandPalette,NgComponentOutlet,KoinonWorkbenchDialogs,KoinonShell,KoinonLibraryTemplate,KoinonInspector,KoinonButton,KoinonIcon,KoinonSkeleton],providers:[KoinonBranding,KoinonTableLineage,KoinonFontLoader,KoinonI18n,KoinonAccount,KoinonClientContext,KoinonFacade,KoinonAssistant],templateUrl:'./workbench.html',styleUrl:'./workbench.scss',host:{'[class.koinon-dark]':"theme==='dark'",'[attr.lang]':'i18n.preferences().locale'},encapsulation:ViewEncapsulation.ShadowDom,changeDetection:ChangeDetectionStrategy.OnPush})
 export class KoinonWorkbench implements OnInit,OnChanges,OnDestroy{
+ readonly viewerEntry=signal<CatalogEntry|null>(null);
  readonly sharedConversationComponent=signal<Type<unknown>|null>(null);
  readonly sharedConversationError=signal('');
  private readonly sharedConversationLoader=inject(KOINON_SHARED_CONVERSATION_LOADER,{optional:true});
@@ -116,7 +118,7 @@ export class KoinonWorkbench implements OnInit,OnChanges,OnDestroy{
   else if(request.action==='move')this.showDialog('move');
   else if(request.action==='archive')this.showDialog('archive');
  }
- async open(entry:CatalogEntry){if(isFolder(entry))await this.openFolder(entry.id);else this.select(entry);}
+ async open(entry:CatalogEntry){if(isFolder(entry))await this.openFolder(entry.id);else if(entry.kind==='document'){this.select(entry);this.viewerEntry.set({...entry});}else this.select(entry);}
  select(entry:CatalogEntry){this.inspectorTrigger=this.host.nativeElement.shadowRoot?.activeElement as HTMLElement;this.f.selected.set(entry);this.selectionChange.emit(entry);this.emitContext();if(entry.kind==='dataset')void this.f.loadSchema(entry.id);}
  parentName(entry:CatalogEntry){if(this.f.libraryPage().items.some(row=>row.id===entry.id))return this.currentFolder()?.name||'Library';const parent=this.allEntries().find(x=>x.id===entry.parent_id);if(parent?.kind==='source')return this.allEntries().find(x=>x.id===parent.parent_id)?.name||parent.name;return parent?.name||'Library';}
  folderLabel(entry:CatalogEntry){return folderTrail(this.allEntries(),entry.id).map(x=>x.name).join(' / ');}

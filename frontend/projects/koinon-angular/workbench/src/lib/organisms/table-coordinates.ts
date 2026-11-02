@@ -1,6 +1,6 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
-import {registerKoinonSpanish} from '../foundations/i18n';
+import {registerKoinonSpanish} from '@fireflyframework/koinon-angular/workbench/core';
 import {PANEL_SPANISH} from '../foundations/panel-spanish.generated';
 import {
   ChangeDetectionStrategy,
@@ -25,10 +25,10 @@ import {
   sheetCell,
   sheetColumn,
 } from '../services/coordinate-labels';
-import { KoinonTextPipe, KoinonValuePipe } from '../foundations/i18n';
-import { KoinonBadge } from '../atoms/badge';
-import { KoinonButton } from '../atoms/button';
-import { KoinonSkeleton } from '../atoms/skeleton';
+import { KoinonTextPipe, KoinonValuePipe } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonBadge } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonSkeleton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonPagination } from '../molecules/pagination';
 registerKoinonSpanish(PANEL_SPANISH);
 @Component({
