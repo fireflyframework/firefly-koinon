@@ -32,7 +32,7 @@ function fixture() {
   let uncertain = false;
   const calls: { method: string; path: string; body: unknown; headers: unknown }[] = [];
   const api = createCommunicationsApi({
-    stream: async function* () {
+    stream: () => {
       throw Error('Unexpected stream');
     },
     request: async <T>(
