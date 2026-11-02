@@ -152,6 +152,12 @@ async def test_help_uses_current_brand_and_explicit_turn_language_without_fake_s
         "context": {**trusted[0].payload["context"], "assistant_name": "Forged name"},
     }
     await service.results.save(trusted[0])
+    from koinon.catalog.errors import AccessDenied
+
+    with pytest.raises(AccessDenied):
+        await exports.download("issuer|viewer", "north", exported.id)
+    with pytest.raises(AccessDenied):
+        await shares.read("issuer|other", "north", shared.id)
     masked = (await service.messages("issuer|viewer", "north", thread["id"]))[-1]
     assert "Sócrates" not in masked["text"] and "Forged name" not in masked["text"]
     assert (await context.get_bean(AnswerAudits).get("issuer|viewer", "north", run.id))[

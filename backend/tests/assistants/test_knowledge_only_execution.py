@@ -89,7 +89,13 @@ async def test_real_executor_releases_only_valid_current_source_plan(assistants,
         thread["id"],
         {
             "agent_id": agent["id"],
-            "message": "When is the maintenance window?",
+            "message": (
+                "¿Cuál es el código de validación y cuál es el plazo de revisión?"
+                if case == "two_quotes"
+                else "What is the approved deployment region?"
+                if case == "abstained"
+                else "When is the maintenance window?"
+            ),
             "scope": {"asset_ids": [parent.id]},
             "client_request_id": case,
         },
@@ -127,13 +133,17 @@ async def test_real_executor_releases_only_valid_current_source_plan(assistants,
         plan = {"outcome": "answer", "quotes": [selection], "values": []}
         if case == "repaired" and output_attempts == 1:
             selection["quote"] = "The window is Tuesday morning."
-        if case == "abstained":
+        if case in {"abstained", "empty"}:
             plan = {"outcome": "insufficient_evidence"}
         if case == "two_quotes":
             plan["language"] = "es"
-            plan["quotes"] = [
-                {"fact_id": selection["fact_id"], "quote": sentence} for sentence in passage.split("\n")
-            ]
+            plan["quotes"] = (
+                [{"fact_id": selection["fact_id"], "quote": passage.replace("\n", " ")}]
+                if output_attempts == 1
+                else [
+                    {"fact_id": selection["fact_id"], "quote": sentence} for sentence in passage.split("\n")
+                ]
+            )
         if case == "forged_id":
             selection["fact_id"] = "forged-source"
         if case == "mixed":
@@ -160,7 +170,7 @@ async def test_real_executor_releases_only_valid_current_source_plan(assistants,
         assert message.text.startswith("El conocimiento seleccionado")
     else:
         assert (passage in message.text) is (case in {"valid", "repaired"})
-    if case == "repaired":
+    if case in {"repaired", "two_quotes"}:
         assert output_attempts == 2
         assert message.answer_policy["validation"]["repairs"] == 1
     if case in {"forged_id", "forged_quote", "mixed"}:
@@ -168,6 +178,8 @@ async def test_real_executor_releases_only_valid_current_source_plan(assistants,
         assert message.answer_policy["validation"]["errors"]
     if case == "abstained":
         assert message.answer_policy["code"] == "MODEL_ABSTAINED"
+    if case == "empty":
+        assert message.answer_policy["code"] == "NO_MATCHING_EVIDENCE"
     events = await service.run_events("issuer|viewer", "north", run.id)
     assert "".join(item["data"]["text"] for item in events if item["type"] == "message_delta") == message.text
     assert "UNSUPPORTED_TRAINING_FACT" not in str(events)
