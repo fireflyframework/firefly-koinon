@@ -321,3 +321,8 @@ summary {
     grid-template-columns: minmax(0, 1fr) auto;
   }
 }
+
+.upload-preview .upload-file:last-child,
+.result-files .record:last-child {
+  border-bottom: 0;
+}

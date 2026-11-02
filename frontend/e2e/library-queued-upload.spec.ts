@@ -512,6 +512,8 @@ for (const width of [1440, 390]) {
     ).toBeInViewport();
     await expect(submit).toBeInViewport();
     await dialog.locator('.upload-preview').evaluate((element) => (element.scrollTop = 0));
+    await expect(dialog.locator('.upload-file').last()).toHaveCSS('border-bottom-width', '0px');
+    await expect(dialog.locator('.dialog-actions')).toHaveCSS('border-top-width', '1px');
     await capture(page, 'office-files-' + width);
     const lastUse = dialog.getByLabel('How to use: review.csv', { exact: true });
     if (width < 600) await lastUse.focus();
@@ -527,6 +529,7 @@ for (const width of [1440, 390]) {
     ]);
     expect(state.transferred).toBe(files.reduce((size, file) => size + file.buffer.length, 0));
     for (const kind of kinds) await expect(dialog).toContainText('review.' + kind);
+    await expect(dialog.locator('.record').last()).toHaveCSS('border-bottom-width', '0px');
     await capture(page, 'office-queued-' + width);
   });
 }
