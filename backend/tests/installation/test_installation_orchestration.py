@@ -74,6 +74,21 @@ async def test_empty_indexes_are_qualified_before_default_is_exposed():
     admission.finish.assert_awaited_once()
 
 
+async def test_empty_library_still_configures_models_and_agent_without_creating_destinations():
+    service, admission, writes, indexes, probe, qualification = fixture()
+    value = example()
+    value["catalog"] = []
+    value["indexes"] = []
+    await service.apply(InstallationPlan.model_validate(value), {"chat": None, "embedding": None})
+    assert writes.provider.await_count == 2
+    writes.connection.assert_awaited_once()
+    writes.agent.assert_awaited_once()
+    writes.default_agent.assert_awaited_once()
+    writes.catalog_node.assert_not_called()
+    assert not indexes.mock_calls
+    admission.finish.assert_awaited_once()
+
+
 async def test_embedding_provider_is_qualified_only_by_index_path_never_chat_completion():
     service, _, writes, indexes, _, qualification = fixture()
     plan = InstallationPlan.model_validate(example())

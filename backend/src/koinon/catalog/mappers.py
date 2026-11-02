@@ -23,7 +23,7 @@ def entry_dto(entry: CatalogEntry) -> dict:
     return {
         **{field: getattr(entry, field) for field in fields},
         **(
-            {"system_managed": entry.system_key is not None}
+            {"system_managed": False}
             if entry.kind in {"workspace", "project", "collection", "corpus"}
             else {}
         ),

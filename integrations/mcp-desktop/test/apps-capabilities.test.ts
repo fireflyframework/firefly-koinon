@@ -54,7 +54,7 @@ async function withBridge(capabilities: ClientCapabilities, run: (host: Client, 
   await new Promise<void>((done) => http.listen(0, '127.0.0.1', done));
   const address = http.address();
   assert.ok(address && typeof address !== 'string');
-  const bridge = createBridge({ url: new URL(`http://127.0.0.1:${address.port}/mcp`), token: 'owned-bridge-token' },
+  const bridge = createBridge({ mode: 'pat', url: new URL(`http://127.0.0.1:${address.port}/mcp`), token: 'owned-bridge-token' },
     'data:image/png;base64,', 'data:image/png;base64,');
   const host = new Client({ name: 'owned-downstream-host', version: '1.0.0' }, { capabilities });
   const [local, client] = InMemoryTransport.createLinkedPair();

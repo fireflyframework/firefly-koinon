@@ -524,10 +524,6 @@ class CatalogService:
             await self.restriction.resource(subject, entry, write=True)
         self.require_knowledge_review(entry.kind)
         self._check_expected_update(entry, expected_updated_at)
-        if entry.system_key is not None and changes.get("status") in {"archived", "disabled"}:
-            raise ConflictException(
-                "System knowledge spaces must remain available", code="SYSTEM_SPACE_PROTECTED"
-            )
         if set(changes) - {"name", "description", "status", "metadata"}:
             raise InvalidHierarchy("Resource scope and ancestry are immutable", code="IMMUTABLE_SCOPE")
         if "name" in changes:
@@ -565,10 +561,6 @@ class CatalogService:
         if self.restriction:
             await self.restriction.resource(subject, entry, write=True)
         self.require_knowledge_review(entry.kind)
-        if entry.system_key is not None:
-            raise ConflictException(
-                "System knowledge spaces cannot be deleted", code="SYSTEM_SPACE_PROTECTED"
-            )
         if entry.metadata_json.get("_koinon_intake") or entry.metadata_json.get("_koinon_external_review"):
             raise ConflictException(
                 "Retained intake receipts cannot be deleted", code="INTAKE_RECEIPT_IMMUTABLE"
@@ -830,10 +822,6 @@ class CatalogService:
         if self.restriction:
             await self.restriction.resource(subject, entry, write=True)
         self.require_knowledge_review(entry.kind)
-        if entry.system_key is not None:
-            raise ConflictException(
-                "System knowledge spaces cannot be archived", code="SYSTEM_SPACE_PROTECTED"
-            )
         self._check_expected_update(entry, expected_updated_at)
         if entry.status != "archived":
             entry.metadata_json = {

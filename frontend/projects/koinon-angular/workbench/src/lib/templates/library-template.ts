@@ -1,5 +1,5 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
-import { KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonTextPipe, KoinonIcon, registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench/core';
 import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, OnChanges } from '@angular/core';
 import type { CatalogEntry, CatalogFilter, Page, ResourceKind } from '@fireflyframework/koinon-sdk';
 import { KoinonPagination } from '../molecules/pagination';
@@ -10,10 +10,12 @@ import { KoinonResourceList } from '../organisms/resource-list';
 import { friendlyStatus } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonLibraryContextMenu } from '../organisms/library-context-menu';
 import { canRunLibraryAction, type LibraryAction, type LibraryActionRequest, type LibraryContextRequest } from '../services/library-context-actions';
+registerKoinonSpanish({ 'Actions for this location': 'Acciones para esta ubicación', 'Library items': 'Elementos de la biblioteca' });
 @Component({
   selector: 'ffk-library-template',
   imports: [
     KoinonTextPipe,
+    KoinonIcon,
     KoinonPagination,
     KoinonButton,
     KoinonBreadcrumb,
@@ -59,7 +61,7 @@ import { canRunLibraryAction, type LibraryAction, type LibraryActionRequest, typ
         </div>
       }
     </header>
-    <div class="collection-surface" tabindex="-1" (contextmenu)="openEmptyContext($event)">
+    <div class="collection-surface" role="region" [attr.aria-label]="'Library items' | ffkText" [attr.tabindex]="hasLocationActions() ? 0 : -1" (contextmenu)="openEmptyContext($event)" (keydown)="locationContextKey($event)">
       <div class="library-toolbar">
         @if (serverControls) {
           <div class="name-filter">
@@ -140,6 +142,9 @@ import { canRunLibraryAction, type LibraryAction, type LibraryActionRequest, typ
           >{{ pageInfo?.total ?? items.length }}
           {{ ((pageInfo?.total ?? items.length) === 1 ? 'item' : 'items') | ffkText }}</span
         >
+        @if (hasLocationActions()) {
+          <button class="location-menu" type="button" aria-haspopup="menu" [attr.aria-expanded]="!!contextMenu && !contextMenu.entry" [attr.aria-label]="'Actions for this location' | ffkText" [title]="'Actions for this location' | ffkText" [disabled]="loading" (click)="openLocationContext($event)" (keydown)="locationContextKey($event, true)"><ffk-icon name="more" /></button>
+        }
       </div>
       @if (serverControls && hasFilters()) {
         <div class="active-filters" [attr.aria-label]="'Active filters' | ffkText">
@@ -223,7 +228,7 @@ import { canRunLibraryAction, type LibraryAction, type LibraryActionRequest, typ
   </section>
   @defer (when contextMenu) {
     @if (contextMenu; as request) {
-      <ffk-library-context-menu [request]="request" [canRead]="canRead" [canEdit]="canEdit" [canAdd]="canAdd" [createLabel]="createLabel" (chosen)="chooseContext($event)" (dismissed)="closeContext($event)"/>
+      <ffk-library-context-menu [request]="request" [canRead]="canRead" [canEdit]="canEdit" [canAdd]="canAdd" [canUpload]="canUpload" [createLabel]="createLabel" (chosen)="chooseContext($event)" (dismissed)="closeContext($event)"/>
     }
   }`,
   styleUrl: './library-template.scss',
@@ -236,11 +241,22 @@ export class KoinonLibraryTemplate implements OnChanges {
   contextMenu: LibraryContextRequest | null = null;
   ngOnChanges() { this.closeContext(false); }
   openEmptyContext(event: MouseEvent) {
-    if (this.loading || !(event.target instanceof HTMLElement) || event.target.closest('button, input, select, textarea, a, [role=row]')) return;
-    if (!(this.canEdit && this.createLabel) && !this.canAdd) return;
+    if (this.loading || !(event.target instanceof HTMLElement) || event.target.closest('button, input, select, textarea, a, summary, label, [contenteditable], [role=row]')) return;
+    this.openLocationContext(event, true);
+  }
+  hasLocationActions() { return !!(this.canEdit && this.createLabel) || this.canAdd || this.canUpload; }
+  openLocationContext(event: MouseEvent | KeyboardEvent, pointer = false) {
+    if (this.loading || !this.hasLocationActions()) return;
     event.preventDefault();
     event.stopPropagation();
-    this.contextMenu = { entry: null, x: event.clientX, y: event.clientY, trigger: event.currentTarget as HTMLElement };
+    const trigger = event.currentTarget as HTMLElement;
+    const rect = trigger.getBoundingClientRect();
+    const mouse = event as MouseEvent;
+    this.contextMenu = { entry: null, x: pointer && mouse.clientX ? mouse.clientX : rect.left, y: pointer && mouse.clientY ? mouse.clientY : rect.top + Math.min(rect.height, 40), trigger };
+  }
+  locationContextKey(event: KeyboardEvent, fromTrigger = false) {
+    if (!fromTrigger && event.target !== event.currentTarget) return;
+    if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) this.openLocationContext(event);
   }
   closeContext(restoreFocus: boolean) {
     const trigger = this.contextMenu?.trigger;
@@ -248,11 +264,12 @@ export class KoinonLibraryTemplate implements OnChanges {
     if (restoreFocus) trigger?.focus();
   }
   chooseContext(action: LibraryAction) {
-    if (!this.contextMenu || !canRunLibraryAction(this.contextMenu.entry, action, this.canEdit, this.canAdd, this.createLabel, this.canRead)) return;
+    if (!this.contextMenu || !canRunLibraryAction(this.contextMenu.entry, action, this.canEdit, this.canAdd, this.createLabel, this.canRead, this.canUpload)) return;
     const entry = this.contextMenu.entry;
     this.closeContext(true);
     if (action === 'create') this.createRequested.emit();
     else if (action === 'add') this.addRequested.emit();
+    else if (action === 'upload') this.uploadRequested.emit();
     else if (entry && action === 'open') this.opened.emit(entry);
     else if (entry && action === 'details') this.selected.emit(entry);
     else this.actionRequested.emit({ entry, action });
@@ -278,6 +295,8 @@ export class KoinonLibraryTemplate implements OnChanges {
   @Input() selectedId = '';
   @Input() loading = false;
   @Input() canAdd = false;
+  @Input() canUpload = false;
+  @Output() uploadRequested = new EventEmitter<void>();
   @Input() createLabel = '';
   @Input() browseAvailable = false;
   @Input() serverControls = false;

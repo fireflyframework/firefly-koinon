@@ -4,6 +4,8 @@
 
 The firefly koinon 26.11.10 desktop extension connects a compatible MCP desktop host to an operator-managed koinon MCP endpoint. The bridge uses the official TypeScript MCP SDK and forwards remote tools, resources, and prompts. The server remains responsible for schemas, permissions, and knowledge access.
 
+The published archive uses the PAT walkthrough below. The [desktop OAuth source candidate](desktop-oauth.md) adds explicit browser sign-in; it is not included in the published 26.11.10 MCPB.
+
 ## Download the published package
 
 Download these files from the **same release**, currently 26.11.10:

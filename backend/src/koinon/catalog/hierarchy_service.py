@@ -39,8 +39,6 @@ class CatalogHierarchyService:
             grant = await catalog.restriction.grant(subject)
             if grant is not None and grant.asset_ids is not None:
                 raise AccessDenied("Folder moves require knowledge-space access", code="TOKEN_SCOPE_DENIED")
-        if entry.system_key is not None:
-            raise ConflictException("System knowledge spaces cannot be moved", code="SYSTEM_SPACE_PROTECTED")
         if entry.kind not in {"collection", "corpus"}:
             raise InvalidHierarchy("Select an organizational folder to move", code="INVALID_MOVE_KIND")
         if entry.parent_id != expected_parent_id or entry.updated_at != expected_updated_at:

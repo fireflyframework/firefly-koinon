@@ -52,7 +52,7 @@ test('relocated bundle forwards authenticated discovery, tools, resources, and p
     const manifest = JSON.parse(await readFile('manifest.json', 'utf8'));
     assert.equal(manifest.server.mcp_config.args[0], '${__dirname}/server/index.cjs');
     const transport = new StdioClientTransport({ command: process.execPath, args: [join(temp, 'server/index.cjs')], cwd: temp, env: {
-      KOINON_MCP_URL: `http://127.0.0.1:${address.port}/mcp`, KOINON_TOKEN: 'relocation-test-token', KOINON_ALLOW_LOOPBACK_HTTP: '1',
+      KOINON_AUTH_MODE: 'pat', KOINON_MCP_URL: `http://127.0.0.1:${address.port}/mcp`, KOINON_TOKEN: 'relocation-test-token', KOINON_ALLOW_LOOPBACK_HTTP: '1',
     }, stderr: 'pipe' });
     let stderr = '';
     transport.stderr?.on('data', (chunk) => { stderr += String(chunk); });
