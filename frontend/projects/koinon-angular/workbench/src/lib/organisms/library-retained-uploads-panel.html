@@ -1,0 +1,343 @@
+<!-- Copyright 2026 Firefly Software Foundation -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+@let v = state.view();
+<section [attr.aria-busy]="v.busy">
+  <div class="intro">
+    <p>
+      {{
+        'Inspect uploads retained by this organization for your current account and connection. Opening this view never uploads files or repeats processing.'
+          | ffkText
+      }}
+    </p>
+    <ffk-button
+      variant="quiet"
+      icon="refresh"
+      [label]="'Refresh uploads' | ffkText"
+      [disabled]="v.busy || v.denied || !allowed()"
+      (click)="refresh()"
+    />
+  </div>
+  @if (!allowed()) {
+    <p class="feedback" role="status">
+      {{ 'Current Library access is required to inspect uploads.' | ffkText }}
+    </p>
+  }
+  @if (v.error) {
+    <p class="feedback" role="alert">{{ v.error | ffkText }}</p>
+  }
+  @if (v.notice) {
+    <p class="feedback" role="status">{{ v.notice | ffkText }}</p>
+  }
+  @if (v.busy) {
+    <ffk-skeleton width="65%" height="3px" [label]="'Loading uploads' | ffkText" />
+  }
+  @if (!v.selected && allowed() && !v.denied) {
+    <h3 id="retained-upload-list" tabindex="-1">{{ 'Your retained uploads' | ffkText }}</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ 'Created' | ffkText }}</th>
+            <th>{{ 'Files' | ffkText }}</th>
+            <th>{{ 'Size' | ffkText }}</th>
+            <th>{{ 'State' | ffkText }}</th>
+            <th>
+              <span class="sr-only">{{ 'Details' | ffkText }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (batch of v.rows; track batch.id) {
+            <tr>
+              <td>
+                <span>{{ batch.created_at | ffkDate: undefined : 'datetime' }}</span
+                ><small class="identifier">{{ batch.id }}</small>
+              </td>
+              <td>{{ batch.total_items | number }}</td>
+              <td class="size">{{ size(batch.total_bytes) }}</td>
+              <td>
+                <ffk-badge [tone]="tone(batch.status)">{{
+                  status(batch.status) | ffkText
+                }}</ffk-badge>
+              </td>
+              <td>
+                <ffk-button
+                  variant="quiet"
+                  icon="chevron"
+                  [label]="('Inspect upload' | ffkText) + ' ' + batch.id"
+                  [disabled]="v.busy"
+                  (click)="select(batch.id)"
+                />
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="mobile-list">
+      @for (batch of v.rows; track batch.id) {
+        <button
+          type="button"
+          class="batch-row"
+          [attr.aria-label]="('Inspect upload' | ffkText) + ' ' + batch.id"
+          [disabled]="v.busy"
+          (click)="select(batch.id)"
+        >
+          <span>{{ batch.created_at | ffkDate: undefined : 'datetime' }}</span
+          ><ffk-badge [tone]="tone(batch.status)">{{ batchStatus(batch) | ffkText }}</ffk-badge
+          ><small
+            >{{ batch.total_items | number }}
+            {{ (batch.total_items === 1 ? 'file' : 'files') | ffkText }} /
+            {{ size(batch.total_bytes) }}</small
+          ><code>{{ batch.id }}</code>
+        </button>
+      }
+    </div>
+    @if (!v.rows.length && !v.busy) {
+      <div class="empty">
+        <h4>{{ 'No retained uploads were returned' | ffkText }}</h4>
+        <p>
+          {{
+            'Uploads made with another account or connection may not be visible here. This does not prove that no work exists elsewhere.'
+              | ffkText
+          }}
+        </p>
+      </div>
+    }
+    <ffk-pagination
+      [page]="page()"
+      [showPageSize]="false"
+      [loading]="v.busy"
+      [label]="'Uploads' | ffkText"
+      (pageChanged)="changePage($event)"
+    />
+  }
+  @if (v.selected; as batch) {
+    @if (!v.review) {
+      <ffk-button variant="back" icon="chevron-left" [disabled]="v.busy" (click)="back()">{{
+        'Back to uploads' | ffkText
+      }}</ffk-button>
+      <header class="details-heading">
+        <h3 id="retained-upload-details" tabindex="-1">{{ 'Upload details' | ffkText }}</h3>
+        <ffk-badge [tone]="tone(batch.status)">{{ batchStatus(batch) | ffkText }}</ffk-badge>
+      </header>
+      <p class="reference">
+        {{ 'Reference' | ffkText }}: <code>{{ batch.id }}</code>
+      </p>
+      <dl class="summary">
+        <div>
+          <dt>{{ 'Created' | ffkText }}</dt>
+          <dd>{{ batch.created_at | ffkDate: undefined : 'datetime' }}</dd>
+        </div>
+        <div>
+          <dt>{{ 'Files' | ffkText }}</dt>
+          <dd>{{ batch.total_items | number }}</dd>
+        </div>
+        <div>
+          <dt>{{ 'Total size' | ffkText }}</dt>
+          <dd>{{ size(batch.total_bytes) }}</dd>
+        </div>
+        <div>
+          <dt>{{ 'Revision' | ffkText }}</dt>
+          <dd>{{ batch.revision | number }}</dd>
+        </div>
+      </dl>
+      <div class="actions">
+        <ffk-button
+          variant="quiet"
+          icon="folder"
+          [disabled]="v.busy"
+          (click)="folderRequested.emit(batch.destination.parent_id)"
+          >{{ 'Open destination folder' | ffkText }}</ffk-button
+        >
+        @for (operation of batchOperations; track operation) {
+          @if (state.canAct(operation)) {
+            <ffk-button
+              [variant]="operation === 'submit' ? 'primary' : 'quiet'"
+              (click)="review(operation)"
+              >{{ labels[operation] | ffkText }}</ffk-button
+            >
+          }
+        }
+      </div>
+      @if (v.pending.length) {
+        <section class="pending" [attr.aria-label]="'Unconfirmed upload actions' | ffkText">
+          <h4>{{ 'Some action results are not confirmed' | ffkText }}</h4>
+          <p>
+            {{
+              'The exact requests are saved in this browser tab. Refreshing or signing in never repeats them. Inspect the current state before reviewing the same saved request.'
+                | ffkText
+            }}
+          </p>
+          @for (request of v.pending; track request.key) {
+            <div class="pending-row">
+              <span
+                >{{ labels[request.operation] | ffkText }}
+                @if (request.itemId) {
+                  , {{ filename(request.itemId) }}
+                }</span
+              ><ffk-button
+                variant="quiet"
+                [disabled]="v.busy || v.journalError"
+                (click)="reviewSaved(request)"
+                >{{ 'Review saved request' | ffkText }}</ffk-button
+              >
+            </div>
+          }
+        </section>
+      }
+      <div class="file-list">
+        @for (item of v.items; track item.id) {
+          <article>
+            <header>
+              <div>
+                <h4>{{ item.filename }}</h4>
+                <p>
+                  {{ (item.mode === 'dataset' ? 'Dataset' : 'Document') | ffkText }} /
+                  {{ size(item.size_bytes) }}
+                </p>
+              </div>
+              <ffk-badge [tone]="tone(item.status)">{{ status(item.status) | ffkText }}</ffk-badge>
+            </header>
+            <div class="actions">
+              @if (state.canAct('recover_original', item.id)) {
+                <ffk-button variant="neutral" (click)="review('recover_original', item.id)">{{
+                  labels.recover_original | ffkText
+                }}</ffk-button>
+              }
+              @if (state.canAct('reconcile', item.id)) {
+                <ffk-button variant="neutral" (click)="review('reconcile', item.id)">{{
+                  labels.reconcile | ffkText
+                }}</ffk-button>
+              }
+              @if (item.status === 'staged' || item.job_id) {
+                <ffk-button variant="quiet" [disabled]="v.busy" (click)="receipt(item.id)">{{
+                  'Verify staged original' | ffkText
+                }}</ffk-button>
+              }
+              <ffk-button
+                variant="quiet"
+                [disabled]="v.busy"
+                (click)="resourceRequested.emit(item.asset_id)"
+                >{{ 'Open in Library' | ffkText }}</ffk-button
+              >
+            </div>
+            @if (v.receipts[item.id]; as receipt) {
+              <p class="receipt" role="status">
+                {{ 'Original verified at' | ffkText }}
+                {{ receipt.observedAt | ffkDate: undefined : 'datetime' }}
+              </p>
+            }
+            <details>
+              <summary>{{ 'Source and upload references' | ffkText }}</summary>
+              <dl class="references">
+                <dt>{{ 'Upload item' | ffkText }}</dt>
+                <dd>
+                  <code>{{ item.id }}</code>
+                </dd>
+                <dt>{{ 'Client item' | ffkText }}</dt>
+                <dd>
+                  <code>{{ item.client_item_id }}</code>
+                </dd>
+                <dt>{{ 'Source' | ffkText }}</dt>
+                <dd>
+                  <code>{{ item.source_id }}</code>
+                </dd>
+                <dt>{{ 'Knowledge item' | ffkText }}</dt>
+                <dd>
+                  <code>{{ item.asset_id }}</code>
+                </dd>
+                <dt>SHA-256</dt>
+                <dd>
+                  <code>{{ item.sha256 }}</code>
+                </dd>
+                @if (item.job_id) {
+                  <dt>{{ 'Processing job' | ffkText }}</dt>
+                  <dd>
+                    <code>{{ item.job_id }}</code>
+                  </dd>
+                }
+                @if (item.file_version_id) {
+                  <dt>{{ 'File version' | ffkText }}</dt>
+                  <dd>
+                    <code>{{ item.file_version_id }}</code>
+                  </dd>
+                }
+                @if (item.source_version_id) {
+                  <dt>{{ 'Source version' | ffkText }}</dt>
+                  <dd>
+                    <code>{{ item.source_version_id }}</code>
+                  </dd>
+                }
+                @if (item.table_ids?.length) {
+                  <dt>{{ 'Tables' | ffkText }}</dt>
+                  <dd>
+                    @for (table of item.table_ids; track table) {
+                      <code class="table-reference">{{ table }}</code>
+                    }
+                  </dd>
+                }
+                @if (item.extraction_id) {
+                  <dt>{{ 'Extraction' | ffkText }}</dt>
+                  <dd>
+                    <code>{{ item.extraction_id }}</code>
+                  </dd>
+                }
+              </dl>
+            </details>
+          </article>
+        }
+      </div>
+      <p class="boundary">
+        {{
+          'Original receipt, processing completion and search availability are different states. Inspect the Library item before relying on its knowledge.'
+            | ffkText
+        }}
+      </p>
+    }
+  }
+  @if (v.review; as review) {
+    <section class="review" [attr.aria-label]="'Review upload action' | ffkText">
+      <h3 id="retained-upload-review" tabindex="-1">
+        {{ labels[review.request.operation] | ffkText }}
+      </h3>
+      <p>{{ explanations[review.request.operation] | ffkText }}</p>
+      @if (review.request.itemId) {
+        <p class="review-file">{{ filename(review.request.itemId) }}</p>
+      }
+      <dl>
+        <dt>{{ 'Reference' | ffkText }}</dt>
+        <dd>
+          <code>{{ review.request.batchId }}</code>
+        </dd>
+        @if (v.selected; as batch) {
+          <dt>{{ 'Files' | ffkText }}</dt>
+          <dd>{{ batch.total_items | number }} / {{ size(batch.total_bytes) }}</dd>
+        }
+        <dt>{{ 'Current revision' | ffkText }}</dt>
+        <dd>{{ review.observedRevision | number }}</dd>
+        <dt>{{ 'Request revision' | ffkText }}</dt>
+        <dd>{{ review.request.expectedRevision | number }}</dd>
+      </dl>
+      @if (review.replay) {
+        <p>
+          {{
+            'This explicitly sends the exact saved request and original key. If it was not accepted before, it can start the reviewed operation. Its result must still be inspected.'
+              | ffkText
+          }}
+        </p>
+      }
+      <p>
+        {{ 'Current access and the reviewed revision are checked again before sending.' | ffkText }}
+      </p>
+      <div class="actions">
+        <ffk-button variant="quiet" [disabled]="v.busy" (click)="closeReview()">{{
+          'Keep inspecting' | ffkText
+        }}</ffk-button
+        ><ffk-button variant="primary" [loading]="v.busy" [disabled]="v.busy" (click)="confirm()">{{
+          labels[review.request.operation] | ffkText
+        }}</ffk-button>
+      </div>
+    </section>
+  }
+</section>

@@ -8,6 +8,7 @@ import type { KoinonWorkbench } from '../koinon-angular';
 import { KoinonTextPipe } from '../foundations/i18n';
 import { KoinonAccountPanel } from './account-panel';
 import { KoinonMoveFolder } from './move-folder';
+import { KoinonLibraryRetainedUploadsPanel } from './library-retained-uploads-panel';
 import { KoinonLibraryUploadPanel } from './library-upload-panel';
 import { KoinonFolderTree } from './folder-tree';
 import { KoinonCodeBlock } from '../atoms/code-block';
@@ -30,6 +31,7 @@ registerKoinonSpanish(PANEL_SPANISH);
     KoinonFolderTree,
     KoinonMoveFolder,
     KoinonLibraryUploadPanel,
+    KoinonLibraryRetainedUploadsPanel,
     KoinonCodeBlock,
     KoinonButton,
     KoinonIcon,
