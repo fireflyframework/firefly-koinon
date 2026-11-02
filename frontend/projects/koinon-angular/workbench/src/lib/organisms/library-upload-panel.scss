@@ -162,3 +162,52 @@ select:focus-visible {
   color: var(--ui-muted);
   font-size: 14px;
 }
+
+.file-issue {
+  font-size: 13px;
+  color: var(--ui-text);
+}
+.upload-progress progress {
+  width: 100%;
+  accent-color: var(--ui-accent);
+}
+
+.upload-preview .upload-file {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto 40px;
+  column-gap: 10px;
+  row-gap: 4px;
+}
+.upload-file > ffk-icon {
+  grid-area: 1 / 1;
+}
+.upload-file .file-name {
+  grid-area: 1 / 2;
+}
+.upload-file .file-size {
+  grid-area: 1 / 3;
+}
+.upload-file > ffk-button {
+  grid-area: 1 / 4;
+  justify-self: end;
+}
+.upload-file .file-issue,
+.upload-file .file-status {
+  grid-column: 2 / -1;
+  white-space: normal;
+}
+@media (max-width: 600px) {
+  .upload-preview .upload-file {
+    grid-template-columns: 18px minmax(0, 1fr) 40px;
+  }
+  .upload-file .file-size {
+    grid-area: 2 / 2;
+  }
+  .upload-file > ffk-button {
+    grid-area: 1 / 3;
+  }
+  .upload-preview .upload-file small {
+    width: auto;
+    margin-inline-start: 0;
+  }
+}

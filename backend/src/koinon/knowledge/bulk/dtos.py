@@ -93,9 +93,17 @@ class FileRecoveryView(Output):
     original_receipt_state: Literal["verified", "unavailable", "not_checked"]
 
 
+class UploadFormat(Output):
+    mode: Literal["document", "dataset"]
+    extensions: list[str]
+    available: bool
+    reason: str | None = None
+
+
 class FileBatchCapabilities(Output):
     configured: bool
     modes: list[Literal["document", "dataset"]]
+    formats: list[UploadFormat] = Field(default_factory=list)
     processing_policy: Literal["extract_only_v1"] = "extract_only_v1"
     staging_backend: Literal["private_local_posix", "private_azure_blob", "private_gcs_object"] = (
         "private_local_posix"

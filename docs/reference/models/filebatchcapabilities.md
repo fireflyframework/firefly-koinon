@@ -17,6 +17,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 | --- | --- | --- | --- |
 | `configured` | `boolean` | Yes | Not specified |
 | `modes` | Array of `string` | Yes | Not specified |
+| `formats` | Array of [`UploadFormat`](uploadformat.md) | No | Not specified |
 | `processing_policy` | `string` | No | `"extract_only_v1"` |
 | `staging_backend` | `string` | No | `"private_local_posix"` |
 | `staging_topology` | `string` | No | `"single_host_shared_durable_posix"` |
@@ -97,6 +98,13 @@ This is a schema definition, not an example request. It preserves all declared k
             "type": "string"
           },
           "title": "Modes",
+          "type": "array"
+        },
+        "formats": {
+          "items": {
+            "$ref": "#/$defs/UploadFormat"
+          },
+          "title": "Formats",
           "type": "array"
         },
         "processing_policy": {

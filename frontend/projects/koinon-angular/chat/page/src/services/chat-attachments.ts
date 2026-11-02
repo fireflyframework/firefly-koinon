@@ -1,6 +1,7 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 import { Injectable, OnDestroy, computed, effect, inject, signal } from '@angular/core';
+import { KoinonError } from '@fireflyframework/koinon-sdk';
 import type {
   AttachmentCapabilities,
   AttachmentView,
@@ -77,7 +78,9 @@ export class KoinonChatAttachments implements OnDestroy {
       state: row.state,
       removeDisabled: row.state === 'uploading' || !!row.removing,
       ...(row.previewUrl ? { previewUrl: row.previewUrl } : {}),
-      ...(row.remote ? { progress: row.remote.progress.percent } : {}),
+      ...(row.remote && ['processing', 'ready'].includes(row.state)
+        ? { progress: row.remote.progress.percent }
+        : {}),
       ...(row.detail ? { detail: row.detail } : {}),
     })),
   );
@@ -108,6 +111,13 @@ export class KoinonChatAttachments implements OnDestroy {
       : '',
   );
   readonly downloading = signal(new Set<string>());
+  readonly imagesEnabled = computed(
+    () =>
+      !!this.assistant.selectedAgent()?.input_modalities?.includes('image') &&
+      !!this.capabilities()?.formats.some(
+        (format) => format.kind === 'image' && format.extraction.available === true,
+      ),
+  );
   readonly accept = computed(
     () =>
       this.capabilities()
@@ -170,10 +180,12 @@ export class KoinonChatAttachments implements OnDestroy {
     this.error.set('');
     const limits = this.capabilities()!.limits;
     const accepted: File[] = [];
+    const rejected: { file: File; reason: string }[] = [];
+    const reject = (file: File, reason: string) => rejected.push({ file, reason });
     for (const file of files) {
       if (this.rows().length + accepted.length >= limits.max_selected) {
-        this.error.set(`You can attach up to ${limits.max_selected} files to a message.`);
-        break;
+        reject(file, `You can attach up to ${limits.max_selected} files to a message.`);
+        continue;
       }
       const format = this.capabilities()!.formats.find(
         (format) =>
@@ -182,14 +194,14 @@ export class KoinonChatAttachments implements OnDestroy {
           ) && format.extraction.available === true,
       );
       if (!format) {
-        this.error.set('This file type is not supported by the configured file processor.');
+        reject(file, 'This file type is not supported by the configured file processor.');
         continue;
       }
       if (
         format.kind === 'image' &&
         !this.assistant.selectedAgent()?.input_modalities?.includes('image')
       ) {
-        this.error.set('Choose an agent that supports images before attaching an image.');
+        reject(file, 'Choose an agent that supports images before attaching an image.');
         continue;
       }
       if (
@@ -200,12 +212,26 @@ export class KoinonChatAttachments implements OnDestroy {
             format.kind === 'image' ? limits.max_image_bytes : Infinity,
           )
       ) {
-        this.error.set('This file is empty or exceeds the workspace file size limit.');
+        reject(file, 'This file is empty or exceeds the workspace file size limit.');
         continue;
       }
       accepted.push(file);
     }
-    if (!accepted.length) return;
+    if (rejected.length)
+      this.error.set('Some files were not accepted. Review their details before sending.');
+    if (!accepted.length) {
+      this.rows.update((rows) => [
+        ...rows,
+        ...rejected.map(({ file, reason }) => ({
+          key: crypto.randomUUID(),
+          file,
+          uploadKey: '',
+          state: 'rejected' as const,
+          detail: reason,
+        })),
+      ]);
+      return;
+    }
     this.selecting.set(true);
     const thread = await this.assistant.ensureThread();
     if (!thread) {
@@ -215,20 +241,32 @@ export class KoinonChatAttachments implements OnDestroy {
     this.switchContext();
     this.selecting.set(true);
     const generation = this.generation;
-    for (const file of accepted) {
-      if (generation !== this.generation) break;
-      const key = crypto.randomUUID();
-      const previewUrl = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(file.type)
-        ? URL.createObjectURL(file)
-        : undefined;
-      const row: DraftFile = {
-        key,
+    if (rejected.length)
+      this.error.set('Some files were not accepted. Review their details before sending.');
+    const queued: DraftFile[] = accepted.map((file) => ({
+      key: crypto.randomUUID(),
+      file,
+      uploadKey: crypto.randomUUID(),
+      state: 'selected',
+      ...(['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(file.type)
+        ? { previewUrl: URL.createObjectURL(file) }
+        : {}),
+    }));
+    this.rows.update((rows) => [
+      ...rows,
+      ...queued,
+      ...rejected.map(({ file, reason }) => ({
+        key: crypto.randomUUID(),
         file,
-        uploadKey: crypto.randomUUID(),
-        state: 'uploading',
-        ...(previewUrl ? { previewUrl } : {}),
-      };
-      this.rows.update((rows) => [...rows, row]);
+        uploadKey: '',
+        state: 'rejected' as const,
+        detail: reason,
+      })),
+    ]);
+    for (const row of queued) {
+      if (generation !== this.generation) break;
+      if (!this.rows().some((current) => current.key === row.key)) continue;
+      this.update(row.key, { state: 'uploading' });
       await this.upload(row, generation);
     }
     if (generation === this.generation) this.selecting.set(false);
@@ -255,8 +293,20 @@ export class KoinonChatAttachments implements OnDestroy {
     } catch (error) {
       if (generation === this.generation) {
         this.update(row.key, {
-          state: 'failed',
-          detail: 'Upload failed. Retry to resume this file.',
+          state:
+            error instanceof KoinonError &&
+            error.status >= 400 &&
+            error.status < 500 &&
+            error.status !== 408
+              ? 'failed'
+              : 'unknown',
+          detail:
+            error instanceof KoinonError &&
+            error.status >= 400 &&
+            error.status < 500 &&
+            error.status !== 408
+              ? 'Upload failed. Retry to resume this file.'
+              : 'Upload outcome not confirmed. Retry checks the same upload request.',
         });
         this.failure(error);
       }
@@ -270,9 +320,15 @@ export class KoinonChatAttachments implements OnDestroy {
       state:
         remote.status === 'ready'
           ? 'ready'
-          : ['storing', 'queued', 'extracting'].includes(remote.status)
+          : remote.status === 'extracting'
             ? 'processing'
-            : 'failed',
+            : ['storing', 'queued'].includes(remote.status)
+              ? 'queued'
+              : remote.status === 'cancelled'
+                ? 'cancelled'
+                : ['expired', 'deleted'].includes(remote.status)
+                  ? 'expired'
+                  : 'failed',
       detail:
         remote.error ||
         (['expired', 'deleted', 'cancelled'].includes(remote.status)
@@ -296,7 +352,7 @@ export class KoinonChatAttachments implements OnDestroy {
         this.rows.update((rows) =>
           rows.map((row) =>
             row.state === 'ready' && row.remote && Date.parse(row.remote.expires_at) <= this.now()
-              ? { ...row, state: 'failed', detail: 'This file has expired. Upload it again.' }
+              ? { ...row, state: 'expired', detail: 'This file has expired. Upload it again.' }
               : row,
           ),
         );
@@ -342,7 +398,7 @@ export class KoinonChatAttachments implements OnDestroy {
           } catch (error) {
             if (generation !== this.generation) return;
             this.update(row.key, {
-              state: 'failed',
+              state: 'unknown',
               detail: 'File status could not be loaded. Retry to check again.',
             });
             this.failure(error);
@@ -357,7 +413,14 @@ export class KoinonChatAttachments implements OnDestroy {
   }
   async retry(key: string) {
     const row = this.rows().find((row) => row.key === key);
-    if (!row || row.removing || this.assistant.running()) return;
+    if (
+      !row ||
+      this.selecting() ||
+      row.removing ||
+      !['failed', 'unknown', 'cancelled', 'expired'].includes(row.state) ||
+      this.assistant.running()
+    )
+      return;
     this.error.set('');
     const generation = this.generation;
     if (!row.remote) {

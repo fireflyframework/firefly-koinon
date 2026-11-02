@@ -9836,6 +9836,13 @@
           "title": "Modes",
           "type": "array"
         },
+        "formats": {
+          "items": {
+            "$ref": "#/$defs/UploadFormat"
+          },
+          "title": "Formats",
+          "type": "array"
+        },
         "processing_policy": {
           "const": "extract_only_v1",
           "default": "extract_only_v1",
@@ -27020,6 +27027,49 @@
       "title": "ToolActivity",
       "type": "object"
     },
+    "UploadFormat": {
+      "additionalProperties": true,
+      "properties": {
+        "mode": {
+          "enum": [
+            "document",
+            "dataset"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "extensions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Extensions",
+          "type": "array"
+        },
+        "available": {
+          "title": "Available",
+          "type": "boolean"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        }
+      },
+      "required": [
+        "mode",
+        "extensions",
+        "available"
+      ],
+      "title": "UploadFormat",
+      "type": "object"
+    },
     "UploadResponse": {
       "additionalProperties": true,
       "properties": {
@@ -28686,6 +28736,9 @@
     },
     "FileRecoveryView": {
       "$ref": "#/$defs/FileRecoveryView"
+    },
+    "UploadFormat": {
+      "$ref": "#/$defs/UploadFormat"
     },
     "FileBatchCapabilities": {
       "$ref": "#/$defs/FileBatchCapabilities"

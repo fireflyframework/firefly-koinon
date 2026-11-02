@@ -757,6 +757,9 @@ class LoaderRegistry:
     def register(self, loader: SourceLoader, *, kind: SourceKind | None = None) -> None:
         self._loaders[kind or loader.kind] = loader
 
+    def registered_kinds(self) -> tuple[SourceKind, ...]:
+        return tuple(self._loaders)
+
     def set_fallback(self, loader: SourceLoader) -> None:
         self._fallback = loader
 

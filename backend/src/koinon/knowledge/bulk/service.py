@@ -56,6 +56,8 @@ from koinon.knowledge.bulk.recovery_intent import PENDING_RECOVERY, ProcessingRe
 from koinon.knowledge.bulk.repositories import BulkRepository
 from koinon.knowledge.bulk.settings import BulkSettings
 from koinon.knowledge.bulk.storage import BulkStorage, LocalWriterPermit
+from koinon.knowledge.bulk.upload_formats import upload_formats
+from koinon.knowledge.service import KnowledgeSettings
 from koinon.security.authority import PRIMARY_POLICY_UNIT
 
 
@@ -106,6 +108,7 @@ class FileBatches:
         jobs: JobService,
         authority: BulkAuthority,
         intakes: Provider[BulkIntakePort | None] | None = None,
+        knowledge_settings: KnowledgeSettings | None = None,
     ):
         self.catalog, self.records, self.storage, self.settings, self.jobs, self.authority = (
             catalog,
@@ -117,6 +120,7 @@ class FileBatches:
         )
 
         self.intakes = intakes
+        self.knowledge_settings = knowledge_settings or KnowledgeSettings()
 
     @transactional(
         datasource="primary",
@@ -152,6 +156,8 @@ class FileBatches:
                 "single_host_shared_durable_posix" if backend == "local" else "shared_private_object_store"
             ),
             modes=["document", "dataset"],
+            formats=upload_formats(),
+            synchronous_max_file_bytes=self.knowledge_settings.max_upload_bytes,
             max_files=self.settings.max_files,
             max_file_bytes=self.storage.effective_file_limit(),
             max_batch_bytes=self.settings.max_batch_bytes,

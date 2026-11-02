@@ -351,3 +351,14 @@ button:focus-visible {
 .attachment progress::-moz-progress-bar {
   background: var(--ui-action, #ffb34a);
 }
+
+.file-capabilities {
+  padding: 8px 12px;
+  color: var(--ui-muted);
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.file-capabilities p {
+  margin: 0 0 6px;
+}
