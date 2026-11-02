@@ -4,6 +4,7 @@ import { mockService, context as baseContext } from './fixtures';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
+import { createServer } from 'node:http';
 const program =
   'root = KnowledgeAnswer([table, chart, document, schema, flow, cites])\ntable = Evidence("r-query", "table")\nchart = Evidence("r-query", "chart")\ndocument = Evidence("r-search", "document")\nschema = Evidence("r-schema", "schema")\nflow = Evidence("r-lineage", "lineage")\ncites = Evidence("r-search", "citations")';
 async function assistantFixture(
@@ -15,6 +16,8 @@ async function assistantFixture(
     multipleAgents?: boolean;
     answerActions?: boolean;
     helpLanguage?: 'en' | 'es';
+    helpText?: string;
+    stream?: { url: string; completed: () => boolean };
     hold?: Promise<void>;
   } = {},
 ) {
@@ -42,9 +45,10 @@ async function assistantFixture(
       }),
     );
   const helpText =
-    options.helpLanguage === 'es'
+    options.helpText ??
+    (options.helpLanguage === 'es'
       ? 'Soy koinon, el asistente de koinon. Te ayudo a trabajar con el conocimiento al que tienes acceso.'
-      : "I'm koinon, the assistant in koinon. I help you work with the knowledge you are allowed to access.";
+      : "I'm koinon, the assistant in koinon. I help you work with the knowledge you are allowed to access.");
   const helpPolicy = {
     outcome: 'product_help',
     code: 'PRODUCT_CONFIGURATION_V1',
@@ -136,6 +140,7 @@ async function assistantFixture(
     updated_at: '2026-10-26T10:00:00Z',
   });
   await page.route('**/bff/api/v1/tenants/*/**', async (route) => {
+    if (options.stream) completed = options.stream.completed();
     const path = new URL(route.request().url()).pathname;
     const json = (body: unknown, status = 200) =>
       route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
@@ -305,6 +310,7 @@ async function assistantFixture(
       return json({ run_id: 'run-one', message_id: 'answer', event_cursor: '0' });
     }
     if (path.endsWith('/events')) {
+      if (options.stream) return route.continue({ url: options.stream.url });
       if (options.hold) await options.hold;
       completed = true;
       if (options.helpLanguage) {
@@ -954,6 +960,98 @@ for (const width of [1440, 390])
       animations: 'disabled',
     });
   });
+
+for (const width of [1440, 390]) {
+  test(`paced HTTP answer remains unauditable until terminal status at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    const text =
+      'Soy koinon, el asistente de koinon. Te ayudo a trabajar con el conocimiento al que tienes acceso.\n\nEn este contexto puedes pedirme:\nBuscar pasajes en el conocimiento autorizado.';
+    let finishText!: () => void, finishRun!: () => void;
+    const textGate = new Promise<void>((resolve) => {
+      finishText = resolve;
+    });
+    const terminalGate = new Promise<void>((resolve) => {
+      finishRun = resolve;
+    });
+    let terminal = false,
+      connections = 0;
+    const server = createServer(async (_request, response) => {
+      connections++;
+      response.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Access-Control-Allow-Origin': '*',
+      });
+      response.flushHeaders();
+      let id = 0;
+      const emit = (event: string, data: unknown) =>
+        response.write(`id: ${++id}\nevent: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+      emit('message_metadata', {
+        answer_policy: {
+          outcome: 'product_help',
+          code: 'PRODUCT_CONFIGURATION_V1',
+          publication: {
+            format: 'verified-unicode-v1',
+            chunk_size: 128,
+            chunk_count: 2,
+            text_sha256: createHash('sha256').update(text).digest('hex'),
+          },
+        },
+      });
+      emit('message_delta', {
+        text: text.slice(0, 128),
+        chunk_index: 0,
+        chunk_count: 2,
+        text_offset: 0,
+      });
+      await textGate;
+      emit('message_delta', {
+        text: text.slice(128),
+        chunk_index: 1,
+        chunk_count: 2,
+        text_offset: 128,
+      });
+      await terminalGate;
+      terminal = true;
+      emit('completed', { status: 'completed' });
+      response.end();
+    });
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('Owned SSE server did not bind');
+    try {
+      await assistantFixture(page, {
+        audit: true,
+        helpLanguage: 'es',
+        helpText: text,
+        stream: { url: `http://127.0.0.1:${address.port}/events`, completed: () => terminal },
+      });
+      await page.goto('/chat');
+      await page
+        .getByRole('textbox', { name: 'Message koinon' })
+        .fill('¿Quién eres y qué puedes hacer? Responde en español.');
+      await page.getByRole('button', { name: 'Send', exact: true }).click();
+      const answer = page.locator('.assistant-message');
+      await expect(answer).toContainText('Soy koinon');
+      await expect(answer).not.toContainText('Buscar pasajes');
+      await expect(answer.getByRole('button', { name: 'Audit', exact: true })).toHaveCount(0);
+      finishText();
+      await expect(answer).toContainText('Buscar pasajes en el conocimiento autorizado.');
+      await expect(answer.getByRole('button', { name: 'Audit', exact: true })).toHaveCount(0);
+      finishRun();
+      await answer.getByRole('button', { name: 'Audit', exact: true }).click();
+      await expect(page.getByText('Recorded product configuration', { exact: true })).toBeVisible();
+      expect(connections).toBe(1);
+    } finally {
+      finishText();
+      finishRun();
+      server.closeAllConnections();
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+  });
+}
 
 for (const [width, height, language] of [
   [1440, 1000, 'en'],

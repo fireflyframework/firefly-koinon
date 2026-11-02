@@ -7,6 +7,10 @@ from koinon.answers.rendering import RenderedAnswer
 
 
 def render_product_help(topic: HelpTopic, context: ProductHelpContext, language: str) -> RenderedAnswer:
+    if topic == "identity_and_capabilities":
+        identity = render_product_help("identity", context, language)
+        capabilities = render_product_help("capabilities", context, language)
+        return RenderedAnswer(identity.text + "\n\n" + capabilities.text, (), ())
     spanish = language.lower().startswith("es")
     if topic == "identity":
         text = (

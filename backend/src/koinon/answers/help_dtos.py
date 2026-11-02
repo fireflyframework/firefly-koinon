@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from koinon.assistants.tool_activity import ToolName
 
-HelpTopic = Literal["identity", "capabilities", "navigation"]
+HelpTopic = Literal["identity", "capabilities", "identity_and_capabilities", "navigation"]
 
 
 class ProductHelpContext(BaseModel):
