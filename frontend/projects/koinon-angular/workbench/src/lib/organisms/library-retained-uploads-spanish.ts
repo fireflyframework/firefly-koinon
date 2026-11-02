@@ -96,6 +96,7 @@ export const RETAINED_UPLOADS_SPANISH: Record<string, string> = {
   Attempts: 'Intentos',
   'Not published': 'No publicado',
   'Publication not confirmed': 'Publicación sin confirmar',
+  'Processing failed before publication': 'Procesamiento fallido antes de publicar',
   'Ready to publish': 'Listo para publicar',
   'Import completed': 'Importación completada',
   'Not confirmed': 'Sin confirmar',

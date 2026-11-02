@@ -231,6 +231,7 @@ export class KoinonLibraryRetainedUploadsPanel implements OnDestroy {
         {
           absent: 'Not published',
           admitted: 'Publication not confirmed',
+          failed: 'Processing failed before publication',
           prepared: 'Ready to publish',
           committed: 'Import completed',
           unknown: 'Not confirmed',

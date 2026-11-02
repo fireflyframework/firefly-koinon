@@ -80,7 +80,7 @@ async def test_native_lineage_admission_roundtrips_through_bulk_inspection(bulk,
         )
     assert admitted.sha256 == lease.sha256 and admitted.bytes == lease.size_bytes
     observation = await port.inspect(lease)
-    assert observation.status == "admitted" and observation.receipt is None
+    assert observation.status == "failed" and observation.receipt is None
     current = await bulk.service.processing_recovery(lease.subject, lease.tenant_id, batch_id, item_id)
     assert current.native_state == "admitted" and current.operation is None
 
@@ -95,6 +95,7 @@ async def test_native_lineage_admission_roundtrips_through_bulk_inspection(bulk,
         (1, "rollback"),
         (2, "rollback"),
         (1, "concurrent"),
+        (1, "recovery"),
     ],
 )
 async def test_actual_native_transform_promotes_and_bulk_receipt_is_recoverable(
@@ -202,6 +203,8 @@ async def test_actual_native_transform_promotes_and_bulk_receipt_is_recoverable(
             stages.append("index")
             if outcome == "concurrent":
                 await revoke_concurrently()
+            if outcome == "recovery" and stages.count("index") == 1:
+                raise TimeoutError("controlled native publication timeout")
             if outcome == "rollback":
                 raise RuntimeError("controlled native index failure")
             return len(kwargs["chunks"])
@@ -259,6 +262,9 @@ async def test_actual_native_transform_promotes_and_bulk_receipt_is_recoverable(
                     config_fingerprint="0" * 64,
                 )
             )
+        if outcome == "recovery":
+            await failed_native_recovery_roundtrip(bulk, port, queue, lease, lineage, pipeline)
+            return
         operation = pipeline.run(
             request=SubmitSourceRequest(kind=SourceKind.text),
             content=b"original",
@@ -284,7 +290,7 @@ async def test_actual_native_transform_promotes_and_bulk_receipt_is_recoverable(
                 await asyncio.wait_for(operation, 10)
             observation = await port.inspect(lease) if outcome == "rollback" else None
             if observation is not None:
-                assert observation.status == "admitted" and observation.receipt is None
+                assert observation.status == "failed" and observation.receipt is None
             from flycanon.core.services.sources.lineage.dtos import DocumentScope
             from flycanon.core.services.sources.lineage.ports import LineageQuery
 
@@ -310,3 +316,80 @@ async def test_actual_native_transform_promotes_and_bulk_receipt_is_recoverable(
     assert observation.status == "committed"
     assert observation.receipt is not None
     assert observation.receipt.native_source_id == row.id
+
+
+async def failed_native_recovery_roundtrip(bulk, port, queue, lease, lineage, pipeline):
+    from types import SimpleNamespace
+
+    from flycanon.core.services.sources.lineage.dtos import DocumentScope
+    from flycanon.core.services.sources.lineage.ports import LineageQuery
+    from flycanon.interfaces.dtos.source import SubmitSourceRequest
+    from flycanon.interfaces.enums import SourceKind
+
+    from koinon.knowledge.bulk.dtos import BulkRecoveryAction
+    from koinon.knowledge.bulk.execution import BulkExecutor
+
+    async def ingest(**arguments):
+        return await pipeline.run(
+            request=SubmitSourceRequest(kind=SourceKind.text),
+            content=arguments["content"],
+            tenant_id=arguments["tenant_id"],
+            workspace_id=arguments["workspace_id"],
+            actor=arguments["actor"],
+            filename=arguments["filename"],
+            content_type="text/plain",
+            logical_key=arguments["source_catalog_id"],
+            operation_id="upload:" + arguments["source_catalog_id"],
+            publication_guard=arguments["publication_guard"],
+            validate_processing=arguments["validate_processing"],
+            validate_publication=arguments["validate_publication"],
+            prepared_document=SimpleNamespace(
+                text="original", sections=[{"path": [], "body": "original"}], metadata={}
+            ),
+        )
+
+    port.facade().domains.ingest_document = ingest
+    executor = BulkExecutor(queue, bulk.service.storage, SimpleNamespace(get=lambda: port))
+    await executor.execute(lease)
+    observed = await port.inspect(lease)
+    assert observed.status == "failed" and observed.failure is not None
+    proof = observed.failure
+    descriptor = await bulk.service.processing_recovery(
+        lease.subject, lease.tenant_id, lease.batch_id, lease.item_id
+    )
+    assert descriptor.operation == "retry_processing" and descriptor.native_state == "failed"
+    assert await queue.claim("no-automatic-replay") is None
+    original_before = (await bulk.service.items(lease.subject, lease.tenant_id, lease.batch_id)).items[0]
+    await bulk.service.recover_processing(
+        lease.subject,
+        lease.tenant_id,
+        lease.batch_id,
+        lease.item_id,
+        BulkRecoveryAction(expected_revision=descriptor.batch_revision, operation="retry_processing"),
+        "confirmed-same-original",
+    )
+    # Repeating the same acknowledged action cannot authorize another processing generation.
+    await bulk.service.recover_processing(
+        lease.subject,
+        lease.tenant_id,
+        lease.batch_id,
+        lease.item_id,
+        BulkRecoveryAction(expected_revision=descriptor.batch_revision, operation="retry_processing"),
+        "confirmed-same-original",
+    )
+    recovered = await queue.claim("explicit-recovery")
+    assert recovered.attempt == lease.attempt + 1 and recovered.job_id == lease.job_id
+    assert recovered.recovery_failure == proof
+    await executor.execute(recovered)
+    current = await port.inspect(recovered)
+    assert current.status == "committed" and current.receipt.source_version_id == proof.version_id
+    batch = await bulk.service.get(lease.subject, lease.tenant_id, lease.batch_id)
+    after = (await bulk.service.items(lease.subject, lease.tenant_id, lease.batch_id)).items[0]
+    assert batch.status == "succeeded" and after.status == "succeeded"
+    assert after.id == original_before.id and after.sha256 == original_before.sha256
+    scope = DocumentScope(lease.tenant_id, recovered.destination.workspace_id, lease.subject)
+    async with lineage.repository.read() as unit:
+        assert await unit.count(LineageQuery("version", scope)) == 1
+        assert await unit.count(LineageQuery("extraction", scope)) == 1
+        events = await unit.all(LineageQuery("event", scope, order=("created_at",)))
+    assert [event["status"] for event in events] == ["admitted", "failed", "committed"]

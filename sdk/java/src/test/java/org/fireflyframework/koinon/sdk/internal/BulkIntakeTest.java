@@ -160,4 +160,15 @@ final class BulkIntakeTest {
     }
   }
 
+  @Test void failedNativeProcessingRemainsASeparateTypedObservation() throws Exception {
+    var http=new InertHttp();
+    try(var transport=new Transport(URI.create("https://inert.test/api/v1"),http,false,()->"fresh",new JsonCodec())){
+      http.response="{\"batch_id\":\"batch\",\"item_id\":\"item\",\"batch_revision\":9,\"native_state\":\"failed\",\"operation\":\"retry_processing\",\"attempts\":2,\"max_attempts\":3,\"job_status\":\"failed\",\"original_receipt_state\":\"verified\"}";
+      var observed=new FileBatchesApi(transport,"north").processingRecovery("batch","item");
+      assertEquals(FileRecoveryViewNativeState.FAILED,observed.nativeState());
+      assertEquals(BulkRecoveryActionOperation.RETRY_PROCESSING,observed.operation());
+      assertEquals(1,http.requests.size());
+    }
+  }
+
 }

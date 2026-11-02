@@ -58,7 +58,7 @@ async def native_reader(bulk, bulk_url):
             connection.execute(
                 text(
                     "GRANT SELECT ON canon_source_versions,canon_source_artifacts,"
-                    f'canon_source_extractions TO "{role}"'
+                    f'canon_source_extractions,canon_source_heads,canon_source_lineage_events TO "{role}"'
                 )
             )
     finally:

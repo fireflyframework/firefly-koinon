@@ -9978,6 +9978,7 @@
           "enum": [
             "absent",
             "admitted",
+            "failed",
             "prepared",
             "committed",
             "unknown",

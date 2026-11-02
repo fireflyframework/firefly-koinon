@@ -64,7 +64,9 @@ class Output(ResponseModel):
     pass
 
 
-NativeRecoveryState = Literal["absent", "admitted", "prepared", "committed", "unknown", "not_checked"]
+NativeRecoveryState = Literal[
+    "absent", "admitted", "failed", "prepared", "committed", "unknown", "not_checked"
+]
 
 
 class FileRecoveryView(Output):

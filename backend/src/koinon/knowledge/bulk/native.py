@@ -117,6 +117,21 @@ class NativeBulkIntake(BulkIntakePort):
                     )
                 )
                 if extraction is None:
+                    from koinon.knowledge.bulk.failed_native import failed_native_proof
+
+                    published = await unit.count(
+                        LineageQuery(
+                            "extraction",
+                            scope,
+                            source_id=version["source_id"],
+                            equal={"version_id": version["id"]},
+                        )
+                    )
+                    failure = await failed_native_proof(
+                        unit, scope, version, lease, published=bool(published)
+                    )
+                    if failure is not None:
+                        return NativeObservation("failed", failure=failure)
                     return NativeObservation("admitted")
                 return NativeObservation(
                     "committed",
