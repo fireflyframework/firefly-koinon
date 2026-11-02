@@ -20,10 +20,10 @@ import {
 } from '@angular/core';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import type { CatalogEntry } from '@fireflyframework/koinon-sdk';
-import { KoinonIcon } from '../atoms/icon';
-import { KoinonI18n, KoinonTextPipe } from '../foundations/i18n';
+import { KoinonIcon } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonI18n, KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonCatalogSearch } from '../services/catalog-search';
-import { friendlyKind, resourceIcon } from '../services/library-tree';
+import { friendlyKind, resourceIcon } from '@fireflyframework/koinon-angular/workbench/core';
 
 import type { KoinonCommand } from './command-palette';
 type PaletteOption =

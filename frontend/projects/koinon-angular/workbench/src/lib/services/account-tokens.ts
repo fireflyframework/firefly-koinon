@@ -1,8 +1,8 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 import type { PersonalTokenInput } from '@fireflyframework/koinon-sdk';
 import type { KoinonAccount } from './account';
-import type { KoinonClientContext } from './client-context';
-import type { KoinonFacade } from '../koinon-facade';
+import type { KoinonClientContext } from '@fireflyframework/koinon-angular/workbench/core';
+import type { KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
 export type AccountPerformer = <T>(
   operation: () => Promise<T>,
   apply: ((value: T) => void) | undefined,

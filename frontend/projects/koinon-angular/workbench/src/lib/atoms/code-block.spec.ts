@@ -1,8 +1,8 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 import { TestBed } from '@angular/core/testing';
-import { KoinonCodeBlock } from './code-block';
-import { sqlTokens } from '../foundations/sql-tokens';
+import { KoinonCodeBlock } from '@fireflyframework/koinon-angular/workbench/panels';
+import { sqlTokens } from '../../../panels/src/lib/foundations/sql-tokens';
 it('preserves the exact recorded SQL while highlighting comments, quoted names, literals and parameters', () => {
   const sql = `-- SELECT remains a comment\nSELECT "order", 'it''s <img src=x>', $$quoted SELECT$$, $1, :tenant, 1.5e-3 FROM "finance"."orders" /* outer /* nested */ done */ WHERE id = ?;`;
   const tokens = sqlTokens(sql);

@@ -11,10 +11,10 @@ import {
 } from '@angular/core';
 import type { CatalogEntry } from '@fireflyframework/koinon-sdk';
 import { KoinonDocumentViewer } from '../services/document-viewer';
-import { KoinonSidePanel } from '../molecules/side-panel';
-import { KoinonButton } from '../atoms/button';
-import { KoinonSkeleton } from '../atoms/skeleton';
-import { KoinonTextPipe, KoinonDatePipe, registerKoinonSpanish } from '../foundations/i18n';
+import { KoinonSidePanel } from '@fireflyframework/koinon-angular/workbench/panels';
+import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonSkeleton } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonTextPipe, KoinonDatePipe, registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench/core';
 registerKoinonSpanish({
   'This original exceeds the 128 MiB download limit. Its extracted text remains readable. Contact your administrator for an approved transfer.':
     'Este original supera el límite de descarga de 128 MiB. Su texto extraído sigue disponible. Contacta con tu administrador para transferirlo de forma autorizada.',

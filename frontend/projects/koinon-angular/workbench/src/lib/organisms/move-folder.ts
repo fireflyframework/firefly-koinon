@@ -12,12 +12,12 @@ import {
   signal,
 } from '@angular/core';
 import { KoinonError, type CatalogEntry } from '@fireflyframework/koinon-sdk';
-import { KoinonButton } from '../atoms/button';
-import { KoinonTextPipe } from '../foundations/i18n';
-import { KoinonFacade } from '../koinon-facade';
-import { KoinonClientContext } from '../services/client-context';
-import { isFolder, isSystemManaged } from '../services/library-tree';
-import { KoinonFolderTree } from './folder-tree';
+import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonClientContext } from '@fireflyframework/koinon-angular/workbench/core';
+import { isFolder, isSystemManaged } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonFolderTree } from '@fireflyframework/koinon-angular/workbench/panels';
 
 export function canMoveFolderTo(
   source: CatalogEntry,

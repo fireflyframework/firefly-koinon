@@ -18,8 +18,8 @@ import {
 } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import type { FileBatchView, Page } from '@fireflyframework/koinon-sdk';
-import { KoinonFacade } from '../koinon-facade';
-import { KoinonClientContext } from '../services/client-context';
+import { KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonClientContext } from '@fireflyframework/koinon-angular/workbench/core';
 import {
   retainedUploadAccess,
   type RetainedUploadOperation,
@@ -28,16 +28,16 @@ import {
 } from '../services/library-retained-uploads-contract';
 import { RetainedUploadJournal } from '../services/library-retained-uploads-journal';
 import { RetainedUploadsState } from '../services/library-retained-uploads-state';
-import { KoinonBadge } from '../atoms/badge';
-import { KoinonButton } from '../atoms/button';
-import { KoinonSkeleton } from '../atoms/skeleton';
+import { KoinonBadge } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonSkeleton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonPagination } from '../molecules/pagination';
 import {
   KoinonI18n,
   KoinonDatePipe,
   KoinonTextPipe,
   registerKoinonSpanish,
-} from '../foundations/i18n';
+} from '@fireflyframework/koinon-angular/workbench/core';
 import {
   uploadProcessingHelp,
   uploadRecoveryReason,

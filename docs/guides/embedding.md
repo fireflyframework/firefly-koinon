@@ -23,6 +23,12 @@ flowchart LR
 
 An embedded component must not take over the host router, create a global authentication session, change the host theme or persist an unrestricted token. Components receive explicit context and report events. Visual styles stay inside the component boundary; design tokens allow intentional theming. The host decides where a selected document, citation or query result opens.
 
+## Choose an Angular entry point
+
+Use `@fireflyframework/koinon-angular/workbench/page` for the workbench shell and its optional page-loader tokens. Supply the client through `provideKoinonClient` from `@fireflyframework/koinon-angular/workbench/core`. This keeps document details and other panels outside the shell’s initial static dependency graph until they are opened.
+
+The existing package root and `/workbench` imports remain compatible: they re-export the same component classes, injection tokens and services. Hosts that use individual panels can import `KoinonInspector`, `KoinonFolderTree`, `KoinonSidePanel`, `KoinonFormField`, `KoinonCodeBlock` and `KoinonCitationPanel` from `/workbench/panels`. Passive availability indicators and their shared observation session use `/workbench/availability`. Importing a panel eagerly in the host makes it part of that host’s initial bundle; the package cannot defer a component that the host uses immediately.
+
 ## Open a focused chat
 
 Set `view="chat"` and `[showNavigation]="false"` on `ffk-workbench` when the host owns the product navigation. Enable the optional `KOINON_CHAT_LOADER` provider. The same inputs are properties on the `firefly-koinon` custom element. `viewChange` reports navigation requests to the host; the component does not change its URL.

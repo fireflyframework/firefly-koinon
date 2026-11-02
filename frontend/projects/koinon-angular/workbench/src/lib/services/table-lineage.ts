@@ -6,8 +6,8 @@ import type {
   TableProvenance,
   TableSnapshotPage,
 } from '@fireflyframework/koinon-sdk';
-import { KoinonFacade } from '../koinon-facade';
-import { KoinonClientContext } from './client-context';
+import { KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonClientContext } from '@fireflyframework/koinon-angular/workbench/core';
 
 export interface TableLineageTarget {
   datasetId: string;

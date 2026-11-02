@@ -16,12 +16,12 @@ import { DOCUMENT } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { KoinonOrganizationInformation } from './organization-information';
 import { KoinonPhotoDraft } from '../services/photo-draft';
-import { KoinonClientContext } from '../services/client-context';
+import { KoinonClientContext } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonAccount } from '../services/account';
-import { KoinonFacade } from '../koinon-facade';
-import { KoinonI18n, KoinonTextPipe, KoinonDatePipe } from '../foundations/i18n';
-import { KoinonButton } from '../atoms/button';
-import { KoinonFormField } from '../molecules/form-field';
+import { KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonI18n, KoinonTextPipe, KoinonDatePipe } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonFormField } from '@fireflyframework/koinon-angular/workbench/panels';
 import { KoinonPagination } from '../molecules/pagination';
 import { KoinonAuthorizedApplicationsPanel } from './authorized-applications-panel';
 import {

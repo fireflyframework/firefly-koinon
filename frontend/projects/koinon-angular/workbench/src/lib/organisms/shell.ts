@@ -1,6 +1,6 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
-import { KoinonTextPipe } from '../foundations/i18n';
+import { KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench/core';
 import {
   Component,
   Input,
@@ -18,7 +18,7 @@ import {
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { KoinonAccountMenu } from './account-menu';
 import { KoinonPoweredBy } from '../atoms/powered-by';
-import { KoinonIcon } from '../atoms/icon';
+import { KoinonIcon } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonSearchField } from '../molecules/search-field';
 export type PrimaryDestination = 'library' | 'chat' | 'my-activity' | 'activity' | 'settings';
 export interface OrganizationOption {

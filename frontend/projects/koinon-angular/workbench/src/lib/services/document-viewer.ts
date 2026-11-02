@@ -11,8 +11,8 @@ import type {
   BinaryDownload,
 } from '@fireflyframework/koinon-sdk';
 import { createAvailabilityApi } from '@fireflyframework/koinon-sdk/availability';
-import { KoinonFacade } from '../koinon-facade';
-import { KoinonClientContext } from './client-context';
+import { KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonClientContext } from '@fireflyframework/koinon-angular/workbench/core';
 interface Selection {
   entry: CatalogEntry;
   key: string;

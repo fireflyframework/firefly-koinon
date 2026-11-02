@@ -20,9 +20,9 @@ import {
   KoinonAuthorizedApplications,
   applicationLifecycle,
 } from '../services/authorized-applications';
-import { KoinonTextPipe, KoinonDatePipe, KoinonI18n } from '../foundations/i18n';
-import { KoinonButton } from '../atoms/button';
-import { KoinonIcon } from '../atoms/icon';
+import { KoinonTextPipe, KoinonDatePipe, KoinonI18n } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonIcon } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonPagination } from '../molecules/pagination';
 import { KoinonMcpConnectionPanel } from './mcp-connection-panel';
 

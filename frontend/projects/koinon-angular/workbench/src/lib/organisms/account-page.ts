@@ -11,13 +11,13 @@ import {
   afterNextRender,
   inject,
 } from '@angular/core';
-import { KoinonTextPipe, registerKoinonSpanish } from '../foundations/i18n';
+import { KoinonTextPipe, registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench/core';
 import { PANEL_SPANISH } from '../foundations/panel-spanish.generated';
-import { KoinonIcon } from '../atoms/icon';
+import { KoinonIcon } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonAccountPanel } from './account-panel';
 import {NgComponentOutlet} from '@angular/common';
 import {KOINON_COMMUNICATIONS_LOADER} from '../services/chat-loader';
-import {KoinonFacade} from '../koinon-facade';
+import {KoinonFacade} from '@fireflyframework/koinon-angular/workbench/core';
 import {signal,type Type} from '@angular/core';
 interface NotificationTarget {kind:'invitation'|'workspace'|'access'|'none';id:string}
 type AccountSection = 'profile' | 'tokens' | 'applications' | 'notifications' | 'notification-preferences';

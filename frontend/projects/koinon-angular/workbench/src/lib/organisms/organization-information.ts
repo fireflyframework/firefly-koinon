@@ -9,8 +9,8 @@ import {
   inject,
 } from '@angular/core';
 import { KoinonOrganizationDirectory } from '../services/organization-directory';
-import { KoinonTextPipe, KoinonDatePipe, registerKoinonSpanish } from '../foundations/i18n';
-import { KoinonButton } from '../atoms/button';
+import { KoinonTextPipe, KoinonDatePipe, registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
 import { ORGANIZATION_PROFILE_SPANISH } from './organization-spanish';
 registerKoinonSpanish(ORGANIZATION_PROFILE_SPANISH);
 import { KoinonCorporatePresentationPanel } from './corporate-presentation';

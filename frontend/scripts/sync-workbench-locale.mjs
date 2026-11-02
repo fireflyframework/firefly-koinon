@@ -38,7 +38,8 @@ function sources(path, panels = false) {
   );
 }
 const all = dictionary(resolve(root, 'src/lib/foundations/spanish.ts'));
-const content = sources(resolve(root, 'workbench/src/lib')).join('\n');
+const content = ['src/lib', 'core/src/lib', 'availability/src/lib', 'panels/src/lib']
+  .flatMap(path => sources(resolve(root, 'workbench', path))).join('\n');
 const selected = Object.fromEntries(
   Object.entries(all).filter(
     ([key]) => content.includes(key) || content.includes(key.replaceAll("'", "\\'")),
@@ -48,7 +49,7 @@ const output =
   '// Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0\n// Library vocabulary. Regenerate with npm run sync:locale after editing the canonical Spanish dictionaries.\nexport const WORKBENCH_SPANISH:Readonly<Record<string,string>>=' +
   JSON.stringify(selected, null, 2) +
   ';\n';
-const target = resolve(root, 'workbench/src/lib/foundations/workbench-spanish.generated.ts');
+const target = resolve(root, 'workbench/core/src/lib/foundations/workbench-spanish.generated.ts');
 const panelContent = sources(resolve(root, 'workbench/src/lib'), true).join('\n');
 const panelSelected = Object.fromEntries(
   Object.entries(all).filter(

@@ -1,4 +1,4 @@
-import {KoinonTextPipe} from './foundations/i18n';
+import {KoinonTextPipe} from '@fireflyframework/koinon-angular/workbench/core';
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 import {CdkTrapFocus} from '@angular/cdk/a11y';
 import type {OverlayRef} from '@angular/cdk/overlay';
@@ -8,28 +8,28 @@ import {KoinonAccountPage} from './organisms/account-page';
 import {KoinonWorkbenchDialogs} from './organisms/workbench-dialogs';
 import {ChangeDetectionStrategy,Component,HostListener,Input,Output,EventEmitter,OnInit,OnChanges,OnDestroy,PendingTasks,ViewChild,TemplateRef,ViewContainerRef,ElementRef,ViewEncapsulation,booleanAttribute,computed,effect,inject,signal,type SimpleChanges,type Type,Injector,afterNextRender} from '@angular/core';
 import type {BrandingValues,CatalogEntry,Citation,KoinonClient,KoinonTransport,QueryResponse,ResourceKind,Membership} from '@fireflyframework/koinon-sdk';
-import {KoinonI18n} from './foundations/i18n';
+import {KoinonI18n} from '@fireflyframework/koinon-angular/workbench/core';
 import {KoinonAccount} from './services/account';
 import {KoinonBranding} from './services/branding';
 import {brandStyles,brandImage,brandSymbol} from './services/branding-values';
 import {KoinonFontLoader} from './services/font-loader';
-import {KoinonFacade} from './koinon-facade';
+import {KoinonFacade} from '@fireflyframework/koinon-angular/workbench/core';
 import {KOINON_ACTIVITY_LOADER,KOINON_COMMUNICATIONS_LOADER,KOINON_CHAT_LOADER,KOINON_SETTINGS_LOADER,KOINON_INVITATION_LOADER,KOINON_SHARED_CONVERSATION_LOADER} from './services/chat-loader';
 import {KoinonAssistant} from './services/assistant';
-import {KoinonClientContext} from './services/client-context';
-import {folderTrail,isSystemManaged,friendlyKind,isFolder,nextFolderKind} from './services/library-tree';
+import {KoinonClientContext} from '@fireflyframework/koinon-angular/workbench/core';
+import {folderTrail,isSystemManaged,friendlyKind,isFolder,nextFolderKind} from '@fireflyframework/koinon-angular/workbench/core';
 import {KoinonCommandPalette,type KoinonCommand} from './organisms/command-palette';
 import {KoinonSignIn} from './organisms/sign-in';
 import {KoinonShell,type PrimaryDestination} from './organisms/shell';
 import {KoinonLibraryTemplate} from './templates/library-template';
-import {KoinonInspector} from './organisms/inspector';
+import {KoinonInspector} from '@fireflyframework/koinon-angular/workbench/panels';
 import {KoinonDocumentViewerPanel} from './organisms/document-viewer';
 import {KoinonTableLineagePanel} from './organisms/table-lineage-panel';
 import {KoinonTableLineage} from './services/table-lineage';
-import {KoinonButton} from './atoms/button';
-import {KoinonIcon} from './atoms/icon';
-import {KoinonSkeleton} from './atoms/skeleton';
-import type {KoinonScope} from './models';
+import {KoinonButton} from '@fireflyframework/koinon-angular/workbench/core';
+import {KoinonIcon} from '@fireflyframework/koinon-angular/workbench/core';
+import {KoinonSkeleton} from '@fireflyframework/koinon-angular/workbench/core';
+import type {KoinonScope} from '@fireflyframework/koinon-angular/workbench/core';
 type Dialog='uploads'|'move'|'sign-out'|'account'|'archived'|'tree'|'add'|'create'|'edit'|'upload'|'archive'|'query'|'lineage'|'citation';
 @Component({selector:'ffk-workbench',imports:[KoinonDocumentViewerPanel,KoinonSignIn,KoinonAccountPage,CdkTrapFocus,KoinonTableLineagePanel,KoinonTextPipe,KoinonCommandPalette,NgComponentOutlet,KoinonWorkbenchDialogs,KoinonShell,KoinonLibraryTemplate,KoinonInspector,KoinonButton,KoinonIcon,KoinonSkeleton],providers:[KoinonBranding,KoinonTableLineage,KoinonFontLoader,KoinonI18n,KoinonAccount,KoinonClientContext,KoinonFacade,KoinonAssistant],templateUrl:'./workbench.html',styleUrl:'./workbench.scss',host:{'[class.koinon-dark]':"theme==='dark'",'[attr.lang]':'i18n.preferences().locale'},encapsulation:ViewEncapsulation.ShadowDom,changeDetection:ChangeDetectionStrategy.OnPush})
 export class KoinonWorkbench implements OnInit,OnChanges,OnDestroy{

@@ -1,8 +1,8 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 import { Injectable, OnDestroy, effect, inject, signal } from '@angular/core';
 import { KoinonAccount } from './account';
-import { KoinonClientContext } from './client-context';
-import { KoinonFacade } from '../koinon-facade';
+import { KoinonClientContext } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
 @Injectable()
 export class KoinonPhotoDraft implements OnDestroy {
   private readonly account = inject(KoinonAccount);
