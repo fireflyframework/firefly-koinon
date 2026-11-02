@@ -38,6 +38,8 @@ export interface UploadView {
   transferring: boolean;
   message: string;
   currentFile: string;
+  currentItemId: string;
+  checkingCapabilities: boolean;
   received: number;
   uncertain: boolean;
   capabilities: FileBatchCapabilities | null;
@@ -100,6 +102,8 @@ const empty = (): UploadView => ({
   transferring: false,
   message: '',
   currentFile: '',
+  currentItemId: '',
+  checkingCapabilities: false,
   received: 0,
   uncertain: false,
   capabilities: null,
@@ -124,10 +128,15 @@ const sameScope = (a: UploadScope, b: UploadScope) =>
 /** Mutation keys live with one verified client/scope; ambiguous writes are never replayed. */
 export class LibraryUploadCoordinator {
   private session: Session | null = null;
+  private readinessScope: UploadScope | null = null;
+  private readinessController?: AbortController;
   private readonly state = signal<UploadView>(empty());
   constructor(private readonly ports: UploadPorts) {}
   readonly view = () =>
-    this.session && !sameScope(this.session.scope, this.ports.scope()) ? empty() : this.state();
+    (this.session && !sameScope(this.session.scope, this.ports.scope())) ||
+    (this.readinessScope && !sameScope(this.readinessScope, this.ports.scope()))
+      ? empty()
+      : this.state();
   private current(session: Session) {
     return (
       this.session === session &&
@@ -142,7 +151,51 @@ export class LibraryUploadCoordinator {
     this.check(session);
     this.state.update((old) => ({ ...old, ...value }));
   }
+  async inspect() {
+    const scope = { ...this.ports.scope() };
+    if (this.view().busy || (this.session && this.current(this.session))) return;
+    if (
+      this.readinessScope &&
+      sameScope(this.readinessScope, scope) &&
+      (this.state().capabilities || this.state().checkingCapabilities)
+    )
+      return;
+    this.readinessController?.abort();
+    this.readinessScope = scope;
+    const controller = new AbortController();
+    this.readinessController = controller;
+    this.state.set(empty());
+    if (
+      !scope.owner ||
+      !scope.transport ||
+      !scope.workspaceId ||
+      !scope.parentId ||
+      scope.allowed === false
+    )
+      return;
+    this.state.update((value) => ({ ...value, checkingCapabilities: true }));
+    try {
+      const capabilities = await this.ports
+        .client()
+        .fileBatches.capabilities(scope.tenantId, scope.workspaceId, {
+          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]),
+        });
+      if (!controller.signal.aborted && sameScope(scope, this.ports.scope()))
+        this.state.update((value) => ({ ...value, capabilities }));
+    } catch {
+      if (!controller.signal.aborted && sameScope(scope, this.ports.scope()))
+        this.state.update((value) => ({
+          ...value,
+          message: 'Upload readiness could not be verified. No files were sent.',
+        }));
+    } finally {
+      if (!controller.signal.aborted && sameScope(scope, this.ports.scope()))
+        this.state.update((value) => ({ ...value, checkingCapabilities: false }));
+    }
+  }
   invalidate() {
+    this.readinessController?.abort();
+    this.readinessScope = null;
     this.session?.controller.abort();
     this.session = null;
     this.state.set(empty());
@@ -226,7 +279,7 @@ export class LibraryUploadCoordinator {
       }
     } finally {
       if (this.current(session))
-        this.set(session, { busy: false, transferring: false, currentFile: '' });
+        this.set(session, { busy: false, transferring: false, currentFile: '', currentItemId: '' });
     }
   }
   async start(files: File[], mode: 'document' | 'dataset') {
@@ -309,6 +362,18 @@ export class LibraryUploadCoordinator {
         }
         if (
           !caps.modes.includes(mode) ||
+          (caps.formats?.length &&
+            files.some(
+              (file) =>
+                !caps.formats!.some(
+                  (format) =>
+                    format.mode === mode &&
+                    format.available &&
+                    format.extensions.some((extension) =>
+                      file.name.toLowerCase().endsWith(extension.toLowerCase()),
+                    ),
+                ),
+            )) ||
           files.length > limits.max_files ||
           files.some((file) => file.size < 1 || file.size > limits.max_file_bytes) ||
           files.reduce((size, file) => size + file.size, 0) > limits.max_batch_bytes
@@ -490,7 +555,7 @@ export class LibraryUploadCoordinator {
       );
       const file = session.files[index];
       if (!file) throw new Error('Original unavailable');
-      this.set(session, { stage: 'staging', currentFile: file.name });
+      this.set(session, { stage: 'staging', currentFile: file.name, currentItemId: item.id });
       const key = crypto.randomUUID();
       session.uploadKeys.set(item.id, key);
       session.attemptedUploads.add(item.id);
@@ -513,7 +578,12 @@ export class LibraryUploadCoordinator {
       )
         throw new Error('Original receipt disagrees');
       session.pendingWrite = false;
-      this.set(session, { received: this.state().received + 1 });
+      this.set(session, {
+        received: this.state().received + 1,
+        items: this.state().items.map((row) =>
+          row.id === item.id ? { ...row, status: 'staged' } : row,
+        ),
+      });
     }
     await this.observe(session);
   }

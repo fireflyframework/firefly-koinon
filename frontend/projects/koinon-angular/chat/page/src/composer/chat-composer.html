@@ -34,7 +34,7 @@
           </div>
           <div class="attachment-state" role="status">
             <span>{{ status(item) | ffkText }}</span>
-            @if (item.state === 'failed') {
+            @if (['failed', 'unknown', 'cancelled', 'expired'].includes(item.state)) {
               <button
                 type="button"
                 [disabled]="disabled"
@@ -49,7 +49,7 @@
             <progress
               max="100"
               [value]="progress(item)"
-              [attr.aria-label]="('File progress' | ffkText) + ': ' + item.name"
+              [attr.aria-label]="('File processing progress' | ffkText) + ': ' + item.name"
             ></progress>
           }
           @if (item.detail) {
@@ -151,6 +151,18 @@
         }}</small></span
       >
     </button>
+    @if (attachmentsEnabled && fileLimits; as limits) {
+      <div class="file-capabilities">
+        <p>{{ 'Supported file types' | ffkText }}: {{ accept || ('Not reported' | ffkText) }}</p>
+        <p>
+          {{ 'Maximum per file' | ffkText }}: {{ size(limits.max_file_bytes) }} ·
+          {{ 'Files per message' | ffkText }}: {{ limits.max_selected }}
+        </p>
+        @if (imageFilesEnabled) {
+          <p>{{ 'Maximum image size' | ffkText }}: {{ size(limits.max_image_bytes) }}</p>
+        }
+      </div>
+    }
     @if (canChooseKnowledge) {
       <button type="button" cdkMenuItem (click)="chooseKnowledge()">
         <ffk-icon name="folder" /><span

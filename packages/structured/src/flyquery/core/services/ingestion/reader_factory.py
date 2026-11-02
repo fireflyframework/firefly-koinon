@@ -26,6 +26,10 @@ from flyquery.core.services.ingestion.reader import FileReader, UnsupportedForma
 _SUPPORTED_COMPRESSIONS = frozenset({"none", "gz", "zip", "bz2"})
 
 
+def supported_compressions() -> tuple[str, ...]:
+    return tuple(sorted(_SUPPORTED_COMPRESSIONS - {"none"}))
+
+
 def get_reader(file_format: str, compression: str = "none") -> FileReader:
     if compression not in _SUPPORTED_COMPRESSIONS:
         raise UnsupportedFormatError(f"compression {compression!r} not in {sorted(_SUPPORTED_COMPRESSIONS)}")

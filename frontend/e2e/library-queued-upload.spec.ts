@@ -242,7 +242,7 @@ for (const width of [1440, 390]) {
     expect(state.calls.filter((call) => call.path.endsWith('/submit'))).toHaveLength(1);
     expect(state.calls.filter((call) => call.method === 'PUT')).toHaveLength(1);
     await dialog.getByRole('button', { name: 'Request cancellation', exact: true }).click();
-    await expect(dialog.getByText('Stopped', { exact: true }).first()).toBeVisible();
+    await expect(dialog.getByText('Cancelled', { exact: true }).first()).toBeVisible();
     expect(state.calls.filter((call) => call.path.endsWith('/cancel'))).toHaveLength(1);
     expect(state.service.writes.some((call) => call.path.includes('/jobs/'))).toBe(false);
   });
@@ -269,10 +269,8 @@ test('large originals are not sent when queued storage is unavailable', async ({
     mimeType: 'text/plain',
     buffer: Buffer.alloc(33 * 1024 * 1024, 65),
   });
-  await dialog.getByRole('button', { name: 'Upload 1 file', exact: true }).click();
-  await expect(dialog.getByRole('alert')).toContainText(
-    'Large files need configured queued storage',
-  );
+  await expect(dialog.getByRole('button', { name: 'Upload 1 file', exact: true })).toBeDisabled();
+  await expect(dialog).toContainText('This file exceeds the maximum file size.');
   await expect(dialog).toContainText('Maximum per file: 32 MiB.');
   expect(state.transferred).toBe(0);
   expect(state.service.writes.some((call) => call.path.endsWith('/sources/upload'))).toBe(false);
@@ -298,9 +296,117 @@ test('observed larger server limits display the same effective bounds enforced b
   await dialog
     .getByLabel('Choose files')
     .setInputFiles({ name: 'policy.txt', mimeType: 'text/plain', buffer: Buffer.from('bounded') });
-  await dialog.getByRole('button', { name: 'Upload 1 file', exact: true }).click();
-  await expect(dialog.getByRole('alert')).toContainText('unavailable processing mode');
+  await expect(dialog.getByRole('button', { name: 'Upload 1 file', exact: true })).toBeDisabled();
+  await expect(dialog.getByRole('alert')).toContainText('This processing mode is unavailable.');
   await expect(dialog).toContainText('Maximum per file: 128 MiB.');
   await expect(dialog).toContainText('Maximum batch: 512 MiB.');
   expect(state.transferred).toBe(0);
+});
+
+for (const width of [1440, 390]) {
+  test(`upload capabilities and individual file rejection are visible before transfer at ${width}px`, async ({
+    page,
+  }) => {
+    const height = width < 600 ? 844 : 1000;
+    await page.setViewportSize({ width, height });
+    const state = await fixture(page);
+    await page.route('**/source-batch-capabilities*', (route) =>
+      route.fulfill({
+        json: {
+          configured: true,
+          modes: ['document', 'dataset'],
+          max_files: 3,
+          max_file_bytes: 1048576,
+          max_batch_bytes: 2097152,
+          synchronous_max_file_bytes: 1048576,
+          formats: [
+            { mode: 'document', extensions: ['.txt', '.pdf'], available: true },
+            { mode: 'dataset', extensions: ['.csv'], available: true },
+          ],
+        },
+      }),
+    );
+    const dialog = await open(page);
+    await expect(dialog).toContainText('Supported file types: .txt,.pdf');
+    await expect(dialog).toContainText('Maximum per file: 1 MiB.');
+    await expect(dialog).toContainText('Maximum files: 3.');
+    await dialog.getByLabel('Choose files').setInputFiles([
+      { name: 'Policy.txt', mimeType: 'text/plain', buffer: Buffer.from('policy') },
+      { name: 'Rejected.exe', mimeType: 'application/octet-stream', buffer: Buffer.from('binary') },
+    ]);
+    await expect(dialog).toContainText('6 bytes');
+    await expect(dialog).toContainText('This file type is not supported for the selected use.');
+    await expect(
+      dialog.getByRole('button', { name: 'Upload 2 files', exact: true }),
+    ).toBeDisabled();
+    const rows = dialog.locator('.upload-preview > div');
+    const firstRemove = await rows.nth(0).getByRole('button').boundingBox();
+    const secondRemove = await rows.nth(1).getByRole('button').boundingBox();
+    expect(Math.abs(firstRemove!.x - secondRemove!.x)).toBeLessThan(2);
+    const name = await rows.nth(0).getByText('Policy.txt', { exact: true }).boundingBox();
+    expect(
+      Math.abs(firstRemove!.y + firstRemove!.height / 2 - name!.y - name!.height / 2),
+    ).toBeLessThan(2);
+    if (width < 600) expect((await rows.nth(0).boundingBox())!.height).toBeLessThan(100);
+    await capture(page, 'formats-rejected-' + width);
+    const submit = dialog.getByRole('button', { name: 'Upload 2 files', exact: true });
+    await submit.scrollIntoViewIfNeeded();
+    await expect(submit).toBeInViewport();
+    const actions = await submit.boundingBox();
+    expect(actions!.y + actions!.height).toBeLessThan(height);
+    if (width < 600) await capture(page, 'formats-actions-' + width);
+    await dialog.getByRole('button', { name: 'Remove file: Rejected.exe', exact: true }).click();
+    await expect(dialog.getByRole('button', { name: 'Upload 1 file', exact: true })).toBeEnabled();
+    expect(state.transferred).toBe(0);
+  });
+}
+
+test('empty Library upload explains how to create a destination without a bootstrap folder', async ({
+  page,
+}) => {
+  const service = await mockService(page);
+  service.rows.splice(0);
+  await page.goto('/library');
+  await page.getByRole('button', { name: 'Add knowledge', exact: true }).click();
+  await page.getByRole('button', { name: /Upload files/ }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toContainText(
+    'Create a space, project and folder in Library, then return to upload.',
+  );
+  await expect(dialog.getByRole('button', { name: 'Upload 0 files', exact: true })).toBeDisabled();
+  await dialog.getByRole('button', { name: 'Back to Library', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Create a space', exact: true })).toBeVisible();
+  expect(service.writes).toHaveLength(0);
+});
+
+test('multiple originals show confirmed per-file transfer progress before queued processing', async ({
+  page,
+}) => {
+  await fixture(page);
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/queued-item-1/content', async (route) => {
+    await gate;
+    await route.fallback();
+  });
+  const dialog = await open(page);
+  await dialog.getByLabel('Choose files').setInputFiles([
+    { name: 'First.txt', mimeType: 'text/plain', buffer: Buffer.from('first') },
+    { name: 'Second.txt', mimeType: 'text/plain', buffer: Buffer.from('second') },
+  ]);
+  await dialog.getByRole('button', { name: 'Upload 2 files', exact: true }).click();
+  await expect(dialog.getByText('Original staged', { exact: true })).toBeVisible();
+  await expect(dialog.getByText('Transferring original', { exact: true })).toBeVisible();
+  await expect(dialog.getByRole('progressbar', { name: 'Files transferred' })).toHaveAttribute(
+    'value',
+    '1',
+  );
+  await expect(dialog.getByText('5 bytes', { exact: true })).toBeVisible();
+  await expect(dialog.getByText('6 bytes', { exact: true })).toBeVisible();
+  await capture(page, 'multi-file-transfer');
+  release();
+  await expect(dialog.getByText('Queued', { exact: true }).first()).toBeVisible();
+  await expect(dialog.getByRole('progressbar', { name: 'Files transferred' })).toHaveCount(0);
 });

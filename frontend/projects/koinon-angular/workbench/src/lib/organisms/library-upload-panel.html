@@ -46,11 +46,30 @@
           {{ 'Automatic checks paused. Check status for a fresh observation.' | ffkText }}
         </p>
       }
+      @if (view()?.transferring && view()?.items?.length) {
+        <div class="upload-progress" role="status">
+          <span
+            >{{ 'Files transferred' | ffkText }}: {{ view()?.received }} /
+            {{ view()?.items?.length }}</span
+          >
+          <progress
+            [max]="view()?.items?.length || 1"
+            [value]="view()?.received || 0"
+            [attr.aria-label]="'Files transferred' | ffkText"
+          ></progress>
+        </div>
+      }
       @for (item of view()?.items || []; track item.id) {
         <div class="record">
           <div>
             <strong>{{ item.filename }}</strong
-            ><span>{{ label(item.status) | ffkText }}</span
+            ><small>{{ item.size_bytes | number }} {{ 'bytes' | ffkText }}</small
+            ><span>{{
+              (view()?.currentItemId === item.id && view()?.stage === 'staging'
+                ? 'Transferring original'
+                : label(item.status)
+              ) | ffkText
+            }}</span
             ><small
               >{{ 'Current availability' | ffkText }}: {{ currentLabel(item) | ffkText }}</small
             >
@@ -102,6 +121,11 @@
           }}</ffk-button>
         }
         @if (view()?.batch; as batch) {
+          @if (['failed', 'partial', 'reconciling'].includes(batch.status)) {
+            <ffk-button variant="quiet" (click)="w.showDialog('uploads')">{{
+              'Review recovery options' | ffkText
+            }}</ffk-button>
+          }
           @if (
             ['staging', 'queued', 'running'].includes(batch.status) && !batch.cancellation_requested
           ) {
@@ -172,6 +196,14 @@
           />
         </div>
       }
+      @if (!w.uploadFolders().length) {
+        <p class="field-help">
+          {{ 'Create a space, project and folder in Library, then return to upload.' | ffkText }}
+        </p>
+        <ffk-button variant="quiet" (click)="w.closeDialog()">{{
+          'Back to Library' | ffkText
+        }}</ffk-button>
+      }
       <p class="field-help">
         {{ 'Only folders where you can add knowledge are selectable.' | ffkText }}
       </p>
@@ -183,8 +215,18 @@
         (change)="w.uploadMode = $any($event.target).value"
         [disabled]="!!view()?.busy"
       >
-        <option value="document">{{ 'Documents for reading' | ffkText }}</option>
-        <option value="dataset">{{ 'Data to explore with queries' | ffkText }}</option>
+        <option
+          value="document"
+          [disabled]="!!view()?.capabilities && !view()?.capabilities?.modes?.includes('document')"
+        >
+          {{ 'Documents for reading' | ffkText }}
+        </option>
+        <option
+          value="dataset"
+          [disabled]="!!view()?.capabilities && !view()?.capabilities?.modes?.includes('dataset')"
+        >
+          {{ 'Data to explore with queries' | ffkText }}
+        </option>
       </select>
       <div class="drop-zone" (dragover)="$event.preventDefault()" (drop)="w.captureDrop($event)">
         <ffk-icon name="upload" /><strong>{{ 'Drop your files here' | ffkText }}</strong>
@@ -194,19 +236,57 @@
           id="upload-files"
           [attr.aria-label]="'Choose files' | ffkText"
           multiple
+          [attr.accept]="accept() || null"
+          aria-describedby="upload-capabilities"
           (change)="w.captureFiles($event)"
           [disabled]="!!view()?.busy"
         />
       </div>
+      <div id="upload-capabilities" class="field-help" aria-live="polite">
+        @if (view()?.checkingCapabilities) {
+          <p>{{ 'Checking upload readiness' | ffkText }}</p>
+        }
+        @if (accept()) {
+          <p>{{ 'Supported file types' | ffkText }}: {{ accept() }}</p>
+        }
+        @if (!w.formParent) {
+          <p>{{ 'Choose a destination folder to see supported files and limits.' | ffkText }}</p>
+        }
+      </div>
       @if (w.files.length) {
         <div class="upload-preview" [attr.aria-label]="'Files to upload' | ffkText">
           @for (file of w.files; track $index) {
-            <div>
-              <ffk-icon name="file" /><span [title]="file.name">{{ file.name }}</span
-              ><small>{{ file.size | number }} bytes</small>
+            <div class="upload-file">
+              <ffk-icon name="file" /><span class="file-name" [title]="file.name">{{
+                file.name
+              }}</span
+              ><small class="file-size">{{ file.size | number }} {{ 'bytes' | ffkText }}</small>
+              <ffk-button
+                variant="quiet"
+                icon="close"
+                [label]="('Remove file' | ffkText) + ': ' + file.name"
+                [disabled]="!!view()?.busy"
+                (click)="removeFile($index)"
+              />
+              @if (view()?.busy && !view()?.capabilities?.configured) {
+                <small class="file-status">{{
+                  (w.uploadedFiles().has(file)
+                    ? 'Received'
+                    : $index === view()?.received && view()?.stage === 'staging'
+                      ? 'Uploading and processing'
+                      : 'Waiting to upload'
+                  ) | ffkText
+                }}</small>
+              }
+              @if (issue(file)) {
+                <span class="file-issue">{{ issue(file) | ffkText }}</span>
+              }
             </div>
           }
         </div>
+      }
+      @if (selectionIssue()) {
+        <p role="alert">{{ selectionIssue() | ffkText }}</p>
       }
       @if (view()?.busy) {
         <div class="upload-progress" role="status">
@@ -223,6 +303,7 @@
         <p class="field-help">
           {{ 'Maximum per file' | ffkText }}: {{ limits.max_file_bytes / 1048576 | number }} MiB.
           {{ 'Maximum batch' | ffkText }}: {{ limits.max_batch_bytes / 1048576 | number }} MiB.
+          {{ 'Maximum files' | ffkText }}: {{ limits.max_files }}.
         </p>
       } @else {
         <p class="field-help">{{ 'Configured limits are checked before transfer.' | ffkText }}</p>
@@ -243,6 +324,8 @@
           icon="upload"
           [disabled]="
             !w.files.length ||
+            !!selectionIssue() ||
+            !!view()?.checkingCapabilities ||
             !w.formParent ||
             !!view()?.busy ||
             !api.canSelect(w.allEntries().find(selectedFolder))

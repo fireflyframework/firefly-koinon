@@ -406,3 +406,27 @@ it('keeps confirmed small synchronous files and refreshes the folder without res
   expect(f.state.view().message).toContain('synchronous upload');
   f.state.dispose();
 });
+
+it('checks destination capabilities without creating a batch or transferring originals', async () => {
+  const f = fixture();
+  await f.state.inspect();
+  expect(f.state.view().capabilities?.max_files).toBe(100);
+  expect(f.calls.every((call) => call.method === 'GET')).toBe(true);
+  expect(f.state.view().items).toEqual([]);
+});
+
+it('ignores a capability result after destination authority changes', async () => {
+  const f = fixture();
+  let release!: (value: unknown) => void;
+  f.transport.request = <T>() =>
+    new Promise<T>((resolve) => {
+      release = (value) => resolve(value as T);
+    });
+  const checking = f.state.inspect();
+  await vi.waitFor(() => expect(release).toBeTypeOf('function'));
+  f.scope.owner = {};
+  release({ configured: true, modes: ['document'], max_files: 100 });
+  await checking;
+  expect(f.state.view().capabilities).toBeNull();
+  expect(f.state.view().checkingCapabilities).toBe(false);
+});

@@ -217,7 +217,7 @@ test('uploads a private file, waits for extraction and submits only selected IDs
   await composer
     .getByRole('textbox', { name: 'Message koinon', exact: true })
     .fill('Summarize these notes.');
-  await expect(composer.getByText('Reading file', { exact: true })).toBeVisible();
+  await expect(composer.getByText('Queued for processing', { exact: true })).toBeVisible();
   await expect(composer.getByRole('button', { name: 'Send', exact: true })).toBeDisabled();
   await expect(composer.getByText('Ready', { exact: true })).toBeVisible({ timeout: 10000 });
   await composer.getByRole('button', { name: 'Send', exact: true }).click();
@@ -331,3 +331,115 @@ for (const spanish of [false, true])
       fullPage: true,
     });
   });
+
+for (const width of [1440, 390]) {
+  test(`chat exposes formats and all selected file outcomes at ${width}px`, async ({ page }) => {
+    await mockService(page, { organizationAgent: 'reader' });
+    await page.setViewportSize({ width, height: 1000 });
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let uploads = 0;
+    const thread = {
+      id: 'feedback-thread',
+      title: 'File feedback',
+      revision: 1,
+      title_source: 'manual',
+      folder_id: null,
+      archived_at: null,
+      scope: {},
+      created_at: '2026-11-02T00:00:00Z',
+      updated_at: '2026-11-02T00:00:00Z',
+    };
+    await page.route('**/bff/api/v1/**', async (route) => {
+      const request = route.request(),
+        path = new URL(request.url()).pathname;
+      const json = (value: unknown) => route.fulfill({ json: value });
+      if (path.endsWith('/capabilities'))
+        return json(
+          path.includes('/attachments/')
+            ? capabilities
+            : { providers: [], features: [], attachments: capabilities },
+        );
+      if (path.endsWith('/agents'))
+        return json({
+          items: [
+            {
+              id: 'reader',
+              name: 'koinon',
+              input_modalities: ['text'],
+              status: 'ready',
+              checks: [],
+            },
+          ],
+        });
+      if (path.endsWith('/chat/folders'))
+        return json({ items: [], page: 1, page_size: 25, total: 0, pages: 0 });
+      if (path.endsWith('/chat/threads'))
+        return json(
+          request.method() === 'POST'
+            ? thread
+            : { items: [], page: 1, page_size: 25, total: 0, pages: 0 },
+        );
+      if (path.endsWith('/chat/threads/feedback-thread')) return json(thread);
+      if (path.endsWith('/attachments') && request.method() === 'POST') {
+        ++uploads;
+        await gate;
+        return json({
+          id: 'attachment-' + uploads,
+          tenant_id: 'tenant-one',
+          thread_id: thread.id,
+          filename: uploads === 1 ? 'First.txt' : 'Second.txt',
+          media_type: 'text/plain',
+          kind: 'document',
+          size_bytes: 5,
+          sha256: 'a'.repeat(64),
+          status: 'queued',
+          revision: 1,
+          created_at: thread.created_at,
+          expires_at: '2099-01-01T00:00:00Z',
+          chunk_count: 0,
+          progress: { status: 'queued', percent: 0, attempts: 0 },
+        });
+      }
+      return route.fallback();
+    });
+    await page.goto('/library');
+    if (width < 700)
+      await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
+    await page.getByRole('button', { name: 'Chat', exact: true }).click();
+    const composer = page.locator('ffk-chat-composer');
+    await composer.getByRole('button', { name: 'Add context', exact: true }).click();
+    const menu = page.getByRole('menu', { name: 'Add context', exact: true });
+    await expect(menu).toContainText('Supported file types: .txt');
+    await expect(menu).toContainText('Maximum per file: 1 MB');
+    const directory = process.env['KOINON_UPLOAD_SCREENSHOTS'];
+    if (directory) {
+      await mkdir(directory, { recursive: true });
+      await page.screenshot({ path: resolve(directory, 'chat-formats-' + width + '.png') });
+    }
+    await page.keyboard.press('Escape');
+    await composer.locator('input[type=file]').setInputFiles([
+      { name: 'First.txt', mimeType: 'text/plain', buffer: Buffer.from('first') },
+      { name: 'Second.txt', mimeType: 'text/plain', buffer: Buffer.from('second') },
+      { name: 'Rejected.exe', mimeType: 'application/octet-stream', buffer: Buffer.from('binary') },
+    ]);
+    await expect(composer.getByRole('listitem')).toHaveCount(3);
+    await expect(composer.getByText('Uploading', { exact: true })).toBeVisible();
+    await expect(composer.getByText('Waiting to upload', { exact: true })).toBeVisible();
+    await expect(composer.getByText('Not accepted', { exact: true })).toBeVisible();
+    expect(uploads).toBe(1);
+    await expect(composer).toContainText(
+      'Some files were not accepted. Review their details before sending.',
+    );
+    if (directory)
+      await page.screenshot({ path: resolve(directory, 'chat-multi-file-' + width + '.png') });
+    release();
+    await expect(composer.getByText('Queued for processing', { exact: true })).toHaveCount(2);
+    await expect(composer.getByRole('progressbar')).toHaveCount(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+  });
+}
