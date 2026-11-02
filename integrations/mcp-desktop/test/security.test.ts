@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import { parseConfig, restrictedFetch } from '../src/config.js';
 
 test('requires explicit HTTPS endpoint and a token without URL credentials', () => {
-  const good = { KOINON_MCP_URL: 'https://knowledge.example.com/mcp', KOINON_TOKEN: 'test-pat' };
+  const good = { KOINON_AUTH_MODE: 'pat', KOINON_MCP_URL: 'https://knowledge.example.com/mcp', KOINON_TOKEN: 'test-pat' };
   assert.equal(parseConfig(good).url.href, good.KOINON_MCP_URL);
   for (const url of ['http://knowledge.example.com/mcp', 'https://user:secret@example.com/mcp', 'https://example.com/mcp?token=secret', 'https://example.com/mcp#secret', 'file:///mcp']) {
     assert.throws(() => parseConfig({ ...good, KOINON_MCP_URL: url }));
@@ -19,7 +19,8 @@ test('requires explicit HTTPS endpoint and a token without URL credentials', () 
 });
 
 test('restricted fetch binds credentials to exact endpoint and forbids redirects', async () => {
-  const config = parseConfig({ KOINON_MCP_URL: 'https://knowledge.example.com/mcp', KOINON_TOKEN: 'test-pat' });
+  const config = parseConfig({ KOINON_AUTH_MODE: 'pat', KOINON_MCP_URL: 'https://knowledge.example.com/mcp', KOINON_TOKEN: 'test-pat' });
+  assert.ok(config.mode !== 'oauth');
   let calls = 0;
   const fetcher = restrictedFetch(config, async (_url, init) => {
     calls++;
@@ -36,7 +37,8 @@ test('restricted fetch binds credentials to exact endpoint and forbids redirects
 });
 
 test('restricted fetch rejects redirect responses even with a custom transport', async () => {
-  const config = parseConfig({ KOINON_MCP_URL: 'https://knowledge.example.com/mcp', KOINON_TOKEN: 'test-pat' });
+  const config = parseConfig({ KOINON_AUTH_MODE: 'pat', KOINON_MCP_URL: 'https://knowledge.example.com/mcp', KOINON_TOKEN: 'test-pat' });
+  assert.ok(config.mode !== 'oauth');
   const fetcher = restrictedFetch(config, async () => new Response(null, { status: 302, headers: { location: 'https://other.example.com' } }));
   await assert.rejects(fetcher(config.url), /redirect/i);
 });
