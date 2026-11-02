@@ -84,6 +84,24 @@
     @if (c.notice() && section() !== 'health') {
       <p class="notice" role="status">{{ c.notice() | ffkText }}</p>
     }
+    @if (departureReview()) {
+      <section
+        class="settings-departure"
+        role="region"
+        [attr.aria-label]="'Leave this settings editor?' | ffkText"
+      >
+        <h2>{{ 'Leave this settings editor?' | ffkText }}</h2>
+        <p>{{ 'Your unsaved changes will be lost. Saved settings will be kept.' | ffkText }}</p>
+        <div class="form-actions">
+          <ffk-button data-keep-settings variant="primary" (click)="keepSectionEditing()">{{
+            'Keep editing' | ffkText
+          }}</ffk-button>
+          <ffk-button variant="quiet" (click)="confirmSectionDeparture()">{{
+            'Leave editor' | ffkText
+          }}</ffk-button>
+        </div>
+      </section>
+    }
     @if (!editor()) {
       @if (section() === 'health' && tabAllowed({ id: 'health', permission: 'audit:read' })) {
         @defer (when section() === 'health') {
@@ -110,11 +128,25 @@
           </p>
         }
       }
+      @if (section() === 'knowledge') {
+        @defer (on immediate) {
+          <ffk-knowledge-overview
+            [connections]="knowledgeConnectionSummary()"
+            [sections]="knowledgeTaskSections()"
+            (sectionRequested)="openSection($event)"
+          />
+        }
+      }
       @if (section() === 'providers') {
         <header class="section-heading">
           <div>
-            <h2>{{ 'Providers' | ffkText }}</h2>
-            <p>{{ 'Connect the models your agents will use.' | ffkText }}</p>
+            <h2>{{ 'Model connections' | ffkText }}</h2>
+            <p>
+              {{
+                'Connect model services, store their credentials and check the connection. Assign their models separately.'
+                  | ffkText
+              }}
+            </p>
           </div>
           <ffk-button
             variant="primary"
@@ -206,9 +238,13 @@
           }
         </div>
       }
+      @if (section() === 'answers') {
+        @defer (on immediate) {
+          <ffk-knowledge-behavior (sectionRequested)="openSection($event)" />
+        }
+      }
       @if (section() === 'models') {
         @defer (on immediate) {
-          <ffk-knowledge-behavior />
           @if (allowed('providers:write')) {
             <div id="knowledge-model-assignments">
               <ffk-knowledge-models
@@ -230,9 +266,38 @@
       @if (section() === 'agents') {
         <header class="section-heading">
           <div>
-            <h2>{{ 'Agents' | ffkText }}</h2>
-            <p>{{ 'Choose the models, tools and knowledge available to each agent.' | ffkText }}</p>
+            <h2>{{ 'Assistant' | ffkText }}</h2>
+            <p>
+              {{
+                'Choose the assistant used by this organization and set its conversation memory.'
+                  | ffkText
+              }}
+            </p>
           </div>
+        </header>
+        @if (!c.pending() && !c.error() && c.agents().total === 0) {
+          <div class="assistant-first-start">
+            <h3>{{ 'Set up your organization assistant' | ffkText }}</h3>
+            @if (usableProviders().length) {
+              <p>{{ 'Create an agent configuration with its model and knowledge tools, check it, then select it in Organization chat.' | ffkText }}</p>
+              <ffk-button variant="primary" icon="plus" (click)="beginAgent()">{{ 'Create assistant configuration' | ffkText }}</ffk-button>
+            } @else {
+              <p>{{ 'A model connection is needed before an assistant can be configured. Review a connection and its offered checks first.' | ffkText }}</p>
+              @if (allowed('providers:write')) {
+                <ffk-button variant="quiet" icon="link" (click)="openSection('providers')">{{ 'Manage connections' | ffkText }}</ffk-button>
+              }
+            }
+          </div>
+        }
+        <ffk-organization-chat-settings />
+        <details class="additional-agents" [open]="additionalAgentsExpanded()" (toggle)="additionalAgentsExpanded.set($any($event.target).open)">
+          <summary>{{ 'Additional agent configurations' | ffkText }}</summary>
+          <p>
+            {{
+              'Configure additional agents only when a separate model, tool set or knowledge scope is needed. Creating one does not change the organization assistant.'
+                | ffkText
+            }}
+          </p>
           <ffk-button
             variant="primary"
             icon="plus"
@@ -240,71 +305,70 @@
             (click)="beginAgent()"
             >{{ 'Create an agent' | ffkText }}</ffk-button
           >
-        </header>
-        <ffk-organization-chat-settings />
-        @if (!usableProviders().length) {
-          <div class="setup-notice">
-            <ffk-icon name="alert" /><span>{{
-              'Check a model provider before creating an agent.' | ffkText
-            }}</span
-            ><ffk-button variant="quiet" (click)="openSection('providers')">{{
-              'Review providers' | ffkText
-            }}</ffk-button>
-          </div>
-        }
-        @if (c.agents().total !== undefined) {
-          <ffk-search-field
-            [value]="agentQuery"
-            (valueChange)="agentQuery = $event"
-            [label]="'Filter agents' | ffkText"
-            [actionLabel]="'Apply agent filter' | ffkText"
-            [placeholder]="'Filter agents by name' | ffkText"
-            (searchSubmitted)="c.loadAgents({ q: $event, page: 1 })"
-          />
-        }
-        <div class="agent-list">
-          @for (agent of c.agents().items; track agent.id) {
-            <article>
-              <div>
-                <h3>{{ agent.name }}</h3>
-                <p>{{ agent.description || 'No description yet.' }}</p>
-                <small>{{ agent.model_id }}</small>
-              </div>
-              <ffk-badge
-                [tone]="
-                  agent.status === 'ready'
-                    ? 'ready'
-                    : agent.status === 'unverified'
-                      ? 'neutral'
-                      : 'attention'
-                "
-                >{{ status(agent.status) | ffkText }}</ffk-badge
-              ><ffk-button variant="quiet" (click)="beginAgent(agent)">{{
-                'Edit' | ffkText
+          @if (!usableProviders().length) {
+            <div class="setup-notice">
+              <ffk-icon name="alert" /><span>{{
+                'Check a model provider before creating an agent.' | ffkText
+              }}</span
+              ><ffk-button variant="quiet" (click)="openSection('providers')">{{
+                'Review providers' | ffkText
               }}</ffk-button>
-              @if (canRun(agent)) {
-                <ffk-button (click)="actions?.chat(agent.id)">{{
-                  (agent.status === 'ready' ? 'Open chat' : 'Try agent') | ffkText
-                }}</ffk-button>
-              }
-            </article>
-          } @empty {
-            @if (!c.pending() && !c.error()) {
-              <div class="empty">
-                <ffk-icon name="chat" />
-                <h3>{{ 'No agents in this view' | ffkText }}</h3>
-                <p>{{ 'Create an agent after checking its model provider.' | ffkText }}</p>
-              </div>
-            }
+            </div>
           }
-        </div>
-        <ffk-pagination
-          [page]="c.agents()"
-          [label]="'Agents' | ffkText"
-          [loading]="c.pending()"
-          (pageChanged)="c.loadAgents({ page: $event })"
-          (sizeChanged)="c.loadAgents({ page_size: $event, page: 1 })"
-        />
+          @if (c.agents().total !== undefined) {
+            <ffk-search-field
+              [value]="agentQuery"
+              (valueChange)="agentQuery = $event"
+              [label]="'Filter agents' | ffkText"
+              [actionLabel]="'Apply agent filter' | ffkText"
+              [placeholder]="'Filter agents by name' | ffkText"
+              (searchSubmitted)="c.loadAgents({ q: $event, page: 1 })"
+            />
+          }
+          <div class="agent-list">
+            @for (agent of c.agents().items; track agent.id) {
+              <article>
+                <div>
+                  <h3>{{ agent.name }}</h3>
+                  <p>{{ agent.description || 'No description yet.' }}</p>
+                  <small>{{ agent.model_id }}</small>
+                </div>
+                <ffk-badge
+                  [tone]="
+                    agent.status === 'ready'
+                      ? 'ready'
+                      : agent.status === 'unverified'
+                        ? 'neutral'
+                        : 'attention'
+                  "
+                  >{{ status(agent.status) | ffkText }}</ffk-badge
+                ><ffk-button variant="quiet" (click)="beginAgent(agent)">{{
+                  'Edit' | ffkText
+                }}</ffk-button>
+                @if (canRun(agent)) {
+                  <ffk-button (click)="actions?.chat(agent.id)">{{
+                    (agent.status === 'ready' ? 'Open chat' : 'Try agent') | ffkText
+                  }}</ffk-button>
+                }
+              </article>
+            } @empty {
+              @if (!c.pending() && !c.error()) {
+                <div class="empty">
+                  <ffk-icon name="chat" />
+                  <h3>{{ 'No agents in this view' | ffkText }}</h3>
+                  <p>{{ 'Create an agent after checking its model provider.' | ffkText }}</p>
+                </div>
+              }
+            }
+          </div>
+          <ffk-pagination
+            [page]="c.agents()"
+            [label]="'Agents' | ffkText"
+            [loading]="c.pending()"
+            (pageChanged)="c.loadAgents({ page: $event })"
+            (sizeChanged)="c.loadAgents({ page_size: $event, page: 1 })"
+          />
+        </details>
       }
     }
     @if (editor() === 'provider') {
@@ -635,7 +699,12 @@
       <header class="section-heading">
         <div>
           <h2>{{ 'Sources & connections' | ffkText }}</h2>
-          <p>{{ 'Review the sources connected to your knowledge.' | ffkText }}</p>
+          <p>
+            {{
+              'Review uploaded source records and their processing state. Browse files and folders in Library.'
+                | ffkText
+            }}
+          </p>
         </div>
         <ffk-button variant="primary" icon="upload" (click)="actions?.addKnowledge?.()">{{
           'Add files' | ffkText

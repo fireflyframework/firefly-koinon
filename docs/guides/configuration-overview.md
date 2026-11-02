@@ -21,7 +21,7 @@ Open Settings from the avatar menu in the intended installation. An account with
 
 ## Set up an organization
 
-Follow [guided configuration](knowledge-setup.md) for the setup sequence, or use the [administration guide](administration.md) to find a particular setting. [Identity and appearance](../operations/identity-appearance.md) covers the installation's name, logos and colors.
+The **Knowledge & AI** overview in Settings groups connections, model assignments, answer behavior, the shared assistant and indexing by task. Connection counts describe saved records and recorded checks; they do not certify the entire knowledge pipeline. Follow [guided configuration](knowledge-setup.md) for the setup sequence, or use the [administration guide](administration.md) to find a particular setting. [Identity and appearance](../operations/identity-appearance.md) covers the installation's name, logos and colors.
 
 ## Manage people and connected applications
 

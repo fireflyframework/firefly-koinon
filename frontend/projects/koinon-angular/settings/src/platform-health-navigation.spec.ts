@@ -88,3 +88,22 @@ it('loads provider configuration when leaving an initially passive health sectio
   await page.openSection('providers');
   expect(requests.filter((path) => path.endsWith('/configuration'))).toHaveLength(1);
 });
+
+it('keeps an explicit Assistant setup destination instead of replacing it with Overview', async () => {
+  const { page } = setup(['catalog:read', 'agents:write']);
+  page.actions = { section: () => 'agents', chat: () => undefined };
+  page.ngOnInit();
+  await Promise.resolve();
+  expect(page.section()).toBe('agents');
+});
+
+it('falls back to a permitted administration section when the shell requests an unavailable Overview', async () => {
+  const { page, requests } = setup(['catalog:read', 'members:write']);
+  page.actions = { section: () => 'knowledge', chat: () => undefined };
+  page.ngOnInit();
+  await Promise.resolve();
+  expect(page.section()).toBe('people');
+  expect(
+    requests.some((path) => /configuration|knowledge-roles|knowledge-connections/.test(path)),
+  ).toBe(false);
+});

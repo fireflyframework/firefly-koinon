@@ -2,7 +2,7 @@
 
 An agent combines a configured model, allowed read tools and a knowledge scope. The same API serves the management application, embedded components and headless consumers.
 
-An organization operator selects the default chat agent once by opening **Settings** and selecting **Agents**. Standard chat uses this saved organization setting across conversations; choose the folder or items relevant to the question. Review the default agent's setup checks before starting. An agent cannot grant access: every tool checks current persisted permissions and source ancestry. Dataset queries require query permission as well as read access.
+An organization operator selects the default chat agent once by opening **Settings** and selecting **Assistant**. Standard chat uses this saved organization setting across conversations; choose the folder or items relevant to the question. Review the default agent's setup checks before starting. An agent cannot grant access: every tool checks current persisted permissions and source ancestry. Dataset queries require query permission as well as read access.
 
 ## Organization chat default
 

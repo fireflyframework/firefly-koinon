@@ -143,7 +143,7 @@ async function mount(
   const permissions = [
     'catalog:read',
     ...(options.providers === false ? [] : ['providers:write']),
-    ...(options.write === false ? [] : ['settings:write']),
+    ...(options.write === false ? ['knowledge:search'] : ['settings:write']),
   ];
   facade.tenantId.set('tenant');
   facade.context.set({
@@ -164,7 +164,7 @@ async function mount(
       response_language: 'es',
     });
   const fixture = TestBed.createComponent(KoinonSettingsPage);
-  fixture.componentRef.setInput('actions', { section: () => 'models', chat: () => undefined });
+  fixture.componentRef.setInput('actions', { section: () => 'answers', chat: () => undefined });
   fixture.detectChanges();
   for (const block of await fixture.getDeferBlocks()) await block.render(DeferBlockState.Complete);
   const settle = async () => {
@@ -218,7 +218,7 @@ it('offers organization behavior separately from workspace assignments and prese
     fixture.nativeElement.querySelector(
       'ffk-knowledge-models select[aria-label="Assignment scope"]',
     ),
-  ).not.toBeNull();
+  ).toBeNull();
   expect(panel.querySelector('button[type=submit]').disabled).toBe(true);
 });
 it('saves full document and SQL settings using the loaded revision, and cancel restores saved values without a write', async () => {
@@ -340,7 +340,7 @@ it('localizes behavior within lazy Settings and keeps separate SQL semantics', a
   const h = await mount({ spanish: true });
   await h.settle();
   const panel = h.fixture.nativeElement.querySelector('ffk-knowledge-behavior');
-  expect(panel.textContent).toContain('Comportamiento del conocimiento');
+  expect(panel.textContent).toContain('Respuestas sobre conocimiento');
   expect(panel.textContent).toContain('Consultas de datos');
   expect(panel.querySelector('label[for="documents.rlm_max_iters"]').textContent).toContain(
     'Pasos de análisis',

@@ -22,7 +22,7 @@ The switch starts disabled. It applies to your chats directly inside that folder
 
 ## Set organization limits
 
-An organization administrator opens **Settings**, selects **Agents**, and reviews **Conversation memory** in the organization chat configuration. The administrator can disable personal project memory or set its context limits. Allowing it at organization level does not activate it in anyone's folders.
+An organization administrator opens **Settings**, selects **Assistant**, and reviews **Conversation memory** in the organization chat configuration. The administrator can disable personal project memory or set its context limits. Allowing it at organization level does not activate it in anyone's folders.
 
 | Setting | Meaning |
 | --- | --- |
