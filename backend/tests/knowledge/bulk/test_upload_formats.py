@@ -27,3 +27,20 @@ def test_structured_compression_hints_preserve_existing_supported_wrappers(monke
     formats = upload_formats()
     csv = next(row for row in formats if row.mode == "dataset" and ".csv" in row.extensions)
     assert {".csv.gz", ".csv.bz2", ".csv.zip"} <= set(csv.extensions)
+
+
+def test_document_hints_match_bounded_parser_admission_and_office_requires_xml_parser(monkeypatch):
+    from flycanon.core.services.ingestion.file_parser import document_file_kind, document_file_kinds
+
+    monkeypatch.setattr(
+        "koinon.knowledge.bulk.upload_formats.find_spec", lambda name: None if name == "lxml" else object()
+    )
+    formats = upload_formats()
+    for item in formats:
+        if item.mode == "document":
+            assert all(
+                document_file_kind("review" + suffix) in document_file_kinds() for suffix in item.extensions
+            )
+            if any(suffix in {".docx", ".pptx"} for suffix in item.extensions):
+                assert item.available is False
+    assert not any(".ppt" in item.extensions for item in formats)

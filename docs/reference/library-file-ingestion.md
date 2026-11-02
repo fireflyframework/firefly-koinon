@@ -6,6 +6,20 @@ koinon accepts queued Library originals up to **128 MiB per file**, in batches u
 
 Chat attachment limits are separate. A Library limit does not raise the chat, image, MCP request-body or synchronous upload limit. External application review follows its separately advertised effective capability and approval flow.
 
+## How a document becomes searchable
+
+The queued document worker uses the following stages. Each stage has a separate purpose; an upload receipt alone does not certify the later stages.
+
+1. **Admit and retain the original.** Validate the destination, current authority and byte limits. Store a pinned private original with its size and SHA-256 digest.
+2. **Extract within resource limits.** Run the selected file parser in an owned subprocess. DOCX and PPTX use the bounded OOXML reader; other advertised document formats use their registered loader. Unsupported binary formats are rejected instead of being decoded as plain text.
+3. **Normalize and preserve structure.** Produce the text representation and recorded sections, apply the configured PII policy, and prepare retrieval chunks. Persist normalization artifacts and transformation records tied to the original. The original remains available independently of the searchable representation.
+4. **Build and publish the index.** Generate embeddings with the configured workspace embedding model, validate publication authority and the expected source version, then publish the extraction, chunks and index state with the native ingestion receipt.
+5. **Confirm the outcome.** The batch worker acknowledges that native receipt. Read the resulting source and its evidence before treating the file as ready for questions. An unconfirmed outcome requires reconciliation of the existing operation, not submission of a duplicate upload.
+
+This file-based path supplies its prepared text and sections directly to the document lineage pipeline. The synchronous in-memory normalization path is separate. A converter installed for that path does not automatically become a supported queued-file parser. The Library capability registry uses the bounded parser's registered kinds and installed dependencies; clients must use the workspace's advertised formats.
+
+Structured intake keeps its own reader and publication pipeline. It detects the data format, reads worksheets or record batches, constructs table schemas and publishes versioned dataset snapshots. It does not flatten queryable datasets into document chunks. Both paths retain original-file identity and source provenance, but their resulting knowledge resources and query behavior differ.
+
 ## Installation policy
 
 The actual installation profile is `koinon.knowledge.ingestion`. koinon binds this typed policy before native document and structured settings. A lower explicit bulk admission limit can further restrict the profile; a higher limit is rejected.

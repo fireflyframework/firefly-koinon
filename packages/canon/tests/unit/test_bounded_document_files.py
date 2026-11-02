@@ -27,6 +27,84 @@ async def test_file_parser_recovers_office_paragraphs_and_tables_without_loading
     assert not list(tmp_path.glob("koinon-parse-*"))
 
 
+@pytest.mark.parametrize("filename", ["legacy.ppt", "unknown.bin", "book.epub", "message.eml"])
+async def test_unregistered_document_formats_never_fall_back_to_plain_text(tmp_path, filename):
+    path = tmp_path / filename
+    path.write_bytes(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1\x00Retained binary content")
+    with pytest.raises(ValueError, match="format"):
+        await parse_document_file(path, filename=filename, policy=DocumentFilePolicy())
+
+
+@pytest.mark.parametrize("filename", ["renamed.txt", "renamed.md", "no-extension"])
+@pytest.mark.parametrize("content", [b"text\x00binary", b"\xff\xfe\x01\x00", b"PK\x03\x04archive"])
+async def test_text_routes_reject_binary_bytes_instead_of_lossy_decoding(tmp_path, filename, content):
+    path = tmp_path / filename
+    path.write_bytes(content)
+    with pytest.raises(ValueError):
+        await parse_document_file(path, filename=filename, policy=DocumentFilePolicy())
+
+
+@pytest.mark.parametrize(
+    "filename,kind",
+    [
+        ("note.md", "markdown"),
+        ("note.markdown", "markdown"),
+        ("note.txt", "text"),
+        ("note.text", "text"),
+        ("note", "text"),
+    ],
+)
+async def test_text_aliases_keep_their_actual_format_and_unicode(tmp_path, filename, kind):
+    path = tmp_path / filename
+    path.write_text("# Review\n\nCafé revenue is 125.\n")
+    parsed = await parse_document_file(path, filename=filename, policy=DocumentFilePolicy())
+    assert parsed.kind == kind and "Café revenue is 125." in parsed.text
+
+
+async def test_explicit_extensionless_text_mime_is_supported_but_cannot_disguise_legacy_binary(tmp_path):
+    from flycanon.core.services.ingestion.file_parser import UnsupportedDocumentFormat, document_file_kind
+
+    path = tmp_path / "note"
+    path.write_text("# Heading\n\nPlain Unicode café.")
+    parsed = await parse_document_file(
+        path, filename=None, content_type="text/markdown", policy=DocumentFilePolicy()
+    )
+    assert parsed.kind == "markdown" and "café" in parsed.text
+    with pytest.raises(UnsupportedDocumentFormat, match="save as .pptx") as error:
+        document_file_kind("legacy.ppt", "text/plain")
+    assert error.value.code == "DOCUMENT_FORMAT_UNSUPPORTED"
+
+
+async def test_document_spreadsheet_obeys_expanded_package_budget(tmp_path):
+    from openpyxl import Workbook
+
+    path = tmp_path / "review.xlsx"
+    workbook = Workbook()
+    workbook.active.append(["Region", "Revenue"])
+    workbook.active.append(["North", 125])
+    workbook.save(path)
+    workbook.close()
+    with pytest.raises(ValueError):
+        await parse_document_file(
+            path, filename=path.name, policy=DocumentFilePolicy(expanded_max_bytes=16)
+        )
+
+
+@pytest.mark.parametrize("content", [b"\xd0\xcf\x11\xe0\x00legacy", b"%PDF-1.7 binary", b"plain words"])
+async def test_renamed_rtf_requires_an_actual_rtf_header(tmp_path, content):
+    path = tmp_path / "renamed.rtf"
+    path.write_bytes(content)
+    with pytest.raises(ValueError):
+        await parse_document_file(path, filename=path.name, policy=DocumentFilePolicy())
+
+
+async def test_valid_rtf_keeps_its_registered_text_loader(tmp_path):
+    path = tmp_path / "review.rtf"
+    path.write_bytes(b"{\\rtf1\\ansi North\\tab 125\\par}")
+    parsed = await parse_document_file(path, filename=path.name, policy=DocumentFilePolicy())
+    assert parsed.kind == "rtf" and "North" in parsed.text and "125" in parsed.text
+
+
 @pytest.mark.parametrize("case", ["xml", "xml_utf16", "duplicate", "expanded", "text", "scratch"])
 async def test_file_parser_fails_closed_on_unsafe_or_over_budget_office(tmp_path, case):
     path = office(tmp_path / "unsafe.docx", malicious=case == "xml")
