@@ -16,6 +16,7 @@ async def test_passive_health_does_not_run_storage_model_email_or_global_queue_o
         catalog_states=AsyncMock(return_value=StatusWindow(("ready",), True)),
         index_targets=AsyncMock(return_value=((), True)),
         model_default_configured=AsyncMock(return_value=True),
+        communication_policy=AsyncMock(return_value=("corporate", "es-ES")),
     )
     sources = SimpleNamespace(
         all_datasources=lambda: [SimpleNamespace(name="primary")],
@@ -51,6 +52,8 @@ async def test_passive_health_does_not_run_storage_model_email_or_global_queue_o
     assert by_id["ingestion-documents"].status == "failed"
     assert "private@internal" not in "".join(item.model_dump_json() for item in components)
     operations._storage.assert_not_called()
+    records.communication_policy.assert_awaited_once_with("north")
+    readiness.observe.assert_called_once_with(sender_id="corporate", organization_locale="es-ES")
 
 
 async def test_disabled_native_modules_and_missing_observations_never_become_passed():
@@ -58,7 +61,10 @@ async def test_disabled_native_modules_and_missing_observations_never_become_pas
         sources=SimpleNamespace(all_datasources=lambda: [], datasources=lambda: []),
         health=SimpleNamespace(health=AsyncMock(return_value=HealthStatus(status="UNKNOWN"))),
     )
-    records = SimpleNamespace(model_default_configured=AsyncMock(return_value=False))
+    records = SimpleNamespace(
+        model_default_configured=AsyncMock(return_value=False),
+        communication_policy=AsyncMock(return_value=(None, None)),
+    )
     native = SimpleNamespace(ingestion=AsyncMock(side_effect=AssertionError("Disabled module was touched")))
     readiness = SimpleNamespace(observe=Mock(return_value=SimpleNamespace(state="disabled")))
     diagnostics = PlatformDiagnostics(

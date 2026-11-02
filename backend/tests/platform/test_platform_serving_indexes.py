@@ -1,5 +1,6 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
+from importlib import import_module
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -87,6 +88,15 @@ async def test_serving_verdict_requires_current_active_target_in_every_observed_
 
         class Adapter:
             async def get_native(self, **arguments):
+                scoped = import_module(
+                    ("flycanon" if domain == "documents" else "flyquery") + ".web.conventions.context"
+                ).current_tenant_context()
+                assert scoped is not None
+                assert (scoped.tenant_id, scoped.workspace_id, scoped.actor) == (
+                    arguments["tenant_id"],
+                    arguments["native_workspace_id"],
+                    arguments["actor"],
+                )
                 unit = current_unit_of_work(native)
                 assert unit.read_only and unit.read_from_primary
                 assert await unit.resource.scalar(text("SELECT 1")) == 1
