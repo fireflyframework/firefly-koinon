@@ -7,9 +7,9 @@ from pathlib import Path
 
 from pyfly.container import Provider, service
 from pyfly.kernel import ConflictException, ServiceUnavailableException
-from pyfly.security.context import SecurityContext
 from pyfly.security.context_holder import SecurityContextHolder
 
+from koinon.knowledge.bulk.authority import execution_context
 from koinon.knowledge.bulk.ports import BulkIntakePort
 from koinon.knowledge.bulk.queue import BulkLease, BulkQueue
 from koinon.knowledge.bulk.storage import BulkStorage
@@ -21,9 +21,8 @@ class BulkExecutor:
         self.queue, self.storage, self.intakes = queue, storage, intakes
 
     async def execute(self, lease: BulkLease) -> None:
-        attributes = {"koinon_token_id": lease.token_id} if lease.token_id else {}
-        with SecurityContextHolder.using(SecurityContext(user_id=lease.subject, attributes=attributes)):
-            try:
+        try:
+            with SecurityContextHolder.using(execution_context(lease.subject, lease.token_id)):
                 await self.queue.check(lease)
                 native = self.intakes.get()
                 if native is None:
@@ -65,10 +64,10 @@ class BulkExecutor:
                         "Native receipt differs from admitted bytes", code="BULK_NATIVE_RECEIPT_CONFLICT"
                     )
                 await native.acknowledge(lease, receipt)
-            except Exception as error:
-                code = getattr(error, "code", None) or "BULK_PROCESSING_FAILED"
-                try:
-                    await self.queue.failed(lease, code=code, unknown=True)
-                except ConflictException as lost:
-                    if lost.code != "BULK_LEASE_LOST":
-                        raise
+        except Exception as error:
+            code = getattr(error, "code", None) or "BULK_PROCESSING_FAILED"
+            try:
+                await self.queue.failed(lease, code=code, unknown=True)
+            except ConflictException as lost:
+                if lost.code != "BULK_LEASE_LOST":
+                    raise

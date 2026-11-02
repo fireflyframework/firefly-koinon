@@ -10,10 +10,9 @@ from pyfly.data.relational.datasource_registry import DataSourceRegistry
 from pyfly.data.relational.sqlalchemy import Propagation, transactional
 from pyfly.data.transaction import infrastructure_unit
 from pyfly.kernel import ConflictException, InvalidRequestException
-from pyfly.security.context import SecurityContext
 from pyfly.security.context_holder import SecurityContextHolder
 
-from koinon.knowledge.bulk.authority import BulkAuthority
+from koinon.knowledge.bulk.authority import BulkAuthority, execution_context
 from koinon.knowledge.bulk.dtos import BulkDestination
 from koinon.knowledge.bulk.entities import BulkTableReservation
 from koinon.knowledge.bulk.repositories import BulkRepository
@@ -122,12 +121,7 @@ class BulkQueue:
             or len({p.name for p in plans}) != len(plans)
         ):
             raise ConflictException("Use a complete bounded table plan", code="BULK_TABLE_LIMIT")
-        with SecurityContextHolder.using(
-            SecurityContext(
-                user_id=lease.subject,
-                attributes={"koinon_token_id": lease.token_id} if lease.token_id else {},
-            )
-        ):
+        with SecurityContextHolder.using(execution_context(lease.subject, lease.token_id)):
             await self._check(lease)
             _, item, batch = await self.records.fenced(
                 lease.tenant_id, lease.item_id, lease.worker_id, lease.attempt
@@ -175,12 +169,7 @@ class BulkQueue:
             )
 
     async def _check(self, lease: BulkLease) -> None:
-        with SecurityContextHolder.using(
-            SecurityContext(
-                user_id=lease.subject,
-                attributes={"koinon_token_id": lease.token_id} if lease.token_id else {},
-            )
-        ):
+        with SecurityContextHolder.using(execution_context(lease.subject, lease.token_id)):
             await self.authority.destination(lease.subject, lease.tenant_id, lease.destination, write=True)
             await self.authority.item(
                 lease.subject,
