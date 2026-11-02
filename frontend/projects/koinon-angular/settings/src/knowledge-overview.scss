@@ -1,0 +1,86 @@
+// Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
+:host {
+  display: block;
+  min-width: 0;
+}
+h2 {
+  margin: 0;
+  font-size: 26px;
+  line-height: 1.35;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+}
+p {
+  max-width: 72ch;
+  margin: 10px 0 0;
+  color: var(--ui-muted);
+  font-size: 13px;
+  line-height: 1.75;
+}
+.knowledge-tasks {
+  margin-top: 32px;
+}
+.knowledge-task {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 18px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--ui-line);
+}
+.knowledge-task:first-child {
+  padding-top: 0;
+}
+.knowledge-task > ffk-icon {
+  margin-top: 3px;
+  color: var(--ui-muted);
+}
+.knowledge-task > div {
+  min-width: 0;
+}
+h3 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+.knowledge-task p {
+  margin-top: 6px;
+  font-size: 12px;
+}
+.scope-note {
+  margin-top: 28px;
+  font-size: 12px;
+}
+@media (max-width: 720px) {
+  .knowledge-task {
+    grid-template-columns: 20px minmax(0, 1fr);
+    gap: 12px;
+  }
+  .knowledge-task > ffk-button {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+.connection-observations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  margin: 22px 0 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.connection-observations > div {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.connection-observations dt {
+  color: var(--ui-muted);
+}
+.connection-observations dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

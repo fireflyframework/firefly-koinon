@@ -21,15 +21,31 @@ If Settings is missing, ask an existing administrator to review your current rol
 | Organization | **Communications** | Verified sender selection, email readiness, summaries and delivery history. Provider credentials remain deployment configuration. |
 | Organization | **Identity & appearance** | Organization names, logos and palettes; see [identity and appearance](../operations/identity-appearance.md). |
 | Organization | **Applications** | Registered application configuration; see [register applications](register-applications.md). Personal connections remain under **Authorized applications** in the account area. |
-| Knowledge & AI | **Sources & connections** | Find registered sources, open their details and start a Library upload. Other source connections require deployment integration. |
-| Knowledge & AI | **Providers** | Model endpoints, protocols, credentials and observed model capabilities. |
-| Knowledge & AI | **Knowledge models** | Organization knowledge behavior, then processing-role assignments and workspace overrides. |
-| Knowledge & AI | **Agents** | Agent configuration, the central organization chat agent and conversation-memory bounds. |
+| Knowledge & AI | **Overview** | Start the appropriate task. Saved connections and recorded generation checks are separate observations. |
+| Operations | **Source processing** | Find uploaded source records, inspect their details and start a Library upload. Other source integrations require deployment configuration. |
+| Knowledge & AI | **Model connections** | Model endpoints, protocols, credentials and observed model capabilities. |
+| Knowledge & AI | **Model assignments** | Document and dataset embeddings, specialized processing roles and explicit workspace overrides. |
+| Knowledge & AI | **Knowledge answers** | Organization document RAG/RLM behavior and bounded document or structured-query parameters. |
+| Knowledge & AI | **Assistant** | The central organization chat assistant and memory limits. Additional agent configurations remain available in an expandable section. |
 | Knowledge & AI | **Storage & indexing** | Plan, build, inspect and explicitly activate knowledge indexes. Inspect deployment observations separately; bucket, database and provisioning bindings remain operator procedures. |
 | Operations | **Platform health** | Passive observations and installed component information; see [health diagnosis](../operations/platform-health.md). |
 | Operations | **Audit**, **Operations** | Recorded administrative events and processing work. Your personal activity is a separate view. |
 
 An unavailable action can reflect missing permission, installation configuration or a current processing constraint. Read the explanation before changing another setting. Each page still checks its own authority; a workspace grant does not become organization-wide administration.
+
+Settings opens **Knowledge & AI**, **Overview** when your account can manage its tasks. An explicit chat-setup link opens **Assistant** directly. If neither is available, Settings opens a section permitted for your current organization.
+
+Choose **Keep editing** when a navigation review appears to preserve the current form, or **Leave editor** to discard unsaved changes. Saved settings remain in place. Connection, assignment and answer settings are separate forms; navigating between them does not save, test or activate anything.
+
+The overview is a list of tasks, not a fixed-order wizard. Index planning can be needed before an embedding assignment is compatible. Follow the prerequisites in the selected workspace instead of assuming that an organization default applies everywhere.
+
+[![Knowledge and AI task overview with separate saved-connection and recorded-check counts](../assets/screenshots/knowledge-ai-overview.png)](../assets/screenshots/knowledge-ai-overview.png)
+
+*Controlled application screenshot with a fictional organization. No model connection has been configured.*
+
+[![The same administration tasks in the mobile settings view](../assets/screenshots/knowledge-ai-overview-mobile.png)](../assets/screenshots/knowledge-ai-overview-mobile.png)
+
+*On mobile, choose a page using Settings section. Tasks remain available in the scrollable content area.*
 
 ## Initial setup
 
@@ -74,13 +90,13 @@ Corporate management screens and external Entra ID/Google Workspace activation a
 
 ## Knowledge model assignments
 
-Providers and agents are separate from the model roles used by document and dataset processing. In **Knowledge models**, choose an organization default or an explicit workspace override, then assign the role described by the server. A disabled workspace override blocks fallback to the organization default.
+Providers and agents are separate from the model roles used by document and dataset processing. In **Model assignments**, choose an organization default or an explicit workspace override, then assign the role described by the server. A disabled workspace override blocks fallback to the organization default. Embedding roles are shown first. Expand **Advanced processing models** for document answering, RLM analysis, SQL generation and other processing roles; the selected method can require these roles.
 
 Generative roles may use the current chat agent only when the role descriptor permits it and the operation has an active agent context. Embedding roles require an explicit provider, model, dimensions and approved existing space. Do not guess an embedding space or substitute a different model for indexed knowledge. An incompatible change requires reindexing; removing and recreating an assignment does not bypass that requirement.
 
 ## Organization chat and memory
 
-Open **Agents** and find **Organization chat**. Choose an organization-wide agent and save the central setting. Creating an agent alone does not make it the organization default. Choosing **No agent** intentionally leaves chat unavailable. A configured default can still be unavailable when its provider, model, validation or current permissions no longer qualify.
+Open **Assistant** and find **Organization chat**. Choose an organization-wide agent and save the central setting. Creating an agent alone does not make it the organization default. Choosing **No agent** intentionally leaves chat unavailable. A configured default can still be unavailable when its provider, model, validation or current permissions no longer qualify.
 
 The same panel configures total history messages, history tokens and the allowance for other chats in a personal project. Project messages count toward the total, and deployment limits remain an upper bound. Allowing personal project memory does not turn it on for every project: the owner must enable it in the relevant chat project. Only that owner's eligible conversations with the same knowledge scope contribute; private files remain in their original conversation. See [conversation memory](conversation-memory.md) before changing these limits.
 
@@ -104,7 +120,7 @@ Unsupported connections and missing credentials need setup guidance. Never repor
 
 ### Review sources, storage and processing
 
-In **Sources & connections**, enter a source-name filter and submit it, then page through the results. **Details** opens the current Library resource. **Add files** opens the Library upload workflow, where a valid destination, intake mode and current write permissions are still required. The **Connections** area directs other source integrations to the deployment administrator; it does not contain a general connector-creation wizard. Use the [ECM integration guide](../operations/ecm-integration.md) for that separate integration boundary.
+In **Source processing**, enter a source-name filter and submit it, then page through the results. **Details** opens the current Library resource. **Add files** opens the Library upload workflow, where a valid destination, intake mode and current write permissions are still required. The source list is not a connector-creation wizard. Other source integrations remain a deployment task. Use the [ECM integration guide](../operations/ecm-integration.md) for that separate integration boundary.
 
 Use **Storage & indexing** for the [guided index lifecycle](../operations/knowledge-indexes.md): select a knowledge space and type, review a model plan, build separately and activate explicitly after inspection. Expand **Deployment observations** to read file-store, search-index and datasource observations. **Refresh deployment observations** reads the descriptor again; it does not migrate a bucket, install an extension or rebuild an index. A recent **Checked** time can accompany **Not checked** for a configured cloud store. Interpret the reason and availability together, following [configuration observations](../operations/configuration.md). The same lifecycle is available through typed APIs and SDKs, with the same revision, idempotency and recovery rules.
 
@@ -126,7 +142,7 @@ Next, perform the operation that needs the setting. A successful save is not a s
 
 | Symptom | Check first | Next step |
 | --- | --- | --- |
-| Chat says it is unavailable | Central organization agent and its current provider/model status | Review **Agents**, then [guided AI setup](knowledge-setup.md#6-configure-the-organizations-chat-agent). |
+| Chat says it is unavailable | Central organization agent and its current provider/model status | Review **Assistant**, then [guided AI setup](knowledge-setup.md#6-configure-the-organizations-chat-agent). |
 | Provider is listed but an operation fails | Endpoint, protocol, chosen model and the operation's role assignment | Run the relevant provider check and test that specific workflow. Discovery alone is insufficient. |
 | Files remain queued | Staging receipts, bulk consumer opt-in, worker process and recorded job outcome | Follow [worker roles](../operations/workers.md) and [durable staging](../operations/durable-bulk.md). Do not upload an uncertain original again. |
 | Health shows unknown or expired observations | Evidence basis, observation time and coverage | Use the [diagnosis sequence](../operations/platform-health.md#diagnose-a-problem-in-order). Unknown is not a successful check. |

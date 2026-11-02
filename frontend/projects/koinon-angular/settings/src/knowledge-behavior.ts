@@ -4,6 +4,8 @@ import {
   Injector,
   ChangeDetectionStrategy,
   Component,
+  Output,
+  EventEmitter,
   PendingTasks,
   computed,
   effect,
@@ -45,6 +47,10 @@ registerKoinonSpanish(KNOWLEDGE_BEHAVIOR_SPANISH);
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KoinonKnowledgeBehavior {
+  @Output() sectionRequested = new EventEmitter<string>();
+  reviewAssignments() {
+    if (this.c.f.tenantPermissions().has('providers:write')) this.sectionRequested.emit('models');
+  }
   readonly c = inject(KoinonKnowledgeBehaviorConfiguration);
   private readonly tasks = inject(PendingTasks);
   private readonly injector = inject(Injector);
@@ -90,6 +96,18 @@ export class KoinonKnowledgeBehavior {
       this.c.contextKey();
       untracked(() => this.tasks.run(() => this.c.load()));
     });
+  }
+  updateField(field: KnowledgeBehaviorField, input: HTMLInputElement) {
+    this.c.set(this.id(field), input.value);
+    this.revealField(input);
+  }
+  revealField(input: HTMLInputElement) {
+    afterNextRender(() => {
+      if (!input.isConnected || !input.matches(':focus') || !this.c.dirty()) return;
+      const footer = input.closest('form')?.querySelector('footer');
+      if (footer && input.getBoundingClientRect().bottom + 8 > footer.getBoundingClientRect().top)
+        input.scrollIntoView({ block: 'center' });
+    }, { injector: this.injector });
   }
   id(field: KnowledgeBehaviorField) {
     return field.domain + '.' + field.name;

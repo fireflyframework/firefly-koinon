@@ -8,7 +8,7 @@ for(const width of [1440,1200])test(`workspace rails share geometry and preserve
  const chatRail=(await page.locator('ffk-conversation-sidebar').boundingBox())!;
  const nav=page.locator('ffk-shell .topbar').getByRole('navigation',{name:'Main navigation',exact:true});
  await openAdministration(page,'Settings');
- const rail=page.getByRole('navigation',{name:'Settings sections',exact:true}),title=page.getByRole('heading',{name:'Providers',exact:true});
+ const rail=page.getByRole('navigation',{name:'Settings sections',exact:true}),title=page.locator('ffk-knowledge-overview').getByRole('heading',{name:'Knowledge & AI',exact:true});
  await expect(rail).toBeVisible();const r=(await rail.boundingBox())!,heading=(await title.boundingBox())!,primary=(await nav.boundingBox())!;
  expect(Math.abs(r.width-chatRail.width)).toBeLessThanOrEqual(1);expect(Math.abs(primary.x-heading.x)).toBeLessThanOrEqual(1);
  const toggle=page.getByRole('button',{name:'Hide settings navigation',exact:true});

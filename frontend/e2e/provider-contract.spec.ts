@@ -1,6 +1,6 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 import { test, expect, type Page } from '@playwright/test';
-import { openAdministration,  mockService } from './fixtures';
+import { openAdministration, mockService } from './fixtures';
 const provider = {
   id: 'provider-one',
   name: 'Controlled model connection',
@@ -128,6 +128,7 @@ test('provider API choice and explicit key removal use the native request contra
   const service = await contract(page);
   await page.goto('/library');
   await openAdministration(page, 'Settings');
+  await page.getByRole('button', { name: 'Manage connections', exact: true }).click();
   await page.getByRole('button', { name: 'Edit', exact: true }).click();
   await page.getByRole('combobox', { name: 'Model API', exact: true }).selectOption('responses');
   await page.getByRole('checkbox', { name: 'Remove the current API key', exact: true }).check();
@@ -143,9 +144,11 @@ test('schema-backed options reject invalid input and retain false before an unve
   service.providers[0].api = 'responses';
   await page.goto('/library');
   await openAdministration(page, 'Settings');
+  await page.getByRole('button', { name: 'Manage connections', exact: true }).click();
   await page.getByText('Model capabilities', { exact: true }).first().click();
   await expect(page.getByRole('cell', { name: 'Not checked', exact: true })).toHaveCount(3);
-  await page.getByRole('button', { name: 'Agents', exact: true }).click();
+  await page.getByRole('button', { name: 'Assistant', exact: true }).click();
+  await page.getByText('Additional agent configurations', { exact: true }).click();
   await page.getByRole('button', { name: 'Create an agent', exact: true }).click();
   await page
     .getByRole('textbox', { name: 'Agent name', exact: true })

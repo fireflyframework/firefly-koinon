@@ -3,7 +3,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { openAdministration,  mockService, context } from './fixtures';
+import { openAdministration, mockService, context } from './fixtures';
 import {
   documents,
   structured,
@@ -96,11 +96,11 @@ async function open(
     name: options.spanish ? 'Sección de configuración' : 'Settings section',
     exact: true,
   });
-  if ((page.viewportSize()?.width ?? 1440) < 760) await select.selectOption('models');
+  if ((page.viewportSize()?.width ?? 1440) < 760) await select.selectOption('answers');
   else
     await page
       .getByRole('button', {
-        name: options.spanish ? 'Modelos de conocimiento' : 'Knowledge models',
+        name: options.spanish ? 'Respuestas sobre conocimiento' : 'Knowledge answers',
         exact: true,
       })
       .click();
@@ -120,7 +120,7 @@ for (const width of [1440, 390])
     await page.setViewportSize({ width, height: 1000 });
     const { panel, writes } = await open(page);
     await expect(
-      panel.getByRole('heading', { name: 'Knowledge behavior', exact: true }),
+      panel.getByRole('heading', { name: 'Knowledge answers', exact: true }),
     ).toBeVisible();
     await expect(panel).toContainText('Knowledge operations');
     const rlm = panel.getByRole('radio', { name: /Analyze documents in steps/ });
@@ -235,7 +235,7 @@ test('Spanish lazy settings keeps document methods separate from SQL controls', 
   await page.setViewportSize({ width: 390, height: 1000 });
   const { panel } = await open(page, { spanish: true });
   await expect(
-    panel.getByRole('heading', { name: 'Comportamiento del conocimiento', exact: true }),
+    panel.getByRole('heading', { name: 'Respuestas sobre conocimiento', exact: true }),
   ).toBeVisible();
   await expect(panel.locator('legend')).toHaveText('Respuestas de documentos');
   const directory = process.env['KOINON_UI_CAPTURE_DIR'] ?? 'test-results/knowledge-behavior';

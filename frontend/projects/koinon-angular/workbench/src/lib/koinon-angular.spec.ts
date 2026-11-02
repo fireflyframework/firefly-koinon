@@ -485,3 +485,26 @@ it('preserves an explicit shared receipt during host/default view initialization
   await fixture.componentInstance.navigate('library');
   expect(dismissed).toHaveBeenCalledOnce();
 });
+
+it('supplies Overview to ordinary Settings and preserves the explicit chat Assistant setup destination', async () => {
+  const fixture = await mount(async (_method, path) =>
+    path === '/context'
+      ? {
+          subject: 'reviewer',
+          tenants: [{ id: 'tenant-one', name: 'Synthetic tenant', roles: ['admin'], permissions: ['catalog:read', 'members:write', 'providers:write', 'agents:write'] }],
+          memberships: [],
+          workspaces: [workspace],
+        }
+      : path === '/capabilities'
+        ? { providers: [], features: [] }
+        : { items: [] },
+  );
+  const workbench = fixture.componentInstance;
+  await workbench.navigate('settings');
+  expect(workbench.destination()).toBe('settings');
+  expect(workbench.settingsActions.section()).toBe('knowledge');
+  await workbench.navigate('chat');
+  await workbench.chatActions.setup();
+  expect(workbench.destination()).toBe('settings');
+  expect(workbench.settingsActions.section()).toBe('agents');
+});

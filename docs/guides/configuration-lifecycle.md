@@ -10,10 +10,11 @@ For initial setup, follow [Configure your corporate brain](knowledge-setup.md). 
 
 | Change | Where it belongs | What must remain explicit |
 | --- | --- | --- |
-| Model endpoint, protocol, credential or declared model | **Providers** | Approved origin, current connection and actual model capabilities. Secrets remain write-only. |
-| Organization chat agent | **Agents**, then **Organization chat** | The validated agent and the separately saved central default. |
-| Processing model or RAG/RLM behavior | **Knowledge models** | Domain, role, organization default or workspace override, current policy and revision. |
-| Embedding model or dimensions | **Storage & indexing**, coordinated with **Knowledge models** | Separate document/dataset targets, measured compatibility, physical index, coverage and explicit activation. |
+| Model endpoint, protocol, credential or declared model | **Model connections** | Approved origin, current connection and actual model capabilities. Secrets remain write-only. |
+| Organization chat agent | **Assistant**, then **Organization chat** | The validated agent and the separately saved central default. |
+| Processing model | **Model assignments** | Domain, role, organization default or workspace override and current revision. |
+| Document RAG/RLM and retrieval policy | **Knowledge answers** | Organization-wide method, supported capabilities, bounded parameters and current revision. |
+| Embedding model or dimensions | **Storage & indexing**, coordinated with **Model assignments** | Separate document/dataset targets, measured compatibility, physical index, coverage and explicit activation. |
 | Sender selection, optional channels or administrator schedules | **Communications** | Operator-verified sender options, current recipient authority and the next scheduled time. |
 | Database, storage, provider-host allowlist, transport credentials or public origin | Protected deployment configuration | Operator review, driver/TLS and storage procedures; these are not ordinary organization fields. |
 
@@ -29,7 +30,7 @@ Organization defaults and workspace overrides are separate records. A disabled o
 
 ## 2. Prepare and check the replacement provider
 
-Open **Providers** and configure the approved endpoint, its actual protocol and model identifiers. If the host is not allowed, ask the deployment operator to review the allowlist; broadening a user role cannot bypass it. When replacing an endpoint or model used by retained indexes, prefer a separate connection so the existing serving configuration remains available while the replacement is checked.
+Open **Model connections** and configure the approved endpoint, its actual protocol and model identifiers. If the host is not allowed, ask the deployment operator to review the allowlist; broadening a user role cannot bypass it. When replacing an endpoint or model used by retained indexes, prefer a separate connection so the existing serving configuration remains available while the replacement is checked.
 
 Save the intended connection and run its offered checks. Discovery establishes that a model is listed. It does not establish streaming, tools, embeddings, vision or RLM behavior. Test the capability the intended workflow needs with a small explicit request. Check supported settings rather than copying options from a different model.
 
@@ -37,9 +38,9 @@ A changed connection or model invalidates earlier validation observations. It ca
 
 ## 3. Change chat or generative processing roles
 
-For chat, select the intended provider/model in **Agents**, review its supported tools and settings, and validate the agent. Then save the intended default in **Organization chat**. Creating or editing an agent alone does not establish the organization's default.
+For chat, select the intended provider/model in **Assistant**, review its supported tools and settings, and validate the agent. Then save the intended default in **Organization chat**. Creating or editing an agent alone does not establish the organization's default.
 
-For document or structured processing, open **Knowledge models**, choose the role and its assignment scope, then review the model selection. `current_agent` is available only for generative roles whose descriptors permit it and when an operation has that agent context. Embeddings always need an explicit compatible selection.
+For document or structured processing, open **Model assignments**, choose the role and its assignment scope, then review the model selection. `current_agent` is available only for generative roles whose descriptors permit it and when an operation has that agent context. Embeddings always need an explicit compatible selection.
 
 Use the current expected revision where the operation requires one. A conflict means the current state must be read and reviewed again. Reload after saving, then start a new bounded operation and inspect its recorded policy and evidence. An admitted or historical run retains its own configuration lineage; today's selection does not rewrite it.
 

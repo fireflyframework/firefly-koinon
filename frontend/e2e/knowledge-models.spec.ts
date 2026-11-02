@@ -197,13 +197,18 @@ async function open(page: Page, mobile = false, spanish = false) {
         exact: true,
       })
       .selectOption('models');
-  else await page.getByRole('button', { name: 'Knowledge models', exact: true }).click();
+  else await page.getByRole('button', { name: 'Model assignments', exact: true }).click();
   await expect(
     page.getByRole('heading', {
-      name: spanish ? 'Modelos de conocimiento' : 'Knowledge models',
+      name: spanish ? 'Asignación de modelos' : 'Model assignments',
       exact: true,
     }),
   ).toBeVisible();
+  await page
+    .getByText(spanish ? 'Modelos de procesamiento avanzado' : 'Advanced processing models', {
+      exact: true,
+    })
+    .click();
 }
 test('operator assigns an organization default, overrides it for a space and restores inheritance', async ({
   page,
@@ -406,6 +411,7 @@ test('Spanish Settings translates provider setup and empty-state instructions', 
   await fixture(page, true);
   await page.goto('/library');
   await openAdministration(page, 'Configuración');
+  await page.getByRole('button', { name: 'Gestionar conexiones', exact: true }).click();
   await expect(page.getByText('No hay proveedores de modelos', { exact: true })).toBeVisible();
   await expect(
     page.getByText('Conecta un proveedor y comprueba que sus modelos están disponibles.', {
@@ -477,7 +483,7 @@ for (const width of [1440, 390])
       await page
         .getByRole('combobox', { name: 'Settings section', exact: true })
         .selectOption('models');
-    else await page.getByRole('button', { name: 'Knowledge models', exact: true }).click();
+    else await page.getByRole('button', { name: 'Model assignments', exact: true }).click();
     await expect(page.getByRole('combobox', { name: 'Assignment scope', exact: true })).toHaveValue(
       'workspace-one',
     );
@@ -528,7 +534,7 @@ test('missing-provider prerequisite links to Providers without creating an assig
   await page.getByRole('button', { name: 'Open Providers', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Keep editing', exact: true })).toBeFocused();
   await page.getByRole('button', { name: 'Leave editor', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Providers', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Model connections', exact: true })).toBeVisible();
   expect(service.writes).toEqual([]);
 });
 

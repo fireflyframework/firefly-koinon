@@ -35,7 +35,7 @@ it('translates organization navigation before a directory view has been opened',
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();
-  expect(fixture.componentInstance.section()).toBe('providers');
+  expect(fixture.componentInstance.section()).toBe('knowledge');
   expect(fixture.nativeElement.querySelector('.settings-navigation').textContent).toContain(
     'Estructura de la organización',
   );
