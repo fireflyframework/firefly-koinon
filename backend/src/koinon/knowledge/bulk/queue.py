@@ -8,7 +8,7 @@ from datetime import datetime
 from pyfly.container import service
 from pyfly.data.relational.datasource_registry import DataSourceRegistry
 from pyfly.data.relational.sqlalchemy import Propagation, transactional
-from pyfly.data.transaction import infrastructure_unit
+from pyfly.data.transaction import TransactionTemplate
 from pyfly.kernel import ConflictException, InvalidRequestException
 from pyfly.security.context_holder import SecurityContextHolder
 
@@ -230,7 +230,8 @@ class BulkQueue:
 
     @asynccontextmanager
     async def publication(self, lease: BulkLease) -> AsyncIterator[None]:
-        async with infrastructure_unit(self.datasources.get("primary")):
+        # Native publication crosses datasource transaction boundaries, which end repository operation scopes.
+        async with TransactionTemplate(self.datasources.get("primary")).transaction():
             await self._check(lease)
             yield
             await self.records.fenced(lease.tenant_id, lease.item_id, lease.worker_id, lease.attempt)
