@@ -26,6 +26,7 @@ from pyfly.security.context import SecurityContext
 from pyfly.security.context_holder import SecurityContextHolder
 
 from koinon.answers.dtos import EvidenceAnswerPlan
+from koinon.answers.model_dtos import ModelAnswerPlan
 from koinon.answers.selection_feedback import selection_feedback
 from koinon.assistants.attachment_input import prepare_attachment_input
 from koinon.assistants.connections import (
@@ -603,7 +604,7 @@ class AssistantExecutor:
                     question=prompt.user,
                     tools=tools,
                     output_tokens=(spec.options.max_tokens or 4096) if spec.options else 4096,
-                    output_schema=EvidenceAnswerPlan.model_json_schema(),
+                    output_schema=ModelAnswerPlan.model_json_schema(),
                 )
                 user_prompt = prompt.user
                 if refs:
@@ -618,7 +619,7 @@ class AssistantExecutor:
                                 question=value,
                                 tools=tools,
                                 output_tokens=(spec.options.max_tokens or 4096) if spec.options else 4096,
-                                output_schema=EvidenceAnswerPlan.model_json_schema(),
+                                output_schema=ModelAnswerPlan.model_json_schema(),
                             )
                             return True
                         except InvalidRequestException:
@@ -653,7 +654,7 @@ class AssistantExecutor:
                             usage.input_tokens
                             + ((spec.options.max_tokens or 4096) if spec.options else 4096)
                             + ConservativeTokenEstimator().estimate(
-                                json.dumps(EvidenceAnswerPlan.model_json_schema())
+                                json.dumps(ModelAnswerPlan.model_json_schema())
                             )
                             + self.assistants.settings.tool_result_tokens
                             + 512
@@ -679,7 +680,7 @@ class AssistantExecutor:
                         question=private.text,
                         tools=tools,
                         output_tokens=(spec.options.max_tokens or 4096) if spec.options else 4096,
-                        output_schema=EvidenceAnswerPlan.model_json_schema(),
+                        output_schema=ModelAnswerPlan.model_json_schema(),
                     )
                     if binary_budget is not None:
                         budget = min(budget, binary_budget)
@@ -693,7 +694,7 @@ class AssistantExecutor:
                     name=f"koinon-chat-{run.id}",
                     model=model,
                     instructions=prompt.system,
-                    output_type=EvidenceAnswerPlan,
+                    output_type=ModelAnswerPlan,
                     tools=tools,
                     auto_register=False,
                     memory=None,

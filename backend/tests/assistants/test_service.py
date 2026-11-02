@@ -294,7 +294,8 @@ async def test_native_agent_worker_uses_scoped_tools_and_persists_replayable_evi
     _, agent = await configured(service)
     await service.validate_provider("issuer|admin", "north", agent["provider_id"])
     model = TestModel(
-        call_tools=["search_knowledge"], custom_output_args={"outcome": "insufficient_evidence"}
+        call_tools=["search_knowledge"],
+        custom_output_args={"language": "en", "outcome": "insufficient_evidence"},
     )
     monkeypatch.setattr(ModelFactory, "build_with_secret", lambda self, spec, secret: model)
     from koinon.catalog.service import CatalogService

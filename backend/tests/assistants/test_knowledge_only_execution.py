@@ -130,11 +130,11 @@ async def test_real_executor_releases_only_valid_current_source_plan(assistants,
             return
         output_attempts += 1
         selection = {"fact_id": facts[0]["id"] if facts else "missing", "quote": passage}
-        plan = {"outcome": "answer", "quotes": [selection], "values": []}
+        plan = {"outcome": "answer", "language": "en", "quotes": [selection], "values": []}
         if case == "repaired" and output_attempts == 1:
             selection["quote"] = "The window is Tuesday morning."
         if case in {"abstained", "empty"}:
-            plan = {"outcome": "insufficient_evidence"}
+            plan = {"outcome": "insufficient_evidence", "language": "en"}
         if case == "two_quotes":
             plan["language"] = "es"
             plan["quotes"] = (
