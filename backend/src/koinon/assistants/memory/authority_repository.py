@@ -410,14 +410,13 @@ class ChatMemoryAuthorityRepository(Repository[ChatMemoryManifest, str]):
         app = AuthorizedApplication
         apps = (
             select(app)
-            .join(active, active.c.authorized_application_id == app.id)
             .where(
+                app.id.in_(select(active.c.authorized_application_id)),
                 app.subject == subject,
                 app.tenant_id == tenant_id,
                 app.revoked_at.is_(None),
                 app.expires_at > clock,
             )
-            .distinct()
             .cte("memory_apps")
         )
         registration = McpOAuthClientRegistration
