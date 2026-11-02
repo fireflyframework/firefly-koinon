@@ -134,6 +134,21 @@ Continue with [Configure your corporate brain](../guides/knowledge-setup.md). Re
 
 Validate the actual provider endpoint, protocol and chosen model. Assign an explicit compatible document embedding model, dimensions and space as well as the answer and chat roles. Begin with RAG for the first document exercise. Discovery or a saved model assignment does not establish that streaming, tools or RLM work. Confirm storage observations and an actual write/read under deployment credentials; a configured bucket alone is insufficient.
 
+### Check administrator communications separately
+
+Email is an optional installation channel, not a prerequisite for creating authorized knowledge or signing in. Prepare the [initial welcome](../reference/bootstrap-welcome.md) only when its provider, verified sender and recipient prerequisites are ready. Use this handoff before enabling recurring reports:
+
+| Responsibility | Check | Evidence to keep |
+| --- | --- | --- |
+| Operator | Correct provider, sender, canonical public origin, encryption key and complete worker configuration. | Transport readiness and the existing event's delivery reference. |
+| Administrator | Current organization role, intended branding/language and permitted summary schedules. | Reloaded policy revision and schedule. Review the personal email preview when its [recipient prerequisites](communications.md#configure-a-weekly-or-monthly-summary) are met. |
+| Operator and administrator | Current directory-backed recipient or separately approved administrator contact with a genuine signed binding and unexpired approval. | Eligibility status; do not use a profile email as identity proof. |
+| Recipient | The actual localized message arrives in the intended mailbox. | Confirmed receipt, recorded separately from provider acceptance or recipient-server handoff. |
+
+Operator contact commands start the native application context even for **status**. Supply the complete reviewed installation profile, including its named database/TLS profiles, identity encryption key and configured object-store addresses and containers. Copying only mail variables can fail context startup before the communication operation runs. Keep the privileged operator datasource separate from normal runtime credentials; follow the [dedicated-role procedure](../reference/operator-delivery-contacts.md).
+
+If the welcome did not arrive, inspect the original delivery rather than repeating bootstrap or modifying the installation ledger. Read [welcome recovery](../reference/bootstrap-welcome.md#check-the-result-without-repeating-enrollment) and [message investigation](communications.md#investigate-a-message-that-did-not-arrive). A later independent diagnostic is a new explicitly requested event; it does not replay the old welcome. A preview and saved schedule are not evidence of email delivery.
+
 ## 6. Exercise upload, RAG, streaming and immutable evidence
 
 Upload a small fictional document with a fact whose answer you know. Wait for ingestion and indexing, then ask a bounded question using that source. Check streamed text through the public proxy, the completed answer and its cited fragment. Open **Audit** to inspect actual tool outcomes, sources and recorded policy. Check the same flow with a reader account and a source it cannot access.

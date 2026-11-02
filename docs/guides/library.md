@@ -73,7 +73,7 @@ The panel checks the server's current limits before sending files. The native up
 
 If a transfer or submission acknowledgment is lost, choose **Check status**. The panel reads the retained batch and originals without sending them again. **Reconcile retained original** asks the native recovery operation to verify an already retained original; it does not reupload it or blindly repeat parsing. Inspect unfinished or reconciliation-required outcomes before starting different work. A partial synchronous response can also leave native effects, so its uncertain remainder is not automatically retried.
 
-**Request cancellation** uses the current native batch revision. It stops pending work; already published effects can remain. Closing the panel stops its bounded automatic checks and leaves submitted work running. Keep the panel open while resolving an uncertain upload: its request keys remain bound to the current authenticated client and scope, and are cleared when that identity or scope changes. The batch itself remains on the server and is available through the file-batch API after a page reload.
+**Request cancellation** uses the current native batch revision. It stops pending work; already published effects can remain. Closing the panel stops its bounded automatic checks and leaves submitted work running. Keep the panel open while resolving an uncertain upload: its request keys remain bound to the current authenticated client and scope, and are cleared when that identity or scope changes. The batch itself remains on the server. After a page reload, open **Library**, **Uploads** to authorize and inspect it again with the current account and credential. The retained-upload panel does not restore old file objects or automatically send a saved action.
 
 Queued storage configuration does not prove worker availability. Operators must run the [complete worker role](../operations/workers.md) and explicitly enable `koinon.knowledge.bulk.worker_enabled` in its configuration. The query-batch scheduler has its own `query_worker_enabled` setting. For an environment-based local launch, scope the flag to the worker command:
 
@@ -82,6 +82,26 @@ PYFLY_KOINON_KNOWLEDGE_BULK_WORKER_ENABLED=true python -m koinon.worker
 ```
 
 Do not apply that worker-only environment override to the API process, which rejects enabled background-worker flags. The file-batch capability response identifies the required external worker and configured storage, not a live worker heartbeat. Resource limits, parser supervision and original retention still apply; this interface does not qualify an arbitrary file or establish a universal memory minimum.
+
+### Recover processing from a saved original
+
+A file can have a confirmed upload and still need processing attention. In **Library**, open **Uploads**, choose **Inspect upload** for the existing batch, then **Inspect recovery** on the affected file. This inspection does not upload bytes or automatically run another attempt. It checks the current owner, credential, destination and native processing outcome before offering an action.
+
+![Inspect recovery after a processing failure](../assets/screenshots/retained-upload-processing-recovery-1440.png)
+
+This controlled example shows an upload receipt alongside a failed job and unpublished knowledge. It illustrates the current recovery controls, not a completed import in a live deployment.
+
+Read the three observations separately:
+
+| Observation | What it tells you | Next step |
+| --- | --- | --- |
+| **Upload confirmed** | A verified receipt records that the original was saved. It is not a fresh check of the stored object. | Choose **Verify retained original** if you need to check its current availability. |
+| **Processing failed** | The inspected processing job failed. Earlier native effects may still exist. | Read the explanation and the server-offered recovery action. Do not infer that nothing was committed. |
+| **Not published**, **Publication not confirmed**, **Ready to publish** or **Import completed** | The native observation distinguishes absence, uncertainty, a prepared result and a completed commit. | Review only the offered action; an unknown outcome does not authorize another attempt. |
+
+**Retry processing** processes the same saved original again and may use configured AI services. **Finish publication** completes an already prepared result. **Record completed import** acknowledges a verified existing commit. They are different authorizations. Review the selected action and confirm it once; the server checks its revision and state again. If no action is offered, follow the stated prerequisite or hand the reference to an administrator.
+
+After confirmation, refresh the upload and open the Library item to inspect its current availability. An acknowledgment is not proof that processing or indexing has finished. If the request result is unknown, preserve its exact saved body and key and use **Review saved request**; reloading never repeats it automatically. The [complete recovery walkthrough](bulk-intake.md#recover-processing-without-uploading-the-original-again) includes mobile review, permissions, attempt limits and typed examples for Python, TypeScript and Java.
 
 ## Understand availability
 
@@ -136,7 +156,7 @@ The SDK helpers are `append_dataset_file` in Python, `dataset.appendFile` in Typ
 
 Append takes an exclusive publication claim. Dataset queries and schema reads return `DATASET_NOT_READY` while intake is pending or failed. Native processing commits sections independently: if a later section or canonical publication fails, earlier native effects may remain. Existing files and snapshots are preserved, but the dataset stays unavailable until its retained file version is reconciled. The same key and exact file return the retained completed receipt after current permissions are checked, without repeating native work. The receipt describes the original completed operation; it is not a fresh dataset-readiness check. A changed payload conflicts, and unfinished keys require reconciliation. There is no automatic retry or public reconciliation helper.
 
-This development endpoint has canonical, native-adapter and HTTP regression coverage. Canonical append locking, cancellation, replay and revocation passed eleven PostgreSQL checks with a controlled native port. Full native/provider append acceptance and recovery remain separate qualification steps. It does not provide asynchronous or bulk intake.
+This append endpoint has canonical, native-adapter and HTTP regression coverage. Canonical append locking, cancellation, replay and revocation passed eleven PostgreSQL checks with a controlled native port. Full native/provider append acceptance and recovery remain separate qualification steps. It does not provide asynchronous or bulk intake.
 
 Physical deletion is a separate API operation. It rejects nonempty resources and active workspace memberships. Source retention and storage cleanup use their own domain operations.
 

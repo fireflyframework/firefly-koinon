@@ -70,7 +70,24 @@ After signed first login, the grant and existing welcome event associate with th
 branding changes and releases. If the grant expires or the associated administrator membership is
 revoked before submission, the welcome is cancelled.
 
-This operator contact is exclusively for initial welcome. It does not enable ongoing security notices,
-usage summaries, recipient search or invitations without the existing verified directory delivery
-binding. Configure that separate supported binding for ongoing communications. No email string is an
-authentication or authorization authority.
+This contact is exclusively for initial welcome. It does not automatically authorize ongoing email.
+For recurring administrator summaries and supported administrative notices, configure either the
+existing verified directory delivery binding or a separate [operator-approved administrator delivery
+contact](operator-delivery-contacts.md). Invitations and ordinary recipient workflows retain their own
+directory requirements. No email string is an authentication or authorization authority.
+
+## Check the result without repeating enrollment
+
+Keep the returned welcome identity and delivery history with the installation record. In **Settings**,
+**Communications**, inspect the existing event before changing any configuration. A queued event still
+needs the normal worker. Provider acceptance and even provider-reported delivery are separate from the
+administrator confirming that the email reached their mailbox.
+
+If email was disabled, fix the provider or sender for future communications; do not reseed the
+bootstrap grant or reset the welcome admission. If the outcome is unknown, preserve the original
+operation and inspect its existing provider evidence. The welcome workflow has no general resend
+button. An administrator who has signed in can use the setup documentation and their in-app welcome
+without receiving another enrollment email. For a later independent delivery check, use the separately
+authorized [administrator-contact diagnostic](operator-delivery-contacts.md#queue-one-new-diagnostic)
+after its current eligibility checks. See [message investigation](../operations/communications.md#investigate-a-message-that-did-not-arrive)
+for the provider and recipient-side handoff.
