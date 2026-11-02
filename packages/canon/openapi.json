@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "flycanon",
-    "version": "26.11.4",
+    "version": "26.11.5",
     "description": "Operational Knowledge Repository -- versioned, provenance-tracked canonical knowledge with hybrid retrieval (BM25 + vector + RRF) and retrieval-augmented answering, exposed as a standalone HTTP microservice over fireflyframework-pyfly and -agentic. Part of Firefly Framework, platform-agnostic by design.",
     "contact": {
       "name": "Firefly Framework",

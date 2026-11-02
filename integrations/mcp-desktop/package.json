@@ -1,6 +1,6 @@
 {
   "name": "@fireflyframework/koinon-mcp-desktop",
-  "version": "26.11.4",
+  "version": "26.11.5",
   "private": true,
   "description": "Branded desktop bridge for the firefly koinon remote MCP server",
   "license": "Apache-2.0",

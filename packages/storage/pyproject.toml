@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 [project]
 name = "firefly-koinon-storage"
-version = "26.11.4"
+version = "26.11.5"
 description = "Bounded immutable private cloud object storage for firefly koinon."
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
