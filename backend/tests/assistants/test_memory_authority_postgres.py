@@ -26,7 +26,7 @@ pytestmark = pytest.mark.integration
 
 
 @pytest.fixture
-async def pg_assistants():
+async def pg_assistants(request):
     from flycanon.config import CanonSettings
     from flyquery.config import FlyquerySettings
     from pyfly.container.scanner import scan_package
@@ -54,7 +54,14 @@ async def pg_assistants():
                     "scheduling": {"enabled": False},
                     "agentic": {"enabled": True},
                     "eda": {"provider": "memory"},
-                    "data": {"relational": {"enabled": True, "ddl-auto": "create", "url": str(url)}},
+                    "data": {
+                        "relational": {
+                            "enabled": True,
+                            "ddl-auto": "create",
+                            "url": str(url),
+                            **getattr(request, "param", {}),
+                        }
+                    },
                 },
                 "koinon": {
                     "assistants": {
