@@ -128,3 +128,59 @@ it('withdraws the document action when current read permission is removed', () =
   expect(opened).toEqual([]);
   expect(canRunLibraryAction(document, 'open', false, false, '', false)).toBe(false);
 });
+
+it('offers a direct upload only with ingest permission and never on an item', () => {
+  expect(libraryActions(null, false, true, '', true, true).map((action) => action.id)).toEqual([
+    'upload',
+    'add',
+  ]);
+  expect(libraryActions(null, true, true, 'Create a folder').map((action) => action.id)).toEqual([
+    'create',
+    'add',
+  ]);
+  expect(canRunLibraryAction(folder, 'upload', true, true, '', true, true)).toBe(false);
+  expect(canRunLibraryAction(null, 'upload', true, true, '', true, false)).toBe(false);
+});
+
+it('opens location actions from the surface keyboard without taking over native input menus', () => {
+  const fixture = TestBed.createComponent(KoinonLibraryTemplate);
+  fixture.componentRef.setInput('canUpload', true);
+  fixture.componentRef.setInput('serverControls', true);
+  fixture.detectChanges();
+  const surface = fixture.nativeElement.querySelector('.collection-surface');
+  const keyboard = new KeyboardEvent('keydown', {
+    key: 'ContextMenu',
+    bubbles: true,
+    cancelable: true,
+  });
+  surface.dispatchEvent(keyboard);
+  expect(keyboard.defaultPrevented).toBe(true);
+  expect(fixture.componentInstance.contextMenu?.entry).toBeNull();
+  fixture.componentInstance.closeContext(false);
+  const inputMenu = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+  fixture.nativeElement.querySelector('input').dispatchEvent(inputMenu);
+  expect(inputMenu.defaultPrevented).toBe(false);
+  expect(fixture.componentInstance.contextMenu).toBeNull();
+});
+
+it('withdraws a location upload when permission is removed or the library is loading', () => {
+  const fixture = TestBed.createComponent(KoinonLibraryTemplate);
+  fixture.componentRef.setInput('canUpload', true);
+  fixture.detectChanges();
+  let uploads = 0;
+  fixture.componentInstance.uploadRequested.subscribe(() => uploads++);
+  const surface = fixture.nativeElement.querySelector('.collection-surface');
+  surface.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+  fixture.componentInstance.chooseContext('upload');
+  expect(uploads).toBe(1);
+  surface.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+  fixture.componentRef.setInput('canUpload', false);
+  fixture.detectChanges();
+  fixture.componentInstance.chooseContext('upload');
+  expect(uploads).toBe(1);
+  fixture.componentRef.setInput('canUpload', true);
+  fixture.componentRef.setInput('loading', true);
+  fixture.detectChanges();
+  surface.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+  expect(fixture.componentInstance.contextMenu).toBeNull();
+});

@@ -2,7 +2,8 @@
 import type { CatalogEntry } from '@fireflyframework/koinon-sdk';
 import { isFolder, isSystemManaged } from './library-tree';
 
-export type LibraryAction = 'open' | 'details' | 'edit' | 'move' | 'archive' | 'create' | 'add';
+export type LibraryAction =
+  'open' | 'details' | 'edit' | 'move' | 'archive' | 'create' | 'add' | 'upload';
 export interface LibraryActionRequest {
   action: LibraryAction;
   entry: CatalogEntry | null;
@@ -26,8 +27,14 @@ export function canRunLibraryAction(
   canAdd = false,
   createLabel = '',
   canRead = true,
+  canUpload = false,
 ): boolean {
-  if (!entry) return action === 'create' ? canEdit && !!createLabel : action === 'add' && canAdd;
+  if (!entry)
+    return action === 'create'
+      ? canEdit && !!createLabel
+      : action === 'upload'
+        ? canUpload
+        : action === 'add' && canAdd;
   if (action === 'open') return isFolder(entry) || (entry.kind === 'document' && canRead);
   if (action === 'details') return true;
   return (
