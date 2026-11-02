@@ -11,6 +11,7 @@ from koinon.catalog.errors import AccessDenied
 from koinon.catalog.repositories import CatalogRepository
 from koinon.mcp_applications.authority import McpOAuthClientAuthority
 from koinon.security.authority import primary_authority
+from koinon.security.policy_reads import snapshot_values
 from koinon.tokens.repositories import PersonalTokenRepository
 
 
@@ -33,7 +34,13 @@ class TokenRestriction:
         token_id = context.attributes.get("koinon_token_id") if context else None
         if not token_id:
             return None
-        row = await self.tokens.find_by_id(token_id)
+        observed = snapshot_values(self, "tokens")
+        if observed is not None and token_id in observed:
+            row = observed[token_id]
+        else:
+            row = await self.tokens.find_by_id(token_id)
+            if observed is not None:
+                observed[token_id] = row
         if (
             row is None
             or row.subject != subject
@@ -42,11 +49,17 @@ class TokenRestriction:
         ):
             raise AccessDenied("This API token is no longer valid", code="TOKEN_UNAVAILABLE")
         if row.purpose == "application":
-            application = (
-                await self.applications.find_by_id(row.authorized_application_id)
-                if self.applications
-                else None
-            )
+            applications = snapshot_values(self, "applications")
+            if applications is not None and row.authorized_application_id in applications:
+                application = applications[row.authorized_application_id]
+            else:
+                application = (
+                    await self.applications.find_by_id(row.authorized_application_id)
+                    if self.applications
+                    else None
+                )
+                if applications is not None:
+                    applications[row.authorized_application_id] = application
             if application is None or not credential_matches(application, row, datetime.now(UTC)):
                 raise AccessDenied("This application connection is no longer valid", code="TOKEN_UNAVAILABLE")
             if application.client_registration is not None:

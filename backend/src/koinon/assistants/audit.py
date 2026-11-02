@@ -17,6 +17,7 @@ from koinon.catalog.errors import AccessDenied
 from koinon.evidence.dtos import SourceReference
 from koinon.evidence.ports import SourceResolverPort
 from koinon.organization_knowledge.runtime import snapshot_for_run
+from koinon.security.policy_reads import policy_read
 from koinon.tokens.repositories import PersonalTokenRepository
 
 
@@ -31,6 +32,11 @@ class AnswerAudits:
         self.assistants, self.sources, self.tokens = assistants, sources, tokens
 
     async def origin(self, subject, tenant_id, run, token_id):
+        await self.assistants.catalog._refresh_managed_memberships(subject)
+        async with policy_read():
+            await self._origin(subject, tenant_id, run, token_id)
+
+    async def _origin(self, subject, tenant_id, run, token_id):
         context = nullcontext()
         if token_id:
             repository = self.tokens.get()

@@ -85,7 +85,18 @@ With default five-source pools, one process permits eleven pooled connections an
 
 Chat navigation reads the available assistants, conversations and chat projects from the primary database. Each page or detail request shares one read transaction with its permission checks, so concurrent navigation does not retain every pool connection while waiting for another connection to authorize the same request. A later request reads permissions again, including membership revocations. The PostgreSQL regression suite exercises five simultaneous navigation requests with both one-connection and five-connection pools and no overflow. This is a navigation regression check, not a capacity benchmark for the whole installation.
 
-Knowledge scope and folder ancestry checks reuse catalog entries, workspace types and membership observations within the same serializable primary policy snapshot. They still evaluate the active credential and managed membership expiry. This reuse ends with the transaction: later requests, fresh answer-transfer checks and write transactions read their own state. Catalog ancestry is loaded in a tenant-filtered recursive batch rather than once per ancestor. Every selected entry still passes its caller and credential checks, and the traversal still rejects cycles and inaccessible parents. The regression budget for a plain scope containing one or forty datasets is three statements, including transaction setup where the driver emits it; curated sources, tokens and complete answer audits have additional checks. It is independent of the shared PostgreSQL cache and has no cross-request permission TTL.
+Knowledge scope and folder ancestry checks reuse catalog entries, workspace types, memberships and credential records within the same serializable primary policy snapshot. Every use still checks the active token, its owner and expiry, the authorized application and its OAuth registration. The stored records are observations, not a cached permission decision. This reuse ends with the transaction: later requests, fresh answer-transfer checks and write transactions read their own state. Catalog ancestry is loaded in a tenant-filtered recursive batch. Every selected entry still passes its caller and credential checks, and the traversal still rejects cycles and inaccessible parents. This mechanism is independent of the shared PostgreSQL cache and has no cross-request permission TTL.
+
+The scope regression tests select either one or forty datasets in the same folder hierarchy. Their SQL budgets stay constant as the selection grows, including transaction setup where the driver emits it:
+
+| Credential used for the scope check | Maximum SQL statements |
+| --- | ---: |
+| Signed-in session | 3 |
+| Personal API token | 4 |
+| Authorized application | 5 |
+| Authorized application with a stored OAuth registration | 6 |
+
+These budgets cover the catalog scope check with local memberships. Directory refresh, curated source verification and complete answer audits perform additional work. Measure those complete requests separately; passing the scope budget does not establish the latency or capacity of an answer audit.
 
 When an answer audit or source detail is slow, compare its HTTP request duration with database query counts before raising pool sizes. A single detail can become expensive through repeated permission and ancestry reads even when every individual SQL statement is fast. Check query execution time, connection checkout waits and connections still checked out after requests finish. Keep source contents, SQL parameters and credentials out of metric labels. Use the [worker capacity guide](workers.md#investigating-slow-responses) to distinguish these reads from queued model generation.
 

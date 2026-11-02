@@ -64,3 +64,63 @@ async def test_writer_observes_membership_changes_within_its_own_transaction(aut
         assert len(await authority.catalog.memberships(SUBJECT)) == 1
         await writer.resource.execute(update(Membership).values(active=False))
         assert await authority.catalog.memberships(SUBJECT) == []
+
+
+def token_context(token_id=TOKEN_ID):
+    return SecurityContextHolder.using(
+        SecurityContext(
+            user_id="principal",
+            attributes={"iss": ISSUER, "sub": "principal", "koinon_token_id": token_id},
+        )
+    )
+
+
+async def enable_token(authority):
+    async with TransactionTemplate("primary").transaction() as writer:
+        await writer.resource.execute(update(PersonalToken).values(revoked_at=None))
+
+
+async def test_observed_token_still_expires_inside_the_same_snapshot(authority, monkeypatch):
+    await enable_token(authority)
+
+    class Later(datetime):
+        @classmethod
+        def now(cls, tz=UTC):
+            return NOW + timedelta(hours=2)
+
+    with token_context(), pytest.raises(AccessDenied, match="no longer valid"):
+        async with primary_authority():
+            assert (await authority.restriction.grant(SUBJECT)).id == TOKEN_ID
+            monkeypatch.setattr("koinon.tokens.authorization.datetime", Later)
+            await authority.restriction.grant(SUBJECT)
+
+
+@pytest.mark.parametrize("change", ["credential", "subject"])
+async def test_observed_token_cannot_authorize_another_credential_or_subject(authority, change):
+    await enable_token(authority)
+    with pytest.raises(AccessDenied):
+        async with primary_authority():
+            with token_context():
+                assert (await authority.restriction.grant(SUBJECT)).id == TOKEN_ID
+            with token_context("missing" if change == "credential" else TOKEN_ID):
+                await authority.restriction.grant("another|subject" if change == "subject" else SUBJECT)
+
+
+async def test_writer_observes_token_revocation_in_its_own_transaction(authority):
+    await enable_token(authority)
+    with token_context(), pytest.raises(AccessDenied):
+        async with TransactionTemplate("primary").transaction() as writer:
+            assert (await authority.restriction.grant(SUBJECT)).id == TOKEN_ID
+            await writer.resource.execute(update(PersonalToken).values(revoked_at=NOW))
+            await authority.restriction.grant(SUBJECT)
+
+
+async def test_token_observations_end_with_the_policy_snapshot(authority):
+    await enable_token(authority)
+    with token_context():
+        async with primary_authority():
+            assert (await authority.restriction.grant(SUBJECT)).id == TOKEN_ID
+        async with TransactionTemplate("primary").transaction() as writer:
+            await writer.resource.execute(update(PersonalToken).values(revoked_at=NOW))
+        with pytest.raises(AccessDenied):
+            await authority.restriction.grant(SUBJECT)

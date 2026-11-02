@@ -1,16 +1,32 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
+from datetime import UTC, datetime, timedelta
+
 import pytest
+from pyfly.container.scanner import scan_package
 from pyfly.data.relational.datasource_registry import DataSourceRegistry
+from pyfly.security.context import SecurityContext
+from pyfly.security.context_holder import SecurityContextHolder
 from sqlalchemy import event
 from test_scope_read_budget import scoped_tree
 from test_service import assistants as assistants
 
+from koinon.authorized_applications.entities import AuthorizedApplication
+from koinon.authorized_applications.repositories import AuthorizedApplicationRepository
 from koinon.catalog.errors import AccessDenied
+from koinon.catalog.repositories import TenantRepository
+from koinon.mcp_applications.authority import McpOAuthClientAuthority
+from koinon.mcp_applications.entities import McpOAuthClientRegistration
+from koinon.mcp_applications.repositories import McpOAuthClientRepository
+from koinon.mcp_auth.settings import McpOAuthSettings
+from koinon.tokens.authorization import TokenRestriction
+from koinon.tokens.entities import PersonalToken
+from koinon.tokens.repositories import PersonalTokenRepository
 
 
 @pytest.mark.parametrize("assets", [1, 40])
-async def test_scope_reads_catalog_and_memberships_in_batches(assistants, assets):
+@pytest.mark.parametrize("credential", ["session", "personal", "application", "registered"])
+async def test_scope_reads_catalog_and_memberships_in_batches(assistants, assets, credential):
     service, context = assistants
     scope = await scoped_tree(service)
     first = await service.catalog.get("issuer|admin", "north", scope["asset_ids"][0])
@@ -19,6 +35,71 @@ async def test_scope_reads_catalog_and_memberships_in_batches(assistants, assets
             "issuer|admin", "north", kind="dataset", name=f"Dataset {index}", parent_id=first.parent_id
         )
         scope["asset_ids"].append(row.id)
+    if credential != "session":
+        context.register_bean(AuthorizedApplicationRepository)
+        scan_package("koinon.tokens", context.container)
+        service.catalog.restriction = context.get_bean(TokenRestriction)
+        expires = datetime.now(UTC) + timedelta(hours=1)
+        registration = None
+        if credential == "registered":
+            context.register_bean(McpOAuthClientRepository)
+            registry = context.get_bean(McpOAuthClientRepository)
+            await registry.save(
+                McpOAuthClientRegistration(
+                    id="registered-client",
+                    tenant_id="north",
+                    client_id="fixture",
+                    name="Fixture",
+                    client_type="public",
+                    redirect_uris=["https://client.example.test/callback"],
+                    scopes=["catalog:read", "chat:use"],
+                    enabled=True,
+                    revision=1,
+                    created_by="issuer|admin",
+                    updated_by="issuer|admin",
+                    created_at=datetime.now(UTC),
+                    updated_at=datetime.now(UTC),
+                )
+            )
+            authority = McpOAuthClientAuthority(
+                registry, McpOAuthSettings(), context.get_bean(TenantRepository)
+            )
+            service.catalog.restriction.registrations = authority
+            registration = authority.snapshot(await authority.resolve("fixture"))
+        application = credential in {"application", "registered"}
+        if application:
+            await context.get_bean(AuthorizedApplicationRepository).save(
+                AuthorizedApplication(
+                    id="scope-application",
+                    subject="issuer|viewer",
+                    client_id="fixture",
+                    name="Scoped application",
+                    resource="https://knowledge.example.test/mcp",
+                    tenant_id="north",
+                    tenant_name="North",
+                    workspace_id=scope["workspace_id"],
+                    workspace_name="Workspace",
+                    scopes=["catalog:read", "chat:use"],
+                    connected_at=datetime.now(UTC),
+                    expires_at=expires,
+                    client_registration=registration,
+                )
+            )
+        await context.get_bean(PersonalTokenRepository).save(
+            PersonalToken(
+                id="scope-reader",
+                subject="issuer|viewer",
+                tenant_id="north",
+                name="Scoped reader",
+                token_hash="0" * 64,
+                prefix="fixture",
+                scopes=["catalog:read", "chat:use"],
+                workspace_ids=[scope["workspace_id"]],
+                purpose="application" if application else "personal",
+                authorized_application_id="scope-application" if application else None,
+                expires_at=expires,
+            )
+        )
     engine = context.get_bean(DataSourceRegistry).primary.engine.sync_engine
     statements = []
 
@@ -27,10 +108,21 @@ async def test_scope_reads_catalog_and_memberships_in_batches(assistants, assets
 
     event.listen(engine, "before_cursor_execute", capture)
     try:
-        assert await service.validate_scope("issuer|viewer", "north", scope) == scope
+        with SecurityContextHolder.using(
+            SecurityContext(
+                user_id="viewer",
+                attributes={
+                    "iss": "issuer",
+                    "sub": "viewer",
+                    **({"koinon_token_id": "scope-reader"} if credential != "session" else {}),
+                },
+            )
+        ):
+            assert await service.validate_scope("issuer|viewer", "north", scope) == scope
     finally:
         event.remove(engine, "before_cursor_execute", capture)
-    assert len(statements) <= 3, f"Scope of {assets} assets issued {len(statements)} SQL statements"
+    budget = {"session": 3, "personal": 4, "application": 5, "registered": 6}[credential]
+    assert len(statements) <= budget, f"Scope of {assets} assets issued {len(statements)} SQL statements"
 
 
 async def test_batched_ancestry_does_not_admit_a_foreign_parent(assistants):
