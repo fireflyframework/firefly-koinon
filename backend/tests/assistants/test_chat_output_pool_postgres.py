@@ -147,7 +147,7 @@ async def pg_outputs(pg_assistants, request):
                             "enabled": True,
                             "ddl-auto": "none",
                             "url": str(database),
-                            "pool": {"size": options["size"], "max-overflow": 0, "timeout": 0.5},
+                            "pool": {"size": options["size"], "max-overflow": 0, "timeout": 2},
                             **replica,
                         }
                     },
@@ -242,10 +242,33 @@ async def test_sealed_memory_output_reads_complete_at_pool_capacity(pg_outputs, 
         return await validate(*args, **kwargs)
 
     monkeypatch.setattr(policy, "validate_scope", synchronized)
-    async with asyncio.timeout(15):
-        values = await asyncio.gather(
-            *(call() for call in reads(service, context, run).values()), return_exceptions=True
+    holders = {}
+    acquire = pool._do_get
+
+    def checked_out(connection, record, proxy):
+        holders[record] = asyncio.current_task()
+
+    def checked_in(connection, record):
+        holders.pop(record, None)
+
+    def independent_acquire():
+        assert asyncio.current_task() not in holders.values(), (
+            "Output authorization requested another connection while retaining its current one"
         )
+        return acquire()
+
+    # Detect recursive checkout directly rather than inferring it from a short timing window.
+    monkeypatch.setattr(pool, "_do_get", independent_acquire)
+    event.listen(pool, "checkout", checked_out)
+    event.listen(pool, "checkin", checked_in)
+    try:
+        async with asyncio.timeout(15):
+            values = await asyncio.gather(
+                *(call() for call in reads(service, context, run).values()), return_exceptions=True
+            )
+    finally:
+        event.remove(pool, "checkout", checked_out)
+        event.remove(pool, "checkin", checked_in)
     assert not [value for value in values if isinstance(value, BaseException)], values
     assert values[2]["memory"] is not None and values[2]["output_release"] is not None
     assert values[3].messages[0].role == "assistant" and values[3].memory_bindings
