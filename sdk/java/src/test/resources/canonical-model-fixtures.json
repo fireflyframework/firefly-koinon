@@ -1,5 +1,5 @@
 {
-  "definition_count": 443,
+  "definition_count": 444,
   "excluded_definitions": [
     "AttachmentUpload",
     "AvatarUpload",
@@ -4152,6 +4152,16 @@
       "configured": false,
       "modes": [
         "document"
+      ],
+      "formats": [
+        {
+          "mode": "document",
+          "extensions": [
+            "extensions-value"
+          ],
+          "available": false,
+          "reason": "reason-value"
+        }
       ],
       "processing_policy": "extract_only_v1",
       "staging_backend": "private_local_posix",
@@ -9505,6 +9515,14 @@
       "duration_ms": 1,
       "summary": "summary-value",
       "result_id": "result_id-value"
+    },
+    "UploadFormat": {
+      "mode": "document",
+      "extensions": [
+        "extensions-value"
+      ],
+      "available": false,
+      "reason": "reason-value"
     },
     "UploadResponse": {
       "source": {

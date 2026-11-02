@@ -11,7 +11,17 @@ export interface ComposerAttachment {
   name: string;
   size: number;
   mediaType: string;
-  state: 'selected' | 'uploading' | 'processing' | 'ready' | 'failed';
+  state:
+    | 'selected'
+    | 'uploading'
+    | 'queued'
+    | 'processing'
+    | 'ready'
+    | 'failed'
+    | 'cancelled'
+    | 'expired'
+    | 'unknown'
+    | 'rejected';
   previewUrl?: string;
   progress?: number;
   detail?: string;

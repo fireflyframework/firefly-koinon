@@ -10,6 +10,7 @@ import java.util.List;
 public record FileBatchCapabilities(
     @JsonProperty("configured") Boolean configured,
     @JsonProperty("modes") List<AddKnowledgeMode> modes,
+    @JsonProperty("formats") List<UploadFormat> formats,
     @JsonProperty("processing_policy") FileBatchCapabilitiesProcessingPolicy processingPolicy,
     @JsonProperty("staging_backend") FileBatchCapabilitiesStagingBackend stagingBackend,
     @JsonProperty("staging_topology") FileBatchCapabilitiesStagingTopology stagingTopology,
@@ -26,6 +27,7 @@ public record FileBatchCapabilities(
 ) {
     public FileBatchCapabilities {
         modes=modes==null?null:List.copyOf(modes);
+        formats=formats==null?null:List.copyOf(formats);
     }
 
 }

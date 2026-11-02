@@ -41,7 +41,10 @@ async def test_capabilities_and_manifest_admission_honor_smaller_shared_scratch_
     from pyfly.kernel import PayloadTooLargeException
 
     bulk.service.storage.scratch.capacity_bytes = 12
+    bulk.service.knowledge_settings.max_upload_bytes = 4096
     capability = await bulk.service.capabilities("issuer|editor", "north", bulk.target["workspace_id"])
     assert capability.max_file_bytes == 6
+    assert capability.synchronous_max_file_bytes == 4096
+    assert any(format.available and ".txt" in format.extensions for format in capability.formats)
     with pytest.raises(PayloadTooLargeException):
         await bulk.service.create("issuer|editor", "north", request(bulk.target, b"1234567"), "too-large")

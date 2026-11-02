@@ -6,6 +6,7 @@ import {
   DestroyRef,
   Input,
   OnInit,
+  DoCheck,
   computed,
   effect,
   inject,
@@ -18,12 +19,50 @@ import type { LibraryUploadRuntime } from '../services/library-upload';
 import { effectiveUploadLimits } from '../services/library-upload-coordinator';
 import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonIcon } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonFileFormats } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonBadge } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonSkeleton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonFolderTree } from '@fireflyframework/koinon-angular/workbench/panels';
-import { KoinonTextPipe, KoinonDatePipe, registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench/core';
+import {
+  KoinonTextPipe,
+  KoinonDatePipe,
+  registerKoinonSpanish,
+} from '@fireflyframework/koinon-angular/workbench/core';
 registerKoinonSpanish({
   Upload: 'Subir',
+  'Read and search the text in your files. Excel and CSV can also be uploaded this way.':
+    'Lee y busca el texto de tus archivos. También puedes cargar Excel y CSV de esta forma.',
+  'Query rows and columns in spreadsheets and data files. Word and PowerPoint belong in Documents for reading.':
+    'Consulta filas y columnas de hojas de cálculo y archivos de datos. Word y PowerPoint corresponden a Documentos para leer.',
+  'This choice applies to every file in this upload.':
+    'Esta elección se aplica a todos los archivos de esta carga.',
+  'Open this .ppt file in PowerPoint and use Save As .pptx, then upload the converted file.':
+    'Abre este archivo .ppt en PowerPoint y usa Guardar como .pptx; después carga el archivo convertido.',
+  Failed: 'Error',
+  Cancelled: 'Cancelado',
+  'Review recovery options': 'Revisar opciones de recuperación',
+  bytes: 'bytes',
+  'This processing mode is unavailable.': 'Este modo de procesamiento no está disponible.',
+  'Supported file types': 'Tipos de archivo admitidos',
+  'Maximum files': 'Máximo de archivos',
+  'Files transferred': 'Archivos transferidos',
+  'Uploading and processing': 'Cargando y procesando',
+  'Transferring original': 'Transfiriendo original',
+  'This file is empty.': 'Este archivo está vacío.',
+  'This file exceeds the maximum file size.': 'Este archivo supera el tamaño máximo.',
+  'This file type is not supported for the selected use.':
+    'Este tipo de archivo no se admite para el uso seleccionado.',
+  'Too many files selected for one upload.':
+    'Se han seleccionado demasiados archivos para una carga.',
+  'Selected files exceed the maximum batch size.':
+    'Los archivos seleccionados superan el tamaño máximo del lote.',
+  'Remove files that cannot be uploaded before continuing.':
+    'Elimina los archivos que no se pueden cargar antes de continuar.',
+  'Choose a destination folder to see supported files and limits.':
+    'Elige una carpeta de destino para ver los archivos admitidos y los límites.',
+  'Create a space, project and folder in Library, then return to upload.':
+    'Crea un espacio, un proyecto y una carpeta en la Biblioteca y vuelve para cargar archivos.',
+  'Back to Library': 'Volver a la Biblioteca',
   Indexing: 'Indexando',
   Searchable: 'Disponible para buscar',
   'Available to query': 'Disponible para consultar',
@@ -92,8 +131,8 @@ registerKoinonSpanish({
     'Los archivos solo se procesan después de preparar sus originales y enviar el lote.',
   'No accepted batch could be confirmed. The original request was not repeated. Keep this page open and ask an administrator to inspect retained uploads.':
     'No se ha podido confirmar un lote aceptado. La solicitud original no se ha repetido. Mantén esta página abierta y pide a un administrador que revise las cargas conservadas.',
-  'Worker extraction records text or tables. Search availability is checked separately.':
-    'La extracción en segundo plano registra texto o tablas. La disponibilidad para buscar se comprueba por separado.',
+  'After upload, files are processed for reading or queries. Search availability is checked separately.':
+    'Después de la carga, los archivos se procesan para lectura o consultas. La disponibilidad para buscar se comprueba por separado.',
   'Configured limits are checked before transfer.':
     'Los límites configurados se comprueban antes de transferir.',
   'Maximum per file': 'Máximo por archivo',
@@ -112,6 +151,7 @@ registerKoinonSpanish({
     KoinonButton,
     KoinonIcon,
     KoinonBadge,
+    KoinonFileFormats,
     KoinonSkeleton,
     KoinonFolderTree,
     KoinonTextPipe,
@@ -121,7 +161,7 @@ registerKoinonSpanish({
   styleUrl: './library-upload-panel.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class KoinonLibraryUploadPanel implements OnInit {
+export class KoinonLibraryUploadPanel implements OnInit, DoCheck {
   @Input({ required: true }) w!: KoinonWorkbench;
   readonly runtime = signal<LibraryUploadRuntime | null>(null);
   readonly error = signal('');
@@ -133,6 +173,70 @@ export class KoinonLibraryUploadPanel implements OnInit {
   readonly retained = computed(
     () => !!this.view()?.batch || !!this.view()?.uncertain || this.view()?.stage === 'observed',
   );
+  private destination = '';
+  ngDoCheck() {
+    const destination = this.w.formParent;
+    if (this.runtime() && destination !== this.destination) {
+      this.destination = destination;
+      void this.runtime()?.coordinator.inspect();
+    }
+  }
+  unavailableFormats() {
+    return (
+      this.view()
+        ?.capabilities?.formats?.filter(
+          (format) => format.mode === this.w.uploadMode && !format.available,
+        )
+        .flatMap((format) => format.extensions) || []
+    );
+  }
+  accept() {
+    return (
+      this.view()
+        ?.capabilities?.formats?.filter(
+          (format) => format.mode === this.w.uploadMode && format.available,
+        )
+        .flatMap((format) => format.extensions)
+        .join(',') || ''
+    );
+  }
+  issue(file: File) {
+    const caps = this.view()?.capabilities,
+      limits = this.limits();
+    if (!caps || !limits) return '';
+    if (!file.size) return 'This file is empty.';
+    if (file.name.toLowerCase().endsWith('.ppt') && !this.accept().split(',').includes('.ppt'))
+      return 'Open this .ppt file in PowerPoint and use Save As .pptx, then upload the converted file.';
+    if (file.size > limits.max_file_bytes) return 'This file exceeds the maximum file size.';
+    if (
+      caps.formats?.length &&
+      !caps.formats.some(
+        (format) =>
+          format.mode === this.w.uploadMode &&
+          format.available &&
+          format.extensions.some((extension) =>
+            file.name.toLowerCase().endsWith(extension.toLowerCase()),
+          ),
+      )
+    )
+      return 'This file type is not supported for the selected use.';
+    return '';
+  }
+  selectionIssue() {
+    const limits = this.limits();
+    if (!limits) return '';
+    if (!this.view()?.capabilities?.modes.includes(this.w.uploadMode as 'document' | 'dataset'))
+      return 'This processing mode is unavailable.';
+    if (this.w.files.length > limits.max_files) return 'Too many files selected for one upload.';
+    if (this.w.files.reduce((total, file) => total + file.size, 0) > limits.max_batch_bytes)
+      return 'Selected files exceed the maximum batch size.';
+    return this.w.files.some((file) => this.issue(file))
+      ? 'Remove files that cannot be uploaded before continuing.'
+      : '';
+  }
+  removeFile(index: number) {
+    if (!this.view()?.busy) this.w.files = this.w.files.filter((_, position) => position !== index);
+  }
   private destroyed = false;
   private polls = 0;
   private timer?: ReturnType<typeof setTimeout>;
@@ -160,7 +264,11 @@ export class KoinonLibraryUploadPanel implements OnInit {
   async ngOnInit() {
     try {
       const runtime = await this.w.uploadRuntime();
-      if (!this.destroyed) this.runtime.set(runtime);
+      if (!this.destroyed) {
+        this.runtime.set(runtime);
+        this.destination = this.w.formParent;
+        await runtime.coordinator.inspect();
+      }
     } catch {
       if (!this.destroyed)
         this.error.set('This upload panel could not be connected. Close it and try again.');
@@ -214,8 +322,8 @@ export class KoinonLibraryUploadPanel implements OnInit {
           running: 'Worker started',
           succeeded: 'Extraction complete',
           partial: 'Some files need attention',
-          failed: 'Needs attention',
-          cancelled: 'Stopped',
+          failed: 'Failed',
+          cancelled: 'Cancelled',
           expired: 'Upload expired',
           reconciling: 'Reconciliation required',
           staged: 'Original staged',

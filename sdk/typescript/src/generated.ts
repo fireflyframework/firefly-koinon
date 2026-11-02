@@ -817,6 +817,7 @@ export interface ExternalReviewView {
 export interface FileBatchCapabilities {
  "configured": boolean;
  "modes": Array<"document" | "dataset">;
+ "formats"?: Array<UploadFormat>;
  "processing_policy"?: "extract_only_v1";
  "staging_backend"?: "private_local_posix" | "private_azure_blob" | "private_gcs_object";
  "staging_topology"?: "single_host_shared_durable_posix" | "shared_private_object_store";
@@ -2300,6 +2301,12 @@ export interface TableSnapshotSummary {
  "row_count"?: number | null;
  "actor"?: string | null;
  "recorded_at"?: string | null;
+}
+export interface UploadFormat {
+ "mode": "document" | "dataset";
+ "extensions": Array<string>;
+ "available": boolean;
+ "reason"?: string | null;
 }
 export interface BatchQueryUsageSummary {
  "total_input_tokens"?: number;

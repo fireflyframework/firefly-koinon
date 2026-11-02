@@ -111,22 +111,22 @@ it('expires a ready selection without allowing expired IDs to be sent', async ()
   vi.advanceTimersByTime(1001);
   expect(files.ready()).toBe(false);
   expect(files.ids()).toEqual([]);
-  expect(files.attachments()[0].state).toBe('failed');
+  expect(files.attachments()[0].state).toBe('expired');
 });
 it('ignores an upload response after the owning context changes', async () => {
-  let registered=false;
+  let registered = false;
   let release: () => void = () => {
     throw Error('Upload did not start');
   };
   const { files, facade, assistant } = setup(
     async () =>
       await new Promise((resolve) => {
-        registered=true;
+        registered = true;
         release = () => resolve(remote());
       }),
   );
   const selection = files.select([file()]);
-  await vi.waitFor(()=>expect(registered).toBe(true));
+  await vi.waitFor(() => expect(registered).toBe(true));
   expect(files.attachments()).toHaveLength(1);
   facade.tenantId.set('other');
   assistant.contextVersion.update((value) => value + 1);
@@ -147,7 +147,7 @@ it('reuses the upload idempotency key after an uncertain transport failure', asy
     return remote();
   });
   await files.select([file()]);
-  expect(files.attachments()[0].state).toBe('failed');
+  expect(files.attachments()[0].state).toBe('unknown');
   await files.retry(files.attachments()[0].id);
   expect(keys).toHaveLength(2);
   expect(keys[0]).toBeTruthy();
@@ -231,3 +231,56 @@ it.each(['database', 'extraction'] as const)(
     expect(files.enabled()).toBe(false);
   },
 );
+
+it('shows every accepted file before sequential upload and retains individual rejection reasons', async () => {
+  let release!: () => void;
+  const { files } = setup(
+    async () =>
+      await new Promise((resolve) => {
+        release = () => resolve(remote());
+      }),
+  );
+  const selection = files.select([
+    file(),
+    new File(['two'], 'Second.txt'),
+    new File(['x'], 'Blocked.exe'),
+  ]);
+  await vi.waitFor(() => expect(files.attachments()).toHaveLength(3));
+  expect(files.attachments().map((row) => row.state)).toEqual([
+    'uploading',
+    'selected',
+    'rejected',
+  ]);
+  expect(files.attachments()[2].detail).toContain('not supported');
+  expect(files.error()).toContain('Some files were not accepted');
+  expect(files.attachments().map((row) => row.size)).toEqual([5, 3, 1]);
+  release();
+  await vi.waitFor(() => expect(files.attachments()[1].state).toBe('uploading'));
+  release();
+  await selection;
+});
+
+it.each(['queued', 'cancelled', 'expired'] as const)(
+  'keeps server %s state distinct from extraction and failed uploads',
+  async (status) => {
+    const { files } = setup(async () => ({
+      ...remote(),
+      status,
+      progress: { status: 'queued', percent: 0, attempts: 0 },
+    }));
+    await files.select([file()]);
+    expect(files.attachments()[0].state).toBe(status);
+  },
+);
+
+it('explains conversion for legacy PowerPoint without uploading or suggesting a rename', async () => {
+  let uploads = 0;
+  const { files } = setup(async () => {
+    uploads++;
+    return remote();
+  });
+  await files.select([new File(['legacy'], 'slides.ppt')]);
+  expect(files.attachments()[0].state).toBe('rejected');
+  expect(files.attachments()[0].detail).toContain('use Save As .pptx');
+  expect(uploads).toBe(0);
+});

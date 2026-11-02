@@ -1,0 +1,253 @@
+[
+  {
+    "mode": "document",
+    "extensions": [
+      ".docx"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "document",
+    "extensions": [
+      ".pdf"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "document",
+    "extensions": [
+      ".html"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "document",
+    "extensions": [
+      ".md",
+      ".markdown"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "document",
+    "extensions": [
+      ".txt",
+      ".text"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "document",
+    "extensions": [
+      ".xlsx"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "document",
+    "extensions": [
+      ".pptx"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "document",
+    "extensions": [
+      ".csv"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "document",
+    "extensions": [
+      ".tsv"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "document",
+    "extensions": [
+      ".json"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "document",
+    "extensions": [
+      ".xml"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "document",
+    "extensions": [
+      ".rtf"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "document",
+    "extensions": [
+      ".odt"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "document",
+    "extensions": [
+      ".ods"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "document",
+    "extensions": [
+      ".odp"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "dataset",
+    "extensions": [
+      ".csv",
+      ".csv.bz2",
+      ".csv.gz",
+      ".csv.zip"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "dataset",
+    "extensions": [
+      ".tsv",
+      ".tsv.bz2",
+      ".tsv.gz",
+      ".tsv.zip"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "dataset",
+    "extensions": [
+      ".jsonl",
+      ".ndjson",
+      ".jsonl.bz2",
+      ".jsonl.gz",
+      ".jsonl.zip",
+      ".ndjson.bz2",
+      ".ndjson.gz",
+      ".ndjson.zip"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "dataset",
+    "extensions": [
+      ".json",
+      ".json.bz2",
+      ".json.gz",
+      ".json.zip"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "dataset",
+    "extensions": [
+      ".parquet",
+      ".parquet.bz2",
+      ".parquet.gz",
+      ".parquet.zip"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "dataset",
+    "extensions": [
+      ".avro",
+      ".avro.bz2",
+      ".avro.gz",
+      ".avro.zip"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "dataset",
+    "extensions": [
+      ".orc",
+      ".orc.bz2",
+      ".orc.gz",
+      ".orc.zip"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "dataset",
+    "extensions": [
+      ".arrow",
+      ".feather",
+      ".arrow.bz2",
+      ".arrow.gz",
+      ".arrow.zip",
+      ".feather.bz2",
+      ".feather.gz",
+      ".feather.zip"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "dataset",
+    "extensions": [
+      ".xlsx",
+      ".xlsx.bz2",
+      ".xlsx.gz",
+      ".xlsx.zip"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "dataset",
+    "extensions": [
+      ".xls",
+      ".xls.bz2",
+      ".xls.gz",
+      ".xls.zip"
+    ],
+    "available": true,
+    "reason": null
+  },
+  {
+    "mode": "dataset",
+    "extensions": [
+      ".ods",
+      ".ods.bz2",
+      ".ods.gz",
+      ".ods.zip"
+    ],
+    "available": true,
+    "reason": null
+  }
+]
