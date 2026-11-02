@@ -3,6 +3,7 @@
 """Actual bounded native readers preserve original bytes and source coordinates."""
 
 import asyncio
+import sys
 from hashlib import sha256
 from tempfile import TemporaryFile
 
@@ -67,3 +68,27 @@ async def test_real_dataset_readers_materialize_rows_with_exact_source_coordinat
     assert (result.coordinates.row_count, result.coordinates.column_count) == (2, 2)
     assert result.coordinates.source_sheet == ("Revenue" if kind == "xlsx" else None)
     assert source.read_bytes() == content
+
+
+@pytest.mark.skipif(
+    not sys.platform.startswith("linux"), reason="Linux exec inherits parent rusage high-water"
+)
+async def test_real_parser_does_not_charge_parent_resident_memory_to_child(tmp_path):
+    import resource
+
+    import psutil
+    from flycanon.core.services.ingestion.file_parser import DocumentFilePolicy, parse_document_file
+
+    path = tmp_path / "parent-memory.docx"
+    path.write_bytes(office_original("docx"))
+    policy = DocumentFilePolicy()
+    allocation = bytearray(800 * 1024**2)
+    try:
+        for offset in range(0, len(allocation), resource.getpagesize()):
+            allocation[offset] = 1
+        assert psutil.Process().memory_info().rss > policy.child_rss_max_bytes
+        parsed = await parse_document_file(path, filename=path.name, policy=policy)
+        assert "North" in parsed.text and "125" in parsed.text
+        assert 0 < parsed.peak_rss_bytes < DocumentFilePolicy().child_rss_max_bytes
+    finally:
+        del allocation

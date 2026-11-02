@@ -78,6 +78,18 @@ def _rss(pid):
         return 0
 
 
+def _peak_rss_bytes():
+    if sys.platform.startswith("linux"):
+        # getrusage retains the parent's RSS high-water across exec on Linux.
+        status = Path("/proc/self/status").read_text()
+        values = re.findall(r"^VmHWM:[ \t]+([1-9]\d*)[ \t]+kB$", status, re.MULTILINE)
+        if len(values) != 1:
+            raise ValueError("Cannot measure the parser's peak resident memory")
+        return int(values[0]) * 1024
+    usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    return int(usage if sys.platform == "darwin" else usage * 1024)
+
+
 def document_file_kinds():
     from flycanon.core.services.ingestion.loaders import default_registry
     from flycanon.interfaces.enums import SourceKind
@@ -226,8 +238,7 @@ def _child(specification):
         }
     if len(text.encode()) > policy.text_max_bytes:
         raise ValueError("Document text exceeds its configured byte limit")
-    usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    peak = int(usage if sys.platform == "darwin" else usage * 1024)
+    peak = _peak_rss_bytes()
     if peak > policy.child_rss_max_bytes:
         raise ValueError("Document parser exceeded its memory budget")
     rendered = json.dumps(

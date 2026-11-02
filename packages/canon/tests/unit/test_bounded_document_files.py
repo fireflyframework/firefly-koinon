@@ -214,3 +214,56 @@ async def test_parser_resource_failure_and_cancellation_reap_only_the_owned_chil
         await task
     assert not psutil.pid_exists(observed[-1]) and path.exists()
     assert not list(tmp_path.glob("koinon-parse-*"))
+
+
+@pytest.mark.parametrize("status", ["", "VmHWM: missing kB", "VmHWM: -1 kB", "VmHWM: 0 kB", "VmHWM: 12 MB", "VmHWM: 12 kB\nVmHWM: 13 kB"])
+def test_linux_parser_peak_rejects_missing_or_malformed_kernel_measurements(monkeypatch, status):
+    from flycanon.core.services.ingestion import file_parser
+
+    monkeypatch.setattr(file_parser.sys, "platform", "linux")
+    monkeypatch.setattr(file_parser.Path, "read_text", lambda self: status)
+    with pytest.raises(ValueError, match="peak resident"):
+        file_parser._peak_rss_bytes()
+
+
+def test_linux_parser_peak_uses_its_post_exec_memory_high_water(monkeypatch):
+    from types import SimpleNamespace
+
+    from flycanon.core.services.ingestion import file_parser
+
+    monkeypatch.setattr(file_parser.sys, "platform", "linux")
+    monkeypatch.setattr(file_parser.Path, "read_text", lambda self: "Name:\tpython\nVmHWM:\t12345 kB\n")
+    monkeypatch.setattr(file_parser.resource, "getrusage", lambda who: SimpleNamespace(ru_maxrss=900000))
+    assert file_parser._peak_rss_bytes() == 12345 * 1024
+
+
+def test_macos_parser_peak_keeps_native_byte_units(monkeypatch):
+    from types import SimpleNamespace
+
+    from flycanon.core.services.ingestion import file_parser
+
+    monkeypatch.setattr(file_parser.sys, "platform", "darwin")
+    monkeypatch.setattr(file_parser.resource, "getrusage", lambda who: SimpleNamespace(ru_maxrss=123456))
+    assert file_parser._peak_rss_bytes() == 123456
+
+
+
+def test_parser_child_rejects_its_own_over_budget_peak_after_actual_extraction(tmp_path, monkeypatch):
+    import json
+    import os
+    from dataclasses import asdict
+
+    from flycanon.core.services.ingestion import file_parser
+
+    source = office(tmp_path / "own-peak.docx")
+    request = tmp_path / "request.json"
+    request.write_text(json.dumps({
+        "path": str(source), "filename": source.name, "kind": "docx",
+        "policy": asdict(DocumentFilePolicy()), "output": str(tmp_path / "result.json"),
+        "parent_pid": os.getpid(),
+    }))
+    monkeypatch.setattr(file_parser, "arm_parent_bound_deadline", lambda seconds, parent: None)
+    monkeypatch.setattr(file_parser, "_peak_rss_bytes", lambda: 769 * 1024**2)
+    with pytest.raises(ValueError, match="exceeded its memory budget"):
+        file_parser._child(request)
+    assert not (tmp_path / "result.json").exists()
