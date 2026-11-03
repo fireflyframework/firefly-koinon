@@ -1,0 +1,6 @@
+{
+  "include": ["corpus_metadata.py", "tests"],
+  "extraPaths": ["../../packages/canon/src", "../../packages/structured/src"],
+  "pythonVersion": "3.13",
+  "typeCheckingMode": "standard"
+}
