@@ -7,11 +7,6 @@ from contextlib import asynccontextmanager
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
-from koinon.catalog.entities import Membership, Tenant
-from koinon.catalog.errors import AccessDenied
-from koinon.catalog.repositories import MembershipRepository, TenantRepository
-from koinon.integrations.content_sources.dtos import Account
-from koinon.integrations.content_sources.errors import SourceError
 from pyfly.container.scanner import scan_package
 from pyfly.context import ApplicationContext
 from pyfly.core import Config
@@ -20,6 +15,12 @@ from pyfly.oauth2 import OAuth2Tokens
 from pyfly.security.context import SecurityContext
 from pyfly.session.adapters.memory import InMemorySessionStore
 from pyfly.session.ports.outbound import SessionStore
+
+from koinon.catalog.entities import Membership, Tenant
+from koinon.catalog.errors import AccessDenied
+from koinon.catalog.repositories import MembershipRepository, TenantRepository
+from koinon.integrations.content_sources.dtos import Account
+from koinon.integrations.content_sources.errors import SourceError
 
 
 @pytest.fixture
@@ -51,7 +52,7 @@ async def lifecycle(tmp_path, monkeypatch):
         {"SECURITY_CONTEXT": SecurityContext(user_id="alice", attributes={"iss": "issuer", "sub": "alice"})},
         600,
     )
-    for package in ("koinon.catalog", "koinon.integrations.content_sources"):
+    for package in ("koinon.catalog", "koinon.jobs", "koinon.integrations.content_sources"):
         scan_package(package, context.container)
     await context.start()
     settings = context.get_bean(ContentSourceSettings)
@@ -328,10 +329,11 @@ async def test_revoked_tenant_access_during_exchange_cannot_publish_grant(lifecy
 
 async def test_narrowed_scopes_are_persisted_for_the_next_refresh(lifecycle, monkeypatch):
     import httpx
+    from pyfly.oauth2 import OAuth2Client, OAuth2Endpoints
+
     from koinon.integrations.content_sources.oauth import ReadOnlySourceOAuth
     from koinon.integrations.content_sources.repositories import SourceConnectionRepository
     from koinon.security.authority import primary_authority
-    from pyfly.oauth2 import OAuth2Client, OAuth2Endpoints
 
     service, _, _, context = lifecycle
     start, state = await begin(service)
