@@ -6,7 +6,9 @@ import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import officeFormats from './office-format-capabilities.json';
 import { openAdministration, mockService } from './fixtures';
-const output = resolve(__dirname, '../../../../outputs/documentation-tour');
+const output = process.env['KOINON_DOCS_CAPTURES']
+  ? resolve(process.env['KOINON_DOCS_CAPTURES'])
+  : resolve(__dirname, '../../../../outputs/documentation-tour');
 async function capture(page: Page, name: string) {
   await mkdir(output, { recursive: true });
   await page.evaluate(async () => {

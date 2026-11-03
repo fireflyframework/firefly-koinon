@@ -12,6 +12,8 @@ Choose a destination and add files. The picker uses actual server capability des
 
 One mixed manifest preserves each file's selected use. Upload transfer remains bounded and sequential. Its progress bar counts acknowledged original bytes, without estimating in-flight bytes or parser progress. Processed file counts and search/query readiness are separate observations.
 
+Library, upload history, chat attachments and original-file details use the same regional size formatting: KB, MB, GB or larger decimal units as needed. Small nonempty files display **< 1 KB**, and unknown sizes remain unknown. The displayed value is rounded; the API, MCP tools and typed SDK contracts retain exact integer byte counts for admission, manifests and integrity verification. This presentation change does not raise the installation's file or batch limits.
+
 You can close the panel or navigate within the app while an upload runs; its captured destination stays fixed. **Keep the browser tab open until transfer finishes.** Submitted server jobs continue independently. The runtime checks active uploads every five seconds while visible and every thirty seconds while hidden. The Uploads inbox updates active jobs while open and pauses detail refresh during recovery review. Account, tenant, client and permission changes invalidate old observations and abort pending requests; ambiguous writes are never automatically replayed.
 
 ## Installation policy

@@ -48,9 +48,10 @@
               {{ progress().percent }}%</span
             >
             <progress
-              [max]="progress().total || 1"
-              [value]="progress().received"
-              [attr.aria-label]="'Bytes transferred' | ffkText"
+              [max]="100"
+              [value]="progress().percent"
+              [attr.aria-label]="'Upload progress' | ffkText"
+              [attr.aria-valuetext]="size(progress().received) + ' ' + ('of' | ffkText) + ' ' + size(progress().total) + ' (' + progress().percent + '%)'"
             ></progress>
             @if (!view()?.transferring) {
               <span
@@ -282,8 +283,8 @@
           @if (limits(); as limits) {
             <p class="field-help">
               {{ 'Maximum per file' | ffkText }}:
-              {{ limits.max_file_bytes / 1048576 | number }} MiB. {{ 'Maximum batch' | ffkText }}:
-              {{ limits.max_batch_bytes / 1048576 | number }} MiB. {{ 'Maximum files' | ffkText }}:
+              {{ size(limits.max_file_bytes) }}. {{ 'Maximum batch' | ffkText }}:
+              {{ size(limits.max_batch_bytes) }}. {{ 'Maximum files' | ffkText }}:
               {{ limits.max_files }}.
             </p>
           } @else {

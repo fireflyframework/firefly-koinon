@@ -1,6 +1,7 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 import { expect, type Page } from '@playwright/test';
 import { knowledgeBehaviorSettings } from './knowledge-behavior-fixture';
+import officeFormats from './office-format-capabilities.json';
 import type {
   CatalogEntry,
   CatalogSummary,
@@ -517,7 +518,7 @@ export async function mockService(
           },
         ],
       });
-    if (path.endsWith('/source-batch-capabilities')) return respond({configured: options.queuedStorageConfigured === true, modes:['document','dataset'], max_files:100, max_file_bytes:134217728, max_batch_bytes:536870912, max_active_batches_per_subject:3, synchronous_max_file_bytes:33554432,processing_policy:'extract_only_v1',staging_backend:'private_local_posix',staging_topology:'single_host_shared_durable_posix',writer_fence:'primary_database_generation_lease',worker:'external_native_worker',automatic_unknown_replay:false,large_file_transport:'queued_file_spool',quota_semantics:'lifetime_admission_bytes'});
+    if (path.endsWith('/source-batch-capabilities')) return respond({configured: options.queuedStorageConfigured === true, modes:['document','dataset'], formats:officeFormats, max_files:100, max_file_bytes:134217728, max_batch_bytes:536870912, max_active_batches_per_subject:3, synchronous_max_file_bytes:33554432,processing_policy:'extract_only_v1',staging_backend:'private_local_posix',staging_topology:'single_host_shared_durable_posix',writer_fence:'primary_database_generation_lease',worker:'external_native_worker',automatic_unknown_replay:false,large_file_transport:'queued_file_spool',quota_semantics:'lifetime_admission_bytes'});
     if (path.endsWith('/sources/upload')) {
       const source=entry('source-uploaded','source','Uploaded source','collection-one');
       rows.push(source);

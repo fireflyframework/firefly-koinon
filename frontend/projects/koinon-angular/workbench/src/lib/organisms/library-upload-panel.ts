@@ -11,11 +11,11 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
 import type { FileBatchItemView } from '@fireflyframework/koinon-sdk';
 import type { KoinonWorkbench } from '../koinon-angular';
 import type { LibraryUploadRuntime } from '../services/library-upload';
 import { transferProgress } from '../services/library-upload-selection';
+import { formatFileSize } from '@fireflyframework/koinon-angular/workbench/core';
 import { effectiveUploadLimits } from '../services/library-upload-coordinator';
 import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonFileTypeIcon } from '@fireflyframework/koinon-angular/workbench/core';
@@ -37,7 +37,7 @@ registerKoinonSpanish({
   'Your upload': 'Tu carga',
   Transferred: 'Transferidos',
   of: 'de',
-  'Bytes transferred': 'Bytes transferidos',
+  'Upload progress': 'Progreso de la subida',
   'files processed': 'archivos procesados',
   'Continue in background': 'Continuar en segundo plano',
   'Upload more files': 'Subir más archivos',
@@ -166,7 +166,6 @@ registerKoinonSpanish({
   selector: 'ffk-library-upload-panel',
   imports: [
     KoinonFileTypeIcon,
-    DecimalPipe,
     KoinonButton,
     KoinonIcon,
     KoinonBadge,
@@ -185,14 +184,7 @@ export class KoinonLibraryUploadPanel implements OnInit, DoCheck {
   readonly runtime = signal<LibraryUploadRuntime | null>(null);
   private readonly i18n = inject(KoinonI18n);
   size(value: number) {
-    const unit = value >= 1000000 ? 1000000 : value >= 1000 ? 1000 : 1;
-    return (
-      new Intl.NumberFormat(this.i18n.preferences().locale, { maximumFractionDigits: 1 }).format(
-        value / unit,
-      ) +
-      ' ' +
-      (unit === 1000000 ? 'MB' : unit === 1000 ? 'KB' : this.i18n.text('bytes'))
-    );
+    return formatFileSize(value, this.i18n.preferences().locale);
   }
   readonly error = signal('');
   readonly view = computed(() => this.runtime()?.coordinator.view());

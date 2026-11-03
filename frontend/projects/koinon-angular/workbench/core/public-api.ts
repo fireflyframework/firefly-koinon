@@ -6,6 +6,7 @@ export * from './src/lib/services/client-context';
 export * from './src/lib/services/library-tree';
 export * from './src/lib/foundations/i18n';
 export * from './src/lib/foundations/presentation-preferences';
+export * from './src/lib/foundations/file-size';
 export * from './src/lib/atoms/button';
 export * from './src/lib/atoms/icon';
 export * from './src/lib/atoms/badge';

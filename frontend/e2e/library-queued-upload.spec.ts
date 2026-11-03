@@ -316,7 +316,7 @@ test('large originals are not sent when queued storage is unavailable', async ({
   });
   await expect(dialog.getByRole('button', { name: 'Upload 1 file', exact: true })).toBeDisabled();
   await expect(dialog).toContainText('This file exceeds the maximum file size.');
-  await expect(dialog).toContainText('Maximum per file: 32 MiB.');
+  await expect(dialog).toContainText('Maximum per file: 33.6 MB.');
   expect(state.transferred).toBe(0);
   expect(state.service.writes.some((call) => call.path.endsWith('/sources/upload'))).toBe(false);
   expect(state.calls.some((call) => call.method === 'POST' || call.method === 'PUT')).toBe(false);
@@ -345,8 +345,8 @@ test('observed larger server limits display the same effective bounds enforced b
   await expect(dialog.getByRole('alert')).toContainText(
     'Remove files that cannot be uploaded before continuing.',
   );
-  await expect(dialog).toContainText('Maximum per file: 128 MiB.');
-  await expect(dialog).toContainText('Maximum batch: 512 MiB.');
+  await expect(dialog).toContainText('Maximum per file: 134.2 MB.');
+  await expect(dialog).toContainText('Maximum batch: 536.9 MB.');
   expect(state.transferred).toBe(0);
 });
 
@@ -376,13 +376,13 @@ for (const width of [1440, 390]) {
     const dialog = await open(page);
     await expect(dialog.locator('ffk-file-formats')).toContainText('PDF');
     await expect(dialog.locator('ffk-file-formats')).toContainText('Text');
-    await expect(dialog).toContainText('Maximum per file: 1 MiB.');
+    await expect(dialog).toContainText('Maximum per file: 1 MB.');
     await expect(dialog).toContainText('Maximum files: 3.');
     await dialog.getByLabel('Choose files').setInputFiles([
       { name: 'Policy.txt', mimeType: 'text/plain', buffer: Buffer.from('policy') },
       { name: 'Rejected.exe', mimeType: 'application/octet-stream', buffer: Buffer.from('binary') },
     ]);
-    await expect(dialog).toContainText('6 bytes');
+    await expect(dialog.getByText('< 1 KB', { exact: true })).toHaveCount(2);
     await expect(dialog).toContainText('This file type is not supported for the selected use.');
     await expect(
       dialog.getByRole('button', { name: 'Upload 2 files', exact: true }),
@@ -449,18 +449,17 @@ test('multiple originals show confirmed per-file transfer progress before queued
   await dialog.getByRole('button', { name: 'Upload 2 files', exact: true }).click();
   await expect(dialog.getByText('Original staged', { exact: true })).toBeVisible();
   await expect(dialog.getByText('Transferring original', { exact: true })).toBeVisible();
-  await expect(dialog.getByRole('progressbar', { name: 'Bytes transferred' })).toHaveAttribute(
+  await expect(dialog.getByRole('progressbar', { name: 'Upload progress' })).toHaveAttribute(
     'value',
-    '5',
+    '45',
   );
-  await expect(dialog.getByText('5 bytes', { exact: true })).toBeVisible();
-  await expect(dialog.getByText('6 bytes', { exact: true })).toBeVisible();
+  await expect(dialog.getByText('< 1 KB', { exact: true })).toHaveCount(2);
   await capture(page, 'multi-file-transfer');
   release();
   await expect(dialog.getByText('Queued', { exact: true }).first()).toBeVisible();
-  await expect(dialog.getByRole('progressbar', { name: 'Bytes transferred' })).toHaveAttribute(
+  await expect(dialog.getByRole('progressbar', { name: 'Upload progress' })).toHaveAttribute(
     'value',
-    '11',
+    '100',
   );
 });
 

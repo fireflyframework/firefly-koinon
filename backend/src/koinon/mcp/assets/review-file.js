@@ -38,6 +38,22 @@ function createKoinonFileReview(bridge) {
       ? /** @type {Record<string,unknown>} */ (v)
       : null;
   const set = bridge.set;
+  const formatSize = (/** @type {number} */ size) => {
+    if (!Number.isFinite(size) || size < 0) return "—";
+    const number = new Intl.NumberFormat(navigator.language, {
+      maximumFractionDigits: 1,
+    });
+    if (size === 0) return number.format(0) + " KB";
+    if (size < 1000) return "< " + number.format(1) + " KB";
+    const units = ["KB", "MB", "GB", "TB", "PB", "EB"];
+    let value = size / 1000;
+    let unit = 0;
+    while (Math.round(value * 10) / 10 >= 1000 && unit < units.length - 1) {
+      value /= 1000;
+      unit++;
+    }
+    return number.format(value) + " " + units[unit];
+  };
   const digest = async (/** @type {ArrayBuffer} */ data) =>
     Array.from(
       new Uint8Array(await crypto.subtle.digest("SHA-256", data)),
@@ -99,7 +115,7 @@ function createKoinonFileReview(bridge) {
     set("review-title", review?.filename ?? "Upload knowledge");
     set(
       "description",
-      "Choose a file, review its exact bytes and destination, then approve importing it.",
+      "Choose a file, check its details and destination, then approve importing it.",
     );
     set(
       "file-destination",
@@ -114,7 +130,7 @@ function createKoinonFileReview(bridge) {
     if (review) {
       el("file-manifest").hidden = false;
       set("file-name", review.filename);
-      set("file-size", review.size_bytes.toLocaleString() + " bytes");
+      set("file-size", formatSize(review.size_bytes));
       set("file-type", review.content_type);
       set("file-hash", review.sha256);
       meter.hidden = false;
@@ -167,8 +183,8 @@ function createKoinonFileReview(bridge) {
       set(
         "file-help",
         "Maximum " +
-          Math.floor((setup?.max_file_bytes ?? 0) / 1048576) +
-          " MiB. Nothing enters the repository before your approval.",
+          formatSize(setup?.max_file_bytes ?? 0) +
+          ". Nothing enters the repository before your approval.",
       );
     }
     controls();
@@ -444,7 +460,7 @@ function createKoinonFileReview(bridge) {
     }
     selected = file;
     el("error").hidden = true;
-    set("file-help", file.name + " (" + file.size.toLocaleString() + " bytes)");
+    set("file-help", file.name + " (" + formatSize(file.size) + ")");
     controls();
   });
   start.addEventListener("click", () => void upload());

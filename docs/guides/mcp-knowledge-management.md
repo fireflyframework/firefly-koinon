@@ -40,7 +40,7 @@ The component calculates the file's size and SHA-256, stages its manifest and tr
 
 The sealed original remains in the configured object store. Its saved reference identifies the storage route, exact provider version, byte count and SHA-256. Changing the storage location or replacing the object cannot silently supply different evidence. The temporary directory is disposable and is removed after processing or cancellation; it is never the authoritative copy.
 
-The review shows the filename, declared media type, byte size and SHA-256. Review these details together with the destination and mode. Approve explicitly to submit it to the normal ingestion path. Cancel to leave repository knowledge unchanged. The component's upload state is separate from ingestion state:
+The review shows the filename, declared media type, readable file size and SHA-256. Sizes and the advertised limit use decimal KB, MB, GB or TB with the browser’s number format; files smaller than 1 KB display as `< 1 KB`. Display rounding never changes the exact size checked by the server. Review these details together with the destination and mode. Approve explicitly to submit it to the normal ingestion path. Cancel to leave repository knowledge unchanged. The component's upload state is separate from ingestion state:
 
 | State | Meaning |
 | --- | --- |
@@ -57,6 +57,22 @@ Files above the installation's synchronous limit enter the durable file-batch qu
 ![Verify the selected file before importing it](../assets/screenshots/mcp-file-review.png)
 
 *The same component verifies selected file bytes, destination and approval. Example data in a controlled host; responsive layout is also tested at 390 pixels.*
+
+## API and SDK upload workflows
+
+The [file-batch API and SDK guide](bulk-intake.md) covers applications uploading several files. Read the authorized installation capabilities first, create a manifest with a destination and mode for each file, transfer each original, and explicitly submit the received batch for processing. Python, TypeScript and Java use the same routes and size/hash-bound receipts:
+
+| Operation | Python | TypeScript | Java |
+| --- | --- | --- | --- |
+| Read formats and limits | `client.file_batch_capabilities(...)` | `client.fileBatches.capabilities(...)` | `client.fileBatches(tenant).capabilities(...)` |
+| Create the manifest | `client.create_file_batch(...)` | `client.fileBatches.create(...)` | `client.fileBatches(tenant).create(...)` |
+| Send one original | `client.upload_file_batch_item(...)` or `upload_file_batch_path(...)` | `client.fileBatches.upload(...)` | `client.fileBatches(tenant).upload(...)` or `uploadPath(...)` |
+| Inspect received items | `client.file_batch_items(...)` | `client.fileBatches.items(...)` | `client.fileBatches(tenant).items(...)` |
+| Submit for processing | `client.submit_file_batch(...)` | `client.fileBatches.submit(...)` | `client.fileBatches(tenant).submit(...)` |
+
+The MCP workflow above selects one file per review and keeps transfer, sealing and approval inside the embedded component. `koinon_prepare_file_upload` does not create a model-controlled bulk uploader or approve an import. Its advertised limit accounts for the configured storage and ingestion path; it need not equal a file-batch capability limit. Larger approved files can enter the durable queue through the server’s existing path.
+
+Protocol fields such as `size_bytes` and `max_file_bytes` remain exact integer byte counts. SDK consumers should format them for display without rounding manifest sizes or changing upload bounds. Preserve the original idempotency keys and inspect recorded outcomes before retrying. Local file upload does not establish SharePoint, OneDrive or Google Drive synchronization.
 
 ## Permissions and supported hosts
 

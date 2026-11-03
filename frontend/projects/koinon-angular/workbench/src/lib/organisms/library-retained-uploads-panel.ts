@@ -17,6 +17,7 @@ import {
   type OnDestroy,
 } from '@angular/core';
 import { UploadObservationLoop } from '../services/upload-observation-loop';
+import { formatFileSize } from '@fireflyframework/koinon-angular/workbench/core';
 import { DecimalPipe } from '@angular/common';
 import type { FileBatchView, Page } from '@fireflyframework/koinon-sdk';
 import { KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
@@ -333,15 +334,7 @@ export class KoinonLibraryRetainedUploadsPanel implements OnDestroy {
     await this.track(() => this.state.verifyReceipt(id));
   }
   size(value: number) {
-    if (!Number.isFinite(value) || value < 0) return this.i18n.text('Not recorded');
-    const unit = value >= 1048576 ? 1048576 : value >= 1024 ? 1024 : 1;
-    return (
-      new Intl.NumberFormat(this.i18n.preferences().locale, { maximumFractionDigits: 1 }).format(
-        value / unit,
-      ) +
-      ' ' +
-      (unit === 1048576 ? 'MiB' : unit === 1024 ? 'KiB' : 'bytes')
-    );
+    return formatFileSize(value, this.i18n.preferences().locale);
   }
   filename(id: string | null) {
     return this.state.view().items.find((i) => i.id === id)?.filename ?? '';
