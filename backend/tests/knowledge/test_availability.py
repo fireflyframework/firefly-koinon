@@ -23,7 +23,9 @@ def unit_without_native_registry(monkeypatch):
 
 def dependencies():
     row = SimpleNamespace(id="document", kind="document")
-    facade = SimpleNamespace(_chain=AsyncMock(return_value=[row]))
+    facade = SimpleNamespace(
+        _chain=AsyncMock(return_value=[row]), catalog=SimpleNamespace(_prefetch_ancestry=AsyncMock())
+    )
     selection = {
         "id": "document",
         "kind": "document",

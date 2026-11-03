@@ -57,6 +57,22 @@ The capability response reports `private_local_posix`, `private_azure_blob`, or
 `primary_database_generation_lease`. Those describe the implementation contract,
 not acceptance evidence for a particular deployment, identity, provider or restore.
 
+## Reading processing progress
+
+Availability reads authorize each selected file against its current catalog ancestry.
+The service loads that ancestry in batches within a fresh primary database snapshot,
+observes native processing, then checks authority again in a separate fresh snapshot.
+The processing history uses the same batching for its visible page. These snapshots
+do not share a permission cache across requests, so a revoked membership, archived
+ancestor or changed project boundary can prevent a response that was initially allowed.
+
+In a synthetic PostgreSQL regression, selecting either one or 25 documents requires
+14 primary SQL statements for the availability observation, down from 62 for the
+25-document case. This count excludes native observations and is not a production
+latency target. Native checks still inspect current text, chunks and vectors; their
+work grows with the selected content even when the number of SQL statements is fixed.
+Measure both query counts and rows inspected when sizing refresh traffic for large files.
+
 ## Writer ownership, retries and recovery
 
 Each admitted attempt has its own immutable registered key. A short primary
