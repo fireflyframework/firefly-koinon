@@ -9,6 +9,7 @@ from sqlalchemy import and_, exists, func, literal, or_, select
 from sqlalchemy.orm import aliased
 
 from koinon.assistants.entities import Provider
+from koinon.catalog.ancestry_queries import active_folder_roots
 from koinon.catalog.entities import CatalogEntry, Tenant
 from koinon.jobs.entities import Job
 from koinon.knowledge.bulk.entities import now
@@ -211,6 +212,24 @@ class QueryBatchRepository(Repository[QueryBatch, str]):
                 )
             return condition
 
+        roots = (
+            select(source.parent_id)
+            .select_from(QueryBatch)
+            .join(QueryBatchItem, QueryBatchItem.batch_id == QueryBatch.id)
+            .join(dataset, dataset.id == QueryBatchItem.dataset_id)
+            .join(source, source.id == dataset.parent_id)
+            .where(
+                *predicates,
+                dataset.kind == "dataset",
+                source.kind == "source",
+                dataset.workspace_id == QueryBatch.workspace_id,
+                source.workspace_id == QueryBatch.workspace_id,
+                visible(dataset),
+                visible(source),
+            )
+        )
+        destinations = active_folder_roots(tenant, roots, visible, name="query_destinations")
+
         valid_ref = exists(
             select(reference.id)
             .join(table_binding, table_binding.catalog_id == reference.id)
@@ -238,7 +257,8 @@ class QueryBatchRepository(Repository[QueryBatch, str]):
             select(dataset.id)
             .join(source, source.id == dataset.parent_id)
             .join(parent, parent.id == source.parent_id)
-            .join(project, project.id == parent.parent_id)
+            .join(project, project.id == parent.project_id)
+            .join(destinations, destinations.c.root_id == parent.id)
             .join(dataset_binding, dataset_binding.catalog_id == dataset.id)
             .join(workspace_binding, workspace_binding.catalog_id == QueryBatch.workspace_id)
             .where(
@@ -259,6 +279,8 @@ class QueryBatchRepository(Repository[QueryBatch, str]):
                 workspace_binding.native_workspace_id == workspace_binding.native_id,
                 source.kind == "source",
                 parent.kind.in_(["collection", "corpus"]),
+                destinations.c.workspace_id == QueryBatch.workspace_id,
+                destinations.c.project_id == project.id,
                 project.kind == "project",
                 project.parent_id == QueryBatch.workspace_id,
                 project.project_id == project.id,

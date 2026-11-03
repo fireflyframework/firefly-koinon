@@ -11,6 +11,7 @@ from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import aliased
 
 from koinon.assistants.entities import Provider
+from koinon.catalog.ancestry_queries import active_folder_roots
 from koinon.catalog.entities import CatalogEntry, Membership, Tenant
 from koinon.jobs.entities import Job
 from koinon.knowledge.bulk.entities import (
@@ -228,6 +229,9 @@ class BulkRepository(Repository[BulkBatch, str]):
                 )
             return condition
 
+        destinations = active_folder_roots(
+            tenant, select(BulkBatch.parent_id).where(*predicates), visible, name="bulk_destinations"
+        )
         valid_item = exists(
             select(asset.id)
             .select_from(asset)
@@ -255,6 +259,7 @@ class BulkRepository(Repository[BulkBatch, str]):
             .join(workspace, workspace.id == BulkBatch.workspace_id)
             .join(project, project.id == BulkBatch.project_id)
             .join(parent, parent.id == BulkBatch.parent_id)
+            .join(destinations, destinations.c.root_id == parent.id)
             .where(
                 *predicates,
                 workspace.kind == "workspace",
@@ -265,7 +270,8 @@ class BulkRepository(Repository[BulkBatch, str]):
                 project.workspace_id == workspace.id,
                 project.project_id == project.id,
                 parent.kind.in_(["collection", "corpus"]),
-                parent.parent_id == project.id,
+                destinations.c.workspace_id == workspace.id,
+                destinations.c.project_id == project.id,
                 parent.workspace_id == workspace.id,
                 parent.project_id == project.id,
                 visible(workspace),
