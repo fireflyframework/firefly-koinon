@@ -1,6 +1,7 @@
 <!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
 <section
   class="dialog"
+  [class.upload-dialog]="w.dialog() === 'upload'"
   [class.account-dialog]="w.dialog() === 'account'"
   [class.tree-dialog]="w.dialog() === 'tree'"
   [class.wide]="
@@ -49,7 +50,7 @@
                     : w.dialog() === 'edit'
                       ? 'Edit details'
                       : w.dialog() === 'upload'
-                        ? 'Upload files'
+                        ? 'Add files'
                         : w.dialog() === 'archive'
                           ? 'Archive this item?'
                           : w.dialog() === 'query'
@@ -64,7 +65,6 @@
       variant="quiet"
       icon="close"
       label="Close dialog"
-      [disabled]="w.uploadState() === 'receiving'"
       (click)="w.closeDialog()"
     />
   </header>

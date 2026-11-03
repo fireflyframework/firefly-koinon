@@ -24,6 +24,7 @@ import { Overlay, type OverlayRef } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
 import { KoinonFileFormats } from '@fireflyframework/koinon-angular/workbench/core';
+import { formatFileSize } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonIcon, KoinonTextPipe } from '@fireflyframework/koinon-angular';
 import type { ComposerAttachment } from './composer-models';
 registerKoinonSpanish({
@@ -293,11 +294,6 @@ export class KoinonChatComposer implements AfterViewInit, OnChanges, OnDestroy {
     }[item.state];
   }
   size(bytes: number) {
-    if (bytes < 1024) return bytes + ' B';
-    return (
-      new Intl.NumberFormat(this.locale, { maximumFractionDigits: 1 }).format(
-        bytes / (bytes < 1048576 ? 1024 : 1048576),
-      ) + (bytes < 1048576 ? ' KB' : ' MB')
-    );
+    return formatFileSize(bytes, this.locale);
   }
 }

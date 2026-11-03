@@ -1,14 +1,20 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
-import { DestroyRef, effect, type Injector } from '@angular/core';
+import { DestroyRef, effect, signal, type Injector } from '@angular/core';
 import type { CatalogEntry } from '@fireflyframework/koinon-sdk';
 import type { KoinonWorkbench } from '../koinon-angular';
 import { KoinonClientContext } from '@fireflyframework/koinon-angular/workbench/core';
-import { LibraryUploadCoordinator, type UploadScope } from './library-upload-coordinator';
+import { preferredUploadMode, uploadModes, type UploadMode } from './library-upload-selection';
+import { UploadObservationLoop } from './upload-observation-loop';
+import { LibraryUploadCoordinator, shouldObserveUpload, type UploadScope } from './library-upload-coordinator';
 
 export interface LibraryUploadRuntime {
   coordinator: LibraryUploadCoordinator;
   start(): Promise<void>;
+  mode(file: File): UploadMode | null;
+  modes(file: File): UploadMode[];
+  chooseMode(file: File, mode: UploadMode): void;
+  fresh(): boolean;
   canSelect(entry: CatalogEntry | undefined): boolean;
   open(): Promise<void>;
   folder(): Promise<void>;
@@ -31,6 +37,9 @@ export function libraryUpload(w: KoinonWorkbench, injector: Injector): LibraryUp
     return existing;
   }
   const clients = injector.get(KoinonClientContext);
+  let destination: CatalogEntry | undefined;
+  let receivedAsset: string | null = null;
+  const choices = new WeakMap<File, UploadMode>();
   let deniedOwner: object | null = null;
   const canSelect = (entry: CatalogEntry | undefined) => {
     if (
@@ -53,17 +62,16 @@ export function libraryUpload(w: KoinonWorkbench, injector: Injector): LibraryUp
     return permissions.has('catalog:write') && permissions.has('ingest:write');
   };
   const scope = (): UploadScope => {
-    const folder = w.allEntries().find((entry) => entry.id === w.formParent);
+    const folder = destination ?? w.allEntries().find((entry) => entry.id === w.formParent);
     return {
-      owner: w.f.context(),
+      owner: w.f.authRequired() ? null : w.f.context(),
       clientRevision: clients.revision(),
       tenantId: w.f.tenantId(),
       workspaceId: folder?.workspace_id || '',
       projectId: folder?.project_id || '',
       parentId: folder?.id || '',
-      navigationId: w.f.parentId(),
       transport: clients.getTransport(),
-      allowed: !!folder && canSelect(folder),
+      allowed: !w.f.authRequired() && !!folder && canSelect(folder),
     };
   };
   const coordinator = new LibraryUploadCoordinator({
@@ -87,17 +95,64 @@ export function libraryUpload(w: KoinonWorkbench, injector: Injector): LibraryUp
       form.append('mode', mode);
       form.append('workspace_id', target.workspaceId);
       form.append('project_id', target.projectId);
-      const done = await w.f.upload(form, { signal });
-      if (done) {
-        w.uploadedFiles.update((files) => new Set([...files, file]));
-        w.uploadedCount.update((count) => count + 1);
-      }
-      return done;
+      const client = clients.get();
+      const response = await client.sources.upload(target.tenantId, form, { signal });
+      signal.throwIfAborted();
+      const current = scope();
+      if (
+        current.owner !== target.owner ||
+        current.clientRevision !== target.clientRevision ||
+        current.transport !== target.transport ||
+        current.tenantId !== target.tenantId ||
+        !current.allowed
+      )
+        return false;
+      const matches = (entry: CatalogEntry) =>
+        entry.tenant_id === target.tenantId &&
+        entry.workspace_id === target.workspaceId &&
+        entry.project_id === target.projectId;
+      if (
+        !response.source?.id ||
+        response.source.kind !== 'source' ||
+        !matches(response.source) ||
+        response.source.parent_id !== target.parentId ||
+        !Array.isArray(response.assets) ||
+        response.assets.some(
+          (entry) => !entry.id || !matches(entry) || entry.parent_id !== response.source.id,
+        )
+      )
+        throw Error('Upload response destination could not be verified');
+      receivedAsset = response.assets[0]?.id || response.source.id;
+      w.uploadedFiles.update((files) => new Set([...files, file]));
+      w.uploadedCount.update((count) => count + 1);
+      return true;
     },
   });
+  let authority = {
+    owner: w.f.context(),
+    revision: clients.revision(),
+    tenant: w.f.tenantId(),
+    transport: clients.getTransport(),
+  };
   effect(
     () => {
-      if (!coordinator.syncScope()) {
+      const currentAuthority = {
+        owner: w.f.authRequired() ? null : w.f.context(),
+        revision: clients.revision(),
+        tenant: w.f.tenantId(),
+        transport: clients.getTransport(),
+      };
+      const changedAuthority =
+        authority.owner !== currentAuthority.owner ||
+        authority.revision !== currentAuthority.revision ||
+        authority.tenant !== currentAuthority.tenant ||
+        authority.transport !== currentAuthority.transport;
+      authority = currentAuthority;
+      const sameScope = coordinator.syncScope();
+      if (changedAuthority) coordinator.invalidate();
+      if (changedAuthority || !sameScope) {
+        destination = undefined;
+        receivedAsset = null;
         w.files = [];
         w.uploadedFiles.set(new Set());
         w.uploadedCount.set(0);
@@ -108,6 +163,21 @@ export function libraryUpload(w: KoinonWorkbench, injector: Injector): LibraryUp
         w.uploadDestinationOpen.set(true);
       }
       const view = coordinator.view();
+      w.uploadActivity?.set(
+        view.batch || view.transferring || view.uncertain
+          ? {
+              label: view.transferring
+                ? 'Uploading files'
+                : view.uncertain
+                  ? 'Upload needs attention'
+                  : ['queued', 'running'].includes(view.batch?.status || '')
+                    ? 'Processing files'
+                    : 'Upload updated',
+              count: view.batch?.total_items || w.files.length,
+              transferring: view.transferring,
+            }
+          : null,
+      );
       w.uploadState.set(
         view.transferring
           ? 'receiving'
@@ -118,25 +188,66 @@ export function libraryUpload(w: KoinonWorkbench, injector: Injector): LibraryUp
     },
     { injector },
   );
-  injector.get(DestroyRef).onDestroy(() => coordinator.dispose());
+  const visible = signal(typeof document === 'undefined' || document.visibilityState !== 'hidden');
+  const visibilityChanged = () => visible.set(document.visibilityState !== 'hidden');
+  if (typeof document !== 'undefined')
+    document.addEventListener('visibilitychange', visibilityChanged);
+  const polling = new UploadObservationLoop({
+    active: () => shouldObserveUpload(coordinator.view()),
+    visible: () => visible(),
+    read: () => coordinator.refresh(),
+  });
+  effect(
+    () => {
+      visible();
+      coordinator.view();
+      polling.update();
+    },
+    { injector },
+  );
+  injector.get(DestroyRef).onDestroy(() => {
+    polling.dispose();
+    coordinator.dispose();
+    if (typeof document !== 'undefined')
+      document.removeEventListener('visibilitychange', visibilityChanged);
+  });
   const runtime: LibraryUploadRuntime = {
     coordinator,
     canSelect,
+    mode: (file) => {
+      const available = uploadModes(file.name, coordinator.view().capabilities),
+        selected = choices.get(file);
+      return selected && available.includes(selected)
+        ? selected
+        : preferredUploadMode(file.name, coordinator.view().capabilities);
+    },
+    modes: (file) => uploadModes(file.name, coordinator.view().capabilities),
+    chooseMode: (file, mode) => {
+      if (!coordinator.view().busy && runtime.modes(file).includes(mode)) choices.set(file, mode);
+    },
+    fresh: () => {
+      if (!coordinator.detachSubmitted()) return false;
+      destination = undefined;
+      receivedAsset = null;
+      return true;
+    },
     start: async () => {
-      if (w.uploadMode !== 'document' && w.uploadMode !== 'dataset') {
-        w.dialogError.set(w.i18n.text('Choose document or dataset mode before uploading.'));
+      if (coordinator.view().busy || coordinator.view().batch || coordinator.view().uncertain)
         return;
-      }
-      await coordinator.start(w.files, w.uploadMode);
+      const folder = w.allEntries().find((entry) => entry.id === w.formParent);
+      if (!folder || !canSelect(folder)) return;
+      destination = folder;
+      const selected = w.files.map((file) => choices.get(file));
+      await coordinator.start(w.files, selected);
     },
     open: async () => {
       const current = coordinator.view();
       if (current.busy) return;
       const owner = w.f.context(),
         revision = clients.revision(),
-        parent = w.formParent;
+        parent = destination?.id || w.formParent;
       const item = current.items.find((row) => row.asset_id);
-      const selected = item?.asset_id || (w.uploadedCount() ? w.f.selected()?.id : null);
+      const selected = item?.asset_id || receivedAsset;
       w.closeDialog();
       await w.openFolder(parent);
       if (owner !== w.f.context() || revision !== clients.revision() || !clients.getTransport())
@@ -153,7 +264,7 @@ export function libraryUpload(w: KoinonWorkbench, injector: Injector): LibraryUp
     },
     folder: async () => {
       if (coordinator.view().busy || !clients.getTransport()) return;
-      const parent = w.formParent;
+      const parent = destination?.id || w.formParent;
       w.closeDialog();
       await w.openFolder(parent);
     },

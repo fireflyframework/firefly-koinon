@@ -214,7 +214,7 @@ async function open(page: Page) {
   await page.getByRole('button', { name: 'Uploads', exact: true }).click();
   const panel = page.locator('ffk-library-retained-uploads-panel');
   await expect(
-    panel.getByRole('heading', { name: 'Your retained uploads', exact: true }),
+    panel.getByRole('heading', { name: 'Your uploads', exact: true }),
   ).toBeVisible();
   return panel;
 }
@@ -336,7 +336,7 @@ for (const changed of ['account', 'credential'] as const)
     await page.getByRole('button', { name: 'Uploads', exact: true }).click();
     panel = page.locator('ffk-library-retained-uploads-panel');
     await expect(
-      panel.getByRole('heading', { name: 'No retained uploads were returned', exact: true }),
+      panel.getByRole('heading', { name: 'No uploads yet', exact: true }),
     ).toBeVisible();
     await expect(panel).not.toContainText('Operating guide.docx');
     await expect(panel).not.toContainText('retained-batch');

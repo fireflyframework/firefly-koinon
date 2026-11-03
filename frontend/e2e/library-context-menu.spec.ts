@@ -187,7 +187,7 @@ test('location creation and direct upload use the current folder destination', a
   ).toMatchObject({ parent_id: 'collection-one', kind: 'collection' });
   await trigger.click();
   await menu.getByRole('menuitem', { name: 'Upload files', exact: true }).click();
-  await expect(dialog.getByRole('heading', { name: 'Upload files', exact: true })).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Add files', exact: true })).toBeVisible();
   await expect(dialog.locator('.upload-location')).toContainText('Reference library');
   await expect(dialog.locator('.upload-folder-picker')).toHaveCount(0);
 });

@@ -53,8 +53,7 @@
             class="resource-icon"
             [class.folder]="isFolder(item)"
             [class.dataset]="item.kind === 'dataset'"
-            ><ffk-icon [name]="icon(item.kind)"
-          /></span>
+            >@if (isFolder(item) || !hasFileType(item)) { <ffk-icon [name]="icon(item.kind)" /> } @else { <ffk-file-type-icon [filename]="item.name" [format]="summaries[item.id]?.format || ''" /> }</span>
           <div class="name-wrap">
             <button class="name" (click)="opened.emit(item)" [title]="item.name">
               {{ item.name }}
