@@ -182,7 +182,12 @@ class IntakeService:
             text_max_bytes=self._settings.file_text_max_bytes,
             chunks_max=self._settings.file_chunks_max,
         )
-        prepared = await parse_document_file(path, filename=arguments.get("filename"), policy=policy)
+        prepared = await parse_document_file(
+            path,
+            filename=arguments.get("filename"),
+            content_type=arguments.get("content_type"),
+            policy=policy,
+        )
         if self._lineage_pipeline is None:
             raise RuntimeError("Queued document ingestion requires native immutable lineage")
         if request.kind == SourceKind.unknown:

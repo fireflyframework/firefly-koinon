@@ -8,6 +8,7 @@ import asyncio
 import contextlib
 import json
 import os
+import re
 import resource
 import sys
 import tempfile
@@ -61,6 +62,10 @@ class ParsedDocumentFile:
     sections: list[dict] = field(default_factory=list)
 
 
+class UnsupportedDocumentFormat(ValueError):
+    code = "DOCUMENT_FORMAT_UNSUPPORTED"
+
+
 def _rss(pid):
     try:
         process = psutil.Process(pid)
@@ -73,7 +78,54 @@ def _rss(pid):
         return 0
 
 
-async def parse_document_file(path, *, filename, policy: DocumentFilePolicy):
+def _peak_rss_bytes():
+    if sys.platform.startswith("linux"):
+        # getrusage retains the parent's RSS high-water across exec on Linux.
+        status = Path("/proc/self/status").read_text()
+        values = re.findall(r"^VmHWM:[ \t]+([1-9]\d*)[ \t]+kB$", status, re.MULTILINE)
+        if len(values) != 1:
+            raise ValueError("Cannot measure the parser's peak resident memory")
+        return int(values[0]) * 1024
+    usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    return int(usage if sys.platform == "darwin" else usage * 1024)
+
+
+def document_file_kinds():
+    from flycanon.core.services.ingestion.loaders import default_registry
+    from flycanon.interfaces.enums import SourceKind
+
+    separate_intake = {SourceKind.archive, SourceKind.image, SourceKind.transcript}
+    return tuple(kind for kind in default_registry().registered_kinds() if kind not in separate_intake)
+
+
+def document_file_kind(filename, content_type=None):
+    from flycanon.core.services.ingestion.ingestion_service import IngestionService
+    from flycanon.interfaces.enums import SourceKind
+
+    suffix = Path(filename or "").suffix.lower()
+    # A declared filename must not be overridden by a misleading text MIME type.
+    kind = IngestionService.detect_kind(filename=filename, content_type=None if suffix else content_type)
+    if not suffix and kind == SourceKind.unknown and content_type in {None, "", "text/plain"}:
+        kind = SourceKind.text
+    if kind not in document_file_kinds():
+        if suffix == ".ppt":
+            raise UnsupportedDocumentFormat(
+                "Unsupported document format .ppt; save as .pptx before uploading"
+            )
+        raise UnsupportedDocumentFormat("Unsupported document format for bounded file ingestion")
+    return kind
+
+
+def _validate_text(content):
+    text = content.decode("utf-8-sig", errors="strict")
+    if content.startswith((b"%PDF-", b"PK\x03\x04", b"\xd0\xcf\x11\xe0", b"GIF87a", b"GIF89a")) or any(
+        ord(character) < 32 and character not in "\t\r\n\f" for character in text
+    ):
+        raise ValueError("Binary content cannot be ingested as plain text")
+
+
+async def parse_document_file(path, *, filename, policy: DocumentFilePolicy, content_type=None):
+    kind = document_file_kind(filename, content_type)
     path = Path(path).absolute()
     if path.is_symlink() or not path.is_file() or not 1 <= path.stat().st_size <= policy.raw_max_bytes:
         raise ValueError("Document exceeds the admitted regular-file byte bound")
@@ -89,6 +141,7 @@ async def parse_document_file(path, *, filename, policy: DocumentFilePolicy):
                 {
                     "path": str(path),
                     "filename": filename,
+                    "kind": kind.value,
                     "policy": asdict(policy),
                     "output": str(output),
                     "parent_pid": os.getpid(),
@@ -149,9 +202,8 @@ def _child(specification):
     policy = DocumentFilePolicy(**request["policy"])
     arm_parent_bound_deadline(policy.wall_seconds, request["parent_pid"])
     path = Path(request["path"])
-    suffix = Path(request["filename"] or "").suffix.lower()
-    if suffix in {".docx", ".pptx"}:
-        kind = suffix[1:]
+    kind = request["kind"]
+    if kind in {"docx", "pptx"}:
         from flycanon.core.services.ingestion.office_package import extract_office
 
         text, sections, metadata = extract_office(path, kind, policy)
@@ -160,15 +212,22 @@ def _child(specification):
         from flycanon.core.services.ingestion.loaders import default_registry
         from flycanon.interfaces.enums import SourceKind
 
-        kind = suffix.lstrip(".")
-        try:
-            selected = SourceKind(kind)
-        except ValueError:
-            selected = SourceKind.text
+        if kind in {"xlsx", "odt", "ods", "odp"}:
+            from flycanon.core.services.ingestion.office_package import validate_office_package
+
+            validate_office_package(path, policy)
+        selected = SourceKind(kind)
         loader = default_registry().get(selected)
         if loader is None:
             raise ValueError("This document format has no installed parser")
-        document = loader.load(path.read_bytes(), filename=request["filename"])
+        content = path.read_bytes()
+        if kind in {"text", "markdown", "csv", "tsv", "json", "xml", "html"}:
+            _validate_text(content)
+        if kind == "rtf" and not re.match(
+            rb"\{\\rtf[1-9]\d*(?=\\|[ \t\r\n}])", content.removeprefix(b"\xef\xbb\xbf").lstrip()
+        ):
+            raise ValueError("RTF content requires an actual RTF document header")
+        document = loader.load(content, filename=request["filename"])
         text = _render_document(document, artifact_label=request["filename"], index=0)
         sections = [asdict(section) for section in document.sections]
         metadata = {
@@ -179,8 +238,7 @@ def _child(specification):
         }
     if len(text.encode()) > policy.text_max_bytes:
         raise ValueError("Document text exceeds its configured byte limit")
-    usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    peak = int(usage if sys.platform == "darwin" else usage * 1024)
+    peak = _peak_rss_bytes()
     if peak > policy.child_rss_max_bytes:
         raise ValueError("Document parser exceeded its memory budget")
     rendered = json.dumps(

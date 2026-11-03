@@ -145,6 +145,11 @@ def _paragraph_text(element):
     return "".join(parts).strip()
 
 
+def validate_office_package(path, policy):
+    with zipfile.ZipFile(path) as archive:
+        _preflight(archive, policy)
+
+
 def extract_office(path, kind, policy):
     sections = []
     size = 0
