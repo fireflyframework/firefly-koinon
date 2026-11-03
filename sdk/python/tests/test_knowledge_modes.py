@@ -42,7 +42,11 @@ async def test_mode_api_encodes_ids_preserves_idempotency_and_typed_progress():
         response = (
             {"transition": value}
             if request.url.path.endswith("/current")
-            else ({"items": [], "next_cursor": "next"} if request.url.path.endswith(("/targets", "/recoveries")) else value)
+            else (
+                {"items": [], "next_cursor": "next"}
+                if request.url.path.endswith(("/targets", "/recoveries"))
+                else value
+            )
         )
         return httpx.Response(200, json=response)
 
@@ -62,7 +66,9 @@ async def test_mode_api_encodes_ids_preserves_idempotency_and_typed_progress():
         revision = KnowledgeModeRevisionInput(expected_revision=created.revision)
         await client.cancel_knowledge_mode_transition("north/one", created.id, revision)
         await client.retry_knowledge_mode_transition("north/one", created.id, revision)
-        recovery = await client.knowledge_mode_recoveries("north/one", created.id, after="attempt/one", limit=25)
+        recovery = await client.knowledge_mode_recoveries(
+            "north/one", created.id, after="attempt/one", limit=25
+        )
         assert recovery.next_cursor == "next"
     assert calls[0].headers["Idempotency-Key"] == "stable"
     assert calls[2].url.raw_path.endswith(b"/north%2Fone/knowledge/settings/transitions/transition%2Fone")

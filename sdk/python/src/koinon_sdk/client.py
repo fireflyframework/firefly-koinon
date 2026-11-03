@@ -151,6 +151,13 @@ from koinon_sdk.mcp_applications import (
     McpOAuthClientReadiness,
     McpOAuthClientRevision,
 )
+from koinon_sdk.mode_transitions import (
+    KnowledgeModeCurrentView,
+    KnowledgeModeRecoveryPage,
+    KnowledgeModeRevisionInput,
+    KnowledgeModeTargetPage,
+    KnowledgeModeTransitionView,
+)
 from koinon_sdk.models import (
     AgentConfiguration,
     AgentInput,
@@ -203,9 +210,6 @@ from koinon_sdk.organization_filters import (
     OrganizationPeopleFilter,
     OrganizationReportsFilter,
     OrganizationUnitFilter,
-)
-from koinon_sdk.mode_transitions import (
-    KnowledgeModeCurrentView, KnowledgeModeRevisionInput, KnowledgeModeTargetPage, KnowledgeModeTransitionView, KnowledgeModeRecoveryPage,
 )
 from koinon_sdk.organization_knowledge import (
     OrganizationKnowledgeSettings,
@@ -1869,54 +1873,90 @@ class KoinonClient(BulkClientMixin, QueryBatchClientMixin, CommunicationsClientM
     async def create_knowledge_mode_transition(
         self, tenant_id: str, value: OrganizationKnowledgeSettingsInput, *, idempotency_key: str
     ) -> KnowledgeModeTransitionView:
-        return KnowledgeModeTransitionView.model_validate(await self._request(
-            "POST", self._tenant(tenant_id) + "/knowledge/settings/transitions",
-            json=value.model_dump(mode="json", exclude_unset=True), headers={"Idempotency-Key": idempotency_key},
-        ))
+        return KnowledgeModeTransitionView.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/knowledge/settings/transitions",
+                json=value.model_dump(mode="json", exclude_unset=True),
+                headers={"Idempotency-Key": idempotency_key},
+            )
+        )
 
     async def current_knowledge_mode_transition(self, tenant_id: str) -> KnowledgeModeCurrentView:
-        return KnowledgeModeCurrentView.model_validate(await self._request(
-            "GET", self._tenant(tenant_id) + "/knowledge/settings/transitions/current",
-        ))
+        return KnowledgeModeCurrentView.model_validate(
+            await self._request(
+                "GET",
+                self._tenant(tenant_id) + "/knowledge/settings/transitions/current",
+            )
+        )
 
-    async def knowledge_mode_transition(self, tenant_id: str, transition_id: str) -> KnowledgeModeTransitionView:
-        return KnowledgeModeTransitionView.model_validate(await self._request(
-            "GET", self._tenant(tenant_id) + "/knowledge/settings/transitions/" + quote(transition_id, safe=""),
-        ))
+    async def knowledge_mode_transition(
+        self, tenant_id: str, transition_id: str
+    ) -> KnowledgeModeTransitionView:
+        return KnowledgeModeTransitionView.model_validate(
+            await self._request(
+                "GET",
+                self._tenant(tenant_id) + "/knowledge/settings/transitions/" + quote(transition_id, safe=""),
+            )
+        )
 
     async def knowledge_mode_targets(
         self, tenant_id: str, transition_id: str, *, after: str | None = None, limit: int = 50
     ) -> KnowledgeModeTargetPage:
         params = {"limit": limit, **({"after": after} if after is not None else {})}
-        return KnowledgeModeTargetPage.model_validate(await self._request(
-            "GET", self._tenant(tenant_id) + "/knowledge/settings/transitions/" + quote(transition_id, safe="") + "/targets",
-            params=params,
-        ))
+        return KnowledgeModeTargetPage.model_validate(
+            await self._request(
+                "GET",
+                self._tenant(tenant_id)
+                + "/knowledge/settings/transitions/"
+                + quote(transition_id, safe="")
+                + "/targets",
+                params=params,
+            )
+        )
 
     async def knowledge_mode_recoveries(
         self, tenant_id: str, transition_id: str, *, after: str | None = None, limit: int = 50
     ) -> KnowledgeModeRecoveryPage:
         params = {"limit": limit, **({"after": after} if after is not None else {})}
-        return KnowledgeModeRecoveryPage.model_validate(await self._request(
-            "GET", self._tenant(tenant_id) + "/knowledge/settings/transitions/" + quote(transition_id, safe="") + "/recoveries",
-            params=params,
-        ))
+        return KnowledgeModeRecoveryPage.model_validate(
+            await self._request(
+                "GET",
+                self._tenant(tenant_id)
+                + "/knowledge/settings/transitions/"
+                + quote(transition_id, safe="")
+                + "/recoveries",
+                params=params,
+            )
+        )
 
     async def cancel_knowledge_mode_transition(
         self, tenant_id: str, transition_id: str, value: KnowledgeModeRevisionInput
     ) -> KnowledgeModeTransitionView:
-        return KnowledgeModeTransitionView.model_validate(await self._request(
-            "POST", self._tenant(tenant_id) + "/knowledge/settings/transitions/" + quote(transition_id, safe="") + "/cancel",
-            json=value.model_dump(mode="json", exclude_unset=True),
-        ))
+        return KnowledgeModeTransitionView.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id)
+                + "/knowledge/settings/transitions/"
+                + quote(transition_id, safe="")
+                + "/cancel",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
 
     async def retry_knowledge_mode_transition(
         self, tenant_id: str, transition_id: str, value: KnowledgeModeRevisionInput
     ) -> KnowledgeModeTransitionView:
-        return KnowledgeModeTransitionView.model_validate(await self._request(
-            "POST", self._tenant(tenant_id) + "/knowledge/settings/transitions/" + quote(transition_id, safe="") + "/retry",
-            json=value.model_dump(mode="json", exclude_unset=True),
-        ))
+        return KnowledgeModeTransitionView.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id)
+                + "/knowledge/settings/transitions/"
+                + quote(transition_id, safe="")
+                + "/retry",
+                json=value.model_dump(mode="json", exclude_unset=True),
+            )
+        )
 
     async def organization_chat_settings(
         self, tenant_id: str, *, workspace_id: str | None = None, project_id: str | None = None
