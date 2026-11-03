@@ -1,12 +1,13 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 import { signal } from '@angular/core';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { KoinonTransport, RequestOptions } from '@fireflyframework/koinon-sdk';
 import type { AssetAvailability } from '@fireflyframework/koinon-sdk/availability';
 import type { KoinonFacade } from '../koinon-facade';
 import type { KoinonClientContext } from './client-context';
 import { AvailabilitySession } from './availability-session';
+afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 const value: AssetAvailability = {
   phase: 'complete',
   revision: { source_version_id: 'v1' },
@@ -37,6 +38,78 @@ function fixture(transport: KoinonTransport) {
   };
 }
 describe('bounded current-actor availability', () => {
+  it('continues automatic observation beyond a minute and while search is still pending', async () => {
+    vi.useFakeTimers();
+    const request = vi.fn(async () => ({ observed_at: '2026-11-03T00:00:00Z', items: { one: value } }));
+    const { state } = fixture({ request } as unknown as KoinonTransport);
+    state.sync();
+    const stop = state.watch('one');
+    await vi.advanceTimersByTimeAsync(70000);
+    expect(request.mock.calls.length).toBeGreaterThan(12);
+    stop();
+    const calls = request.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(60000);
+    expect(request).toHaveBeenCalledTimes(calls);
+  });
+  it('retains last observations as stale and automatically recovers after read failure', async () => {
+    vi.useFakeTimers();
+    let fail = false;
+    const request = vi.fn(async () => {
+      if (fail) throw Error('503');
+      return { observed_at: '2026-11-03T00:00:00Z', items: { one: value } };
+    });
+    const { state } = fixture({ request } as unknown as KoinonTransport);
+    state.sync();
+    const stop = state.watch('one');
+    await vi.advanceTimersByTimeAsync(0);
+    fail = true;
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(state.get('one')?.read?.state).toBe('ready');
+    expect(state.stale()).toBe(true);
+    fail = false;
+    await vi.advanceTimersByTimeAsync(29999);
+    expect(request).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(request).toHaveBeenCalledTimes(3);
+    expect(state.stale()).toBe(false);
+    stop();
+  });
+  it('backs off hidden views and rechecks account authority on focus', async () => {
+    vi.useFakeTimers();
+    const visible = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    const request = vi.fn(async () => ({ observed_at: 'now', items: { one: value } }));
+    const { state, scope, pair } = fixture({ request } as unknown as KoinonTransport);
+    state.sync();
+    const stop = state.watch('one');
+    await vi.advanceTimersByTimeAsync(29999);
+    expect(request).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(request).toHaveBeenCalledTimes(2);
+    scope.context.set({ subject: 'actor-b' });
+    pair.set(null);
+    visible.mockReturnValue('visible');
+    window.dispatchEvent(new Event('focus'));
+    await vi.advanceTimersByTimeAsync(60000);
+    expect(state.get('one')).toBeUndefined();
+    expect(request).toHaveBeenCalledTimes(2);
+    stop();
+  });
+  it('does not overlap a new visible row request with an in-flight observation', async () => {
+    let finish!: (v: unknown) => void;
+    const request = vi.fn(() => new Promise((resolve) => { finish = resolve; }));
+    const { state } = fixture({ request } as unknown as KoinonTransport);
+    state.sync();
+    const one = state.watch('one');
+    await vi.waitFor(() => expect(request).toHaveBeenCalledOnce());
+    const two = state.watch('two');
+    await Promise.resolve();
+    expect(request).toHaveBeenCalledOnce();
+    finish({ observed_at: 'now', items: { one: value } });
+    await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(2));
+    finish({ observed_at: 'later', items: { one: value, two: value } });
+    await vi.waitFor(() => expect(state.get('two')).toBeDefined());
+    one(); two();
+  });
   it('batches visible rows and never equates text availability with search readiness', async () => {
     const request = vi.fn<
       (method: string, path: string, options: RequestOptions) => Promise<unknown>

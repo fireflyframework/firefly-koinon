@@ -2,6 +2,7 @@
 export const CHAT_SPANISH: Readonly<Record<string, string>> = {
   'The verified answer stream could not be reconciled. Reopen the conversation.':
     'No se pudo reconciliar la respuesta verificada. Vuelve a abrir el chat.',
+  Failed: 'Fallido',
   'Chat projects': 'Proyectos de chat',
   'New chat project': 'Nuevo proyecto de chat',
   'Clear chat project selection': 'Quitar la selección del proyecto de chat',

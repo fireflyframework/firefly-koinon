@@ -189,9 +189,16 @@ export function libraryUpload(w: KoinonWorkbench, injector: Injector): LibraryUp
     { injector },
   );
   const visible = signal(typeof document === 'undefined' || document.visibilityState !== 'hidden');
-  const visibilityChanged = () => visible.set(document.visibilityState !== 'hidden');
-  if (typeof document !== 'undefined')
+  const visibilityChanged = () => {
+    coordinator.syncScope();
+    visible.set(document.visibilityState !== 'hidden');
+    polling.update();
+    if (visible() && shouldObserveUpload(coordinator.view())) void coordinator.refresh();
+  };
+  if (typeof document !== 'undefined') {
     document.addEventListener('visibilitychange', visibilityChanged);
+    window.addEventListener('focus', visibilityChanged);
+  }
   const polling = new UploadObservationLoop({
     active: () => shouldObserveUpload(coordinator.view()),
     visible: () => visible(),
@@ -208,8 +215,10 @@ export function libraryUpload(w: KoinonWorkbench, injector: Injector): LibraryUp
   injector.get(DestroyRef).onDestroy(() => {
     polling.dispose();
     coordinator.dispose();
-    if (typeof document !== 'undefined')
+    if (typeof document !== 'undefined') {
       document.removeEventListener('visibilitychange', visibilityChanged);
+      window.removeEventListener('focus', visibilityChanged);
+    }
   });
   const runtime: LibraryUploadRuntime = {
     coordinator,

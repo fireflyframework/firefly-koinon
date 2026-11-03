@@ -59,7 +59,7 @@ The page controls keep their labels and values together. Change the page size to
 
 ## Add knowledge
 
-Start from the destination folder and choose **Add knowledge**. Review the destination, file and processing mode before uploading. The result shows the observed processing state. Uploading bytes, processing a source and making knowledge searchable are distinct states. A failed provider or unsupported format must produce an actionable error; a request reaching the server is not a successful import.
+Start from the destination folder and choose **Add knowledge**. Review the destination and selected files before uploading. Each file starts with an appropriate use; change its optional setting only when you need a different result. The result shows the observed processing state. Uploading bytes, processing a source and making knowledge searchable are distinct states. A failed provider or unsupported format must produce an actionable error; a request reaching the server is not a successful import.
 
 ```mermaid
 flowchart LR
@@ -83,9 +83,9 @@ The panel checks the server's current limits before sending files. The native up
 
 **Queued**, **Extraction complete** and cancellation outcomes come from the retained batch. A persisted worker-start record alone does not establish that a worker is still processing it: **Processing** requires the current native observation. Without that proof, the panel shows **Worker state not verified**. Current readable, queryable and searchable availability is shown separately from the original batch's outcome. Finishing extraction does not establish vector coverage or activate a search index.
 
-If a transfer or submission acknowledgment is lost, choose **Check status**. The panel reads the retained batch and originals without sending them again. **Reconcile retained original** asks the native recovery operation to verify an already retained original; it does not reupload it or blindly repeat parsing. Inspect unfinished or reconciliation-required outcomes before starting different work. A partial synchronous response can also leave native effects, so its uncertain remainder is not automatically retried.
+If a transfer or submission acknowledgment is lost, automatic checks read the retained batch and originals without sending them again. **Reconcile retained original** asks the native recovery operation to verify an already retained original; it does not reupload it or blindly repeat parsing. Inspect unfinished or reconciliation-required outcomes before starting different work. A partial synchronous response can also leave native effects, so its uncertain remainder is not automatically retried.
 
-**Request cancellation** uses the current native batch revision. It stops pending work; already published effects can remain. Closing the panel stops its bounded automatic checks and leaves submitted work running. Keep the panel open while resolving an uncertain upload: its request keys remain bound to the current authenticated client and scope, and are cleared when that identity or scope changes. The batch itself remains on the server. After a page reload, open **Library**, **Uploads** to authorize and inspect it again with the current account and credential. The retained-upload panel does not restore old file objects or automatically send a saved action.
+**Request cancellation** uses the current native batch revision. It stops pending work; already published effects can remain. You can close the panel and keep using the application while uploads and status checks continue. Open **Uploads** to follow submitted work. Closing the browser does not keep a local file transfer running. While the application remains open, its request keys remain bound to the current authenticated client and scope, and are cleared when that identity or scope changes. The batch itself remains on the server. After a page reload, open **Library**, **Uploads** to authorize and inspect it again with the current account and credential. The retained-upload panel does not restore old file objects or automatically send a saved action.
 
 Queued storage configuration does not prove worker availability. Operators must run the [complete worker role](../operations/workers.md) and explicitly enable `koinon.knowledge.bulk.worker_enabled` in its configuration. The query-batch scheduler has its own `query_worker_enabled` setting. For an environment-based local launch, scope the flag to the worker command:
 
@@ -113,9 +113,22 @@ Read the three observations separately:
 
 **Retry processing** processes the same saved original again and may use configured AI services. It is offered when the native operation is absent, or when a current terminal failure is verified before publication. A verified failure must belong to the current attempt, retain the unchanged native head and original, and have no extraction commit. An admitted operation without that proof stays unconfirmed. The confirmed recovery reuses the same original, native version and job, advances the attempt counter, and checks authority again before publication. **Finish publication** completes an already prepared result. **Record completed import** acknowledges a verified existing commit. They are different authorizations. Review the selected action and confirm it once; the server checks its revision and state again. If no action is offered, follow the stated prerequisite or hand the reference to an administrator.
 
-After confirmation, refresh the upload and open the Library item to inspect its current availability. An acknowledgment is not proof that processing or indexing has finished. If the request result is unknown, preserve its exact saved body and key and use **Review saved request**; reloading never repeats it automatically. The [complete recovery walkthrough](bulk-intake.md#recover-processing-without-uploading-the-original-again) includes mobile review, permissions, attempt limits and typed examples for Python, TypeScript and Java.
+After confirmation, the upload updates automatically. Open the Library item to inspect its current availability. An acknowledgment is not proof that processing or indexing has finished. If the request result is unknown, preserve its exact saved body and key and use **Review saved request**; reloading never repeats it automatically. The [complete recovery walkthrough](bulk-intake.md#recover-processing-without-uploading-the-original-again) includes mobile review, permissions, attempt limits and typed examples for Python, TypeScript and Java.
 
 ## Understand availability
+
+Library status labels and **Uploads** update automatically; you do not need to press Refresh. Active work is checked more often than completed work, and checks slow down when the tab is hidden. Returning to the application checks the current account and organization again. Processing can continue after you close a panel; reopen **Uploads** to follow it.
+
+A transfer reaching **100%** means the file was sent, not that its content is searchable. Follow the file's processing status and its separate **Searchable** or **Available to query** label.
+
+Status labels include an icon and text as well as color:
+
+- Green identifies a confirmed completed or available state.
+- Blue identifies queued work, processing or search preparation.
+- Amber identifies an unknown outcome, a stale observation or an action that needs review.
+- Red identifies a confirmed failure, such as **Processing failed**.
+
+If a status check fails, the last known result remains visible with **Status temporarily unavailable**. It is not shown as a newly verified success. Checks retry automatically with a longer pause; they never resend a file or repeat a processing request. A recovery action still requires your review. Changing account or organization clears the old observations.
 
 A successful upload records the result of that request. It does not establish that a source is searchable. Library rows and details observe the current native source, extraction or table snapshot separately from catalog metadata.
 

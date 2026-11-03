@@ -1,5 +1,6 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
+import { statusTone } from '@fireflyframework/koinon-angular/workbench/core';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -61,6 +62,7 @@ registerKoinonSpanish(PLATFORM_HEALTH_SPANISH);
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KoinonPlatformHealthPanel {
+  readonly tone = statusTone;
   @Output() sectionRequested = new EventEmitter<string>();
   readonly state = inject(KoinonPlatformHealthState);
   private readonly f = inject(KoinonFacade);

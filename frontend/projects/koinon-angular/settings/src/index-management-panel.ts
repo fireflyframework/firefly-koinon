@@ -264,12 +264,13 @@ export class KoinonIndexManagementPanel implements OnDestroy {
         ? 'Recorded active, not confirmed'
         : this.status(row.status);
   }
-  tone(row: KnowledgeIndexView): 'ready' | 'attention' | 'neutral' {
+  tone(row: KnowledgeIndexView): 'ready' | 'attention' | 'neutral' | 'error' | 'processing' {
     return this.state.view().activeKnown && this.state.view().active?.id === row.id
       ? 'ready'
-      : ['failed', 'activating', 'active'].includes(row.status)
-        ? 'attention'
-        : 'neutral';
+      : row.status === 'failed' ? 'error'
+      : row.status === 'active' ? 'attention'
+      : ['activating', 'building', 'queued'].includes(row.status) ? 'processing'
+      : 'neutral';
   }
   actions(row: KnowledgeIndexView) {
     const view = this.state.view();

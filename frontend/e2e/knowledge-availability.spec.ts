@@ -51,7 +51,7 @@ for (const width of [1440, 390]) {
     for (const name of ['Research operations', 'Operations intelligence', 'Reference library'])
       await page.getByRole('button', { name, exact: true }).click();
     const documentRow = page.getByRole('row').filter({ hasText: 'Service operating policy.pdf' });
-    await expect(documentRow.getByText('Needs attention', { exact: true })).toBeVisible();
+    await expect(documentRow.getByText('Processing failed', { exact: true })).toBeVisible();
     await expect(
       documentRow.getByText('Observed version remains available', { exact: true }),
     ).toBeVisible();

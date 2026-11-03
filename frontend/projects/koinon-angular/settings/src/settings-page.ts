@@ -1,4 +1,5 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
+import { statusTone } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonTextPipe, KoinonI18n, KoinonValuePipe } from '@fireflyframework/koinon-angular';
 import {
   Component,
@@ -106,6 +107,7 @@ registerKoinonSpanish({
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KoinonSettingsPage implements OnInit {
+  readonly tone = statusTone;
   @Input() actions?: {
     chat: (id: string) => void;
     section?: () => string;

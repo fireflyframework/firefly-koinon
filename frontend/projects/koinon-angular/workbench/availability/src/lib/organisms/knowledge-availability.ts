@@ -12,6 +12,7 @@ import {
 import type { CatalogEntry } from '@fireflyframework/koinon-sdk';
 import { KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonClientContext } from '@fireflyframework/koinon-angular/workbench/core';
+import { availabilityStatus } from '../services/availability-status';
 import { availabilitySession } from '../services/availability-session';
 import { KoinonBadge } from '@fireflyframework/koinon-angular/workbench/core';
 import { registerKoinonSpanish, KoinonDatePipe, KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench/core';
@@ -27,12 +28,16 @@ registerKoinonSpanish({
   'Observed version remains available': 'La versión observada sigue disponible',
   'Observed serving version': 'Versión disponible observada',
   Checked: 'Comprobado',
+  'Processing failed': 'El procesamiento falló',
+  'Status temporarily unavailable': 'Estado temporalmente no disponible',
+  'Last known status': 'Último estado conocido',
 });
 @Component({
   selector: 'ffk-knowledge-availability',
   imports: [KoinonBadge, KoinonTextPipe, KoinonDatePipe],
-  template: `<span role="status"
-    ><ffk-badge [tone]="attention() ? 'attention' : 'neutral'">{{ label() | ffkText }}</ffk-badge>
+  template: `<span><span role="status"><ffk-badge [tone]="stale() ? 'attention' : presentation().tone">{{ label() | ffkText }}</ffk-badge>
+    @if (stale() && value()) { <small>{{ 'Last known status' | ffkText }}: {{ presentation().label | ffkText }}</small> }
+    </span>
     @if (value()?.latest_attempt?.state === 'failed' && value()?.read?.state === 'ready') {
       <small>{{ 'Observed version remains available' | ffkText }}</small>
     }
@@ -75,28 +80,9 @@ export class KoinonKnowledgeAvailability {
     this.facade && this.clients ? availabilitySession(this.facade, this.clients) : null;
   readonly observedAt = computed(() => (this.value() ? this.session?.observedAt() : ''));
   readonly value = computed(() => this.session?.get(this.entry().id));
-  readonly attention = computed(() =>
-    ['failed', 'reconciliation_required'].includes(this.value()?.phase ?? ''),
-  );
-  readonly label = computed(() => {
-    const value = this.value();
-    if (!value) return 'Availability not checked';
-    if (value.phase === 'failed') return 'Needs attention';
-    if (value.phase === 'reconciliation_required') return 'Review required';
-    if (value.phase === 'cancelled') return 'Stopped';
-    if (value.phase === 'queued') return 'Queued';
-    if (value.phase === 'processing') return 'Processing';
-    if (value.phase === 'indexing') return 'Indexing';
-    if (value.search?.state === 'ready') return 'Searchable';
-    if (value.query?.state === 'ready') return 'Available to query';
-    if (['dataset', 'table'].includes(this.entry().kind) && value.query?.state === 'pending')
-      return 'Query preparation pending';
-    if (value.read?.state === 'ready')
-      return value.search?.state === 'pending'
-        ? 'Text available; search pending'
-        : 'Text available; search not checked';
-    return 'Availability not checked';
-  });
+  readonly stale = computed(() => this.session?.stale() ?? false);
+  readonly presentation = computed(() => availabilityStatus(this.value(), this.entry().kind));
+  readonly label = computed(() => this.stale() ? 'Status temporarily unavailable' : this.presentation().label);
   constructor() {
     effect((onCleanup) => {
       const entry = this.entry();

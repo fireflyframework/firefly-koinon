@@ -51,6 +51,11 @@ describe('Communications administration', () => {
     fixture.componentInstance.tab.set('history');
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Accepted by email service');
+    expect(fixture.componentInstance.tone('sent')).toBe('neutral');
+    expect(fixture.componentInstance.tone('delivered')).toBe('ready');
+    expect(fixture.componentInstance.tone('failed')).toBe('error');
+    expect(fixture.componentInstance.tone('sending')).toBe('processing');
+    expect(fixture.componentInstance.tone('unknown')).toBe('attention');
     expect(fixture.nativeElement.querySelector('tbody')?.textContent).not.toContain('Delivered');
     let filter: unknown;
     fixture.componentInstance.filterChanged.subscribe((value) => (filter = value));

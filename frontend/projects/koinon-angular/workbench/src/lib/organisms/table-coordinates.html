@@ -9,7 +9,7 @@
   @if (state.manifest(); as manifest) {
     <div class="heading">
       <strong>{{ format(manifest.source_format, manifest.source_variant) | ffkText }}</strong
-      ><ffk-badge [tone]="manifest.status === 'partial' ? 'attention' : 'neutral'">{{
+      ><ffk-badge [tone]="tone(manifest.status)">{{
         coverage(manifest.status) | ffkText
       }}</ffk-badge>
     </div>
