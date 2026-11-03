@@ -2,9 +2,9 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # firefly koinon desktop extension
 
-The 26.11.11 source candidate adds browser OAuth to the koinon desktop extension. It has not been published: the released 26.11.10 archive still uses the PAT setup documented in the [published-package walkthrough](../../docs/integrations/desktop.md). Local package checks and installed-host acceptance are separate release gates; a source build is not a published artifact.
+The 26.11.11 desktop extension supports browser OAuth and explicit PAT compatibility. Obtain its MCPB and matching checksums through the [versioned installation walkthrough](../../docs/integrations/desktop.md) once release assets are published. The 26.11.10 archive uses PAT authentication. Local package checks, publication and installed-host acceptance are separate release gates.
 
-The bridge uses the official TypeScript MCP SDK and forwards remote tools, resources, and prompts; the server owns tool schemas and permission checks. The instructions below describe this source candidate.
+The bridge uses the official TypeScript MCP SDK and forwards remote tools, resources, and prompts; the server owns tool schemas and permission checks. The instructions below describe the 26.11.11 source and package configuration.
 
 ## Install
 

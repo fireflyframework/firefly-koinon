@@ -4,7 +4,7 @@
 
 A personal access token lets a desktop extension, SDK or script act as you with the permissions you choose. A **scope** is one allowed operation, such as searching documents. Resource limits determine where those operations may run. Both remain subject to your current role and access.
 
-Use this guide for the Claude Desktop MCPB or a manually configured API client. A hosted OAuth connector uses a different sign-in flow and appears under [Authorized applications](authorized-applications.md); do not paste a personal token into an OAuth client-secret field.
+Use this guide for the Claude Desktop MCPB’s explicit PAT compatibility mode or a manually configured API client. A hosted OAuth connector uses a different sign-in flow and appears under [Authorized applications](authorized-applications.md); do not paste a personal token into an OAuth client-secret field.
 
 ## 1. Open the token page
 
@@ -54,7 +54,7 @@ Content publication still needs explicit human approval in a compatible review c
 
 ## 5. Create and copy the secret once
 
-Choose **Create a token**. The next panel says **Copy this token now. It will not be shown again.** Select **Copy token**, then save it in a password manager or paste it into your integration's protected credential field. For the [Claude Desktop extension](../integrations/desktop.md#4-fill-in-the-two-connection-fields), that field is **Personal access token**.
+Choose **Create a token**. The next panel says **Copy this token now. It will not be shown again.** Select **Copy token**, then save it in a password manager or paste it into your integration's protected credential field. For the [Claude Desktop extension](../integrations/desktop.md#4-configure-browser-sign-in) in `pat` mode, that field is **Personal access token**.
 
 Choose **Done** when it is stored. The token list retains the name, expiry, prefix and permissions, but not the recoverable secret. If you close the panel before saving it, revoke that token and create a replacement. The visible prefix is not sufficient to authenticate.
 
