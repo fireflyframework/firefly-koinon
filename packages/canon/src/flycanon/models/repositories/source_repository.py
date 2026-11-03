@@ -139,6 +139,30 @@ class SourceRepository:
             result = await session.execute(query)
             return result.scalars().first()
 
+    async def get_many_scoped(
+        self,
+        source_ids: Sequence[str],
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        statuses: Sequence[str] | None = None,
+    ) -> list[SourceRow]:
+        """Read one bounded metadata batch without a workspace scan or repeated total."""
+        if not tenant_id or not workspace_id or len(source_ids) > 200:
+            raise ValueError("A source batch requires scope and at most 200 identifiers")
+        ids = list(dict.fromkeys(source_ids))
+        if not ids:
+            return []
+        statement = select(SourceRow).where(
+            SourceRow.id.in_(ids),
+            SourceRow.tenant_id == tenant_id,
+            SourceRow.workspace_id == workspace_id,
+        )
+        if statuses:
+            statement = statement.where(SourceRow.status.in_(statuses))
+        async with infrastructure_unit(self._session_factory) as session:
+            return list((await session.execute(statement)).scalars().all())
+
     async def list_sources(
         self,
         *,

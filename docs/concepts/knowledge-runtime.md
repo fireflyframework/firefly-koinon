@@ -3,6 +3,8 @@
 
 koinon connects a question to the knowledge its caller can access. Documents, datasets and reviewed knowledge have different processing paths, but share organization boundaries, source identities and answer audit. The interface, embedded components, SDKs and MCP use the same authorized services.
 
+For an operational change, follow [Switch document answers between RAG and RLM](../operations/rag-rlm-switching.md). For dynamic corpus scope, retrieval plans, lazy document reads and safety limits, see [Knowledge scaling and query cost](knowledge-scaling.md).
+
 ## What each component does
 
 | Component | Responsibility | Configuration |

@@ -5,6 +5,8 @@ import os
 import subprocess
 import sys
 import time
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 import psutil
 import pytest
@@ -89,3 +91,56 @@ def test_already_reaped_pid_cannot_authorize_group_signals():
         stop_owned_child(
             leader, signal_group=lambda *_: pytest.fail("Reaped PID cannot prove group ownership")
         )
+
+
+@pytest.mark.parametrize("lookup", ["getpgid", "getsid"])
+@pytest.mark.parametrize("exited", [False, True])
+def test_child_exit_between_observation_and_identity_lookup_retains_unreaped_ownership(
+    monkeypatch, lookup, exited
+):
+    from koinon.knowledge.bulk import worker
+
+    process = record_owned_session(SimpleNamespace(pid=12345, returncode=None))
+    status = SimpleNamespace(si_status=0) if exited else None
+    observed = Mock(side_effect=[None, status])
+    native = SimpleNamespace(
+        name="posix",
+        P_PID=os.P_PID,
+        WEXITED=os.WEXITED,
+        WNOHANG=os.WNOHANG,
+        WNOWAIT=os.WNOWAIT,
+        waitid=observed,
+        getpgid=Mock(return_value=process.pid),
+        getsid=Mock(return_value=process.pid),
+    )
+    getattr(native, lookup).side_effect = ProcessLookupError
+    monkeypatch.setattr(worker, "os", native)
+    assert worker._owned_child_exit(process) is status
+    assert observed.call_count == 2
+    assert all(call.args[-1] & os.WNOWAIT for call in observed.call_args_list)
+
+
+@pytest.mark.parametrize("spawn_owned", [False, True])
+def test_identity_lookup_race_never_signals_without_current_unreaped_spawn_ownership(
+    monkeypatch, spawn_owned
+):
+    from koinon.knowledge.bulk import worker
+
+    process = SimpleNamespace(pid=12345, returncode=None)
+    if spawn_owned:
+        record_owned_session(process)
+    monkeypatch.setattr(
+        worker,
+        "os",
+        SimpleNamespace(
+            name="posix",
+            P_PID=os.P_PID,
+            WEXITED=os.WEXITED,
+            WNOHANG=os.WNOHANG,
+            WNOWAIT=os.WNOWAIT,
+            waitid=Mock(side_effect=[None, ChildProcessError() if spawn_owned else None]),
+            getpgid=Mock(side_effect=ProcessLookupError),
+        ),
+    )
+    with pytest.raises(RuntimeError, match="ownership"):
+        stop_owned_child(process, signal_group=lambda *_: pytest.fail("Unproven ownership cannot signal"))

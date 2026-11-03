@@ -5,6 +5,8 @@ Organization administrators configure document answer behavior and structured-qu
 
 Read the current values and server capabilities before editing. With no saved organization policy, revision `0` and origin `deployment` identify the validated deployment values. Saving the complete policy creates an organization revision. There is no implicit switch from RAG to RLM. Inherited document `answer_top_k` preserves the canonical baseline of `10`.
 
+Use [Switch document answers between RAG and RLM](rag-rlm-switching.md) for model and document prerequisites, revision-safe changes, new-run verification and rollback. [Knowledge scaling](../concepts/knowledge-scaling.md) explains query costs and distinguishes safety bounds from total authorized corpus size.
+
 ## Save and review
 
 1. Select the intended organization and read its current policy.

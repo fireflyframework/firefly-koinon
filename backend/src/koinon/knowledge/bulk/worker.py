@@ -98,9 +98,17 @@ def _owned_child_exit(process):
     try:
         status = os.waitid(os.P_PID, process.pid, os.WEXITED | os.WNOHANG | os.WNOWAIT)
         if status is None:
-            if os.getpgid(process.pid) != process.pid or os.getsid(process.pid) != process.pid:
-                raise RuntimeError("Child session ownership changed")
-            record_owned_session(process)
+            try:
+                if os.getpgid(process.pid) != process.pid or os.getsid(process.pid) != process.pid:
+                    raise RuntimeError("Child session ownership changed")
+            except ProcessLookupError:
+                # Exit can hide process identity before its wait status is ready. A successful
+                # nonreaping observation still proves this child reserves its spawn-owned PID.
+                status = os.waitid(os.P_PID, process.pid, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+                if getattr(process, "_koinon_owned_session_pid", None) != process.pid:
+                    raise RuntimeError("Exiting child requires its spawn-time session ownership") from None
+            else:
+                record_owned_session(process)
         elif getattr(process, "_koinon_owned_session_pid", None) != process.pid:
             raise RuntimeError("Exited child requires its spawn-time session ownership")
         return status
