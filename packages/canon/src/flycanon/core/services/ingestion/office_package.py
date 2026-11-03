@@ -199,6 +199,7 @@ def extract_office(path, kind, policy):
             )
         for name, heading, page in selected:
             slide_text = []
+            slide_text_bytes = 0
             headings = list(heading)
             with archive.open(name) as stream:
                 for _, element in etree.iterparse(
@@ -214,7 +215,8 @@ def extract_office(path, kind, policy):
                     text = _paragraph_text(element)
                     if kind == "pptx":
                         slide_text.append(text)
-                        if sum(len(item.encode()) for item in slide_text) > policy.text_max_bytes:
+                        slide_text_bytes += len(text.encode())
+                        if slide_text_bytes > policy.text_max_bytes:
                             raise ValueError("Slide text exceeds its resource policy")
                     else:
                         style = next(
