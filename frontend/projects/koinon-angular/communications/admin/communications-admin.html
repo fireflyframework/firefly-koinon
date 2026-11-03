@@ -326,7 +326,7 @@
                 </td>
                 <td>{{ delivery.scope_name }}</td>
                 <td>
-                  <ffk-badge [tone]="delivery.status === 'failed' ? 'attention' : 'neutral'">{{
+                  <ffk-badge [tone]="tone(delivery.status)">{{
                     statusLabel(delivery.status) | ffkText
                   }}</ffk-badge>
                 </td>

@@ -1,4 +1,5 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
+import { type StatusTone } from '@fireflyframework/koinon-angular/workbench/core';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -73,6 +74,13 @@ registerKoinonSpanish(COMMUNICATIONS_ADMIN_SPANISH);
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KoinonCommunicationsAdmin implements OnChanges {
+  tone(status: DeliveryState): StatusTone {
+    if (status === 'delivered') return 'ready';
+    if (status === 'failed') return 'error';
+    if (status === 'queued' || status === 'sending') return 'processing';
+    if (status === 'deferred' || status === 'unknown') return 'attention';
+    return 'neutral';
+  }
   @Input() deliverySession: KoinonCommunicationsSession | null = null;
   @Input() readiness: CommunicationReadiness | null = null;
   @Input() policy: CommunicationPolicyView | null = null;

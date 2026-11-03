@@ -5,6 +5,7 @@ import { KoinonTextPipe, KoinonDatePipe } from '@fireflyframework/koinon-angular
 import { KoinonKnowledgeAvailability } from '@fireflyframework/koinon-angular/workbench/availability';
 import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonBadge } from '@fireflyframework/koinon-angular/workbench/core';
+import { statusTone } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonIcon } from '@fireflyframework/koinon-angular/workbench/core';
 import type { KoinonInspector } from './inspector';
 @Component({
@@ -15,5 +16,6 @@ import type { KoinonInspector } from './inspector';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KoinonInspectorContent {
+  readonly tone = statusTone;
   @Input({ required: true }) view!: KoinonInspector;
 }

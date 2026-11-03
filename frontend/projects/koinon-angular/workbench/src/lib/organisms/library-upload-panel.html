@@ -26,9 +26,7 @@
         }
         @if (view()?.batch; as batch) {
           <ffk-badge
-            [tone]="
-              ['failed', 'partial', 'reconciling'].includes(batch.status) ? 'attention' : 'neutral'
-            "
+            [tone]="tone(batch.status)"
             >{{ batchLabel(batch.status) | ffkText }}</ffk-badge
           >
         }
@@ -68,14 +66,14 @@
               <div class="record-text">
                 <strong>{{ item.filename }}</strong
                 ><small>{{ size(item.size_bytes) }}</small>
-                <span>{{
+                <ffk-badge [tone]="currentTone(item)">{{
                   (view()?.currentItemId === item.id && view()?.stage === 'staging'
                     ? 'Transferring original'
                     : currentLabel(item) !== 'Availability not checked'
                       ? currentLabel(item)
                       : label(item.status)
                   ) | ffkText
-                }}</span>
+                }}</ffk-badge>
               </div>
               @if (api.coordinator.canRecover(item)) {
                 <ffk-button variant="quiet" (click)="api.coordinator.recoverOriginal(item.id)">{{

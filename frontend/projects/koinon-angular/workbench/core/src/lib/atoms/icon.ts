@@ -74,6 +74,7 @@ export class KoinonIcon {
     moon: 'M21 13a9 9 0 1 1-10-10 7 7 0 0 0 10 10',
     logout: 'M9 3H3v18h6M9 12h13M17 7l5 5-5 5',
     check: 'M5 12l4 4L20 5',
+    clock: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M12 7v5l3 2',
     alert: 'M12 9v4M12 17h.01M2 21 12 3l10 18Z',
     menu: 'M3 6h18M3 12h18M3 18h18',
     copy: 'M8 8h13v13H8ZM16 5V2H2v14h3',

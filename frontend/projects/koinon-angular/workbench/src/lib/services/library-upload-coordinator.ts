@@ -135,7 +135,8 @@ export function shouldObserveUpload(view: UploadView) {
         (view.observationFailed ||
           ['staging', 'queued', 'running'].includes(view.batch.status) ||
           Object.values(view.availability).some((value) =>
-            ['processing', 'indexing', 'queued'].includes(value.phase || ''),
+            ['processing', 'indexing', 'queued'].includes(value.phase || '') ||
+              value.search?.state === 'pending' || value.query?.state === 'pending',
           ))))
   );
 }

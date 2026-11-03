@@ -1,5 +1,6 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
+import { statusTone } from '@fireflyframework/koinon-angular/workbench/core';
 import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
 import { CHAT_SPANISH } from './chat-spanish';
 import { KoinonTextPipe, KoinonDatePipe, KoinonI18n } from '@fireflyframework/koinon-angular';
@@ -74,6 +75,7 @@ registerKoinonSpanish(CHAT_SPANISH);
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KoinonChatPage implements OnInit, AfterViewInit, OnDestroy {
+  readonly tone = statusTone;
   @Input() actions?: {
     agentId?: () => string;
     avatar?: () => string;

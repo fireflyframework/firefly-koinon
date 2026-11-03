@@ -32,6 +32,7 @@ import { RetainedUploadJournal } from '../services/library-retained-uploads-jour
 import { RetainedUploadsState } from '../services/library-retained-uploads-state';
 import { KoinonFileTypeIcon } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonBadge } from '@fireflyframework/koinon-angular/workbench/core';
+import { statusTone } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonSkeleton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonPagination } from '../molecules/pagination';
@@ -178,8 +179,14 @@ export class KoinonLibraryRetainedUploadsPanel implements OnDestroy {
   private readonly visible = signal(
     typeof document === 'undefined' || document.visibilityState !== 'hidden',
   );
-  private readonly visibilityChanged = () =>
+  private readonly visibilityChanged = () => {
+    this.state.syncScope();
     this.visible.set(document.visibilityState !== 'hidden');
+    this.polling.update();
+    const v = this.state.view();
+    if (this.visible() && this.allowed() && !v.busy && !v.review && !Object.keys(v.recovery).length)
+      void this.refresh();
+  };
   private readonly polling = new UploadObservationLoop({
     active: () => {
       const v = this.state.view();
@@ -188,18 +195,22 @@ export class KoinonLibraryRetainedUploadsPanel implements OnDestroy {
         !v.denied &&
         !v.busy &&
         !v.review &&
-        !Object.keys(v.recovery).length &&
-        (v.selected
-          ? ['staging', 'queued', 'running'].includes(v.selected.status)
-          : v.rows.some((batch) => ['staging', 'queued', 'running'].includes(batch.status)))
+        !Object.keys(v.recovery).length
       );
     },
     visible: () => this.visible(),
+    interval: () => {
+      const v = this.state.view();
+      const rows = v.selected ? [v.selected] : v.rows;
+      return rows.some(batch => ['staging', 'queued', 'running'].includes(batch.status)) ? 5000 : 30000;
+    },
     read: () => this.refresh(),
   });
   constructor() {
-    if (typeof document !== 'undefined')
+    if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', this.visibilityChanged);
+      window.addEventListener('focus', this.visibilityChanged);
+    }
     effect(() => {
       this.visible();
       this.allowed();
@@ -210,6 +221,7 @@ export class KoinonLibraryRetainedUploadsPanel implements OnDestroy {
       this.scope();
       untracked(() => {
         this.state.syncScope();
+        this.polling.reset();
         if (this.scope().allowed) void this.track(() => this.state.load(1));
       });
     });
@@ -289,11 +301,7 @@ export class KoinonLibraryRetainedUploadsPanel implements OnDestroy {
       ? 'Originals received'
       : this.status(batch.status);
   }
-  tone(value: string): 'ready' | 'attention' | 'neutral' {
-    return ['failed', 'partial', 'reconciling', 'expired'].includes(value)
-      ? 'attention'
-      : 'neutral';
-  }
+  tone(value: string) { return this.state.view().stale || this.state.view().error ? 'attention' as const : statusTone(value); }
   async refresh() {
     const batch = this.state.view().selected;
     await this.track(() =>
@@ -342,8 +350,10 @@ export class KoinonLibraryRetainedUploadsPanel implements OnDestroy {
   ngOnDestroy() {
     clearTimeout(this.expiry);
     this.polling.dispose();
-    if (typeof document !== 'undefined')
+    if (typeof document !== 'undefined') {
       document.removeEventListener('visibilitychange', this.visibilityChanged);
+      window.removeEventListener('focus', this.visibilityChanged);
+    }
     this.state.dispose();
   }
 }

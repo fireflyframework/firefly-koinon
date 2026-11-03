@@ -43,7 +43,7 @@ for (const [state, status] of [
       state === 'searchable'
         ? 'Searchable'
         : state === 'failed-update'
-          ? 'Needs attention'
+          ? 'Processing failed'
           : 'Availability not checked',
     );
     if (status === 'pending') await expect(row.locator('.name-wrap > ffk-badge')).toHaveCount(0);

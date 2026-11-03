@@ -615,3 +615,26 @@ it.each(['unavailable', 'revision-change', 'denied', 'invalid-destination'])(
     }
   },
 );
+it('keeps read observations stale throughout a slow retry until a current read succeeds', async () => {
+  const f = setup();
+  await f.state.load();
+  f.intercept(() => Promise.reject(new Error('Network unavailable')));
+  await f.state.load();
+  expect(f.state.view().stale).toBe(true);
+  expect(f.state.view().rows).toHaveLength(1);
+  expect(f.state.view().error).toContain('Status temporarily unavailable');
+  let reject!: (error: Error) => void;
+  f.intercept(() => new Promise((_, fail) => { reject = fail; }));
+  const retry = f.state.load();
+  expect(f.state.view().busy).toBe(true);
+  expect(f.state.view().stale).toBe(true);
+  expect(f.state.view().error).toContain('retry automatically');
+  await vi.waitFor(() => expect(reject).toBeTypeOf('function'));
+  reject(new Error('Still unavailable'));
+  await retry;
+  f.intercept(undefined);
+  await f.state.load();
+  expect(f.state.view().stale).toBe(false);
+  expect(f.state.view().error).toBe('');
+  expect(f.calls.every(call => call.method === 'GET')).toBe(true);
+});
