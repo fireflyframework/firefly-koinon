@@ -61,6 +61,8 @@ The page controls keep their labels and values together. Change the page size to
 
 Start from the destination folder and choose **Add knowledge**. Review the destination and selected files before uploading. Each file starts with an appropriate use; change its optional setting only when you need a different result. The result shows the observed processing state. Uploading bytes, processing a source and making knowledge searchable are distinct states. A failed provider or unsupported format must produce an actionable error; a request reaching the server is not a successful import.
 
+You can select a nested folder. Files stay in that exact folder; they are not moved to the project's top level. Intake and recovery check the complete current path and its permissions, so an archived or inaccessible ancestor prevents further publication.
+
 ```mermaid
 flowchart LR
   Folder[Current folder] --> Select[Choose a file]

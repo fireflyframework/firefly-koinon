@@ -143,7 +143,9 @@ class MembershipRepository(Repository[Membership, str]):
 class CatalogRepository(Repository[CatalogEntry, str]):
     """Scoped catalog entries shared by both domains."""
 
-    async def ancestry_rows(self, tenant_id: str, entry_ids: tuple[str, ...]) -> list[CatalogEntry]:
+    async def ancestry_rows(
+        self, tenant_id: str, entry_ids: tuple[str, ...], *, fresh: bool = False
+    ) -> list[CatalogEntry]:
         node = aliased(CatalogEntry)
         ancestors = (
             select(CatalogEntry.id, CatalogEntry.parent_id, literal(0).label("depth"))
@@ -158,10 +160,12 @@ class CatalogRepository(Repository[CatalogEntry, str]):
         return list(
             (
                 await self._require_session().scalars(
-                    select(CatalogEntry).where(
+                    select(CatalogEntry)
+                    .where(
                         CatalogEntry.tenant_id == tenant_id,
                         CatalogEntry.id.in_(select(ancestors.c.id)),
                     )
+                    .execution_options(populate_existing=fresh)
                 )
             ).all()
         )
