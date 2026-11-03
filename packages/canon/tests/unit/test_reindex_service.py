@@ -106,7 +106,7 @@ class _StubDense:
         self.indexed: list[str] = []
         self.dropped: list[str] = []
 
-    async def ensure_set_index(self, binding: EmbeddingSetBinding) -> bool:
+    async def ensure_set_index(self, binding: EmbeddingSetBinding, *, namespace: str) -> bool:
         if self.can_index:
             self.indexed.append(binding.set_id)
         return self.can_index

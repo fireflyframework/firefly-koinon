@@ -80,6 +80,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
+from pyfly.agentic.vectorstores.scoped import scope_namespace
 from pyfly.agentic.vectorstores.types import VectorDocument
 
 from flycanon.config import CanonSettings
@@ -437,7 +438,9 @@ class ReindexService:
                 embedded += caught_up
                 emit(f"{workspace_id}: caught up {caught_up} chunk(s) ingested during the run")
 
-            indexed = await self._dense.ensure_set_index(binding)
+            indexed = await self._dense.ensure_set_index(
+                binding, namespace=scope_namespace(tenant_id, workspace_id)
+            )
             await self._sets.mark(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
@@ -758,8 +761,6 @@ class ReindexService:
 
     async def drop_set(self, *, tenant_id: str, workspace_id: str, set_id: str) -> int:
         """Delete a set's vectors, its index and its row. Refuses the active one."""
-        from pyfly.agentic.vectorstores.scoped import scope_namespace
-
         with ScopedContext(tenant_id, workspace_id):
             rows = await self._sets.list_for(tenant_id=tenant_id, workspace_id=workspace_id)
             row = next((r for r in rows if r.id == set_id), None)

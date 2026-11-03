@@ -85,6 +85,7 @@ from flycanon.core.services.embeddings.embedding_sets import (
     current_embedding_set,
     index_lock_key,
 )
+from flycanon.core.services.retrieval.readiness_ddl import fence_index_ddl
 from flycanon.models.entities.embedding_set import ann_cast, index_name_for
 
 logger = logging.getLogger(__name__)
@@ -336,7 +337,9 @@ class RlsPgVectorVectorStore(PgVectorVectorStore):
             f"WHERE set_id = '{binding.set_id}'"
         )
 
-    async def ensure_set_index(self, binding: EmbeddingSetBinding, *, conn: Any | None = None) -> bool:
+    async def ensure_set_index(
+        self, binding: EmbeddingSetBinding, *, conn: Any | None = None, namespace: str | None = None
+    ) -> bool:
         """Build ``binding``'s ANN index if this role may. Returns whether it exists.
 
         ``CREATE INDEX`` demands ownership of the table, which the serving
@@ -374,6 +377,7 @@ class RlsPgVectorVectorStore(PgVectorVectorStore):
                     statement,
                 )
                 return False
+            await fence_index_ddl(connection, set_id=binding.set_id, namespace=namespace)
             await connection.execute(statement)
             return True
 
@@ -381,7 +385,7 @@ class RlsPgVectorVectorStore(PgVectorVectorStore):
             if conn is not None:
                 indexed = await verify_or_build(conn)
             else:
-                async with self._operation(namespace="") as own:
+                async with self._operation(namespace=namespace or "") as own:
                     indexed = await verify_or_build(own)
         except Exception as exc:  # asyncpg raises InsufficientPrivilegeError among others
             logger.warning(
@@ -417,6 +421,7 @@ class RlsPgVectorVectorStore(PgVectorVectorStore):
         index = index_name_for(set_id, table=self._table)
         try:
             async with self._operation(namespace=namespace) as conn:
+                await fence_index_ddl(conn, set_id=set_id, namespace=namespace)
                 await conn.execute(f'DROP INDEX IF EXISTS "{index}"')
         except Exception as exc:
             logger.warning("could not drop the ANN index %s (%s); run it as an owner", index, exc)
@@ -503,7 +508,7 @@ class RlsPgVectorVectorStore(PgVectorVectorStore):
                 """,
                 rows,
             )
-        await self.ensure_set_index(binding)
+        await self.ensure_set_index(binding, namespace=namespace)
 
     async def _search(
         self,
