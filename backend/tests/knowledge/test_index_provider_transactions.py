@@ -30,7 +30,7 @@ def planning_service(rows, callback):
 
     planner.open = opened
     reader = KnowledgeIndexService(
-        SimpleNamespace(),
+        SimpleNamespace(catalog=SimpleNamespace(_lock_tenant=AsyncMock())),
         SimpleNamespace(overview=AsyncMock(return_value={"active_native_id": None, "chunk_count": 3})),
         SimpleNamespace(authority=AsyncMock(), selected=AsyncMock(return_value=None)),
         planner,
@@ -132,3 +132,22 @@ async def test_worker_rechecks_provider_after_embedding_before_publishing(index_
         await worker.execute(job.id)
     assert error.value.code == "INDEX_PROVIDER_CHANGED"
     assert not published
+
+
+async def test_plan_captures_tenant_before_workspace_or_provider_locks(index_rows):
+    async def probe(providers):
+        assert current_unit_of_work("primary") is None
+
+    reader = planning_service(index_rows, probe)
+    lock = AsyncMock()
+    reader.facade = SimpleNamespace(catalog=SimpleNamespace(_lock_tenant=lock))
+    calls = []
+
+    async def authority(*args, **kwargs):
+        calls.append("authority")
+        assert lock.await_count == len(calls)
+        return SimpleNamespace(id="workspace")
+
+    reader.authority = authority
+    await reader.plan("actor", "tenant", request())
+    assert lock.await_count == 2

@@ -21,6 +21,7 @@ def dependencies():
         binding=AsyncMock(return_value=SimpleNamespace(native_id="native", native_workspace_id="native")),
         catalog=SimpleNamespace(
             restriction=None,
+            _lock_tenant=AsyncMock(),
             authorize=AsyncMock(),
             catalog_repository=SimpleNamespace(find_by_id=AsyncMock(return_value=workspace)),
         ),

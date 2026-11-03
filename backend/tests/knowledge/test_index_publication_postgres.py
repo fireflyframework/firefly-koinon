@@ -139,7 +139,7 @@ async def test_concurrent_change_during_provider_wait_finishes_before_network_an
         await asyncio.gather(running, return_exceptions=True)
 
 
-@pytest.mark.parametrize("mutation", ["update", "delete"])
+@pytest.mark.parametrize("mutation", ["update", "delete", "source_update", "source_delete"])
 async def test_native_publication_locks_current_chunk_and_rejects_changed_or_deleted_source(
     pg_indexes, mutation
 ):
@@ -184,6 +184,7 @@ async def test_native_publication_locks_current_chunk_and_rejects_changed_or_del
         )
     repository = ChunkRepository(native.sessionmaker)
     snapshot = await repository.get_many(["chunk"])
+    source_snapshot = await repository.reindex_sources(snapshot, tenant_id="tenant", workspace_id="workspace")
     assert native.engine.pool.checkedout() == 0
     uri = native.engine.url.set(drivername="postgresql").render_as_string(hide_password=False)
     application = "index-publication-race-" + uuid4().hex
@@ -193,14 +194,21 @@ async def test_native_publication_locks_current_chunk_and_rejects_changed_or_del
         async with await psycopg.AsyncConnection.connect(uri, application_name=application) as connection:
             started.set()
             await connection.execute(
-                "UPDATE canon_chunks SET content='Changed' WHERE id='chunk'"
-                if mutation == "update"
-                else "DELETE FROM canon_chunks WHERE id='chunk'"
+                {
+                    "update": "UPDATE canon_chunks SET content='Changed' WHERE id='chunk'",
+                    "delete": "DELETE FROM canon_chunks WHERE id='chunk'",
+                    "source_update": "UPDATE canon_sources SET content_sha256=repeat('b',64) "
+                    "WHERE id='source'",
+                    "source_delete": "DELETE FROM canon_sources WHERE id='source'",
+                }[mutation]
             )
 
     running = None
     try:
         async with infrastructure_unit(native):
+            assert source_snapshot == await repository.reindex_sources(
+                snapshot, tenant_id="tenant", workspace_id="workspace", lock=True
+            )
             assert await repository.matches_reindex_batch(
                 snapshot, tenant_id="tenant", workspace_id="workspace"
             )
@@ -220,9 +228,14 @@ async def test_native_publication_locks_current_chunk_and_rejects_changed_or_del
             assert not running.done()
         await asyncio.wait_for(running, timeout=5)
         async with infrastructure_unit(native):
-            assert not await repository.matches_reindex_batch(
-                snapshot, tenant_id="tenant", workspace_id="workspace"
-            )
+            if mutation.startswith("source_"):
+                assert source_snapshot != await repository.reindex_sources(
+                    snapshot, tenant_id="tenant", workspace_id="workspace", lock=True
+                )
+            else:
+                assert not await repository.matches_reindex_batch(
+                    snapshot, tenant_id="tenant", workspace_id="workspace"
+                )
     finally:
         if running is not None:
             if not running.done():

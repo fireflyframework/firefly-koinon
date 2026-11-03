@@ -281,6 +281,7 @@ class KnowledgeIndexService:
 
     @transactional
     async def plan_state(self, subject, tenant_id, data):
+        await self.facade.catalog._lock_tenant(tenant_id)
         workspace = await self.authority(subject, tenant_id, data.workspace_id, write=True)
         await self.connections.authority(subject, tenant_id, workspace.id)
         binding = await self.native_binding(subject, tenant_id, workspace, data.domain, write=True)
