@@ -44,6 +44,7 @@ import json
 import logging
 from asyncio import get_running_loop, run_coroutine_threadsafe
 from dataclasses import replace
+from datetime import UTC, datetime
 from functools import lru_cache
 from importlib.metadata import distributions
 from types import MappingProxyType
@@ -341,6 +342,7 @@ class CanonCorpusBuilder:
         whole_reader = None
         sources: dict[str, SourceMeta] = {}
         used_keys: set[str] = set()
+        next_suffix: dict[str, int] = {}
         for row in rows:
             versioned = required or bool((row.metadata_json or {}).get("_source_lineage"))
             meta = _source_meta(row)
@@ -393,7 +395,7 @@ class CanonCorpusBuilder:
                     row.filename,
                 )
                 continue
-            key = self._readable_key(row, used_keys)
+            key = self._readable_key(row, used_keys, next_suffix)
             used_keys.add(key)
             sources[key] = meta
         documents = CanonDocStore(
@@ -413,10 +415,9 @@ class CanonCorpusBuilder:
     ) -> list[SourceRow]:
         """Workspace sources after applying the filters (AND, empty = no-op).
 
-        ``statuses`` is pushed into the repository query (it is a first-class
-        ``SourceRow`` column); the remaining dimensions live on
-        ``metadata_json`` (``domain`` / ``jurisdiction`` / ``tags``, mirroring
-        the RAG hydration) or are the row id, so they are matched in-process.
+        Explicit source IDs and statuses constrain metadata reads in the
+        repository. Product calls supply their dynamically authorized IDs.
+        Remaining metadata filters are prepared once for the complete read.
 
         ``knowledge_item_ids`` is the one dimension that needs a repo
         round-trip: it is resolved to the set of ``source_id``\\ s that those
@@ -442,7 +443,29 @@ class CanonCorpusBuilder:
             if f.knowledge_item_ids and not (curated_lease is not None and curated_lease.rlm is not None)
             else None
         )
+        if knowledge_source_ids == set():
+            return []
+        matches = _source_predicate(f, knowledge_source_ids)
         rows: list[SourceRow] = []
+        selected = list(dict.fromkeys(f.source_ids)) if f.source_ids else None
+        if knowledge_source_ids is not None:
+            selected = (
+                [identifier for identifier in selected if identifier in knowledge_source_ids]
+                if selected is not None
+                else sorted(knowledge_source_ids)
+            )
+        if selected is not None:
+            for start in range(0, len(selected), 200):
+                rows.extend(
+                    await self._sources.get_many_scoped(
+                        selected[start : start + 200],
+                        tenant_id=tenant_id,
+                        workspace_id=workspace_id,
+                        statuses=f.statuses,
+                    )
+                )
+            rows.sort(key=_source_order, reverse=True)
+            return [row for row in rows if matches(row)]
         offset = 0
         page = 200
         while True:
@@ -457,9 +480,9 @@ class CanonCorpusBuilder:
             offset += len(batch)
             if not batch or offset >= total:
                 break
-        return [row for row in rows if _matches(row, f, knowledge_source_ids)]
+        return [row for row in rows if matches(row)]
 
-    def _readable_key(self, row: SourceRow, used: set[str]) -> str:
+    def _readable_key(self, row: SourceRow, used: set[str], next_suffix: dict[str, int]) -> str:
         """A routing-friendly key from the filename stem (fallbacks: title, id).
 
         De-duplicated across sources by suffixing ``#2``, ``#3`` ... so two
@@ -468,37 +491,39 @@ class CanonCorpusBuilder:
         base = _key_base(row)
         if base not in used:
             return base
-        n = 2
+        n = next_suffix.get(base, 2)
         while f"{base}#{n}" in used:
             n += 1
+        next_suffix[base] = n + 1
         return f"{base}#{n}"
 
 
-def _matches(row: SourceRow, f: Filters, knowledge_source_ids: set[str] | None) -> bool:
-    """Whether a source row passes the in-process filter dimensions.
+def _source_order(row: SourceRow) -> tuple[datetime, str]:
+    created = row.created_at or datetime.min
+    if created.tzinfo is None:
+        created = created.replace(tzinfo=UTC)
+    return created, row.id
 
-    ``source_ids`` matches the row id; ``domains`` / ``jurisdictions`` / ``tags``
-    read the source's ``metadata_json`` hints (the same keys the RAG hydration
-    falls back to when no knowledge linkage exists). ``knowledge_item_ids`` is
-    pre-resolved by the caller to ``knowledge_source_ids`` -- the set of
-    ``source_id``\\ s those items' current-version citations point at -- which
-    the row id must be in (``None`` means the filter is absent / a no-op; an
-    empty set means the items cite nothing, so nothing matches).
-    """
-    if f.source_ids and row.id not in set(f.source_ids):
-        return False
-    if knowledge_source_ids is not None and row.id not in knowledge_source_ids:
-        return False
-    meta = row.metadata_json or {}
-    if f.domains and str(meta.get("domain")) not in set(f.domains):
-        return False
-    if f.jurisdictions and str(meta.get("jurisdiction")) not in set(f.jurisdictions):
-        return False
-    if f.tags:
-        row_tags = {str(t) for t in (meta.get("tags") or [])}
-        if not (set(f.tags) & row_tags):
+
+def _source_predicate(filters: Filters, knowledge_source_ids: set[str] | None):
+    source_ids = frozenset(filters.source_ids or ())
+    domains = frozenset(filters.domains or ())
+    jurisdictions = frozenset(filters.jurisdictions or ())
+    tags = frozenset(filters.tags or ())
+
+    def matches(row: SourceRow) -> bool:
+        if source_ids and row.id not in source_ids:
             return False
-    return True
+        if knowledge_source_ids is not None and row.id not in knowledge_source_ids:
+            return False
+        meta = row.metadata_json or {}
+        if domains and str(meta.get("domain")) not in domains:
+            return False
+        if jurisdictions and str(meta.get("jurisdiction")) not in jurisdictions:
+            return False
+        return not tags or bool(tags.intersection(str(tag) for tag in (meta.get("tags") or [])))
+
+    return matches
 
 
 @lru_cache(maxsize=1)

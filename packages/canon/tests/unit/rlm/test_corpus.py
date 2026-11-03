@@ -78,6 +78,17 @@ class FakeSourceRepository:
     def __init__(self, rows: list[SourceRow]):
         self._rows = rows
 
+    async def get_many_scoped(self, source_ids, *, tenant_id, workspace_id, statuses=None):
+        selected = set(source_ids)
+        return [
+            row
+            for row in self._rows
+            if row.id in selected
+            and row.tenant_id == tenant_id
+            and row.workspace_id == workspace_id
+            and (not statuses or row.status in statuses)
+        ]
+
     async def list_sources(
         self,
         *,
