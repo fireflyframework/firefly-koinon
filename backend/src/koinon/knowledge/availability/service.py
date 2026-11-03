@@ -20,6 +20,7 @@ class KnowledgeAvailabilityService:
 
     async def _snapshot(self, subject, tenant_id, identifiers, workspace_id=None):
         async with primary_authority(fresh=True):
+            await self.knowledge.catalog._prefetch_ancestry(tenant_id, identifiers)
             entries = [
                 (await self.knowledge._chain(subject, tenant_id, identifier))[0] for identifier in identifiers
             ]
@@ -91,6 +92,9 @@ class KnowledgeAvailabilityService:
                         "Processing history requires a complete workspace", code="TOKEN_SCOPE_DENIED"
                     )
             rows = await self.records.processing(tenant_id, data.workspace_id, data.page, data.page_size)
+            await self.knowledge.catalog._prefetch_ancestry(
+                tenant_id, [row["resource_id"] for row in rows[: data.page_size]]
+            )
             visible = []
             for row in rows[: data.page_size]:
                 try:
@@ -111,6 +115,9 @@ class KnowledgeAvailabilityService:
         )
         async with primary_authority(fresh=True):
             await self.knowledge.catalog.authorize(subject, tenant_id, "jobs:manage", data.workspace_id)
+            await self.knowledge.catalog._prefetch_ancestry(
+                tenant_id, [row["resource_id"] for row in visible]
+            )
             for row in visible:
                 await self.knowledge._chain(subject, tenant_id, row["resource_id"])
         return ProcessingResponse(
