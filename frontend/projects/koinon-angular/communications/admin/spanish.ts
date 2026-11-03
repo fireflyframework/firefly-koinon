@@ -1,5 +1,9 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 export const COMMUNICATIONS_ADMIN_SPANISH: Readonly<Record<string, string>> = {
+  'Your current account cannot manage communications.':
+    'Tu cuenta actual no puede gestionar las comunicaciones.',
+  'Communication status could not be updated. Previously observed information may be out of date.':
+    'No se pudo actualizar el estado de las comunicaciones. La información anterior puede estar desactualizada.',
   'Email sender': 'Remitente del correo',
   'Use deployment default': 'Usar el predeterminado del despliegue',
   'Only senders verified in deployment configuration are available.':

@@ -33,6 +33,7 @@ interface View {
   error: string;
   notice: string;
   journalError: boolean;
+  stale: boolean;
 }
 const empty = (): View => ({
   options: null,
@@ -45,6 +46,7 @@ const empty = (): View => ({
   error: '',
   notice: '',
   journalError: false,
+  stale: false,
 });
 const statuses = [
   'queued',
@@ -75,11 +77,13 @@ export class DeliveryRecoveryState {
   private id = '';
   private session: Session | null = null;
   private alive = true;
-  readonly view = computed(() =>
-    this.alive && this.ports.scope().key === this.key && this.ports.scope().allowed
-      ? this.state()
-      : empty(),
-  );
+  private denied = false;
+  readonly view = computed(() => {
+    const value = this.state();
+    return this.alive && this.ports.scope().key === this.key && this.ports.scope().allowed
+      ? value
+      : empty();
+  });
   constructor(private readonly ports: Ports) {
     this.key = ports.scope().key;
   }
@@ -88,6 +92,7 @@ export class DeliveryRecoveryState {
     if (scope.key === this.key && scope.allowed) return;
     this.session?.abort.abort();
     this.session = null;
+    if (scope.key !== this.key) this.denied = false;
     this.key = scope.key;
     this.state.set(empty());
   }
@@ -108,12 +113,13 @@ export class DeliveryRecoveryState {
   private set(s: Session, value: Partial<View>) {
     if (this.current(s)) this.state.update((v) => ({ ...v, ...value }));
   }
-  private async run(work: (s: Session) => Promise<void>) {
+  private async run(work: (s: Session) => Promise<void>, readOnly = false) {
     this.sync();
     const scope = this.ports.scope(),
       api = this.ports.api();
     if (
       !this.alive ||
+      this.denied ||
       !scope.allowed ||
       !scope.subject ||
       !scope.tenantId ||
@@ -124,7 +130,7 @@ export class DeliveryRecoveryState {
       return;
     const s: Session = { scope: { ...scope }, id: this.id, api, abort: new AbortController() };
     this.session = s;
-    this.set(s, { busy: true, error: '', notice: '' });
+    this.set(s, { busy: true, ...(readOnly ? {} : { error: '', notice: '' }) });
     try {
       await work(s);
     } catch (error) {
@@ -134,9 +140,11 @@ export class DeliveryRecoveryState {
           ...empty(),
           error: 'Your current account cannot inspect or manage this delivery.',
         });
+        this.denied = true;
         this.ports.denied?.(error.status);
       } else
         this.set(s, {
+          stale: true,
           error: this.state().pending.length
             ? 'The request result is not confirmed. Inspect this delivery before reviewing the exact saved request.'
             : 'The delivery could not be inspected. Refresh its details before continuing.',
@@ -215,6 +223,8 @@ export class DeliveryRecoveryState {
       pending,
       journalError,
       review: null,
+      stale: false,
+      error: '',
       ...(journalError
         ? {
             error:
@@ -225,16 +235,23 @@ export class DeliveryRecoveryState {
   }
   async open(id: string) {
     if (!identifier(id)) return;
+    if (this.id === id && this.view().review) return;
     if (this.id !== id) {
       this.session?.abort.abort();
       this.session = null;
       this.id = id;
       this.state.set(empty());
     }
-    return this.run(async (s) => this.admit(s, await this.read(s)));
+    return this.run(async (s) => this.admit(s, await this.read(s)), true);
   }
   async review(operation: 'inspect' | 'welcome') {
-    if (this.view().busy || this.view().journalError || this.view().pending.length) return;
+    if (
+      this.view().busy ||
+      this.view().stale ||
+      this.view().journalError ||
+      this.view().pending.length
+    )
+      return;
     return this.run(async (s) => {
       const fresh = await this.read(s);
       this.admit(s, fresh);
