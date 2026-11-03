@@ -32,9 +32,14 @@ def service(rows):
                 "chunk_count": 0,
             }
         ),
-        facade=SimpleNamespace(catalog=SimpleNamespace(_audit=AsyncMock())),
+        facade=SimpleNamespace(catalog=SimpleNamespace(_audit=AsyncMock(), _lock_tenant=AsyncMock())),
+        plan_state=AsyncMock(return_value=(provider, {})),
+        validate_plan=lambda before, current: None,
     )
-    jobs = SimpleNamespace(submit=AsyncMock(return_value=SimpleNamespace(id="job")))
+    from koinon.jobs.repository import JobRepository
+    from koinon.jobs.service import JobService
+
+    jobs = JobService(JobRepository())
     return IndexLifecycleService(reader, rows, jobs), reader, adapter
 
 
@@ -54,7 +59,7 @@ async def test_create_records_durable_native_target_and_replay_does_not_allocate
     lifecycle, reader, adapter = service(index_rows)
     first = await lifecycle.create("issuer|actor", "tenant", values(), "request")
     second = await lifecycle.create("issuer|actor", "tenant", values(), "request")
-    assert first["index"]["id"] == second["index"]["id"] and first["job_id"] == "job"
+    assert first["index"]["id"] == second["index"]["id"] and first["job_id"] == second["job_id"]
     assert first["index"]["status"] == "queued" and not first["index"]["active"]
     assert first["index"]["native_id"].startswith("es-")
     reader.plan.assert_awaited_once()
@@ -91,3 +96,18 @@ async def test_resume_replay_retains_job_and_revision_without_repeating_native_w
     assert replay["job_id"] == first["job_id"]
     assert replay["index"]["revision"] == first["index"]["revision"] == revision + 1
     adapter.project_state.assert_awaited_once()
+
+
+async def test_creation_qualifies_provider_without_holding_a_primary_transaction(index_rows):
+    from pyfly.data.transaction import current_unit_of_work
+
+    lifecycle, reader, _ = service(index_rows)
+    result = reader.plan.return_value
+
+    async def plan(*args, **kwargs):
+        assert current_unit_of_work("primary") is None, "Provider work must release the database first"
+        return result
+
+    reader.plan.side_effect = plan
+    created = await lifecycle.create("issuer|actor", "tenant", values(), "outside-transaction")
+    assert created["index"]["status"] == "queued"

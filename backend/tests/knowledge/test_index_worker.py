@@ -23,11 +23,17 @@ def test_worker_lease_must_cover_provider_budget_and_commit_margin():
 
 async def test_expired_worker_is_denied_before_provider_secret_or_model_client(index_rows):
     provider = AsyncMock(side_effect=AssertionError("A stale lease must not open the provider"))
-    lifecycle = SimpleNamespace(reader=SimpleNamespace(planner=SimpleNamespace(provider=provider)))
+    lifecycle = SimpleNamespace(
+        reader=SimpleNamespace(
+            planner=SimpleNamespace(provider=provider),
+            facade=SimpleNamespace(catalog=SimpleNamespace(_lock_tenant=AsyncMock())),
+        ),
+        check_parent=AsyncMock(),
+    )
     queue = SimpleNamespace(
         jobs=SimpleNamespace(
             repository=SimpleNamespace(
-                find_by_id=AsyncMock(return_value=SimpleNamespace(id="job", tenant_id="tenant"))
+                find_by_id=AsyncMock(return_value=SimpleNamespace(id="job", tenant_id="tenant", payload={}))
             )
         ),
         fence=AsyncMock(side_effect=ConflictException("Lease lost", code="INDEX_LEASE_LOST")),

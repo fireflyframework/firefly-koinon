@@ -29,6 +29,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from flycanon.core.services.query import provenance
 from flycanon.models.entities.knowledge_chunk import KnowledgeChunkRow
+from flycanon.models.entities.source import SourceRow
 from flycanon.models.repositories._engine import build_session_factory
 
 
@@ -84,6 +85,60 @@ class ChunkRepository:
             rows = list(result.scalars().all())
             await provenance.database(session, rows)
             return rows
+
+    async def reindex_sources(self, batch, *, tenant_id: str, workspace_id: str, lock: bool = False):
+        statement = (
+            select(
+                SourceRow.id,
+                SourceRow.content_sha256,
+                SourceRow.status,
+                SourceRow.updated_at,
+                SourceRow.metadata_json,
+                SourceRow.object_store_key,
+            )
+            .where(
+                SourceRow.tenant_id == tenant_id,
+                SourceRow.workspace_id == workspace_id,
+                SourceRow.id.in_({chunk.source_id for chunk in batch}),
+            )
+            .order_by(SourceRow.id)
+        )
+        if lock:
+            statement = statement.with_for_update(read=True)
+        async with infrastructure_unit(self._session_factory) as session:
+            return [tuple(row) for row in (await session.execute(statement)).all()]
+
+    async def matches_reindex_batch(
+        self, batch: Sequence[KnowledgeChunkRow], *, tenant_id: str, workspace_id: str
+    ) -> bool:
+        """Lock and compare the exact text and citation positions before publishing vectors."""
+        fields = (
+            "id",
+            "source_id",
+            "content",
+            "index_in_source",
+            "total_chunks",
+            "char_start",
+            "char_end",
+            "page",
+            "section_path",
+            "metadata_json",
+        )
+        expected = {row.id: tuple(getattr(row, key) for key in fields) for row in batch}
+        async with infrastructure_unit(self._session_factory) as session:
+            rows = await session.scalars(
+                select(KnowledgeChunkRow)
+                .where(
+                    KnowledgeChunkRow.tenant_id == tenant_id,
+                    KnowledgeChunkRow.workspace_id == workspace_id,
+                    KnowledgeChunkRow.id.in_(expected),
+                )
+                .order_by(KnowledgeChunkRow.id)
+                .with_for_update(read=True)
+                .execution_options(populate_existing=True)
+            )
+            current = {row.id: tuple(getattr(row, key) for key in fields) for row in rows}
+            return expected == current
 
     # ------------------------------------------------------------------
     # The reindex reads -- keyset-paged over a whole workspace

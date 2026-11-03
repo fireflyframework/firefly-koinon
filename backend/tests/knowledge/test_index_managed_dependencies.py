@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Index operations honor the application-managed native service replacement."""
 
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, nullcontext
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -11,7 +11,7 @@ from pyfly.container import Container
 from pyfly.data.relational.datasource_registry import DataSourceRegistry
 
 from koinon.knowledge.adapters import NativeDomains
-from koinon.knowledge.indexes import adapters
+from koinon.knowledge.indexes import adapters, native_batch
 
 
 @pytest.fixture
@@ -23,7 +23,7 @@ def managed_index(monkeypatch):
     from flycanon.models.repositories import ChunkRepository, IngestJobRepository
     from flycanon.models.repositories.embedding_set_repository import EmbeddingSetRepository
 
-    activations, pointers, statuses = [], [], []
+    activations, pointers, statuses, units = [], [], [], []
 
     async def activate(**values):
         activations.append(values)
@@ -66,6 +66,7 @@ def managed_index(monkeypatch):
                         "provider": "ollama",
                         "model": "embedding",
                         "dimensions": 3,
+                        "config_fingerprint": native_set.config_fingerprint,
                         "status": "ready",
                     }
                 )
@@ -74,9 +75,14 @@ def managed_index(monkeypatch):
     @asynccontextmanager
     async def unit(selected):
         assert selected is source
-        yield Session()
+        units.append(selected)
+        try:
+            yield Session()
+        finally:
+            units.pop()
 
     monkeypatch.setattr(adapters, "infrastructure_unit", unit)
+    monkeypatch.setattr(native_batch, "infrastructure_unit", unit)
     container = Container()
     container.register_instance(Container, container)
     container.register_instance(DataSourceRegistry, SimpleNamespace(get=lambda name: source))
@@ -99,6 +105,7 @@ def managed_index(monkeypatch):
         model_id="embedding",
         dimensions=3,
         batch_size=16,
+        cursor={"native_config_fingerprint": native_set.config_fingerprint},
     )
     return SimpleNamespace(
         adapter=adapter,
@@ -108,6 +115,7 @@ def managed_index(monkeypatch):
         pointers=pointers,
         statuses=statuses,
         chunks=chunks,
+        units=units,
     )
 
 
@@ -133,12 +141,13 @@ async def test_container_override_supplies_reindex_operation_dependencies(manage
             assert dependencies["jobs"] is managed_index.services[IngestJobRepository]
 
         async def step(self, **values):
+            assert not managed_index.units, "Provider orchestration must not inherit a native unit"
             assert values["tenant_id"] == "tenant" and values["workspace_id"] == "workspace"
             return {"complete": False, "processed": 1}
 
     monkeypatch.setattr(reindex_service, "ReindexService", Reindex)
     result = await managed_index.adapter.step(
-        managed_index.record, embedder=object(), validate_write=AsyncMock()
+        managed_index.record, embedder=object(), validate_write=AsyncMock(), publication_guard=nullcontext
     )
     assert result == {
         "complete": False,
@@ -179,3 +188,26 @@ async def test_container_override_supplies_activation_and_restore(
                 "set_id": previous if restore else "set",
             }
         ]
+
+
+async def test_changed_native_embedding_target_is_rejected_before_provider(managed_index, monkeypatch):
+    from flycanon.core.services.embeddings import reindex_service
+    from pyfly.kernel import ConflictException
+
+    class Reindex:
+        def __init__(self, **dependencies):
+            pass
+
+        async def step(self, **values):
+            pytest.fail("A changed target must be rejected before embedding")
+
+    monkeypatch.setattr(reindex_service, "ReindexService", Reindex)
+    managed_index.record.dimensions = 64
+    with pytest.raises(ConflictException) as error:
+        await managed_index.adapter.step(
+            managed_index.record,
+            embedder=object(),
+            validate_write=AsyncMock(),
+            publication_guard=nullcontext,
+        )
+    assert error.value.code == "INDEX_NATIVE_TARGET_CHANGED"

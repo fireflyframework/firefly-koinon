@@ -85,11 +85,20 @@ class EmbeddingSetRepository:
             )
             return dict(row)
 
-    async def upsert(self, *, tenant_id, workspace_id, set_id, rows):
+    async def upsert(self, *, tenant_id, workspace_id, set_id, rows) -> int:
         params = self.params(tenant_id, workspace_id, set_id)
+        written = 0
         async with infrastructure_unit(self.session_factory) as session:
-            for row in rows:
+            for row in sorted(rows, key=lambda row: (row["kind"], str(row["id"]))):
+                table = "flyquery_examples" if row["kind"] == "example" else "flyquery_schema_objects"
                 await session.execute(
+                    text(
+                        f"SELECT id FROM {table} WHERE id=:id AND tenant_id=:tenant "
+                        "AND workspace_id=:workspace FOR SHARE"
+                    ),
+                    {**params, "id": UUID(str(row["id"]))},
+                )
+                result = await session.execute(
                     text(
                         OBJECTS_SQL
                         + """
@@ -114,3 +123,6 @@ class EmbeddingSetRepository:
                         "model": row["model"],
                     },
                 )
+
+                written += max(0, result.rowcount)
+        return written

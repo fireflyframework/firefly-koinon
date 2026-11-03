@@ -85,16 +85,14 @@ async def test_index_management_requires_workspace_permission_and_write_resource
     adapter.discover.assert_not_awaited()
 
 
-async def test_standalone_plan_holds_native_read_write_unit_for_authority_locks(index_rows):
+async def test_standalone_plan_uses_short_read_write_units_for_authority_locks(index_rows):
     service, facade, _, connections = dependencies()
     facade.catalog.catalog_repository = CatalogRepository()
     facade.bindings.find_all = AsyncMock(return_value=[])
     connections.selected = AsyncMock(return_value=None)
-    service.planner.prepare = AsyncMock(
-        return_value=(
-            SimpleNamespace(kind="ollama", revision=1),
-            {"dimensions": 768, "storage_dimensions": 768, "qualification": "probe_passed"},
-        )
+    service.planner.provider = AsyncMock(return_value=SimpleNamespace(kind="ollama", revision=1))
+    service.planner.qualify = AsyncMock(
+        return_value={"dimensions": 768, "storage_dimensions": 768, "qualification": "probe_passed"}
     )
     plan = await service.plan(
         "issuer|actor",

@@ -93,6 +93,16 @@ A conflict such as `INDEX_REVISION_CONFLICT` requires a new inspection and revie
 
 Read `GET /api/v1/tenants/{tenant_id}/knowledge-indexes/{index_id}` and the recorded job outcome. Expect intermediate states such as `queued`, `building` or `awaiting_index`; a waiting state is not successful activation. Inspect `qualification`, `indexed`, `chunk_count`, `vector_count`, `revision`, `native_status` and any safe error information.
 
+### What happens during each batch
+
+The worker first captures a bounded batch and its current authority, then releases database transactions before calling the embedding provider. Slow provider responses therefore do not keep a primary or native database connection checked out for the duration of that request.
+
+Publication is a separate, short operation. It locks primary authority before native index state and checks the current job lease, workspace binding, submitting user's access, personal-token restrictions, provider revision and index configuration. A managed mode preparation also needs its parent transition to remain authorized and active. Cancelling a build while the provider is busy prevents that result from being published after cancellation takes effect; it cannot undo usage already incurred at the provider.
+
+Document vectors are written only when the captured chunk content, positions and metadata still match the stored chunks. Structured vectors use the current schema or approved-example content hash. Changed or removed sources are not counted as successfully published vectors. A failed document batch preserves its target for reviewed resumption; structured sources that changed remain eligible for a later batch. Source locks protect these checks through publication.
+
+Replaying an already created keyed request reads and validates its saved result without probing the embedding provider again. An initial request that has not yet created a durable target still needs qualification.
+
 Before activation, the target must be qualified and its physical index and coverage must be complete. A stale count or an older ready target does not satisfy the current build. Provider/configuration changes and lost original authority can stop work. Preserve the failed record for diagnosis rather than deleting it and starting an indistinguishable replacement.
 
 ## 5. Activate the reviewed target
@@ -115,6 +125,8 @@ Read back `active`, `status`, `space_id`, dimensions and the resulting assignmen
 | A failed, cancelled, ready or retired nonactive target needs more build work | Review `/resume` with the current revision and a saved new action key | The target's original model fingerprint and the returned job identity. |
 | An activation is unfinished and reports `recovery_required` | Inspect the transition, then use activation with `recovery: finish` or `recovery: restore_previous` | Current target, active pointer, assignment revision and the operator's explicit recovery decision. |
 | The endpoint, model or embedding dimensions changed incompatibly | Plan a reviewed replacement target | Retained source versions, prior assignments and the old target's evidence. |
+
+**Finish activation** only finalizes a transition whose native pointer already selects the target. It never starts a previously unapplied switch. If the pointer still selects the recorded previous target, use **Restore previous index** to close the unfinished transition, then review a new activation. Restoration rejects a pointer that belongs to a different intervening activation. Recovery still requires current index-management permissions and valid workspace bindings; a cancelled parent mode preparation does not grant authority or restart itself.
 
 Resume rejects an active native target; rebuild into a separate target instead. Recovery applies only to an unfinished activation. Do not submit a recovery action merely because a normal activation failed before any transition began. The service checks the current revision and permitted state for each action.
 
