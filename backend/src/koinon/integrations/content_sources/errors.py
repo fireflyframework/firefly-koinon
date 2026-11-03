@@ -9,6 +9,7 @@ ErrorCode = Literal[
     "invalid_identity",
     "invalid_cursor",
     "access_denied",
+    "authority_changed",
     "reconnect_required",
     "unavailable",
     "resync_required",

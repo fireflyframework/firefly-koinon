@@ -60,3 +60,20 @@ async def test_api_session_identifier_comes_only_from_native_request(lifecycle):
     unauthenticated.state.session = SimpleNamespace(id="browser-a")
     with pytest.raises(ForbiddenException):
         await controller.begin("tenant", SourceAuthorizationInput(provider="google_drive"), unauthenticated)
+
+
+async def test_changed_read_authority_has_retryable_read_conflict_without_replay():
+    from koinon.integrations.content_sources.controllers import _safe
+    from koinon.integrations.content_sources.errors import SourceError
+    from pyfly.kernel import ConflictException
+
+    calls = []
+
+    async def read():
+        calls.append("read")
+        raise SourceError("authority_changed")
+
+    with pytest.raises(ConflictException) as failure:
+        await _safe(read())
+    assert failure.value.code == "SOURCE_AUTHORITY_CHANGED"
+    assert calls == ["read"]

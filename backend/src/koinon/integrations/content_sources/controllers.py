@@ -57,6 +57,10 @@ async def _safe(operation):
         code = "SOURCE_" + error.code.upper()
         if error.code == "access_denied":
             raise ForbiddenException("This source is not available to your account.", code=code) from None
+        if error.code == "authority_changed":
+            raise ConflictException(
+                "Source permissions changed during this read. Read the source again.", code=code
+            ) from None
         if error.code in {"reconnect_required", "invalid_identity", "scope_mismatch"}:
             raise ConflictException("Connect your source account again to continue.", code=code) from None
         if error.code in {"invalid_cursor", "unsupported"}:

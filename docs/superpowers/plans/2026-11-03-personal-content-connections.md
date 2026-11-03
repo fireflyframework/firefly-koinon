@@ -49,6 +49,16 @@ Files: mapping DTO/entity/repository/service; canonical read authorization integ
 - [ ] Test candidates before text/model reads plus output/commit rechecks, previews/downloads/audits/exports and remembered context. Never use mapping-owner tokens for another reader.
 - [ ] Keep failed or indeterminate checks closed and avoid network I/O while holding primary DB connections.
 
+### Next integration sequence
+
+1. Reuse `BulkAuthority.destination` inside a short primary unit for the selected existing folder. Never infer or create a destination from an empty Library. Keep remote root observations outside that unit, then recheck the connection, exact provider account/configuration and canonical destination before recording a review.
+2. Persist the reviewed root identity, destination ancestry, selection/removal policy, configuration binding and expiry as a server-owned review. Paginated enumeration must distinguish known totals from incomplete/unknown totals. The mapping starts inactive; accepting a review cannot bypass the missing ingestion and reader-fence gates.
+3. Compare root overlap using current stable identities and folder ancestry, without treating an unreadable parent or incomplete page as absence. Serialize concurrent mapping admissions with existing primary authority locking, then compare the mapping revisions observed before provider I/O. Never hold that lock across provider calls.
+4. Persist an immutable origin binding for each admitted local version: provider/tenant/drive/object/version, mapping revision, original content hash, native commit receipt and retirement generation. A reader selects their own connection; a mapping's connection is only the importer's grant and is never a fallback for retrieval.
+5. Resolve only bounded locally authorized candidates to origin bindings. `PersonalSourceAccess.check` now supplies fresh remote observations for one selected connection, with at most100 candidates and four concurrent requests per process. Bind those observations to the current mapping/origin revisions in the consuming operation and repeat the remote check at output. Its observation DTO is not a reusable authorization ticket.
+6. RAG must admit candidate identities before returning protected text; RLM directory names and metadata need the same candidate gate before model-visible enumeration. `_authorize_search_assets` currently receives all admitted assets, so simply placing remote calls there would create corpus-sized network work. Do not add provider I/O to `Catalog.get`, `_read_chain` or their policy transactions. Coordinate concrete native candidate/reader hooks with the knowledge-mode owner before changing those shared files.
+7. Cover Library metadata/preview/download, original/history, model text, sources/audits, export, curated evidence and remembered context before registering public sync routes. A denied or indeterminate candidate must not leak content through another output. Reuse existing capture/output/commit fences while keeping network work outside their database snapshots.
+
 ## Task4: User journey and delivery
 
 - [ ] Reuse Library/dialog/settings atoms and truthful capability states; no enabled sync action before server gates.

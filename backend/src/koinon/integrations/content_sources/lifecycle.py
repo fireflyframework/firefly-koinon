@@ -61,6 +61,18 @@ class PersonalConnection:
     account: Account | None
 
 
+@dataclass(frozen=True, slots=True)
+class SourceReadGrant:
+    tenant: str
+    owner: str
+    connection_id: str
+    account: Account
+    revision: int
+    config_fingerprint: str = field(repr=False)
+    scopes: tuple[str, ...]
+    token: str = field(repr=False)
+
+
 def connection_view(row: PersonalSourceConnection) -> PersonalConnection:
     account = (
         Account(cast(Provider, row.provider), row.external_subject, row.external_tenant)
@@ -276,6 +288,30 @@ class SourceConnectionService:
 
     async def access_token(self, actor: str, tenant: str, identifier: str, account: Account) -> str:
         """Internal reader-bound acquisition; never expose this value through an API DTO."""
+        return (await self.read_grant(actor, tenant, identifier, account)).token
+
+    async def confirm_read_grant(self, actor: str, tenant: str, identifier: str, grant: SourceReadGrant):
+        if (grant.owner, grant.tenant, grant.connection_id) != (actor, tenant, identifier):
+            raise SourceError("access_denied")
+        await self._authorize(actor, tenant)
+        async with primary_authority():
+            await self._member(actor, tenant)
+            row = await self.connections.owned(tenant, actor, identifier)
+            if row is None or row.status != "connected" or connection_view(row).account != grant.account:
+                raise SourceError("access_denied")
+            if (
+                row.config_fingerprint != grant.config_fingerprint
+                or self.registrations.get(row.provider).fingerprint != grant.config_fingerprint
+            ):
+                raise SourceError("reconnect_required")
+            if (
+                row.revision != grant.revision
+                or tuple(row.scopes) != grant.scopes
+                or row.refresh_operation is not None
+            ):
+                raise SourceError("authority_changed")
+
+    async def read_grant(self, actor: str, tenant: str, identifier: str, account: Account) -> SourceReadGrant:
         await self._authorize(actor, tenant)
         async with primary_authority(read_only=False):
             await self._member(actor, tenant)
@@ -287,7 +323,16 @@ class SourceConnectionService:
                 raise SourceError("reconnect_required")
             grant = self.vault.decrypt(tenant, actor, identifier, "grant", row.secret_ciphertext)
             if grant["expires_at"] > (datetime.now(UTC) + timedelta(seconds=60)).timestamp():
-                return grant["access_token"]
+                return SourceReadGrant(
+                    tenant,
+                    actor,
+                    identifier,
+                    account,
+                    row.revision,
+                    row.config_fingerprint,
+                    tuple(row.scopes),
+                    grant["access_token"],
+                )
             operation, revision, scopes = str(uuid4()), row.revision, tuple(row.scopes)
             if not await self.connections.reserve_refresh(
                 tenant, actor, identifier, revision, operation, datetime.now(UTC) + timedelta(seconds=60)
@@ -312,4 +357,13 @@ class SourceConnectionService:
                 tenant, actor, identifier, revision, operation, ciphertext, (tokens.scope or "").split()
             ):
                 raise SourceError("reconnect_required")
-        return tokens.access_token
+        return SourceReadGrant(
+            tenant,
+            actor,
+            identifier,
+            account,
+            revision + 1,
+            registration.fingerprint,
+            tuple((tokens.scope or "").split()),
+            tokens.access_token,
+        )

@@ -15,7 +15,7 @@ from koinon.integrations.content_sources.discovery_dtos import DiscoveryCursor, 
 from koinon.integrations.content_sources.dtos import Account, Cursor, RemoteItem, SourceScope, bounded
 from koinon.integrations.content_sources.errors import SourceError
 from koinon.integrations.content_sources.google_drive import GoogleDriveSource
-from koinon.integrations.content_sources.lifecycle import SourceConnectionService
+from koinon.integrations.content_sources.lifecycle import SourceConnectionService, SourceReadGrant
 from koinon.integrations.content_sources.microsoft import OneDriveSource, SharePointSource
 from koinon.integrations.content_sources.parsing import path_id
 from koinon.integrations.content_sources.settings import ContentSourceSettings
@@ -35,14 +35,21 @@ class FolderItems:
 
 
 class _ReaderTokens:
-    def __init__(self, connections, actor, tenant, identifier, account):
+    def __init__(
+        self, connections: SourceConnectionService, actor: str, tenant: str, identifier: str, account: Account
+    ):
         self.connections, self.actor, self.tenant = connections, actor, tenant
         self.identifier, self.account = identifier, account
+        self.grant: SourceReadGrant | None = None
 
     async def access_token(self, account: Account) -> str:
         if account != self.account:
             raise SourceError("access_denied")
-        return await self.connections.access_token(self.actor, self.tenant, self.identifier, account)
+        grant = self.grant
+        if grant is None:
+            grant = await self.connections.read_grant(self.actor, self.tenant, self.identifier, account)
+            self.grant = grant
+        return grant.token
 
 
 @service(name="content_sources.browser")
@@ -77,16 +84,24 @@ class PersonalSourceBrowser:
         connection = await self.connections.connected(actor, tenant, identifier)
         if connection.account is None:
             raise SourceError("reconnect_required")
-        return connection.account, _ReaderTokens(
-            self.connections, actor, tenant, identifier, connection.account
-        )
+        tokens = _ReaderTokens(self.connections, actor, tenant, identifier, connection.account)
+        await tokens.access_token(connection.account)
+        return connection.account, tokens
 
-    async def _confirm(self, actor, tenant, identifier, account):
+    async def _confirm(self, actor, tenant, identifier, account, tokens):
         current = await self.connections.connected(actor, tenant, identifier)
-        if current.account != account:
+        if current.account != account or tokens.grant is None:
             raise SourceError("access_denied")
+        await self.connections.confirm_read_grant(actor, tenant, identifier, tokens.grant)
 
-    def _open(self, actor, tenant, identifier, account, operation, cursor):
+    @staticmethod
+    def _authority(tokens):
+        grant = tokens.grant
+        if grant is None:
+            raise SourceError("access_denied")
+        return [grant.revision, grant.config_fingerprint, list(grant.scopes)]
+
+    def _open(self, actor, tenant, identifier, account, operation, cursor, tokens):
         if cursor is None:
             return None
         try:
@@ -96,6 +111,7 @@ class PersonalSourceBrowser:
             if (
                 value["operation"] != operation
                 or value["account"] != asdict(account)
+                or value["authority"] != self._authority(tokens)
                 or value["expires_at"] <= datetime.now(UTC).timestamp()
             ):
                 raise ValueError
@@ -103,7 +119,7 @@ class PersonalSourceBrowser:
         except Exception:
             raise SourceError("invalid_cursor") from None
 
-    def _seal(self, actor, tenant, identifier, account, operation, token):
+    def _seal(self, actor, tenant, identifier, account, operation, token, tokens):
         if token is None:
             return None
         envelope = self.vault.encrypt(
@@ -113,6 +129,7 @@ class PersonalSourceBrowser:
             "browse-cursor",
             {
                 "account": asdict(account),
+                "authority": self._authority(tokens),
                 "operation": operation,
                 "token": token,
                 "expires_at": (datetime.now(UTC) + timedelta(minutes=15)).timestamp(),
@@ -125,13 +142,13 @@ class PersonalSourceBrowser:
         if account.provider != "sharepoint":
             raise SourceError("unsupported")
         operation = "sites:" + bounded(query, limit=256)
-        token = self._open(actor, tenant, identifier, account, operation, cursor)
+        token = self._open(actor, tenant, identifier, account, operation, cursor, tokens)
         continuation = DiscoveryCursor(account, operation, token) if token else None
         async with self._discovery(account, tokens) as adapter:
             if not isinstance(adapter, GraphDiscovery):
                 raise SourceError("unsupported")
             page = await adapter.sites(query, continuation)
-        await self._confirm(actor, tenant, identifier, account)
+        await self._confirm(actor, tenant, identifier, account, tokens)
         return Locations(
             page.items,
             self._seal(
@@ -141,6 +158,7 @@ class PersonalSourceBrowser:
                 account,
                 operation,
                 page.next_cursor.token if page.next_cursor else None,
+                tokens,
             ),
         )
 
@@ -166,14 +184,14 @@ class PersonalSourceBrowser:
             if site_id is not None:
                 raise SourceError("unsupported")
             operation = "/v1.0/me/drives"
-        token = self._open(actor, tenant, identifier, account, operation, cursor)
+        token = self._open(actor, tenant, identifier, account, operation, cursor, tokens)
         continuation = DiscoveryCursor(account, operation, token) if token else None
         async with self._discovery(account, tokens) as adapter:
             if isinstance(adapter, GoogleDriveDiscovery):
                 page = await adapter.drives(continuation)
             else:
                 page = await adapter.drives(site_id=site_id, cursor=continuation)
-        await self._confirm(actor, tenant, identifier, account)
+        await self._confirm(actor, tenant, identifier, account, tokens)
         return Locations(
             page.items,
             self._seal(
@@ -183,6 +201,7 @@ class PersonalSourceBrowser:
                 account,
                 operation,
                 page.next_cursor.token if page.next_cursor else None,
+                tokens,
             ),
         )
 
@@ -204,10 +223,10 @@ class PersonalSourceBrowser:
                 raise SourceError("unsupported")
             operation = "children:" + folder.item_id
             bound_operation = json.dumps([drive_id, operation], separators=(",", ":"))
-            token = self._open(actor, tenant, identifier, account, bound_operation, cursor)
+            token = self._open(actor, tenant, identifier, account, bound_operation, cursor, tokens)
             continuation = Cursor(scope, operation, token) if token else None
             page = await adapter.children(folder.item_id, continuation)
-        await self._confirm(actor, tenant, identifier, account)
+        await self._confirm(actor, tenant, identifier, account, tokens)
         return FolderItems(
             folder,
             page.items,
@@ -218,5 +237,6 @@ class PersonalSourceBrowser:
                 account,
                 bound_operation,
                 page.next_cursor.token if page.next_cursor else None,
+                tokens,
             ),
         )
