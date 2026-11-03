@@ -93,6 +93,7 @@ nav:
       - Knowledge behavior:
           - Change providers and models: guides/configuration-lifecycle.md
           - Organization defaults: operations/organization-knowledge.md
+          - Switch RAG and RLM: operations/rag-rlm-switching.md
           - Knowledge-only responses: reference/knowledge-only-responses.md
           - Curated RLM evidence: reference/curated-rlm-evidence.md
   - Integrate:
@@ -195,6 +196,7 @@ nav:
       - Architecture:
           - System architecture: concepts/architecture.md
           - Agents, embeddings and knowledge engines: concepts/knowledge-runtime.md
+          - Knowledge scaling and query cost: concepts/knowledge-scaling.md
           - Backend structure: concepts/backend-structure.md
           - MCP architecture: architecture/mcp.md
       - Product identity: concepts/visual-identity.md

@@ -68,6 +68,35 @@ async def test_admission_captures_policy_and_queued_edit_replay_retry_and_audit_
     assert audit["knowledge_settings_snapshot"] == expected.model_dump(mode="json")
 
 
+async def test_rag_rlm_and_rollback_admit_distinct_runs_without_rewriting_their_audits(assistants):
+    service, context = assistants
+    _, agent = await configured(service)
+    admitted = []
+    for mode in ("rag", "rlm", "rag"):
+        policy = await change_policy(context, mode, 10)
+        thread = await service.create_thread("issuer|viewer", "north", {})
+        submitted = await service.submit(
+            "issuer|viewer",
+            "north",
+            thread["id"],
+            {
+                "agent_id": agent["id"],
+                "message": "Read the recorded knowledge",
+                "client_request_id": f"switch-{policy.revision}",
+            },
+        )
+        admitted.append((submitted["run_id"], policy))
+
+    assert [policy.revision for _, policy in admitted] == [1, 2, 3]
+    assert len({policy.digest for _, policy in admitted}) == 3
+    assert admitted[0][1].documents == admitted[2][1].documents
+    for run_id, policy in admitted:
+        run = await service.runs.find_by_id(run_id)
+        assert snapshot_for_run(run) == policy
+        audit = await context.get_bean(AnswerAudits).get("issuer|viewer", "north", run_id)
+        assert audit["knowledge_settings_snapshot"] == policy.model_dump(mode="json")
+
+
 async def test_missing_policy_fails_admission_before_messages_or_run(assistants, monkeypatch):
     service, _ = assistants
     _, agent = await configured(service)
