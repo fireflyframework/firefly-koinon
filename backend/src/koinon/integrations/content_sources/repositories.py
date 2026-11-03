@@ -26,12 +26,15 @@ class SourceConnectionRepository(Repository[PersonalSourceConnection, str]):
             PersonalSourceConnection.owner == owner,
         )
 
-    async def owned(self, tenant_id, owner, identifier):
-        return await self._require_session().scalar(
-            select(PersonalSourceConnection).where(
-                *self._owner(tenant_id, owner, identifier),
-            )
+    async def owned(
+        self, tenant_id: str, owner: str, identifier: str, *, lock: bool = False
+    ) -> PersonalSourceConnection | None:
+        statement = select(PersonalSourceConnection).where(
+            *self._owner(tenant_id, owner, identifier),
         )
+        if lock:
+            statement = statement.with_for_update().execution_options(populate_existing=True)
+        return await self._require_session().scalar(statement)
 
     async def complete_authorization(
         self,

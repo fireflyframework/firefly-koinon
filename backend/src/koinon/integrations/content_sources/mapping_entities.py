@@ -38,6 +38,7 @@ class SourceMapping(Base):
     status: Mapped[str] = mapped_column(String(32), default="reviewed")
     revision: Mapped[int] = mapped_column(default=1)
     reviewed_at: Mapped[datetime] = mapped_column(UtcDateTime())
+    reviewed_expires_at: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=lambda: datetime.now(UTC))
     updated_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=lambda: datetime.now(UTC))
 

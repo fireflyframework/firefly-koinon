@@ -44,8 +44,8 @@ Files: new focused connection settings, entities, repositories, credentials, cal
 
 Files: mapping DTO/entity/repository/service; canonical read authorization integration points identified from source inspection; tests for all consuming surfaces before activation.
 
-- [ ] Test canonical destination write access, reviewed root identity/revision, overlap and no-default-folder behavior.
-- [ ] Record mappings without activating ingestion until all output surfaces enforce the requesting reader's own current external authorization.
+- [x] Test canonical destination write access, reviewed root identity/revision, account-scoped overlap and no-default-folder behavior. Cross-account shared-object overlap remains an activation gate.
+- [x] Record mappings without activating ingestion until all output surfaces enforce the requesting reader's own current external authorization.
 - [ ] Test candidates before text/model reads plus output/commit rechecks, previews/downloads/audits/exports and remembered context. Never use mapping-owner tokens for another reader.
 - [ ] Keep failed or indeterminate checks closed and avoid network I/O while holding primary DB connections.
 
@@ -87,3 +87,11 @@ Publication integration must preserve one physical lock order across admissions,
 
 
 Independent review found that an acknowledgment could retain an old ORM attempt snapshot while waiting for the object fence. A two-session interleaving reproduced a rewritten commit timestamp. The acknowledgment now reselects and locks the attempt after the connection/mapping/object fences, preserving an already committed receipt and timestamp. This regression exercises stale identity-map behavior; it does not replace the required PostgreSQL opposing-lock-order test.
+
+### Destination review checkpoint
+
+The internal service now composes canonical Library destination authority with bounded remote folder ancestry and inactive persistence. Provider metadata is read outside all database units; a second pass rejects changed ancestry. The final short unit reauthorizes the selected local ancestry, locks and revalidates the captured connection, and compares the mapping inventory before saving a 15-minute review. No unrelated Library contents or other owner's destination are returned. Two roots can be disjoint when the ancestor selection is nonrecursive; equal roots or a recursive ancestor conflict. Review limits fail closed rather than returning a partial absence-of-conflict result. See the specification's internal review section for exact guardrails and the cross-account/remote-consistency limitations.
+
+This is still a review-only development milestone. It does not register a public action, activate a mapping, schedule discovery or bypass any publication/reader gate. The existing before-publication lock-order and opposing-writers PostgreSQL requirements remain unchanged.
+
+Root review verified a canonical destination applicability limit: Library supports nested folders, but `BulkAuthority.destination` currently admits only a collection/corpus directly beneath a project. A native catalog regression proves that nested destinations are refused before provider reads and are never flattened. Generalizing that shared intake contract is outside this checkpoint and remains necessary for nested destination support.

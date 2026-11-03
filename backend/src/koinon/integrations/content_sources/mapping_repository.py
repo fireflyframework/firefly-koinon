@@ -7,9 +7,12 @@ from typing import Literal
 
 from pyfly.container import repository
 from pyfly.data.relational.sqlalchemy import Repository
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
+from koinon.integrations.content_sources.dtos import Account
 from koinon.integrations.content_sources.entities import PersonalSourceConnection
+from koinon.integrations.content_sources.errors import SourceError
+from koinon.integrations.content_sources.mapping_dtos import MappingCandidate
 from koinon.integrations.content_sources.mapping_entities import SourceMapping, SourceObject
 
 ObservationState = Literal["pending", "deleted", "removed", "excluded"]
@@ -17,6 +20,43 @@ ObservationState = Literal["pending", "deleted", "removed", "excluded"]
 
 @repository(name="content_sources.mapping_repository")
 class SourceMappingRepository(Repository[SourceMapping, str]):
+    async def review_candidates(
+        self, tenant: str, account: Account, drive_id: str, *, at: datetime
+    ) -> tuple[MappingCandidate, ...]:
+        # Callers hold canonical tenant authority while admitting or revalidating this inventory.
+        statement = (
+            select(SourceMapping)
+            .where(
+                SourceMapping.tenant_id == tenant,
+                SourceMapping.provider == account.provider,
+                SourceMapping.external_subject == account.subject,
+                SourceMapping.external_tenant == account.tenant_id,
+                SourceMapping.drive_id == drive_id,
+                SourceMapping.status != "retired",
+                or_(
+                    SourceMapping.status != "reviewed",
+                    SourceMapping.reviewed_expires_at.is_(None),
+                    SourceMapping.reviewed_expires_at > at,
+                ),
+            )
+            .order_by(SourceMapping.id)
+            .limit(100)
+            .execution_options(populate_existing=True)
+        )
+        rows = list((await self._require_session().scalars(statement)).all())
+        # Leave one slot for the proposed root. Never silently truncate overlap candidates.
+        if len(rows) >= 100:
+            raise SourceError("size_exceeded")
+        candidates = []
+        for row in rows:
+            recursive = row.request_json.get("recursive")
+            if not isinstance(recursive, bool):
+                raise SourceError("scope_mismatch")
+            candidates.append(
+                MappingCandidate(row.id, row.revision, row.root_id, row.request_sha256, recursive, row.status)
+            )
+        return tuple(candidates)
+
     async def owned(self, tenant: str, owner: str, identifier: str) -> SourceMapping | None:
         return await self._require_session().scalar(
             select(SourceMapping).where(

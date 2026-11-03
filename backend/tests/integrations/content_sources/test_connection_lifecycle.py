@@ -54,6 +54,12 @@ async def lifecycle(tmp_path, monkeypatch):
     )
     for package in ("koinon.catalog", "koinon.jobs", "koinon.integrations.content_sources"):
         scan_package(package, context.container)
+    from koinon.authorized_applications.entities import AuthorizedApplication  # noqa: F401
+    from koinon.knowledge.bulk.authority import BulkAuthority
+    from koinon.knowledge.bulk.repositories import BulkRepository
+
+    context.register_bean(BulkAuthority)
+    context.register_bean(BulkRepository)
     await context.start()
     settings = context.get_bean(ContentSourceSettings)
     settings.master_key = base64.b64encode(bytes(range(32))).decode()
