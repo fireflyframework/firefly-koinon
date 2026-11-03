@@ -22,6 +22,7 @@ import { KoinonIcon } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonSkeleton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonTableCoordinatesView } from './table-coordinates';
 import type { CoordinateTarget } from '../services/table-coordinates';
+import { formatFileSize } from '@fireflyframework/koinon-angular/workbench/core';
 registerKoinonSpanish(PANEL_SPANISH);
 @Component({
   selector: 'ffk-table-lineage-panel',
@@ -44,6 +45,9 @@ registerKoinonSpanish(PANEL_SPANISH);
 export class KoinonTableLineagePanel {
   readonly state = inject(KoinonTableLineage);
   private readonly i18n = inject(KoinonI18n);
+  size(value: number | null) {
+    return formatFileSize(value, this.i18n.preferences().locale);
+  }
   readonly coordinatesOpen = signal(false);
   readonly coordinateTarget = computed<CoordinateTarget | null>(() => {
     const target = this.state.target(),

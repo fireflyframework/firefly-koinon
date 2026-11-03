@@ -4,23 +4,23 @@
 
 from importlib.util import find_spec
 
-from flycanon.core.services.ingestion.loaders import default_registry
+from flycanon.core.services.ingestion.file_parser import document_file_kinds
 from flyquery.core.services.ingestion.format_detect import FORMAT_EXTENSIONS
 from flyquery.core.services.ingestion.reader_factory import get_reader, supported_compressions
 
 from koinon.knowledge.bulk.dtos import UploadFormat
 
 _DOCUMENT_DEPENDENCIES = {
-    "docx": ("docx",),
-    "pptx": ("pptx",),
-    "xlsx": ("openpyxl",),
+    "docx": ("docx", "lxml"),
+    "pptx": ("pptx", "lxml"),
+    "xlsx": ("openpyxl", "lxml"),
     "pdf": ("pymupdf", "pypdf"),
     "html": ("bs4",),
     "xml": ("lxml",),
     "rtf": ("striprtf",),
-    "odt": ("odf",),
-    "ods": ("odf",),
-    "odp": ("odf",),
+    "odt": ("odf", "lxml"),
+    "ods": ("odf", "lxml"),
+    "odp": ("odf", "lxml"),
     "markdown": (),
     "text": (),
     "csv": (),
@@ -48,12 +48,16 @@ def _installed(dependencies: tuple[str, ...]) -> bool:
 
 def upload_formats() -> list[UploadFormat]:
     result = []
-    for kind in default_registry().registered_kinds():
+    for kind in document_file_kinds():
         name = kind.value
         # Aggregate, image and transcript loaders require distinct intake paths.
         if name not in _DOCUMENT_DEPENDENCIES:
             continue
-        extensions = {"text": [".txt", ".text"], "markdown": [".md", ".markdown"]}.get(name, ["." + name])
+        extensions = {
+            "text": [".txt", ".text"],
+            "markdown": [".md", ".markdown"],
+            "html": [".html", ".htm"],
+        }.get(name, ["." + name])
         available = _installed(_DOCUMENT_DEPENDENCIES[name])
         result.append(
             UploadFormat(

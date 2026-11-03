@@ -105,7 +105,7 @@
             <dt>{{ 'Format' | ffkText }}</dt>
             <dd>{{ artifact.file_format }}</dd>
             <dt>{{ 'Size' | ffkText }}</dt>
-            <dd>{{ artifact.byte_size | ffkValue }} {{ 'bytes' | ffkText }}</dd>
+            <dd>{{ size(artifact.byte_size) }}</dd>
             <dt>{{ 'Received' | ffkText }}</dt>
             <dd>{{ artifact.admitted_at | ffkDate: undefined : 'datetime' }}</dd>
             @if (detail.sheet_or_json_path) {

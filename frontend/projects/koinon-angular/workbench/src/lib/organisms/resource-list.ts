@@ -15,12 +15,14 @@ import type {
   PublicActor,
 } from '@fireflyframework/koinon-sdk';
 import { KoinonI18n } from '@fireflyframework/koinon-angular/workbench/core';
+import { fileType, KoinonFileTypeIcon } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonIcon } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonBadge } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonSkeleton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonKnowledgeAvailability } from '@fireflyframework/koinon-angular/workbench/availability';
 import { friendlyStatus, friendlyKind, isFolder, isSystemManaged, resourceIcon } from '@fireflyframework/koinon-angular/workbench/core';
 import type { LibraryContextRequest } from '../services/library-context-actions';
+import { formatFileSize } from '@fireflyframework/koinon-angular/workbench/core';
 // Native availability replaces these processing markers, never catalog lifecycle or custom states.
 const ingestionStatuses = new Set([
   'pending', 'processing', 'running', 'queued', 'indexing', 'failed', 'error',
@@ -28,7 +30,7 @@ const ingestionStatuses = new Set([
 ]);
 @Component({
   selector: 'ffk-resource-list',
-  imports: [KoinonTextPipe, KoinonDatePipe, KoinonIcon, KoinonBadge, KoinonSkeleton, KoinonKnowledgeAvailability],
+  imports: [KoinonFileTypeIcon,KoinonTextPipe, KoinonDatePipe, KoinonIcon, KoinonBadge, KoinonSkeleton, KoinonKnowledgeAvailability],
   templateUrl: './resource-list.html',
   styleUrl: './resource-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -61,14 +63,7 @@ export class KoinonResourceList {
       Number.isFinite(summary.size_bytes) &&
       summary.size_bytes >= 0
     ) {
-      const unit = summary.size_bytes >= 1048576 ? 1048576 : summary.size_bytes >= 1024 ? 1024 : 1;
-      parts.push(
-        new Intl.NumberFormat(this.i18n.preferences().locale, { maximumFractionDigits: 1 }).format(
-          summary.size_bytes / unit,
-        ) +
-          ' ' +
-          (unit === 1048576 ? 'MB' : unit === 1024 ? 'KB' : 'B'),
-      );
+      parts.push(formatFileSize(summary.size_bytes, this.i18n.preferences().locale));
     }
     return parts.join(', ');
   }
@@ -136,6 +131,7 @@ export class KoinonResourceList {
   readonly status = friendlyStatus;
   readonly kind = friendlyKind;
   readonly icon = resourceIcon;
+  hasFileType(item: CatalogEntry) { return !!fileType(item.name,this.summaries[item.id]?.format || '').mark; }
   readonly isFolder = isFolder;
   hasKnowledgeAvailability(item: CatalogEntry) {
     return ['source', 'document', 'dataset', 'table'].includes(item.kind);

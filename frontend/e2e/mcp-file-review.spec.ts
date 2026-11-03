@@ -60,6 +60,7 @@ for (const width of [900, 390])
   }) => {
     await page.setViewportSize({ width, height: 1100 });
     const app = await open(page);
+    await expect(app.locator('#file-help')).toContainText('Maximum 33.6 MB');
     const bytes = Buffer.from('team,records\nOperations,24\n');
     await app
       .getByLabel('Choose a file', { exact: true })
@@ -68,6 +69,8 @@ for (const width of [900, 390])
     await expect(app.getByRole('button', { name: 'Approve & import', exact: true })).toBeDisabled();
     await expect(app.getByText('Ready for your approval', { exact: true })).toBeVisible();
     await expect(app.getByText('text/csv', { exact: true })).toBeVisible();
+    await expect(app.locator('#file-size')).toHaveText('< 1 KB');
+    await expect(app.locator('#description')).not.toContainText('bytes');
     expect(await page.evaluate(() => Reflect.get(window, 'fileBytes'))).toEqual([...bytes]);
     expect(
       (await page.evaluate(() => Reflect.get(window, 'calls'))).some(
@@ -168,4 +171,38 @@ test('a file review rejects a late text review instead of mixing approval contro
   );
   await expect(app.getByRole('heading', { name: 'Upload knowledge', exact: true })).toBeVisible();
   await expect(app.locator('#review-content')).toBeHidden();
+});
+
+test.describe('localized file sizes', () => {
+  test.use({ locale: 'es-ES' });
+
+  test('uses decimal units in selection and review while staging exact byte counts', async ({
+    page,
+  }) => {
+    const app = await open(page);
+    await expect(app.locator('#file-help')).toContainText('Maximum 33,6 MB');
+    for (const [size, display] of [
+      [999, '< 1 KB'],
+      [1000, '1 KB'],
+      [1550, '1,6 KB'],
+      [999999, '1 MB'],
+      [1500000, '1,5 MB'],
+    ] as const) {
+      await app.getByLabel('Choose a file', { exact: true }).setInputFiles({
+        name: 'records.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.alloc(size, 65),
+      });
+      await expect(app.locator('#file-help')).toHaveText(`records.csv (${display})`);
+    }
+    await app.getByRole('button', { name: 'Upload for review', exact: true }).click();
+    await expect(app.getByText('Ready for your approval', { exact: true })).toBeVisible();
+    await expect(app.locator('#file-size')).toHaveText('1,5 MB');
+    const calls = await page.evaluate(() => Reflect.get(window, 'calls'));
+    expect(
+      calls.find((call: { name: string }) => call.name === 'koinon_stage_file').arguments.file
+        .size_bytes,
+    ).toBe(1500000);
+    expect(calls.some((call: { name: string }) => call.name === 'koinon_approve_file')).toBe(false);
+  });
 });

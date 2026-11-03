@@ -6,6 +6,30 @@ koinon accepts queued Library originals up to **128 MiB per file**, in batches u
 
 Chat attachment limits are separate. A Library limit does not raise the chat, image, MCP request-body or synchronous upload limit. External application review follows its separately advertised effective capability and approval flow.
 
+## Library upload experience
+
+Choose a destination and add files. The picker uses actual server capability descriptors; unsupported or unavailable formats are reported before transfer. There is no batch-wide processing choice. Spreadsheets and delimited/columnar data (`xlsx`, `xls`, `ods`, `csv`, `tsv`, `parquet`, `orc`, `arrow`, `ipc`, `feather`, `avro`, and advertised compressed variants) default to analysis when supported. Other files, including dual-use JSON and HTML, default to document content when supported. A file with only one available use takes that use. Files with both choices offer “Search document content” and “Analyze rows and columns” individually. The backend still validates bytes, format, limits and current permissions.
+
+One mixed manifest preserves each file's selected use. Upload transfer remains bounded and sequential. Its progress bar counts acknowledged original bytes, without estimating in-flight bytes or parser progress. Processed file counts and search/query readiness are separate observations.
+
+Library, upload history, chat attachments and original-file details use the same regional size formatting: KB, MB, GB or larger decimal units as needed. Small nonempty files display **< 1 KB**, and unknown sizes remain unknown. The displayed value is rounded; the API, MCP tools and typed SDK contracts retain exact integer byte counts for admission, manifests and integrity verification. This presentation change does not raise the installation's file or batch limits.
+
+You can close the panel or navigate within the app while an upload runs; its captured destination stays fixed. **Keep the browser tab open until transfer finishes.** Submitted server jobs continue independently. The runtime checks active uploads every five seconds while visible and every thirty seconds while hidden. The Uploads inbox updates active jobs while open and pauses detail refresh during recovery review. Account, tenant, client and permission changes invalidate old observations and abort pending requests; ambiguous writes are never automatically replayed.
+
+## How a document becomes searchable
+
+The queued document worker uses the following stages. Each stage has a separate purpose; an upload receipt alone does not certify the later stages.
+
+1. **Admit and retain the original.** Validate the destination, current authority and byte limits. Store a pinned private original with its size and SHA-256 digest.
+2. **Extract within resource limits.** Run the selected file parser in an owned subprocess. DOCX and PPTX use the bounded OOXML reader; other advertised document formats use their registered loader. Unsupported binary formats are rejected instead of being decoded as plain text.
+3. **Normalize and preserve structure.** Produce the text representation and recorded sections, apply the configured PII policy, and prepare retrieval chunks. Persist normalization artifacts and transformation records tied to the original. The original remains available independently of the searchable representation.
+4. **Build and publish the index.** Generate embeddings with the configured workspace embedding model, validate publication authority and the expected source version, then publish the extraction, chunks and index state with the native ingestion receipt.
+5. **Confirm the outcome.** The batch worker acknowledges that native receipt. Read the resulting source and its evidence before treating the file as ready for questions. An unconfirmed outcome requires reconciliation of the existing operation, not submission of a duplicate upload.
+
+This file-based path supplies its prepared text and sections directly to the document lineage pipeline. The synchronous in-memory normalization path is separate. A converter installed for that path does not automatically become a supported queued-file parser. The Library capability registry uses the bounded parser's registered kinds and installed dependencies; clients must use the workspace's advertised formats.
+
+Structured intake keeps its own reader and publication pipeline. It detects the data format, reads worksheets or record batches, constructs table schemas and publishes versioned dataset snapshots. It does not flatten queryable datasets into document chunks. Both paths retain original-file identity and source provenance, but their resulting knowledge resources and query behavior differ.
+
 ## Installation policy
 
 The actual installation profile is `koinon.knowledge.ingestion`. koinon binds this typed policy before native document and structured settings. A lower explicit bulk admission limit can further restrict the profile; a higher limit is rejected.
