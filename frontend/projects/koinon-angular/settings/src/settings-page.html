@@ -861,7 +861,7 @@
                 </td>
                 <td>
                   <ffk-badge
-                    [tone]="job.status.toLowerCase() === 'failed' ? 'attention' : 'neutral'"
+                    [tone]="tone(job.status)"
                     >{{ status(job.status) | ffkText }}</ffk-badge
                   >
                 </td>

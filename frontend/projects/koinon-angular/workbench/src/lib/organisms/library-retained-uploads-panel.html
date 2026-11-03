@@ -6,6 +6,7 @@
     <p>
       {{ 'Follow your uploads and manage files that need attention.' | ffkText }}
     </p>
+    @if (v.error && !v.denied && allowed()) {
     <ffk-button
       variant="quiet"
       icon="refresh"
@@ -13,6 +14,7 @@
       [disabled]="v.busy || v.denied || !allowed()"
       (click)="refresh()"
     />
+    }
   </div>
   @if (!allowed()) {
     <p class="feedback" role="status">

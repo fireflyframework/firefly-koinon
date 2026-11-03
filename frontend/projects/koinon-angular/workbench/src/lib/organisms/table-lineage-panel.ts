@@ -18,6 +18,7 @@ import { KoinonSidePanel } from '@fireflyframework/koinon-angular/workbench/pane
 import { KoinonPagination } from '../molecules/pagination';
 import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonBadge } from '@fireflyframework/koinon-angular/workbench/core';
+import { statusTone } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonIcon } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonSkeleton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonTableCoordinatesView } from './table-coordinates';
@@ -43,6 +44,7 @@ registerKoinonSpanish(PANEL_SPANISH);
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KoinonTableLineagePanel {
+  readonly tone = statusTone;
   readonly state = inject(KoinonTableLineage);
   private readonly i18n = inject(KoinonI18n);
   size(value: number | null) {

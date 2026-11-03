@@ -153,9 +153,24 @@ async def test_ready_mode_candidates_are_exact_scope_and_keyset_bounded(index_ro
         row.status = status
         await index_rows.save(row)
     filters = {"provider_id": "provider", "model_id": "embedding"}
-    assert [row.id for row in await index_rows.mode_ready_candidates("tenant", "workspace", "workspace", **filters)] == ["a"]
-    assert [row.id for row in await index_rows.mode_ready_candidates("tenant", "workspace", "workspace", after="a", **filters)] == ["b"]
-    assert await index_rows.mode_ready_candidates("tenant", "workspace", "workspace", after="b", **filters) == []
+    assert [
+        row.id
+        for row in await index_rows.mode_ready_candidates("tenant", "workspace", "workspace", **filters)
+    ] == ["a"]
+    assert [
+        row.id
+        for row in await index_rows.mode_ready_candidates(
+            "tenant", "workspace", "workspace", after="a", **filters
+        )
+    ] == ["b"]
+    assert (
+        await index_rows.mode_ready_candidates("tenant", "workspace", "workspace", after="b", **filters) == []
+    )
     assert await index_rows.mode_ready_candidates("foreign", "workspace", "workspace", **filters) == []
     assert await index_rows.mode_ready_candidates("tenant", "workspace", "other-native", **filters) == []
-    assert await index_rows.mode_ready_candidates("tenant", "workspace", "workspace", provider_id="foreign", model_id="embedding") == []
+    assert (
+        await index_rows.mode_ready_candidates(
+            "tenant", "workspace", "workspace", provider_id="foreign", model_id="embedding"
+        )
+        == []
+    )

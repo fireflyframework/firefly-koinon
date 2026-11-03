@@ -182,8 +182,8 @@
                 message.created_at | ffkDate: undefined : 'time'
               }}</time>
               @if (message.status === 'failed' || message.status === 'cancelled') {
-                <ffk-badge [tone]="message.status === 'failed' ? 'attention' : 'neutral'">{{
-                  (message.status === 'failed' ? 'Needs attention' : 'Stopped') | ffkText
+                <ffk-badge [tone]="tone(message.status)">{{
+                  (message.status === 'failed' ? 'Failed' : 'Stopped') | ffkText
                 }}</ffk-badge>
               }
             </div>

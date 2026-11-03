@@ -35,7 +35,7 @@
   }
   <p class="description">{{ entry.description || 'No description yet.' }}</p>
   @if (!['source', 'document', 'dataset', 'table'].includes(entry.kind) || !['ready', 'active'].includes(entry.status)) {
-  <ffk-badge [tone]="['failed', 'error'].includes(entry.status) ? 'attention' : 'neutral'">{{
+  <ffk-badge [tone]="tone(entry.status)">{{
     view.status(entry.status) | ffkText
   }}</ffk-badge> }
   @if (['source', 'document', 'dataset', 'table'].includes(entry.kind)) {

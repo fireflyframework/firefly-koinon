@@ -7,13 +7,14 @@ Neither technique has one useful complexity label for the entire request. A fast
 
 ## What the measurements establish
 
-The study has three independent workloads. They must not be added together as though they were one instrumented chat request.
+The study has four independent workloads. They must not be added together as though they were one instrumented chat request.
 
 | Workload | Real components exercised | Boundary |
 | --- | --- | --- |
 | Selected source metadata | Native repository, SQLAlchemy, SQLite and RLM corpus builder; 100 to 10,000 selected rows | No product permission pass, immutable version pinning, document content or model execution |
 | Authorization batches | Product permissions, repositories, native ID projection and fresh authority snapshots; SQLite and PostgreSQL | Measures SQL statements and revocation behavior, not answer latency |
 | Native answers with Azure models | Native document ingestion, PostgreSQL 17, pgvector 0.8.7, embeddings, hybrid retrieval, RLM execution and source verification | Two documents and one request at a time; controlled authorization and policy fixtures, not authenticated chat load |
+| Office extraction | Actual DOCX, XLSX, CSV and PPTX originals through the native bounded parser in child processes | Sequential text fixtures; no upload, queue, embeddings, structured SQL ingestion or chat |
 
 Results below were collected on November 3, 2026 UTC. Native answer observations use released `26.11.10` and the source change in [retrieval reuse PR 117](https://github.com/fireflyframework/firefly-koinon/pull/117). Metadata observations use source revision `f113e6e9dafff6c6d567dffe571a0b7dd5aead8d` with pyfly `26.11.5`. Authorization observations belong to [batch admission PR 115](https://github.com/fireflyframework/firefly-koinon/pull/115). A source comparison does not mean an existing installation already runs those changes.
 
@@ -61,6 +62,16 @@ Current product authorization still has catalog enumeration work. A handful of S
 
 ### RAG query work
 
+The PostgreSQL RAG implementation already supports HNSW and hybrid ranking. A normal passage question is intended to retrieve a candidate window, not read every original file. The native retrieval stages are:
+
+1. Bind the authorized workspace, source restrictions and active embedding set.
+2. Retrieve lexical matches and nearest vector candidates for each query variant.
+3. Combine their ranked lists with Reciprocal Rank Fusion, then load the selected passages and their metadata.
+4. Apply remaining metadata filters and merge eligible curated knowledge. An additional reranking model can reorder the candidate window when configured; this model is disabled by default.
+5. Select the final passages and validate their evidence before releasing the answer.
+
+The default document settings request 30 candidates per query and 10 final results. They are configurable candidate limits, not a guarantee that the database examines only 30 rows. Neither HNSW nor reranking removes an eager catalog walk performed before retrieval. Treat those surrounding stages as separate optimization targets.
+
 The native PostgreSQL lexical path uses full-text ranking. Its cost depends on postings visited and the `M` matches ranked; a bounded top-N sort can cost `O(M log p)`. The method name does not imply the Okapi BM25 formula.
 
 Exact dense retrieval performs distance arithmetic proportional to `C × D`. An HNSW search instead performs distance work related to `V × D`, plus graph and heap operations. `V` is data-, filter- and configuration-dependent. Do not promise `O(log N)` latency from the presence of an index. PostgreSQL can choose another plan, and ANN filtering can require further traversal. Check the [pgvector indexing behavior](https://github.com/pgvector/pgvector#indexing) and the actual plan.
@@ -76,6 +87,37 @@ Per-document page caching can avoid repeated object retrieval, while text joinin
 ### Structured questions
 
 SQL over a dataset is a separate execution stage. A scan, indexed lookup, join and aggregation have different costs. RAG or RLM around that query does not remove the database's work. Record the source dataset revision, rows read and returned, plan, execution time, memory and spill information available from the engine. Preserve SQL and source provenance in the answer audit. This study does not yet provide a scale benchmark for the structured query engine.
+
+## Measured Office extraction
+
+This workload uses actual Office files generated with python-docx, openpyxl and python-pptx, plus CSV originals. It exercises the document extraction route for all four formats. The spreadsheet dataset route is a separate pipeline and is not measured here.
+
+There are three sequential samples per case, each with a fresh parent process and parser child. Wall time includes child startup, parsing and cleanup. Fixture creation, hashing and verification are outside timing. The CPU column is completed-child CPU time; the RSS column is the median peak reported by the child through extraction, including imports but before result serialization. Later output and cleanup peaks may be excluded. Receipts also retain parent CPU time and emitted text size. The shared macOS ARM64 host uses Python 3.13.13 and pyfly 26.11.5; OS caches and other host workloads are uncontrolled.
+
+Counts mean paragraphs for DOCX, slides for PPTX and four-column data rows for XLSX/CSV. The table shows medians. Individual timings and observed ranges remain in the receipts; three samples do not establish p95 latency.
+
+| Format and count | Original KiB | Expanded MiB | Wall seconds | Child CPU seconds | Peak RSS MiB |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| DOCX 100 | 36.2 | 0.82 | 2.69 | 1.55 | 110.2 |
+| DOCX 1,000 | 39.3 | 1.11 | 2.37 | 1.44 | 111.5 |
+| DOCX 4,000 | 49.5 | 2.10 | 2.47 | 1.54 | 116.8 |
+| XLSX 1,000 | 25.5 | 0.22 | 3.82 | 2.26 | 147.7 |
+| XLSX 10,000 | 209.8 | 2.06 | 4.14 | 2.80 | 150.2 |
+| XLSX 50,000 | 1032.1 | 10.49 | 5.25 | 4.41 | 160.1 |
+| CSV 1,000 | 40.4 | 0.04 | 1.97 | 1.74 | 135.3 |
+| CSV 10,000 | 413.6 | 0.40 | 2.61 | 1.96 | 140.5 |
+| CSV 50,000 | 2093.3 | 2.04 | 2.70 | 2.05 | 168.2 |
+| PPTX 10 | 35.7 | 0.11 | 1.49 | 1.28 | 109.6 |
+| PPTX 100 | 116.2 | 0.25 | 1.34 | 1.19 | 110.6 |
+| PPTX 500 | 476.1 | 0.91 | 1.46 | 1.29 | 111.7 |
+
+All 36 samples retained every evidence marker, preserved the original file hash and removed their parser scratch directories. Total retained fixture storage was 4.46 MiB. The largest original was 2.04 MiB; these content-count tests do not establish capacity for large image-heavy presentations or scanned documents. They also do not determine a worker's memory budget under concurrent ingestion. Include the parent service, simultaneous children, buffers, indexes and other processes when sizing workers.
+
+Child startup and imports are substantial in these fixtures, and wall-time variation is visible. A 500-slide sample taking roughly the same time as a ten-slide sample does not establish constant-time parsing. The larger XLSX cases show increasing child CPU work, but three points do not prove an asymptotic complexity class.
+
+The study also identified and corrected a separate quadratic text-budget check within a single slide. Previously, every new paragraph caused all earlier paragraphs to be encoded and counted again. The parser now accumulates each paragraph's UTF-8 byte length once, preserving the same byte and section limits. A regression with 256 paragraphs reduced observed paragraph-accounting work from 20,405,290 bytes to 158,905 bytes without changing extracted text or slide provenance. This is an operation-count result, not a claimed speedup for the complete ingestion pipeline.
+
+To reproduce the matrix with your hardware, follow the [Office performance probe instructions](https://github.com/fireflyframework/firefly-koinon/tree/main/tools/performance#office-document-extraction). The measured parser source hashes are `09f8f87960ca3e547af7cc9b8c7526638274f60c74894ed7422d84616e6a36ca` for the file runner, `faa112a85f07210bb723f2e46937c89232b96be3e9da8ec40c49f7fc725fd05d` for Office extraction, and `b877858520c09d2efeb2805d5bdaca50bb60abc2cac41259304ea3039fff9a39` for format loaders. These identify the measured implementation independently of later documentation edits.
 
 ## Measured metadata construction
 

@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "firefly-koinon",
   "display_name": "firefly koinon",
-  "version": "26.11.11",
+  "version": "26.11.12",
   "description": "Connect your desktop assistant to authorized knowledge in firefly koinon.",
   "long_description": "Discover authorized knowledge through your organization's firefly koinon MCP endpoint. Use an operator-registered public OAuth client and explicit browser sign-in. OAuth credentials stay in memory for this desktop session only; reconnect after restart or expiry. Personal access tokens remain an explicit compatibility mode. Server permissions govern every operation.",
   "author": {

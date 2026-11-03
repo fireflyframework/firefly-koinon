@@ -27,6 +27,7 @@ import {
 } from '../services/coordinate-labels';
 import { KoinonTextPipe, KoinonValuePipe } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonBadge } from '@fireflyframework/koinon-angular/workbench/core';
+import { statusTone } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonSkeleton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonPagination } from '../molecules/pagination';
@@ -47,6 +48,7 @@ registerKoinonSpanish(PANEL_SPANISH);
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KoinonTableCoordinatesView {
+  readonly tone = statusTone;
   readonly target = input.required<CoordinateTarget>();
   readonly state = inject(KoinonTableCoordinates);
   readonly row = signal('1');

@@ -18,6 +18,7 @@ from koinon.knowledge.indexes.adapters import index_id
 from koinon.knowledge.indexes.dtos import IndexPlanInput
 from koinon.knowledge.indexes.entities import KnowledgeIndex
 from koinon.knowledge.indexes.service import KnowledgeIndexService
+from koinon.knowledge.indexes.transactions import require_detached_provider_work
 
 
 @service(name="installation.indexes")
@@ -76,8 +77,21 @@ class NativeInstallationIndexes:
             validate_reconciled(permit, value, run, row, provider)
         return run, reader, row, provider
 
-    @transactional(read_from_primary=True)
     async def intent(self, permit: InstallationPermit, value: IndexInstallation):
+        require_detached_provider_work()
+        state = await self.intent_state(permit, value)
+        if isinstance(state, str):
+            return state
+        provider, data = state
+        revision = provider.revision
+        expected_fingerprint = embedding_fingerprint(
+            provider, value.model_id, value.dimensions, value.dimensions
+        )
+        profile = await self.reader.get().planner.qualify(provider, data)
+        return await self.persist_intent(permit, value, data, revision, expected_fingerprint, profile)
+
+    @transactional(read_from_primary=True)
+    async def intent_state(self, permit, value):
         run = await self.admissions.require(permit)
         if "index-intent:" + value.key in run.checkpoints:
             if (
@@ -107,16 +121,31 @@ class NativeInstallationIndexes:
         ):
             raise InstallationError("INSTALLATION_INDEX_EXISTS")
         provider_id = NativeInstallationWrites.reference(run, "provider", value.provider_key)
-        provider, profile = await reader.planner.prepare(
-            permit.tenant_id,
-            IndexPlanInput(
-                workspace_id=workspace_id,
-                domain=value.domain,
-                provider_id=provider_id,
-                model_id=value.model_id,
-                expected_dimensions=value.dimensions,
-            ),
+        data = IndexPlanInput(
+            workspace_id=workspace_id,
+            domain=value.domain,
+            provider_id=provider_id,
+            model_id=value.model_id,
+            expected_dimensions=value.dimensions,
         )
+        provider = await reader.planner.provider(permit.tenant_id, provider_id, value.model_id)
+        return provider, data
+
+    @transactional(read_from_primary=True)
+    async def persist_intent(self, permit, value, expected_data, revision, expected_fingerprint, profile):
+        state = await self.intent_state(permit, value)
+        if isinstance(state, str):
+            return state
+        provider, data = state
+        if (
+            data != expected_data
+            or provider.revision != revision
+            or embedding_fingerprint(provider, value.model_id, value.dimensions, value.dimensions)
+            != expected_fingerprint
+        ):
+            raise InstallationError("INSTALLATION_PROVIDER_CHANGED")
+        reader = self.reader.get()
+        workspace_id = data.workspace_id
         native_id = ("es-" if value.domain == "documents" else "fs-") + resource_id(
             permit, "index:" + value.key
         ).replace("-", "")

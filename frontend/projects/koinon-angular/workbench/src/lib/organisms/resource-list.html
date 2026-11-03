@@ -89,7 +89,7 @@
               @defer (on immediate) { <ffk-knowledge-availability [entry]="item"/> }
             }
             @if (showCatalogStatus(item)) {
-              <ffk-badge [tone]="['failed', 'error'].includes(item.status) ? 'attention' : 'neutral'">{{
+              <ffk-badge [tone]="tone(item.status)">{{
                 status(item.status) | ffkText
               }}</ffk-badge>
             }

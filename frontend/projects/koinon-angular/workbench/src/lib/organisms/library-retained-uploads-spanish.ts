@@ -9,6 +9,7 @@ export const RETAINED_UPLOADS_SPANISH: Record<string, string> = {
   Uploads: 'Subidas',
   'Inspect uploads retained by this organization for your current account and connection. Opening this view never uploads files or repeats processing.':
     'Consulta las subidas conservadas en esta organización para tu cuenta y conexión actuales. Abrir esta vista no sube archivos ni repite su procesamiento.',
+  'Status temporarily unavailable. Checks retry automatically; no file or processing request is sent again.': 'El estado no está disponible temporalmente. Las consultas se reintentan automáticamente; no se vuelve a enviar ningún archivo ni solicitud de procesamiento.',
   'Refresh uploads': 'Actualizar subidas',
   'Current Library access is required to inspect uploads.':
     'Necesitas acceso vigente a Biblioteca para consultar las subidas.',

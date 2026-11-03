@@ -16,4 +16,4 @@
 
 from __future__ import annotations
 
-__version__ = "26.11.11"
+__version__ = "26.11.12"

@@ -1,5 +1,5 @@
 {
-  "include": ["corpus_metadata.py", "tests"],
+  "include": ["corpus_metadata.py", "office_files.py", "tests"],
   "extraPaths": ["../../packages/canon/src", "../../packages/structured/src"],
   "pythonVersion": "3.13",
   "typeCheckingMode": "standard"

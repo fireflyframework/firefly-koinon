@@ -31,3 +31,19 @@ packages/canon/.venv/bin/pyright -p tools/performance \
 ```
 
 The [performance study](../../docs/concepts/knowledge-performance-study.md) explains measured native-provider results, per-stage complexity, cost accounting and the separate full-installation qualification matrix. Generated receipts belong in an operator-owned evidence directory, not a release package or source commit.
+
+## Office document extraction
+
+`office_files.py` creates actual DOCX, XLSX, CSV and PPTX originals, then runs the native bounded document parser. It measures document reading, not structured dataset ingestion, uploads, worker queues, embeddings or chat. XLSX and CSV are deliberately exercised through the document parser; their SQL dataset path requires separate qualification.
+
+```bash
+PYTHONPATH=packages/canon/src:packages/structured/src \
+  packages/canon/.venv/bin/python tools/performance/office_files.py \
+  --output /tmp/koinon-office-study/run-1 --repeats 3
+```
+
+The output directory must not already exist. The probe preserves originals, individual receipts, diagnostic logs and a completion manifest containing hashes. It stops on the first failing sample, preserves its diagnostics and does not raise product resource limits. It deletes no files or databases. Restrict a run with `--formats docx pptx` when investigating one parser family.
+
+The fixed matrix includes DOCX documents with 100, 1,000 and 4,000 paragraphs, PPTX presentations with 10, 100 and 500 slides, and XLSX/CSV files with 1,000, 10,000 and 50,000 four-column rows. These synthetic fixtures establish extraction behavior; they do not represent image-heavy slides, scanned documents, workbook formulas or arbitrary customer files. The local probe permits at most five repetitions and 512 MiB of stored fixtures.
+
+Each sample starts a fresh parent process and the parser's actual child. Timing includes the native parsing call, child startup and cleanup; it excludes fixture generation, hashing and result verification. Receipts separate wall time, parent CPU seconds, completed-child CPU seconds and the child's reported peak RSS. They also record original, expanded and emitted text bytes, the unchanged parser policy and complete evidence-marker coverage. Reported peak RSS includes child imports and extraction up to the native measurement, before result serialization. It can exclude later output and cleanup peaks. OS caches and shared-host load are uncontrolled; do not infer production concurrency or p95 latency from three sequential samples.

@@ -21,7 +21,9 @@ import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonFileTypeIcon } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonIcon } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonFileFormats } from '@fireflyframework/koinon-angular/workbench/core';
+import { availabilityStatus } from '@fireflyframework/koinon-angular/workbench/availability';
 import { KoinonBadge } from '@fireflyframework/koinon-angular/workbench/core';
+import { statusTone } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonSkeleton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonFolderTree } from '@fireflyframework/koinon-angular/workbench/panels';
 import {
@@ -295,20 +297,14 @@ export class KoinonLibraryUploadPanel implements OnInit, DoCheck {
         : 'Worker state not verified';
     return this.label(status);
   }
+  tone(status: string) { return this.view()?.observationFailed || this.view()?.uncertain ? 'attention' as const : statusTone(status); }
   currentLabel(item: FileBatchItemView) {
+    return availabilityStatus(this.view()?.availability[item.asset_id], item.mode).label;
+  }
+  currentTone(item: FileBatchItemView) {
+    if (this.view()?.observationFailed || this.view()?.uncertain) return 'attention';
     const value = this.view()?.availability[item.asset_id];
-    if (!value) return 'Availability not checked';
-    if (value.phase === 'processing') return 'Processing';
-    if (value.phase === 'indexing') return 'Indexing';
-    if (value.phase === 'queued') return 'Queued';
-    if (value.phase === 'failed') return 'Needs attention';
-    if (value.search?.state === 'ready') return 'Searchable';
-    if (value.query?.state === 'ready') return 'Available to query';
-    if (value.read?.state === 'ready')
-      return value.search?.state === 'pending'
-        ? 'Text available; search pending'
-        : 'Text available; search not checked';
-    return 'Availability not checked';
+    return value ? availabilityStatus(value, item.mode).tone : statusTone(item.status);
   }
   label(status: string, progress = false) {
     if (status === 'staging' && progress) return 'Transferring originals';
