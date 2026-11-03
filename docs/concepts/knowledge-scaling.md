@@ -7,6 +7,8 @@ New questions can include newly available knowledge under the caller's current p
 
 This guide describes the native PostgreSQL document retrieval and recorded-view RLM paths. Other retrieval backends require their own query-plan and recall measurements. These are implementation cost bounds and a measurement procedure, not published throughput, cloud sizing or enterprise-capacity results.
 
+For measured metadata growth, permission-query counts, actual model observations and cost accounting, read the [RAG and RLM performance study](knowledge-performance-study.md). Its results state the exact workload and distinguish measured stages from complete installation capacity.
+
 ## Name the input before describing complexity
 
 | Variable | Meaning |
