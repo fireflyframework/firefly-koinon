@@ -52,7 +52,7 @@ export function createBridge(config: Config, icon: string, iconDark: string): Se
     if (!available()) return Promise.reject(authRequired());
     const generation = epoch;
     connection ??= (async () => {
-      const client = new Client({ name: 'firefly-koinon-desktop', version: '26.11.10' }, {
+      const client = new Client({ name: 'firefly-koinon-desktop', version: '26.11.11' }, {
         capabilities: appsCapabilities(server.getClientCapabilities()),
       });
       remote = client;
@@ -79,7 +79,7 @@ export function createBridge(config: Config, icon: string, iconDark: string): Se
     return connection;
   };
   const server = new Server({
-    name: 'firefly-koinon', title: 'koinon', version: '26.11.10',
+    name: 'firefly-koinon', title: 'koinon', version: '26.11.11',
     icons: [{ src: icon, mimeType: 'image/png', sizes: ['128x128'], theme: 'light' }, { src: iconDark, mimeType: 'image/png', sizes: ['128x128'], theme: 'dark' }],
   }, {
     capabilities: { tools: { listChanged: true }, resources: {}, prompts: {}, extensions: { [UI_EXTENSION]: {} } },

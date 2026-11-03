@@ -1,6 +1,8 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 export const RETAINED_UPLOADS_SPANISH: Record<string, string> = {
+  'Follow your uploads and manage files that need attention.': 'Sigue tus subidas y gestiona los archivos que necesitan atención.',
+  'Uploads for your current account and organization will appear here.': 'Aquí aparecerán las subidas de tu cuenta y organización actuales.',
   file: 'archivo',
   files: 'archivos',
   'Originals received': 'Originales recibidos',
@@ -11,9 +13,9 @@ export const RETAINED_UPLOADS_SPANISH: Record<string, string> = {
   'Current Library access is required to inspect uploads.':
     'Necesitas acceso vigente a Biblioteca para consultar las subidas.',
   'Loading uploads': 'Cargando subidas',
-  'Your retained uploads': 'Tus subidas conservadas',
+  'Your uploads': 'Tus subidas',
   'Inspect upload': 'Consultar subida',
-  'No retained uploads were returned': 'No se han encontrado subidas conservadas',
+  'No uploads yet': 'Todavía no hay subidas',
   'Uploads made with another account or connection may not be visible here. This does not prove that no work exists elsewhere.':
     'Las subidas realizadas con otra cuenta o conexión pueden no aparecer aquí. Eso no significa que no existan trabajos en otros ámbitos.',
   'Back to uploads': 'Volver a subidas',

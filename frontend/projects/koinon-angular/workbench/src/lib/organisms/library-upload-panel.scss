@@ -174,11 +174,11 @@ select:focus-visible {
 
 .upload-preview .upload-file {
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr) auto 40px;
+  grid-template-columns: 30px minmax(0, 1fr) auto 40px;
   column-gap: 10px;
   row-gap: 4px;
 }
-.upload-file > ffk-icon {
+.upload-file > ffk-file-type-icon {
   grid-area: 1 / 1;
 }
 .upload-file .file-name {
@@ -198,7 +198,7 @@ select:focus-visible {
 }
 @media (max-width: 600px) {
   .upload-preview .upload-file {
-    grid-template-columns: 18px minmax(0, 1fr) 40px;
+    grid-template-columns: 30px minmax(0, 1fr) 40px;
   }
   .upload-file .file-size {
     grid-area: 2 / 2;
@@ -214,4 +214,115 @@ select:focus-visible {
 
 .mode-help {
   margin: -8px 0 0;
+}
+
+.file-use {
+  grid-column: 2 / -1;
+  min-width: 0;
+}
+.file-use select {
+  width: auto;
+  max-width: 100%;
+  min-height: 36px;
+  padding: 4px 8px;
+  font-size: 13px;
+}
+
+.record > div {
+  flex: 1;
+}
+
+:host {
+  display: flex;
+  min-height: 0;
+  max-height: min(650px, calc(100dvh - 180px));
+}
+form,
+.retained {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  gap: 12px;
+}
+.upload-body {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  gap: 12px;
+  padding: 2px;
+}
+.dialog-actions {
+  flex: none;
+  margin-top: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--ui-line);
+}
+.drop-zone.compact {
+  padding: 8px 12px;
+  flex-direction: row;
+  text-align: start;
+  gap: 10px;
+}
+.drop-zone.compact > ffk-icon {
+  font-size: 18px;
+}
+.upload-preview,
+.result-files {
+  max-height: 370px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.upload-preview .upload-file {
+  padding: 8px 0;
+}
+.record {
+  padding: 12px 0;
+  flex-wrap: nowrap;
+}
+.record-text {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+}
+.record-text span {
+  grid-column: 1/-1;
+}
+.record-text small {
+  color: var(--ui-muted);
+  white-space: nowrap;
+}
+.field-help {
+  margin: 0;
+}
+summary {
+  cursor: pointer;
+}
+@media (max-width: 600px) {
+  :host {
+    max-height: calc(100dvh - 170px);
+  }
+  .upload-preview,
+  .result-files {
+    max-height: 320px;
+  }
+  .upload-file > ffk-button {
+    grid-row: 1/3;
+  }
+  .upload-file > ffk-file-type-icon {
+    grid-row: 1/3;
+  }
+  .upload-file .file-name {
+    align-self: end;
+  }
+  .upload-file .file-size {
+    align-self: start;
+  }
+  .record-text {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+.upload-preview .upload-file:last-child,
+.result-files .record:last-child {
+  border-bottom: 0;
 }

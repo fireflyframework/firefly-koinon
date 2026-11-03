@@ -155,7 +155,9 @@
       <div class="file-capabilities">
         <ffk-file-formats [extensions]="accept ? accept.split(',') : []" [showDetails]="false" />
         <p>
-          {{ 'Maximum per file' | ffkText }}: {{ size(limits.max_file_bytes) }} ·
+          {{ 'Maximum per file' | ffkText }}: {{ size(limits.max_file_bytes) }}
+        </p>
+        <p>
           {{ 'Files per message' | ffkText }}: {{ limits.max_selected }}
         </p>
         @if (imageFilesEnabled) {

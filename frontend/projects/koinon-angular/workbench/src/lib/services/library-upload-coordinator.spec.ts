@@ -7,8 +7,10 @@ import {
   type KoinonTransport,
   type RequestOptions,
 } from '@fireflyframework/koinon-sdk';
+import { UploadObservationLoop } from './upload-observation-loop';
 import {
   effectiveUploadLimits,
+  shouldObserveUpload,
   LibraryUploadCoordinator,
   type UploadScope,
 } from './library-upload-coordinator';
@@ -24,8 +26,8 @@ function fixture(configured = true) {
     destination: { workspace_id: 'space', project_id: 'project', parent_id: 'folder' },
     status,
     revision,
-    total_items: 1,
-    total_bytes: 1,
+    total_items: 1 + extraItems.length,
+    total_bytes: [item, ...extraItems].reduce((sum, value) => sum + value.size_bytes, 0),
     counts: {},
     cancellation_requested: status === 'cancelled',
     created_at: '2026-11-01T00:00:00Z',
@@ -43,6 +45,7 @@ function fixture(configured = true) {
     asset_id: 'asset',
     job_id: null,
   };
+  let extraItems: (typeof item)[] = [];
   const transport: KoinonTransport = {
     request: async <T>(method: string, path: string, options: RequestOptions = {}) => {
       calls.push({ method, path, options });
@@ -55,6 +58,10 @@ function fixture(configured = true) {
         return {
           configured,
           modes: ['document', 'dataset'],
+          formats: [
+            { mode: 'document', extensions: ['.docx', '.txt', '.xlsx', '.csv'], available: true },
+            { mode: 'dataset', extensions: ['.xlsx', '.csv'], available: true },
+          ],
           max_file_bytes: 134217728,
           max_batch_bytes: 536870912,
           max_files: 100,
@@ -70,20 +77,34 @@ function fixture(configured = true) {
         } as T;
       if (path.endsWith('/batches') && method === 'POST') {
         created = true;
-        item = { ...item, ...(options.body as { items: (typeof item)[] }).items[0] };
+        const manifest = (options.body as { items: (typeof item)[] }).items;
+        item = { ...item, ...manifest[0] };
+        extraItems = manifest.slice(1).map((entry, index) => ({
+          ...item,
+          ...entry,
+          id: 'item-' + index,
+          status: 'awaiting_upload',
+        }));
         return batch() as T;
       }
       if (path.endsWith('/items'))
-        return { items: [item], total: 1, page: 1, page_size: 50, pages: 1 } as T;
+        return {
+          items: [item, ...extraItems],
+          total: 1 + extraItems.length,
+          page: 1,
+          page_size: 50,
+          pages: 1,
+        } as T;
       if (path.endsWith('/content')) {
-        item.status = 'staged';
+        const target = [item, ...extraItems].find((value) => path.includes('/' + value.id + '/'))!;
+        target.status = 'staged';
         revision++;
         return {
           status: 'staged',
           batch_id: 'batch',
-          item_id: 'item',
-          size_bytes: item.size_bytes,
-          sha256: item.sha256,
+          item_id: target.id,
+          size_bytes: target.size_bytes,
+          sha256: target.sha256,
         } as T;
       }
       if (path.endsWith('/original/reconcile')) {
@@ -93,7 +114,7 @@ function fixture(configured = true) {
       }
       if (path.endsWith('/submit')) {
         status = 'queued';
-        item.status = 'queued';
+        for (const target of [item, ...extraItems]) target.status = 'queued';
         revision++;
         return batch() as T;
       }
@@ -129,7 +150,19 @@ function fixture(configured = true) {
     hash,
     changed,
   });
-  return { calls, scope, transport, state, synchronous, hash, changed };
+  return {
+    calls,
+    scope,
+    transport,
+    state,
+    synchronous,
+    hash,
+    changed,
+    advance: (value: string) => {
+      status = value;
+      item.status = value;
+    },
+  };
 }
 describe('durable regular Library uploads', () => {
   it('shares honest displayed and enforced limits when server caps exceed browser or synchronous bounds', async () => {
@@ -429,4 +462,130 @@ it('ignores a capability result after destination authority changes', async () =
   await checking;
   expect(f.state.view().capabilities).toBeNull();
   expect(f.state.view().checkingCapabilities).toBe(false);
+});
+
+it('submits one mixed manifest with stable individual uses and no replay after observation or navigation', async () => {
+  const f = fixture();
+  const files = [
+    new File(['a'], 'review.docx'),
+    new File(['b'], 'totals.xlsx'),
+    new File(['c'], 'notes.csv'),
+  ];
+  await f.state.start(files, [undefined, undefined, 'document']);
+  const create = f.calls.filter((call) => call.method === 'POST' && call.path.endsWith('/batches'));
+  expect(create).toHaveLength(1);
+  expect(
+    (create[0]!.options.body as { items: { mode: string }[] }).items.map((item) => item.mode),
+  ).toEqual(['document', 'dataset', 'document']);
+  expect(f.calls.filter((call) => call.method === 'PUT')).toHaveLength(3);
+  f.scope.navigationId = 'another-visible-folder';
+  expect(f.state.syncScope()).toBe(true);
+  await f.state.refresh();
+  await f.state.start(files);
+  expect(
+    f.calls.filter((call) => call.method === 'POST' && call.path.endsWith('/batches')),
+  ).toHaveLength(1);
+  expect(f.calls.filter((call) => call.method === 'PUT')).toHaveLength(3);
+  expect(f.state.detachSubmitted()).toBe(true);
+  expect(f.state.view().batch).toBeNull();
+});
+
+it.each(['batch', 'availability'])(
+  'backs off actual failed %s observations without replaying upload mutations',
+  async (route) => {
+    const f = fixture();
+    await f.state.start([new File(['a'], 'review.docx')]);
+    const original = f.transport.request.bind(f.transport);
+    let reads = 0;
+    f.transport.request = async <T>(
+      method: Parameters<KoinonTransport['request']>[0],
+      path: string,
+      options?: RequestOptions,
+    ) => {
+      if (path.endsWith(route === 'batch' ? '/batch' : '/catalog/availability')) {
+        ++reads;
+        throw Error('offline');
+      }
+      return original<T>(method, path, options);
+    };
+    vi.useFakeTimers();
+    const loop = new UploadObservationLoop({
+      active: () => true,
+      visible: () => true,
+      read: () => f.state.refresh(),
+    });
+    try {
+      loop.update();
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(reads).toBe(1);
+      expect(f.state.view().observationFailed).toBe(true);
+      await vi.advanceTimersByTimeAsync(29999);
+      expect(reads).toBe(1);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(reads).toBe(2);
+      await vi.advanceTimersByTimeAsync(59999);
+      expect(reads).toBe(2);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(reads).toBe(3);
+      expect(f.calls.filter((call) => call.method === 'PUT')).toHaveLength(1);
+      expect(
+        f.calls.filter((call) => call.method === 'POST' && call.path.endsWith('/submit')),
+      ).toHaveLength(1);
+    } finally {
+      loop.dispose();
+      vi.useRealTimers();
+    }
+  },
+);
+
+it('keeps observing a completed extraction after unavailable availability, preserving the last observation until recovery', async () => {
+  const f = fixture();
+  const original = f.transport.request.bind(f.transport);
+  let availability: 'unknown' | 'offline' | 'ready' = 'unknown';
+  f.transport.request = async <T>(
+    method: Parameters<KoinonTransport['request']>[0],
+    path: string,
+    options?: RequestOptions,
+  ) => {
+    if (path.endsWith('/catalog/availability')) {
+      if (availability === 'offline') throw Error('503');
+      return {
+        observed_at: availability === 'ready' ? '2026-11-02T23:00:00Z' : '2026-11-02T22:00:00Z',
+        items: {
+          asset: {
+            phase: availability === 'ready' ? 'complete' : 'unknown',
+            search: { state: availability === 'ready' ? 'ready' : 'unknown' },
+          },
+        },
+      } as T;
+    }
+    return original<T>(method, path, options);
+  };
+  await f.state.start([new File(['a'], 'review.docx')]);
+  const prior = f.state.view().availability,
+    timestamp = f.state.view().availabilityObservedAt;
+  f.advance('succeeded');
+  availability = 'offline';
+  vi.useFakeTimers();
+  const loop = new UploadObservationLoop({
+    active: () => shouldObserveUpload(f.state.view()),
+    visible: () => true,
+    read: () => f.state.refresh(),
+  });
+  try {
+    loop.update();
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(f.state.view().batch?.status).toBe('succeeded');
+    expect(f.state.view().observationFailed).toBe(true);
+    expect(f.state.view().availability).toEqual(prior);
+    expect(f.state.view().availabilityObservedAt).toBe(timestamp);
+    availability = 'ready';
+    await vi.advanceTimersByTimeAsync(30000);
+    expect(f.state.view().availability['asset']?.search?.state).toBe('ready');
+    expect(f.state.view().observationFailed).toBe(false);
+    expect(shouldObserveUpload(f.state.view())).toBe(false);
+  } finally {
+    loop.dispose();
+    vi.useRealTimers();
+  }
 });

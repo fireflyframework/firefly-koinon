@@ -86,20 +86,21 @@ async def test_native_lineage_admission_roundtrips_through_bulk_inspection(bulk,
 
 
 @pytest.mark.parametrize(
-    "canon_pool_size,outcome",
+    "canon_pool_size,outcome,format",
     [
-        (1, "success"),
-        (2, "success"),
-        (1, "revoked"),
-        (2, "revoked"),
-        (1, "rollback"),
-        (2, "rollback"),
-        (1, "concurrent"),
-        (1, "recovery"),
+        (1, "success", "text"),
+        (2, "success", "text"),
+        (1, "revoked", "text"),
+        (2, "revoked", "text"),
+        (1, "rollback", "text"),
+        (2, "rollback", "text"),
+        (1, "concurrent", "text"),
+        (1, "recovery", "text"),
+        *((1, "success", kind) for kind in ("docx", "pptx", "xlsx", "csv")),
     ],
 )
 async def test_actual_native_transform_promotes_and_bulk_receipt_is_recoverable(
-    bulk, bulk_url, tmp_path, canon_pool_size, outcome
+    bulk, bulk_url, tmp_path, canon_pool_size, outcome, format
 ):
     import asyncio
     from dataclasses import replace
@@ -129,7 +130,31 @@ async def test_actual_native_transform_promotes_and_bulk_receipt_is_recoverable(
     from koinon.knowledge.adapters import native_scope
     from koinon.knowledge.bulk.queue import BulkQueue
 
-    await queued(bulk, "transform")
+    content = b"original"
+    prepared = SimpleNamespace(text="original", sections=[{"path": [], "body": "original"}], metadata={})
+    if format == "text":
+        await queued(bulk, "transform")
+    else:
+        from office_fixtures import office_original
+        from test_bulk_native import request
+
+        from koinon.knowledge.bulk.dtos import BulkAction
+
+        content = office_original(format)
+        filename = "review." + format
+        manifest = request(bulk.target, content)
+        manifest = manifest.model_copy(
+            update={"items": [manifest.items[0].model_copy(update={"filename": filename})]}
+        )
+        batch = await bulk.service.create("issuer|editor", "north", manifest, "create-office-transform")
+        item = (await bulk.service.items("issuer|editor", "north", batch.id)).items[0]
+        await bulk.service.stage("issuer|editor", "north", batch.id, item.id, content, "upload")
+        current = await bulk.service.get("issuer|editor", "north", batch.id)
+        await bulk.service.submit(
+            "issuer|editor", "north", batch.id, BulkAction(expected_revision=current.revision), "submit"
+        )
+        path = tmp_path / filename
+        path.write_bytes(content)
     queue = bulk.context.get_bean(BulkQueue)
     lease = await queue.claim("native-transform")
     port = await native_reader(bulk, bulk_url)
@@ -265,23 +290,39 @@ async def test_actual_native_transform_promotes_and_bulk_receipt_is_recoverable(
         if outcome == "recovery":
             await failed_native_recovery_roundtrip(bulk, port, queue, lease, lineage, pipeline)
             return
-        operation = pipeline.run(
-            request=SubmitSourceRequest(kind=SourceKind.text),
-            content=b"original",
+        arguments = dict(
+            request=SubmitSourceRequest(kind=SourceKind(format)),
             tenant_id=lease.tenant_id,
             workspace_id=bulk.target["workspace_id"],
             actor=lease.subject,
             filename=lease.filename,
-            content_type="text/plain",
-            logical_key=lease.source_id,
+            content_type="text/plain" if format == "text" else None,
             operation_id="upload:" + lease.source_id,
             validate_processing=processing,
             publication_guard=lambda: queue.publication(lease),
             validate_publication=lambda: queue._check(lease),
-            prepared_document=SimpleNamespace(
-                text="original", sections=[{"path": [], "body": "original"}], metadata={}
-            ),
         )
+        if format == "text":
+            operation = pipeline.run(
+                **arguments, content=content, logical_key=lease.source_id, prepared_document=prepared
+            )
+        else:
+            from dataclasses import fields
+
+            from flycanon.core.services.sources.intake_service import IntakeService
+
+            intake = IntakeService(
+                **{
+                    field.name: getattr(components, field.name)
+                    for field in fields(components)
+                    if field.name != "policy"
+                },
+                lineage_pipeline=pipeline,
+                intake_policy=components.policy,
+            )
+            operation = intake.submit_file(
+                **arguments, path=path, original_reference=None, logical_source_key=lease.source_id
+            )
         if outcome in {"revoked", "rollback"}:
             from pyfly.kernel import ForbiddenException
 
@@ -302,7 +343,7 @@ async def test_actual_native_transform_promotes_and_bulk_receipt_is_recoverable(
             if outcome == "revoked":
                 assert "index" not in stages
             return
-        row = await asyncio.wait_for(operation, 10)
+        row = await asyncio.wait_for(operation, 10 if format == "text" else 30)
     for revocation in revocations:
         await asyncio.wait_for(revocation, 3)
     if outcome == "concurrent":
@@ -310,12 +351,47 @@ async def test_actual_native_transform_promotes_and_bulk_receipt_is_recoverable(
 
         with pytest.raises(ForbiddenException):
             await queue.check(lease)
-    assert row.n_chunks == 1
+    assert row.n_chunks >= 1
     assert stages == ["processing", "processing", "processing", "embed", "processing", "index", "audit"]
     observation = await port.inspect(lease)
     assert observation.status == "committed"
     assert observation.receipt is not None
     assert observation.receipt.native_source_id == row.id
+    assert (observation.receipt.sha256, observation.receipt.size_bytes) == (lease.sha256, len(content))
+    assert observation.receipt.source_version_id and observation.receipt.extraction_id
+    if format != "text":
+        from hashlib import sha256
+
+        from flycanon.core.services.sources.lineage.dtos import DocumentScope
+        from flycanon.core.services.sources.lineage.ports import LineageQuery
+
+        scope = DocumentScope(lease.tenant_id, bulk.target["workspace_id"], lease.subject)
+        with native_scope("canon", scope.tenant_id, scope.workspace_id, scope.actor):
+            async with lineage.repository.read() as unit:
+                extraction = await unit.one(
+                    LineageQuery("extraction", scope, equal={"id": observation.receipt.extraction_id})
+                )
+                steps = await unit.all(
+                    LineageQuery("step", scope, equal={"extraction_id": observation.receipt.extraction_id})
+                )
+                normalized = await unit.one(
+                    LineageQuery("artifact", scope, equal={"id": extraction["normalized_artifact_id"]})
+                )
+            assert {step["stage"] for step in steps} == {"normalize", "merge", "pii_policy"}
+            normalizer = next(step for step in steps if step["stage"] == "normalize")
+            assert normalizer["implementation"]["class"].endswith("file_parser.parse_document_file")
+            assert normalizer["implementation"]["configuration_recorded"] is True
+            normalized_bytes = await lineage.store.get(normalized["object_key"])
+            assert b"North" in normalized_bytes and b"125" in normalized_bytes
+            assert sha256(normalized_bytes).hexdigest() == normalized["sha256"]
+            assert await lineage.store.get(observation.receipt.object_key) == content
+        assert row.kind == format and row.metadata_json["_persisted_original"]["sha256"] == lease.sha256
+        await port.acknowledge(lease, observation.receipt)
+        stored = (await bulk.service.items(lease.subject, lease.tenant_id, lease.batch_id)).items[0]
+        assert (
+            stored.status == "succeeded" and stored.source_version_id == observation.receipt.source_version_id
+        )
+        assert stored.extraction_id == observation.receipt.extraction_id
 
 
 async def failed_native_recovery_roundtrip(bulk, port, queue, lease, lineage, pipeline):

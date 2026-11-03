@@ -509,3 +509,39 @@ it('supplies Overview to ordinary Settings and preserves the explicit chat Assis
   expect(workbench.destination()).toBe('settings');
   expect(workbench.settingsActions.section()).toBe('agents');
 });
+
+it('reopens the ordinary-folder upload action without replacing a transfer already in progress', async () => {
+  const fixture = await mount(async (_method, path) =>
+    path === '/context'
+      ? {
+          subject: 'editor',
+          tenants: [
+            {
+              id: 'tenant-one',
+              name: 'Synthetic tenant',
+              roles: ['editor'],
+              permissions: ['catalog:read', 'catalog:write', 'ingest:write'],
+            },
+          ],
+          memberships: [],
+          workspaces: [workspace],
+        }
+      : path === '/capabilities'
+        ? { providers: [], features: [] }
+        : { items: [] },
+  );
+  const w = fixture.componentInstance;
+  const show = vi.spyOn(w, 'showDialog').mockImplementation(() => undefined);
+  const file = new File(['private'], 'captured.docx');
+  w.files = [file];
+  w.formParent = 'captured-folder';
+  w.uploadedCount.set(1);
+  w.uploadState.set('receiving');
+  w.f.parentId.set('another-visible-folder');
+  w.openLibraryUpload();
+  expect(show).toHaveBeenCalledWith('upload');
+  expect(w.files).toEqual([file]);
+  expect(w.formParent).toBe('captured-folder');
+  expect(w.uploadedCount()).toBe(1);
+  expect(w.uploadState()).toBe('receiving');
+});

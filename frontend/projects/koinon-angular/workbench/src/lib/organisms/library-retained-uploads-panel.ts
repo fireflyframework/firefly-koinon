@@ -16,6 +16,8 @@ import {
   untracked,
   type OnDestroy,
 } from '@angular/core';
+import { UploadObservationLoop } from '../services/upload-observation-loop';
+import { formatFileSize } from '@fireflyframework/koinon-angular/workbench/core';
 import { DecimalPipe } from '@angular/common';
 import type { FileBatchView, Page } from '@fireflyframework/koinon-sdk';
 import { KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
@@ -28,6 +30,7 @@ import {
 } from '../services/library-retained-uploads-contract';
 import { RetainedUploadJournal } from '../services/library-retained-uploads-journal';
 import { RetainedUploadsState } from '../services/library-retained-uploads-state';
+import { KoinonFileTypeIcon } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonBadge } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonSkeleton } from '@fireflyframework/koinon-angular/workbench/core';
@@ -47,6 +50,7 @@ registerKoinonSpanish(RETAINED_UPLOADS_SPANISH);
 @Component({
   selector: 'ffk-library-retained-uploads-panel',
   imports: [
+    KoinonFileTypeIcon,
     DecimalPipe,
     KoinonBadge,
     KoinonButton,
@@ -71,18 +75,20 @@ export class KoinonLibraryRetainedUploadsPanel implements OnDestroy {
   private expiry?: ReturnType<typeof setTimeout>;
   readonly now = signal(Date.now());
   private scope = (): RetainedUploadScope => ({
-    owner: this.f.context(),
+    owner: this.f.authRequired() ? null : this.f.context(),
     subject: this.f.context()?.subject ?? '',
     tenantId: this.f.tenantId(),
     clientRevision: this.clients.revision(),
     transport: this.clients.getTransport(),
     accessRevision: this.now(),
-    allowed: retainedUploadAccess(
-      this.f.context(),
-      this.f.tenantId(),
-      undefined,
-      Math.max(this.now(), Date.now()),
-    ).read,
+    allowed:
+      !this.f.authRequired() &&
+      retainedUploadAccess(
+        this.f.context(),
+        this.f.tenantId(),
+        undefined,
+        Math.max(this.now(), Date.now()),
+      ).read,
   });
   private journal() {
     try {
@@ -169,7 +175,37 @@ export class KoinonLibraryRetainedUploadsPanel implements OnDestroy {
     cancel:
       'This requests cancellation of pending work. Published knowledge and already committed effects can remain. It does not delete the retained history.',
   };
+  private readonly visible = signal(
+    typeof document === 'undefined' || document.visibilityState !== 'hidden',
+  );
+  private readonly visibilityChanged = () =>
+    this.visible.set(document.visibilityState !== 'hidden');
+  private readonly polling = new UploadObservationLoop({
+    active: () => {
+      const v = this.state.view();
+      return (
+        this.allowed() &&
+        !v.denied &&
+        !v.busy &&
+        !v.review &&
+        !Object.keys(v.recovery).length &&
+        (v.selected
+          ? ['staging', 'queued', 'running'].includes(v.selected.status)
+          : v.rows.some((batch) => ['staging', 'queued', 'running'].includes(batch.status)))
+      );
+    },
+    visible: () => this.visible(),
+    read: () => this.refresh(),
+  });
   constructor() {
+    if (typeof document !== 'undefined')
+      document.addEventListener('visibilitychange', this.visibilityChanged);
+    effect(() => {
+      this.visible();
+      this.allowed();
+      this.state.view();
+      this.polling.update();
+    });
     effect(() => {
       this.scope();
       untracked(() => {
@@ -263,6 +299,7 @@ export class KoinonLibraryRetainedUploadsPanel implements OnDestroy {
     await this.track(() =>
       batch ? this.state.select(batch.id) : this.state.load(this.state.view().page),
     );
+    return !this.state.view().error && !this.state.view().denied;
   }
   async select(id: string) {
     await this.track(() => this.state.select(id));
@@ -297,21 +334,16 @@ export class KoinonLibraryRetainedUploadsPanel implements OnDestroy {
     await this.track(() => this.state.verifyReceipt(id));
   }
   size(value: number) {
-    if (!Number.isFinite(value) || value < 0) return this.i18n.text('Not recorded');
-    const unit = value >= 1048576 ? 1048576 : value >= 1024 ? 1024 : 1;
-    return (
-      new Intl.NumberFormat(this.i18n.preferences().locale, { maximumFractionDigits: 1 }).format(
-        value / unit,
-      ) +
-      ' ' +
-      (unit === 1048576 ? 'MiB' : unit === 1024 ? 'KiB' : 'bytes')
-    );
+    return formatFileSize(value, this.i18n.preferences().locale);
   }
   filename(id: string | null) {
     return this.state.view().items.find((i) => i.id === id)?.filename ?? '';
   }
   ngOnDestroy() {
     clearTimeout(this.expiry);
+    this.polling.dispose();
+    if (typeof document !== 'undefined')
+      document.removeEventListener('visibilitychange', this.visibilityChanged);
     this.state.dispose();
   }
 }

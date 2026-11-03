@@ -259,3 +259,7 @@
   scrollbar-gutter: stable;
   padding-right: 3px;
 }
+
+.dialog.upload-dialog { display:flex; flex-direction:column; overflow:hidden; }
+.upload-dialog > header { flex:none; margin-bottom:16px; }
+.upload-dialog > ffk-library-upload-panel { min-height:0; }

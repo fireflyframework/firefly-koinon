@@ -1,20 +1,22 @@
 <!-- Copyright 2026 Firefly Software Foundation -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-# Choose an intake mode and file format
+# Add files and review supported formats
 
-Choose the destination by what you want to do with the content. Use a **document** to read and search passages, a **dataset** to explore tables and calculate results, or a **private chat attachment** to supply context to one conversation. A filename alone does not choose the mode or grant access.
+Choose an authorized Library destination and add your files, or attach a private file to one conversation. Library automatically selects content search for Word, PDF and presentations, and row analysis for supported spreadsheet, delimited and columnar files. These defaults use the server capability response; the backend still validates actual file contents and permissions. JSON and HTML default to content search when both uses are supported.
 
 ## Pick the right path
 
 | Destination | Suitable files and behavior | What to check |
 | --- | --- | --- |
-| Documents uploaded to the Library for reading and search | Text and Markdown; HTML, XML and JSON; PDF, DOCX, XLSX, PPTX and RTF; OpenDocument text, spreadsheets and presentations; CSV/TSV; supported transcript and image extraction | The operator's installed normalizers, loaders and OCR prerequisites. Check processing completion, original source and extracted passages. |
+| Documents uploaded to the Library for reading and search | Text and Markdown; HTML, XML and JSON; PDF, DOCX, XLSX, PPTX and RTF; OpenDocument text, spreadsheets and presentations; CSV/TSV | The formats and installed parser dependencies advertised for the selected workspace. Check processing completion, original source and extracted passages. |
 | Data uploaded to the Library for queries | CSV/TSV, XLSX/XLS/ODS, JSON/JSONL/NDJSON, Parquet, Avro, ORC and Arrow/Feather | A file can yield several tables. Inspect sheet/section boundaries, column names and inferred types before querying. Required reader dependencies must be installed. |
 | Files attached to a chat | Text/Markdown, CSV/TSV, JSON, HTML, XML, PDF, DOCX, XLSX, PPTX, still PNG/JPEG/WebP/GIF images and ZIP bundles advertised by the conversation's capabilities | Private storage, current ownership/access, extraction worker and per-format dependencies. Select the specific ready attachment IDs to use in a message. |
 
 These are implemented format families, not a claim that every deployment has every converter or model capability enabled. An encrypted or corrupt file, a content/extension mismatch or a missing parser can still fail processing. Review the reported reason before retrying. Do not rename an unsupported binary file to a supported extension.
 
-For a spreadsheet, choose **Data to explore with queries** when you need row filters, aggregation or SQL. Choose **Documents to read and search** when you need its extracted text. These paths create different knowledge resources; choosing one does not automatically create the other. The structured spreadsheet reader can identify multiple sections in a sheet instead of treating every workbook as one CSV-like table.
+Word means **DOCX** and PowerPoint means **PPTX** in queued Library document intake. The older binary `.doc` and `.ppt` formats are not accepted by that path. Open the original in an appropriate editor and use **Save As** to create a DOCX or PPTX file. Changing its extension does not convert its content. The structured spreadsheet reader separately supports `.xls` when its reader dependencies are available.
+
+A spreadsheet defaults to row analysis when supported. Its optional **Analyze rows and columns** choice supports filters, aggregation and SQL; **Search document content** uses extracted text. The override appears only when both uses are available for that file. These paths create different knowledge resources; choosing one does not automatically create the other. The structured spreadsheet reader can identify multiple sections in a sheet instead of treating every workbook as one CSV-like table.
 
 Structured compression supports gzip, bzip2 and ZIP around a detected data file. A structured ZIP must contain exactly one data file; it is not a multi-file batch. Expansion limits, parsing resources and object-storage limits remain separate from the compressed upload size.
 
@@ -24,10 +26,26 @@ Text extraction, OCR, image validation and model vision are separate capabilitie
 
 - A digital PDF may provide text directly. A scanned PDF needs an available OCR path; a PDF upload alone does not establish that its pages were read correctly.
 - Image intake can require OCR tools and language data. Private chat accepts still images; animation is rejected. A verified image does not establish that the selected model supports vision.
-- Document normalization can convert additional image types, archives, email or media into supported artifacts when the operator has installed and configured the required adapters. Existing transcript loaders do not, by themselves, supply audio transcription.
+- The queued Library document path uses a bounded file parser. Other normalization adapters may support archives, email, images or transcripts through separate intake paths; installing an adapter does not automatically enable that format in the Library uploader. Existing transcript loaders do not, by themselves, supply audio transcription.
 - Docling is an optional layout-aware PDF OCR path. Its dependencies and runtime resources must be configured by the operator. Enabling it does not remove file, extraction or model-context limits.
 
-The API exposes deployment observations at `GET /api/v1/capabilities`. For private chat, use `GET /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/capabilities` for that authorized conversation. Its typed response reports format extensions, extraction prerequisites and the effective limits. A null availability observation means unknown; configured storage or an installed parser is not a completed processing job. Library intake still requires validation of a representative file in the selected mode; the general capability response is not an exhaustive Library format registry.
+The Library uploader reads `GET /api/v1/tenants/{tenant_id}/source-batch-capabilities?workspace_id={workspace_id}` for the selected workspace. Its `formats` entries distinguish documents from datasets, list extensions, and report installed parser availability. The same response supplies the effective file and batch limits. Use that response when building an SDK or API upload interface; do not maintain a separate list of accepted suffixes in the client.
+
+The API also exposes deployment observations at `GET /api/v1/capabilities`. For private chat, use `GET /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/attachments/capabilities` for that authorized conversation. Its typed response reports format extensions, extraction prerequisites and the effective limits. A null availability observation means unknown. An installed parser is not a completed processing job or a guarantee that a particular file is valid. Verify a representative file in the selected mode on the deployed worker.
+
+## What normalization preserves
+
+Uploading a document retains its original bytes and creates a searchable representation. Normalization does not replace the original or imply that all of its visual content was understood.
+
+| File and selected mode | Representation to inspect after processing |
+| --- | --- |
+| DOCX as a document | Paragraphs, table text, headers and footers with section provenance. Physical page numbers are not invented. |
+| PPTX as a document | Extracted text and tables in presentation slide order, with recorded slide numbers. Embedded images remain in the original. |
+| XLSX or CSV as a document | Extracted worksheet or row text for reading and passage retrieval. This does not register queryable dataset tables. |
+| XLSX or CSV as a dataset | Registered table sections, column names, inferred types and row values, tied to the source and its version. Check how the importer divided a workbook into tables. |
+| PDF as a document | Extracted text and recorded page coordinates. Scanned pages depend on the configured OCR path. |
+
+Document processing records the original digest, parser and normalization steps, resulting extraction, and source parts used for retrieval. Dataset processing retains the original and the published dataset snapshot used for queries. After processing, open the source and compare a known paragraph or a few rows with the original. Then ask a focused question and inspect its source evidence. The [file ingestion reference](../reference/library-file-ingestion.md) explains the processing stages and resource limits; [versions and lineage](lineage.md) explains historical evidence.
 
 ## Understand the limits
 
@@ -52,7 +70,7 @@ Model context has its own bounds. A large accepted file is not necessarily inser
 For Library content:
 
 1. Choose the organization, workspace and destination folder you are authorized to maintain.
-2. Review the mode and files, then upload. Follow the observed processing state rather than assuming accepted bytes are searchable.
+2. Review the destination, files and optional individual uses, then upload. Status updates automatically. You can close the panel or navigate within the app, but keep the browser tab open until transfer finishes. Submitted server processing continues independently; open **Uploads** to follow each file. Confirmed transferred bytes do not establish search readiness.
 3. Open the resulting document passages or dataset schema. Verify extraction and table boundaries against the original.
 4. Ask a small question, then inspect the answer's audit and source references. [Versions and lineage](lineage.md) explains the original file, extraction, source parts and table snapshots.
 

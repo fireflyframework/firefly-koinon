@@ -1,6 +1,7 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 import { signal } from '@angular/core';
+import { preferredUploadMode, type UploadMode } from './library-upload-selection';
 import { KoinonError } from '@fireflyframework/koinon-sdk';
 import { createAvailabilityApi } from '@fireflyframework/koinon-sdk/availability';
 import type {
@@ -40,6 +41,7 @@ export interface UploadView {
   currentFile: string;
   currentItemId: string;
   checkingCapabilities: boolean;
+  observationFailed: boolean;
   received: number;
   uncertain: boolean;
   capabilities: FileBatchCapabilities | null;
@@ -67,7 +69,7 @@ interface Session {
   observations: ReturnType<typeof createAvailabilityApi>;
   controller: AbortController;
   files: File[];
-  mode: 'document' | 'dataset';
+  modes: UploadMode[];
   manifest: FileBatchCreate;
   createKey: string;
   submitKey: string;
@@ -104,6 +106,7 @@ const empty = (): UploadView => ({
   currentFile: '',
   currentItemId: '',
   checkingCapabilities: false,
+  observationFailed: false,
   received: 0,
   uncertain: false,
   capabilities: null,
@@ -122,8 +125,20 @@ const sameScope = (a: UploadScope, b: UploadScope) =>
   a.workspaceId === b.workspaceId &&
   a.projectId === b.projectId &&
   a.parentId === b.parentId &&
-  a.navigationId === b.navigationId &&
   a.allowed === b.allowed;
+
+export function shouldObserveUpload(view: UploadView) {
+  return (
+    !view.busy &&
+    ((!!view.capabilities?.configured && view.uncertain) ||
+      (!!view.batch &&
+        (view.observationFailed ||
+          ['staging', 'queued', 'running'].includes(view.batch.status) ||
+          Object.values(view.availability).some((value) =>
+            ['processing', 'indexing', 'queued'].includes(value.phase || ''),
+          ))))
+  );
+}
 
 /** Mutation keys live with one verified client/scope; ambiguous writes are never replayed. */
 export class LibraryUploadCoordinator {
@@ -210,6 +225,20 @@ export class LibraryUploadCoordinator {
     }
     return true;
   }
+  detachSubmitted() {
+    const view = this.view();
+    if (
+      view.busy ||
+      view.uncertain ||
+      (view.batch &&
+        !['queued', 'running', 'succeeded', 'partial', 'failed', 'cancelled', 'expired'].includes(
+          view.batch.status,
+        ))
+    )
+      return false;
+    this.invalidate();
+    return true;
+  }
   reset() {
     const view = this.view();
     if (
@@ -239,7 +268,7 @@ export class LibraryUploadCoordinator {
   }
   private async run(session: Session, work: () => Promise<void>, transferring = false) {
     if (this.state().busy) return;
-    this.set(session, { busy: true, transferring, message: '' });
+    this.set(session, { busy: true, transferring, message: '', observationFailed: false });
     try {
       await work();
     } catch (error) {
@@ -258,6 +287,7 @@ export class LibraryUploadCoordinator {
         return;
       }
       if (this.current(session)) {
+        this.set(session, { observationFailed: true });
         if (session.pendingWrite || this.state().uncertain) {
           this.set(session, {
             stage: 'unknown',
@@ -282,7 +312,7 @@ export class LibraryUploadCoordinator {
         this.set(session, { busy: false, transferring: false, currentFile: '', currentItemId: '' });
     }
   }
-  async start(files: File[], mode: 'document' | 'dataset') {
+  async start(files: File[], choice?: UploadMode | readonly (UploadMode | undefined)[]) {
     if (this.view().busy) return;
     if (
       this.session &&
@@ -316,7 +346,7 @@ export class LibraryUploadCoordinator {
       observations: createAvailabilityApi(scope.transport),
       controller: new AbortController(),
       files: [...files],
-      mode,
+      modes: [],
       manifest: {
         processing_policy: 'extract_only_v1',
         destination: {
@@ -352,6 +382,11 @@ export class LibraryUploadCoordinator {
         this.check(session);
         this.set(session, { capabilities: caps });
         const limits = effectiveUploadLimits(caps);
+        const modes = files.map((file, index) =>
+          typeof choice === 'string'
+            ? choice
+            : (choice?.[index] ?? preferredUploadMode(file.name, caps)),
+        );
         if (!caps.configured && files.some((file) => file.size > limits.max_file_bytes)) {
           this.set(session, {
             stage: 'idle',
@@ -361,13 +396,13 @@ export class LibraryUploadCoordinator {
           return;
         }
         if (
-          !caps.modes.includes(mode) ||
+          modes.some((mode) => !mode || !caps.modes.includes(mode)) ||
           (caps.formats?.length &&
             files.some(
-              (file) =>
+              (file, index) =>
                 !caps.formats!.some(
                   (format) =>
-                    format.mode === mode &&
+                    format.mode === modes[index] &&
                     format.available &&
                     format.extensions.some((extension) =>
                       file.name.toLowerCase().endsWith(extension.toLowerCase()),
@@ -385,12 +420,20 @@ export class LibraryUploadCoordinator {
           });
           return;
         }
+        session.modes = modes as UploadMode[];
         if (!caps.configured) {
-          for (const file of files) {
+          for (const [index, file] of files.entries()) {
             this.set(session, { stage: 'staging', currentFile: file.name });
             session.synchronousAttempted = true;
             session.pendingWrite = true;
-            if (!(await this.ports.synchronous(file, mode, scope, session.controller.signal)))
+            if (
+              !(await this.ports.synchronous(
+                file,
+                session.modes[index]!,
+                scope,
+                session.controller.signal,
+              ))
+            )
               throw new Error('Unconfirmed synchronous result');
             this.check(session);
             session.pendingWrite = false;
@@ -400,9 +443,11 @@ export class LibraryUploadCoordinator {
             stage: 'observed',
             message: 'Files received. Check their observed availability in the Library.',
           });
+          await this.ports.changed();
+          this.check(session);
           return;
         }
-        for (const file of files) {
+        for (const [index, file] of files.entries()) {
           this.set(session, { stage: 'hashing', currentFile: file.name });
           const sha256 = await this.ports.hash(file, session.controller.signal);
           this.check(session);
@@ -410,7 +455,7 @@ export class LibraryUploadCoordinator {
           session.manifest.items.push({
             client_item_id: crypto.randomUUID(),
             filename: file.name,
-            mode,
+            mode: session.modes[index]!,
             size_bytes: file.size,
             sha256,
           });
@@ -500,8 +545,8 @@ export class LibraryUploadCoordinator {
       })
     )
       throw new Error('Original identities disagree');
-    let availability: Record<string, AssetAvailability> = {};
-    let availabilityObservedAt: string | null = null;
+    let availability = this.state().availability;
+    let availabilityObservedAt = this.state().availabilityObservedAt;
     try {
       const observed = await session.observations.observe(
         session.scope.tenantId,
@@ -518,6 +563,7 @@ export class LibraryUploadCoordinator {
     } catch (error) {
       if (error instanceof KoinonError && [401, 403].includes(error.status)) throw error;
       this.check(session);
+      this.set(session, { observationFailed: true });
     }
     const accepted = active.has(batch.status) || terminal.has(batch.status);
     const unresolved =
@@ -536,11 +582,13 @@ export class LibraryUploadCoordinator {
       received: items.filter((item) => !['awaiting_upload', 'cancelled'].includes(item.status))
         .length,
       uncertain: unresolved,
-      message: accepted
-        ? 'Processing status comes from the worker. Completed extraction does not establish search readiness.'
-        : unresolved
-          ? 'A previous request is not confirmed. Check status or reconcile the retained original; do not send it again.'
-          : 'Files are processed only after their originals are staged and the batch is submitted.',
+      message: this.state().observationFailed
+        ? 'Status could not be refreshed. Last observations are retained.'
+        : accepted
+          ? 'Your files are being prepared. Search availability is checked separately.'
+          : unresolved
+            ? 'A previous request is not confirmed. Check status or reconcile the retained original; do not send it again.'
+            : 'Finish uploading your files to start processing.',
     });
   }
   private async stage(session: Session) {
@@ -622,11 +670,11 @@ export class LibraryUploadCoordinator {
     this.check(session);
     await this.ports.changed();
   }
-  async refresh() {
+  async refresh(): Promise<boolean> {
     const session = this.session;
     if (!session || !this.current(session)) {
       this.invalidate();
-      return;
+      return false;
     }
     await this.run(session, async () => {
       if (session.synchronousAttempted && !session.batchId) {
@@ -683,6 +731,7 @@ export class LibraryUploadCoordinator {
             'No accepted batch could be confirmed. The original request was not repeated. Keep this page open and ask an administrator to inspect retained uploads.',
         });
     });
+    return this.current(session) && !this.state().observationFailed;
   }
   async continue() {
     const session = this.session;

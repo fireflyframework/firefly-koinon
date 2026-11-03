@@ -141,7 +141,7 @@ test('a failed nested upload body preserves close and recovers after the instruc
     .getByRole('dialog')
     .getByRole('button', { name: /Upload files/ })
     .click();
-  const upload = page.getByRole('dialog', { name: 'Upload files', exact: true });
+  const upload = page.getByRole('dialog', { name: 'Add files', exact: true });
   await expect(upload.getByRole('alert')).toHaveText(
     'This panel could not be opened. Refresh this page and try again.',
   );

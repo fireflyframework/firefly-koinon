@@ -3,8 +3,8 @@
 
 # Desktop extension OAuth
 
-!!! note "Unreleased source candidate"
-    These instructions describe the OAuth implementation in source. The published 26.11.10 MCPB still uses the [PAT installation walkthrough](desktop.md). OAuth package publication and installed-host acceptance have not been established. Building this source with the unchanged version string does not reproduce the published archive.
+!!! note "Versioned installation instructions"
+    These instructions target the 26.11.11 desktop bridge. Obtain its MCPB and matching checksums through the [desktop installation guide](desktop.md) when the release assets are published. The 26.11.10 archive uses PAT authentication. Controlled protocol checks do not establish acceptance in an installed desktop host.
 
 The local koinon MCPB extension can sign in through a browser without asking the user to create or copy a personal access token. Its OAuth client runs inside the local bridge. It uses the same koinon browser login, consent, authorized-application records, workspace permissions and revocation checks as remote OAuth clients.
 
