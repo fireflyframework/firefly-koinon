@@ -1,0 +1,177 @@
+# Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
+name: Release assembly
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_commit:
+        description: Full 40-character merged product commit with successful exact-source CI
+        required: true
+        type: string
+      version:
+        description: Final CalVer already present in every release manifest
+        required: true
+        type: string
+  pull_request:
+    paths: ['tools/release/**', '.github/workflows/release-assembly.yml']
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: release-assembly-${{ github.event.inputs.source_commit || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  operator-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13'
+      - name: Test release gates without builds or services
+        env:
+          PYTHONPATH: tools/release
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: python -m unittest discover -s tools/release/tests -v
+
+  assemble:
+    if: github.event_name == 'workflow_dispatch'
+    needs: operator-tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      SOURCE_COMMIT: ${{ inputs.source_commit }}
+      RELEASE_VERSION: ${{ inputs.version }}
+      PYTHONDONTWRITEBYTECODE: '1'
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17@sha256:7d0a41464797aeb9862dfdc0bbf1526b82cfd324cdd8036df19e3545f4a9ccb8
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - '127.0.0.1:5439:5432'
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - name: Check out the reviewed workflow tools
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: operator
+          persist-credentials: false
+      - name: Check out the explicit product commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source_commit }}
+          path: source
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Admit only a clean merged commit with green source CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python -c 'import shutil; assert shutil.disk_usage(".").free >= 16*1024**3, "16 GiB disk floor"'
+          python operator/tools/release/hosted_release.py preflight \
+            --source "$GITHUB_WORKSPACE/source" --commit "$SOURCE_COMMIT" --version "$RELEASE_VERSION" \
+            --receipt "$RUNNER_TEMP/source-ci.json"
+      - name: Prepare explicit build and documentation tools
+        run: |
+          python -m pip install uv==0.11.19 jsonschema==4.26.0
+          uv venv "$RUNNER_TEMP/docs-env"
+          uv pip install --python "$RUNNER_TEMP/docs-env/bin/python" -r source/docs/requirements.txt
+      - name: Assemble every release payload from the frozen commit
+        run: |
+          python operator/tools/release/package_release.py \
+            --checkout "$GITHUB_WORKSPACE/source" --commit "$SOURCE_COMMIT" --version "$RELEASE_VERSION" \
+            --output "$RUNNER_TEMP/assembled-v1" --java-home "$JAVA_HOME" \
+            --python "$(command -v python)" --docs-python "$RUNNER_TEMP/docs-env/bin/python" \
+            --allow-build-network --allow-registry-install
+          python operator/tools/release/verify_delivery.py \
+            --checkout "$GITHUB_WORKSPACE/source" --delivery "$RUNNER_TEMP/assembled-v1" \
+            > "$RUNNER_TEMP/assembled-v1/evidence/independent-delivery.json"
+      - name: Install exact wheels into a source-free environment
+        run: |
+          python -c 'import shutil; assert shutil.disk_usage(".").free >= 16*1024**3, "16 GiB disk floor"'
+          uv export --project source/backend --locked --extra dev --extra storage-azure --extra storage-gcs \
+            --no-emit-local --no-annotate --no-header \
+            --output-file "$RUNNER_TEMP/assembled-v1/evidence/installed-requirements.txt"
+          uv venv "$RUNNER_TEMP/installed-env"
+          uv pip install --python "$RUNNER_TEMP/installed-env/bin/python" --no-deps \
+            -r "$RUNNER_TEMP/assembled-v1/evidence/installed-requirements.txt"
+          uv pip install --python "$RUNNER_TEMP/installed-env/bin/python" --no-deps \
+            "$RUNNER_TEMP/assembled-v1/assets/"*.whl
+          uv pip check --python "$RUNNER_TEMP/installed-env/bin/python"
+          uv pip list --python "$RUNNER_TEMP/installed-env/bin/python" --format json \
+            > "$RUNNER_TEMP/assembled-v1/evidence/installed-dependencies.json"
+      - name: Qualify installed bytes and named runtime, PostgreSQL and SDK regressions
+        run: |
+          python operator/tools/release/qualify_installed.py \
+            --source "$GITHUB_WORKSPACE/source" --commit "$SOURCE_COMMIT" --version "$RELEASE_VERSION" \
+            --assets "$RUNNER_TEMP/assembled-v1/assets" --output "$RUNNER_TEMP/assembled-v1/evidence/installed" \
+            --environment "$RUNNER_TEMP/installed-env"
+      - name: Compile external consumers and qualify packaged MCP behavior
+        run: |
+          python operator/tools/release/hosted_release.py consumers \
+            --source "$GITHUB_WORKSPACE/source" --commit "$SOURCE_COMMIT" --version "$RELEASE_VERSION" \
+            --delivery "$RUNNER_TEMP/assembled-v1"
+      - name: Verify packaged documentation and finalize complete release evidence
+        run: |
+          "$RUNNER_TEMP/docs-env/bin/python" source/tools/docs/check_site.py "$RUNNER_TEMP/assembled-v1/docs-site" \
+            > "$RUNNER_TEMP/assembled-v1/evidence/docs-site-check.log"
+          python - <<'PY'
+          import json, os, pathlib
+          target = pathlib.Path(os.environ['RUNNER_TEMP']) / 'assembled-v1/evidence/documentation.json'
+          target.write_text(json.dumps({'source_commit': os.environ['SOURCE_COMMIT'], 'status': 'passed'}) + '\n')
+          PY
+          python operator/tools/release/hosted_release.py finalize \
+            --source "$GITHUB_WORKSPACE/source" --commit "$SOURCE_COMMIT" --version "$RELEASE_VERSION" \
+            --receipt "$RUNNER_TEMP/source-ci.json" --delivery "$RUNNER_TEMP/assembled-v1"
+      - name: Retain qualified release payloads and evidence
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: koinon-${{ inputs.version }}-${{ inputs.source_commit }}-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+          path: |
+            ${{ runner.temp }}/assembled-v1/assets/*
+            ${{ runner.temp }}/assembled-v1/evidence/*.json
+            ${{ runner.temp }}/assembled-v1/evidence/*.log
+            ${{ runner.temp }}/assembled-v1/evidence/*.txt
+            ${{ runner.temp }}/assembled-v1/evidence/installed/*.json
+            ${{ runner.temp }}/assembled-v1/evidence/installed/*.log
+            ${{ runner.temp }}/assembled-v1/evidence/installed/*.xml
+      - name: Retain failure diagnostics without advertising release assets
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            ${{ runner.temp }}/source-ci.json
+            ${{ runner.temp }}/assembled-v1/evidence/*.json
+            ${{ runner.temp }}/assembled-v1/evidence/*.log
+            ${{ runner.temp }}/assembled-v1/evidence/installed/*.json
+            ${{ runner.temp }}/assembled-v1/evidence/installed/*.log
+            ${{ runner.temp }}/assembled-v1/evidence/installed/*.xml
