@@ -62,9 +62,23 @@ Start with polling through durable scheduled jobs. Provider notifications may la
 
 ## Durable processing and PyFly ownership
 
-PyFly owns reusable typed provider ports, HTTP transport constraints, OAuth credential lifecycle, scheduling, bounded concurrency and transactional outbox behavior. koinon owns mapping review, project authority, source-version bindings, ingestion orchestration, user journeys and audit. Use native DI beans, repositories and configuration properties with DTOs, mappers, services and controllers in separate modules.
+koinon owns the concrete SharePoint, OneDrive and Google Drive adapters, provider-specific DTOs and ports, delegated consent policy and connected-account lifecycle, mapping review, project authority, source-version bindings, ingestion orchestration, user journeys and audit. These integrations live in `koinon.integrations.content_sources`. PyFly supplies existing generic native HTTP/OAuth acquisition, DI, repositories, scheduling, bounded concurrency and transactional outbox primitives; it does not own product-specific source adapters or mapping rules. Use native DI beans, repositories and configuration properties with DTOs, mappers, services and controllers in separate modules.
 
-The existing PyFly `ContentSource` contract describes changed files and a local `Path`; it does not express deleted objects, permission loss, typed change pages or streaming into configured storage. Extend the framework with a compatible versioned change-page/streaming contract rather than manufacturing zero-byte files for deletions or putting an entire downloaded file in memory. Preserve existing source implementations and their cursor behavior. Do not call an optional SharePoint example a shipped adapter.
+The implementation must follow this reuse boundary. A product policy wrapper does not replace the native mechanism underneath it.
+
+| Existing native mechanism | Product responsibility |
+| --- | --- |
+| `StreamingHttpClientPort`, bounded requests and `HttpxClientAdapter` streaming | Fixed provider hosts, read-only methods, redirect credential isolation, bounded source metadata and staged originals |
+| `OAuth2Client.exchange_code`, `refresh_token` and PKCE | Separate delegated content consent, exact installation client binding, read-only scope ceiling, single-use callback state and durable refresh CAS |
+| `JWKSTokenValidator` and native `SessionStore` | Verify the content grant issuer, audience, nonce and stable provider subject; recheck the same live application session without borrowing its login tokens |
+| Native repositories and primary transaction units | Personal owner/tenant predicates, encrypted grants, short reservation and completion units around provider I/O |
+| Native database/PostgreSQL scheduler leases and distributed locks | Mapping schedule identity, due work, ownership fences and checkpoint policy; no separate scheduler subsystem |
+| Native SQL/Mongo transactional outbox | Durable source observations and ingestion admission; no separate delivery queue subsystem |
+| `koinon_storage.client_lifecycle.ClientLifecycle` | Close only owned clients after active requests drain |
+
+The small generic PyFly dependency change exposes typed streaming responses, public OAuth URI/scope validation and read-only client identity, plus opt-in inherited-credential suppression and sanitized transport failures. It does not contain SharePoint, OneDrive or Google Drive adapters. Until that dependency is released and pinned, source-override tests are development evidence only. The native device flow is available but is not a substitute for this browser-bound consent journey.
+
+The existing PyFly `ContentSource` contract describes changed files and a local `Path`; it does not express deleted objects, permission loss, typed change pages or streaming into configured storage. Define the typed change-page, provider identity and streaming-staging contracts in the product rather than manufacturing zero-byte files for deletions or putting an entire downloaded file in memory. Reuse generic native streaming response ports and OAuth clients; preserve existing framework source implementations and their cursor behavior. Do not call an optional SharePoint example a shipped adapter.
 
 Store source connections, revisioned mappings, run records, change observations, per-item attempts and origin bindings in typed primary repositories. Keep secrets outside these DTOs and public snapshots. A change observation records provider/account/drive/object IDs, remote version, mapping revision, event kind and an immutable operation key. The origin binding records koinon source/asset/version IDs, downloaded hash and bytes, transformation details and commit receipt.
 
@@ -95,6 +109,18 @@ Changing a mapping is not an ordinary cross-project folder move. Preview affecte
 Deletion in Library, API, SDK and MCP must call the same canonical retire/archive operation and invalidate subsequent retrieval, memory reuse and previews. Permanent purge remains a separate retention-aware administrator operation. Neither archive nor purge may erase the fact that a historical answer used a particular source/version; a retained audit can indicate that source content is no longer available without releasing it.
 
 ## API, MCP and delivery gates
+
+### Current adapter development limits
+
+The internal adapter milestone is not activated in the application and does not provide public synchronization. Installation-owned registrations keep content-consent clients separate from login. An optional `allow_loopback_http` must be a literal boolean and permits only `localhost`, `127.0.0.1` and `::1` callbacks; remote callbacks require HTTPS. Changing registration parameters invalidates pending consent and requires reconnection of an old grant. Refresh stores the effective returned scopes and never requests permissions removed by a previous refresh response.
+
+Metadata requests, connection establishment, idle reads and complete transfers have separate installation deadlines. Defaults are 30, 10, 30 and 900 seconds respectively; the transfer deadline covers redirects and sink writes without restarting. These are development transport bounds, not a worker qualification or a larger ingestion allowance. Every download still requires the effective admitted `max_bytes`; the existing file-intake limits remain authoritative. The future worker must renew and fence its durable lease throughout an admitted transfer.
+
+Graph `/content` accepts direct HTTP 200 streaming without any redirect-host configuration. HTTP 302/307 follows at most one credential-free redirect to an exact installation-approved hostname. An empty allowlist rejects redirects, and wildcards are invalid. This avoids making temporary authenticated URLs mandatory: Microsoft has announced their retirement beginning April 1, 2027. Do not replace the stable API with `contentStream` beta implicitly. See the [Microsoft migration notice](https://devblogs.microsoft.com/microsoft365dev/pre-authenticated-tempauth-urls-are-retiring-move-to-microsoft-entra-id-tokens-before-april-1-2027/).
+
+Google Workspace exports use explicit DOCX/XLSX/PPTX formats and retain the documented 10 MB `files.export` limit. The asynchronous `files.download` POST operation is not implemented by the GET-only content adapter; it requires a separately reviewed durable operation, not arbitrary POST support. See [Google download and export limits](https://developers.google.com/workspace/drive/api/guides/manage-downloads). Provider grants, large-file transfers and export behavior still require real owned-account acceptance before release.
+
+### Complete journey gates
 
 Provide typed endpoints and all supported SDK methods for connection status, source browsing, mapping preview/create/update, run/status/history, pause/resume, synchronization request, exclusions and local retirement. MCP exposes the same operations with explicit narrow scopes and current user identity. An assistant cannot complete external OAuth, approve its own mapping changes, receive refresh credentials or gain source access from the mapping owner.
 

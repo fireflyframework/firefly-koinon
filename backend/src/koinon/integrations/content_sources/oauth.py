@@ -1,0 +1,185 @@
+# Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
+"""Read-only source consent over the native bounded OAuth acquisition client."""
+
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass, replace
+from typing import Any, Self
+from urllib.parse import urlencode
+from uuid import UUID
+
+from pyfly.oauth2 import (
+    OAuth2Client,
+    OAuth2Endpoints,
+    OAuth2Tokens,
+    serialize_oauth_scopes,
+    validate_oauth_uri,
+)
+
+from koinon.integrations.content_sources.dtos import Provider, bounded
+from koinon.integrations.content_sources.errors import SourceError
+
+_GOOGLE_READ = "https://www.googleapis.com/auth/drive.readonly"
+_GRAPH_READ = "https://graph.microsoft.com/Files.Read.All"
+_GRAPH_SITES_READ = "https://graph.microsoft.com/Sites.Read.All"
+
+
+@dataclass(frozen=True, slots=True)
+class SourceOAuthConfig:
+    provider: Provider
+    client_id: str
+    redirect_uri: str
+    tenant_id: str | None = None
+    allow_loopback_http: bool = False
+
+    def __post_init__(self) -> None:
+        bounded(self.client_id)
+        bounded(self.redirect_uri, limit=2048)
+        if not isinstance(self.allow_loopback_http, bool):
+            raise ValueError("Loopback HTTP requires an explicit boolean opt-in")
+        validate_oauth_uri(self.redirect_uri, allow_loopback_http=self.allow_loopback_http)
+        if self.provider not in {"sharepoint", "onedrive", "google_drive"}:
+            raise ValueError("Unsupported source provider")
+        if self.provider != "google_drive":
+            if not (self.provider == "onedrive" and self.tenant_id == "consumers"):
+                try:
+                    if str(UUID(self.tenant_id or "")) != self.tenant_id:
+                        raise ValueError
+                except ValueError:
+                    raise ValueError(
+                        "Microsoft source consent requires an explicit tenant UUID or OneDrive consumers"
+                    ) from None
+        elif self.tenant_id is not None:
+            raise ValueError("Google workspace identity restrictions belong to verified callback policy")
+
+    @property
+    def scopes(self) -> tuple[str, ...]:
+        return (
+            ("openid", "profile", _GOOGLE_READ)
+            if self.provider == "google_drive"
+            else ("openid", "profile", "offline_access", _GRAPH_READ)
+            + ((_GRAPH_SITES_READ,) if self.provider == "sharepoint" else ())
+        )
+
+    @property
+    def authorization_endpoint(self) -> str:
+        return (
+            "https://accounts.google.com/o/oauth2/v2/auth"
+            if self.provider == "google_drive"
+            else (f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/v2.0/authorize")
+        )
+
+    @property
+    def token_endpoint(self) -> str:
+        return (
+            "https://oauth2.googleapis.com/token"
+            if self.provider == "google_drive"
+            else (f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/v2.0/token")
+        )
+
+
+class ReadOnlySourceOAuth:
+    """Native code/refresh acquisition, never a login or callback authenticator.
+
+    The application MUST verify callback state, exact URI, expected issuer and
+    replay before exchange. Verify ID-token signature, issuer, audience, expiry
+    and nonce before binding provider identity and persisting an Account. ID tokens
+    remain opaque here. Encrypt refresh credentials and
+    serialize rotation in durable application storage. No client-credentials
+    operation or automatic scope expansion is exposed.
+    """
+
+    def __init__(
+        self,
+        config: SourceOAuthConfig,
+        *,
+        client_secret: str | None = None,
+        client: OAuth2Client | None = None,
+        owns_client: bool = False,
+    ) -> None:
+        self.config = config
+        endpoints = OAuth2Endpoints(config.token_endpoint)
+        if client is not None:
+            if client_secret is not None:
+                raise ValueError("Configure credentials on the supplied native OAuth client")
+            if client.client_id != config.client_id or client.endpoints != endpoints:
+                raise ValueError("The supplied native OAuth client must match the source configuration")
+        self._owns_client = client is None or owns_client
+        self._client = (
+            client
+            if client is not None
+            else OAuth2Client(config.client_id, endpoints, client_secret=client_secret)
+        )
+
+    async def __aenter__(self) -> Self:
+        return self
+
+    async def __aexit__(self, *_: Any) -> None:
+        if self._owns_client:
+            await self._client.aclose()
+
+    def authorization_url(self, *, state: str, code_challenge: str, nonce: str) -> str:
+        bounded(state)
+        bounded(nonce)
+        if not re.fullmatch(r"[A-Za-z0-9_-]{43}", code_challenge):
+            raise ValueError("An S256 PKCE challenge is required")
+        params = {
+            "client_id": self.config.client_id,
+            "redirect_uri": self.config.redirect_uri,
+            "response_type": "code",
+            "scope": " ".join(self.config.scopes),
+            "state": state,
+            "code_challenge": code_challenge,
+            "code_challenge_method": "S256",
+            "nonce": nonce,
+        }
+        if self.config.provider == "google_drive":
+            params.update(access_type="offline", prompt="consent")
+        return self.config.authorization_endpoint + "?" + urlencode(params)
+
+    def _granted(self, scopes: tuple[str, ...]) -> frozenset[str]:
+        try:
+            serialize_oauth_scopes(scopes)
+        except ValueError:
+            raise SourceError("scope_mismatch") from None
+        aliases = (
+            {"https://www.googleapis.com/auth/userinfo.profile": "profile"}
+            if self.config.provider == "google_drive"
+            else {"Files.Read.All": _GRAPH_READ, "Sites.Read.All": _GRAPH_SITES_READ}
+        )
+        granted = frozenset(aliases.get(scope, scope) for scope in scopes)
+        required = {_GOOGLE_READ} if self.config.provider == "google_drive" else {_GRAPH_READ}
+        if self.config.provider == "sharepoint":
+            required.add(_GRAPH_SITES_READ)
+        if not required <= granted or not granted <= set(self.config.scopes):
+            raise SourceError("scope_mismatch")
+        return granted
+
+    def _checked(self, tokens: OAuth2Tokens, *, ceiling: frozenset[str] | None = None) -> OAuth2Tokens:
+        granted = self._granted(tuple((tokens.scope or "").split(" ")))
+        if tokens.token_type.lower() != "bearer" or (ceiling is not None and not granted <= ceiling):
+            raise SourceError("scope_mismatch")
+        return tokens
+
+    async def exchange_code(self, code: str, *, code_verifier: str) -> OAuth2Tokens:
+        return self._checked(
+            await self._client.exchange_code(
+                code, redirect_uri=self.config.redirect_uri, code_verifier=code_verifier
+            )
+        )
+
+    async def refresh_token(self, refresh_token: str, *, granted_scopes: tuple[str, ...]) -> OAuth2Tokens:
+        """Refresh only a trusted persisted grant; never infer it from configuration.
+
+        An omitted response scope means the same scope requested (RFC 6749
+        section 5.1). Preserve that effective scope in the returned token DTO.
+        The caller retains the prior refresh token when no rotation is returned.
+        """
+        previous = self._granted(granted_scopes)
+        requested = tuple(sorted(previous))
+        tokens = await self._client.refresh_token(refresh_token, scopes=requested)
+        if tokens.scope is None:
+            tokens = replace(tokens, scope=" ".join(requested))
+        return self._checked(tokens, ceiling=previous)

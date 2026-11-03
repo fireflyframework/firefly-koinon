@@ -1,0 +1,307 @@
+# Copyright 2026 Firefly Software Foundation
+# SPDX-License-Identifier: Apache-2.0
+"""GET-only bounded provider transport; OAuth uses its separate native client."""
+
+from __future__ import annotations
+
+import asyncio
+import hashlib
+import ipaddress
+import json
+import logging
+import math
+import re
+from collections.abc import AsyncIterable, AsyncIterator, Iterator
+from contextlib import asynccontextmanager, contextmanager
+from contextvars import ContextVar
+from datetime import timedelta
+from typing import Any
+from urllib.parse import urlsplit
+
+from koinon_storage.client_lifecycle import ClientLifecycle
+from pyfly.client.adapters.httpx_adapter import HttpxClientAdapter
+from pyfly.client.exceptions import ServiceClientException
+from pyfly.client.ports.outbound import StreamingHttpClientPort, StreamingHttpResponsePort
+
+from koinon.integrations.content_sources.dtos import Account, bounded
+from koinon.integrations.content_sources.errors import ErrorCode, SourceError
+from koinon.integrations.content_sources.ports import AsyncByteSink, DelegatedTokenSource
+
+_SOURCE_HTTP: ContextVar[bool] = ContextVar("koinon_source_http", default=False)
+
+
+class _SourceLogFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        return not _SOURCE_HTTP.get()
+
+
+@contextmanager
+def _private_http() -> Iterator[None]:
+    # HTTPX logs complete request URLs at INFO; HTTPCore can log signed
+    # redirect headers at DEBUG. Suppress only this task's provider requests.
+    names = {
+        "httpx",
+        "httpcore.connection",
+        "httpcore.http11",
+        "httpcore.http2",
+        "httpcore.proxy",
+        "httpcore.socks",
+    }
+    names.update(name for name in logging.Logger.manager.loggerDict if name.startswith("httpcore."))
+    for name in names:
+        logger = logging.getLogger(name)
+        if not any(isinstance(f, _SourceLogFilter) for f in logger.filters):
+            logger.addFilter(_SourceLogFilter())
+    token = _SOURCE_HTTP.set(True)
+    try:
+        yield
+    finally:
+        _SOURCE_HTTP.reset(token)
+
+
+def checked_url(url: str, *, host: str, path: str | None = None) -> None:
+    try:
+        bounded(url, limit=16384)
+        parts = urlsplit(url)
+        if (
+            parts.scheme != "https"
+            or parts.hostname != host
+            or parts.port not in {None, 443}
+            or parts.username is not None
+            or parts.password is not None
+            or parts.fragment
+            or "\\" in url
+            or any(c.isspace() for c in url)
+            or (path is not None and parts.path != path)
+        ):
+            raise ValueError
+    except ValueError:
+        raise SourceError("unsafe_url") from None
+
+
+def redirect_host(url: str) -> str:
+    try:
+        host = urlsplit(url).hostname
+    except ValueError:
+        raise SourceError("unsafe_url") from None
+    if host is None:
+        raise SourceError("unsafe_url")
+    return host
+
+
+def checked_hosts(hosts: frozenset[str]) -> frozenset[str]:
+    for host in hosts:
+        if len(host) > 253 or not all(
+            re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?", label) for label in host.split(".")
+        ):
+            raise ValueError("Download hosts must be exact lowercase DNS names")
+        checked_url("https://" + host, host=host)
+        if "." not in host or host.endswith(".localhost") or host.endswith(".local"):
+            raise ValueError("Download hosts must be explicit public DNS names")
+        try:
+            ipaddress.ip_address(host)
+        except ValueError:
+            continue
+        raise ValueError("Download hosts cannot be IP literals")
+    return hosts
+
+
+class SourceTransport:
+    def __init__(
+        self,
+        account: Account,
+        tokens: DelegatedTokenSource,
+        *,
+        host: str,
+        http_client: StreamingHttpClientPort | None = None,
+        owns_http_client: bool = False,
+        timeout: float = 30,
+        connect_timeout: float = 10,
+        read_timeout: float = 30,
+        transfer_timeout: float = 900,
+        max_json_bytes: int = 1024 * 1024,
+        download_hosts: frozenset[str] = frozenset(),
+    ) -> None:
+        if (
+            any(
+                isinstance(value, bool) or not math.isfinite(value) or value <= 0
+                for value in (timeout, connect_timeout, read_timeout, transfer_timeout)
+            )
+            or isinstance(max_json_bytes, bool)
+            or max_json_bytes <= 0
+        ):
+            raise ValueError("Positive finite transport limits are required")
+        self.account = account
+        self.tokens = tokens
+        self.host = host
+        self.timeout = timeout
+        self.connect_timeout, self.read_timeout, self.transfer_timeout = (
+            connect_timeout,
+            read_timeout,
+            transfer_timeout,
+        )
+        self.max_json_bytes = max_json_bytes
+        self.download_hosts = checked_hosts(download_hosts)
+        self._owns_client = http_client is None or owns_http_client
+        self._lifecycle = ClientLifecycle()
+        self.client: StreamingHttpClientPort = (
+            http_client
+            if http_client is not None
+            else HttpxClientAdapter(
+                trust_env=False, follow_redirects=False, timeout=timedelta(seconds=timeout)
+            )
+        )
+
+    async def aclose(self) -> None:
+        if self._owns_client:
+            await self._lifecycle.aclose(self.client.stop)
+
+    @asynccontextmanager
+    async def request(
+        self, url: str, *, authenticated: bool = True, transfer: bool = False
+    ) -> AsyncIterator[StreamingHttpResponsePort]:
+        host = self.host if authenticated else redirect_host(url)
+        if host is None or (not authenticated and host not in self.download_hosts):
+            raise SourceError("unsafe_url")
+        checked_url(url, host=host)
+        headers = {"Accept-Encoding": "identity"}
+        if authenticated:
+            token = await self.tokens.access_token(self.account)
+            try:
+                bounded(token, limit=65536)
+            except ValueError:
+                raise SourceError("reconnect_required") from None
+            headers["Authorization"] = "Bearer " + token
+        try:
+            with self._lifecycle.operation(), _private_http():
+                async with asyncio.timeout(self.transfer_timeout if transfer else self.timeout):
+                    async with self.client.stream(
+                        "GET",
+                        url,
+                        headers=headers,
+                        follow_redirects=False,
+                        auth=None,
+                        suppress_cookies=True,
+                        suppress_authorization=not authenticated,
+                        sanitize_errors=True,
+                        timeout={
+                            "connect": self.connect_timeout,
+                            "read": self.read_timeout,
+                            "write": self.read_timeout,
+                            "pool": self.connect_timeout,
+                        },
+                    ) as response:
+                        if response.headers.get("content-encoding", "identity").lower() != "identity":
+                            raise SourceError("invalid_response")
+                        self.check_status(response)
+                        yield response
+        except TimeoutError:
+            raise SourceError("timeout") from None
+        except ServiceClientException:
+            raise SourceError("transport_error") from None
+
+    @staticmethod
+    def check_status(response: StreamingHttpResponsePort) -> None:
+        status = response.status_code
+        if status in {200, 302, 307}:
+            return
+        codes: dict[int, ErrorCode] = {
+            401: "reconnect_required",
+            403: "access_denied",
+            404: "unavailable",
+            410: "resync_required",
+            412: "version_changed",
+            429: "throttled",
+        }
+        retry = response.headers.get("retry-after", "")
+        seconds = min(int(retry), 86400) if len(retry) <= 6 and retry.isdecimal() else None
+        raise SourceError(
+            codes.get(status, "invalid_response"), retry_after=seconds if status == 429 else None
+        )
+
+    @staticmethod
+    async def chunks(response: StreamingHttpResponsePort) -> AsyncIterator[bytes]:
+        # Mock/custom transports can return prebuffered bodies; their allocation
+        # is trusted transport work, not the network client's buffering policy.
+        if response.is_stream_consumed:
+            yield response.content
+        else:
+            if not isinstance(response.stream, AsyncIterable):
+                raise SourceError("invalid_response")
+            # Raw iteration leaves cleanup to the native stream context's cancellation shield.
+            async for chunk in response.stream:
+                yield chunk
+
+    async def json(self, url: str) -> dict[str, Any]:
+        async with self.request(url) as response:
+            if response.status_code != 200:
+                raise SourceError("unsafe_url")
+            data = bytearray()
+            async for chunk in self.chunks(response):
+                if len(chunk) > self.max_json_bytes - len(data):
+                    raise SourceError("size_exceeded")
+                data.extend(chunk)
+            try:
+                value = json.loads(data)
+            except (ValueError, UnicodeError):
+                raise SourceError("invalid_response") from None
+            if not isinstance(value, dict):
+                raise SourceError("invalid_response")
+            return value
+
+    async def transfer(
+        self,
+        url: str,
+        sink: AsyncByteSink,
+        *,
+        max_bytes: int,
+        expected_size: int | None = None,
+        redirects: bool = False,
+    ) -> tuple[int, str]:
+        if isinstance(max_bytes, bool) or not isinstance(max_bytes, int) or max_bytes < 1:
+            raise ValueError("max_bytes must be positive")
+        if expected_size is not None and expected_size > max_bytes:
+            raise SourceError("size_exceeded")
+        try:
+            async with asyncio.timeout(self.transfer_timeout):
+                async with self.request(url, transfer=True) as response:
+                    if response.status_code in {302, 307}:
+                        if not redirects:
+                            raise SourceError("unsafe_url")
+                        target = response.headers.get("location", "")
+                    else:
+                        return await self._copy(response, sink, max_bytes, expected_size)
+                # Never reuse authenticated headers or reset the total deadline at a redirect.
+                async with self.request(target, authenticated=False, transfer=True) as response:
+                    if response.status_code != 200:
+                        raise SourceError("unsafe_url")
+                    return await self._copy(response, sink, max_bytes, expected_size)
+        except TimeoutError:
+            raise SourceError("timeout") from None
+
+    async def _copy(
+        self,
+        response: StreamingHttpResponsePort,
+        sink: AsyncByteSink,
+        max_bytes: int,
+        expected_size: int | None,
+    ) -> tuple[int, str]:
+        declared = response.headers.get("content-length")
+        if declared is not None and (not declared.isdecimal() or len(declared) > 20):
+            raise SourceError("invalid_response")
+        if declared is not None and int(declared) > max_bytes:
+            raise SourceError("size_exceeded")
+        size = 0
+        digest = hashlib.sha256()
+        async for chunk in self.chunks(response):
+            if len(chunk) > max_bytes - size:
+                raise SourceError("size_exceeded")
+            size += len(chunk)
+            digest.update(chunk)
+            for offset in range(0, len(chunk), 65536):
+                await sink.write(chunk[offset : offset + 65536])
+        if (declared is not None and size != int(declared)) or (
+            expected_size is not None and size != expected_size
+        ):
+            raise SourceError("invalid_response")
+        return size, digest.hexdigest()
