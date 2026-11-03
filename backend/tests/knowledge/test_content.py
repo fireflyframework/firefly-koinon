@@ -88,7 +88,7 @@ async def test_content_updates_deny_role_archive_and_alias_pat_write_before_nati
     with pytest.raises(AccessDenied):
         await service.document("issuer|outsider", "north", document, **arguments)
 
-    async def restrict(subject, entry, *, write=False):
+    async def restrict(subject, entry, *, write=False, parent_reader=None):
         if write and entry.kind == "source":
             raise AccessDenied("The selected token cannot write this alias", code="TOKEN_SCOPE_DENIED")
 
