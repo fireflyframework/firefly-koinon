@@ -72,12 +72,23 @@ An RLM action can inspect one passage or scan all accessible text. Describe its 
 | --- | --- | --- |
 | Product search workspace groups | Default maximum `32` per call; exceeding it returns `SEARCH_SCOPE_TOO_WIDE`. | A single-call safety bound. The request is rejected, not silently truncated. It is not a limit on the caller's total authorized knowledge. |
 | Explicit asset selection | At most `128` IDs in the product search request. | A request-shape limit; broader authorized scope can be resolved from a workspace or project. |
+| Curated serving versions | At most `128` admitted versions in the curated search, RLM binding and corpus observation paths. | This currently bounds a broad curated selection too, not just explicitly supplied asset IDs. It must not be described as unrestricted enterprise corpus support. |
+| Scope evidence | One tool receipt accepts at most `500` combined document and knowledge IDs; capture budgets separately bound reads, sources and serialized receipt bytes. | Provenance representation and per-operation guards. Metadata batching alone does not remove these guards. |
+| Curated authority snapshot | At most `8,192` dependency rows and `8 MiB` of serialized authority state. | An explicit authority-snapshot limit, not an ANN candidate limit or a stored-knowledge quota. |
 | Selected native metadata reads | Batches of `200`, with all admitted IDs considered. | Batch size, not a total source cap. |
 | Recorded whole-document reader | Default normalized/text limit `64 MiB`, original limit `128 MiB`, at most `100,000` parts per document. | Per-document guards, not a total corpus memory budget. These are separate from upload capability limits. |
 | RLM iterations and subcalls | Configured iterations `1–64`, subcall budget `0–128`, depth `0–8`, self-consistency `1–8`. Extended reasoning can double the effective iteration allowance. | Bounded actions do not imply bounded document bytes per action or constant model cost. |
 | Secure execution | `64 MiB` VM memory; cooperative `300`-second lifetime per candidate and descendants; configured compute/request timeout defaults to `30` seconds. | Host metadata, readers and trusted I/O have their own work and deadlines. VM limits do not cap all process memory or forcibly interrupt a running host callback. |
 
 A scheduler that transparently federates arbitrary authorized workspace counts, preserves complete coverage and combines verified evidence is not implemented. Narrow the question's scope after a broad-scope rejection. Do not invent a fixed installation corpus, silently select the first workspaces or claim complete coverage from partial execution.
+
+### Growing the repository without freezing its authorized scope
+
+The enterprise design must separate three things: stored organizational knowledge, the caller's current authorized scope and the work admitted for one operation. A new project or source must become eligible through normal permissions and indexing; it must not require enlarging a hardcoded installation corpus. An administrator's storage quota is a separate capacity policy, not a retrieval authorization rule.
+
+Removing the existing scope guards alone would allow unbounded metadata, authority and receipt allocations. The next scaling step requires database-backed scope selection, batched permission and binding reads, and a durable scope manifest with a digest and version pins. Workers must page through that admitted manifest under bounded concurrency and memory, preserve complete coverage or report incompleteness, and recheck current authority before releasing evidence. Adding documents later affects a new operation; it does not rewrite an existing operation's evidence.
+
+This broader execution mechanism is not delivered by the selected-metadata optimization. Qualify it with repository growth, more than 32 workspaces, more than 128 curated versions, large source manifests, permission revocation during processing, cancellation and restart. All of those paths need the same semantics through chat, API, SDK and MCP. Raising constants without these checks is not a capacity strategy.
 
 ## Measure the deployed path
 
