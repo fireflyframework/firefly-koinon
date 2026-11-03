@@ -580,6 +580,7 @@ class NativeDomains:
         from flycanon.core.services.query.handlers import AnswerKnowledgeQuery, SearchKnowledgeQuery
         from flycanon.core.services.query.runtime import DocumentQueryOptions
         from flycanon.core.services.retrieval import curated_corpus
+        from flycanon.core.services.retrieval.candidate_reuse import candidate_scope
         from flycanon.core.services.sources.lineage.dtos import DocumentScope
         from flycanon.core.services.sources.lineage.retrieval import bind_retrieval_parts
         from flycanon.core.services.sources.lineage.service import DocumentLineage
@@ -635,7 +636,12 @@ class NativeDomains:
             if _curated_retrieve is not None
             else nullcontext()
         )
-        with native_scope("canon", tenant_id, workspace_id, actor), curated:
+        with (
+            native_scope("canon", tenant_id, workspace_id, actor),
+            curated,
+            candidate_scope(policy_digest=policy.digest if policy else None)
+            if answer and purpose != "rlm" else nullcontext(),
+        ):
             bus = self._resolve(DefaultQueryBus)
             result = {"hits": []}
             if purpose != "rlm":

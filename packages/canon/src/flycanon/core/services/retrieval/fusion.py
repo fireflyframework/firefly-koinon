@@ -114,6 +114,7 @@ class HybridRetriever:
         self._vector_store = vector_store
         self._embedder = embedder
         self._rrf_k = rrf_k
+        self.complete = True
 
     async def retrieve(
         self,
@@ -122,6 +123,7 @@ class HybridRetriever:
         top_k_per_query: int = 30,
         top_k_final: int = 10,
     ) -> list[ChunkHit]:
+        self.complete = True
         if not queries:
             return []
 
@@ -136,6 +138,7 @@ class HybridRetriever:
                     bm25_hits = await self._corpus.bm25_search(text, top_k=top_k_per_query)
                     rankings.append([h.chunk_id for h in bm25_hits])
                 except Exception as exc:  # noqa: BLE001
+                    self.complete = False
                     logger.warning("bm25 failed for query %r: %s", text, exc)
 
             # Vector -- always.
@@ -144,17 +147,21 @@ class HybridRetriever:
                 vec_hits = await self._vector_store.search(qvec, top_k=top_k_per_query)
                 rankings.append([h.document.id for h in vec_hits])
             except Exception as exc:  # noqa: BLE001
+                self.complete = False
                 logger.warning("vector search failed for query %r: %s", text, exc)
 
         if not any(rankings):
             return []
 
         fused = reciprocal_rank_fusion(rankings, k=self._rrf_k)
-        top_ids = [cid for cid, _ in fused[:top_k_final]]
+        return await self.hydrate(fused[:top_k_final])
+
+    async def hydrate(self, ranking: Sequence[tuple[str, float]]) -> list[ChunkHit]:
+        """Resolve ranked IDs through the current corpus, including its custom metadata."""
+        top_ids = [cid for cid, _ in ranking]
         if not top_ids:
             return []
-
-        score_by_id = dict(fused[:top_k_final])
+        score_by_id = dict(ranking)
         stored = await self._corpus.get_chunks(top_ids)
         stored_by_id = {c.chunk_id: c for c in stored}
 

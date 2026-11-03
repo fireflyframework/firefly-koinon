@@ -28,11 +28,12 @@ import contextlib
 import logging
 import time
 from collections.abc import Iterable, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import astuple, dataclass, replace
 from typing import TYPE_CHECKING
 
 from pyfly.agentic.vectorstores.types import SearchFilter
 
+from flycanon.core.agents.model_bindings import current_scope
 from flycanon.core.services.embeddings import (
     EmbeddingRegistry,
     EmbeddingService,
@@ -41,7 +42,7 @@ from flycanon.core.services.embeddings import (
     bind_embedding_set,
 )
 from flycanon.core.services.query import provenance
-from flycanon.core.services.retrieval import curated_corpus
+from flycanon.core.services.retrieval import candidate_reuse, curated_corpus
 from flycanon.core.services.retrieval.corpus_factory import CorpusContext
 from flycanon.models.repositories.chunk_repository import ChunkRepository
 from flycanon.models.repositories.knowledge_repository import KnowledgeRepository
@@ -221,12 +222,55 @@ class RetrievalService:
         # the ANN scan have to agree on it, and the dense store reads it from
         # the ContextVar rather than from a parameter the framework's
         # ``search(vector, top_k, namespace)`` has nowhere to carry.
-        with bind_embedding_set(binding) if binding is not None else contextlib.nullcontext():
-            chunk_hits = await retriever.retrieve(
-                queries,
-                top_k_per_query=effective_per_query_k,
-                top_k_final=effective_top_k * 3,  # widen for post-filter
-            ) if documents_enabled else []
+        async def retrieve_candidates():
+            with bind_embedding_set(binding) if binding is not None else contextlib.nullcontext():
+                return await retriever.retrieve(
+                    queries,
+                    top_k_per_query=effective_per_query_k,
+                    top_k_final=effective_top_k * 3,  # widen for post-filter
+                ) if documents_enabled else []
+
+        # Only deterministic document candidate work is shared. Current hydration,
+        # curated publication reads and model/immutable evidence checks still run below.
+        if self._query_expander is None and self._reranker is None:
+            connections = current_scope()
+            borrowed = connections.embeddings.get("documents.embedding") if connections else None
+            # The registry creates a fresh orchestration wrapper for each borrowed
+            # provider. Compare the live immutable binding and its validated shape.
+            embedding_identity = (
+                (
+                    id(borrowed), embedder.model, embedder.dimensions, embedder.zero_vector_on_failure,
+                    borrowed.embedding_model, borrowed.dimensions, borrowed.storage_dimensions,
+                    borrowed.space_id, id(borrowed.embedder),
+                    borrowed.embedder.model, borrowed.embedder.dimensions,
+                )
+                if type(embedder) is EmbeddingService and borrowed is not None
+                else embedder
+            )
+            key = (
+                tenant_id, workspace_id, query, effective_top_k, effective_per_query_k,
+                self._rrf_k, self._query_expansion_n, self._reranker_top_n, documents_enabled,
+                tuple(
+                    tuple(value) if value is not None else None
+                    for value in astuple(filters or RetrievalFilters())
+                ),
+                binding, embedding_identity,
+                *(id(resource) for resource in (
+                    self._context, self._context.corpus, self._context.vector_store,
+                    self._source_repo, self._chunk_repo, self._knowledge_repo,
+                    self._embedding_sets, self._embedding_registry,
+                )),
+            )
+            async def reload_candidates(ranking):
+                return await retriever.hydrate(
+                    [(candidate.chunk_id, candidate.score) for candidate in ranking]
+                )
+
+            chunk_hits = await candidate_reuse.candidates(
+                key, retrieve_candidates, complete=lambda: retriever.complete, reload=reload_candidates
+            )
+        else:
+            chunk_hits = await retrieve_candidates()
         # Hydrate with Postgres metadata + apply filters.
         hydrated = await self._hydrate(chunk_hits)
         if filters is not None:
