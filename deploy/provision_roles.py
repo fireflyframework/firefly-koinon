@@ -25,6 +25,34 @@ EMAIL_RECOVERY_TABLES = (
 
 
 def grant_table(connection, table, role, *, document_control=False):
+    if table in {
+        "canon_readiness_generations", "canon_readiness_changes", "canon_readiness_pending",
+        "koinon_knowledge_readiness_generations", "koinon_knowledge_readiness_changes",
+        "koinon_knowledge_readiness_pending",
+    }:
+        target, relation = sql.Identifier(role), sql.Identifier(table)
+        connection.execute(sql.SQL("REVOKE ALL ON TABLE public.{} FROM {}").format(relation, target))
+        columns = connection.execute(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name=%s", (table,)
+        ).fetchall()
+        connection.execute(sql.SQL("REVOKE ALL ({}) ON TABLE public.{} FROM {}").format(
+            sql.SQL(",").join(sql.Identifier(column) for (column,) in columns), relation, target
+        ))
+        if table.endswith("_pending"):
+            return
+        connection.execute(sql.SQL("GRANT SELECT ON TABLE public.{} TO {}").format(relation, target))
+        if table.endswith("_generations"):
+            connection.execute(sql.SQL("GRANT UPDATE(fence) ON TABLE public.{} TO {}").format(relation, target))
+        if table == "canon_readiness_generations":
+            connection.execute(sql.SQL(
+                "GRANT EXECUTE ON FUNCTION public.koinon_ensure_canon_readiness(text) TO {}"
+            ).format(target))
+        if table == "koinon_knowledge_readiness_generations":
+            connection.execute(sql.SQL(
+                "GRANT EXECUTE ON FUNCTION public.koinon_lock_knowledge_readiness(text,bigint) TO {}"
+            ).format(target))
+        return
     if table in EMAIL_RECOVERY_TABLES:
         target = sql.Identifier(role)
         relation = sql.Identifier(table)
