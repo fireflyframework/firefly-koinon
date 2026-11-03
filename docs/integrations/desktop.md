@@ -2,21 +2,21 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # Desktop MCP extension
 
-The firefly koinon 26.11.11 desktop extension connects a compatible MCP desktop host to an operator-managed koinon MCP endpoint. The bridge uses the official TypeScript MCP SDK and forwards remote tools, resources, and prompts. The server remains responsible for schemas, permissions, and knowledge access.
+The firefly koinon 26.11.12 desktop extension connects a compatible MCP desktop host to an operator-managed koinon MCP endpoint. The bridge uses the official TypeScript MCP SDK and forwards remote tools, resources, and prompts. The server remains responsible for schemas, permissions, and knowledge access.
 
 !!! note "Versioned installation instructions"
-    These instructions target 26.11.11. Install only when its release page provides the MCPB and matching checksums. The 26.11.10 archive uses PAT authentication and cannot follow the browser sign-in steps below.
+    These instructions target 26.11.12. Install only when its release page provides the MCPB and matching checksums. The 26.11.10 archive uses PAT authentication and cannot follow the browser sign-in steps below.
 
 ## Download the matching package
 
-Download these files from the **same release**, 26.11.11, once its assets are published:
+Download these files from the **same release**, 26.11.12, once its assets are published:
 
 | Download | Use it for |
 | --- | --- |
-| [Claude Desktop extension (.mcpb)](https://github.com/fireflyframework/firefly-koinon/releases/download/v26.11.11/firefly-koinon-desktop-26.11.11.mcpb) | Install the branded local bridge in a compatible desktop host |
-| [Portable skills (.zip)](https://github.com/fireflyframework/firefly-koinon/releases/download/v26.11.11/firefly-koinon-skills-26.11.11.zip) | Obtain the separate `koinon-evidence` instructions for a host with a supported skill installer |
-| [SHA256SUMS](https://github.com/fireflyframework/firefly-koinon/releases/download/v26.11.11/SHA256SUMS) | Check that the downloaded files match the published artifacts |
-| [Release notes and all assets](https://github.com/fireflyframework/firefly-koinon/releases/tag/v26.11.11) | Review the version, provenance and other distributions |
+| [Claude Desktop extension (.mcpb)](https://github.com/fireflyframework/firefly-koinon/releases/download/v26.11.12/firefly-koinon-desktop-26.11.12.mcpb) | Install the branded local bridge in a compatible desktop host |
+| [Portable skills (.zip)](https://github.com/fireflyframework/firefly-koinon/releases/download/v26.11.12/firefly-koinon-skills-26.11.12.zip) | Obtain the separate `koinon-evidence` instructions for a host with a supported skill installer |
+| [SHA256SUMS](https://github.com/fireflyframework/firefly-koinon/releases/download/v26.11.12/SHA256SUMS) | Check that the downloaded files match the published artifacts |
+| [Release notes and all assets](https://github.com/fireflyframework/firefly-koinon/releases/tag/v26.11.12) | Review the version, provenance and other distributions |
 
 You do not need to clone the repository, install Python or build the extension. Keep the `.mcpb` filename and extension unchanged. The generic package contains no organization's URL or credential; you supply those during setup.
 
@@ -37,13 +37,13 @@ Open a terminal in the directory where you saved the MCPB and `SHA256SUMS`. Calc
 === "macOS or Linux"
 
     ```sh
-    shasum -a 256 firefly-koinon-desktop-26.11.11.mcpb
+    shasum -a 256 firefly-koinon-desktop-26.11.12.mcpb
     ```
 
 === "Windows PowerShell"
 
     ```powershell
-    Get-FileHash .\firefly-koinon-desktop-26.11.11.mcpb -Algorithm SHA256
+    Get-FileHash .\firefly-koinon-desktop-26.11.12.mcpb -Algorithm SHA256
     ```
 
 Compare the result with the line for that exact filename in `SHA256SUMS`. It must match; letter case in a hexadecimal hash does not matter. If it differs, download the file again from the release before installing it. The checksum file includes other release assets, so checking every line would require downloading those other files too.
@@ -53,7 +53,7 @@ Compare the result with the line for that exact filename in `SHA256SUMS`. It mus
 1. Open Claude Desktop and its **Settings**.
 2. Select **Desktop app**, then **Manage** beside **Extensions**. Older layouts place **Extensions** directly in Settings.
 3. Open **Advanced settings** and find the **Extension Developer** section.
-4. Choose **Install Extension…** and select the downloaded `firefly-koinon-desktop-26.11.11.mcpb`.
+4. Choose **Install Extension…** and select the downloaded `firefly-koinon-desktop-26.11.12.mcpb`.
 5. Review **firefly koinon**, its version and publisher before continuing.
 
 These steps follow [Anthropic's custom desktop extension instructions](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop). An organization's desktop policy may require its owner to allow or distribute the extension first. The package needs Node.js 22 or later from the host; a separate Python environment is not required.
@@ -112,7 +112,7 @@ Use the extension's connection status and logs for diagnosis, keeping credential
 
 ## Reusable skill
 
-The [portable skills archive](https://github.com/fireflyframework/firefly-koinon/releases/download/v26.11.11/firefly-koinon-skills-26.11.11.zip) includes `koinon-evidence`, which guides document retrieval, schema inspection, bounded dataset queries, answer audit interpretation, provenance, and citation. Install the folder through your assistant's supported skill mechanism. MCPB installation does not automatically install skills. A skill provides instructions and does not establish a connection or grant access. For Claude Code or a managed ChatGPT workspace, use the [documented plugin installation steps](plugins.md) instead of guessing an archive importer.
+The [portable skills archive](https://github.com/fireflyframework/firefly-koinon/releases/download/v26.11.12/firefly-koinon-skills-26.11.12.zip) includes `koinon-evidence`, which guides document retrieval, schema inspection, bounded dataset queries, answer audit interpretation, provenance, and citation. Install the folder through your assistant's supported skill mechanism. MCPB installation does not automatically install skills. A skill provides instructions and does not establish a connection or grant access. For Claude Code or a managed ChatGPT workspace, use the [documented plugin installation steps](plugins.md) instead of guessing an archive importer.
 
 ## ChatGPT and other MCP hosts
 

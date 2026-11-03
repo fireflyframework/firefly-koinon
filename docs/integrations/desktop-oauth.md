@@ -4,7 +4,7 @@
 # Desktop extension OAuth
 
 !!! note "Versioned installation instructions"
-    These instructions target the 26.11.11 desktop bridge. Obtain its MCPB and matching checksums through the [desktop installation guide](desktop.md) when the release assets are published. The 26.11.10 archive uses PAT authentication. Controlled protocol checks do not establish acceptance in an installed desktop host.
+    These instructions target the 26.11.12 desktop bridge. Obtain its MCPB and matching checksums through the [desktop installation guide](desktop.md) when the release assets are published. The 26.11.10 archive uses PAT authentication. Controlled protocol checks do not establish acceptance in an installed desktop host.
 
 The local koinon MCPB extension can sign in through a browser without asking the user to create or copy a personal access token. Its OAuth client runs inside the local bridge. It uses the same koinon browser login, consent, authorized-application records, workspace permissions and revocation checks as remote OAuth clients.
 

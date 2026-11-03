@@ -17,7 +17,7 @@ For Grok, follow the [custom connector guide](../guides/connect-grok.md). The re
 
 ## Install in Claude Code
 
-The install source is the [koinon GitHub marketplace repository](https://github.com/fireflyframework/firefly-koinon). You do not download the desktop MCPB for this route. If you need the independent instruction files, download the [26.11.11 skills archive](https://github.com/fireflyframework/firefly-koinon/releases/download/v26.11.11/firefly-koinon-skills-26.11.11.zip) and its [checksums](https://github.com/fireflyframework/firefly-koinon/releases/download/v26.11.11/SHA256SUMS) once that release’s assets are published. Use an archive only with a host's documented skill installer.
+The install source is the [koinon GitHub marketplace repository](https://github.com/fireflyframework/firefly-koinon). You do not download the desktop MCPB for this route. If you need the independent instruction files, download the [26.11.12 skills archive](https://github.com/fireflyframework/firefly-koinon/releases/download/v26.11.12/firefly-koinon-skills-26.11.12.zip) and its [checksums](https://github.com/fireflyframework/firefly-koinon/releases/download/v26.11.12/SHA256SUMS) once that release’s assets are published. Use an archive only with a host's documented skill installer.
 
 1. Open Claude Code in the intended account and choose whether the plugin belongs to you or to the project, according to your team's policy.
 2. Add the koinon marketplace and install its instruction plugin:
