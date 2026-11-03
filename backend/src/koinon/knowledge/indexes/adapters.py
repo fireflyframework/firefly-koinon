@@ -601,101 +601,16 @@ class NativeIndexAdapter:
                 )
             return {**counts, "complete": counts["chunk_count"] == counts["vector_count"]}
 
-    async def step(self, record, *, embedder, validate_write):
-        domain = record.domain
-        with native_scope(
-            "canon" if domain == "documents" else "structured",
-            record.tenant_id,
-            record.native_workspace_id,
-            record.updated_by,
-        ):
-            if domain == "documents":
-                from flycanon.core.services.retrieval.corpus_factory import CorpusContext
+    async def step(self, record, *, embedder, validate_write, publication_guard):
+        from koinon.knowledge.indexes.native_batch import step
 
-                corpus = self.domains._resolve(CorpusContext)
-                if corpus.backend != "pgvector":
-                    raise ServiceUnavailableException(
-                        "Versioned document index management requires the native pgvector backend",
-                        code="KNOWLEDGE_INDEX_BACKEND_UNSUPPORTED",
-                    )
-                await corpus.initialise()
-            async with infrastructure_unit(self.source(domain)) as session:
-                await self.set_state(record, "building")
-                if domain == "documents":
-                    from flycanon.config import CanonSettings
-                    from flycanon.core.services.embeddings.embedding_service import EmbeddingRegistry
-                    from flycanon.core.services.embeddings.embedding_sets import (
-                        EmbeddingSetBinding,
-                        EmbeddingSetService,
-                    )
-                    from flycanon.core.services.embeddings.reindex_service import ReindexService
-                    from flycanon.core.services.retrieval.corpus_factory import CorpusContext
-                    from flycanon.models.repositories import ChunkRepository, IngestJobRepository
-
-                    domains = self.domains
-                    corpus = domains._resolve(CorpusContext)
-                    chunks = domains._resolve(ChunkRepository)
-                    binding = EmbeddingSetBinding(
-                        record.native_id, record.provider_kind, record.model_id, record.dimensions
-                    )
-                    service = ReindexService(
-                        chunks=chunks,
-                        jobs=domains._resolve(IngestJobRepository),
-                        sets=domains._resolve(EmbeddingSetService),
-                        registry=domains._resolve(EmbeddingRegistry),
-                        vector_store=corpus.vector_store,
-                        dense_backend=corpus.dense_backend,
-                        settings=domains._resolve(CanonSettings),
-                    )
-                    result = await service.step(
-                        tenant_id=record.tenant_id,
-                        workspace_id=record.native_workspace_id,
-                        binding=binding,
-                        batch_size=record.batch_size,
-                        validate_write=validate_write,
-                    )
-                    result.update(
-                        await chunks.coverage_counts(
-                            tenant_id=record.tenant_id,
-                            workspace_id=record.native_workspace_id,
-                            set_id=record.native_id,
-                        )
-                    )
-                    indexed = False
-                else:
-                    from flyquery.core.services.retrieval.versioned_index import VersionedIndexService
-                    from flyquery.models.repositories.embedding_set_repository import EmbeddingSetRepository
-
-                    repository = EmbeddingSetRepository(self.source(domain).sessionmaker)
-                    result = await VersionedIndexService(repository).step(
-                        tenant_id=record.tenant_id,
-                        workspace_id=record.native_workspace_id,
-                        set_id=record.native_id,
-                        embedder=embedder,
-                        dimensions=record.dimensions,
-                        model=record.model_id,
-                        batch_size=record.batch_size,
-                        validate_write=validate_write,
-                    )
-                    indexed = await ann_qualified(
-                        session, domain=domain, set_id=record.native_id, dimensions=record.dimensions
-                    )
-            if result["complete"]:
-                await validate_write()
-                # Commit the native batch before owner-side DDL takes its table lock.
-                if domain == "documents":
-                    indexed = await self.provision_document(record)
-                async with infrastructure_unit(self.source(domain)):
-                    result.update(await self.coverage(record))
-                    await self.set_state(
-                        record,
-                        "ready"
-                        if result["complete"] and indexed
-                        else "awaiting_index"
-                        if result["complete"]
-                        else "building",
-                    )
-            return {**result, "indexed": indexed}
+        return await step(
+            self,
+            record,
+            embedder=embedder,
+            validate_write=validate_write,
+            publication_guard=publication_guard,
+        )
 
     async def get_native(
         self, *, tenant_id, native_workspace_id, catalog_workspace_id, domain, actor, identifier

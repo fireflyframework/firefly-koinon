@@ -28,31 +28,35 @@ async def index_rows(tmp_path):
     app.context.register_bean(ProviderRepository)
     await app.startup()
     try:
-        await app.context.get_bean(TenantRepository).save(Tenant(id="tenant", name="Owned"))
-        await app.context.get_bean(CatalogRepository).save(
-            CatalogEntry(
-                id="workspace",
-                tenant_id="tenant",
-                workspace_id="workspace",
-                kind="workspace",
-                name="Owned",
-                created_by="issuer|actor",
-                updated_by="issuer|actor",
-            )
-        )
-        await app.context.get_bean(ProviderRepository).save(
-            Provider(
-                id="provider",
-                tenant_id="tenant",
-                name="Owned",
-                kind="ollama",
-                base_url="http://127.0.0.1:11434/v1",
-                model_ids=["embedding"],
-            )
-        )
+        await seed_index_rows(app.context)
         yield app.context.get_bean(KnowledgeIndexRepository)
     finally:
         await app.shutdown()
+
+
+async def seed_index_rows(context):
+    await context.get_bean(TenantRepository).save(Tenant(id="tenant", name="Owned"))
+    await context.get_bean(CatalogRepository).save(
+        CatalogEntry(
+            id="workspace",
+            tenant_id="tenant",
+            workspace_id="workspace",
+            kind="workspace",
+            name="Owned",
+            created_by="issuer|actor",
+            updated_by="issuer|actor",
+        )
+    )
+    await context.get_bean(ProviderRepository).save(
+        Provider(
+            id="provider",
+            tenant_id="tenant",
+            name="Owned",
+            kind="ollama",
+            base_url="http://127.0.0.1:11434/v1",
+            model_ids=["embedding"],
+        )
+    )
 
 
 def record(identifier, *, native="native", live=None):
@@ -93,3 +97,34 @@ async def test_native_repository_pages_only_requested_tenant_and_workspace(index
     assert await index_rows.page("foreign", "workspace", "documents", limit=1, offset=0) == ([], 0)
     assert await index_rows.page("tenant", "foreign", "documents", limit=1, offset=0) == ([], 0)
     assert page[0][0].created_at <= datetime.now(UTC)
+
+
+async def test_mode_children_are_scoped_filtered_and_keyset_paged(index_rows):
+    from koinon.jobs.repository import JobRepository
+    from koinon.jobs.service import JobService
+
+    jobs = JobService(JobRepository())
+    for key, parent, status in (
+        ("a", "parent", "activating"),
+        ("b", "parent", "ready"),
+        ("c", "other", "activating"),
+        ("d", "parent", "activating"),
+    ):
+        job = await jobs.submit(
+            "tenant",
+            "workspace",
+            "knowledge.index",
+            {"index_id": key, "parent_mode_transition_id": parent},
+            key,
+        )
+        row = record(key, native="native-" + key)
+        row.job_id, row.status = job.id, status
+        await index_rows.save(row)
+    first = await index_rows.mode_children("tenant", "parent", status="activating", limit=1)
+    assert [row.id for row in first] == ["a"]
+    second = await index_rows.mode_children("tenant", "parent", status="activating", limit=1, after_id="a")
+    assert [row.id for row in second] == ["d"]
+    assert await index_rows.mode_children("foreign", "parent") == []
+    assert await index_rows.mode_children("tenant", "missing") == []
+    assert await index_rows.count_mode_recoveries("tenant", "parent") == 2
+    assert await index_rows.count_mode_recoveries("foreign", "parent") == 0

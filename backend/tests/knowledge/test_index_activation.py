@@ -116,3 +116,65 @@ async def test_restore_pending_pointer_does_not_require_failed_target_provider_o
     assert result["status"] == "ready" and pointer["value"] is None
     assert assignments.bind.await_count == 1
     assert len(await index_rows.find_all()) == 1
+
+
+async def inactive_parent(lifecycle, row):
+    job = await lifecycle.jobs.repository.find_by_id(row.job_id)
+    job.payload = {**job.payload, "parent_mode_transition_id": "cancelled-parent"}
+    await lifecycle.jobs.repository.save(job)
+    lifecycle.parent_authority = SimpleNamespace(
+        get=lambda: SimpleNamespace(
+            check=AsyncMock(
+                side_effect=ConflictException("Parent cancelled", code="INDEX_MODE_PREPARATION_INACTIVE")
+            )
+        )
+    )
+
+
+@pytest.mark.parametrize("action", ["finish", "restore_previous"])
+async def test_explicit_recovery_of_started_activation_survives_parent_cancellation(index_rows, action):
+    activation, row, pointer, assignments, _, _ = await prepared(index_rows)
+    assignments.bind.side_effect = ConflictException("Assignment changed", code="INDEX_CONNECTION_CONFLICT")
+    with pytest.raises(ConflictException):
+        await activation.activate("issuer|actor", "tenant", row.id, request(row))
+    pending = await index_rows.find_by_id(row.id)
+    assert pending.status == "activating" and pointer["value"] == row.native_id
+    await inactive_parent(activation.lifecycle, pending)
+    assignments.bind.side_effect = None
+    result = await activation.activate(
+        "issuer|actor",
+        "tenant",
+        row.id,
+        request(pending, expected_active_id=row.id, recovery=action),
+    )
+    assert result["status"] == ("active" if action == "finish" else "ready")
+    assert pointer["value"] == (row.native_id if action == "finish" else None)
+
+
+async def test_cancelled_parent_cannot_start_new_activation_even_with_recovery_label(index_rows):
+    activation, row, pointer, _, _, _ = await prepared(index_rows)
+    await inactive_parent(activation.lifecycle, row)
+    for recovery in (None, "finish", "restore_previous"):
+        with pytest.raises(ConflictException):
+            await activation.activate("issuer|actor", "tenant", row.id, request(row, recovery=recovery))
+    assert pointer["value"] is None
+
+
+async def test_cancel_before_native_switch_cannot_be_recovered_by_starting_new_switch(index_rows):
+    activation, row, pointer, assignments, adapter, _ = await prepared(index_rows)
+    from koinon.knowledge.indexes.dtos import IndexActivateInput
+
+    initial = IndexActivateInput.model_validate(request(row)).model_dump()
+    pending = await activation.begin("issuer|actor", "tenant", row.id, initial)
+    await inactive_parent(activation.lifecycle, pending)
+    with pytest.raises(ConflictException) as error:
+        await activation.activate("issuer|actor", "tenant", row.id, request(pending, recovery="finish"))
+    assert error.value.code == "INDEX_RECOVERY_SWITCH_NOT_APPLIED"
+    adapter.activate.assert_not_awaited()
+    assignments.bind.assert_not_awaited()
+    assert pointer["value"] is None
+    pending = await index_rows.find_by_id(row.id)
+    result = await activation.activate(
+        "issuer|actor", "tenant", row.id, request(pending, recovery="restore_previous")
+    )
+    assert result["status"] == "ready" and pointer["value"] is None

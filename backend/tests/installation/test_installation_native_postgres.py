@@ -203,6 +203,7 @@ async def pg_phase(ann_database, request):
                         "relational": {
                             "enabled": True,
                             "ddl-auto": "none",
+                            "pool": {"size": 1, "max-overflow": 0, "timeout": 0.5},
                             "url": fixture.url.set(drivername="postgresql+asyncpg").render_as_string(
                                 hide_password=False
                             ),
@@ -292,13 +293,13 @@ async def pg_phase(ann_database, request):
             await writes.catalog_node(permit, next(value for value in plan.catalog if value.key == key))
         planner = IndexPlanner(get(ProviderRepository), Mock(), Mock())
 
-        async def prepare(tenant, value):
-            return await planner.provider(tenant, value.provider_id, value.model_id), {
+        async def qualify(provider, value):
+            return {
                 "dimensions": 1536,
                 "storage_dimensions": 1536,
             }
 
-        planner.prepare = prepare
+        planner.qualify = qualify
         reader = SimpleNamespace(
             records=get(KnowledgeIndexRepository),
             planner=planner,
@@ -307,6 +308,16 @@ async def pg_phase(ann_database, request):
             connections=SimpleNamespace(selected=unused_selected),
         )
         writer = NativeInstallationIndexes(admissions, SimpleNamespace(get=lambda: reader))
+        if getattr(request, "param", None) == "probe":
+            yield SimpleNamespace(
+                writer=writer,
+                permit=permit,
+                value=plan.indexes[0],
+                reader=reader,
+                admissions=admissions,
+                registry=registry,
+            )
+            return
         # Seed precisely the durable post-create boundary; no model/provider calls are needed for this phase.
         if legacy:
             from hashlib import sha256
@@ -811,3 +822,64 @@ async def test_observed_cancel_after_final_native_cas_never_gets_ready_checkpoin
     assert (
         "index-ready:" + state.value.key not in (await state.admissions.receipt(state.permit))["checkpoints"]
     )
+
+
+@pytest.mark.parametrize("pg_phase", ["probe"], indirect=True)
+@pytest.mark.parametrize("change", ["renew", "cancel", "provider"])
+async def test_installation_provider_wait_releases_pool_and_fences_concurrent_changes(pg_phase, change):
+    import asyncio
+
+    from pyfly.data.transaction import current_unit_of_work
+
+    from koinon.installation.authority import InstallationError
+
+    state = pg_phase
+    pool = state.registry.primary.engine.pool
+    entered, release = asyncio.Event(), asyncio.Event()
+    calls = []
+
+    async def qualify(provider, value):
+        assert pool.size() == 1 and pool.checkedout() == 0
+        assert all(current_unit_of_work(name) is None for name in ("primary", "canon", "structured"))
+        calls.append(provider.id)
+        entered.set()
+        await release.wait()
+        return {"dimensions": 1536, "storage_dimensions": 1536}
+
+    state.reader.planner.qualify = qualify
+    task = asyncio.create_task(state.writer.intent(state.permit, state.value))
+    try:
+        await asyncio.wait_for(entered.wait(), timeout=5)
+        if change == "renew":
+            await asyncio.wait_for(state.admissions.renew(state.permit), timeout=2)
+        elif change == "cancel":
+            await asyncio.wait_for(state.admissions.fail(state.permit), timeout=2)
+        else:
+
+            async def update_provider():
+                provider = await state.reader.planner.providers.find_by_id(calls[0])
+                provider.revision += 1
+                await state.reader.planner.providers.save(provider)
+
+            await asyncio.wait_for(update_provider(), timeout=2)
+        assert not task.done()
+        release.set()
+        if change == "renew":
+            identifier = await asyncio.wait_for(task, timeout=5)
+            assert await state.writer.intent(state.permit, state.value) == identifier
+            assert len(calls) == 1
+            receipt = await state.admissions.receipt(state.permit)
+            assert receipt["checkpoints"]["index-intent:" + state.value.key]["resource_id"] == identifier
+        else:
+            with pytest.raises(InstallationError) as error:
+                await asyncio.wait_for(task, timeout=5)
+            assert error.value.code == (
+                "INSTALLATION_LEASE_LOST" if change == "cancel" else "INSTALLATION_PROVIDER_CHANGED"
+            )
+            assert not await state.reader.records.find_all(tenant_id=state.permit.tenant_id)
+        assert pool.checkedout() == 0
+    finally:
+        release.set()
+        if not task.done():
+            task.cancel()
+        await asyncio.gather(task, return_exceptions=True)

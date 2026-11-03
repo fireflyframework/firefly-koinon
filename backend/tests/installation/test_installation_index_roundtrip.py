@@ -120,13 +120,13 @@ async def persisted_indexes(tmp_path, monkeypatch):
             await writes.catalog_node(permit, next(value for value in plan.catalog if value.key == key))
         planner = IndexPlanner(get(ProviderRepository), Mock(), Mock())
 
-        async def prepare(tenant, value):
-            return await planner.provider(tenant, value.provider_id, value.model_id), {
+        async def qualify(provider, value):
+            return {
                 "dimensions": 1536,
                 "storage_dimensions": 1536,
             }
 
-        monkeypatch.setattr(planner, "prepare", prepare)
+        monkeypatch.setattr(planner, "qualify", qualify)
         adapter = AsyncMock()
         adapter.workspace_exists.return_value = False
         adapter.overview.return_value = {"active_native_id": None, "chunk_count": 0}

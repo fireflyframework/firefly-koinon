@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Bounded sidecar embedding builds preserve every currently serving vector."""
 
+from contextlib import nullcontext
 from hashlib import sha256
 from math import isfinite
 from numbers import Real
@@ -28,11 +29,13 @@ class VersionedIndexService:
         model,
         batch_size=32,
         validate_write=None,
+        publication_guard=None,
     ):
         if isinstance(batch_size, bool) or not 1 <= batch_size <= 64 or not 64 <= dimensions <= 1536:
             raise ValueError("A structured index requires a bounded batch and compatible native width")
         scope = {"tenant_id": tenant_id, "workspace_id": workspace_id, "set_id": set_id}
         batch = await self.repository.missing(**scope, limit=batch_size)
+        written = 0
         rows = []
         if batch:
             texts = [row["question"] if row["kind"] == "example" else _build_embed_text(row) for row in batch]
@@ -60,9 +63,10 @@ class VersionedIndexService:
                 }
                 for row, text, vector in zip(batch, texts, vectors, strict=True)
             ]
-            if validate_write is not None:
-                await validate_write()
-            await self.repository.upsert(**scope, rows=rows)
+            async with publication_guard() if publication_guard is not None else nullcontext():
+                if validate_write is not None:
+                    await validate_write()
+                written = await self.repository.upsert(**scope, rows=rows)
         remaining = await self.repository.missing(**scope, limit=1)
         counts = await self.repository.counts(**scope)
-        return {"written": len(rows), "complete": not remaining, **counts}
+        return {"written": written, "complete": not remaining, **counts}
