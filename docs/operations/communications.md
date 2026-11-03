@@ -93,7 +93,10 @@ delivery is selected, one for that record plus two for action eligibility and th
 message, replay an uncertain request or save a policy. An explicitly confirmed provider
 check remains a separate operation.
 
-These are HTTP request bounds, not constant database-work or throughput guarantees.
+Delivery rows are limited by SQL pagination; its total count still scans the matching history.
+Recorded provider checks read at most 26 rows and return 25. Recovery eligibility reads
+at most two matching contacts, rejecting ambiguity without loading the whole contact history.
+These are materialization and HTTP request bounds, not constant database-work or throughput guarantees.
 The [knowledge processing observations](durable-bulk.md)
 have separate primary and native costs: the PostgreSQL regression uses 14 primary SQL
 statements for either one or 25 selected documents, while native text and vector checks
