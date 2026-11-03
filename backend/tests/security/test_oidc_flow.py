@@ -5,6 +5,7 @@ import hashlib
 from types import SimpleNamespace
 from urllib.parse import parse_qs, urlencode, urlsplit
 
+from native_session_flow import NativeSessionFlow
 from pyfly.security.oauth2.client import ClientRegistration, InMemoryClientRegistrationRepository
 from pyfly.session.session import HttpSession
 from starlette.requests import Request
@@ -70,11 +71,18 @@ async def test_native_authorization_pkce_state_nonce_session_rotation_and_replay
         }
     )
     callback = urlencode({"state": query["state"][0], "code": "one-time-code", "iss": ISSUER})
-    bad = await login._handle_callback(request(session, urlencode({"state": "wrong", "code": "code"})))
+    flow = NativeSessionFlow()
+    await flow.persist_challenge(session)
+    bad = await flow.callback(
+        login._handle_callback, request(session, urlencode({"state": "wrong", "code": "code"}))
+    )
     assert bad.status_code == 400
     assert exchanges == []
-    result = await login._handle_callback(request(session, callback))
+    incoming = request(session, callback)
+    result = await flow.callback(login._handle_callback, incoming)
+    session = incoming.state.session
     assert result.status_code == 302
+    assert await flow.store.get("before-auth") is None
     assert exchanges == [("one-time-code", verifier)]
     assert session.id != "before-auth"
     assert session.get_attribute("SECURITY_CONTEXT").attributes == {
@@ -83,7 +91,7 @@ async def test_native_authorization_pkce_state_nonce_session_rotation_and_replay
         "aud": "browser",
     }
     assert session.get_attribute("oauth2_state") is None
-    assert (await login._handle_callback(request(session, callback))).status_code == 400
+    assert (await flow.callback(login._handle_callback, request(session, callback))).status_code == 400
     assert len(exchanges) == 1
 
 
@@ -94,7 +102,9 @@ async def test_native_issuer_response_mismatch_rejected_before_exchange():
     query = urlencode(
         {"state": session.get_attribute("oauth2_state"), "code": "code", "iss": "https://wrong.test"}
     )
-    assert (await login._handle_callback(request(session, query))).status_code == 400
+    flow = NativeSessionFlow()
+    await flow.persist_challenge(session)
+    assert (await flow.callback(login._handle_callback, request(session, query))).status_code == 400
 
 
 async def test_strict_native_callback_requires_id_token_without_userinfo():
@@ -112,10 +122,15 @@ async def test_strict_native_callback_requires_id_token_without_userinfo():
 
     login._exchange_code, login._fetch_user_info = exchange, userinfo
     callback = urlencode({"state": session.get_attribute("oauth2_state"), "code": "code", "iss": ISSUER})
-    result = await login.routes()[1].endpoint(request(session, callback))
+    flow = NativeSessionFlow()
+    await flow.persist_challenge(session)
+    incoming = request(session, callback)
+    result = await flow.callback(login.routes()[1].endpoint, incoming)
+    session = incoming.state.session
     assert result.status_code == 401
     assert called == []
-    assert session.id == "before-auth"
+    assert await flow.store.get("before-auth") is None
+    assert session.claim_bound
     assert session.get_attribute("SECURITY_CONTEXT") is None
 
 
@@ -136,7 +151,8 @@ async def test_product_uses_native_public_hooks_and_preserves_verified_raw_claim
     class Success(OAuth2AuthenticationSuccessHandler):
         async def on_success(self, request, registration, context):
             assert request.state.session.get_attribute("SECURITY_CONTEXT") is None
-            assert request.state.session.id == "before-auth"
+            assert request.state.session.id != "before-auth"
+            assert request.state.session.claim_bound
             observed.append(context)
 
     class Factory(OidcTokenValidatorFactory):
@@ -171,10 +187,29 @@ async def test_product_uses_native_public_hooks_and_preserves_verified_raw_claim
 
     login._exchange_code = exchange
     callback = urlencode({"state": query["state"][0], "code": "one-time-code", "iss": ISSUER})
-    result = await login.routes()[1].endpoint(request(session, callback))
+    flow = NativeSessionFlow()
+    await flow.persist_challenge(session)
+    incoming = request(session, callback)
+    result = await flow.callback(login.routes()[1].endpoint, incoming)
+    session = incoming.state.session
     assert result.headers["location"] == "http://127.0.0.1:18782"
     assert observed[0].attributes["auth_time"] == 1700000000
     assert observed[0].attributes["groups"] == ["research", "reviewers"]
     assert observed[0].attributes["amr"] == ["pwd", "mfa"]
     assert observed[0].roles == []
     assert session.id != "before-auth"
+
+
+async def test_callback_without_native_persistence_fails_before_provider_exchange():
+    import json
+    from unittest.mock import AsyncMock
+
+    login = handler()
+    session = HttpSession("unpersisted", is_new=True)
+    await login._handle_authorization(request(session))
+    login._exchange_code = AsyncMock()
+    query = urlencode({"state": session.get_attribute("oauth2_state"), "code": "unused", "iss": ISSUER})
+    response = await login._handle_callback(request(session, query))
+    assert response.status_code == 400
+    assert json.loads(response.body)["error"] == "session_claim_unavailable"
+    login._exchange_code.assert_not_awaited()

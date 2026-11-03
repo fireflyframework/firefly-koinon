@@ -2,9 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Bound root operations before claims; native permits cover their complete lifetime."""
 
-import asyncio
 import math
-from collections import deque
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
@@ -12,8 +10,8 @@ from typing import Literal
 
 from pyfly.container import component, service
 from pyfly.core import config_properties
-from pyfly.kernel import ServiceUnavailableException
-from pyfly.resilience import Bulkhead
+from pyfly.kernel import BulkheadException, ServiceUnavailableException
+from pyfly.resilience import QueuedBulkhead
 
 WorkKind = Literal[
     "conversation",
@@ -74,50 +72,23 @@ class WorkAdmissionSettings:
 
 class _Pool:
     def __init__(self, capacity, settings):
-        self.bulkhead = Bulkhead(max_concurrent=capacity)
-        self.settings = settings
-        self.waiters: deque[asyncio.Future[None]] = deque()
-        self.closed = False
+        self.bulkhead = QueuedBulkhead(
+            max_concurrent=capacity,
+            max_waiters=settings.max_waiters,
+            wait_timeout_seconds=settings.wait_timeout_seconds,
+        )
 
     async def acquire(self):
-        if self.closed:
-            raise WorkAdmissionUnavailable()
-        if not self.waiters and self.bulkhead.available_slots:
-            await self.bulkhead.acquire()
-            return
-        if len(self.waiters) >= self.settings.max_waiters:
-            raise WorkAdmissionUnavailable()
-        waiter = asyncio.get_running_loop().create_future()
-        self.waiters.append(waiter)
         try:
-            async with asyncio.timeout(self.settings.wait_timeout_seconds):
-                await asyncio.shield(waiter)
-        except BaseException as error:
-            # A permit can be assigned in the same turn as cancellation or timeout.
-            if waiter.done() and not waiter.cancelled() and waiter.exception() is None:
-                await self.release()
-            else:
-                waiter.cancel()
-                if waiter in self.waiters:
-                    self.waiters.remove(waiter)
-            if isinstance(error, TimeoutError):
-                raise WorkAdmissionUnavailable() from None
-            raise
+            await self.bulkhead.acquire()
+        except BulkheadException:
+            raise WorkAdmissionUnavailable() from None
 
     async def release(self):
         self.bulkhead.release()
-        while not self.closed and self.waiters and self.bulkhead.available_slots:
-            waiter = self.waiters.popleft()
-            if not waiter.done():
-                await self.bulkhead.acquire()
-                waiter.set_result(None)
 
     def close(self):
-        self.closed = True
-        while self.waiters:
-            waiter = self.waiters.popleft()
-            if not waiter.done():
-                waiter.set_exception(WorkAdmissionUnavailable())
+        self.bulkhead.close()
 
 
 @dataclass
@@ -153,17 +124,15 @@ class WorkAdmission:
 
     @property
     def worker_active(self):
-        return sum(
-            pool.bulkhead.max_concurrent - pool.bulkhead.available_slots for pool in self._worker_pools()
-        )
+        return sum(pool.bulkhead.active_count for pool in self._worker_pools())
 
     @property
     def worker_waiting(self):
-        return sum(len(pool.waiters) for pool in self._worker_pools())
+        return sum(pool.bulkhead.waiting_count for pool in self._worker_pools())
 
     @property
     def api_active(self):
-        return self._api.bulkhead.max_concurrent - self._api.bulkhead.available_slots
+        return self._api.bulkhead.active_count
 
     def close_workers(self):
         for pool in self._worker_pools():

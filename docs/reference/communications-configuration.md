@@ -2,7 +2,7 @@
 
 Communications use native pyfly notifications, templates, scheduling and primary database transactions. The installation owns the transport and verified sender allowlist. Organization administrators select an allowed sender, branding, language and summary policy; they cannot configure arbitrary SMTP hosts, credentials, HTML or subject templates.
 
-Use the product's pinned pyfly version, 26.10.32 in this release. Apply the native communications migration and provision its runtime table privileges before enabling communications. Run the complete worker role separately from API processes. The API never starts the communications scheduler.
+Use the product's pinned pyfly version from its dependency lockfile. Apply the native communications migration and provision its runtime table privileges before enabling communications. Run the complete worker role separately from API processes. The API never starts the communications scheduler.
 
 Directory synchronization is optional. When an installation uses basic native SSO without directory application permissions, use [operator-approved delivery contacts](operator-delivery-contacts.md) for durable, revocable administrator email targets and a new native delivery diagnostic. Inbox access and SSO do not depend on directory availability. Invitation recipient discovery remains a separate directory-dependent capability.
 

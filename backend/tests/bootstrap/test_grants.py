@@ -321,6 +321,8 @@ async def test_only_actual_strict_native_id_token_callback_runs_bootstrap_before
     import jwt
     from cryptography.hazmat.primitives.asymmetric import rsa
     from pyfly.security.oauth2.client import ClientRegistration, InMemoryClientRegistrationRepository
+    from pyfly.session.adapters.memory import InMemorySessionStore
+    from pyfly.session.filter import SessionFilter
     from pyfly.session.session import HttpSession
 
     from koinon.corporate_identity.login import CorporateLoginSuccess
@@ -455,12 +457,17 @@ async def test_only_actual_strict_native_id_token_callback_runs_bootstrap_before
     query = urlencode(
         dict(state=session.get_attribute("oauth2_state"), code="inert-code", iss=ISSUER, oid="forged-object")
     )
+    store = InMemorySessionStore()
+    await store.save(session.id, session.get_data(), 60)
+    incoming = request(query)
+    incoming.scope["headers"].append((b"cookie", b"PYFLY_SESSION=before-login"))
+    response = await SessionFilter(store).do_filter(incoming, handler.routes()[1].endpoint)
+    session = incoming.state.session
+    assert await store.get("before-login") is None
     if id_token_present:
-        response = await handler.routes()[1].endpoint(request(query))
         assert response.status_code == 302 and refreshed == ["actual-signed-pairwise"]
         assert session.get_attribute("SECURITY_CONTEXT").user_id != OID
     else:
-        response = await handler.routes()[1].endpoint(request(query))
         assert response.status_code == 401
         assert json.loads(response.body)["error"] == "oidc_id_token_required"
         assert refreshed == []
