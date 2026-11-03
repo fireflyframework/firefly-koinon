@@ -41,9 +41,11 @@ class IndexPlanner:
 
     async def prepare(self, tenant_id, data):
         provider = await self.provider(tenant_id, data.provider_id, data.model_id)
-        profile = await qualify_embedding(
+        return provider, await self.qualify(provider, data)
+
+    async def qualify(self, provider, data):
+        return await qualify_embedding(
             self.open(provider, data.model_id),
             domain=data.domain,
             expected_dimensions=data.expected_dimensions,
         )
-        return provider, profile

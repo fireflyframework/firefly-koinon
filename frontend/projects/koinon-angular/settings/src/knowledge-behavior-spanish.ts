@@ -1,5 +1,80 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 export const KNOWLEDGE_BEHAVIOR_SPANISH: Readonly<Record<string, string>> = {
+  'Index activation receipts': 'Recibos de activación de índices',
+  'Each receipt retains the admitted workspace and index version, including earlier activations of a reused index.':
+    'Cada recibo conserva el espacio y la versión de índice admitidos, incluidas las activaciones anteriores de un índice reutilizado.',
+  'Index version:': 'Versión del índice:',
+  'Workspace:': 'Espacio:',
+  'Receipt:': 'Recibo:',
+  'Load more activation receipts': 'Cargar más recibos de activación',
+  'Recovery pagination did not advance. Refresh the status.': 'La paginación de recuperación no avanzó. Actualiza el estado.',
+  pending: 'pendiente',
+  finished: 'Finalizado',
+  restored: 'Restaurado',
+  aborted: 'Interrumpido',
+  'Mode preparation': 'Preparación del modo',
+  'Active mode:': 'Modo activo:',
+  'Requested mode:': 'Modo solicitado:',
+  'Prepare mode change': 'Preparar cambio de modo',
+  'Refresh preparation': 'Actualizar preparación',
+  'Discovering documents': 'Buscando documentos',
+  'Checking model assignments': 'Comprobando modelos asignados',
+  'Preparing document views': 'Preparando vistas de documentos',
+  'Preparing document indexes': 'Preparando índices de documentos',
+  'Verifying current knowledge': 'Verificando el conocimiento actual',
+  'Activating requested mode': 'Activando el modo solicitado',
+  'Preparation requested. The active mode remains unchanged.':
+    'Preparación solicitada. El modo activo no cambia.',
+  'Preparation completed. Reload the settings to see the active revision.':
+    'Preparación completada. Actualiza la configuración para ver la revisión activa.',
+  'The active mode remains unchanged while preparation runs or needs attention.':
+    'El modo activo no cambia mientras la preparación está en curso o requiere atención.',
+  'Knowledge changed during preparation. Changed workspaces are being checked again.':
+    'El conocimiento cambió durante la preparación. Se están verificando de nuevo los espacios modificados.',
+  'Catalog entries checked:': 'Entradas del catálogo revisadas:',
+  'Verification checks:': 'Comprobaciones de verificación:',
+  'Current stage time (ms):': 'Tiempo de la etapa actual (ms):',
+  'Processing job:': 'Trabajo de procesamiento:',
+  'Worker lease until:': 'Reserva del worker hasta:',
+  'Open source': 'Abrir fuente',
+  'Inspect index job': 'Inspeccionar trabajo de índice',
+  'Index reconciliation is still required. Cancelling a mode change does not undo a native index switch.':
+    'El índice sigue pendiente de conciliación. Cancelar el cambio de modo no deshace un cambio nativo de índice.',
+  'Review finishing the index activation': 'Revisar finalización de la activación del índice',
+  'Review restoring the previous index': 'Revisar restauración del índice anterior',
+  'Load more preparation targets': 'Cargar más destinos de preparación',
+  'Review index reconciliation': 'Revisar conciliación del índice',
+  'Finish only the already-applied index switch. This does not activate a cancelled mode change or repeat embedding calls.':
+    'Finaliza únicamente el cambio de índice ya aplicado. No activa un cambio de modo cancelado ni repite llamadas de embeddings.',
+  'Restore the recorded previous index. This does not activate a cancelled mode change or repeat embedding calls.':
+    'Restaura el índice anterior registrado. No activa un cambio de modo cancelado ni repite llamadas de embeddings.',
+  'Confirm index reconciliation': 'Confirmar conciliación del índice',
+  'Retry preparation': 'Reintentar preparación',
+  'Cancel mode change': 'Cancelar cambio de modo',
+  'Inspect the source and job outcome first. Retrying may repeat incomplete model calls and incur usage again.':
+    'Revisa primero la fuente y el resultado del trabajo. Reintentar puede repetir llamadas incompletas al modelo y generar consumo adicional.',
+  'I reviewed the prerequisites and retry usage':
+    'Revisé los requisitos y el consumo del reintento',
+  'The request outcome is unknown. Check its status before submitting another change.':
+    'Se desconoce el resultado de la solicitud. Consulta su estado antes de enviar otro cambio.',
+  'Check the same request': 'Comprobar la misma solicitud',
+  'Preparation status could not be loaded. Refresh to try again.':
+    'No se pudo cargar el estado de preparación. Actualiza para volver a intentarlo.',
+  'Preparation pagination did not advance. Refresh the status.':
+    'La paginación de la preparación no avanzó. Actualiza el estado.',
+  queued: 'En cola',
+  running: 'En curso',
+  failed: 'Fallido',
+  cancelled: 'Cancelado',
+  superseded: 'Sustituido',
+  succeeded: 'Completado',
+  prepared: 'Preparado',
+  ready: 'Listo',
+  waiting: 'En espera',
+  excluded: 'Fuera del alcance actual',
+  workspace: 'Espacio',
+  document: 'Documento',
+  curated: 'Conocimiento curado',
   'RLM needs document versions with recorded processing details. Older documents may need to be reprocessed.':
     'RLM necesita versiones de documento con el procesamiento registrado. Puede ser necesario volver a procesar los documentos antiguos.',
   'Knowledge behavior': 'Comportamiento del conocimiento',

@@ -1312,6 +1312,101 @@ export interface KnowledgeItemView {
  "serving_version"?: number | null;
  "selected_version": KnowledgeVersionView;
 }
+export interface KnowledgeModeCurrentView {
+ "transition": KnowledgeModeTransitionView | null;
+}
+export interface KnowledgeModeIndexRecovery {
+ "index_id": string;
+ "job_id": string | null;
+ "state": "in_progress" | "required" | "resolved";
+ "activation_job_id": string;
+ "activation_lease_until": string | null;
+ "index_status": string;
+ "native_pointer_state"?: "target" | "previous" | "other" | "unavailable";
+ "expected_revision"?: number | null;
+ "expected_active_id"?: string | null;
+ "expected_connection_revision"?: number | null;
+ "actions": Array<"finish" | "restore_previous">;
+ "message": string;
+}
+export interface KnowledgeModeRecoveryPage {
+ "items": Array<KnowledgeModeRecoveryReceipt>;
+ "next_cursor": string | null;
+}
+export interface KnowledgeModeRecoveryReceipt {
+ "index_id": string;
+ "job_id": string | null;
+ "state": "in_progress" | "required" | "resolved";
+ "activation_job_id": string;
+ "activation_lease_until": string | null;
+ "index_status": string;
+ "native_pointer_state"?: "target" | "previous" | "other" | "unavailable";
+ "expected_revision"?: number | null;
+ "expected_active_id"?: string | null;
+ "expected_connection_revision"?: number | null;
+ "actions": Array<"finish" | "restore_previous">;
+ "message": string;
+ "receipt_id": string;
+ "attempt_revision": number;
+ "resolution_revision": number;
+ "resolution": "pending" | "finished" | "restored" | "aborted";
+ "native_index_id": string;
+ "provider_id": string;
+ "model_id": string;
+ "workspace_id": string;
+ "native_workspace_id": string;
+}
+export interface KnowledgeModeRevisionInput {
+ "expected_revision": number;
+}
+export interface KnowledgeModeTargetPage {
+ "items": Array<KnowledgeModeTargetView>;
+ "next_cursor": string | null;
+}
+export interface KnowledgeModeTargetView {
+ "id": string;
+ "kind": "workspace" | "document" | "curated";
+ "catalog_id": string;
+ "workspace_id": string;
+ "status": "queued" | "prepared" | "ready" | "waiting" | "failed" | "excluded";
+ "error_code"?: string | null;
+ "message"?: string | null;
+ "action"?: "reprocess_document" | "inspect_document_job" | "keep_rag" | "inspect_source_integrity" | "inspect_source_limits" | "restart_preparation" | "retry_preparation" | "configure_models" | "inspect_preparation" | "inspect_index_job" | "reconcile_index" | null;
+ "index_id"?: string | null;
+ "job_id"?: string | null;
+ "job_status"?: string | null;
+ "index_recovery"?: KnowledgeModeIndexRecovery | null;
+ "lease_until"?: string | null;
+ "source_version_id"?: string | null;
+ "ingestion_extraction_id"?: string | null;
+ "view_extraction_id"?: string | null;
+ "raw_sha256"?: string | null;
+ "raw_bytes"?: number | null;
+ "normalized_sha256"?: string | null;
+ "parts"?: number | null;
+ "text_bytes"?: number | null;
+}
+export interface KnowledgeModeTransitionView {
+ "id": string;
+ "tenant_id": string;
+ "job_id": string;
+ "revision": number;
+ "base_revision": number;
+ "base_digest": string;
+ "active_mode": "rag" | "rlm";
+ "requested_mode": "rag" | "rlm";
+ "requested_settings": OrganizationKnowledgeSettingsInput;
+ "status": "queued" | "running" | "failed" | "cancelled" | "superseded" | "succeeded";
+ "stage": "discovery" | "preflight" | "repair_views" | "prepare_indexes" | "verify" | "activate";
+ "counters": Record<string,number>;
+ "stage_milliseconds": Record<string,number>;
+ "pending_index_recoveries"?: number;
+ "progress_reason"?: "knowledge_changed" | null;
+ "error_code": string | null;
+ "error": string | null;
+ "created_at": string;
+ "updated_at": string;
+}
 export interface KnowledgeNumberBounds {
  "minimum": number;
  "maximum": number;

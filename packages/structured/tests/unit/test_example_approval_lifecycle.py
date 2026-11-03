@@ -77,6 +77,7 @@ async def lifecycle(tmp_path):
             sql = "SELECT 1"
         sql = re.sub(r"(\w+(?:\.\w+)?)\s*<=>\s*CAST\((:\w+) AS vector\)", r"cosine_distance(\1,\2)", sql)
         sql = re.sub(r"CAST\((:\w+) AS (?:vector|jsonb)\)", r"\1", sql)
+        sql = sql.replace(" FOR SHARE", "")
         sql = sql.replace("xmin::text", "CAST(_test_review_version AS TEXT)")
         sql = sql.replace("::text", "").replace("::uuid", "")
 

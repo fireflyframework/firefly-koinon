@@ -100,6 +100,32 @@ async function mount(
       calls.push({ method: String(method), path, body: request?.body });
       if (options.request && path.endsWith('/knowledge/settings'))
         return options.request<T>(method as 'GET', path, request);
+      if (path.endsWith('/knowledge/settings/transitions/current'))
+        return { transition: null } as T;
+      if (method === 'POST' && path.endsWith('/knowledge/settings/transitions')) {
+        return {
+          id: 'mode-one',
+          tenant_id: 'tenant',
+          job_id: 'mode-job',
+          revision: 1,
+          base_revision: 7,
+          base_digest: 'a'.repeat(64),
+          active_mode: 'rag',
+          requested_mode: 'rlm',
+          requested_settings: request?.body,
+          status: 'queued',
+          stage: 'discovery',
+          counters: {},
+          stage_milliseconds: {},
+          pending_index_recoveries: 0,
+          error: null,
+          error_code: null,
+          created_at: '2026-11-03T00:00:00Z',
+          updated_at: '2026-11-03T00:00:00Z',
+        } as T;
+      }
+      if (path.endsWith('/transitions/mode-one/targets'))
+        return { items: [], next_cursor: null } as T;
       if (path.endsWith('/knowledge/settings')) {
         if (options.readFailure || (method === 'PUT' && options.failure))
           throw new KoinonError(
@@ -227,13 +253,12 @@ it('saves full document and SQL settings using the loaded revision, and cancel r
   expect(
     h.fixture.nativeElement.querySelector('ffk-knowledge-behavior .origin').textContent,
   ).toContain('Saved for this organization');
-  await h.selectRlm();
   await h.change('structured.grounding_min_confidence', '0.75');
   await h.change('documents.rlm_sub_budget', '0');
   await h.save();
   expect(h.calls.find((c) => c.method === 'PUT')?.body).toEqual({
     expected_revision: 7,
-    documents: { ...documents, answer_mode: 'rlm', rlm_sub_budget: 0 },
+    documents: { ...documents, rlm_sub_budget: 0 },
     structured: { ...structured, grounding_min_confidence: 0.75 },
   });
   await h.change('documents.retrieval_top_k', '22');
@@ -304,9 +329,9 @@ it('keeps provider operators read-only and ignores workspace-only settings autho
 it('preserves draft on conflict and requires an explicit reload before another save', async () => {
   const h = await mount({ failure: 409 });
   await h.settle();
-  await h.selectRlm();
+  await h.change('documents.rlm_max_iters', '9');
   await h.save();
-  expect(h.rlm().checked).toBe(true);
+  expect(h.field('documents.rlm_max_iters').value).toBe('9');
   expect(
     h.fixture.nativeElement.querySelector('ffk-knowledge-behavior button[type=submit]').disabled,
   ).toBe(true);
@@ -318,10 +343,10 @@ for (const status of [401, 403])
   it(`retains the draft after server save ${status} and preserves authentication semantics`, async () => {
     const h = await mount({ failure: status });
     await h.settle();
-    await h.selectRlm();
+    await h.change('documents.rlm_max_iters', '9');
     await h.save();
     expect(h.facade.authRequired()).toBe(status === 401);
-    expect(h.rlm().checked).toBe(true);
+    expect(h.field('documents.rlm_max_iters').value).toBe('9');
     expect(h.fixture.nativeElement.querySelector('[role=alert]').textContent).toContain(
       'Observed settings failure',
     );
@@ -369,7 +394,7 @@ it('ignores an older organization response and saves only the new organizations 
   h.fixture.detectChanges();
   release();
   await h.settle();
-  await h.selectRlm();
+  await h.change('documents.rlm_max_iters', '9');
   await h.save();
   const write = h.calls.find((c) => c.method === 'PUT');
   expect(write?.path).toBe('/tenants/other/knowledge/settings');
@@ -448,7 +473,7 @@ it('ignores a pending save response after the host changes organization', async 
     },
   });
   await h.settle();
-  await h.selectRlm();
+  await h.change('documents.rlm_max_iters', '9');
   (
     h.fixture.nativeElement.querySelector(
       'ffk-knowledge-behavior button[type=submit]',
@@ -487,4 +512,20 @@ it('keeps the technical capability code inside collapsed prerequisites instead o
   expect(prerequisites.open).toBe(false);
   expect(prerequisites.textContent).toContain('KNOWLEDGE_RLM_UNQUALIFIED');
   expect(panel.querySelectorAll('button[type=submit]')).toHaveLength(1);
+});
+
+it('requests durable preparation and keeps the active mode visible until completion', async () => {
+  const h = await mount();
+  await h.settle();
+  await h.selectRlm();
+  await h.save();
+  expect(h.calls.some((call) => call.method === 'PUT')).toBe(false);
+  expect(
+    h.calls.find((call) => call.method === 'POST' && call.path.endsWith('/transitions'))?.body,
+  ).toEqual({ expected_revision: 7, documents: { ...documents, answer_mode: 'rlm' }, structured });
+  const panel = h.fixture.nativeElement.querySelector('ffk-knowledge-behavior');
+  expect(panel.textContent).toContain('Active mode: RAG');
+  expect(panel.textContent).toContain('Requested mode: RLM');
+  expect(panel.textContent).toContain('Discovering documents');
+  expect(panel.querySelector('button[type=submit]').disabled).toBe(true);
 });

@@ -106,7 +106,7 @@ class _StubDense:
         self.indexed: list[str] = []
         self.dropped: list[str] = []
 
-    async def ensure_set_index(self, binding: EmbeddingSetBinding) -> bool:
+    async def ensure_set_index(self, binding: EmbeddingSetBinding, *, namespace: str) -> bool:
         if self.can_index:
             self.indexed.append(binding.set_id)
         return self.can_index
@@ -496,3 +496,123 @@ class TestListing:
         active = {entry.row.id for entry in listing if entry.is_active}
         assert active == {outcome.set_id}
         assert previous.set_id in {entry.row.id for entry in listing}
+
+
+async def test_detached_batch_rechecks_changed_content_before_vector_publication(world, session_factory):
+    from contextlib import asynccontextmanager
+
+    from pyfly.data.transaction import infrastructure_unit
+    from sqlalchemy import update
+
+    batch = await world["chunks"].get_many(["chunk-00"])
+    original = world["embedder"].embed
+    phases = []
+
+    async def embed(texts):
+        phases.append("provider")
+        async with session_factory() as session, session.begin():
+            await session.execute(
+                update(KnowledgeChunkRow)
+                .where(KnowledgeChunkRow.id == "chunk-00")
+                .values(content="Updated while provider was running")
+            )
+        return await original(texts)
+
+    world["embedder"].embed = embed
+
+    @asynccontextmanager
+    async def publication():
+        assert phases == ["provider"]
+        phases.append("publication")
+        async with infrastructure_unit(session_factory):
+            yield
+
+    with pytest.raises(ReindexError, match="changed"):
+        await world["service"]._embed_batch(
+            batch,
+            binding=EmbeddingSetBinding("target", "azure", "text-embedding-3-large", 3072),
+            embedder=world["embedder"],
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            stamp_model=False,
+            publication_guard=publication,
+        )
+    assert phases == ["provider", "publication"]
+    assert world["store"].rows == {}
+
+
+async def test_detached_batch_publishes_unchanged_content_inside_guard(world, session_factory):
+    from contextlib import asynccontextmanager
+
+    from pyfly.data.transaction import infrastructure_unit
+
+    batch = await world["chunks"].get_many(["chunk-00", "chunk-01"])
+    original = world["store"].upsert
+    publishing = False
+
+    async def upsert(*args, **kwargs):
+        assert publishing
+        return await original(*args, **kwargs)
+
+    world["store"].upsert = upsert
+
+    @asynccontextmanager
+    async def publication():
+        nonlocal publishing
+        assert len(world["embedder"].calls) == 1
+        async with infrastructure_unit(session_factory):
+            publishing = True
+            try:
+                yield
+            finally:
+                publishing = False
+
+    written = await world["service"]._embed_batch(
+        batch,
+        binding=EmbeddingSetBinding("target", "azure", "text-embedding-3-large", 3072),
+        embedder=world["embedder"],
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        stamp_model=False,
+        publication_guard=publication,
+    )
+    assert written == 2 and set(world["store"].rows) == {("target", "chunk-00"), ("target", "chunk-01")}
+
+
+async def test_detached_batch_rejects_source_revision_change_without_chunk_change(world, session_factory):
+    from sqlalchemy import update
+
+    from flycanon.models.entities.source import SourceRow
+
+    async with session_factory() as session, session.begin():
+        session.add(
+            SourceRow(
+                id="src-1",
+                tenant_id=_TENANT,
+                workspace_id=_WORKSPACE,
+                kind="text",
+                status="ingested",
+                content_sha256="a" * 64,
+            )
+        )
+    batch = await world["chunks"].get_many(["chunk-00"])
+    original = world["embedder"].embed
+
+    async def embed(texts):
+        async with session_factory() as session, session.begin():
+            await session.execute(
+                update(SourceRow).where(SourceRow.id == "src-1").values(content_sha256="b" * 64)
+            )
+        return await original(texts)
+
+    world["embedder"].embed = embed
+    with pytest.raises(ReindexError, match="Source revisions changed"):
+        await world["service"]._embed_batch(
+            batch,
+            binding=EmbeddingSetBinding("target", "azure", "text-embedding-3-large", 3072),
+            embedder=world["embedder"],
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            stamp_model=False,
+        )
+    assert world["store"].rows == {}

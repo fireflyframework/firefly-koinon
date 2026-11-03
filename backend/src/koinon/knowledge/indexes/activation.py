@@ -9,6 +9,7 @@ from pydantic import ValidationError
 from pyfly.container import service
 from pyfly.data.relational.sqlalchemy import transactional
 from pyfly.kernel import ConflictException, DuplicateKeyException, InvalidRequestException
+from pyfly.security.context_holder import SecurityContextHolder
 
 from koinon.knowledge.connections.service import embedding_fingerprint
 from koinon.knowledge.indexes.adapters import index_id
@@ -24,14 +25,16 @@ class IndexActivation:
     def __init__(self, lifecycle: IndexLifecycleService, assignments: IndexAssignments):
         self.lifecycle, self.assignments = lifecycle, assignments
 
-    async def activate(self, subject, tenant_id, identifier, values):
+    async def activate(self, subject, tenant_id, identifier, values, *, parent_mode_transition_id=None):
         try:
             request = IndexActivateInput.model_validate(values).model_dump()
         except ValidationError as error:
             raise InvalidRequestException(
                 "Provide valid activation revisions and recovery action", code="INVALID_INDEX_ACTIVATION"
             ) from error
-        row = await self.begin(subject, tenant_id, identifier, request)
+        row = await self.begin(
+            subject, tenant_id, identifier, request, parent_mode_transition_id=parent_mode_transition_id
+        )
         if row.status == "active":
             return index_dto(row)
         if request["recovery"] == "restore_previous":
@@ -67,13 +70,37 @@ class IndexActivation:
         return provider
 
     @transactional
-    async def begin(self, subject, tenant_id, identifier, request):
+    async def begin(self, subject, tenant_id, identifier, request, *, parent_mode_transition_id=None):
+        await self.lifecycle.reader.facade.catalog._lock_tenant(tenant_id)
         row = await self.lifecycle.scoped(subject, tenant_id, identifier, write=True, lock=True)
         if row.status == "active" and row.transition.get("request") == request:
             return row
         if row.revision != request["expected_revision"]:
             raise ConflictException("Reload the current index revision", code="INDEX_REVISION_CONFLICT")
         recovering = row.status == "activating" and request["recovery"] is not None
+        activation_parent = {
+            key: row.transition[key]
+            for key in (
+                "parent_mode_transition_id",
+                "activation_actor",
+                "activation_token_id",
+                "mode_activation_attempt_id",
+                "mode_activation_attempt_revision",
+            )
+            if recovering and key in row.transition
+        }
+        if not recovering:
+            if parent_mode_transition_id is not None:
+                context = SecurityContextHolder.get_context()
+                activation_parent = {
+                    "parent_mode_transition_id": parent_mode_transition_id,
+                    "activation_actor": subject,
+                    "activation_token_id": context.attributes.get("koinon_token_id") if context else None,
+                }
+                row.transition = {**row.transition, **activation_parent}
+                await self.lifecycle.check_parent(tenant_id, parent_mode_transition_id, row)
+            else:
+                await self.lifecycle.parent_for(row)
         if row.status not in {"ready", "retired"} and not recovering:
             raise ConflictException(
                 "Activate a qualified ready/retired version or explicitly recover its transition",
@@ -88,6 +115,7 @@ class IndexActivation:
         overview = await self.lifecycle.reader.adapter.overview(
             tenant_id=tenant_id, workspace_id=row.native_workspace_id, domain=row.domain, actor=subject
         )
+        self.validate_recovery_pointer(row, request, overview["active_native_id"])
         current = (
             index_id(tenant_id, row.workspace_id, row.domain, overview["active_native_id"])
             if overview["active_native_id"]
@@ -108,6 +136,7 @@ class IndexActivation:
         if not recovering:
             row.previous_binding = snapshot
         row.transition = {
+            **activation_parent,
             "request": request,
             "previous_native_id": previous,
             "roles": snapshot,
@@ -122,24 +151,54 @@ class IndexActivation:
             raise ConflictException(
                 "Another build or activation owns this workspace", code="INDEX_BUILD_CONFLICT"
             ) from error
+        if not recovering:
+            await self.lifecycle.activation_admitted(row)
         await self.lifecycle.reader.facade.catalog._audit(
             subject, tenant_id, "knowledge.index.activating", row.id
         )
         return row
 
     async def pending(self, subject, tenant_id, identifier, request, *, require_provider=True):
+        await self.lifecycle.reader.facade.catalog._lock_tenant(tenant_id)
         row = await self.lifecycle.scoped(subject, tenant_id, identifier, write=True, lock=True)
         if row.status != "activating" or row.transition.get("request") != request or not row.build_slot:
             raise ConflictException(
                 "This activation no longer owns the transition", code="INDEX_STATE_CONFLICT"
             )
+        if request["recovery"] is None:
+            parent_id = row.transition.get("parent_mode_transition_id")
+            if parent_id is not None:
+                await self.lifecycle.check_parent(tenant_id, parent_id, row)
+            else:
+                await self.lifecycle.parent_for(row)
         if require_provider:
             await self.provider(row)
         return row
 
+    @staticmethod
+    def validate_recovery_pointer(row, request, current):
+        if request["recovery"] == "finish" and current != row.native_id:
+            raise ConflictException(
+                "The native switch was not applied; restore the previous index "
+                "before starting a new activation",
+                code="INDEX_RECOVERY_SWITCH_NOT_APPLIED",
+            )
+        if request["recovery"] == "restore_previous" and current not in {
+            row.native_id,
+            row.transition.get("previous_native_id"),
+        }:
+            raise ConflictException("The native serving index changed", code="INDEX_ACTIVE_CONFLICT")
+
     @transactional
     async def switch(self, subject, tenant_id, identifier, request, restore=False):
         row = await self.pending(subject, tenant_id, identifier, request, require_provider=not restore)
+        if request["recovery"] is not None:
+            overview = await self.lifecycle.reader.adapter.overview(
+                tenant_id=tenant_id, workspace_id=row.native_workspace_id, domain=row.domain, actor=subject
+            )
+            self.validate_recovery_pointer(row, request, overview["active_native_id"])
+            if not restore or overview["active_native_id"] == row.transition["previous_native_id"]:
+                return
         await self.lifecycle.reader.adapter.activate(
             row, previous_native_id=row.transition["previous_native_id"], restore=restore
         )
@@ -186,6 +245,7 @@ class IndexActivation:
         row.activated_at, row.updated_at = timestamp(), timestamp()
         row.revision += 1
         await self.lifecycle.records.save(row)
+        await self.lifecycle.activation_resolved(row, "finished")
         await self.lifecycle.reader.facade.catalog._audit(
             subject, tenant_id, "knowledge.index.activated", row.id
         )
@@ -194,6 +254,13 @@ class IndexActivation:
     @transactional
     async def restored(self, subject, tenant_id, identifier, request):
         row = await self.pending(subject, tenant_id, identifier, request, require_provider=False)
+        overview = await self.lifecycle.reader.adapter.overview(
+            tenant_id=tenant_id, workspace_id=row.native_workspace_id, domain=row.domain, actor=subject
+        )
+        if overview["active_native_id"] != row.transition["previous_native_id"]:
+            raise ConflictException(
+                "The previous native index was not restored", code="INDEX_ACTIVE_CONFLICT"
+            )
         actual = await self.lifecycle.reader.adapter.get_native(
             tenant_id=tenant_id,
             native_workspace_id=row.native_workspace_id,
@@ -213,6 +280,7 @@ class IndexActivation:
         row.error_code, row.error = None, None
         row.revision += 1
         await self.lifecycle.records.save(row)
+        await self.lifecycle.activation_resolved(row, "restored")
         await self.lifecycle.reader.facade.catalog._audit(
             subject, tenant_id, "knowledge.index.restored_previous", row.id
         )
@@ -229,3 +297,4 @@ class IndexActivation:
             row.status, row.build_slot = previous if previous in {"ready", "retired"} else "ready", None
             row.revision += 1
             await self.lifecycle.records.save(row)
+            await self.lifecycle.activation_resolved(row, "aborted")

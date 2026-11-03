@@ -22,6 +22,16 @@ public final class JavaAdministration {
                 AgentTool.INSPECT_SCHEMA, AgentTool.QUERY_DATASET)).withEnabled(true));
     }
 
+    public static KnowledgeModeTransitionView prepareDocumentMode(KoinonClient client, String tenant,
+            OrganizationKnowledgeSettings reviewed, KnowledgeAnswerMode mode,
+            String idempotencyKey, boolean personConfirmed) {
+        if (!personConfirmed) throw new IllegalArgumentException("Review the mode and retained settings");
+        return client.knowledgeModes(tenant).create(OrganizationKnowledgeSettingsInput.empty()
+            .withExpectedRevision(reviewed.revision())
+            .withDocuments(reviewed.documents().withAnswerMode(mode))
+            .withStructured(reviewed.structured()), idempotencyKey);
+    }
+
     public static Membership updateMember(KoinonClient client, String tenant,
             String memberId, MemberUpdate reviewed, boolean personConfirmed) {
         if (!personConfirmed) throw new IllegalArgumentException("Review the member and access change");

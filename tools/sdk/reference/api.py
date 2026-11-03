@@ -49,6 +49,7 @@ AREAS = (
             "KnowledgeIndexesController",
             "KnowledgeAvailabilityController",
             "OrganizationKnowledgeController",
+            "KnowledgeModeController",
         ),
     ),
     ("models-agents", "Models and agents", ("ProviderController", "AgentController")),

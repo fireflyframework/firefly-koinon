@@ -12727,6 +12727,475 @@
     "idempotency": false
   },
   {
+    "operation": "KnowledgeModeController.create",
+    "group": "KnowledgeModesApi",
+    "group_scoped": true,
+    "method": "create",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/knowledge/settings/transitions",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "OrganizationKnowledgeSettingsInput",
+    "response": "KnowledgeModeTransitionView",
+    "body": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "job_id": "job_id-value",
+      "revision": 1,
+      "base_revision": 1,
+      "base_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "active_mode": "rag",
+      "requested_mode": "rag",
+      "requested_settings": {
+        "expected_revision": 1,
+        "documents": {
+          "answer_mode": "rag",
+          "retrieval_top_k": 1,
+          "retrieval_per_query_k": 1,
+          "retrieval_rrf_k": 1,
+          "query_expansion_enabled": false,
+          "query_expansion_n": 1,
+          "answer_top_k": 1,
+          "rlm_max_iters": 1,
+          "rlm_sub_budget": 1,
+          "rlm_max_depth": 1,
+          "rlm_self_consistency": 1,
+          "rlm_extended_reasoning": false
+        },
+        "structured": {
+          "top_k_schema": 1,
+          "top_k_examples": 1,
+          "top_k_metrics": 1,
+          "rrf_k": 1,
+          "generation_candidates": 1,
+          "max_refine_retries": 1,
+          "grounding_min_confidence": 0.25
+        }
+      },
+      "status": "queued",
+      "stage": "discovery",
+      "counters": {
+        "example": 1
+      },
+      "stage_milliseconds": {
+        "example": 1
+      },
+      "pending_index_recoveries": 1,
+      "progress_reason": "knowledge_changed",
+      "error_code": "error_code-value",
+      "error": "error-value",
+      "created_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z"
+    },
+    "status": 202,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": true
+  },
+  {
+    "operation": "KnowledgeModeController.current",
+    "group": "KnowledgeModesApi",
+    "group_scoped": true,
+    "method": "current",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/knowledge/settings/transitions/current",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "KnowledgeModeCurrentView",
+    "body": {
+      "transition": {
+        "id": "id-value",
+        "tenant_id": "tenant_id-value",
+        "job_id": "job_id-value",
+        "revision": 1,
+        "base_revision": 1,
+        "base_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "active_mode": "rag",
+        "requested_mode": "rag",
+        "requested_settings": {
+          "expected_revision": 1,
+          "documents": {
+            "answer_mode": "rag",
+            "retrieval_top_k": 1,
+            "retrieval_per_query_k": 1,
+            "retrieval_rrf_k": 1,
+            "query_expansion_enabled": false,
+            "query_expansion_n": 1,
+            "answer_top_k": 1,
+            "rlm_max_iters": 1,
+            "rlm_sub_budget": 1,
+            "rlm_max_depth": 1,
+            "rlm_self_consistency": 1,
+            "rlm_extended_reasoning": false
+          },
+          "structured": {
+            "top_k_schema": 1,
+            "top_k_examples": 1,
+            "top_k_metrics": 1,
+            "rrf_k": 1,
+            "generation_candidates": 1,
+            "max_refine_retries": 1,
+            "grounding_min_confidence": 0.25
+          }
+        },
+        "status": "queued",
+        "stage": "discovery",
+        "counters": {
+          "example": 1
+        },
+        "stage_milliseconds": {
+          "example": 1
+        },
+        "pending_index_recoveries": 1,
+        "progress_reason": "knowledge_changed",
+        "error_code": "error_code-value",
+        "error": "error-value",
+        "created_at": "2026-10-27T12:34:56Z",
+        "updated_at": "2026-10-27T12:34:56Z"
+      }
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "KnowledgeModeController.get",
+    "group": "KnowledgeModesApi",
+    "group_scoped": true,
+    "method": "get",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/knowledge/settings/transitions/transition_id value",
+    "ids": {
+      "tenant_id": "tenant value",
+      "transition_id": "transition_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "KnowledgeModeTransitionView",
+    "body": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "job_id": "job_id-value",
+      "revision": 1,
+      "base_revision": 1,
+      "base_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "active_mode": "rag",
+      "requested_mode": "rag",
+      "requested_settings": {
+        "expected_revision": 1,
+        "documents": {
+          "answer_mode": "rag",
+          "retrieval_top_k": 1,
+          "retrieval_per_query_k": 1,
+          "retrieval_rrf_k": 1,
+          "query_expansion_enabled": false,
+          "query_expansion_n": 1,
+          "answer_top_k": 1,
+          "rlm_max_iters": 1,
+          "rlm_sub_budget": 1,
+          "rlm_max_depth": 1,
+          "rlm_self_consistency": 1,
+          "rlm_extended_reasoning": false
+        },
+        "structured": {
+          "top_k_schema": 1,
+          "top_k_examples": 1,
+          "top_k_metrics": 1,
+          "rrf_k": 1,
+          "generation_candidates": 1,
+          "max_refine_retries": 1,
+          "grounding_min_confidence": 0.25
+        }
+      },
+      "status": "queued",
+      "stage": "discovery",
+      "counters": {
+        "example": 1
+      },
+      "stage_milliseconds": {
+        "example": 1
+      },
+      "pending_index_recoveries": 1,
+      "progress_reason": "knowledge_changed",
+      "error_code": "error_code-value",
+      "error": "error-value",
+      "created_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "KnowledgeModeController.targets",
+    "group": "KnowledgeModesApi",
+    "group_scoped": true,
+    "method": "targets",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/knowledge/settings/transitions/transition_id value/targets",
+    "ids": {
+      "tenant_id": "tenant value",
+      "transition_id": "transition_id value"
+    },
+    "query": {
+      "after": "after value",
+      "limit": 2
+    },
+    "filter": "KnowledgeModeTargetFilter",
+    "request": null,
+    "response": "KnowledgeModeTargetPage",
+    "body": {
+      "items": [
+        {
+          "id": "id-value",
+          "kind": "workspace",
+          "catalog_id": "catalog_id-value",
+          "workspace_id": "workspace_id-value",
+          "status": "queued",
+          "error_code": "error_code-value",
+          "message": "message-value",
+          "action": "reprocess_document",
+          "index_id": "index_id-value",
+          "job_id": "job_id-value",
+          "job_status": "job_status-value",
+          "index_recovery": {
+            "index_id": "index_id-value",
+            "job_id": "job_id-value",
+            "state": "in_progress",
+            "activation_job_id": "activation_job_id-value",
+            "activation_lease_until": "activation_lease_until-value",
+            "index_status": "index_status-value",
+            "native_pointer_state": "target",
+            "expected_revision": 1,
+            "expected_active_id": "expected_active_id-value",
+            "expected_connection_revision": 1,
+            "actions": [
+              "finish"
+            ],
+            "message": "message-value"
+          },
+          "lease_until": "lease_until-value",
+          "source_version_id": "source_version_id-value",
+          "ingestion_extraction_id": "ingestion_extraction_id-value",
+          "view_extraction_id": "view_extraction_id-value",
+          "raw_sha256": "raw_sha256-value",
+          "raw_bytes": 1,
+          "normalized_sha256": "normalized_sha256-value",
+          "parts": 1,
+          "text_bytes": 1
+        }
+      ],
+      "next_cursor": "next_cursor-value"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "KnowledgeModeController.recoveries",
+    "group": "KnowledgeModesApi",
+    "group_scoped": true,
+    "method": "recoveries",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/knowledge/settings/transitions/transition_id value/recoveries",
+    "ids": {
+      "tenant_id": "tenant value",
+      "transition_id": "transition_id value"
+    },
+    "query": {
+      "after": "after value",
+      "limit": 2
+    },
+    "filter": "KnowledgeModeRecoveryFilter",
+    "request": null,
+    "response": "KnowledgeModeRecoveryPage",
+    "body": {
+      "items": [
+        {
+          "index_id": "index_id-value",
+          "job_id": "job_id-value",
+          "state": "in_progress",
+          "activation_job_id": "activation_job_id-value",
+          "activation_lease_until": "activation_lease_until-value",
+          "index_status": "index_status-value",
+          "native_pointer_state": "target",
+          "expected_revision": 1,
+          "expected_active_id": "expected_active_id-value",
+          "expected_connection_revision": 1,
+          "actions": [
+            "finish"
+          ],
+          "message": "message-value",
+          "receipt_id": "receipt_id-value",
+          "attempt_revision": 1,
+          "resolution_revision": 1,
+          "resolution": "pending",
+          "native_index_id": "native_index_id-value",
+          "provider_id": "provider_id-value",
+          "model_id": "model_id-value",
+          "workspace_id": "workspace_id-value",
+          "native_workspace_id": "native_workspace_id-value"
+        }
+      ],
+      "next_cursor": "next_cursor-value"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "KnowledgeModeController.cancel",
+    "group": "KnowledgeModesApi",
+    "group_scoped": true,
+    "method": "cancel",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/knowledge/settings/transitions/transition_id value/cancel",
+    "ids": {
+      "tenant_id": "tenant value",
+      "transition_id": "transition_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "KnowledgeModeRevisionInput",
+    "response": "KnowledgeModeTransitionView",
+    "body": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "job_id": "job_id-value",
+      "revision": 1,
+      "base_revision": 1,
+      "base_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "active_mode": "rag",
+      "requested_mode": "rag",
+      "requested_settings": {
+        "expected_revision": 1,
+        "documents": {
+          "answer_mode": "rag",
+          "retrieval_top_k": 1,
+          "retrieval_per_query_k": 1,
+          "retrieval_rrf_k": 1,
+          "query_expansion_enabled": false,
+          "query_expansion_n": 1,
+          "answer_top_k": 1,
+          "rlm_max_iters": 1,
+          "rlm_sub_budget": 1,
+          "rlm_max_depth": 1,
+          "rlm_self_consistency": 1,
+          "rlm_extended_reasoning": false
+        },
+        "structured": {
+          "top_k_schema": 1,
+          "top_k_examples": 1,
+          "top_k_metrics": 1,
+          "rrf_k": 1,
+          "generation_candidates": 1,
+          "max_refine_retries": 1,
+          "grounding_min_confidence": 0.25
+        }
+      },
+      "status": "queued",
+      "stage": "discovery",
+      "counters": {
+        "example": 1
+      },
+      "stage_milliseconds": {
+        "example": 1
+      },
+      "pending_index_recoveries": 1,
+      "progress_reason": "knowledge_changed",
+      "error_code": "error_code-value",
+      "error": "error-value",
+      "created_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "KnowledgeModeController.retry",
+    "group": "KnowledgeModesApi",
+    "group_scoped": true,
+    "method": "retry",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/knowledge/settings/transitions/transition_id value/retry",
+    "ids": {
+      "tenant_id": "tenant value",
+      "transition_id": "transition_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "KnowledgeModeRevisionInput",
+    "response": "KnowledgeModeTransitionView",
+    "body": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "job_id": "job_id-value",
+      "revision": 1,
+      "base_revision": 1,
+      "base_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "active_mode": "rag",
+      "requested_mode": "rag",
+      "requested_settings": {
+        "expected_revision": 1,
+        "documents": {
+          "answer_mode": "rag",
+          "retrieval_top_k": 1,
+          "retrieval_per_query_k": 1,
+          "retrieval_rrf_k": 1,
+          "query_expansion_enabled": false,
+          "query_expansion_n": 1,
+          "answer_top_k": 1,
+          "rlm_max_iters": 1,
+          "rlm_sub_budget": 1,
+          "rlm_max_depth": 1,
+          "rlm_self_consistency": 1,
+          "rlm_extended_reasoning": false
+        },
+        "structured": {
+          "top_k_schema": 1,
+          "top_k_examples": 1,
+          "top_k_metrics": 1,
+          "rrf_k": 1,
+          "generation_candidates": 1,
+          "max_refine_retries": 1,
+          "grounding_min_confidence": 0.25
+        }
+      },
+      "status": "queued",
+      "stage": "discovery",
+      "counters": {
+        "example": 1
+      },
+      "stage_milliseconds": {
+        "example": 1
+      },
+      "pending_index_recoveries": 1,
+      "progress_reason": "knowledge_changed",
+      "error_code": "error_code-value",
+      "error": "error-value",
+      "created_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z"
+    },
+    "status": 202,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
     "operation": "OrganizationPeopleController.self",
     "group": "OrganizationPeopleApi",
     "group_scoped": true,

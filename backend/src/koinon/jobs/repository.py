@@ -14,7 +14,9 @@ class JobRepository(Repository[Job, str]):
     async def claim(self, worker_id: str, lease_seconds: int) -> Job | None:
         session = self._require_session()
         now = datetime.now(UTC)
-        ordinary = Job.kind.not_in(["knowledge.bulk.intake", "knowledge.bulk.query"])
+        ordinary = Job.kind.not_in(
+            ["knowledge.bulk.intake", "knowledge.bulk.query", "knowledge.mode", "knowledge.index"]
+        )
         expired = and_(ordinary, Job.status == "running", Job.lease_until < now)
         await session.execute(
             update(Job)
@@ -41,3 +43,29 @@ class JobRepository(Repository[Job, str]):
         candidate.updated_at = now
         await session.flush()
         return candidate
+
+    async def cancel_mode_children(self, tenant_id: str, transition_id: str) -> int:
+        candidates = (
+            select(Job.id)
+            .where(
+                Job.tenant_id == tenant_id,
+                Job.kind == "knowledge.index",
+                Job.payload["parent_mode_transition_id"].as_string() == transition_id,
+                Job.status.in_(("queued", "running")),
+            )
+            .order_by(Job.id)
+            .limit(25)
+        )
+        result = await self._require_session().execute(
+            update(Job)
+            .where(Job.id.in_(candidates))
+            .values(
+                status="cancelled",
+                worker_id=None,
+                lease_until=None,
+                error="MODE_PREPARATION_CANCELLED",
+                updated_at=datetime.now(UTC),
+            )
+            .returning(Job.id)
+        )
+        return len(list(result.scalars()))

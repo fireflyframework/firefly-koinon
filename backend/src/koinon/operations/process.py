@@ -26,6 +26,7 @@ def process_configuration(values: dict, *, role: ProcessRole | None = None) -> d
         raise ValueError("pyfly.scheduling.enabled must match koinon.process.role")
     knowledge = result["koinon"].setdefault("knowledge", {})
     knowledge.setdefault("indexes", {})["enabled"] = worker
+    knowledge.setdefault("mode_preparation", {})["enabled"] = worker
     result["koinon"].setdefault("attachments", {})["worker_enabled"] = worker
     result["koinon"].setdefault("identity", {}).setdefault("profile_sync", {})["worker_enabled"] = worker
     bulk = knowledge.setdefault("bulk", {})

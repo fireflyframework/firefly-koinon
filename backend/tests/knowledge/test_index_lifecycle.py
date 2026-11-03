@@ -32,9 +32,14 @@ def service(rows):
                 "chunk_count": 0,
             }
         ),
-        facade=SimpleNamespace(catalog=SimpleNamespace(_audit=AsyncMock())),
+        facade=SimpleNamespace(catalog=SimpleNamespace(_audit=AsyncMock(), _lock_tenant=AsyncMock())),
+        plan_state=AsyncMock(return_value=(provider, {})),
+        validate_plan=lambda before, current: None,
     )
-    jobs = SimpleNamespace(submit=AsyncMock(return_value=SimpleNamespace(id="job")))
+    from koinon.jobs.repository import JobRepository
+    from koinon.jobs.service import JobService
+
+    jobs = JobService(JobRepository())
     return IndexLifecycleService(reader, rows, jobs), reader, adapter
 
 
@@ -54,7 +59,7 @@ async def test_create_records_durable_native_target_and_replay_does_not_allocate
     lifecycle, reader, adapter = service(index_rows)
     first = await lifecycle.create("issuer|actor", "tenant", values(), "request")
     second = await lifecycle.create("issuer|actor", "tenant", values(), "request")
-    assert first["index"]["id"] == second["index"]["id"] and first["job_id"] == "job"
+    assert first["index"]["id"] == second["index"]["id"] and first["job_id"] == second["job_id"]
     assert first["index"]["status"] == "queued" and not first["index"]["active"]
     assert first["index"]["native_id"].startswith("es-")
     reader.plan.assert_awaited_once()
@@ -91,3 +96,42 @@ async def test_resume_replay_retains_job_and_revision_without_repeating_native_w
     assert replay["job_id"] == first["job_id"]
     assert replay["index"]["revision"] == first["index"]["revision"] == revision + 1
     adapter.project_state.assert_awaited_once()
+
+
+async def test_creation_qualifies_provider_without_holding_a_primary_transaction(index_rows):
+    from pyfly.data.transaction import current_unit_of_work
+
+    lifecycle, reader, _ = service(index_rows)
+    result = reader.plan.return_value
+
+    async def plan(*args, **kwargs):
+        assert current_unit_of_work("primary") is None, "Provider work must release the database first"
+        return result
+
+    reader.plan.side_effect = plan
+    created = await lifecycle.create("issuer|actor", "tenant", values(), "outside-transaction")
+    assert created["index"]["status"] == "queued"
+
+
+async def test_reviewed_resume_can_link_an_existing_target_without_rewriting_old_job(index_rows):
+    lifecycle, _, adapter = service(index_rows)
+    initial = await lifecycle.create("issuer|actor", "tenant", values(), "initial")
+    row = await index_rows.find_by_id(initial["index"]["id"])
+    row.status, row.build_slot = "failed", None
+    row.transition = {"parent_mode_transition_id": "historical"}
+    await index_rows.save(row)
+    guard = AsyncMock()
+    lifecycle.parent_authority = SimpleNamespace(get=lambda: SimpleNamespace(check=guard))
+    adapter.overview = AsyncMock(return_value={"active_native_id": None, "chunk_count": 0})
+    adapter.project_state = AsyncMock()
+    resumed = await lifecycle.resume(
+        "issuer|actor", "tenant", row.id, row.revision, "reviewed", parent_mode_transition_id="current"
+    )
+    assert resumed["job_id"] != initial["job_id"]
+    old = await lifecycle.jobs.repository.find_by_id(initial["job_id"])
+    new = await lifecycle.jobs.repository.find_by_id(resumed["job_id"])
+    assert "parent_mode_transition_id" not in old.payload
+    assert new.payload["parent_mode_transition_id"] == "current"
+    assert "parent_mode_transition_id" not in (await index_rows.find_by_id(row.id)).transition
+    assert [value.id for value in await index_rows.mode_children("tenant", "current")] == [row.id]
+    assert guard.await_count >= 1

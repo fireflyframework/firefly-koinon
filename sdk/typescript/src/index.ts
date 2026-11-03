@@ -15,7 +15,7 @@ import type {McpOAuthClient,McpOAuthClientCredential,McpOAuthClientInput,McpOAut
 import type {McpOAuthClientFilter} from './types.js';
 import type {BrandingValues,OrganizationBranding,OrganizationBrandingInput,BrandingResetInput} from './generated.js';
 import type {OrganizationChatSettings,OrganizationChatSettingsInput} from './generated.js';
-import type {OrganizationKnowledgeSettings,OrganizationKnowledgeSettingsInput} from './generated.js';
+import type {OrganizationKnowledgeSettings,OrganizationKnowledgeSettingsInput,KnowledgeModeCurrentView,KnowledgeModeRevisionInput,KnowledgeModeTargetPage,KnowledgeModeRecoveryPage,KnowledgeModeTransitionView} from './generated.js';
 import type {DocumentVersion,DocumentVersionPage,DocumentExtractionPage,DocumentPartPage,DocumentPartContent} from './generated.js';
 import type {AnswerAudit,ActivitySummary,ActivityWindow} from './generated.js';
 import type {AuthorizedApplication} from './generated.js';
@@ -60,6 +60,19 @@ export class KoinonClient {
  }
  get organizationKnowledge(){
   return this.organizationSettings<OrganizationKnowledgeSettings,OrganizationKnowledgeSettingsInput,false>('/knowledge/settings',false);
+ }
+ get knowledgeModes(){
+  const transport=this.options.transport;
+  const base=(tenantId:string)=>tenant(tenantId)+'/knowledge/settings/transitions';
+  return {
+   create:(tenantId:string,input:OrganizationKnowledgeSettingsInput,idempotencyKey:string,options:RequestOptions={})=>transport.request<KnowledgeModeTransitionView>('POST',base(tenantId),{...options,body:input,headers:{...options.headers,'Idempotency-Key':idempotencyKey}}),
+   current:(tenantId:string,options:RequestOptions={})=>transport.request<KnowledgeModeCurrentView>('GET',base(tenantId)+'/current',options),
+   get:(tenantId:string,transitionId:string,options:RequestOptions={})=>transport.request<KnowledgeModeTransitionView>('GET',base(tenantId)+'/'+id(transitionId),options),
+   targets:(tenantId:string,transitionId:string,filter:{after?:string;limit?:number}={},options:RequestOptions={})=>transport.request<KnowledgeModeTargetPage>('GET',base(tenantId)+'/'+id(transitionId)+'/targets',{...options,query:{...filter}}),
+   recoveries:(tenantId:string,transitionId:string,filter:{after?:string;limit?:number}={},options:RequestOptions={})=>transport.request<KnowledgeModeRecoveryPage>('GET',base(tenantId)+'/'+id(transitionId)+'/recoveries',{...options,query:{...filter}}),
+   cancel:(tenantId:string,transitionId:string,input:KnowledgeModeRevisionInput,options:RequestOptions={})=>transport.request<KnowledgeModeTransitionView>('POST',base(tenantId)+'/'+id(transitionId)+'/cancel',{...options,body:input}),
+   retry:(tenantId:string,transitionId:string,input:KnowledgeModeRevisionInput,options:RequestOptions={})=>transport.request<KnowledgeModeTransitionView>('POST',base(tenantId)+'/'+id(transitionId)+'/retry',{...options,body:input}),
+  };
  }
  private organizationSettings<T,I,F extends boolean>(suffix:string,scoped:F):OrganizationSettingsApi<T,I,F>{
   const transport=this.options.transport;

@@ -75,10 +75,12 @@ from __future__ import annotations
 import logging
 import time
 from collections.abc import Awaitable, Callable
+from contextlib import nullcontext
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
+from pyfly.agentic.vectorstores.scoped import scope_namespace
 from pyfly.agentic.vectorstores.types import VectorDocument
 
 from flycanon.config import CanonSettings
@@ -436,7 +438,9 @@ class ReindexService:
                 embedded += caught_up
                 emit(f"{workspace_id}: caught up {caught_up} chunk(s) ingested during the run")
 
-            indexed = await self._dense.ensure_set_index(binding)
+            indexed = await self._dense.ensure_set_index(
+                binding, namespace=scope_namespace(tenant_id, workspace_id)
+            )
             await self._sets.mark(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
@@ -486,10 +490,16 @@ class ReindexService:
     # ------------------------------------------------------------------
 
     async def step(
-        self, *, tenant_id: str, workspace_id: str, binding: EmbeddingSetBinding,
-        batch_size: int = 32, validate_write: Callable[[], Awaitable[None]] | None = None,
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        binding: EmbeddingSetBinding,
+        batch_size: int = 32,
+        validate_write: Callable[[], Awaitable[None]] | None = None,
+        publication_guard=None,
     ) -> dict[str, int | bool]:
-        """Embed one replay-safe target batch; caller owns scope, lease and transaction."""
+        """Read a bounded batch, embed outside its read unit, then publish under fresh authority."""
         context = current_tenant_context()
         if context is None or (context.tenant_id, context.workspace_id) != (tenant_id, workspace_id):
             raise ReindexError("A matching native tenant/workspace scope is required for a bounded step")
@@ -503,8 +513,14 @@ class ReindexService:
             with bind_embedding_set(binding):
                 embedder = self._registry.for_binding(binding).strict()
                 written = await self._embed_batch(
-                    batch, binding=binding, embedder=embedder, tenant_id=tenant_id,
-                    workspace_id=workspace_id, validate_write=validate_write, stamp_model=False,
+                    batch,
+                    binding=binding,
+                    embedder=embedder,
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    validate_write=validate_write,
+                    stamp_model=False,
+                    publication_guard=publication_guard,
                 )
         remaining = await self._chunks.list_missing_for_set(
             tenant_id=tenant_id, workspace_id=workspace_id, set_id=binding.set_id, limit=1
@@ -589,6 +605,7 @@ class ReindexService:
         workspace_id: str,
         validate_write: Callable[[], Awaitable[None]] | None = None,
         stamp_model: bool = True,
+        publication_guard=None,
     ) -> int:
         """Embed one batch and write it into the target set.
 
@@ -597,6 +614,7 @@ class ReindexService:
         batch it has already written -- which ``ON CONFLICT (set_id, id)``
         makes a rewrite of identical rows rather than a duplicate.
         """
+        sources = await self._chunks.reindex_sources(batch, tenant_id=tenant_id, workspace_id=workspace_id)
         vectors = await embedder.embed([chunk.content for chunk in batch])
         documents = [
             VectorDocument(
@@ -612,14 +630,25 @@ class ReindexService:
             )
             for chunk, vector in zip(batch, vectors, strict=True)
         ]
-        if validate_write is not None:
-            await validate_write()
-        with bind_embedding_set(binding):
-            await self._vector_store.upsert(documents, tenant_id=tenant_id, workspace_id=workspace_id)
-        if stamp_model:
-            await self._chunks.stamp_embedding_model(
-                chunk_ids=[chunk.id for chunk in batch], embedding_model=binding.embedding_model
-            )
+        async with publication_guard() if publication_guard is not None else nullcontext():
+            if validate_write is not None:
+                await validate_write()
+            async with self._chunks.session():
+                current_sources = await self._chunks.reindex_sources(
+                    batch, tenant_id=tenant_id, workspace_id=workspace_id, lock=True
+                )
+                if sources != current_sources:
+                    raise ReindexError("Source revisions changed during embedding; retry the current content")
+                if not await self._chunks.matches_reindex_batch(
+                    batch, tenant_id=tenant_id, workspace_id=workspace_id
+                ):
+                    raise ReindexError("Source chunks changed during embedding; retry the current content")
+                with bind_embedding_set(binding):
+                    await self._vector_store.upsert(documents, tenant_id=tenant_id, workspace_id=workspace_id)
+                if stamp_model:
+                    await self._chunks.stamp_embedding_model(
+                        chunk_ids=[chunk.id for chunk in batch], embedding_model=binding.embedding_model
+                    )
         return len(documents)
 
     async def _catch_up(
@@ -732,8 +761,6 @@ class ReindexService:
 
     async def drop_set(self, *, tenant_id: str, workspace_id: str, set_id: str) -> int:
         """Delete a set's vectors, its index and its row. Refuses the active one."""
-        from pyfly.agentic.vectorstores.scoped import scope_namespace
-
         with ScopedContext(tenant_id, workspace_id):
             rows = await self._sets.list_for(tenant_id=tenant_id, workspace_id=workspace_id)
             row = next((r for r in rows if r.id == set_id), None)

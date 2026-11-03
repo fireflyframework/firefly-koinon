@@ -3,7 +3,7 @@
 
 Organization administrators configure document answer behavior and structured-query parameters by opening **Settings** and selecting **Knowledge answers**. This page applies to the selected organization. **Model assignments** is a separate page with organization defaults and workspace overrides; workspace assignment rights do not grant permission to change organization behavior. The model-prerequisites link opens that page through the same unsaved-change review as the settings navigation.
 
-Read the current values and server capabilities before editing. With no saved organization policy, revision `0` and origin `deployment` identify the validated deployment values. Saving the complete policy creates an organization revision. There is no implicit switch from RAG to RLM. Inherited document `answer_top_k` preserves the canonical baseline of `10`.
+Read the current values and server capabilities before editing. With no saved organization policy, revision `0` and origin `deployment` identify the validated deployment values. Saving budgets for the active mode creates an organization revision. A technique change creates a durable preparation request and keeps the active mode until its prerequisites and final revision check succeed. There is no implicit switch from RAG to RLM. Inherited document `answer_top_k` preserves the canonical baseline of `10`.
 
 Use [Switch document answers between RAG and RLM](rag-rlm-switching.md) for model and document prerequisites, revision-safe changes, new-run verification and rollback. [Knowledge scaling](../concepts/knowledge-scaling.md) explains query costs and distinguishes safety bounds from total authorized corpus size.
 
@@ -11,10 +11,10 @@ Use [Switch document answers between RAG and RLM](rag-rlm-switching.md) for mode
 
 1. Select the intended organization and read its current policy.
 2. Choose document RAG or RLM and review the required model assignment. Open advanced controls only when their defaults need changing.
-3. Review the server-provided numeric bounds and capability reasons. Save sends both complete document and structured settings with the revision that was read.
+3. Review the server-provided numeric bounds and capability reasons. A technique change prepares its dependencies first; follow its progress and exact prerequisites. Budget edits for the active mode save both complete policy sections with the revision that was read.
 4. If another administrator saved first, reload the current policy and review the differences. SDKs do not automatically retry configuration writes.
 
-`GET /api/v1/tenants/{tenant_id}/knowledge/settings` is available to an authorized caller in that organization with knowledge search, query execution, chat use, or organization settings-write permission. `PUT` requires organization-level `settings:write`. Neither operation accepts workspace filters. Current membership and credential bounds remain authoritative.
+`GET /api/v1/tenants/{tenant_id}/knowledge/settings` is available to an authorized caller in that organization with knowledge search, query execution, chat use, or organization settings-write permission. `PUT` requires organization-level `settings:write` and preserves the active `answer_mode`; technique changes use `POST .../knowledge/settings/transitions` with an idempotency key. Neither operation accepts workspace filters. Current membership and credential bounds remain authoritative.
 
 The input is a strict `OrganizationKnowledgeSettingsInput`: `expected_revision`, `documents`, and `structured`. All nested policy fields are required. Unknown fields, unsupported modes, nonfinite confidence, and booleans supplied as integers are rejected. Read-only capabilities are returned with the current settings and are not part of the update body.
 
@@ -89,7 +89,7 @@ Use the typed bounds returned in `capabilities.documents.bounds` and `capabiliti
 
 ## SDKs and applied policy
 
-Python exposes `organization_knowledge_settings` and `update_organization_knowledge_settings`:
+For budget edits that preserve the active mode, Python exposes `organization_knowledge_settings` and `update_organization_knowledge_settings`. Use the [governed transition API and SDK journey](rag-rlm-switching.md) to change RAG/RLM, inspect progress, retry, cancel, or reconcile an index:
 
 ```python
 from koinon_sdk import DocumentKnowledgeSettings, OrganizationKnowledgeSettingsInput
@@ -98,7 +98,7 @@ current = await client.organization_knowledge_settings(tenant_id)
 change = OrganizationKnowledgeSettingsInput(
     expected_revision=current.revision,
     documents=DocumentKnowledgeSettings.model_validate({
-        **current.documents.model_dump(), "answer_mode": "rag",
+        **current.documents.model_dump(), "answer_top_k": 10,
     }),
     structured=current.structured,
 )
@@ -111,7 +111,7 @@ TypeScript exposes the same policy through `organizationKnowledge.get/update`:
 const current = await client.organizationKnowledge.get(tenantId);
 const updated = await client.organizationKnowledge.update(tenantId, {
   expected_revision: current.revision,
-  documents: {...current.documents, answer_mode: 'rag'},
+  documents: {...current.documents, answer_top_k: 10},
   structured: current.structured,
 });
 ```
@@ -122,7 +122,7 @@ Java provides `client.organizationKnowledge(tenantId).get()` and typed synchrono
 var current = client.organizationKnowledge(tenantId).get();
 var change = OrganizationKnowledgeSettingsInput.empty()
     .withExpectedRevision(current.revision())
-    .withDocuments(current.documents().withAnswerMode(KnowledgeAnswerMode.RAG))
+    .withDocuments(current.documents().withAnswerTopK(10))
     .withStructured(current.structured());
 var updated = client.organizationKnowledge(tenantId).update(change);
 ```

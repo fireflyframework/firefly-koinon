@@ -28,7 +28,7 @@ async def test_versioned_step_reuses_original_schema_text_and_fences_before_writ
     }
     repo = SimpleNamespace(
         missing=AsyncMock(side_effect=[[row], []]),
-        upsert=AsyncMock(),
+        upsert=AsyncMock(return_value=1),
         counts=AsyncMock(return_value={"chunk_count": 1, "vector_count": 1}),
     )
     service = VersionedIndexService(repo)
@@ -59,7 +59,7 @@ async def test_versioned_step_does_not_overwrite_original_or_commit_after_cancel
                 {"id": uuid4(), "kind": "example", "question": "What?", "generated_sql": "SELECT 12"}
             ]
         ),
-        upsert=AsyncMock(),
+        upsert=AsyncMock(return_value=1),
     )
     embedder = SimpleNamespace(embed=AsyncMock(return_value=SimpleNamespace(embeddings=[[0.1] * 768])))
     fence = AsyncMock(side_effect=RuntimeError("cancelled"))
@@ -114,3 +114,60 @@ async def test_versioned_native_binding_replaces_only_request_embedding_profile(
     finally:
         reset_bindings(token)
         context.var.reset(context.token)
+
+
+async def test_provider_finishes_before_guarded_structured_publication():
+    from contextlib import asynccontextmanager
+
+    phase = []
+    row = {"id": uuid4(), "kind": "example", "question": "Owned?", "generated_sql": "SELECT 1"}
+
+    async def embed(texts):
+        assert phase == []
+        phase.append("embedded")
+        return SimpleNamespace(embeddings=[[0.25] * 64])
+
+    async def upsert(**values):
+        assert phase == ["embedded", "guarded"]
+        assert values["rows"][0]["model"] == "selected"
+        return 1
+
+    @asynccontextmanager
+    async def publication():
+        assert phase == ["embedded"]
+        phase.append("guarded")
+        yield
+
+    repo = SimpleNamespace(
+        missing=AsyncMock(side_effect=[[row], []]),
+        upsert=upsert,
+        counts=AsyncMock(return_value={"chunk_count": 1, "vector_count": 1}),
+    )
+    result = await VersionedIndexService(repo).step(
+        tenant_id="tenant",
+        workspace_id=str(uuid4()),
+        set_id="target",
+        embedder=SimpleNamespace(embed=embed),
+        dimensions=64,
+        model="selected",
+        publication_guard=publication,
+    )
+    assert result["written"] == 1 and result["complete"]
+
+
+async def test_changed_structured_object_is_not_counted_as_published():
+    row = {"id": uuid4(), "kind": "example", "question": "Original", "generated_sql": "SELECT 1"}
+    repo = SimpleNamespace(
+        missing=AsyncMock(side_effect=[[row], [row]]),
+        upsert=AsyncMock(return_value=0),
+        counts=AsyncMock(return_value={"chunk_count": 1, "vector_count": 0}),
+    )
+    result = await VersionedIndexService(repo).step(
+        tenant_id="tenant",
+        workspace_id=str(uuid4()),
+        set_id="target",
+        embedder=SimpleNamespace(embed=AsyncMock(return_value=SimpleNamespace(embeddings=[[0.25] * 64]))),
+        dimensions=64,
+        model="selected",
+    )
+    assert result == {"written": 0, "complete": False, "chunk_count": 1, "vector_count": 0}

@@ -5,7 +5,7 @@
 from pydantic import ValidationError
 from pyfly.container import service
 from pyfly.data.relational.sqlalchemy import LockMode, transactional
-from pyfly.kernel import InvalidRequestException
+from pyfly.kernel import ConflictException, InvalidRequestException
 
 from koinon.catalog.errors import AccessDenied
 from koinon.knowledge.connections.service import KnowledgeConnectionService
@@ -14,6 +14,7 @@ from koinon.knowledge.indexes.dtos import IndexPlanInput
 from koinon.knowledge.indexes.mappers import index_dto
 from koinon.knowledge.indexes.planner import IndexPlanner
 from koinon.knowledge.indexes.repositories import KnowledgeIndexRepository
+from koinon.knowledge.indexes.transactions import require_detached_provider_work
 from koinon.knowledge.service import KnowledgeFacade
 
 
@@ -243,18 +244,48 @@ class KnowledgeIndexService:
                 await self.connections.authority(subject, tenant_id, alias.catalog_id)
         return binding
 
-    @transactional
     async def plan(self, subject, tenant_id, values):
+        require_detached_provider_work()
         try:
             data = IndexPlanInput.model_validate(values)
         except ValidationError as error:
             raise InvalidRequestException(
                 "Provide valid index planning fields", code="INVALID_INDEX_PLAN"
             ) from error
+        provider, before = await self.plan_state(subject, tenant_id, data)
+        profile = await self.planner.qualify(provider, data)
+        _, current = await self.plan_state(subject, tenant_id, data)
+        self.validate_plan(before, current)
+        return {**current, **profile, "warnings": []}
+
+    @staticmethod
+    def validate_plan(before, current):
+        if before["provider_revision"] != current["provider_revision"]:
+            raise ConflictException(
+                "The embedding provider changed during qualification; review its configuration",
+                code="INDEX_PROVIDER_CHANGED",
+            )
+        if any(
+            before[key] != current[key]
+            for key in (
+                "active_index_id",
+                "expected_connection_revision",
+                "active_space_id",
+                "native_workspace_id",
+            )
+        ):
+            raise ConflictException(
+                "The active index or embedding assignment changed; review the current plan",
+                code="INDEX_REVISION_CONFLICT",
+            )
+
+    @transactional
+    async def plan_state(self, subject, tenant_id, data):
+        await self.facade.catalog._lock_tenant(tenant_id)
         workspace = await self.authority(subject, tenant_id, data.workspace_id, write=True)
         await self.connections.authority(subject, tenant_id, workspace.id)
         binding = await self.native_binding(subject, tenant_id, workspace, data.domain, write=True)
-        provider, profile = await self.planner.prepare(tenant_id, data)
+        provider = await self.planner.provider(tenant_id, data.provider_id, data.model_id)
         role = data.domain + ".embedding"
         current = await self.connections.selected(tenant_id, workspace.id, data.domain, role)
         overview = (
@@ -272,15 +303,14 @@ class KnowledgeIndexService:
             if overview["active_native_id"]
             else None
         )
-        return {
+        return provider, {
             "tenant_id": tenant_id,
             **data.model_dump(exclude={"expected_dimensions"}),
-            **profile,
             "provider_kind": provider.kind,
             "provider_revision": provider.revision,
             "expected_connection_revision": current.revision if current else None,
             "active_space_id": current.space_id if current else None,
             "active_index_id": active,
+            "native_workspace_id": binding.native_workspace_id if binding else None,
             "chunk_count": overview["chunk_count"],
-            "warnings": [],
         }
