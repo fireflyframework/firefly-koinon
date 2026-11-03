@@ -271,3 +271,29 @@ it('updates the observation clock when evidence expires without making another r
     vi.useRealTimers();
   }
 });
+
+it('preserves only marked-stale health during a slow background retry and clears it on denial', async () => {
+  let mode = 'ready';
+  let reject!: (error: Error) => void;
+  const { state } = setup(async <T>() => {
+    if (mode === 'slow')
+      return new Promise<T>((_, fail) => {
+        reject = fail;
+      });
+    if (mode === 'failure') throw new Error('Network');
+    return health as T;
+  });
+  await state.loadHealth();
+  mode = 'failure';
+  await state.loadHealth(true);
+  expect(state.health()).toEqual(health);
+  expect(state.healthStale()).toBe(true);
+  mode = 'slow';
+  const pending = state.loadHealth(true);
+  expect(state.healthStale()).toBe(true);
+  expect(state.healthError()).not.toBe('');
+  reject(new KoinonError(403, 'DENIED', 'revoked'));
+  await pending;
+  expect(state.health()).toBeNull();
+  expect(state.allowed()).toBe(false);
+});

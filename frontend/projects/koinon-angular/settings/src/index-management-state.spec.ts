@@ -394,3 +394,44 @@ it('does not dispatch a reviewed activation after the preflight loses authority'
   await s.state.confirmAction();
   expect(s.calls.some((call) => call.method === 'POST')).toBe(false);
 });
+
+it('keeps an old active-index observation stale until the entire bounded read succeeds', async () => {
+  const s = setup();
+  await s.state.load();
+  expect(s.state.view().activeKnown).toBe(true);
+  s.intercept(() => Promise.reject(new Error('Network')));
+  await s.state.load();
+  expect(s.state.view().stale).toBe(true);
+  expect(s.state.view().activeKnown).toBe(true);
+  let release!: () => void;
+  const wait = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  s.intercept(async () => {
+    await wait;
+    throw new Error('Still unavailable');
+  });
+  const retry = s.state.load();
+  expect(s.state.view().stale).toBe(true);
+  expect(s.state.view().error).not.toBe('');
+  release();
+  await retry;
+  s.intercept(undefined);
+  await s.state.load();
+  expect(s.state.view().stale).toBe(false);
+  expect(s.state.view().error).toBe('');
+  expect(s.calls.every((call) => call.method === 'GET')).toBe(true);
+});
+
+it('invalidates an early empty view when a changed scope is synchronized', async () => {
+  const s = setup();
+  s.setScope({ clientRevision: 1 });
+  expect(s.state.view().rows).toEqual([]);
+  await s.state.load();
+  expect(s.state.view().active?.id).toBe('previous');
+  expect(s.state.view().rows.length).toBeGreaterThan(0);
+  s.setScope({ tenantId: 'other' });
+  s.state.syncScope();
+  expect(s.state.view().rows).toEqual([]);
+  expect(s.state.view().active).toBeNull();
+});

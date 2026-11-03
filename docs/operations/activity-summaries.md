@@ -6,6 +6,12 @@ Activity summaries describe recorded work with knowledge. They show the pieces s
 
 Start with a personal summary for a short period. Check its coverage before comparing it with another report. An organization administrator can also request an organization summary; this is a separate operation with a stricter permission check.
 
+## Keep an open activity view current
+
+An open Activity view updates the applied summary and its current processing page automatically. Stable views use a 30-second interval; changing jobs and processing attempts use five seconds while visible. Hidden tabs use a slower interval, and failed observations back off. Each reader keeps at most one automatic request in flight.
+
+Editing the summary audience or reporting window pauses its automatic refresh until you choose **View summary**. The background reader does not apply an unfinished selection. Processing pagination stays on the selected page. If a read fails, the last known information is labelled as unverified; failed or expired access clears the affected information and stops retries until authority changes. Closing the view cancels outstanding reads. These observations never retry an upload, replay a mutation or cancel a job.
+
 ## What each number means
 
 A piece is a document, dataset or curated knowledge item. Creating a source connection, indexing a table or splitting a document into chunks does not create additional pieces in these counts. A piece is counted once in each category for the selected period. A document created and then updated can appear in both categories. Daily figures count each piece once per local day, so adding daily figures can exceed the period's distinct-piece total.

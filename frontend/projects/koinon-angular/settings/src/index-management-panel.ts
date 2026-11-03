@@ -15,6 +15,7 @@ import {
   untracked,
   type OnDestroy,
 } from '@angular/core';
+import { UploadObservationLoop } from '@fireflyframework/koinon-angular/workbench/availability';
 import { FormsModule } from '@angular/forms';
 import {
   KoinonBadge,
@@ -180,7 +181,54 @@ export class KoinonIndexManagementPanel implements OnDestroy {
     restore_previous:
       'This explicitly restores the previous native target and reviewed assignment after an interrupted activation.',
   };
+  private readonly visible = signal(
+    typeof document === 'undefined' || document.visibilityState !== 'hidden',
+  );
+  private readonly polling = new UploadObservationLoop({
+    active: () => {
+      const view = this.state.view();
+      return (
+        this.scope().read &&
+        !view.accessDenied &&
+        !view.loading &&
+        !view.busy &&
+        !view.plan &&
+        !view.review &&
+        !this.editing() &&
+        !this.replayReview()
+      );
+    },
+    visible: () => this.visible(),
+    interval: () =>
+      this.state
+        .view()
+        .rows.some((row) => ['queued', 'building', 'activating'].includes(row.status))
+        ? 5000
+        : 30000,
+    read: async () => {
+      await this.state.load();
+      return !this.state.view().error;
+    },
+  });
+  private readonly reenter = () => {
+    this.visible.set(document.visibilityState !== 'hidden');
+    this.now.set(Date.now());
+    this.state.syncScope();
+    this.polling.reset();
+  };
   constructor() {
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', this.reenter);
+      window.addEventListener('focus', this.reenter);
+    }
+    effect(() => {
+      this.scope();
+      this.state.view();
+      this.editing();
+      this.replayReview();
+      this.visible();
+      this.polling.update();
+    });
     effect(() => {
       const selection = this.initialSelection();
       if (selection === this.appliedSelection) return;
@@ -258,6 +306,7 @@ export class KoinonIndexManagementPanel implements OnDestroy {
     );
   }
   rowStatus(row: KnowledgeIndexView) {
+    if (this.state.view().stale) return 'Status temporarily unavailable';
     return this.state.view().activeKnown && this.state.view().active?.id === row.id
       ? 'Active'
       : row.status === 'active'
@@ -265,15 +314,20 @@ export class KoinonIndexManagementPanel implements OnDestroy {
         : this.status(row.status);
   }
   tone(row: KnowledgeIndexView): 'ready' | 'attention' | 'neutral' | 'error' | 'processing' {
+    if (this.state.view().stale || this.state.view().error) return 'attention';
     return this.state.view().activeKnown && this.state.view().active?.id === row.id
       ? 'ready'
-      : row.status === 'failed' ? 'error'
-      : row.status === 'active' ? 'attention'
-      : ['activating', 'building', 'queued'].includes(row.status) ? 'processing'
-      : 'neutral';
+      : row.status === 'failed'
+        ? 'error'
+        : row.status === 'active'
+          ? 'attention'
+          : ['activating', 'building', 'queued'].includes(row.status)
+            ? 'processing'
+            : 'neutral';
   }
   actions(row: KnowledgeIndexView) {
     const view = this.state.view();
+    if (view.stale) return [];
     if (view.activeKnown && view.active?.id === row.id) return [];
     const unknown = view.unknown;
     return this.canManage()
@@ -359,6 +413,11 @@ export class KoinonIndexManagementPanel implements OnDestroy {
     await this.track(() => this.state.load(page, this.filter()));
   }
   ngOnDestroy() {
+    this.polling.dispose();
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.reenter);
+      window.removeEventListener('focus', this.reenter);
+    }
     clearTimeout(this.expiry);
     this.state.dispose();
   }
