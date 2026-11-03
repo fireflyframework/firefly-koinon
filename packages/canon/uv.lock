@@ -1344,7 +1344,7 @@ wheels = [
 
 [[package]]
 name = "firefly-koinon-documents"
-version = "26.11.11"
+version = "26.11.12"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
@@ -1436,9 +1436,9 @@ requires-dist = [
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
     { name = "pydantic", specifier = ">=2.10.0" },
     { name = "pydantic-settings", specifier = ">=2.7.0" },
-    { name = "pyfly", extras = ["agentic-vectorstores-chroma"], marker = "extra == 'chroma'", git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=2ada81c420868ca27528bf7673390a95d9deb42b" },
-    { name = "pyfly", extras = ["agentic-vectorstores-qdrant"], marker = "extra == 'qdrant'", git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=2ada81c420868ca27528bf7673390a95d9deb42b" },
-    { name = "pyfly", extras = ["cache", "fastapi", "observability", "security", "data-relational", "postgresql", "eda", "redis", "client", "scheduling", "cli", "agentic", "agentic-security", "agentic-script-execution", "agentic-openai-embeddings", "agentic-binary", "agentic-vectorstores-pgvector"], git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=2ada81c420868ca27528bf7673390a95d9deb42b" },
+    { name = "pyfly", extras = ["agentic-vectorstores-chroma"], marker = "extra == 'chroma'", git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=ceef5c2870fa44a7adff41d788defd0cd8fc1055" },
+    { name = "pyfly", extras = ["agentic-vectorstores-qdrant"], marker = "extra == 'qdrant'", git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=ceef5c2870fa44a7adff41d788defd0cd8fc1055" },
+    { name = "pyfly", extras = ["cache", "fastapi", "observability", "security", "data-relational", "postgresql", "eda", "redis", "client", "scheduling", "cli", "agentic", "agentic-security", "agentic-script-execution", "agentic-openai-embeddings", "agentic-binary", "agentic-vectorstores-pgvector"], git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=ceef5c2870fa44a7adff41d788defd0cd8fc1055" },
     { name = "pymupdf", specifier = ">=1.24" },
     { name = "pypdf", specifier = ">=4.3.0" },
     { name = "pyright", marker = "extra == 'dev'", specifier = ">=1.1" },
@@ -1464,7 +1464,7 @@ provides-extras = ["storage-azure", "storage-gcs", "dev", "docling", "chroma", "
 
 [[package]]
 name = "firefly-koinon-storage"
-version = "26.11.11"
+version = "26.11.12"
 source = { editable = "../storage" }
 
 [package.optional-dependencies]
@@ -3808,8 +3808,8 @@ wheels = [
 
 [[package]]
 name = "pyfly"
-version = "26.11.5"
-source = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=2ada81c420868ca27528bf7673390a95d9deb42b#2ada81c420868ca27528bf7673390a95d9deb42b" }
+version = "26.11.7"
+source = { git = "https://github.com/fireflyframework/fireflyframework-pyfly.git?rev=ceef5c2870fa44a7adff41d788defd0cd8fc1055#ceef5c2870fa44a7adff41d788defd0cd8fc1055" }
 dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },

@@ -15,31 +15,36 @@ The [reference architecture](../concepts/architecture.md#reference-deployment) s
 
 ## 1. Choose one release
 
-Obtain packages from [the official releases](https://github.com/fireflyframework/firefly-koinon/releases). Keep the selected release notes, asset checksums and configuration with your installation record. The example names below target `26.11.11`; use them only after that release and its checksums are published. Do not combine runtime wheels from different versions.
+Obtain packages from [the official releases](https://github.com/fireflyframework/firefly-koinon/releases). Keep the selected release notes, asset checksums and configuration with your installation record. The example names below target `26.11.12`; use them only after that release and its checksums are published. Do not combine runtime wheels from different versions.
 
 | Release asset | What it provides |
 |---|---|
-| `koinon-26.11.11-source.tar.gz` | Versioned deployment scripts, migrations, configuration examples and editable source. Deployment scripts are not installed by the runtime wheel. |
-| `firefly_koinon-26.11.11-py3-none-any.whl` | API, authorization, catalog and conversations. |
-| `firefly_koinon_documents-26.11.11-py3-none-any.whl` | Document knowledge services. |
-| `firefly_koinon_structured-26.11.11-py3-none-any.whl` | Structured knowledge services. |
-| `firefly_koinon_storage-26.11.11-py3-none-any.whl` | Shared object-storage ports and adapters. |
-| `koinon-management-26.11.11.tar.gz` | Optional prebuilt browser application; no Node build is needed to serve it. |
+| `koinon-26.11.12-source.tar.gz` | Versioned deployment scripts, migrations, configuration examples and editable source. Deployment scripts are not installed by the runtime wheel. |
+| `firefly_koinon-26.11.12-py3-none-any.whl` | API, authorization, catalog and conversations. |
+| `firefly_koinon_documents-26.11.12-py3-none-any.whl` | Document knowledge services. |
+| `firefly_koinon_structured-26.11.12-py3-none-any.whl` | Structured knowledge services. |
+| `firefly_koinon_storage-26.11.12-py3-none-any.whl` | Shared object-storage ports and adapters. |
+| `koinon-management-26.11.12.tar.gz` | Optional prebuilt browser application; no Node build is needed to serve it. |
 | `SHA256SUMS` | Checksums for that release's assets. |
 
 Compare the downloaded files with the release checksum manifest before installation. On Linux, `sha256sum FILE` prints a file's digest; on macOS, use `shasum -a 256 FILE`. `sha256sum --check SHA256SUMS` checks the complete downloaded asset set; it reports missing files if only part of the release was downloaded. Preserve the supplied licenses, notices and font licenses when redistributing a package or serving the browser build.
 
 ## 2. Install an isolated Python runtime
 
-Use Python **3.13** for the product runtime. Keep its environment separate from consumer applications and from other installations. Starting in the directory containing the four selected wheels:
+Use Python **3.13** for the product runtime. Keep its environment separate from consumer applications and from other installations.
+
+The framework is a separate distribution. For koinon `26.11.12`, obtain `pyfly-26.11.7-py3-none-any.whl` and its `SHA256SUMS` from the [PyFly 26.11.07 release](https://github.com/fireflyframework/fireflyframework-pyfly/releases/tag/v26.11.07). Check that wheel against the framework's checksum manifest, separately from koinon's manifest. PyFly is distributed through GitHub Releases, not PyPI; installing only the koinon wheels leaves that dependency unresolved on a fresh machine.
+
+Starting in the directory containing the four koinon wheels and the verified framework wheel:
 
 ```sh
 python3.13 -m venv .venv
 .venv/bin/python -m pip install \
-  ./firefly_koinon_storage-26.11.11-py3-none-any.whl \
-  ./firefly_koinon_documents-26.11.11-py3-none-any.whl \
-  ./firefly_koinon_structured-26.11.11-py3-none-any.whl \
-  ./firefly_koinon-26.11.11-py3-none-any.whl
+  ./pyfly-26.11.7-py3-none-any.whl \
+  ./firefly_koinon_storage-26.11.12-py3-none-any.whl \
+  ./firefly_koinon_documents-26.11.12-py3-none-any.whl \
+  ./firefly_koinon_structured-26.11.12-py3-none-any.whl \
+  ./firefly_koinon-26.11.12-py3-none-any.whl
 .venv/bin/python -m pip check
 ```
 
@@ -56,8 +61,11 @@ for distribution in (
     "firefly-koinon-structured", "firefly-koinon-storage",
 ):
     installed = version(distribution)
-    assert installed == "26.11.11", (distribution, installed)
+    assert installed == "26.11.12", (distribution, installed)
     print(distribution, installed)
+
+assert version("pyfly") == "26.11.7"
+print("pyfly", version("pyfly"))
 PY
 ```
 

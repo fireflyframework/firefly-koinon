@@ -141,7 +141,7 @@ describe('embedded knowledge workbench', () => {
   it.each([
     ['OK', 'ready'],
     ['REFINED_OK', 'ready'],
-    ['FAILED', 'attention'],
+    ['FAILED', 'error'],
     ['REJECTED_BY_FIREWALL', 'attention'],
     [null, 'neutral'],
   ] as const)('shows the canonical query status %s with the correct tone', async (status, tone) => {

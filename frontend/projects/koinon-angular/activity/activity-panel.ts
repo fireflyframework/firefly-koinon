@@ -1,4 +1,5 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
+import { statusTone } from '@fireflyframework/koinon-angular/workbench/core';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -98,7 +99,7 @@ import { KoinonActivitySummary } from './activity-summary';
                 <td>{{ jobResourceName(job.resource_id) }}</td>
                 <td>{{ job.kind.replaceAll('_', ' ') }}</td>
                 <td>
-                  <ffk-badge [tone]="job.status === 'failed' ? 'attention' : 'neutral'">{{
+                  <ffk-badge [tone]="tone(job.status)">{{
                     job.status
                   }}</ffk-badge>
                   @if (job.error) {
@@ -202,6 +203,7 @@ import { KoinonActivitySummary } from './activity-summary';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KoinonActivityPanel {
+  readonly tone = statusTone;
   readonly personalOnly = input(false, {transform:booleanAttribute});
   readonly facade = inject(KoinonFacade);
   readonly clients = inject(KoinonClientContext);

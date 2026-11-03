@@ -152,9 +152,10 @@ export class KoinonWorkbench implements OnInit,OnChanges,OnDestroy{
  }
  async explore(){const entry=this.f.selected();if(!entry)return;this.queryQuestion='';this.f.queryResult.set(null);this.showDialog('query');await this.f.loadSchema(entry.id);}
  async runQuery(){const entry=this.f.selected();if(!entry||!this.queryQuestion.trim())return;if(await this.f.query(entry.id,this.queryQuestion.trim())){const result=this.f.queryResult();if(result)this.queryCompleted.emit(result);}}
- queryStatusTone(status:QueryResponse['execution_status']):'ready'|'attention'|'neutral'{
+ queryStatusTone(status:QueryResponse['execution_status']):'ready'|'attention'|'error'|'neutral'{
   if(status==='OK'||status==='REFINED_OK')return 'ready';
-  if(status==='FAILED'||status==='REJECTED_BY_FIREWALL')return 'attention';
+  if(status==='FAILED')return 'error';
+  if(status==='REJECTED_BY_FIREWALL')return 'attention';
   return 'neutral';
  }
  queryStatusLabel(status:QueryResponse['execution_status']):string{

@@ -18,6 +18,7 @@ import {
 } from './library-retained-uploads-contract';
 import { isProcessingRecovery } from './library-upload-recovery-messages';
 import { RetainedUploadJournal } from './library-retained-uploads-journal';
+const observationError = 'Status temporarily unavailable. Checks retry automatically; no file or processing request is sent again.';
 interface Review {
   request: RetainedUploadRequest;
   observedRevision: number;
@@ -34,6 +35,7 @@ interface View {
   recovery: Record<string, FileRecoveryView>;
   receipts: Record<string, { value: StagedFileReceipt; observedAt: string }>;
   busy: boolean;
+  stale: boolean;
   error: string;
   notice: string;
   denied: boolean;
@@ -50,6 +52,7 @@ const empty = (): View => ({
   recovery: {},
   receipts: {},
   busy: false,
+  stale: false,
   error: '',
   notice: '',
   denied: false,
@@ -125,7 +128,7 @@ export class RetainedUploadsState {
     )
       throw Error('Batch scope could not be verified');
   }
-  private async run(work: (s: Session) => Promise<void>) {
+  private async run(work: (s: Session) => Promise<void>, observation = false) {
     this.syncScope();
     if (!this.alive || this.session || !this.scope.allowed || this.state().denied) return;
     const s: Session = {
@@ -134,9 +137,10 @@ export class RetainedUploadsState {
       abort: new AbortController(),
     };
     this.session = s;
-    this.set(s, { busy: true, error: '', notice: '' });
+    this.set(s, { busy: true, error: observation && this.state().stale ? this.state().error : '', notice: '' });
     try {
       await work(s);
+      if (observation) this.set(s, { stale: false, error: this.state().error === observationError ? '' : this.state().error });
     } catch (error) {
       if (!this.current(s)) return;
       const status = error instanceof Error && 'status' in error ? error.status : null;
@@ -151,7 +155,9 @@ export class RetainedUploadsState {
         this.ports.denied?.(status);
       } else
         this.set(s, {
+          ...(observation ? { stale: true } : {}),
           error:
+            observation ? observationError :
             code === 'BULK_UPLOAD_ACTIVE'
               ? 'The original transfer is still active. Wait, then inspect the batch again.'
               : code === 'BULK_UPLOAD_PENDING'
@@ -187,7 +193,7 @@ export class RetainedUploadsState {
         throw Error('Invalid retained batch page');
       for (const row of result.items) this.batch(s, row);
       this.set(s, { rows: result.items, total: result.total, page });
-    });
+    }, true);
   }
   private async read(s: Session, id: string) {
     const batch = await s.client.fileBatches.get(s.scope.tenantId, id, this.options(s));
@@ -275,7 +281,7 @@ export class RetainedUploadsState {
     return this.run(async (s) => {
       const { batch, items } = await this.read(s, id);
       this.admit(s, batch, items);
-    });
+    }, true);
   }
   closeDetails() {
     if (!this.view().busy)
@@ -298,6 +304,7 @@ export class RetainedUploadsState {
     return (
       !!v.selected &&
       !v.denied &&
+      !v.stale &&
       !v.busy &&
       !v.journalError &&
       this.ports.access(v.selected).write &&

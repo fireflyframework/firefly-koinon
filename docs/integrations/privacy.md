@@ -1,6 +1,6 @@
 # Integration data flow and privacy
 
-The firefly koinon desktop extension runs a local MCP bridge. Its configured remote destination is the full MCP endpoint selected by the user. The 26.11.11 bridge sends its OAuth access token or explicitly configured personal access token in an Authorization bearer header to that endpoint, forwards the host's requested tool arguments and resource or prompt requests, and returns server results to the host.
+The firefly koinon desktop extension runs a local MCP bridge. Its configured remote destination is the full MCP endpoint selected by the user. The 26.11.12 bridge sends its OAuth access token or explicitly configured personal access token in an Authorization bearer header to that endpoint, forwards the host's requested tool arguments and resource or prompt requests, and returns server results to the host.
 
 The [desktop OAuth flow](desktop-oauth.md) supports explicit browser sign-in. It reads only the configured installation's exact OAuth metadata and token endpoints; the browser uses the installation's existing login and identity provider. OAuth access tokens and temporary code-verifier/state values remain in bridge memory only. The host receives the authorization link and connection status, but not the access token. Disconnecting locally forgets that token; server revocation remains a separate action in **Authorized applications**. The bridge has no persistent OAuth credential cache or refresh-token support.
 

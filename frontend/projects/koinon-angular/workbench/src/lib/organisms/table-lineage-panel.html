@@ -80,7 +80,7 @@
         @if (state.isCurrent()) {
           <ffk-badge>{{ 'Current' | ffkText }}</ffk-badge>
         }
-        <ffk-badge [tone]="detail.snapshot_status === 'FAILED' ? 'attention' : 'neutral'">{{
+        <ffk-badge [tone]="tone(detail.snapshot_status)">{{
           status(detail.snapshot_status) | ffkText
         }}</ffk-badge>
       </div>

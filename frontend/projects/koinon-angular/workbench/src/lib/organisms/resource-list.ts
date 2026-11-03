@@ -18,6 +18,7 @@ import { KoinonI18n } from '@fireflyframework/koinon-angular/workbench/core';
 import { fileType, KoinonFileTypeIcon } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonIcon } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonBadge } from '@fireflyframework/koinon-angular/workbench/core';
+import { statusTone } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonSkeleton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonKnowledgeAvailability } from '@fireflyframework/koinon-angular/workbench/availability';
 import { friendlyStatus, friendlyKind, isFolder, isSystemManaged, resourceIcon } from '@fireflyframework/koinon-angular/workbench/core';
@@ -36,6 +37,7 @@ const ingestionStatuses = new Set([
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KoinonResourceList {
+  readonly tone = statusTone;
   private readonly i18n = inject(KoinonI18n);
   private readonly languageNames = new Map<string, Intl.DisplayNames>();
   @Input() summaries: Record<string, CatalogSummary> = {};

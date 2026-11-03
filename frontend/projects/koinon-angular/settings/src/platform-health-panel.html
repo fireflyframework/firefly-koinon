@@ -146,7 +146,7 @@
             >
               <span class="eyebrow">{{ 'Check details' | ffkText }}</span>
               <h3>{{ safeLabel(components, component.id, 'Service check') | ffkText }}</h3>
-              <ffk-badge [tone]="status(component) === 'failed' ? 'attention' : 'neutral'">{{
+              <ffk-badge [tone]="tone(status(component))">{{
                 statusLabel(component) | ffkText
               }}</ffk-badge>
               <p class="reason">
