@@ -22,9 +22,10 @@ from koinon.knowledge.capture_receipt import NativeEvidenceReceipt
 from koinon.knowledge.curated.ports import CuratedCorpusPort
 from koinon.knowledge.entities import DomainBinding
 from koinon.knowledge.repositories import DomainBindingRepository
+from koinon.knowledge.search_dtos import SearchAdmission
 from koinon.organization_knowledge.runtime import settings_for_operation
 from koinon.organization_knowledge.service import OrganizationKnowledgeService
-from koinon.security.policy_reads import policy_read
+from koinon.security.policy_reads import policy_read, snapshot_values
 
 
 @component(name="knowledge.settings")
@@ -90,7 +91,13 @@ class KnowledgeFacade:
         return chain
 
     async def binding(self, tenant_id: str, catalog_id: str, domain: str, *, entry=None) -> DomainBinding:
-        rows = await self.bindings.find_all(tenant_id=tenant_id, catalog_id=catalog_id, domain=domain)
+        observed = snapshot_values(self, "bindings")
+        key = (tenant_id, domain, catalog_id)
+        rows = observed.get(key) if observed is not None else None
+        if rows is None:
+            rows = await self.bindings.find_all(tenant_id=tenant_id, catalog_id=catalog_id, domain=domain)
+            if observed is not None:
+                observed[key] = rows
         if not rows:
             raise AccessDenied("The resource has no admitted domain binding", code="BINDING_UNAVAILABLE")
         binding = rows[0]
@@ -276,6 +283,119 @@ class KnowledgeFacade:
                 "Upload exceeds the configured byte limit", code="UPLOAD_TOO_LARGE"
             )
 
+    async def _admit_search(
+        self, subject, tenant_id, *, workspace_id, project_id, collection_id, asset_ids, curated
+    ) -> SearchAdmission:
+        await self.catalog._refresh_managed_memberships(subject)
+        async with policy_read():
+            await self.catalog._prefetch_ancestry(
+                tenant_id, [value for value in (workspace_id, project_id, collection_id) if value]
+            )
+            for identifier, kinds in (
+                (workspace_id, {"workspace"}),
+                (project_id, {"project"}),
+                (collection_id, {"collection", "corpus"}),
+            ):
+                if identifier:
+                    selected = (await self._chain(subject, tenant_id, identifier, "knowledge:search"))[0]
+                    if selected.kind not in kinds or (workspace_id and selected.workspace_id != workspace_id):
+                        raise InvalidHierarchy(
+                            "Search filters disagree with their ancestry", code="INVALID_SEARCH_SCOPE"
+                        )
+                    if (
+                        project_id
+                        and selected.kind not in {"workspace"}
+                        and selected.project_id != project_id
+                    ):
+                        raise InvalidHierarchy(
+                            "Search filters disagree with their project", code="INVALID_SEARCH_SCOPE"
+                        )
+            if asset_ids is not None and (
+                not isinstance(asset_ids, list)
+                or len(asset_ids) > 128
+                or any(
+                    not isinstance(identifier, str) or not 1 <= len(identifier) <= 64
+                    for identifier in asset_ids
+                )
+            ):
+                raise InvalidRequestException(
+                    "Select at most 128 valid asset IDs", code="INVALID_ASSET_SCOPE"
+                )
+            await self.catalog._prefetch_ancestry(tenant_id, asset_ids or ())
+            assets = (
+                await self.catalog.list(subject, tenant_id, kind="document", workspace_id=workspace_id)
+                if asset_ids is None
+                else [
+                    (await self._chain(subject, tenant_id, identifier, "knowledge:search"))[0]
+                    for identifier in dict.fromkeys(asset_ids)
+                ]
+            )
+            if asset_ids is None and curated is not None:
+                assets += await self.catalog.list(
+                    subject, tenant_id, kind="knowledge_item", workspace_id=workspace_id
+                )
+            await self.catalog._prefetch_ancestry(tenant_id, [entry.id for entry in assets])
+            observed = snapshot_values(self, "bindings")
+            if observed is not None:
+                identifiers = tuple(
+                    dict.fromkeys([entry.id for entry in assets] + [entry.workspace_id for entry in assets])
+                )
+                for identifier in identifiers:
+                    observed[(tenant_id, "canon", identifier)] = []
+                for binding in await self.bindings.for_catalog_ids(tenant_id, "canon", identifiers):
+                    observed[(tenant_id, "canon", binding.catalog_id)] = [binding]
+            groups = {}
+            curated_groups = {}
+            for asset in assets:
+                chain = await self._chain(subject, tenant_id, asset.id, "knowledge:search")
+                asset = chain[0]
+                mismatched = (
+                    asset.kind not in {"document", "knowledge_item"}
+                    or (workspace_id and asset.workspace_id != workspace_id)
+                    or (project_id and asset.project_id != project_id)
+                    or (collection_id and collection_id not in {entry.id for entry in chain})
+                )
+                if mismatched:
+                    if asset_ids is not None:
+                        raise InvalidHierarchy(
+                            "Selected assets disagree with the document search context",
+                            code="INVALID_ASSET_SCOPE",
+                        )
+                    continue
+                if asset.kind == "document" and asset.status != "ready":
+                    if asset_ids is not None:
+                        raise ConflictException(
+                            "Document intake is unfinished; inspect its retained upload before searching",
+                            code="DOCUMENT_NOT_READY",
+                        )
+                    continue
+                binding = await self.binding(tenant_id, asset.id, "canon", entry=asset)
+                if asset.kind == "knowledge_item":
+                    if curated is None:
+                        raise AccessDenied("Curated retrieval is unavailable", code="KNOWLEDGE_UNAVAILABLE")
+                    key = (asset.workspace_id, binding.native_workspace_id)
+                    groups.setdefault(key, {})
+                    curated_groups.setdefault(key, {})[binding.native_id] = (asset, chain[1])
+                    continue
+                groups.setdefault((asset.workspace_id, binding.native_workspace_id), {})[
+                    binding.native_id
+                ] = (
+                    asset,
+                    chain[1],
+                )
+            if len(groups) > self.settings.max_search_workspaces:
+                raise InvalidRequestException(
+                    "Narrow the search to a workspace or project", code="SEARCH_SCOPE_TOO_WIDE"
+                )
+            return SearchAdmission(assets, groups, curated_groups)
+
+    async def _authorize_search_assets(self, subject, tenant_id, identifiers) -> None:
+        await self.catalog._refresh_managed_memberships(subject)
+        async with policy_read():
+            await self.catalog._prefetch_ancestry(tenant_id, identifiers)
+            for identifier in identifiers:
+                await self._chain(subject, tenant_id, identifier, "knowledge:search")
+
     async def search(
         self,
         subject,
@@ -294,83 +414,17 @@ class KnowledgeFacade:
             raise InvalidRequestException(
                 "Supply a question and a limit from 1 to 100", code="INVALID_SEARCH"
             )
-        for identifier, kinds in (
-            (workspace_id, {"workspace"}),
-            (project_id, {"project"}),
-            (collection_id, {"collection", "corpus"}),
-        ):
-            if identifier:
-                selected = (await self._chain(subject, tenant_id, identifier, "knowledge:search"))[0]
-                if selected.kind not in kinds or (workspace_id and selected.workspace_id != workspace_id):
-                    raise InvalidHierarchy(
-                        "Search filters disagree with their ancestry", code="INVALID_SEARCH_SCOPE"
-                    )
-                if project_id and selected.kind not in {"workspace"} and selected.project_id != project_id:
-                    raise InvalidHierarchy(
-                        "Search filters disagree with their project", code="INVALID_SEARCH_SCOPE"
-                    )
-        if asset_ids is not None and (
-            not isinstance(asset_ids, list)
-            or len(asset_ids) > 128
-            or any(
-                not isinstance(identifier, str) or not 1 <= len(identifier) <= 64 for identifier in asset_ids
-            )
-        ):
-            raise InvalidRequestException("Select at most 128 valid asset IDs", code="INVALID_ASSET_SCOPE")
-        assets = (
-            await self.catalog.list(subject, tenant_id, kind="document", workspace_id=workspace_id)
-            if asset_ids is None
-            else [
-                (await self._chain(subject, tenant_id, identifier, "knowledge:search"))[0]
-                for identifier in dict.fromkeys(asset_ids)
-            ]
-        )
         curated = self.curated.get() if self.curated is not None else None
-        if asset_ids is None and curated is not None:
-            assets += await self.catalog.list(
-                subject, tenant_id, kind="knowledge_item", workspace_id=workspace_id
-            )
-        groups = {}
-        curated_groups = {}
-        for asset in assets:
-            chain = await self._chain(subject, tenant_id, asset.id, "knowledge:search")
-            asset = chain[0]
-            mismatched = (
-                asset.kind not in {"document", "knowledge_item"}
-                or (workspace_id and asset.workspace_id != workspace_id)
-                or (project_id and asset.project_id != project_id)
-                or (collection_id and collection_id not in {entry.id for entry in chain})
-            )
-            if mismatched:
-                if asset_ids is not None:
-                    raise InvalidHierarchy(
-                        "Selected assets disagree with the document search context",
-                        code="INVALID_ASSET_SCOPE",
-                    )
-                continue
-            if asset.kind == "document" and asset.status != "ready":
-                if asset_ids is not None:
-                    raise ConflictException(
-                        "Document intake is unfinished; inspect its retained upload before searching",
-                        code="DOCUMENT_NOT_READY",
-                    )
-                continue
-            binding = await self.binding(tenant_id, asset.id, "canon", entry=asset)
-            if asset.kind == "knowledge_item":
-                if curated is None:
-                    raise AccessDenied("Curated retrieval is unavailable", code="KNOWLEDGE_UNAVAILABLE")
-                key = (asset.workspace_id, binding.native_workspace_id)
-                groups.setdefault(key, {})
-                curated_groups.setdefault(key, {})[binding.native_id] = (asset, chain[1])
-                continue
-            groups.setdefault((asset.workspace_id, binding.native_workspace_id), {})[binding.native_id] = (
-                asset,
-                chain[1],
-            )
-        if len(groups) > self.settings.max_search_workspaces:
-            raise InvalidRequestException(
-                "Narrow the search to a workspace or project", code="SEARCH_SCOPE_TOO_WIDE"
-            )
+        admission = await self._admit_search(
+            subject,
+            tenant_id,
+            workspace_id=workspace_id,
+            project_id=project_id,
+            collection_id=collection_id,
+            asset_ids=asset_ids,
+            curated=curated,
+        )
+        assets, groups, curated_groups = admission.assets, admission.documents, admission.curated
         hits, citations, answers = [], [], []
         curated_selections = []
         policy = await settings_for_operation(self.knowledge_settings, subject, tenant_id)
@@ -389,8 +443,7 @@ class KnowledgeFacade:
 
             async def authorize_empty_search():
                 if identifiers:
-                    for identifier in identifiers:
-                        await self._chain(subject, tenant_id, identifier, "knowledge:search")
+                    await self._authorize_search_assets(subject, tenant_id, identifiers)
                 else:
                     await self.catalog.authorize(subject, tenant_id, "knowledge:search", workspace_id)
 
@@ -401,8 +454,7 @@ class KnowledgeFacade:
             admitted_ids = tuple(asset.id for asset, _ in [*admitted.values(), *knowledge.values()])
 
             async def authorize_model(asset_ids=admitted_ids):
-                for admitted_id in asset_ids:
-                    await self._chain(subject, tenant_id, admitted_id, "knowledge:search")
+                await self._authorize_search_assets(subject, tenant_id, asset_ids)
 
             receipt.authorize_model = authorize_model
             receipt.admit_documents(tenant_id, native_workspace, subject, admitted)

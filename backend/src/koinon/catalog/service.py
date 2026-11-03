@@ -221,12 +221,13 @@ class CatalogService:
         missing = tuple(dict.fromkeys(value for value in entry_ids if (tenant_id, value) not in observed))
         if not missing:
             return
-        rows = await self.catalog_repository.ancestry_rows(tenant_id, missing)
         for value in missing:
             observed[(tenant_id, value)] = []
-        for row in rows:
-            observed[(tenant_id, row.id)] = [row]
-            kinds[(tenant_id, row.id)] = row.kind
+        for start in range(0, len(missing), 200):
+            rows = await self.catalog_repository.ancestry_rows(tenant_id, missing[start : start + 200])
+            for row in rows:
+                observed[(tenant_id, row.id)] = [row]
+                kinds[(tenant_id, row.id)] = row.kind
 
     async def _scoped_entry(self, tenant_id: str, entry_id: str, *, lock=False) -> CatalogEntry:
         observed = snapshot_values(self, "entries") if not lock else None
@@ -250,7 +251,9 @@ class CatalogService:
         entry = await self._scoped_entry(tenant_id, entry_id)
         await self.authorize(subject, tenant_id, "catalog:read", entry.workspace_id)
         if self.restriction:
-            await self.restriction.resource(subject, entry)
+            await self.restriction.resource(
+                subject, entry, parent_reader=lambda identifier: self._scoped_entry(tenant_id, identifier)
+            )
         if entry.kind == "knowledge_item":
             bounds = await self.curated_read_bounds(subject, tenant_id)
             if not await self.catalog_repository.curated_visible(tenant_id, entry.id, **bounds):
@@ -318,10 +321,15 @@ class CatalogService:
         if grant is not None and self.restriction is not None:
             if "catalog:read" not in grant.scopes:
                 raise AccessDenied("API token lacks catalog access", code="TOKEN_SCOPE_DENIED")
+            await self._prefetch_ancestry(tenant_id, [entry.id for entry in visible])
             restricted = []
             for entry in visible:
                 try:
-                    await self.restriction.resource(subject, entry)
+                    await self.restriction.resource(
+                        subject,
+                        entry,
+                        parent_reader=lambda identifier: self._scoped_entry(tenant_id, identifier),
+                    )
                 except AccessDenied:
                     continue
                 restricted.append(entry)
