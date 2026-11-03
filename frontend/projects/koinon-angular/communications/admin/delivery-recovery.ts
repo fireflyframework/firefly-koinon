@@ -40,6 +40,8 @@ export class KoinonDeliveryRecovery implements OnDestroy {
   readonly delivery = input.required<DeliveryRecordView>();
   readonly deliveryRequested = output<string>();
   readonly accessDenied = output<void>();
+  readonly observationPaused = output<boolean>();
+  readonly stale = input(false);
   private readonly reviewTitle = viewChild<ElementRef<HTMLElement>>('reviewTitle');
   private readonly sectionTitle = viewChild<ElementRef<HTMLElement>>('sectionTitle');
   private readonly returnFocus = signal(false);
@@ -49,6 +51,10 @@ export class KoinonDeliveryRecovery implements OnDestroy {
   readonly reason = deliveryReason;
   readonly operationLabel = operationLabel;
   constructor() {
+    effect(() => {
+      const view = this.state()?.view();
+      this.observationPaused.emit(!!view?.busy || !!view?.review);
+    });
     afterRenderEffect(() => {
       const title = this.reviewTitle();
       if (title) title.nativeElement.focus();
@@ -112,10 +118,12 @@ export class KoinonDeliveryRecovery implements OnDestroy {
     );
   }
   async review(operation: 'inspect' | 'welcome') {
+    if (this.stale()) return;
     this.duplicate.set(false);
     await this.state()?.review(operation);
   }
   async reviewSaved(request: Parameters<DeliveryRecoveryState['reviewSaved']>[0]) {
+    if (this.stale()) return;
     this.duplicate.set(false);
     await this.state()?.reviewSaved(request);
   }
@@ -124,7 +132,9 @@ export class KoinonDeliveryRecovery implements OnDestroy {
     this.returnFocus.set(true);
   }
   async confirm() {
+    if (this.stale()) return;
     await this.state()?.confirm(this.duplicate());
+    if (!this.state()?.view().error) await this.state()?.open(this.delivery().id);
     this.returnFocus.set(true);
   }
   ngOnDestroy() {

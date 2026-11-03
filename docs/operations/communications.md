@@ -77,6 +77,32 @@ Under **Administrator summaries**, independently enable daily, weekly and monthl
 
 **Delivery history** supports server-side status, event and date filters with pagination. Open a record for its bounded status explanation and attempt timestamps. Current scope and membership restrictions still apply to administrator API tokens.
 
+The current view updates automatically. A page containing queued, sending or deferred
+messages is observed every five seconds; stable pages and hidden tabs use thirty seconds.
+Only the applied page and selected delivery are read. Editing a policy or reviewing a
+delivery action pauses automatic reads, so your draft and confirmation remain in place.
+Failed reads keep the previous information visibly unverified while retries back off to
+at most once per minute. **Try again** is available after an observation failure.
+Expired or denied access clears private observations and stops automatic reads until
+the account context changes.
+
+Opening administration reads the recorded email capabilities and policy. An ordinary
+service refresh uses one GET; a history refresh uses one GET for its page and, when a
+delivery is selected, one for that record plus two for action eligibility and the latest
+25 recorded provider checks. These reads never contact the email provider, submit a
+message, replay an uncertain request or save a policy. An explicitly confirmed provider
+check remains a separate operation.
+
+Delivery rows are limited by SQL pagination; its total count still scans the matching history.
+Recorded provider checks read at most 26 rows and return 25. Recovery eligibility reads
+at most two matching contacts, rejecting ambiguity without loading the whole contact history.
+These are materialization and HTTP request bounds, not constant database-work or throughput guarantees.
+The [knowledge processing observations](durable-bulk.md)
+have separate primary and native costs: the PostgreSQL regression uses 14 primary SQL
+statements for either one or 25 selected documents, while native text and vector checks
+still inspect work proportional to the selected chunks. Size observation traffic from
+measured workloads; these tests do not establish throughput for 50 concurrent users.
+
 The operator sets `koinon.public_url` to the canonical installation origin; invitation URLs never come from a request's Host header. Keep the default native acceptance route unless a same-origin custom client route has actually been deployed. Serve all emitted frontend chunks so optional views remain reachable after a rollout.
 
 ## Investigate a message that did not arrive

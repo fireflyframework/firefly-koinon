@@ -35,6 +35,8 @@ async function fixture(page: Page) {
   let observed = false,
     denied = false;
   let queued = 0;
+  let readCount = 0,
+    readFailure = 0;
   let accepted: { key: string | undefined; body: unknown } | null = null;
   await page.route('**/bff/api/v1/**', async (route) => {
     const req = route.request(),
@@ -60,6 +62,10 @@ async function fixture(page: Page) {
         })),
       });
     if (!path.includes('/communications/')) return route.fallback();
+    if (method === 'GET') {
+      ++readCount;
+      if (readFailure) return json({ code: 'UNAVAILABLE' }, readFailure);
+    }
     if (method === 'POST')
       writes.push({ path, body: req.postDataJSON(), key: req.headers()['idempotency-key'] });
     if (path.endsWith('/capabilities'))
@@ -124,6 +130,13 @@ async function fixture(page: Page) {
   });
   return {
     writes,
+    reads: () => readCount,
+    status: (status: string) => {
+      original.status = status;
+    },
+    readFailure: (status: number) => {
+      readFailure = status;
+    },
     deny: () => {
       denied = true;
     },
@@ -184,7 +197,12 @@ for (const width of [1440, 390])
     await expect(child).toContainText('does not confirm that the recipient received');
     await expect(admin.locator('.delivery-detail')).toContainText('Outcome unknown');
     expect(service.writes).toHaveLength(1);
-    await child.getByRole('button', { name: 'Refresh recorded checks', exact: true }).click();
+    await expect(
+      child.getByRole('button', { name: 'Refresh recorded checks', exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      child.getByRole('button', { name: 'Send a new welcome', exact: true }),
+    ).toBeEnabled();
     await child.getByRole('button', { name: 'Send a new welcome', exact: true }).click();
     const welcome = child.getByRole('region', { name: 'Review delivery action', exact: true });
     const confirm = welcome.getByRole('button', { name: 'Queue new welcome', exact: true });
@@ -254,7 +272,7 @@ test('current delivery authority denial removes prior recipient details and offe
   const { admin, child } = await open(page, 1440);
   service.deny();
   await child.getByRole('button', { name: 'Check email service', exact: true }).click();
-  await expect(admin).toContainText('Your current account cannot inspect or manage this delivery.');
+  await expect(admin).toContainText('Your current account cannot manage communications.');
   await expect(admin).not.toContainText('Alex Rivera');
   await expect(admin).not.toContainText('Private provider exception');
   expect(service.writes).toHaveLength(0);
@@ -298,4 +316,62 @@ test('Spanish mobile review requires duplicate consent without submitting on can
   await expect(review).toHaveCount(0);
   expect(service.writes).toHaveLength(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+for (const width of [1440, 390])
+  test(`delivery observations update automatically and pause for review at ${width}px`, async ({
+    page,
+  }) => {
+    await page.clock.install();
+    const service = await fixture(page);
+    service.status('queued');
+    await page.setViewportSize({ width, height: 1000 });
+    const { admin, child } = await open(page, width);
+    service.status('delivered');
+    await page.clock.fastForward(6000);
+    await expect(admin.locator('tbody ffk-badge')).toHaveText('Delivered');
+    expect(service.writes).toHaveLength(0);
+    await child.getByRole('button', { name: 'Send a new welcome', exact: true }).click();
+    const review = child.getByRole('region', { name: 'Review delivery action', exact: true });
+    await expect(review).toBeVisible();
+    const reads = service.reads();
+    await page.clock.fastForward(65000);
+    expect(service.reads()).toBe(reads);
+    await expect(review).toBeVisible();
+    await review.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(review).toHaveCount(0);
+    await expect(
+      child.getByRole('button', { name: 'Send a new welcome', exact: true }),
+    ).toBeEnabled();
+    service.readFailure(503);
+    await page.clock.fastForward(31000);
+    await expect(admin).toContainText('Communication status could not be updated');
+    await expect(admin.locator('tbody ffk-badge')).toHaveText('Status not verified');
+    await expect(
+      child.getByRole('button', { name: 'Send a new welcome', exact: true }),
+    ).toBeDisabled();
+    await capture(page, `automatic-delivery-stale-${width}`);
+    service.readFailure(0);
+    await page.clock.fastForward(61000);
+    await expect(admin.locator('tbody ffk-badge')).toHaveText('Delivered');
+    expect(service.writes).toHaveLength(0);
+    await capture(page, `automatic-delivery-current-${width}`);
+  });
+
+test('policy drafts survive focus and automatic observation deadlines', async ({ page }) => {
+  await page.clock.install();
+  const service = await fixture(page);
+  const { admin } = await open(page, 1440);
+  await admin.getByRole('button', { name: 'Policies', exact: true }).click();
+  const language = admin.getByRole('combobox', {
+    name: 'Default notification language',
+    exact: false,
+  });
+  await language.selectOption('es-ES');
+  const reads = service.reads();
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await page.clock.fastForward(65000);
+  await expect(language).toHaveValue('es-ES');
+  expect(service.reads()).toBe(reads);
+  expect(service.writes).toHaveLength(0);
 });

@@ -286,3 +286,44 @@ async def test_limited_pat_cannot_admit_organization_welcome_recovery(email_cont
     ):
         await service.recover(ACTOR, "north", original.id, request(original, target), str(uuid4()))
     assert not await service.records.find_all()
+
+
+async def test_recovery_options_bounds_contact_ambiguity_read(email_context, monkeypatch):
+    from pyfly.data.relational.sqlalchemy import transactional
+    from sqlalchemy import event
+    from test_email_invitations import ACTOR
+
+    from koinon.communications.contact_entities import OperatorContactRecord
+
+    context, _ = email_context
+    service, target, original = await bound_prepared(context)
+    records = service.operator_contacts.contacts
+    selected = await records.find_by_id(target.id)
+    for number in range(8):
+        values = {
+            column.name: getattr(selected, column.name)
+            for column in OperatorContactRecord.__table__.columns
+        }
+        values.update(id=str(uuid4()), identity_key=f"ambiguous-{number}")
+        await records.save(OperatorContactRecord(**values))
+    statements = []
+
+    @transactional(read_only=True)
+    async def observe():
+        connection = await records._require_session().connection()
+        def capture(conn, cursor, statement, parameters, context, executemany):
+            if "koinon_operator_delivery_contacts" in statement and "canonical_subject" in statement:
+                statements.append((statement, parameters))
+        event.listen(connection.sync_connection.engine, "before_cursor_execute", capture)
+        try:
+            return await service.recovery_options(ACTOR, "north", original.id)
+        finally:
+            event.remove(connection.sync_connection.engine, "before_cursor_execute", capture)
+
+    async def forbidden(*args, **kwargs):
+        raise AssertionError("Ambiguous contacts must not invoke recipient resolution")
+    monkeypatch.setattr(service, "_recipient", forbidden)
+    contact, reason = await observe()
+    assert contact is None and reason == "WELCOME_RECOVERY_CONTACT_UNAVAILABLE"
+    assert len(statements) == 1
+    assert "LIMIT" in statements[0][0] and 2 in statements[0][1]

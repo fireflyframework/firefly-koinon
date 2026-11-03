@@ -9,13 +9,15 @@
         }}
       </p>
     </div>
-    <ffk-button
-      variant="quiet"
-      icon="refresh"
-      [disabled]="loading"
-      (click)="refreshRequested.emit()"
-      >{{ 'Refresh' | ffkText }}</ffk-button
-    >
+    @if (error && !denied && tab() !== 'policy') {
+      <ffk-button
+        variant="quiet"
+        icon="refresh"
+        [disabled]="loading"
+        (click)="refreshRequested.emit()"
+        >{{ 'Try again' | ffkText }}</ffk-button
+      >
+    }
   </header>
   <nav class="tabs" [attr.aria-label]="'Communications views' | ffkText">
     <button
@@ -54,7 +56,7 @@
           <h3 id="email-service-title">
             {{ service.provider_label || ('Email delivery' | ffkText) }}
           </h3>
-          <ffk-badge [tone]="service.state === 'ready' ? 'ready' : 'attention'">{{
+          <ffk-badge [tone]="!stale && service.state === 'ready' ? 'ready' : 'attention'">{{
             readinessLabel() | ffkText
           }}</ffk-badge>
         </div>
@@ -326,8 +328,8 @@
                 </td>
                 <td>{{ delivery.scope_name }}</td>
                 <td>
-                  <ffk-badge [tone]="tone(delivery.status)">{{
-                    statusLabel(delivery.status) | ffkText
+                  <ffk-badge [tone]="stale ? 'attention' : tone(delivery.status)">{{
+                    (stale ? 'Status not verified' : statusLabel(delivery.status)) | ffkText
                   }}</ffk-badge>
                 </td>
                 <td>
@@ -390,7 +392,7 @@
           <dt>{{ 'Access scope' | ffkText }}</dt>
           <dd>{{ delivery.scope_name }}</dd>
           <dt>{{ 'Status' | ffkText }}</dt>
-          <dd>{{ statusLabel(delivery.status) | ffkText }}</dd>
+          <dd>{{ (stale ? 'Status not verified' : statusLabel(delivery.status)) | ffkText }}</dd>
           <dt>{{ 'Attempts' | ffkText }}</dt>
           <dd>{{ delivery.attempt_count }}</dd>
           @if (delivery.last_attempt_at) {
@@ -409,6 +411,8 @@
           <ffk-delivery-recovery
             [session]="session"
             [delivery]="delivery"
+            [stale]="stale"
+            (observationPaused)="recoveryPaused.set($event)"
             (deliveryRequested)="deliveryRequested.emit($event)"
             (accessDenied)="deliveryAccessDenied.emit()"
           />
@@ -429,15 +433,18 @@
                 ><ffk-button
                   variant="primary"
                   [loading]="retryPending === delivery.id"
+                  [disabled]="stale || denied"
                   (click)="retry(delivery)"
                   >{{ 'Retry delivery' | ffkText }}</ffk-button
                 >
               </div>
             </div>
           } @else {
-            <ffk-button [disabled]="!!retryPending" (click)="confirmingRetry.set(delivery.id)">{{
-              'Retry delivery' | ffkText
-            }}</ffk-button>
+            <ffk-button
+              [disabled]="!!retryPending || stale || denied"
+              (click)="confirmingRetry.set(delivery.id)"
+              >{{ 'Retry delivery' | ffkText }}</ffk-button
+            >
           }
         }
       </section>

@@ -353,9 +353,7 @@ class WelcomeRecoveryService:
             raise recipient_unavailable()
         if original.owner_subject is None:
             return None, "WELCOME_RECOVERY_OPERATOR_REQUIRED"
-        rows = await self.operator_contacts.contacts.find_all(
-            tenant_id=tenant_id, canonical_subject=original.owner_subject
-        )
+        rows = await self.operator_contacts.contacts.bound_candidates(tenant_id, original.owner_subject)
         if len(rows) != 1:
             return None, "WELCOME_RECOVERY_CONTACT_UNAVAILABLE"
         row = rows[0]
