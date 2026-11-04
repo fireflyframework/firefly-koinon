@@ -6,15 +6,6 @@
       {{ 'Review service checks and find the next step when something needs attention.' | ffkText }}
     </p>
   </div>
-  @if (state.allowed()) {
-    <ffk-button
-      icon="refresh"
-      label="Refresh observations"
-      [loading]="view() === 'health' ? state.healthPending() : state.informationPending()"
-      (click)="refresh()"
-      >{{ 'Refresh observations' | ffkText }}</ffk-button
-    >
-  }
 </header>
 @if (!state.allowed()) {
   <p class="access-notice" role="alert">
@@ -229,7 +220,7 @@
                     safeLabel(
                       remediations,
                       component.remediation,
-                      'Refresh observations to request the latest available checks.'
+                      'Available observations update automatically.'
                     ) | ffkText
                   }}
                 </p>

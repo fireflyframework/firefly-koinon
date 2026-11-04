@@ -4,7 +4,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { mockService } from './fixtures';
+import { context, mockService } from './fixtures';
 
 const observation = {
   phase: 'failed',
@@ -81,6 +81,12 @@ for (const width of [1440, 390]) {
   }) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
     await mockService(page);
+    await page.route('**/context', (route) => route.fulfill({
+      json: { ...context, memberships: [{
+        id: 'processing-admin', subject: context.subject, tenant_id: 'tenant-one',
+        workspace_id: null, role: 'admin', active: true,
+      }] },
+    }));
     await page.route('**/knowledge-processing', (route) =>
       route.fulfill({
         json: {
@@ -123,7 +129,9 @@ for (const width of [1440, 390]) {
     );
     await page.goto('/activity');
     const processing = page.getByRole('region', { name: 'Current knowledge processing' });
-    await expect(processing.getByText('Needs attention', { exact: true })).toBeVisible();
+    const failed = processing.locator('ffk-badge > span').filter({ hasText: 'Processing failed' });
+    await expect(failed).toBeVisible();
+    await expect(failed).toHaveClass('error');
     await expect(
       processing.getByText('Text remains available from the observed version', { exact: true }),
     ).toBeVisible();

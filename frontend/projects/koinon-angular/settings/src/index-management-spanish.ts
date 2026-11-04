@@ -1,6 +1,8 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 export const INDEX_MANAGEMENT_SPANISH: Record<string, string> = {
+  'Last observed native target': 'Último índice nativo observado',
+  'Status temporarily unavailable': 'Estado temporalmente no disponible',
   'Change model': 'Cambiar modelo',
   'Knowledge indexes': 'Índices de conocimiento',
   'Manage knowledge indexes and inspect deployment configuration.':

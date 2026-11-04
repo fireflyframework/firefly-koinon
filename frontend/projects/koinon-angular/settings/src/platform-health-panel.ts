@@ -1,5 +1,6 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
+import { UploadObservationLoop } from '@fireflyframework/koinon-angular/workbench/availability';
 import { statusTone } from '@fireflyframework/koinon-angular/workbench/core';
 import {
   ChangeDetectionStrategy,
@@ -7,6 +8,7 @@ import {
   EventEmitter,
   Output,
   PendingTasks,
+  DestroyRef,
   computed,
   effect,
   inject,
@@ -72,7 +74,12 @@ export class KoinonPlatformHealthPanel {
   readonly filter = signal<HealthStatus | 'all'>('all');
   readonly selectedId = signal<HealthComponent['id'] | null>(null);
   readonly summary = computed(() =>
-    healthSummary(this.state.health()?.components ?? [], this.state.now()),
+    healthSummary(
+      (this.state.health()?.components ?? []).map((component) =>
+        this.state.healthStale() ? { ...component, status: 'unknown' as const } : component,
+      ),
+      this.state.now(),
+    ),
   );
   readonly rows = computed(() => {
     const order = { failed: 0, unknown: 1, passed: 2, disabled: 3 };
@@ -101,7 +108,47 @@ export class KoinonPlatformHealthPanel {
     { key: 'communications_enabled', label: 'Email communications' },
     { key: 'scheduled_consumers_enabled', label: 'Scheduled processing' },
   ] as const;
+  private readonly visible = signal(
+    typeof document === 'undefined' || document.visibilityState !== 'hidden',
+  );
+  private readonly polling = new UploadObservationLoop({
+    active: () =>
+      this.state.allowed() && !this.state.healthPending() && !this.state.informationPending(),
+    visible: () => this.visible(),
+    interval: () => 30000,
+    read: async () => {
+      await (this.view() === 'health'
+        ? this.state.loadHealth(true)
+        : this.state.loadInformation(true));
+      return !(this.view() === 'health' ? this.state.healthError() : this.state.informationError());
+    },
+  });
+  private readonly reenter = () => {
+    this.visible.set(document.visibilityState !== 'hidden');
+    this.state.now.set(Date.now());
+    this.polling.reset();
+  };
   constructor() {
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', this.reenter);
+      window.addEventListener('focus', this.reenter);
+    }
+    inject(DestroyRef).onDestroy(() => {
+      this.polling.dispose();
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', this.reenter);
+        window.removeEventListener('focus', this.reenter);
+      }
+    });
+    effect(() => {
+      this.state.key();
+      this.view();
+      this.state.allowed();
+      this.state.healthPending();
+      this.state.informationPending();
+      this.visible();
+      this.polling.update();
+    });
     effect(() => {
       this.state.key();
       const view = this.view(),
@@ -115,9 +162,12 @@ export class KoinonPlatformHealthPanel {
     });
   }
   status(component: HealthComponent) {
-    return healthStatus(component, this.state.now());
+    return this.state.healthStale()
+      ? ('unknown' as const)
+      : healthStatus(component, this.state.now());
   }
   statusLabel(component: HealthComponent) {
+    if (this.state.healthStale()) return 'Status temporarily unavailable';
     const status = this.status(component);
     if (status === 'unknown')
       return component.freshness === 'stale' ||

@@ -352,10 +352,11 @@ for (const grant of ['workspace', 'viewer'] as const)
     expect(service.requests).toEqual([]);
   });
 test('access denial clears reports and never renders the raw diagnostic', async ({ page }) => {
+  await page.clock.install();
   const service = await setup(page),
     panel = await open(page, 1440);
   service.deny();
-  await panel.getByRole('button', { name: 'Refresh observations', exact: true }).click();
+  await page.clock.fastForward(31000);
   await expect(panel.getByRole('alert')).toContainText(
     'Current organization administrator access is required.',
   );

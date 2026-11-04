@@ -8,14 +8,18 @@ Use **Settings**, then **Storage & indexing**, for the guided lifecycle below. T
 
 ## Use the administration panel
 
-Start with a knowledge space you are authorized to manage. **Knowledge type** separates **Documents** from **Datasets**; a plan or action for one does not apply to the other. The **Build state** filter narrows the managed records, and the list is paged. **Refresh indexes** rereads records without calling an embedding model or repeating a mutation.
+Start with a knowledge space you are authorized to manage. **Knowledge type** separates **Documents** from **Datasets**; a plan or action for one does not apply to the other. The **Build state** filter narrows the managed records, and the list is paged. **Try again**, shown after a read error, rereads records without calling an embedding model or repeating a mutation.
+
+The list and selected details update automatically while this panel is open. Queued, building and activating targets use five-second observation intervals; stable lists use 30 seconds. Hidden tabs and failed reads back off. Each observation reads one managed page of at most 25 records, the selected record when present, and up to 10 native-inventory pages of 100 choices to establish the active target. These are request bounds, not a measurement of database queries or latency. Opening the model editor, a build plan or an action review pauses observation so the information being reviewed is not replaced underneath you. Closing the review resumes observation without submitting any action.
+
+If an observation fails, previous data stays marked as unverified throughout retries. A previously active target does not retain a green status merely because an older read succeeded. Changing account or losing current access clears the retained observations.
 
 The **Active native target** strip is read separately from the managed list. It can describe a retained native target without a lifecycle record. A record marked **Recorded active, not confirmed** is not proof that the native pointer currently selects it. If the native inventory cannot be verified completely within the bounded inspection, correct that condition before proceeding; an empty or partial response does not establish an inactive workspace.
 
 1. Choose **Plan a new index**, then select an enabled **Embedding provider** and one of its declared models. Read the usage notice before choosing **Check embeddings and prepare plan**. This is an explicit provider request, not a passive configuration refresh.
 2. In **Review before building**, check the provider, model, measured dimensions, storage dimensions, recorded chunks, qualification and warnings. Choose **Change model** to return to selection or **Close plan** to leave without building.
 3. Choose **Build this index** only after review. The panel rereads the provider configuration, native target and selected embedding assignment before submitting a keyed request. A changed revision requires a new plan. The panel uses a batch size of 32; other supported batch sizes are available through the API.
-4. Inspect the selected **Index details** and use **Refresh indexes** to read progress. **Queued**, **Building** and **Awaiting physical index** mean work remains. The details show recorded chunks and vectors, dimensions, qualification, revision and retained identities. No timer automatically submits work.
+4. Inspect the selected **Index details** as their progress updates automatically. **Queued**, **Building** and **Awaiting physical index** mean work remains. The details show recorded chunks and vectors, dimensions, qualification, revision and retained identities. No timer automatically submits work.
 5. When the target is ready, choose **Activate index**. Review the current active target, target revision and assignment revision, then confirm **Activate index** in that review. The panel checks them again before sending. Read back the native active target and perform the small functional check described below.
 
 ![Reviewing an index build in the administration panel](../assets/screenshots/index-plan-1440.png)
