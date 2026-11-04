@@ -14563,6 +14563,813 @@
       "title": "KnowledgeItemView",
       "type": "object"
     },
+    "KnowledgeModeCurrentView": {
+      "additionalProperties": true,
+      "properties": {
+        "transition": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/KnowledgeModeTransitionView"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "transition"
+      ],
+      "title": "KnowledgeModeCurrentView",
+      "type": "object"
+    },
+    "KnowledgeModeIndexRecovery": {
+      "additionalProperties": true,
+      "properties": {
+        "index_id": {
+          "title": "Index Id",
+          "type": "string"
+        },
+        "job_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Job Id"
+        },
+        "state": {
+          "enum": [
+            "in_progress",
+            "required",
+            "resolved"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "activation_job_id": {
+          "title": "Activation Job Id",
+          "type": "string"
+        },
+        "activation_lease_until": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Activation Lease Until"
+        },
+        "index_status": {
+          "title": "Index Status",
+          "type": "string"
+        },
+        "native_pointer_state": {
+          "default": "unavailable",
+          "enum": [
+            "target",
+            "previous",
+            "other",
+            "unavailable"
+          ],
+          "title": "Native Pointer State",
+          "type": "string"
+        },
+        "expected_revision": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Revision"
+        },
+        "expected_active_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Active Id"
+        },
+        "expected_connection_revision": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Connection Revision"
+        },
+        "actions": {
+          "items": {
+            "enum": [
+              "finish",
+              "restore_previous"
+            ],
+            "type": "string"
+          },
+          "title": "Actions",
+          "type": "array"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "index_id",
+        "job_id",
+        "state",
+        "activation_job_id",
+        "activation_lease_until",
+        "index_status",
+        "actions",
+        "message"
+      ],
+      "title": "KnowledgeModeIndexRecovery",
+      "type": "object"
+    },
+    "KnowledgeModeRecoveryPage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/KnowledgeModeRecoveryReceipt"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Cursor"
+        }
+      },
+      "required": [
+        "items",
+        "next_cursor"
+      ],
+      "title": "KnowledgeModeRecoveryPage",
+      "type": "object"
+    },
+    "KnowledgeModeRecoveryReceipt": {
+      "additionalProperties": true,
+      "properties": {
+        "index_id": {
+          "title": "Index Id",
+          "type": "string"
+        },
+        "job_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Job Id"
+        },
+        "state": {
+          "enum": [
+            "in_progress",
+            "required",
+            "resolved"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "activation_job_id": {
+          "title": "Activation Job Id",
+          "type": "string"
+        },
+        "activation_lease_until": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Activation Lease Until"
+        },
+        "index_status": {
+          "title": "Index Status",
+          "type": "string"
+        },
+        "native_pointer_state": {
+          "default": "unavailable",
+          "enum": [
+            "target",
+            "previous",
+            "other",
+            "unavailable"
+          ],
+          "title": "Native Pointer State",
+          "type": "string"
+        },
+        "expected_revision": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Revision"
+        },
+        "expected_active_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Active Id"
+        },
+        "expected_connection_revision": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Connection Revision"
+        },
+        "actions": {
+          "items": {
+            "enum": [
+              "finish",
+              "restore_previous"
+            ],
+            "type": "string"
+          },
+          "title": "Actions",
+          "type": "array"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "receipt_id": {
+          "title": "Receipt Id",
+          "type": "string"
+        },
+        "attempt_revision": {
+          "minimum": 1,
+          "title": "Attempt Revision",
+          "type": "integer"
+        },
+        "resolution_revision": {
+          "minimum": 1,
+          "title": "Resolution Revision",
+          "type": "integer"
+        },
+        "resolution": {
+          "enum": [
+            "pending",
+            "finished",
+            "restored",
+            "aborted"
+          ],
+          "title": "Resolution",
+          "type": "string"
+        },
+        "native_index_id": {
+          "title": "Native Index Id",
+          "type": "string"
+        },
+        "provider_id": {
+          "title": "Provider Id",
+          "type": "string"
+        },
+        "model_id": {
+          "title": "Model Id",
+          "type": "string"
+        },
+        "workspace_id": {
+          "title": "Workspace Id",
+          "type": "string"
+        },
+        "native_workspace_id": {
+          "title": "Native Workspace Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "index_id",
+        "job_id",
+        "state",
+        "activation_job_id",
+        "activation_lease_until",
+        "index_status",
+        "actions",
+        "message",
+        "receipt_id",
+        "attempt_revision",
+        "resolution_revision",
+        "resolution",
+        "native_index_id",
+        "provider_id",
+        "model_id",
+        "workspace_id",
+        "native_workspace_id"
+      ],
+      "title": "KnowledgeModeRecoveryReceipt",
+      "type": "object"
+    },
+    "KnowledgeModeRevisionInput": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "expected_revision"
+      ],
+      "title": "KnowledgeModeRevisionInput",
+      "type": "object"
+    },
+    "KnowledgeModeTargetPage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/KnowledgeModeTargetView"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Cursor"
+        }
+      },
+      "required": [
+        "items",
+        "next_cursor"
+      ],
+      "title": "KnowledgeModeTargetPage",
+      "type": "object"
+    },
+    "KnowledgeModeTargetView": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "workspace",
+            "document",
+            "curated"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "catalog_id": {
+          "title": "Catalog Id",
+          "type": "string"
+        },
+        "workspace_id": {
+          "title": "Workspace Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "queued",
+            "prepared",
+            "ready",
+            "waiting",
+            "failed",
+            "excluded"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        },
+        "message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Message"
+        },
+        "action": {
+          "anyOf": [
+            {
+              "enum": [
+                "reprocess_document",
+                "inspect_document_job",
+                "keep_rag",
+                "inspect_source_integrity",
+                "inspect_source_limits",
+                "restart_preparation",
+                "retry_preparation",
+                "configure_models",
+                "inspect_preparation",
+                "inspect_index_job",
+                "reconcile_index"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action"
+        },
+        "index_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Index Id"
+        },
+        "job_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Job Id"
+        },
+        "job_status": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Job Status"
+        },
+        "index_recovery": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/KnowledgeModeIndexRecovery"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "lease_until": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lease Until"
+        },
+        "source_version_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Version Id"
+        },
+        "ingestion_extraction_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ingestion Extraction Id"
+        },
+        "view_extraction_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "View Extraction Id"
+        },
+        "raw_sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Raw Sha256"
+        },
+        "raw_bytes": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Raw Bytes"
+        },
+        "normalized_sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Normalized Sha256"
+        },
+        "parts": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parts"
+        },
+        "text_bytes": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Text Bytes"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "catalog_id",
+        "workspace_id",
+        "status"
+      ],
+      "title": "KnowledgeModeTargetView",
+      "type": "object"
+    },
+    "KnowledgeModeTransitionView": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "tenant_id": {
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "base_revision": {
+          "minimum": 0,
+          "title": "Base Revision",
+          "type": "integer"
+        },
+        "base_digest": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Base Digest",
+          "type": "string"
+        },
+        "active_mode": {
+          "enum": [
+            "rag",
+            "rlm"
+          ],
+          "title": "Active Mode",
+          "type": "string"
+        },
+        "requested_mode": {
+          "enum": [
+            "rag",
+            "rlm"
+          ],
+          "title": "Requested Mode",
+          "type": "string"
+        },
+        "requested_settings": {
+          "$ref": "#/$defs/OrganizationKnowledgeSettingsInput"
+        },
+        "status": {
+          "enum": [
+            "queued",
+            "running",
+            "failed",
+            "cancelled",
+            "superseded",
+            "succeeded"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "stage": {
+          "enum": [
+            "discovery",
+            "preflight",
+            "repair_views",
+            "prepare_indexes",
+            "verify",
+            "activate"
+          ],
+          "title": "Stage",
+          "type": "string"
+        },
+        "counters": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Counters",
+          "type": "object"
+        },
+        "stage_milliseconds": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Stage Milliseconds",
+          "type": "object"
+        },
+        "pending_index_recoveries": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Pending Index Recoveries",
+          "type": "integer"
+        },
+        "progress_reason": {
+          "anyOf": [
+            {
+              "const": "knowledge_changed",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Progress Reason"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Error Code"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Error"
+        },
+        "created_at": {
+          "title": "Created At",
+          "type": "string"
+        },
+        "updated_at": {
+          "title": "Updated At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "tenant_id",
+        "job_id",
+        "revision",
+        "base_revision",
+        "base_digest",
+        "active_mode",
+        "requested_mode",
+        "requested_settings",
+        "status",
+        "stage",
+        "counters",
+        "stage_milliseconds",
+        "error_code",
+        "error",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "KnowledgeModeTransitionView",
+      "type": "object"
+    },
     "KnowledgeNumberBounds": {
       "additionalProperties": false,
       "properties": {
@@ -28517,6 +29324,30 @@
     },
     "OrganizationKnowledgeSnapshot": {
       "$ref": "#/$defs/OrganizationKnowledgeSnapshot"
+    },
+    "KnowledgeModeTransitionView": {
+      "$ref": "#/$defs/KnowledgeModeTransitionView"
+    },
+    "KnowledgeModeRevisionInput": {
+      "$ref": "#/$defs/KnowledgeModeRevisionInput"
+    },
+    "KnowledgeModeCurrentView": {
+      "$ref": "#/$defs/KnowledgeModeCurrentView"
+    },
+    "KnowledgeModeIndexRecovery": {
+      "$ref": "#/$defs/KnowledgeModeIndexRecovery"
+    },
+    "KnowledgeModeRecoveryReceipt": {
+      "$ref": "#/$defs/KnowledgeModeRecoveryReceipt"
+    },
+    "KnowledgeModeRecoveryPage": {
+      "$ref": "#/$defs/KnowledgeModeRecoveryPage"
+    },
+    "KnowledgeModeTargetView": {
+      "$ref": "#/$defs/KnowledgeModeTargetView"
+    },
+    "KnowledgeModeTargetPage": {
+      "$ref": "#/$defs/KnowledgeModeTargetPage"
     },
     "BrandingPalette": {
       "$ref": "#/$defs/BrandingPalette"

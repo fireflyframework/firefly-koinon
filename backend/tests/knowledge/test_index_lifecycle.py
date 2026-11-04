@@ -111,3 +111,27 @@ async def test_creation_qualifies_provider_without_holding_a_primary_transaction
     reader.plan.side_effect = plan
     created = await lifecycle.create("issuer|actor", "tenant", values(), "outside-transaction")
     assert created["index"]["status"] == "queued"
+
+
+async def test_reviewed_resume_can_link_an_existing_target_without_rewriting_old_job(index_rows):
+    lifecycle, _, adapter = service(index_rows)
+    initial = await lifecycle.create("issuer|actor", "tenant", values(), "initial")
+    row = await index_rows.find_by_id(initial["index"]["id"])
+    row.status, row.build_slot = "failed", None
+    row.transition = {"parent_mode_transition_id": "historical"}
+    await index_rows.save(row)
+    guard = AsyncMock()
+    lifecycle.parent_authority = SimpleNamespace(get=lambda: SimpleNamespace(check=guard))
+    adapter.overview = AsyncMock(return_value={"active_native_id": None, "chunk_count": 0})
+    adapter.project_state = AsyncMock()
+    resumed = await lifecycle.resume(
+        "issuer|actor", "tenant", row.id, row.revision, "reviewed", parent_mode_transition_id="current"
+    )
+    assert resumed["job_id"] != initial["job_id"]
+    old = await lifecycle.jobs.repository.find_by_id(initial["job_id"])
+    new = await lifecycle.jobs.repository.find_by_id(resumed["job_id"])
+    assert "parent_mode_transition_id" not in old.payload
+    assert new.payload["parent_mode_transition_id"] == "current"
+    assert "parent_mode_transition_id" not in (await index_rows.find_by_id(row.id)).transition
+    assert [value.id for value in await index_rows.mode_children("tenant", "current")] == [row.id]
+    assert guard.await_count >= 1

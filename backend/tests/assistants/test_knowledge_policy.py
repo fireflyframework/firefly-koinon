@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import asyncio
 from dataclasses import replace
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import pytest
@@ -16,29 +17,30 @@ from koinon.assistants.execution import AssistantExecutor
 from koinon.catalog.errors import AccessDenied
 from koinon.knowledge.capture_dtos import CapturedEvidence
 from koinon.knowledge.evidence_capture import NativeKnowledgeEvidence
-from koinon.organization_knowledge.dtos import OrganizationKnowledgeSettingsInput
 from koinon.organization_knowledge.runtime import bind_snapshot, current_snapshot, snapshot_for_run
 from koinon.organization_knowledge.service import OrganizationKnowledgeService
 
 
-async def change_policy(context, mode="rlm", limit=151, structured_changes=None):
+async def seed_activated_policy(context, mode="rlm", limit=151, structured_changes=None):
     policy = context.get_bean(OrganizationKnowledgeService)
     current = await policy.get("issuer|admin", "north")
-    await policy.update(
-        "issuer|admin",
+    # These consumer tests start after activation; preparation has its own API/worker regressions.
+    assert await policy.settings.compare_and_swap(
         "north",
-        OrganizationKnowledgeSettingsInput(
-            expected_revision=current.revision,
-            documents=current.documents.model_copy(update={"answer_mode": mode, "retrieval_top_k": limit}),
-            structured=current.structured.model_copy(update=structured_changes or {}),
+        current.documents.model_copy(update={"answer_mode": mode, "retrieval_top_k": limit}).model_dump(
+            mode="json"
         ),
+        current.structured.model_copy(update=structured_changes or {}).model_dump(mode="json"),
+        current.revision,
+        "issuer|admin",
+        datetime.now(UTC),
     )
     return await policy.snapshot("issuer|admin", "north")
 
 
 async def tool_fixture(assistants, mode="rag", limit=27):
     service, context, run, entry, data, source = await fixture(assistants)
-    recorded = await change_policy(context, mode, limit)
+    recorded = await seed_activated_policy(context, mode, limit)
     run.knowledge_settings_snapshot = recorded.model_dump(mode="json")
     await service.runs.save(run)
     native = type("ControlledNative", (), {})()
@@ -53,13 +55,13 @@ async def tool_fixture(assistants, mode="rag", limit=27):
 async def test_admission_captures_policy_and_queued_edit_replay_retry_and_audit_preserve_it(assistants):
     service, context = assistants
     _, agent = await configured(service)
-    expected = await change_policy(context)
+    expected = await seed_activated_policy(context)
     thread = await service.create_thread("issuer|viewer", "north", {})
     request = {"agent_id": agent["id"], "message": "Read knowledge", "client_request_id": "captured"}
     submitted = await service.submit("issuer|viewer", "north", thread["id"], request)
     run = await service.runs.find_by_id(submitted["run_id"])
     assert run.knowledge_settings_snapshot == expected.model_dump(mode="json")
-    await change_policy(context, "rag", 7)
+    await seed_activated_policy(context, "rag", 7)
     assert await service.submit("issuer|viewer", "north", thread["id"], request) == submitted
     await service.cancel("issuer|viewer", "north", run.id)
     await service.retry("issuer|viewer", "north", run.id)
@@ -73,7 +75,7 @@ async def test_rag_rlm_and_rollback_admit_distinct_runs_without_rewriting_their_
     _, agent = await configured(service)
     admitted = []
     for mode in ("rag", "rlm", "rag"):
-        policy = await change_policy(context, mode, 10)
+        policy = await seed_activated_policy(context, mode, 10)
         thread = await service.create_thread("issuer|viewer", "north", {})
         submitted = await service.submit(
             "issuer|viewer",
@@ -120,7 +122,7 @@ async def test_missing_policy_fails_admission_before_messages_or_run(assistants,
 @pytest.mark.parametrize("mode,limit,expected_limit", [("rag", 27, 27), ("rlm", 151, 100)])
 async def test_search_uses_recorded_mode_limit_and_scoped_policy(assistants, mode, limit, expected_limit):
     service, context, run, native, tool, recorded = await tool_fixture(assistants, mode, limit)
-    await change_policy(context, "rlm" if mode == "rag" else "rag", 3)
+    await seed_activated_policy(context, "rlm" if mode == "rag" else "rag", 3)
     receipt = native.search.return_value
     if mode == "rlm":
         receipt = replace(
@@ -230,7 +232,9 @@ async def test_query_tool_borrows_exact_recorded_structured_policy_through_evide
     await service.memory.get().build(run, generation_id=generation)
     recorded = snapshot_for_run(run)
     assert recorded is not None
-    await change_policy(context, structured_changes={"generation_candidates": 7, "max_refine_retries": 0})
+    await seed_activated_policy(
+        context, structured_changes={"generation_candidates": 7, "max_refine_retries": 0}
+    )
     data = {
         "query_id": "controlled-query",
         "execution_status": "OK",

@@ -12,6 +12,7 @@ from koinon_sdk import (
     IndexPlanInput,
     IndexPlanView,
     KnowledgeScope,
+    KnowledgeModeTransitionView,
     KoinonClient,
     Membership,
     MemberUpdate,
@@ -85,18 +86,20 @@ async def set_reviewed_document_mode(
     tenant: str,
     reviewed: OrganizationKnowledgeSettings,
     mode: Literal["rag", "rlm"],
+    idempotency_key: str,
     person_confirmed: bool,
-) -> OrganizationKnowledgeSettings:
+) -> KnowledgeModeTransitionView:
     if not person_confirmed:
         raise ValueError("Review the selected mode and retained settings first")
     documents = reviewed.documents.model_copy(update={"answer_mode": mode})
-    return await client.update_organization_knowledge_settings(
+    return await client.create_knowledge_mode_transition(
         tenant,
         OrganizationKnowledgeSettingsInput(
             expected_revision=reviewed.revision,
             documents=documents,
             structured=reviewed.structured,
         ),
+        idempotency_key=idempotency_key,
     )
 
 

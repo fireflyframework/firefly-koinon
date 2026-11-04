@@ -80,14 +80,15 @@ export async function setReviewedDocumentMode(
   tenant: string,
   reviewed: OrganizationKnowledgeSettings,
   mode: "rag" | "rlm",
+  idempotencyKey: string,
   personConfirmed: boolean,
 ) {
   if (!personConfirmed) throw new Error("Review the mode and retained settings");
-  return client.organizationKnowledge.update(tenant, {
+  return client.knowledgeModes.create(tenant, {
     expected_revision: reviewed.revision,
     documents: { ...reviewed.documents, answer_mode: mode },
     structured: reviewed.structured,
-  });
+  }, idempotencyKey);
 }
 
 export async function createReviewedAgent(

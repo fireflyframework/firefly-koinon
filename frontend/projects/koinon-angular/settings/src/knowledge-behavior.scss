@@ -257,3 +257,62 @@ input,
 summary {
   scroll-margin-bottom: 88px;
 }
+
+.preparation {
+  margin: 24px 0;
+  padding: 20px 0;
+  border-block: 1px solid var(--ui-line);
+}
+.preparation h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+}
+.preparation .modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  color: var(--ui-text);
+}
+.preparation-targets {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+}
+.preparation-targets li {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--ui-line);
+  overflow-wrap: anywhere;
+}
+.preparation-targets code {
+  font-size: 11px;
+  margin-inline: 8px;
+}
+.preparation label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  margin: 12px 0;
+}
+.preparation ffk-button {
+  margin: 8px 8px 0 0;
+}
+.recovery-review {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ui-line);
+}
+
+.preparation label input[type='checkbox'] {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--ui-accent);
+}
+.activation-receipts {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ui-line);
+}

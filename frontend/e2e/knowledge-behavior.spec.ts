@@ -15,6 +15,7 @@ async function open(
 ) {
   await mockService(page);
   const writes: unknown[] = [];
+  await page.route('**/bff/api/v1/tenants/*/knowledge/settings/transitions/current', route => route.fulfill({json:{transition:null}}));
   if (options.readOnly)
     await page.route('**/bff/api/v1/context', (route) =>
       route.fulfill({
@@ -128,6 +129,7 @@ for (const width of [1440, 390])
     await page.keyboard.press('Space');
     await expect(rlm).toBeChecked();
     await expect(panel.getByText('RLM uses document files', { exact: true })).toBeVisible();
+    await panel.getByRole('radio', { name: /Find relevant passages/ }).check();
     await panel
       .locator('summary')
       .filter({ hasText: /^Document analysis$/ })
@@ -145,7 +147,7 @@ for (const width of [1440, 390])
     expect(writes).toEqual([
       {
         expected_revision: 7,
-        documents: { ...documents, answer_mode: 'rlm', rlm_sub_budget: 0 },
+        documents: { ...documents, rlm_sub_budget: 0 },
         structured: { ...structured, grounding_min_confidence: 0.75 },
       },
     ]);
@@ -220,10 +222,11 @@ test('provider administrator can read behavior without organization settings aut
 });
 test('conflict retains the selected method and requires reload', async ({ page }) => {
   const { panel, writes } = await open(page, { conflict: true });
-  await panel.getByRole('radio', { name: /Analyze documents in steps/ }).check();
+  await panel.locator('summary').filter({hasText:/^Document analysis$/}).click();
+  await panel.getByRole('spinbutton',{name:'Analysis steps',exact:true}).fill('9');
   await panel.getByRole('button', { name: 'Save changes', exact: true }).click();
   await expect(panel.getByRole('alert')).toContainText('Reload');
-  await expect(panel.getByRole('radio', { name: /Analyze documents in steps/ })).toBeChecked();
+  await expect(panel.getByRole('spinbutton',{name:'Analysis steps',exact:true})).toHaveValue('9');
   await expect(panel.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled();
   await panel.getByRole('button', { name: 'Reload knowledge behavior', exact: true }).click();
   await expect(panel.getByRole('radio', { name: /Find relevant passages/ })).toBeChecked();
@@ -266,7 +269,7 @@ for (const variant of [
     const rlm = panel.getByRole('radio', { name: /Analyze documents in steps/ });
     await rlm.focus();
     await page.keyboard.press('Space');
-    const save = panel.getByRole('button', { name: 'Save changes', exact: true });
+    const save = panel.getByRole('button', { name: 'Prepare mode change', exact: true });
     const cancel = panel.getByRole('button', { name: 'Cancel', exact: true });
     await expect(save).toBeEnabled();
     await expect(save).toHaveCount(1);
@@ -333,6 +336,6 @@ for (const variant of [
     expect(inputBox!.y + inputBox!.height + 2).toBeLessThanOrEqual(barBox!.y);
     await cancel.click();
     await expect(panel.getByRole('radio', { name: /Find relevant passages/ })).toBeChecked();
-    await expect(save).toBeDisabled();
+    await expect(panel.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled();
     expect(writes).toEqual([]);
   });

@@ -5,6 +5,7 @@
 import inspect
 import json
 from collections.abc import Awaitable, Callable
+from contextlib import AsyncExitStack
 from hashlib import sha256
 from typing import NoReturn
 from uuid import NAMESPACE_URL, uuid4, uuid5
@@ -19,7 +20,7 @@ from flycanon.core.services.sources.lineage.dtos import (
     WholeDocumentPart,
     WholeDocumentRead,
 )
-from flycanon.core.services.sources.lineage.ports import LineageQuery
+from flycanon.core.services.sources.lineage.ports import LineageQuery, PublicationGuard
 from flycanon.core.services.sources.lineage.service import DocumentLineage, identity
 
 
@@ -152,6 +153,7 @@ class WholeDocumentReader:
         source_version_id: str,
         ingestion_extraction_id: str,
         authorize: Callable[[], Awaitable[None]] | None = None,
+        publication_guard: PublicationGuard | None = None,
     ) -> WholeDocumentRead:
         if authorize is not None:
             await authorize()
@@ -275,9 +277,12 @@ class WholeDocumentReader:
             for index, page in enumerate(pages)
         ]
         try:
-            async with self.lineage.repository.write() as session:
+            async with AsyncExitStack() as guards:
+                if publication_guard is not None:
+                    await guards.enter_async_context(publication_guard())
                 if authorize is not None:
                     await authorize()
+                session = await guards.enter_async_context(self.lineage.repository.write())
                 await session.insert("artifact", dict(**output))
                 await session.insert(
                     "extraction",

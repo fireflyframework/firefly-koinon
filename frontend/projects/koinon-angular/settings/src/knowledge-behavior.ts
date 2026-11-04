@@ -5,6 +5,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   Output,
+  Input,
   EventEmitter,
   PendingTasks,
   computed,
@@ -20,6 +21,7 @@ import {
   KoinonSkeleton,
   KoinonTextPipe,
   KoinonValuePipe,
+  KoinonDatePipe,
 } from '@fireflyframework/koinon-angular';
 import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
 import {
@@ -28,6 +30,7 @@ import {
   KoinonKnowledgeBehaviorConfiguration,
   type KnowledgeBehaviorField,
 } from './knowledge-behavior-configuration';
+import { KnowledgeModePreparation } from './knowledge-mode-preparation';
 import { KNOWLEDGE_BEHAVIOR_SPANISH } from './knowledge-behavior-spanish';
 registerKoinonSpanish(KNOWLEDGE_BEHAVIOR_SPANISH);
 @Component({
@@ -40,13 +43,25 @@ registerKoinonSpanish(KNOWLEDGE_BEHAVIOR_SPANISH);
     KoinonSkeleton,
     KoinonTextPipe,
     KoinonValuePipe,
+    KoinonDatePipe,
   ],
-  providers: [KoinonKnowledgeBehaviorConfiguration],
+  providers: [KnowledgeModePreparation, KoinonKnowledgeBehaviorConfiguration],
   templateUrl: './knowledge-behavior.html',
   styleUrl: './knowledge-behavior.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KoinonKnowledgeBehavior {
+  @Input() canOpenResource = false;
+  @Output() resourceRequested = new EventEmitter<string>();
+  @Output() indexRequested = new EventEmitter<string>();
+  readonly stageLabels: Record<string, string> = {
+    discovery: 'Discovering documents',
+    preflight: 'Checking model assignments',
+    repair_views: 'Preparing document views',
+    prepare_indexes: 'Preparing document indexes',
+    verify: 'Verifying current knowledge',
+    activate: 'Activating requested mode',
+  };
   @Output() sectionRequested = new EventEmitter<string>();
   reviewAssignments() {
     if (this.c.f.tenantPermissions().has('providers:write')) this.sectionRequested.emit('models');
@@ -77,7 +92,7 @@ export class KoinonKnowledgeBehavior {
     const values = this.c.values(),
       mode = values['documents.answer_mode'];
     const ids = [
-      'documents.embedding',
+      ...(mode === 'rag' ? ['documents.embedding'] : []),
       mode === 'rlm'
         ? this.c.settings()?.capabilities.documents.rlm_model_role
         : 'documents.answer',
@@ -102,12 +117,15 @@ export class KoinonKnowledgeBehavior {
     this.revealField(input);
   }
   revealField(input: HTMLInputElement) {
-    afterNextRender(() => {
-      if (!input.isConnected || !input.matches(':focus') || !this.c.dirty()) return;
-      const footer = input.closest('form')?.querySelector('footer');
-      if (footer && input.getBoundingClientRect().bottom + 8 > footer.getBoundingClientRect().top)
-        input.scrollIntoView({ block: 'center' });
-    }, { injector: this.injector });
+    afterNextRender(
+      () => {
+        if (!input.isConnected || !input.matches(':focus') || !this.c.dirty()) return;
+        const footer = input.closest('form')?.querySelector('footer');
+        if (footer && input.getBoundingClientRect().bottom + 8 > footer.getBoundingClientRect().top)
+          input.scrollIntoView({ block: 'center' });
+      },
+      { injector: this.injector },
+    );
   }
   id(field: KnowledgeBehaviorField) {
     return field.domain + '.' + field.name;

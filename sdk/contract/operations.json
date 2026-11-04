@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "api_prefix": "/api/v1",
   "status": "Canonical API contract; development snapshot",
-  "canonical_operation_count": 248,
+  "canonical_operation_count": 255,
   "qualified_compatibility_operations": [
     {
       "operation": "GlossaryController.list_terms",
@@ -8756,6 +8756,266 @@
       "response_schema": "OrganizationKnowledgeSettings",
       "success_status": 200,
       "source_sha256": "9ab094768b9c3f891d2ae4a990e18e81df935c50b2a7a1a3fdf9aeb2c972247c",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge/settings/transitions",
+      "category": "canonical",
+      "operation": "KnowledgeModeController.create",
+      "source": "backend/src/koinon/organization_knowledge/transitions/controllers.py",
+      "line": 26,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[OrganizationKnowledgeSettingsInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "KnowledgeModeTransitionView",
+      "sdk_python": "create_knowledge_mode_transition",
+      "sdk_typescript": "knowledgeModes.create",
+      "sdk_java": "client.knowledgeModes.create",
+      "request_schema": "OrganizationKnowledgeSettingsInput",
+      "response_schema": "KnowledgeModeTransitionView",
+      "success_status": 202,
+      "source_sha256": "47af8e6c1d5734881b4292f974e56d4895049516fca258aa08e76754b886622e",
+      "encoding": "application/json",
+      "headers": [
+        "Idempotency-Key (required; caller-supplied stable operation key)"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge/settings/transitions/current",
+      "category": "canonical",
+      "operation": "KnowledgeModeController.current",
+      "source": "backend/src/koinon/organization_knowledge/transitions/controllers.py",
+      "line": 40,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "KnowledgeModeCurrentView",
+      "sdk_python": "current_knowledge_mode_transition",
+      "sdk_typescript": "knowledgeModes.current",
+      "sdk_java": "client.knowledgeModes.current",
+      "request_schema": null,
+      "response_schema": "KnowledgeModeCurrentView",
+      "success_status": 200,
+      "source_sha256": "47af8e6c1d5734881b4292f974e56d4895049516fca258aa08e76754b886622e",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge/settings/transitions/{transition_id}",
+      "category": "canonical",
+      "operation": "KnowledgeModeController.get",
+      "source": "backend/src/koinon/organization_knowledge/transitions/controllers.py",
+      "line": 46,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "transition_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "KnowledgeModeTransitionView",
+      "sdk_python": "knowledge_mode_transition",
+      "sdk_typescript": "knowledgeModes.get",
+      "sdk_java": "client.knowledgeModes.get",
+      "request_schema": null,
+      "response_schema": "KnowledgeModeTransitionView",
+      "success_status": 200,
+      "source_sha256": "47af8e6c1d5734881b4292f974e56d4895049516fca258aa08e76754b886622e",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge/settings/transitions/{transition_id}/targets",
+      "category": "canonical",
+      "operation": "KnowledgeModeController.targets",
+      "source": "backend/src/koinon/organization_knowledge/transitions/controllers.py",
+      "line": 55,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "transition_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "after",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "limit",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 50
+        }
+      ],
+      "return_annotation": "KnowledgeModeTargetPage",
+      "sdk_python": "knowledge_mode_targets",
+      "sdk_typescript": "knowledgeModes.targets",
+      "sdk_java": "client.knowledgeModes.targets",
+      "request_schema": null,
+      "response_schema": "KnowledgeModeTargetPage",
+      "success_status": 200,
+      "source_sha256": "47af8e6c1d5734881b4292f974e56d4895049516fca258aa08e76754b886622e",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge/settings/transitions/{transition_id}/recoveries",
+      "category": "canonical",
+      "operation": "KnowledgeModeController.recoveries",
+      "source": "backend/src/koinon/organization_knowledge/transitions/controllers.py",
+      "line": 68,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "transition_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "after",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "limit",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 50
+        }
+      ],
+      "return_annotation": "KnowledgeModeRecoveryPage",
+      "sdk_python": "knowledge_mode_recoveries",
+      "sdk_typescript": "knowledgeModes.recoveries",
+      "sdk_java": "client.knowledgeModes.recoveries",
+      "request_schema": null,
+      "response_schema": "KnowledgeModeRecoveryPage",
+      "success_status": 200,
+      "source_sha256": "47af8e6c1d5734881b4292f974e56d4895049516fca258aa08e76754b886622e",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge/settings/transitions/{transition_id}/cancel",
+      "category": "canonical",
+      "operation": "KnowledgeModeController.cancel",
+      "source": "backend/src/koinon/organization_knowledge/transitions/controllers.py",
+      "line": 85,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "transition_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[KnowledgeModeRevisionInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "KnowledgeModeTransitionView",
+      "sdk_python": "cancel_knowledge_mode_transition",
+      "sdk_typescript": "knowledgeModes.cancel",
+      "sdk_java": "client.knowledgeModes.cancel",
+      "request_schema": "KnowledgeModeRevisionInput",
+      "response_schema": "KnowledgeModeTransitionView",
+      "success_status": 200,
+      "source_sha256": "47af8e6c1d5734881b4292f974e56d4895049516fca258aa08e76754b886622e",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge/settings/transitions/{transition_id}/retry",
+      "category": "canonical",
+      "operation": "KnowledgeModeController.retry",
+      "source": "backend/src/koinon/organization_knowledge/transitions/controllers.py",
+      "line": 100,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "transition_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[KnowledgeModeRevisionInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "KnowledgeModeTransitionView",
+      "sdk_python": "retry_knowledge_mode_transition",
+      "sdk_typescript": "knowledgeModes.retry",
+      "sdk_java": "client.knowledgeModes.retry",
+      "request_schema": "KnowledgeModeRevisionInput",
+      "response_schema": "KnowledgeModeTransitionView",
+      "success_status": 202,
+      "source_sha256": "47af8e6c1d5734881b4292f974e56d4895049516fca258aa08e76754b886622e",
       "encoding": "application/json",
       "headers": []
     },

@@ -28,6 +28,13 @@ Use the linked wire models for field constraints. Operation metadata does not en
 - [Resume](#knowledgeindexescontroller-resume) (POST)
 - [Get](#organizationknowledgecontroller-get) (GET)
 - [Update](#organizationknowledgecontroller-update) (PUT)
+- [Create](#knowledgemodecontroller-create) (POST)
+- [Current](#knowledgemodecontroller-current) (GET)
+- [Get](#knowledgemodecontroller-get) (GET)
+- [Targets](#knowledgemodecontroller-targets) (GET)
+- [Recoveries](#knowledgemodecontroller-recoveries) (GET)
+- [Cancel](#knowledgemodecontroller-cancel) (POST)
+- [Retry](#knowledgemodecontroller-retry) (POST)
 
 <!-- operation: KnowledgeAvailabilityController.observe -->
 <a id="knowledgeavailabilitycontroller-observe"></a>
@@ -837,6 +844,305 @@ These are the declared path, query and body arguments. Multipart and binary inpu
 | Request schema | [`OrganizationKnowledgeSettingsInput`](../models/organizationknowledgesettingsinput.md) |
 | Response schema | [`OrganizationKnowledgeSettings`](../models/organizationknowledgesettings.md) |
 | Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: KnowledgeModeController.create -->
+<a id="knowledgemodecontroller-create"></a>
+## Create
+
+```http
+POST /api/v1/tenants/{tenant_id}/knowledge/settings/transitions
+```
+
+Contract operation: `KnowledgeModeController.create`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `create_knowledge_mode_transition` |
+| TypeScript | `knowledgeModes.create` |
+| Java | `client.knowledgeModes.create` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[OrganizationKnowledgeSettingsInput]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`OrganizationKnowledgeSettingsInput`](../models/organizationknowledgesettingsinput.md) |
+| Response schema | [`KnowledgeModeTransitionView`](../models/knowledgemodetransitionview.md) |
+| Success status | `202` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+- `Idempotency-Key (required; caller-supplied stable operation key)`
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: KnowledgeModeController.current -->
+<a id="knowledgemodecontroller-current"></a>
+## Current
+
+```http
+GET /api/v1/tenants/{tenant_id}/knowledge/settings/transitions/current
+```
+
+Contract operation: `KnowledgeModeController.current`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `current_knowledge_mode_transition` |
+| TypeScript | `knowledgeModes.current` |
+| Java | `client.knowledgeModes.current` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | No request schema declared |
+| Response schema | [`KnowledgeModeCurrentView`](../models/knowledgemodecurrentview.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: KnowledgeModeController.get -->
+<a id="knowledgemodecontroller-get"></a>
+## Get
+
+```http
+GET /api/v1/tenants/{tenant_id}/knowledge/settings/transitions/{transition_id}
+```
+
+Contract operation: `KnowledgeModeController.get`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `knowledge_mode_transition` |
+| TypeScript | `knowledgeModes.get` |
+| Java | `client.knowledgeModes.get` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `transition_id` | path | `PathVar[str]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | No request schema declared |
+| Response schema | [`KnowledgeModeTransitionView`](../models/knowledgemodetransitionview.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: KnowledgeModeController.targets -->
+<a id="knowledgemodecontroller-targets"></a>
+## Targets
+
+```http
+GET /api/v1/tenants/{tenant_id}/knowledge/settings/transitions/{transition_id}/targets
+```
+
+Contract operation: `KnowledgeModeController.targets`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `knowledge_mode_targets` |
+| TypeScript | `knowledgeModes.targets` |
+| Java | `client.knowledgeModes.targets` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `transition_id` | path | `PathVar[str]` | Yes | Not specified |
+| `after` | query | <code>QueryParam&#91;str &#124; None&#93;</code> | No | `null` |
+| `limit` | query | `QueryParam[int]` | No | `50` |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | No request schema declared |
+| Response schema | [`KnowledgeModeTargetPage`](../models/knowledgemodetargetpage.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: KnowledgeModeController.recoveries -->
+<a id="knowledgemodecontroller-recoveries"></a>
+## Recoveries
+
+```http
+GET /api/v1/tenants/{tenant_id}/knowledge/settings/transitions/{transition_id}/recoveries
+```
+
+Contract operation: `KnowledgeModeController.recoveries`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `knowledge_mode_recoveries` |
+| TypeScript | `knowledgeModes.recoveries` |
+| Java | `client.knowledgeModes.recoveries` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `transition_id` | path | `PathVar[str]` | Yes | Not specified |
+| `after` | query | <code>QueryParam&#91;str &#124; None&#93;</code> | No | `null` |
+| `limit` | query | `QueryParam[int]` | No | `50` |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | No request schema declared |
+| Response schema | [`KnowledgeModeRecoveryPage`](../models/knowledgemoderecoverypage.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: KnowledgeModeController.cancel -->
+<a id="knowledgemodecontroller-cancel"></a>
+## Cancel
+
+```http
+POST /api/v1/tenants/{tenant_id}/knowledge/settings/transitions/{transition_id}/cancel
+```
+
+Contract operation: `KnowledgeModeController.cancel`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `cancel_knowledge_mode_transition` |
+| TypeScript | `knowledgeModes.cancel` |
+| Java | `client.knowledgeModes.cancel` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `transition_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[KnowledgeModeRevisionInput]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`KnowledgeModeRevisionInput`](../models/knowledgemoderevisioninput.md) |
+| Response schema | [`KnowledgeModeTransitionView`](../models/knowledgemodetransitionview.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: KnowledgeModeController.retry -->
+<a id="knowledgemodecontroller-retry"></a>
+## Retry
+
+```http
+POST /api/v1/tenants/{tenant_id}/knowledge/settings/transitions/{transition_id}/retry
+```
+
+Contract operation: `KnowledgeModeController.retry`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `retry_knowledge_mode_transition` |
+| TypeScript | `knowledgeModes.retry` |
+| Java | `client.knowledgeModes.retry` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `transition_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[KnowledgeModeRevisionInput]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`KnowledgeModeRevisionInput`](../models/knowledgemoderevisioninput.md) |
+| Response schema | [`KnowledgeModeTransitionView`](../models/knowledgemodetransitionview.md) |
+| Success status | `202` |
 | Declared encoding | `application/json` |
 
 Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.

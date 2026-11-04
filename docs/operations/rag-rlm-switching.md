@@ -1,45 +1,34 @@
 <!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
 # Switch document answers between RAG and RLM
 
-Open **Settings** and select **Knowledge answers** to change document answer behavior for the selected **organization**. It is not a file conversion, a workspace preference or an upload option. RAG retrieves passages before generating an answer. RLM analyzes recorded document views through bounded model actions. Neither choice changes permissions, publishes knowledge or converts a spreadsheet into a document.
+Knowledge answers applies to the selected organization. RAG retrieves passages before generating an answer. RLM analyzes recorded document views through bounded model actions. Changing the technique prepares its dependencies before replacing the active organization policy. It does not change source permissions, publish knowledge, or convert datasets into documents.
 
-New operations use the effective organization policy. A durable chat run captures its complete policy revision when admitted; its worker and retries retain that snapshot after an administrator changes the organization. Switching back does not rewrite an existing run or its audit. Start a new run to test a new policy.
+The preparation receipt distinguishes `active_mode` from `requested_mode`. Existing operations keep their admitted policy snapshot. New operations use the active policy until preparation succeeds and its final revision check commits. A failed, cancelled or superseded request does not activate its requested mode.
 
-## 1. Record the current state
+## Readiness and necessary work
 
-Select the intended organization and read its current revision, origin, document settings, structured settings and capability reasons. Revision `0` with origin `deployment` means no organization override has been saved. Changing the policy requires organization-level `settings:write`; workspace model-assignment authority alone is insufficient.
+| Requested mode | Preparation |
+| --- | --- |
+| RAG | Check effective document answer and embedding assignments. Reuse a compatible qualified active or ready index; create a durable index build only when necessary. Activate the qualified target using current revisions. |
+| RLM | Check the effective `documents.rlm` assignment and current document versions. Verify or rebuild recorded whole views from committed ingestion sections. This path makes no embedding calls and creates no vector index. |
 
-Record the affected workspaces and a small set of authorized documents with known answers. Keep the current policy and model assignments for a reviewed rollback. Do not include provider credentials or document bodies in the change record.
+Disabled workspace overrides do not silently fall back to organization defaults. Missing provider configuration produces an exact model-configuration prerequisite. Configuration validation and a completed build are not proof that a model will answer every question correctly; qualify representative answers separately.
 
-## 2. Check the intended engine
+RLM remains unsupported for curated knowledge (`KNOWLEDGE_RLM_UNQUALIFIED`). An older source without committed version and extraction lineage produces `SOURCE_VERSION_PREPARATION_REQUIRED`, with its document ID and reprocessing action. Finish that source's normal processing before retrying. The transition does not invent historical lineage or configure an embedding provider to repair an RLM view.
 
-| Check | RAG | RLM |
-| --- | --- | --- |
-| Model | Verify the effective document answer assignment and any configured fallback/consolidation roles. | Verify the effective `documents.rlm` assignment and the exact model's supported action protocol. |
-| Content | Confirm ingestion is complete and retrieval returns the intended source evidence. | Confirm every selected document has its recorded immutable version and extraction view. Missing views fail with `RLM_DOCUMENT_VIEWS_REQUIRED`. |
-| Index | Inspect the active document embedding target when dense retrieval is required. | Switching modes does not itself require an embedding rebuild; document view and model prerequisites still apply. |
-| Curated knowledge | Use its governed retrieval path. | Curated RLM remains unsupported: `rlm_curated_knowledge_supported: false`, with `KNOWLEDGE_RLM_UNQUALIFIED`. |
-| Execution | Test retrieval and the generated answer separately. | Require the supported secure execution runtime and an actual model test with exact evidence. Missing required execution support fails with `RLM_SECURE_EXECUTION_REQUIRED`. |
+View reconstruction verifies the exact original, version, ingestion extraction and hashes. Its current limits are 128 MiB for the original, 64 MiB for the normalized artifact/view and 100,000 parts. A larger file produces an explicit prerequisite; it is not silently truncated. Upload, parser, worker scratch, model and query limits remain separate. See [Library file ingestion](../reference/library-file-ingestion.md) and [Knowledge scaling](../concepts/knowledge-scaling.md).
 
-**Model assignments** has organization defaults and workspace overrides. Inspect the effective assignment in every affected workspace: a disabled override blocks fallback instead of inheriting the organization default. The Knowledge answers prerequisites panel reports organization assignment observations, not complete workspace readiness. An enabled assignment is not proof of provider availability, supported model behavior or successful answers.
+## Request and follow preparation
 
-Saving an otherwise valid RLM policy does **not** preflight every workspace model or document view. An administrator can save RLM while prerequisites are missing; execution then fails explicitly. Keep RAG selected until the intended RLM model, views and representative answers have been qualified. There is no silent RLM-to-RAG repair when a model, action protocol, permission or evidence requirement fails.
+Read `GET /api/v1/tenants/{tenant_id}/knowledge/settings`, preserving both policy sections and its revision. Submit the complete `OrganizationKnowledgeSettingsInput` to `POST /api/v1/tenants/{tenant_id}/knowledge/settings/transitions` with a stable `Idempotency-Key`. Organization-level `settings:write` and current credential restrictions are required. A repeated key replays the same request, not another build.
 
-Use a separate test organization when qualification must occur before changing production organization defaults. Within an organization, selecting one test workspace does not make the policy change workspace-local.
+`PUT .../knowledge/settings` continues to update budgets and structured parameters for the active document mode. Changing `answer_mode` through that route returns `KNOWLEDGE_MODE_TRANSITION_REQUIRED`. Structured parameter updates do not qualify or rebuild a Structured corpus.
 
-### When an index change is needed
+The transition advances through discovery, model preflight, recorded-view repair or index preparation, verification, and activation. The API exposes its durable job, stage, per-stage milliseconds, counters and precise prerequisites. Read `GET .../transitions/current` or `GET .../transitions/{id}`; read target receipts from `GET .../transitions/{id}/targets?limit=50`. Follow `next_cursor` with `after` until it is null. Each target includes its source or workspace, processing/index job, version pins and applicable action. Never treat the first page as the complete corpus.
 
-Changing only the answer engine does not rebuild an index. Changing the embedding model, dimensions or embedding space can require a new compatible target. Follow [Build and activate a knowledge index](knowledge-indexes.md): inspect the actual active target, review a plan, submit a durable build once, wait for coverage and physical-index qualification, then perform the separate activation review using current revisions. A queued build is not a ready target, and a ready managed record is not proof that its native pointer is active.
+Verification reads catalog metadata in pages of at most 100, then reconciles transactional change journals. Changes in one workspace revalidate that workspace; tenant-wide changes can require another tenant scan. `progress_reason: knowledge_changed` and the verification counters expose this work. Counters measure work performed and can count a document again after a change. A continuously changing giant workspace can delay completion; this is not constant-time corpus verification or an unlimited-capacity claim. The final settings transaction checks generations and revisions without rescanning the corpus, and retains the native readiness fence through the primary commit.
 
-Without an active document embedding set, the native retrieval service can use lexical retrieval with its dense half disabled. Do not report that as a successful dense-vector check. Changing dataset embeddings is a separate lifecycle. The [configuration change procedure](../guides/configuration-lifecycle.md) covers provider and assignment rollback as well as index activation.
-
-## 3. Save one complete policy
-
-In **Knowledge answers**, choose the engine, review the displayed capabilities and bounds, then save. The request includes the complete document and structured policies and the revision read earlier. Preserve unrelated settings. On a revision conflict, reload and review the current policy; do not replay a stale write automatically.
-
-The canonical API is `GET` and `PUT /api/v1/tenants/{tenant_id}/knowledge/settings`. It does not accept a workspace selector. The input is `OrganizationKnowledgeSettingsInput`, containing `expected_revision`, `documents` and `structured`; capabilities are read-only response fields.
-
-With an authenticated Python SDK client and an authorized `tenant_id`:
+With an authenticated Python SDK client:
 
 ```python
 from koinon_sdk import DocumentKnowledgeSettings, OrganizationKnowledgeSettingsInput
@@ -52,47 +41,58 @@ change = OrganizationKnowledgeSettingsInput(
     }),
     structured=current.structured,
 )
-updated = await client.update_organization_knowledge_settings(tenant_id, change)
+preparation = await client.create_knowledge_mode_transition(
+    tenant_id, change, idempotency_key="reviewed-rlm-change-1",
+)
+progress = await client.knowledge_mode_transition(tenant_id, preparation.id)
+page = await client.knowledge_mode_targets(tenant_id, preparation.id, limit=50)
 ```
 
-The equivalent TypeScript operation preserves both policy sections:
+TypeScript uses the same contract:
 
 ```ts
 const current = await client.organizationKnowledge.get(tenantId);
-const updated = await client.organizationKnowledge.update(tenantId, {
+const preparation = await client.knowledgeModes.create(tenantId, {
   expected_revision: current.revision,
   documents: {...current.documents, answer_mode: 'rlm'},
   structured: current.structured,
-});
+}, 'reviewed-rlm-change-1');
+const progress = await client.knowledgeModes.get(tenantId, preparation.id);
+const page = await client.knowledgeModes.targets(tenantId, preparation.id, {limit: 50});
 ```
 
-Use `rag` instead of `rlm` for a reviewed switch back. Java exposes `client.organizationKnowledge(tenantId).get()` and typed `update(...)` methods. See [Organization knowledge behavior](organization-knowledge.md) for the Java example, complete parameter bounds and policy provenance, and [Headless API and SDK](../guides/headless.md) for client setup and authentication. The examples change policy; they do not validate a provider or migrate content.
+Java provides `client.knowledgeModes(tenantId).create(change, idempotencyKey)`, `get(id)`, `current()`, `targets(id, filter)` and `recoveries(id, filter)`, with synchronous and asynchronous methods. [Organization knowledge behavior](organization-knowledge.md) documents the policy parameters; [Headless API and SDK](../guides/headless.md) covers authentication and client setup.
 
-For complete programs with imports, authentication, client lifecycle and reviewed write helpers, use the [Python tutorial](../examples/python/README.md) and [administration source](../examples/python/administration.py), the [TypeScript tutorial](../examples/typescript/README.md) and [administration source](../examples/typescript/administration.mts), or the [Java tutorial](../examples/java/README.md) and [administration source](../examples/java/JavaAdministration.java). Their write helpers receive the policy revision already reviewed by the operator; they do not silently replace it with a later revision.
+## Failure, retry and cancellation
 
-## 4. Verify a new run and its evidence
+Retry a failed preparation through `POST .../transitions/{id}/retry` with `KnowledgeModeRevisionInput.expected_revision` from its current receipt. Cancellation uses `POST .../transitions/{id}/cancel` and the same revision contract. Python exposes `retry_knowledge_mode_transition` and `cancel_knowledge_mode_transition`; TypeScript and Java expose `knowledgeModes.retry/cancel`. A newer settings revision supersedes stale preparation rather than letting an older worker overwrite it.
 
-1. Read the saved policy back and record the returned revision and origin.
-2. Start a **new** chat run with an explicit authorized scope and a question whose answer is known. Repeat in workspaces with distinct overrides.
-3. Inspect the answer audit's recorded mode, organization revision and policy origin. Verify cited source versions and parts against the expected answer. For RLM, distinguish document metadata observations from actual execution-use evidence.
-4. Test missing evidence and a denied source. These must not become a fabricated answer, an expanded scope or a silent engine switch.
-5. Observe a previously queued run or retry: its captured policy must remain unchanged. Do not use its result as acceptance of the newly saved revision.
-
-Record the deployment, actor, scope, model identity, policy revision, run ID, observed result and unresolved failures. Latency, cost and answer correctness are separate observations. A passing local test, a provider capability label or a tool receipt alone does not establish deployed model acceptance.
-
-The existing MCP tools use the canonical authorized services. In particular, `koinon_search` retrieves evidence with `answer=False`; it does not generate an organization RAG/RLM answer. A host assistant composing an answer from that evidence follows its own model workflow. `koinon_answer_audit` reads an existing permitted audit. There is no MCP administration tool for changing this organization policy; use Settings or the authorized API/SDK. See [MCP knowledge workflows](../guides/mcp-knowledge-management.md).
-
-## 5. Recover deliberately
-
-| Observation | Action |
+| Receipt | Action |
 | --- | --- |
-| Revision conflict | Reload the current policy and review the complete replacement before saving. |
-| Missing or incompatible model binding | Inspect effective organization/default and workspace override assignments; qualify the intended model. |
-| Missing recorded views | Inspect ingestion and lineage for the selected sources. A policy save does not backfill views or historical provenance. |
-| Unsupported curated RLM scope | Use a supported document scope or explicitly restore RAG for new operations. Do not hide the unsupported result. |
-| New RLM runs fail after switching | Restore the reviewed RAG policy with the **current** revision, verify a new run, and inspect existing runs separately. |
-| Broad scope is rejected | Narrow the current question's scope. Do not silently select a subset and present it as a complete corpus answer. |
+| Source processing incomplete | Inspect the exact document processing job. Complete processing before retrying preparation. |
+| Missing historical version | Open the linked document's reprocessing action. Retry after committed version lineage exists. |
+| Original hash mismatch or view limit | Inspect the exact source integrity or size prerequisite; the active mode stays unchanged. |
+| Missing model binding | Configure the effective role identified by the prerequisite, then retry. |
+| Interrupted index qualification or unresolved build outcome | Inspect the linked job and provider outcome. Explicit retry can repeat an uncommitted provider call and its usage. |
+| Curated knowledge with requested RLM | Keep RAG; removing or ignoring evidence automatically is not a valid repair. |
+| Newer organization settings | Reload and review a new request against the current revision. |
 
-For input-size costs, per-call limits and measurement guidance, see [Knowledge scaling](../concepts/knowledge-scaling.md). Keep [qualification evidence](qualification.md) separate from publication and live-provider acceptance.
+Committed results are reconciled before another attempt. Durable jobs and publication fences prevent stale publication, but do not promise at-most-once provider billing when a network call's outcome is unknown.
+
+Index activation crosses primary and native databases. Cancellation after a native pointer change can leave an index requiring reconciliation even though the mode change is cancelled. `pending_index_recoveries` and `GET .../transitions/{id}/recoveries?limit=50` distinguish an active worker lease, required reconciliation and a resolved index. Inspect the current pointer and permitted actions; do not assume cancellation rolled it back.
+
+Follow the recovery page's `next_cursor` using `after`; its page limit is not a corpus limit. Python exposes `knowledge_mode_recoveries`, TypeScript `knowledgeModes.recoveries`, and Java `knowledgeModes(tenantId).recoveries`. Each `KnowledgeModeRecoveryReceipt` retains an immutable `receipt_id`, attempt revision, original workspace/native index and model, plus a separately revisioned resolution. Reusing an index in another transition does not rewrite an earlier receipt. Archived workspaces and replaced bindings remain visible to an authorized administrator, with recovery actions disabled until the exact prerequisite is restored. Current permissions are required on every read and action.
+
+Cancelling closes the parent authority without enumerating its children. The worker settles cancelled child jobs in batches of 25; the parent fence already prevents new provider/publication work while that cleanup finishes. A model call already in flight may still incur usage, but cannot publish under the cancelled authority. Pending activations remain separately recoverable and block another mode request.
+
+Use the existing index activation endpoint with `IndexActivateInput`, the recovery receipt's current `expected_revision`, `expected_active_id`, `expected_connection_revision`, and a permitted `recovery` action. Python uses `activate_knowledge_index`, TypeScript `knowledgeIndexes.activate`, and Java `knowledgeIndexes(tenantId).activate`. `finish` only completes an already-applied target pointer; `restore_previous` reconciles the recorded previous pointer. Both require current index-write authority. Neither revives the cancelled mode transition or repeats embedding calls. If `actions` is empty, inspect the stated lease, pointer or authority prerequisite before proceeding. See [Knowledge indexes](knowledge-indexes.md).
+
+## Verify answers after activation
+
+After the transition succeeds, read the active settings revision. Start a new Chat operation over explicitly authorized documents with a known answer. Check the answer, cited source versions and parts, applied mode and policy revision. Test denied sources and missing evidence as well. Existing runs and retries retain their captured policy and are not acceptance evidence for a new revision.
+
+RLM also requires its qualified secure execution runtime and supported model action protocol. A preparation receipt establishes its recorded prerequisites; it is not a live-provider answer evaluation. Record model identity, deployment, policy revision, run ID, latency, observed answer and unresolved errors separately.
+
+MCP uses the same authorized services. `koinon_search` retrieves evidence with `answer=False`; a host composing an answer follows its own model workflow. `koinon_answer_audit` reads a permitted existing audit. There is no MCP administration tool for changing organization answer mode; use Settings or the authorized API/SDK. See [MCP knowledge workflows](../guides/mcp-knowledge-management.md).
 
 Copyright 2026 Firefly Software Foundation. Licensed under Apache-2.0. Made with <3.

@@ -1,5 +1,15 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
-import { Injectable, OnDestroy, computed, effect, inject, signal } from '@angular/core';
+import {
+  Injectable,
+  OnDestroy,
+  computed,
+  effect,
+  inject,
+  signal,
+  PendingTasks,
+  untracked,
+} from '@angular/core';
+import { KnowledgeModePreparation } from './knowledge-mode-preparation';
 import { KoinonClientContext, KoinonFacade } from '@fireflyframework/koinon-angular';
 import type {
   DocumentKnowledgeSettings,
@@ -54,8 +64,11 @@ export const STRUCTURED_FIELDS: readonly KnowledgeBehaviorField[] = [
 @Injectable()
 export class KoinonKnowledgeBehaviorConfiguration implements OnDestroy {
   readonly f = inject(KoinonFacade);
+  readonly preparation = inject(KnowledgeModePreparation);
   private readonly clients = inject(KoinonClientContext);
   private epoch = 0;
+  private appliedTransition = '';
+  private readonly tasks = inject(PendingTasks);
   private key = this.contextKey();
   readonly settings = signal<OrganizationKnowledgeSettings | null>(null);
   readonly roles = signal<KnowledgeRole[] | null>(null);
@@ -75,7 +88,8 @@ export class KoinonKnowledgeBehaviorConfiguration implements OnDestroy {
       !this.pending() &&
       !this.saving() &&
       !this.stale() &&
-      !this.denied(),
+      !this.denied() &&
+      !this.preparation.locked(),
   );
   readonly dirty = computed(
     () =>
@@ -84,6 +98,13 @@ export class KoinonKnowledgeBehaviorConfiguration implements OnDestroy {
   );
   readonly canSave = computed(() => this.canEdit() && this.dirty());
   constructor() {
+    effect(() => {
+      const completed = this.preparation.value();
+      if (completed?.status === 'succeeded' && this.appliedTransition !== completed.id) {
+        this.appliedTransition = completed.id;
+        untracked(() => this.tasks.run(() => this.load()));
+      }
+    });
     effect(() => {
       const key = this.contextKey();
       if (key !== this.key) {
@@ -165,6 +186,7 @@ export class KoinonKnowledgeBehaviorConfiguration implements OnDestroy {
         throw new Error('Knowledge behavior could not be loaded. Try again.');
       this.settings.set(value);
       this.values.set(this.fromSettings(value));
+      await this.preparation.load();
       try {
         const roles = await this.clients.get().knowledgeConnections.roles(tenant);
         if (this.current(epoch)) this.roles.set(roles.roles);
@@ -240,11 +262,19 @@ export class KoinonKnowledgeBehaviorConfiguration implements OnDestroy {
     this.error.set('');
     this.notice.set('');
     try {
-      const value = await this.clients.get().organizationKnowledge.update(tenant, {
+      const input = {
         expected_revision: snapshot.revision,
         documents: documents as unknown as DocumentKnowledgeSettings,
         structured: structured as unknown as StructuredKnowledgeSettings,
-      });
+      };
+      if (documents['answer_mode'] !== snapshot.documents.answer_mode) {
+        if ((await this.preparation.create(input)) && this.current(epoch)) {
+          this.values.set(this.fromSettings(snapshot));
+          this.notice.set('Preparation requested. The active mode remains unchanged.');
+        }
+        return;
+      }
+      const value = await this.clients.get().organizationKnowledge.update(tenant, input);
       if (!this.current(epoch)) return;
       this.settings.set(value);
       this.values.set(this.fromSettings(value));

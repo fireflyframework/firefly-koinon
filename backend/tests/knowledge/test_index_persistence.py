@@ -128,3 +128,49 @@ async def test_mode_children_are_scoped_filtered_and_keyset_paged(index_rows):
     assert await index_rows.mode_children("tenant", "missing") == []
     assert await index_rows.count_mode_recoveries("tenant", "parent") == 2
     assert await index_rows.count_mode_recoveries("foreign", "parent") == 0
+
+
+async def test_borrowed_activation_ownership_overrides_old_build_parent_and_allows_no_job(index_rows):
+    from koinon.jobs.repository import JobRepository
+    from koinon.jobs.service import JobService
+
+    old = await JobService(JobRepository()).submit(
+        "tenant", "workspace", "knowledge.index", {"parent_mode_transition_id": "old"}, "old-build"
+    )
+    for key, job_id in (("borrowed", old.id), ("adopted", None)):
+        row = record(key, native=key)
+        row.status, row.job_id = "activating", job_id
+        row.transition = {"parent_mode_transition_id": "current"}
+        await index_rows.save(row)
+    assert await index_rows.count_mode_recoveries("tenant", "old") == 0
+    assert await index_rows.count_mode_recoveries("tenant", "current") == 2
+    assert await index_rows.count_mode_recoveries("foreign", "current") == 0
+
+
+async def test_ready_mode_candidates_are_exact_scope_and_keyset_bounded(index_rows):
+    for key, status in (("a", "ready"), ("b", "retired"), ("c", "building")):
+        row = record(key, native=key)
+        row.status = status
+        await index_rows.save(row)
+    filters = {"provider_id": "provider", "model_id": "embedding"}
+    assert [
+        row.id
+        for row in await index_rows.mode_ready_candidates("tenant", "workspace", "workspace", **filters)
+    ] == ["a"]
+    assert [
+        row.id
+        for row in await index_rows.mode_ready_candidates(
+            "tenant", "workspace", "workspace", after="a", **filters
+        )
+    ] == ["b"]
+    assert (
+        await index_rows.mode_ready_candidates("tenant", "workspace", "workspace", after="b", **filters) == []
+    )
+    assert await index_rows.mode_ready_candidates("foreign", "workspace", "workspace", **filters) == []
+    assert await index_rows.mode_ready_candidates("tenant", "workspace", "other-native", **filters) == []
+    assert (
+        await index_rows.mode_ready_candidates(
+            "tenant", "workspace", "workspace", provider_id="foreign", model_id="embedding"
+        )
+        == []
+    )
