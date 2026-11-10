@@ -21,7 +21,7 @@ Apply the ordinary database migrations, including `koinon_0041_email_recovery`, 
 3. Filter the event type and dates, find the existing delivery and choose **Details**.
 4. Read its submission status, attempts and explanation before requesting another action.
 
-The **Email service and receipt** section loads current action eligibility and previously recorded checks. Opening or refreshing these details does not call the external provider, send email or retry an unknown request.
+The **Email service and receipt** section loads current action eligibility and previously recorded checks. These details update automatically with the selected delivery. Opening or observing them does not call the external provider, send email or retry an unknown request. Automatic observation pauses while you review an action and resumes when that review closes. A failed observation shows **Status not verified**; the earlier values do not become current again until a read succeeds.
 
 ## Check the email service
 

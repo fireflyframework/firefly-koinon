@@ -7,13 +7,15 @@
         <h4 #sectionTitle tabindex="-1" id="delivery-observations-title">
           {{ 'Email service and receipt' | ffkText }}
         </h4>
-        <ffk-button
-          variant="quiet"
-          icon="refresh"
-          [label]="'Refresh recorded checks' | ffkText"
-          [disabled]="v.busy"
-          (click)="driver.open(delivery().id)"
-        />
+        @if (v.error && !v.review) {
+          <ffk-button
+            variant="quiet"
+            icon="refresh"
+            [label]="'Try again' | ffkText"
+            [disabled]="v.busy"
+            (click)="driver.open(delivery().id)"
+          />
+        }
       </div>
       <p>
         {{
@@ -48,9 +50,11 @@
           <dt>{{ 'Provider observation' | ffkText }}</dt>
           <dd>
             {{
-              (v.history.length
-                ? operationLabel(v.history[0].operation_state)
-                : 'No check recorded'
+              (stale() || v.stale
+                ? 'Status not verified'
+                : v.history.length
+                  ? operationLabel(v.history[0].operation_state)
+                  : 'No check recorded'
               ) | ffkText
             }}
           </dd>
@@ -65,14 +69,14 @@
           <div class="actions">
             <ffk-button
               icon="search"
-              [disabled]="v.busy || v.journalError || !options.can_inspect"
+              [disabled]="stale() || v.stale || v.busy || v.journalError || !options.can_inspect"
               (click)="review('inspect')"
               >{{ 'Check email service' | ffkText }}</ffk-button
             >
             @if (delivery().kind === 'welcome' && options.can_recover_welcome) {
               <ffk-button
                 icon="mail"
-                [disabled]="v.busy || v.journalError"
+                [disabled]="stale() || v.stale || v.busy || v.journalError"
                 (click)="review('welcome')"
                 >{{ 'Send a new welcome' | ffkText }}</ffk-button
               >
@@ -100,9 +104,12 @@
             }}
           </p>
           @for (request of v.pending; track request.key) {
-            <ffk-button variant="quiet" [disabled]="v.busy" (click)="reviewSaved(request)">{{
-              'Review saved request' | ffkText
-            }}</ffk-button>
+            <ffk-button
+              variant="quiet"
+              [disabled]="stale() || v.stale || v.busy"
+              (click)="reviewSaved(request)"
+              >{{ 'Review saved request' | ffkText }}</ffk-button
+            >
           }
         </section>
       }
@@ -162,7 +169,12 @@
             ><ffk-button
               variant="primary"
               [icon]="review.request.operation === 'welcome' ? 'mail' : 'search'"
-              [disabled]="v.busy || (review.request.operation === 'welcome' && !duplicate())"
+              [disabled]="
+                stale() ||
+                v.stale ||
+                v.busy ||
+                (review.request.operation === 'welcome' && !duplicate())
+              "
               [loading]="v.busy"
               (click)="confirm()"
               >{{

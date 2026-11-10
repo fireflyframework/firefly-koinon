@@ -1,6 +1,7 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 import { createCommunicationsApi } from '@fireflyframework/koinon-sdk/communications';
+import { KoinonError } from '@fireflyframework/koinon-sdk';
 import { DeliveryRecoveryState } from '../../../../communications/admin/delivery-recovery-state';
 import { DeliveryRecoveryJournal } from '../../../../communications/admin/delivery-recovery-journal';
 function fixture() {
@@ -66,6 +67,7 @@ function fixture() {
   });
   const make = () => new DeliveryRecoveryState({ scope: () => scope, api: () => api, journal });
   return {
+    api,
     options,
     state: make(),
     make,
@@ -79,6 +81,55 @@ function fixture() {
     },
   };
 }
+it('does not replace a reviewed action during automatic observation', async () => {
+  const f = fixture();
+  await f.state.open('original');
+  await f.state.review('welcome');
+  const review = f.state.view().review;
+  const count = f.calls.length;
+  await f.state.open('original');
+  expect(f.state.view().review).toBe(review);
+  expect(f.calls).toHaveLength(count);
+});
+it('keeps stale observations visible through a slow retry and clears them only on success', async () => {
+  const f = fixture();
+  await f.state.open('original');
+  const original = f.api.administration.recovery;
+  f.api.administration.recovery = async () => {
+    throw new KoinonError(503, 'UNAVAILABLE', 'private');
+  };
+  await f.state.open('original');
+  expect(f.state.view().stale).toBe(true);
+  let resolve!: () => void;
+  const waiting = new Promise<void>((done) => {
+    resolve = done;
+  });
+  f.api.administration.recovery = async (...args) => {
+    await waiting;
+    return original(...args);
+  };
+  const load = f.state.open('original');
+  expect(f.state.view().stale).toBe(true);
+  expect(f.state.view().options?.generation).toBe(2);
+  resolve();
+  await load;
+  expect(f.state.view().stale).toBe(false);
+  expect(f.state.view().error).toBe('');
+});
+for (const status of [401, 403])
+  it(`does not repeat recorded-check reads after ${status}`, async () => {
+    const f = fixture();
+    await f.state.open('original');
+    let reads = 0;
+    f.api.administration.recovery = async () => {
+      ++reads;
+      throw new KoinonError(status, 'DENIED', 'private');
+    };
+    await f.state.open('original');
+    expect(f.state.view().options).toBeNull();
+    await f.state.open('original');
+    expect(reads).toBe(1);
+  });
 it('reads saved observations without contacting the provider or sending another welcome', async () => {
   const f = fixture();
   await f.state.open('original');

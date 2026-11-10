@@ -9,6 +9,7 @@ import {
   Output,
   SimpleChanges,
   signal,
+  effect,
 } from '@angular/core';
 import {
   KoinonDigestSchedule,
@@ -88,6 +89,8 @@ export class KoinonCommunicationsAdmin implements OnChanges {
   @Input() selected: DeliveryRecordView | null = null;
   @Input() loading = false;
   @Input() saving = false;
+  @Input() stale = false;
+  @Input() denied = false;
   @Input() retryPending: string | null = null;
   @Input() error = '';
   @Input() notice = '';
@@ -99,9 +102,14 @@ export class KoinonCommunicationsAdmin implements OnChanges {
   @Output() deliveryClosed = new EventEmitter<void>();
   @Output() retryRequested = new EventEmitter<string>();
   @Output() refreshRequested = new EventEmitter<void>();
+  @Output() observationPaused = new EventEmitter<boolean>();
+  readonly recoveryPaused = signal(false);
   readonly tab = signal<'service' | 'policy' | 'history'>('service');
   readonly confirmingRetry = signal('');
   readonly validation = signal('');
+  constructor() {
+    effect(() => this.observationPaused.emit(!!this.confirmingRetry() || this.recoveryPaused()));
+  }
   rules: NotificationPreferenceRule[] = [];
   defaultLocale = '';
   adminSchedules: AdministrativeSummarySchedule[] = [];
@@ -192,6 +200,7 @@ export class KoinonCommunicationsAdmin implements OnChanges {
     this.sectionChanged.emit(section);
   }
   readinessLabel() {
+    if (this.stale) return 'Status not verified';
     return this.readiness?.state === 'ready'
       ? 'Ready'
       : this.readiness?.state === 'degraded'
@@ -245,7 +254,7 @@ export class KoinonCommunicationsAdmin implements OnChanges {
     this.changePage(1);
   }
   savePolicy() {
-    if (!this.policy?.can_update || this.saving) return;
+    if (!this.policy?.can_update || this.saving || this.stale || this.denied) return;
     if (
       this.senderId &&
       !this.readiness?.sender_options?.some((sender) => sender.id === this.senderId)
@@ -294,7 +303,7 @@ export class KoinonCommunicationsAdmin implements OnChanges {
     });
   }
   retry(record: DeliveryRecordView) {
-    if (!record.can_retry || this.retryPending) return;
+    if (!record.can_retry || this.retryPending || this.stale || this.denied) return;
     this.confirmingRetry.set('');
     this.retryRequested.emit(record.id);
   }
