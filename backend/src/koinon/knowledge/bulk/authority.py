@@ -5,8 +5,10 @@ from pyfly.kernel import ConflictException
 from pyfly.security.context import SecurityContext
 from pyfly.security.context_holder import SecurityContextHolder
 
-from koinon.catalog.errors import AccessDenied
-from koinon.catalog.service import ROLE_PERMISSIONS, CatalogService
+from koinon.catalog.ancestry import MAX_FOLDER_ANCESTRY, validated_ancestry
+from koinon.catalog.entities import CatalogEntry
+from koinon.catalog.errors import AccessDenied, InvalidHierarchy
+from koinon.catalog.service import PARENTS, ROLE_PERMISSIONS, CatalogService
 from koinon.knowledge.bulk.dataset_dtos import DatasetReservation
 from koinon.knowledge.bulk.dtos import BulkDestination
 from koinon.knowledge.bulk.repositories import BulkRepository
@@ -76,29 +78,33 @@ class BulkAuthority:
             raise AccessDenied("Original token cannot be verified", code="TOKEN_UNAVAILABLE")
         if write:
             await self.records.authority_lock(tenant, subject, token)
-            await self.records.catalog_locks(
-                tenant, (target.workspace_id, target.project_id, target.parent_id)
-            )
-        chain = []
-        for identifier in [target.parent_id, target.project_id, target.workspace_id]:
-            row = await self.catalog.get(subject, tenant, identifier)
-            if row.status == "archived":
+        # Catalog creation/movement/archive serialize on this same tenant before changing ancestry.
+        rows = await self.catalog.catalog_repository.ancestry_rows(tenant, (target.parent_id,), fresh=True)
+        observed = {row.id: row for row in rows}
+        if write:
+            await self.records.catalog_locks(tenant, tuple(sorted(observed)))
+
+        async def read(identifier: str) -> CatalogEntry:
+            if identifier not in observed:
                 raise AccessDenied("Bulk destination is unavailable", code="ACCESS_DENIED")
-            chain.append(row)
-        parent, project, workspace = chain
+            return await self.catalog.get(subject, tenant, identifier)
+
+        parent = await read(target.parent_id)
+        try:
+            chain = await validated_ancestry(parent, read, PARENTS)
+        except InvalidHierarchy:
+            raise AccessDenied("Bulk destination is unavailable", code="ACCESS_DENIED") from None
         if (
-            [row.kind for row in chain]
-            not in [["collection", "project", "workspace"], ["corpus", "project", "workspace"]]
-            or parent.parent_id != project.id
-            or project.parent_id != workspace.id
-            or workspace.parent_id is not None
-            or any(row.workspace_id != workspace.id for row in chain)
-            or any(row.project_id != project.id for row in chain[:-1])
+            parent.kind not in {"collection", "corpus"}
+            or not 3 <= len(chain) <= MAX_FOLDER_ANCESTRY
+            or chain[-1].id != target.workspace_id
+            or chain[-2].id != target.project_id
+            or chain[-2].kind != "project"
         ):
             raise AccessDenied("Bulk destination ancestry differs", code="ACCESS_DENIED")
         if write:
             for permission in ["catalog:write", "ingest:write"]:
-                await self.catalog.authorize(subject, tenant, permission, workspace.id)
+                await self.catalog.authorize(subject, tenant, permission, target.workspace_id)
         if self.catalog.restriction:
             await self.catalog.restriction.resource(subject, parent, write=write)
 

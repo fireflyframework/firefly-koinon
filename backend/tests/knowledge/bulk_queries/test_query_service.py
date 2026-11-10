@@ -219,3 +219,27 @@ async def test_empty_page_cannot_return_private_total_after_last_read_revokes_me
     service.records.visible_page = revoke
     with pytest.raises(AccessDenied):
         await service.list("issuer|analyst", "north", page=2, page_size=1)
+
+
+async def test_nested_dataset_history_uses_complete_active_ancestry_before_count(queries):
+    from sqlalchemy import update
+
+    from koinon.catalog.entities import CatalogEntry
+    from koinon.knowledge.bulk_queries.service import QueryBatches
+    from koinon.security.authority import primary_authority
+
+    source = await queries.catalog.get("issuer|admin", "north", queries.dataset.parent_id)
+    nested = await queries.catalog.create(
+        "issuer|admin", "north", kind="collection", name="Nested dataset folder", parent_id=source.parent_id
+    )
+    async with primary_authority(read_only=False):
+        await queries.catalog.catalog_repository._require_session().execute(
+            update(CatalogEntry).where(CatalogEntry.id == source.id).values(parent_id=nested.id)
+        )
+    service = queries.context.get_bean(QueryBatches)
+    batch = await service.create("issuer|analyst", "north", request(queries), "nested-query")
+    result = await service.list("issuer|analyst", "north", page_size=1)
+    assert result.total == 1 and [row.id for row in result.items] == [batch.id]
+    await queries.catalog.archive("issuer|admin", "north", nested.parent_id)
+    result = await service.list("issuer|analyst", "north", page_size=1)
+    assert result.total == 0 and result.items == []

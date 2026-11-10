@@ -26,7 +26,14 @@ from koinon.tokens.repositories import PersonalTokenRepository
 
 
 @pytest.fixture
-async def queries(tmp_path):
+async def queries(tmp_path, request):
+    # Resolve the native contact FK regardless of which migration tests were collected first.
+    from koinon.bootstrap.entities import BootstrapIdentityGrant  # noqa: F401
+
+    try:
+        query_url = request.getfixturevalue("query_url")
+    except pytest.FixtureLookupError:
+        query_url = f"sqlite+aiosqlite:///{tmp_path / 'queries.db'}"
     context = ApplicationContext(
         Config(
             {
@@ -37,7 +44,7 @@ async def queries(tmp_path):
                         "relational": {
                             "enabled": True,
                             "ddl-auto": "create",
-                            "url": f"sqlite+aiosqlite:///{tmp_path / 'queries.db'}",
+                            "url": query_url,
                         }
                     },
                 }

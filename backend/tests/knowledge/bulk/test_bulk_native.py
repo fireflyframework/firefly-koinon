@@ -19,6 +19,9 @@ from koinon.knowledge.bulk.service import FileBatches
 
 @pytest.fixture
 async def bulk(tmp_path, request):
+    # Bootstrap-contact metadata can be loaded by migration test collection before this fixture.
+    from koinon.bootstrap.entities import BootstrapIdentityGrant  # noqa: F401
+
     try:
         bulk_url = request.getfixturevalue("bulk_url")
     except pytest.FixtureLookupError:
