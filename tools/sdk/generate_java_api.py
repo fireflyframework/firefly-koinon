@@ -32,6 +32,7 @@ add("OrganizationChatController", "OrganizationChatApi", {"get": "get", "update"
 add("BrandingDefaultsController", "BrandingDefaultsApi", {"defaults": "defaults"})
 add("OrganizationBrandingController", "OrganizationBrandingApi", {"get": "get", "update": "update", "reset": "reset"})
 add("OrganizationKnowledgeController", "OrganizationKnowledgeApi", {"get": "get", "update": "update"})
+add("KnowledgeModeController", "KnowledgeModesApi", {"create": "create", "current": "current", "get": "get", "targets": "targets", "recoveries": "recoveries", "cancel": "cancel", "retry": "retry"})
 add("CorporateProfilesController", "CorporateProfilesApi", {
     "presentation": "presentation", "update_presentation": "updatePresentation",
     "refresh_self": "refreshSelf", "refresh_person": "refreshPerson",
@@ -213,6 +214,8 @@ def upper(s):
 
 
 filters = {
+    "KnowledgeModeController.targets": "KnowledgeModeTargetFilter",
+    "KnowledgeModeController.recoveries": "KnowledgeModeRecoveryFilter",
     "CatalogController.catalog_archive": "CatalogLifecycleFilter",
     "CatalogController.catalog_restore": "CatalogLifecycleFilter",
     "CommunicationsController.providers":"RecipientProviderFilter",

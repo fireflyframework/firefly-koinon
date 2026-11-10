@@ -141,6 +141,10 @@ public final class KoinonClient implements AutoCloseable {
     return organizationBranding(tenant);
   }
 
+  public KnowledgeModesApi knowledgeModes(String tenant) {
+    return new KnowledgeModesApi(transport, tenant);
+  }
+
   public OrganizationKnowledgeApi organizationKnowledge(String tenant) {
     return new OrganizationKnowledgeApi(transport, tenant);
   }

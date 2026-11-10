@@ -23,6 +23,7 @@ from koinon.organization_knowledge.dtos import (
     snapshot_digest,
 )
 from koinon.organization_knowledge.repositories import OrganizationKnowledgeRepository
+from koinon.security.authority import primary_authority
 
 _READ = frozenset({"settings:write", "knowledge:search", "query:execute", "chat:use"})
 
@@ -136,13 +137,21 @@ class OrganizationKnowledgeService:
             {**value.model_dump(mode="json", exclude={"digest"}), "capabilities": capabilities()}
         )
 
-    @transactional(read_only=True)
     async def get(self, subject, tenant_id) -> OrganizationKnowledgeSettings:
+        await self.catalog._refresh_managed_memberships(subject)
+        return await self._get(subject, tenant_id)
+
+    @primary_authority()
+    async def _get(self, subject, tenant_id) -> OrganizationKnowledgeSettings:
         await self._authorize_read(subject, tenant_id)
         return self._view(tenant_id, await self.settings.current(tenant_id))
 
-    @transactional(read_only=True)
     async def snapshot(self, subject, tenant_id) -> OrganizationKnowledgeSnapshot:
+        await self.catalog._refresh_managed_memberships(subject)
+        return await self._authorized_snapshot(subject, tenant_id)
+
+    @primary_authority()
+    async def _authorized_snapshot(self, subject, tenant_id) -> OrganizationKnowledgeSnapshot:
         await self._authorize_read(subject, tenant_id)
         return self._snapshot(tenant_id, await self.settings.current(tenant_id))
 
@@ -152,6 +161,13 @@ class OrganizationKnowledgeService:
     ) -> OrganizationKnowledgeSettings:
         await self.catalog.authorize(subject, tenant_id, "settings:write")
         values = OrganizationKnowledgeSettingsInput.model_validate(values)
+        await self.catalog._lock_tenant(tenant_id)
+        current = self._view(tenant_id, await self.settings.current(tenant_id))
+        if values.documents.answer_mode != current.documents.answer_mode:
+            raise ConflictException(
+                "Request knowledge mode preparation before changing the active answer mode.",
+                code="KNOWLEDGE_MODE_TRANSITION_REQUIRED",
+            )
         if not await self.settings.compare_and_swap(
             tenant_id,
             values.documents.model_dump(mode="json"),

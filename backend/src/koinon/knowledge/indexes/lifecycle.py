@@ -65,6 +65,34 @@ class IndexLifecycleService:
             )
         await authority.check(parent_id, tenant_id, record)
 
+    async def activation_admitted(self, row):
+        parent = row.transition.get("parent_mode_transition_id")
+        if parent is None:
+            return
+        authority = self.parent_authority.get() if self.parent_authority is not None else None
+        if authority is None:
+            raise ConflictException(
+                "The activation evidence recorder is unavailable", code="INDEX_PARENT_UNAVAILABLE"
+            )
+        attempt = await authority.admitted(parent, row.tenant_id, row)
+        row.transition = {
+            **row.transition,
+            "mode_activation_attempt_id": attempt,
+            "mode_activation_attempt_revision": row.revision,
+        }
+        await self.records.save(row)
+
+    async def activation_resolved(self, row, outcome):
+        parent = row.transition.get("parent_mode_transition_id")
+        if parent is None:
+            return
+        authority = self.parent_authority.get() if self.parent_authority is not None else None
+        if authority is None:
+            raise ConflictException(
+                "The activation evidence recorder is unavailable", code="INDEX_PARENT_UNAVAILABLE"
+            )
+        await authority.resolved(parent, row.tenant_id, row, outcome)
+
     @staticmethod
     def identity(tenant_id, data, idempotency_key):
         digest = sha256(
@@ -259,9 +287,29 @@ class IndexLifecycleService:
         return index_dto(row)
 
     @transactional
-    async def resume(self, subject, tenant_id, identifier, expected_revision, idempotency_key):
-        row = await self.scoped(subject, tenant_id, identifier, write=True, lock=True, check_parent=True)
-        parent_id = await self.parent_for(row)
+    async def resume(
+        self,
+        subject,
+        tenant_id,
+        identifier,
+        expected_revision,
+        idempotency_key,
+        *,
+        parent_mode_transition_id=None,
+    ):
+        await self.reader.facade.catalog._lock_tenant(tenant_id)
+        await self.check_parent(tenant_id, parent_mode_transition_id)
+        row = await self.scoped(
+            subject,
+            tenant_id,
+            identifier,
+            write=True,
+            lock=True,
+            check_parent=parent_mode_transition_id is None,
+        )
+        parent_id = (
+            parent_mode_transition_id if parent_mode_transition_id is not None else await self.parent_for(row)
+        )
         payload = {
             "index_id": row.id,
             "subject": subject,
@@ -275,6 +323,7 @@ class IndexLifecycleService:
             )
             if replay.id != row.job_id:
                 raise ConflictException("A later request superseded this job", code="INDEX_REVISION_CONFLICT")
+            await self.check_parent(tenant_id, parent_id, row)
             return {"index": index_dto(row), "job_id": replay.id}
         if type(expected_revision) is not int or row.revision != expected_revision:
             raise ConflictException("Reload the index revision", code="INDEX_REVISION_CONFLICT")
@@ -309,6 +358,12 @@ class IndexLifecycleService:
         row.updated_by, row.updated_at = subject, timestamp()
         context = SecurityContextHolder.get_context()
         row.access_token_id = context.attributes.get("koinon_token_id") if context else None
+        row.transition = {
+            key: value
+            for key, value in row.transition.items()
+            if key not in {"parent_mode_transition_id", "activation_actor", "activation_token_id"}
+        }
+        await self.check_parent(tenant_id, parent_id, row)
         row.error_code, row.error = None, None
         try:
             await self.records.save(row)

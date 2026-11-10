@@ -59,7 +59,12 @@ def test_knowledge_settings_http_is_typed_strict_revisioned_and_tenant_admin_onl
     assert baseline.json()["documents"]["answer_mode"] == "rlm"
     for subject in ("viewer", "editor", "analyst", "outsider"):
         assert client.put(path, headers=bearer(subject), json=body()).status_code == 403
-    saved = client.put(path, headers=bearer(), json=body())
+    requested = client.put(path, headers=bearer(), json=body())
+    assert requested.status_code == 409
+    assert requested.json()["code"] == "KNOWLEDGE_MODE_TRANSITION_REQUIRED"
+    budget = body()
+    budget["documents"]["answer_mode"] = "rlm"
+    saved = client.put(path, headers=bearer(), json=budget)
     assert saved.status_code == 200, saved.text
     assert saved.json()["revision"] == 1 and saved.json()["origin"] == "organization"
     assert client.put(path, headers=bearer(), json=body()).status_code == 409

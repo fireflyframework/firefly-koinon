@@ -29,6 +29,7 @@ SOURCES = {
     "external_reviews": "backend/src/koinon/knowledge/external_reviews/dtos.py",
     "organization_branding": "backend/src/koinon/organization_branding/dtos.py",
     "organization_knowledge": "backend/src/koinon/organization_knowledge/dtos.py",
+    "mode_transitions": "backend/src/koinon/organization_knowledge/transitions/dtos.py",
     "organization_chat": "backend/src/koinon/organization_chat/dtos.py",
     "authorized_applications": "backend/src/koinon/authorized_applications/dtos.py",
     "coordinates": "backend/src/koinon/knowledge/provenance/coordinate_dtos.py",
@@ -220,7 +221,7 @@ def render(source):
     available["koinon_sdk.organization_branding"] = ["BrandingValues"]
     available["koinon_sdk.evidence"] = ["ConversationIdentity", "ConversationMessage", "Frozen", "Identifier", "Revision", "SourceReference", "StoredResult"]
     available["koinon_sdk.exports"] = ["Input", "MessageSelection"]
-    available["koinon_sdk.organization_knowledge"] = ["OrganizationKnowledgeSnapshot"]
+    available["koinon_sdk.organization_knowledge"] = ["OrganizationKnowledgeSnapshot", "OrganizationKnowledgeSettingsInput"]
     available["koinon_sdk.organization_chat"] = ["OrganizationMemoryPolicy"]
     available["koinon_sdk.memory"] = ["MemoryReceipt"]
     available["koinon_sdk.answer_release"] = ["AnswerRelease"]

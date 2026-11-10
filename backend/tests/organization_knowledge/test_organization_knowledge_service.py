@@ -106,6 +106,11 @@ def update_input(**changes):
     return OrganizationKnowledgeSettingsInput.model_validate(input_policy() | changes)
 
 
+def budget_input(**changes):
+    values = update_input(**changes)
+    return values.model_copy(update={"documents": values.documents.model_copy(update={"answer_mode": "rlm"})})
+
+
 async def test_absent_policy_inherits_actual_native_deployment_without_creating_a_row(knowledge):
     result = await knowledge.service.get("viewer", "north")
     assert isinstance(result, OrganizationKnowledgeSettings)
@@ -146,30 +151,30 @@ async def test_absent_policy_inherits_actual_native_deployment_without_creating_
 async def test_only_tenant_admin_can_write_but_scoped_members_can_read_policy(knowledge):
     for subject in ("viewer", "operator", "scoped", "outside"):
         with pytest.raises(AccessDenied):
-            await knowledge.service.update(subject, "north", update_input())
+            await knowledge.service.update(subject, "north", budget_input())
     with pytest.raises(AccessDenied):
         await knowledge.service.get("outside", "north")
     assert (await knowledge.service.get("scoped", "north")).revision == 0
 
 
 async def test_policy_is_independent_per_organization_and_snapshot_is_immutable(knowledge):
-    saved = await knowledge.service.update("admin", "north", update_input())
-    assert (saved.revision, saved.origin, saved.documents.answer_mode) == (1, "organization", "rag")
+    saved = await knowledge.service.update("admin", "north", budget_input())
+    assert (saved.revision, saved.origin, saved.documents.answer_mode) == (1, "organization", "rlm")
     snapshot = await knowledge.service.snapshot("viewer", "north")
     value = snapshot.model_dump(mode="json")
     digest = value.pop("digest")
     canonical = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
     assert digest == hashlib.sha256(canonical.encode()).hexdigest()
-    assert snapshot.documents.answer_mode == "rag"
+    assert snapshot.documents.answer_mode == "rlm"
     assert (await knowledge.service.get("outside", "south")).documents.answer_mode == "rlm"
     await knowledge.service.update(
         "admin",
         "north",
-        update_input(
+        budget_input(
             expected_revision=1, documents=documents() | {"answer_mode": "rlm", "rlm_sub_budget": 2}
         ),
     )
-    assert snapshot.revision == 1 and snapshot.documents.answer_mode == "rag"
+    assert snapshot.revision == 1 and snapshot.documents.answer_mode == "rlm"
     for field, changed in (("tenant_id", "south"), ("origin", "deployment"), ("digest", "0" * 64)):
         with pytest.raises(ValidationError):
             type(snapshot).model_validate(snapshot.model_dump() | {field: changed})
@@ -180,7 +185,7 @@ async def test_policy_is_independent_per_organization_and_snapshot_is_immutable(
 async def test_first_create_and_update_cas_have_one_winner_without_stale_audits(knowledge):
     for revision in (0, 1):
         values = [
-            update_input(expected_revision=revision, documents=documents() | {"rlm_max_iters": n})
+            budget_input(expected_revision=revision, documents=documents() | {"rlm_max_iters": n})
             for n in (4, 7)
         ]
         results = await asyncio.gather(
@@ -205,7 +210,7 @@ async def test_audit_failure_rolls_back_the_policy_write(knowledge, monkeypatch)
 
     monkeypatch.setattr(knowledge.catalog, "_audit", failure)
     with pytest.raises(RuntimeError, match="Controlled audit failure"):
-        await knowledge.service.update("admin", "north", update_input())
+        await knowledge.service.update("admin", "north", budget_input())
     assert (await knowledge.service.get("viewer", "north")).revision == 0
 
 
@@ -250,7 +255,7 @@ async def test_empty_organization_global_admin_can_read_and_snapshot_without_wor
 
 
 async def test_audit_failure_rolls_back_existing_policy_revision_and_values(knowledge, monkeypatch):
-    saved = await knowledge.service.update("admin", "north", update_input())
+    saved = await knowledge.service.update("admin", "north", budget_input())
 
     async def failure(*args, **kwargs):
         raise RuntimeError("Controlled update audit failure")
@@ -258,7 +263,7 @@ async def test_audit_failure_rolls_back_existing_policy_revision_and_values(know
     monkeypatch.setattr(knowledge.catalog, "_audit", failure)
     with pytest.raises(RuntimeError, match="Controlled update audit failure"):
         await knowledge.service.update(
-            "admin", "north", update_input(expected_revision=1, documents=documents() | {"rlm_max_iters": 2})
+            "admin", "north", budget_input(expected_revision=1, documents=documents() | {"rlm_max_iters": 2})
         )
     current = await knowledge.service.get("viewer", "north")
     assert current == saved
@@ -270,17 +275,17 @@ async def test_audit_failure_rolls_back_existing_policy_revision_and_values(know
 
 async def test_concurrent_independent_organizations_keep_distinct_policies(knowledge):
     north, south = await asyncio.gather(
-        knowledge.service.update("admin", "north", update_input()),
+        knowledge.service.update("admin", "north", budget_input()),
         knowledge.service.update(
             "outside",
             "south",
-            update_input(
+            budget_input(
                 documents=documents() | {"answer_mode": "rlm", "rlm_max_iters": 31},
                 structured=structured() | {"max_refine_retries": 0},
             ),
         ),
     )
-    assert north.documents.answer_mode == "rag" and north.documents.rlm_max_iters == 8
+    assert north.documents.answer_mode == "rlm" and north.documents.rlm_max_iters == 8
     assert south.documents.answer_mode == "rlm" and south.documents.rlm_max_iters == 31
     assert north.structured.max_refine_retries == 2 and south.structured.max_refine_retries == 0
     assert (await knowledge.service.get("viewer", "north")) == north
@@ -291,3 +296,14 @@ async def test_rlm_capability_requires_exact_recorded_document_views(knowledge):
     value = (await knowledge.service.get("viewer", "north")).capabilities.documents
     assert value.rlm_recorded_views_required is True
     assert value.rlm_recorded_views_reason == "RLM_DOCUMENT_VIEWS_REQUIRED"
+
+
+async def test_mode_changes_require_durable_preparation_without_mutating_active_settings(knowledge):
+    with pytest.raises(ConflictException) as error:
+        await knowledge.service.update("admin", "north", update_input())
+    assert error.value.code == "KNOWLEDGE_MODE_TRANSITION_REQUIRED"
+    current = await knowledge.service.get("admin", "north")
+    assert current.revision == 0 and current.documents.answer_mode == "rlm"
+    assert not await knowledge.context.get_bean(AuditRepository).find_all(
+        action="organization_knowledge.updated"
+    )

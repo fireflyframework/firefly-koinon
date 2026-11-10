@@ -39,7 +39,7 @@
           : 'Saved for this organization'
         ) | ffkText
       }}
-     , {{ 'Revision' | ffkText }} {{ settings.revision | ffkValue: 'INTEGER' }}
+      , {{ 'Revision' | ffkText }} {{ settings.revision | ffkValue: 'INTEGER' }}
     </p>
     @if (!c.f.tenantPermissions().has('settings:write')) {
       <p class="read-only">
@@ -48,6 +48,246 @@
             | ffkText
         }}
       </p>
+    }
+    @if (c.preparation.error()) {
+      <p class="feedback error" role="alert">{{ c.preparation.error() | ffkText }}</p>
+    }
+    @if (c.preparation.unknown()) {
+      <p role="status">
+        {{
+          'The request outcome is unknown. Check its status before submitting another change.'
+            | ffkText
+        }}
+      </p>
+      <ffk-button
+        variant="quiet"
+        [disabled]="c.preparation.busy()"
+        (click)="c.preparation.repeatRequest()"
+        >{{ 'Check the same request' | ffkText }}</ffk-button
+      >
+    }
+    @if (c.preparation.value(); as preparation) {
+      <div class="preparation" aria-labelledby="preparation-title">
+        <header>
+          <h3 id="preparation-title">{{ 'Mode preparation' | ffkText }}</h3>
+          <ffk-button
+            variant="quiet"
+            icon="refresh"
+            [disabled]="c.preparation.busy()"
+            (click)="c.preparation.load()"
+            >{{ 'Refresh preparation' | ffkText }}</ffk-button
+          >
+        </header>
+        <p class="modes">
+          <strong
+            >{{ 'Active mode:' | ffkText }} {{ preparation.active_mode.toUpperCase() }}</strong
+          >
+          <span
+            >{{ 'Requested mode:' | ffkText }} {{ preparation.requested_mode.toUpperCase() }}</span
+          >
+        </p>
+        @if (preparation.status === 'succeeded') {
+          <p role="status">
+            {{ 'Preparation completed. Reload the settings to see the active revision.' | ffkText }}
+          </p>
+        } @else {
+          <p>
+            {{
+              'The active mode remains unchanged while preparation runs or needs attention.'
+                | ffkText
+            }}
+          </p>
+          <p role="status">
+            {{ stageLabels[preparation.stage] | ffkText }} · {{ preparation.status | ffkText }}
+          </p>
+        }
+        @if (preparation.error) {
+          <p class="feedback error">{{ preparation.error | ffkText }}</p>
+        }
+        @if (preparation.progress_reason === 'knowledge_changed') {
+          <p>
+            {{
+              'Knowledge changed during preparation. Changed workspaces are being checked again.'
+                | ffkText
+            }}
+          </p>
+        }
+        <p>
+          {{ 'Catalog entries checked:' | ffkText }}
+          {{ preparation.counters['catalog_scanned'] ?? 0 | ffkValue: 'INTEGER' }} ·
+          {{ 'Verification checks:' | ffkText }}
+          {{ preparation.counters['verification_catalog_scanned'] ?? 0 | ffkValue: 'INTEGER' }}
+        </p>
+        <p>
+          {{ 'Current stage time (ms):' | ffkText }}
+          {{ preparation.stage_milliseconds[preparation.stage] ?? 0 | ffkValue: 'INTEGER' }}
+        </p>
+        @if ((preparation.pending_index_recoveries ?? 0) > 0) {
+          <p role="status">
+            {{
+              'Index reconciliation is still required. Cancelling a mode change does not undo a native index switch.'
+                | ffkText
+            }}
+          </p>
+        }
+        <ul class="preparation-targets">
+          @for (target of c.preparation.targets(); track target.id) {
+            <li>
+              <strong>{{ target.kind | ffkText }}</strong> <code>{{ target.catalog_id }}</code>
+              <span>{{ target.status | ffkText }}</span>
+              @if (target.message) {
+                <p>{{ target.message | ffkText }}</p>
+              }
+              @if (target.job_id) {
+                <p>
+                  {{ 'Processing job:' | ffkText }} <code>{{ target.job_id }}</code>
+                  {{ target.job_status }}
+                </p>
+              }
+              @if (target.lease_until) {
+                <p>
+                  {{ 'Worker lease until:' | ffkText }}
+                  {{ target.lease_until | ffkDate: undefined : 'datetime' }}
+                </p>
+              }
+              @if (target.action === 'configure_models') {
+                <ffk-button variant="quiet" (click)="reviewAssignments()">{{
+                  'Review model assignments' | ffkText
+                }}</ffk-button>
+              }
+              @if (target.kind === 'document' && canOpenResource) {
+                <ffk-button variant="quiet" (click)="resourceRequested.emit(target.catalog_id)">{{
+                  'Open source' | ffkText
+                }}</ffk-button>
+              }
+              @if (target.index_id && c.f.tenantPermissions().has('indexes:manage')) {
+                <ffk-button variant="quiet" (click)="indexRequested.emit(target.workspace_id)">{{
+                  'Inspect index job' | ffkText
+                }}</ffk-button>
+              }
+            </li>
+          }
+        </ul>
+        @if (c.preparation.cursor()) {
+          <ffk-button
+            variant="quiet"
+            [disabled]="c.preparation.busy()"
+            (click)="c.preparation.more()"
+            >{{ 'Load more preparation targets' | ffkText }}</ffk-button
+          >
+        }
+        @if (c.preparation.recoveries().length) {
+          <div class="activation-receipts" aria-labelledby="activation-receipts-title">
+            <h4 id="activation-receipts-title">{{ 'Index activation receipts' | ffkText }}</h4>
+            <p>
+              {{
+                'Each receipt retains the admitted workspace and index version, including earlier activations of a reused index.'
+                  | ffkText
+              }}
+            </p>
+            <ul class="preparation-targets">
+              @for (recovery of c.preparation.recoveries(); track recovery.receipt_id) {
+                <li>
+                  <strong>{{ 'Index version:' | ffkText }}</strong>
+                  <code>{{ recovery.native_index_id }}</code>
+                  <p>
+                    {{ 'Workspace:' | ffkText }} <code>{{ recovery.workspace_id }}</code>
+                  </p>
+                  <p>
+                    {{ 'Receipt:' | ffkText }} <code>{{ recovery.receipt_id }}</code> ·
+                    {{ recovery.resolution | ffkText }}
+                  </p>
+                  <p>{{ recovery.message | ffkText }}</p>
+                  @if (recovery.job_id) {
+                    <p>
+                      {{ 'Processing job:' | ffkText }} <code>{{ recovery.job_id }}</code>
+                    </p>
+                  }
+                  @if (recovery.activation_lease_until) {
+                    <p>
+                      {{ 'Worker lease until:' | ffkText }}
+                      {{ recovery.activation_lease_until | ffkDate: undefined : 'datetime' }}
+                    </p>
+                  }
+                  @for (action of recovery.actions; track action) {
+                    <ffk-button
+                      variant="quiet"
+                      [disabled]="c.preparation.busy()"
+                      (click)="c.preparation.reviewRecovery.set({ receipt: recovery, action })"
+                    >
+                      {{
+                        (action === 'finish'
+                          ? 'Review finishing the index activation'
+                          : 'Review restoring the previous index'
+                        ) | ffkText
+                      }}
+                    </ffk-button>
+                  }
+                </li>
+              }
+            </ul>
+            @if (c.preparation.recoveryCursor()) {
+              <ffk-button
+                variant="quiet"
+                [disabled]="c.preparation.busy()"
+                (click)="c.preparation.moreRecoveries()"
+                >{{ 'Load more activation receipts' | ffkText }}</ffk-button
+              >
+            }
+          </div>
+        }
+        @if (c.preparation.reviewRecovery(); as review) {
+          <div
+            class="recovery-review"
+            role="region"
+            [attr.aria-label]="'Review index reconciliation' | ffkText"
+          >
+            <p>
+              {{
+                (review.action === 'finish'
+                  ? 'Finish only the already-applied index switch. This does not activate a cancelled mode change or repeat embedding calls.'
+                  : 'Restore the recorded previous index. This does not activate a cancelled mode change or repeat embedding calls.'
+                ) | ffkText
+              }}
+            </p>
+            <ffk-button [disabled]="c.preparation.busy()" (click)="c.preparation.recover()">{{
+              'Confirm index reconciliation' | ffkText
+            }}</ffk-button>
+            <ffk-button variant="quiet" (click)="c.preparation.reviewRecovery.set(null)">{{
+              'Back' | ffkText
+            }}</ffk-button>
+          </div>
+        }
+        @if (preparation.status === 'failed') {
+          <p>
+            {{
+              'Inspect the source and job outcome first. Retrying may repeat incomplete model calls and incur usage again.'
+                | ffkText
+            }}
+          </p>
+          <label
+            ><input
+              type="checkbox"
+              [ngModel]="c.preparation.reviewRetry()"
+              (ngModelChange)="c.preparation.reviewRetry.set($event)"
+            />
+            {{ 'I reviewed the prerequisites and retry usage' | ffkText }}</label
+          >
+          <ffk-button
+            [disabled]="c.preparation.busy() || !c.preparation.reviewRetry()"
+            (click)="c.preparation.act('retry')"
+            >{{ 'Retry preparation' | ffkText }}</ffk-button
+          >
+        }
+        @if (c.preparation.active()) {
+          <ffk-button
+            variant="quiet"
+            [disabled]="c.preparation.busy()"
+            (click)="c.preparation.act('cancel')"
+            >{{ 'Cancel mode change' | ffkText }}</ffk-button
+          >
+        }
+      </div>
     }
     <form #form (ngSubmit)="save(form)" novalidate>
       <fieldset class="methods" [disabled]="!c.canEdit()" aria-describedby="knowledge-method-help">
@@ -198,7 +438,9 @@
           }}</small>
         }
         @if (c.f.tenantPermissions().has('providers:write')) {
-          <ffk-button variant="quiet" (click)="reviewAssignments()">{{ 'Review model assignments' | ffkText }}</ffk-button>
+          <ffk-button variant="quiet" (click)="reviewAssignments()">{{
+            'Review model assignments' | ffkText
+          }}</ffk-button>
         }
       </details>
       <footer [class.dirty-actions]="c.dirty() || c.saving()">
@@ -212,7 +454,12 @@
           variant="primary"
           [disabled]="!c.canSave()"
           [loading]="c.saving()"
-          >{{ 'Save changes' | ffkText }}</ffk-button
+          >{{
+            (c.values()['documents.answer_mode'] !== settings.documents.answer_mode
+              ? 'Prepare mode change'
+              : 'Save changes'
+            ) | ffkText
+          }}</ffk-button
         >
       </footer>
     </form>

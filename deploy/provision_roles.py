@@ -53,6 +53,19 @@ def grant_table(connection, table, role, *, document_control=False):
                 "GRANT EXECUTE ON FUNCTION public.koinon_lock_knowledge_readiness(text,bigint) TO {}"
             ).format(target))
         return
+    if table in {"koinon_knowledge_mode_index_attempts", "koinon_knowledge_mode_index_resolutions"}:
+        target, relation = sql.Identifier(role), sql.Identifier(table)
+        connection.execute(sql.SQL("REVOKE ALL ON TABLE public.{} FROM {}").format(relation, target))
+        columns = connection.execute(
+            "SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name=%s", (table,)
+        ).fetchall()
+        connection.execute(sql.SQL("REVOKE ALL ({}) ON TABLE public.{} FROM {}").format(
+            sql.SQL(",").join(sql.Identifier(column) for (column,) in columns), relation, target
+        ))
+        connection.execute(sql.SQL("GRANT SELECT, INSERT ON TABLE public.{} TO {}").format(relation, target))
+        if table.endswith("_resolutions"):
+            connection.execute(sql.SQL("GRANT UPDATE(status,revision,updated_at) ON TABLE public.{} TO {}").format(relation, target))
+        return
     if table in EMAIL_RECOVERY_TABLES:
         target = sql.Identifier(role)
         relation = sql.Identifier(table)

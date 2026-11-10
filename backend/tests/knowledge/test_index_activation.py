@@ -9,6 +9,9 @@ from test_index_lifecycle import service, values
 from test_index_persistence import index_rows as index_rows
 
 from koinon.knowledge.indexes.activation import IndexActivation
+from koinon.organization_knowledge.transitions.entities import KnowledgeModeTransition
+from koinon.organization_knowledge.transitions.index_attempts import ModeIndexAttemptRepository
+from koinon.organization_knowledge.transitions.repositories import ModeTransitionRepository
 
 
 async def prepared(rows):
@@ -178,3 +181,91 @@ async def test_cancel_before_native_switch_cannot_be_recovered_by_starting_new_s
         "issuer|actor", "tenant", row.id, request(pending, recovery="restore_previous")
     )
     assert result["status"] == "ready" and pointer["value"] is None
+
+
+@pytest.mark.parametrize("cancel_after_switch", [False, True])
+async def test_borrowed_ready_activation_is_fenced_without_rewriting_build_job(
+    index_rows, cancel_after_switch
+):
+    from koinon.knowledge.indexes.dtos import IndexActivateInput
+
+    activation, row, pointer, _, adapter, _ = await prepared(index_rows)
+    build_job = await activation.lifecycle.jobs.repository.find_by_id(row.job_id)
+    payload = dict(build_job.payload)
+    parent = {"active": True}
+
+    async def guard(parent_id, tenant_id, index_record=None):
+        assert (parent_id, tenant_id) == ("mode-parent", "tenant")
+        if not parent["active"]:
+            raise ConflictException("Parent cancelled", code="INDEX_MODE_PREPARATION_INACTIVE")
+
+    mode_job = await activation.lifecycle.jobs.submit("tenant", "tenant", "knowledge.mode", {}, "mode-parent")
+    await ModeTransitionRepository().save(
+        KnowledgeModeTransition(
+            id="mode-parent",
+            tenant_id="tenant",
+            job_id=mode_job.id,
+            actor="issuer|actor",
+            base_revision=0,
+            base_digest="a" * 64,
+            active_mode="rlm",
+            requested_settings={},
+        )
+    )
+    evidence = ModeIndexAttemptRepository()
+
+    async def admitted(parent_id, tenant_id, record):
+        return await evidence.capture(tenant_id, parent_id, record)
+
+    async def resolved(parent_id, tenant_id, record, outcome):
+        await evidence.resolve(
+            tenant_id,
+            parent_id,
+            record.transition["mode_activation_attempt_id"],
+            record,
+            outcome,
+            expected_revision=1,
+        )
+
+    activation.lifecycle.parent_authority = SimpleNamespace(
+        get=lambda: SimpleNamespace(
+            check=guard,
+            admitted=admitted,
+            resolved=resolved,
+        )
+    )
+    initial = IndexActivateInput.model_validate(request(row)).model_dump()
+    pending = await activation.begin(
+        "issuer|actor", "tenant", row.id, initial, parent_mode_transition_id="mode-parent"
+    )
+    if cancel_after_switch:
+        await activation.switch("issuer|actor", "tenant", row.id, initial)
+    parent["active"] = False
+    with pytest.raises(ConflictException, match="Parent cancelled"):
+        if cancel_after_switch:
+            await activation.finish("issuer|actor", "tenant", row.id, initial)
+        else:
+            await activation.switch("issuer|actor", "tenant", row.id, initial)
+    assert pointer["value"] == (row.native_id if cancel_after_switch else None)
+    assert (await activation.lifecycle.jobs.repository.find_by_id(build_job.id)).payload == payload
+    assert await index_rows.count_mode_recoveries("tenant", "mode-parent") == 1
+    assert [value.id for value in await index_rows.mode_children("tenant", "mode-parent")] == [row.id]
+    result = await activation.activate(
+        "issuer|actor",
+        "tenant",
+        row.id,
+        request(
+            pending,
+            expected_active_id=row.id if cancel_after_switch else None,
+            recovery="finish" if cancel_after_switch else "restore_previous",
+        ),
+    )
+    assert result["status"] == ("active" if cancel_after_switch else "ready")
+    assert await index_rows.count_mode_recoveries("tenant", "mode-parent") == 0
+    assert adapter.activate.await_count == int(cancel_after_switch)
+    attempts = await evidence.page("tenant", "mode-parent")
+    assert len(attempts) == 1 and attempts[0].index_id == row.id
+    assert attempts[0].native_workspace_id == row.native_workspace_id
+    resolutions = await evidence.resolutions("tenant", [attempts[0].id])
+    assert resolutions[attempts[0].id].status == ("finished" if cancel_after_switch else "restored")
+    assert resolutions[attempts[0].id].revision == 2

@@ -12,3 +12,9 @@ class IndexParentAuthority(Protocol):
     async def check(
         self, parent_id: str, tenant_id: str, index_record: KnowledgeIndex | None = None
     ) -> None: ...
+
+    async def admitted(self, parent_id: str, tenant_id: str, index_record: KnowledgeIndex) -> str: ...
+
+    async def resolved(
+        self, parent_id: str, tenant_id: str, index_record: KnowledgeIndex, outcome: str
+    ) -> None: ...

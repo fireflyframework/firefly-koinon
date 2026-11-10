@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from pyfly.container import repository
 from pyfly.data.relational.sqlalchemy import Repository
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, func, or_, select
 
 from koinon.catalog.entities import CatalogEntry
 from koinon.jobs.entities import Job
@@ -16,9 +16,15 @@ class KnowledgeIndexRepository(Repository[KnowledgeIndex, str]):
     def mode_scope(tenant_id, parent_id, status=None):
         return (
             KnowledgeIndex.tenant_id == tenant_id,
-            Job.tenant_id == tenant_id,
-            Job.kind == "knowledge.index",
-            Job.payload["parent_mode_transition_id"].as_string() == parent_id,
+            or_(
+                KnowledgeIndex.transition["parent_mode_transition_id"].as_string() == parent_id,
+                and_(
+                    KnowledgeIndex.transition["parent_mode_transition_id"].as_string().is_(None),
+                    Job.tenant_id == tenant_id,
+                    Job.kind == "knowledge.index",
+                    Job.payload["parent_mode_transition_id"].as_string() == parent_id,
+                ),
+            ),
             *((KnowledgeIndex.status == status,) if status is not None else ()),
         )
 
@@ -27,7 +33,7 @@ class KnowledgeIndexRepository(Repository[KnowledgeIndex, str]):
             raise ValueError("Index child pages contain 1 to 200 records")
         statement = (
             select(KnowledgeIndex)
-            .join(Job, KnowledgeIndex.job_id == Job.id)
+            .outerjoin(Job, KnowledgeIndex.job_id == Job.id)
             .where(*self.mode_scope(tenant_id, parent_id, status))
             .order_by(KnowledgeIndex.id)
             .limit(limit)
@@ -44,10 +50,30 @@ class KnowledgeIndexRepository(Repository[KnowledgeIndex, str]):
             await self._require_session().scalar(
                 select(func.count())
                 .select_from(KnowledgeIndex)
-                .join(Job, KnowledgeIndex.job_id == Job.id)
+                .outerjoin(Job, KnowledgeIndex.job_id == Job.id)
                 .where(*self.mode_scope(tenant_id, parent_id, "activating"))
             )
             or 0
+        )
+
+    async def mode_ready_candidates(
+        self, tenant_id, workspace_id, native_workspace_id, *, provider_id, model_id, after=None
+    ):
+        statement = select(KnowledgeIndex).where(
+            KnowledgeIndex.tenant_id == tenant_id,
+            KnowledgeIndex.workspace_id == workspace_id,
+            KnowledgeIndex.native_workspace_id == native_workspace_id,
+            KnowledgeIndex.domain == "documents",
+            KnowledgeIndex.provider_id == provider_id,
+            KnowledgeIndex.model_id == model_id,
+            KnowledgeIndex.status.in_(("ready", "retired")),
+        )
+        if after is not None:
+            statement = statement.where(KnowledgeIndex.id > after)
+        return list(
+            await self._require_session().scalars(
+                statement.order_by(KnowledgeIndex.id).limit(1).execution_options(populate_existing=True)
+            )
         )
 
     async def find_initial_workspace_effects(self, tenant_id, workspace_id, run_id, index_id) -> bool:

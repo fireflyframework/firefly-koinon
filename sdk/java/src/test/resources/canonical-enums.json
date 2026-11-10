@@ -696,6 +696,68 @@
     "security",
     "other"
   ],
+  "KnowledgeModeIndexRecoveryState": [
+    "in_progress",
+    "required",
+    "resolved"
+  ],
+  "KnowledgeModeIndexRecoveryNativePointerState": [
+    "target",
+    "previous",
+    "other",
+    "unavailable"
+  ],
+  "KnowledgeModeRecoveryReceiptResolution": [
+    "pending",
+    "finished",
+    "restored",
+    "aborted"
+  ],
+  "KnowledgeModeTargetViewKind": [
+    "workspace",
+    "document",
+    "curated"
+  ],
+  "KnowledgeModeTargetViewStatus": [
+    "queued",
+    "prepared",
+    "ready",
+    "waiting",
+    "failed",
+    "excluded"
+  ],
+  "KnowledgeModeTargetViewAction": [
+    "reprocess_document",
+    "inspect_document_job",
+    "keep_rag",
+    "inspect_source_integrity",
+    "inspect_source_limits",
+    "restart_preparation",
+    "retry_preparation",
+    "configure_models",
+    "inspect_preparation",
+    "inspect_index_job",
+    "reconcile_index"
+  ],
+  "KnowledgeModeTransitionViewStatus": [
+    "queued",
+    "running",
+    "failed",
+    "cancelled",
+    "superseded",
+    "succeeded"
+  ],
+  "KnowledgeModeTransitionViewStage": [
+    "discovery",
+    "preflight",
+    "repair_views",
+    "prepare_indexes",
+    "verify",
+    "activate"
+  ],
+  "KnowledgeModeTransitionViewProgressReason": [
+    "knowledge_changed"
+  ],
   "RoleKind": [
     "embedding",
     "generative"

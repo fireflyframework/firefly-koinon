@@ -34,3 +34,23 @@ test('applied search, query, and audit snapshots preserve the captured policy',a
  const old=new KoinonClient({transport:{request:async()=>({run_id:'old',provenance_status:'not_recorded'})}});
  assert.equal((await old.chat.audit('north','old')).knowledge_settings_snapshot,undefined);
 });
+
+test('mode preparation preserves tenant encoding, stable request keys and revision actions',async()=>{
+ const calls=[];
+ const client=new KoinonClient({transport:{request:async(method,path,options)=>{calls.push({method,path,options});return (path.endsWith('/targets')||path.endsWith('/recoveries'))?{items:[],next_cursor:'next'}:{};}}});
+ const input=fixtures.OrganizationKnowledgeSettingsInput,revision={expected_revision:2};
+ await client.knowledgeModes.create('north/one',input,'stable',{headers:{'X-Test':'retained'}});
+ await client.knowledgeModes.current('north/one');
+ await client.knowledgeModes.get('north/one','transition/one');
+ const page=await client.knowledgeModes.targets('north/one','transition/one',{after:'cursor/one',limit:25});
+ await client.knowledgeModes.cancel('north/one','transition/one',revision);
+ await client.knowledgeModes.retry('north/one','transition/one',revision);
+ const recovery=await client.knowledgeModes.recoveries('north/one','transition/one',{after:'attempt/one',limit:25});
+ assert.equal(recovery.next_cursor,'next');
+ assert.equal(page.next_cursor,'next');
+ assert.deepEqual(calls.map(call=>call.method),['POST','GET','GET','GET','POST','POST','GET']);
+ assert.deepEqual(calls[0].options.headers,{'X-Test':'retained','Idempotency-Key':'stable'});
+ assert.equal(calls[2].path,'/tenants/north%2Fone/knowledge/settings/transitions/transition%2Fone');
+ assert.deepEqual(calls[3].options.query,{after:'cursor/one',limit:25});
+ assert.deepEqual(calls[5].options.body,revision);
+});

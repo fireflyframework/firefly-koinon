@@ -20,7 +20,7 @@ from koinon_sdk import activity, communications, communications_recovery, availa
 from koinon_sdk import contracts, models, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance
 from koinon_sdk.client import KoinonClient
 from koinon_sdk import coordinates, curated, dataset_files, authorized_applications, organization_chat
-from koinon_sdk import organization_knowledge
+from koinon_sdk import organization_knowledge, mode_transitions
 from koinon_sdk import organization_branding, mcp, external_reviews, external_file_reviews
 from koinon_sdk import mcp_applications, document_history
 from koinon_sdk import organization_people, corporate_profiles, memory, bulk, bulk_queries
@@ -135,6 +135,13 @@ BrandingDefaultsController.defaults|branding_defaults|branding.defaults|-|Brandi
 OrganizationBrandingController.get|organization_branding|branding.get|-|OrganizationBranding
 OrganizationBrandingController.update|update_organization_branding|branding.update|OrganizationBrandingInput|OrganizationBranding
 OrganizationBrandingController.reset|reset_organization_branding|branding.reset|BrandingResetInput|OrganizationBranding
+KnowledgeModeController.create|create_knowledge_mode_transition|knowledgeModes.create|OrganizationKnowledgeSettingsInput|KnowledgeModeTransitionView
+KnowledgeModeController.current|current_knowledge_mode_transition|knowledgeModes.current|-|KnowledgeModeCurrentView
+KnowledgeModeController.get|knowledge_mode_transition|knowledgeModes.get|-|KnowledgeModeTransitionView
+KnowledgeModeController.targets|knowledge_mode_targets|knowledgeModes.targets|-|KnowledgeModeTargetPage
+KnowledgeModeController.recoveries|knowledge_mode_recoveries|knowledgeModes.recoveries|-|KnowledgeModeRecoveryPage
+KnowledgeModeController.cancel|cancel_knowledge_mode_transition|knowledgeModes.cancel|KnowledgeModeRevisionInput|KnowledgeModeTransitionView
+KnowledgeModeController.retry|retry_knowledge_mode_transition|knowledgeModes.retry|KnowledgeModeRevisionInput|KnowledgeModeTransitionView
 OrganizationKnowledgeController.get|organization_knowledge_settings|organizationKnowledge.get|-|OrganizationKnowledgeSettings
 OrganizationKnowledgeController.update|update_organization_knowledge_settings|organizationKnowledge.update|OrganizationKnowledgeSettingsInput|OrganizationKnowledgeSettings
 OrganizationChatController.get|organization_chat_settings|organizationChat.get|-|OrganizationChatSettings
@@ -478,7 +485,7 @@ for op in inventory["operations"]:
         else ["If-None-Match (optional; avatars only)"]
         if response == "BinaryDownload" and "avatar" in op["path"]
         else ["Idempotency-Key (required; caller-supplied stable operation key)"]
-        if (op["operation"].startswith(("FileBatchController.", "QueryBatchController.")) and op["method"] != "GET") or op["operation"] in {"KnowledgeIndexesController.create", "KnowledgeIndexesController.resume", "ChatAttachmentsController.upload", "ChatAttachmentsController.retry", "ChatAttachmentsController.knowledge", "CuratedKnowledgeController.confirm", "DatasetFilesController.append", "ExternalKnowledgeReviewController.stage", "ExternalKnowledgeReviewController.approve", "ExternalFileReviewController.stage", "ExternalFileReviewController.approve", "CommunicationsController.create", "DeliveryRecoveryController.inspect_delivery", "DeliveryRecoveryController.recover_welcome"}
+        if (op["operation"].startswith(("FileBatchController.", "QueryBatchController.")) and op["method"] != "GET") or op["operation"] in {"KnowledgeModeController.create", "KnowledgeIndexesController.create", "KnowledgeIndexesController.resume", "ChatAttachmentsController.upload", "ChatAttachmentsController.retry", "ChatAttachmentsController.knowledge", "CuratedKnowledgeController.confirm", "DatasetFilesController.append", "ExternalKnowledgeReviewController.stage", "ExternalKnowledgeReviewController.approve", "ExternalFileReviewController.stage", "ExternalFileReviewController.approve", "CommunicationsController.create", "DeliveryRecoveryController.inspect_delivery", "DeliveryRecoveryController.recover_welcome"}
         else []
     )
     if op["operation"] in {"ContentController.document", "ContentController.reingest_document"}:
@@ -488,7 +495,7 @@ assert not mapping, mapping
 assert not unmapped, "Canonical API operations awaiting typed SDK mapping: " + ", ".join(unmapped)
 
 classes = {}
-for module in (platform_health, availability, communications, communications_recovery, activity, models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files, authorized_applications, organization_chat, organization_knowledge, organization_branding, mcp, external_reviews, external_file_reviews, mcp_applications, document_history, organization_people, corporate_profiles, memory, bulk, bulk_queries):
+for module in (platform_health, availability, communications, communications_recovery, activity, models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files, authorized_applications, organization_chat, organization_knowledge, mode_transitions, organization_branding, mcp, external_reviews, external_file_reviews, mcp_applications, document_history, organization_people, corporate_profiles, memory, bulk, bulk_queries):
     classes.update(
         {
             name: value

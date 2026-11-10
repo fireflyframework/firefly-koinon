@@ -240,7 +240,9 @@
       }
       @if (section() === 'answers') {
         @defer (on immediate) {
-          <ffk-knowledge-behavior (sectionRequested)="openSection($event)" />
+          <ffk-knowledge-behavior (sectionRequested)="openSection($event)"
+            [canOpenResource]="!!actions?.resource" (resourceRequested)="actions?.resource?.($event)"
+            (indexRequested)="openKnowledgeSection({section: 'storage', workspaceId: $event, domain: 'documents'})" />
         }
       }
       @if (section() === 'models') {

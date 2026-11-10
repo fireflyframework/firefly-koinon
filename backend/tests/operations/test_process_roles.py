@@ -45,6 +45,7 @@ def test_default_api_disables_all_worker_gates_and_worker_enables_complete_set()
     for role in ("api", "worker"):
         values = process_configuration({"koinon": {"process": {"role": role}}})
         assert values["koinon"]["knowledge"]["indexes"]["enabled"] == (role == "worker")
+        assert values["koinon"]["knowledge"]["mode_preparation"]["enabled"] == (role == "worker")
         assert values["koinon"]["attachments"]["worker_enabled"] == (role == "worker")
         assert values["koinon"]["identity"]["profile_sync"]["worker_enabled"] == (role == "worker")
 

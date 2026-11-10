@@ -313,6 +313,16 @@ from koinon_sdk.mcp_applications import (
     McpOAuthScope,
 )
 from koinon_sdk.memory import MemoryReceipt, MemoryTurnReference, MemoryValue
+from koinon_sdk.mode_transitions import (
+    KnowledgeModeCurrentView,
+    KnowledgeModeIndexRecovery,
+    KnowledgeModeRecoveryPage,
+    KnowledgeModeRecoveryReceipt,
+    KnowledgeModeRevisionInput,
+    KnowledgeModeTargetPage,
+    KnowledgeModeTargetView,
+    KnowledgeModeTransitionView,
+)
 from koinon_sdk.models import (
     AgentConfiguration,
     AgenticCapability,
@@ -491,6 +501,14 @@ from koinon_sdk.streaming import (
 )
 
 __all__ = [
+    "KnowledgeModeCurrentView",
+    "KnowledgeModeIndexRecovery",
+    "KnowledgeModeRecoveryPage",
+    "KnowledgeModeRecoveryReceipt",
+    "KnowledgeModeRevisionInput",
+    "KnowledgeModeTargetPage",
+    "KnowledgeModeTargetView",
+    "KnowledgeModeTransitionView",
     "AnswerPublication",
     "AnswerSelectionValidation",
     "ProductHelpContext",

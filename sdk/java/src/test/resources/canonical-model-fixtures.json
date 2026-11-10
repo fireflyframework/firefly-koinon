@@ -1,5 +1,5 @@
 {
-  "definition_count": 444,
+  "definition_count": 452,
   "excluded_definitions": [
     "AttachmentUpload",
     "AvatarUpload",
@@ -5221,6 +5221,263 @@
         "author_subject": "author_subject-value",
         "committed_at": "2026-10-27T12:34:56Z"
       }
+    },
+    "KnowledgeModeCurrentView": {
+      "transition": {
+        "id": "id-value",
+        "tenant_id": "tenant_id-value",
+        "job_id": "job_id-value",
+        "revision": 1,
+        "base_revision": 1,
+        "base_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "active_mode": "rag",
+        "requested_mode": "rag",
+        "requested_settings": {
+          "expected_revision": 1,
+          "documents": {
+            "answer_mode": "rag",
+            "retrieval_top_k": 1,
+            "retrieval_per_query_k": 1,
+            "retrieval_rrf_k": 1,
+            "query_expansion_enabled": false,
+            "query_expansion_n": 1,
+            "answer_top_k": 1,
+            "rlm_max_iters": 1,
+            "rlm_sub_budget": 1,
+            "rlm_max_depth": 1,
+            "rlm_self_consistency": 1,
+            "rlm_extended_reasoning": false
+          },
+          "structured": {
+            "top_k_schema": 1,
+            "top_k_examples": 1,
+            "top_k_metrics": 1,
+            "rrf_k": 1,
+            "generation_candidates": 1,
+            "max_refine_retries": 1,
+            "grounding_min_confidence": 0.25
+          }
+        },
+        "status": "queued",
+        "stage": "discovery",
+        "counters": {
+          "example": 1
+        },
+        "stage_milliseconds": {
+          "example": 1
+        },
+        "pending_index_recoveries": 1,
+        "progress_reason": "knowledge_changed",
+        "error_code": "error_code-value",
+        "error": "error-value",
+        "created_at": "2026-10-27T12:34:56Z",
+        "updated_at": "2026-10-27T12:34:56Z"
+      }
+    },
+    "KnowledgeModeIndexRecovery": {
+      "index_id": "index_id-value",
+      "job_id": "job_id-value",
+      "state": "in_progress",
+      "activation_job_id": "activation_job_id-value",
+      "activation_lease_until": "activation_lease_until-value",
+      "index_status": "index_status-value",
+      "native_pointer_state": "target",
+      "expected_revision": 1,
+      "expected_active_id": "expected_active_id-value",
+      "expected_connection_revision": 1,
+      "actions": [
+        "finish"
+      ],
+      "message": "message-value"
+    },
+    "KnowledgeModeRecoveryPage": {
+      "items": [
+        {
+          "index_id": "index_id-value",
+          "job_id": "job_id-value",
+          "state": "in_progress",
+          "activation_job_id": "activation_job_id-value",
+          "activation_lease_until": "activation_lease_until-value",
+          "index_status": "index_status-value",
+          "native_pointer_state": "target",
+          "expected_revision": 1,
+          "expected_active_id": "expected_active_id-value",
+          "expected_connection_revision": 1,
+          "actions": [
+            "finish"
+          ],
+          "message": "message-value",
+          "receipt_id": "receipt_id-value",
+          "attempt_revision": 1,
+          "resolution_revision": 1,
+          "resolution": "pending",
+          "native_index_id": "native_index_id-value",
+          "provider_id": "provider_id-value",
+          "model_id": "model_id-value",
+          "workspace_id": "workspace_id-value",
+          "native_workspace_id": "native_workspace_id-value"
+        }
+      ],
+      "next_cursor": "next_cursor-value"
+    },
+    "KnowledgeModeRecoveryReceipt": {
+      "index_id": "index_id-value",
+      "job_id": "job_id-value",
+      "state": "in_progress",
+      "activation_job_id": "activation_job_id-value",
+      "activation_lease_until": "activation_lease_until-value",
+      "index_status": "index_status-value",
+      "native_pointer_state": "target",
+      "expected_revision": 1,
+      "expected_active_id": "expected_active_id-value",
+      "expected_connection_revision": 1,
+      "actions": [
+        "finish"
+      ],
+      "message": "message-value",
+      "receipt_id": "receipt_id-value",
+      "attempt_revision": 1,
+      "resolution_revision": 1,
+      "resolution": "pending",
+      "native_index_id": "native_index_id-value",
+      "provider_id": "provider_id-value",
+      "model_id": "model_id-value",
+      "workspace_id": "workspace_id-value",
+      "native_workspace_id": "native_workspace_id-value"
+    },
+    "KnowledgeModeRevisionInput": {
+      "expected_revision": 1
+    },
+    "KnowledgeModeTargetPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "kind": "workspace",
+          "catalog_id": "catalog_id-value",
+          "workspace_id": "workspace_id-value",
+          "status": "queued",
+          "error_code": "error_code-value",
+          "message": "message-value",
+          "action": "reprocess_document",
+          "index_id": "index_id-value",
+          "job_id": "job_id-value",
+          "job_status": "job_status-value",
+          "index_recovery": {
+            "index_id": "index_id-value",
+            "job_id": "job_id-value",
+            "state": "in_progress",
+            "activation_job_id": "activation_job_id-value",
+            "activation_lease_until": "activation_lease_until-value",
+            "index_status": "index_status-value",
+            "native_pointer_state": "target",
+            "expected_revision": 1,
+            "expected_active_id": "expected_active_id-value",
+            "expected_connection_revision": 1,
+            "actions": [
+              "finish"
+            ],
+            "message": "message-value"
+          },
+          "lease_until": "lease_until-value",
+          "source_version_id": "source_version_id-value",
+          "ingestion_extraction_id": "ingestion_extraction_id-value",
+          "view_extraction_id": "view_extraction_id-value",
+          "raw_sha256": "raw_sha256-value",
+          "raw_bytes": 1,
+          "normalized_sha256": "normalized_sha256-value",
+          "parts": 1,
+          "text_bytes": 1
+        }
+      ],
+      "next_cursor": "next_cursor-value"
+    },
+    "KnowledgeModeTargetView": {
+      "id": "id-value",
+      "kind": "workspace",
+      "catalog_id": "catalog_id-value",
+      "workspace_id": "workspace_id-value",
+      "status": "queued",
+      "error_code": "error_code-value",
+      "message": "message-value",
+      "action": "reprocess_document",
+      "index_id": "index_id-value",
+      "job_id": "job_id-value",
+      "job_status": "job_status-value",
+      "index_recovery": {
+        "index_id": "index_id-value",
+        "job_id": "job_id-value",
+        "state": "in_progress",
+        "activation_job_id": "activation_job_id-value",
+        "activation_lease_until": "activation_lease_until-value",
+        "index_status": "index_status-value",
+        "native_pointer_state": "target",
+        "expected_revision": 1,
+        "expected_active_id": "expected_active_id-value",
+        "expected_connection_revision": 1,
+        "actions": [
+          "finish"
+        ],
+        "message": "message-value"
+      },
+      "lease_until": "lease_until-value",
+      "source_version_id": "source_version_id-value",
+      "ingestion_extraction_id": "ingestion_extraction_id-value",
+      "view_extraction_id": "view_extraction_id-value",
+      "raw_sha256": "raw_sha256-value",
+      "raw_bytes": 1,
+      "normalized_sha256": "normalized_sha256-value",
+      "parts": 1,
+      "text_bytes": 1
+    },
+    "KnowledgeModeTransitionView": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "job_id": "job_id-value",
+      "revision": 1,
+      "base_revision": 1,
+      "base_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "active_mode": "rag",
+      "requested_mode": "rag",
+      "requested_settings": {
+        "expected_revision": 1,
+        "documents": {
+          "answer_mode": "rag",
+          "retrieval_top_k": 1,
+          "retrieval_per_query_k": 1,
+          "retrieval_rrf_k": 1,
+          "query_expansion_enabled": false,
+          "query_expansion_n": 1,
+          "answer_top_k": 1,
+          "rlm_max_iters": 1,
+          "rlm_sub_budget": 1,
+          "rlm_max_depth": 1,
+          "rlm_self_consistency": 1,
+          "rlm_extended_reasoning": false
+        },
+        "structured": {
+          "top_k_schema": 1,
+          "top_k_examples": 1,
+          "top_k_metrics": 1,
+          "rrf_k": 1,
+          "generation_candidates": 1,
+          "max_refine_retries": 1,
+          "grounding_min_confidence": 0.25
+        }
+      },
+      "status": "queued",
+      "stage": "discovery",
+      "counters": {
+        "example": 1
+      },
+      "stage_milliseconds": {
+        "example": 1
+      },
+      "pending_index_recoveries": 1,
+      "progress_reason": "knowledge_changed",
+      "error_code": "error_code-value",
+      "error": "error-value",
+      "created_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z"
     },
     "KnowledgeNumberBounds": {
       "minimum": 0.25,

@@ -22,6 +22,7 @@ class KnowledgeIndex(Base):
         CheckConstraint("domain in ('documents','structured')", name="ck_koinon_index_domain"),
         CheckConstraint("dimensions between 64 and 4096", name="ck_koinon_index_dimensions"),
         Index("ix_koinon_index_scope", "tenant_id", "workspace_id", "domain"),
+        Index("ix_koinon_index_status", "tenant_id", "status", "id"),
     )
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("lattice_tenants.id"))
