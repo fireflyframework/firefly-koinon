@@ -208,7 +208,7 @@ test('confirmed native-style redirect logout succeeds after the server clears th
   });
   await page.route('**/login?logout', (route) => route.fulfill({ status: 404, body: 'Not found' }));
   await page.route('**/auth/me', (route) =>
-    route.fulfill({ status: 401, json: { detail: 'Sign in required' } }),
+    signedOut ? route.fulfill({ status: 401, json: { detail: 'Sign in required' } }) : route.fallback(),
   );
   await page.goto('/');
   await page.getByRole('button', { name: 'Account menu', exact: true }).click();

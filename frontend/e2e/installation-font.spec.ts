@@ -79,7 +79,7 @@ test('successful logout returns to the installation-branded sign-in screen', asy
     if (signedOut) await route.fulfill({ status: 401, json: { detail: 'Sign in' } });
     else await route.fallback();
   });
-  await page.route('**/auth/me', (route) => route.fulfill({ status: 401, json: {} }));
+  await page.route('**/auth/me', (route) => signedOut ? route.fulfill({ status: 401, json: {} }) : route.fallback());
   await page.route('**/logout', (route) => {
     signedOut = true;
     return route.fulfill({ status: 204 });

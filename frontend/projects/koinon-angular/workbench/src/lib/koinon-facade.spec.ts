@@ -103,6 +103,42 @@ describe('scoped knowledge facade', () => {
 });
 
 describe('mutation context changes', () => {
+  it('revalidates the same actor without unmounting drafts and fences an old unknown write', async () => {
+    let current = context;
+    let complete!: (value: unknown) => void;
+    const facade = setup(async (method, path) => {
+      if (path === '/context') return current;
+      if (method === 'POST')
+        return new Promise((resolve) => {
+          complete = resolve;
+        });
+      return { items: [] };
+    });
+    await facade.bootstrap();
+    const write = facade.create({ kind: 'workspace', name: 'Unknown result' });
+    current = {
+      ...context,
+      tenants: context.tenants.map((tenant) => ({ ...tenant, permissions: ['catalog:read'] })),
+    };
+    expect(await facade.revalidateSession(context.subject)).toBe(true);
+    expect(facade.initializing()).toBe(false);
+    expect(facade.canWrite()).toBe(false);
+    complete(entry('must-not-be-replayed'));
+    expect(await write).toBe(false);
+    expect(facade.entries()).toEqual([]);
+  });
+  it('clears private scope when renewal changes principal', async () => {
+    let current = context;
+    const facade = setup(async (_method, path) =>
+      path === '/context' ? current : { items: [entry('private')] },
+    );
+    await facade.bootstrap();
+    current = { ...context, subject: 'another-user' };
+    expect(await facade.revalidateSession(context.subject)).toBe(false);
+    expect(facade.authRequired()).toBe(true);
+    expect(facade.context()).toBe(null);
+    expect(facade.entries()).toEqual([]);
+  });
   it('does not report an old-scope mutation as confirmed in the new tenant', async () => {
     let complete!: (value: unknown) => void;
     const facade = setup(async (method, path) => {

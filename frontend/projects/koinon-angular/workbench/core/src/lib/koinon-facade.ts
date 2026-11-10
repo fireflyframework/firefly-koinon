@@ -96,6 +96,25 @@ export class KoinonFacade {
     }
     return error instanceof Error ? error.message : 'The request could not be completed.';
   }
+  async revalidateSession(subject:string):Promise<boolean>{
+    const initialization=++this.initialization;
+    ++this.revision;
+    try{
+      const context=await this.api().context();
+      if(initialization!==this.initialization)return false;
+      if(context.subject!==subject){
+        this.context.set(null);this.entries.set([]);this.selected.set(null);this.clearResults();
+        this.authRequired.set(true);return false;
+      }
+      this.context.set(context);this.authRequired.set(false);
+      if(!context.tenants.some(tenant=>tenant.id===this.tenantId())){await this.selectTenant('');return false;}
+      if(this.workspaceId()&&!context.workspaces.some(workspace=>workspace.id===this.workspaceId()&&workspace.tenant_id===this.tenantId())){
+        await this.selectTenant(this.tenantId());return false;
+      }
+      return true;
+    }catch(error){if(initialization===this.initialization)this.error.set(this.message(error));return false;}
+    finally{if(initialization===this.initialization)this.pending.set(false);}
+  }
   async bootstrap(tenantId = ''): Promise<void> {
     const initialization = ++this.initialization;
     const previousSubject = this.context()?.subject;

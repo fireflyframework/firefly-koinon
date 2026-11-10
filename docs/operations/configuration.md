@@ -14,6 +14,47 @@ Local storage observations use the settings already bound to the document and st
 
 Vector observations use only the tenant's persisted workspace bindings under the native document tenant context, with explicit tenant/workspace predicates. They check the vector extension, embedding-set completion and physical valid/ready HNSW indexes. An empty binding, missing index, interrupted embedding set or exceeded verification limit cannot produce ready. Index creation belongs to privileged migrations or reviewed control operations, never runtime DDL.
 
+## Browser session expiry and renewal
+
+When the configured native session store supports expiry observations, management
+shows a small warning during the last two minutes of the observed session lifetime.
+It displays the remaining time and **Renew session**, including inside an open
+Library dialog. Unknown expiry stays unknown: an older framework or a custom store
+without the capability produces no invented countdown.
+
+1. Choose **Renew session** to open the existing sign-in flow in a separate window.
+   Allow the sign-in pop-up if your browser blocks it. The original page stays open.
+   No sign-in is started automatically by the countdown or its read-only checks.
+2. Complete your identity provider's normal sign-in requirements. The application
+   waits for an observed completed login, then checks the same canonical account
+   and fresh permissions. Starting OAuth alone is not completion, even when saving
+   OAuth state changes the session deadline.
+3. Continue only with current access. Before expiry, mounted form edits remain in
+   the original page. After a denied/expired request, bounded Library create/edit
+   text can be restored in this tab for the same account and still-authorized
+   destination. Changed account, lost permissions, changed edited entry or logout
+   discards that recovery. Other forms and selected file contents are not covered
+   by this text recovery; save or copy those edits before signing in again.
+
+No write, upload or failed request is replayed by renewal. If a request was already
+in flight, inspect Library or Activity before manually submitting again. A network
+failure can leave its outcome unknown. Drafts are kept only in tab memory, not in
+URLs, local storage or session storage, and a full reload does not restore them.
+
+Authenticated browser `GET /auth/me` returns additive `expires_at`,
+`authenticated_at` and `server_time` observations with `Cache-Control: no-store`.
+It never returns a session ID, cookie, token or session attributes. A bearer
+principal does not receive a matching cookie's expiry. These browser observations
+are separate from the personal-token and MCP OAuth lifetimes in the headless SDKs.
+Subsequent requests always run normal authentication and authorization checks.
+
+`pyfly.session.ttl` is the native store lifetime in seconds, default `1800`.
+It applies when a session is saved, replaced or renamed; reading expiry does not
+renew it. A reissued cookie's `Max-Age` and `HttpSession.last_accessed` are not
+authoritative remaining lifetime. There is no new idle or hard timeout policy,
+refresh-token grant, membership extension or identity-provider policy change in
+this UI. Keep the deployment's reviewed lifetime and secure cookie configuration.
+
 ## PostgreSQL TLS by driver
 
 Choose the driver before preparing connection options. PyFly passes `connect-args` to that driver without translating TLS fields. A different database role can use the same driver; elevated credentials do not require switching drivers.

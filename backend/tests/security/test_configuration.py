@@ -91,6 +91,7 @@ def test_native_lifespan_session_csrf_and_logout():
 
     app = create_app(context=context, lifespan=lifespan, actuator_enabled=False)
     with TestClient(app) as client:
+        assert context.get_bean(AuthController).sessions is store
         assert isinstance(context.get_bean(JWKSTokenValidator), IdentityTokenValidator)
         assert isinstance(context.get_bean(OAuth2LoginHandler), VerifiedOidcLoginHandler)
         assert context.get_bean(OAuth2LoginHandler)._concurrency is context.get_bean(
@@ -106,6 +107,11 @@ def test_native_lifespan_session_csrf_and_logout():
         response = client.get("/auth/me")
         assert response.status_code == 200, response.text
         assert response.json()["subject"] == f"{ISSUER}|user-1"
+        assert response.headers["cache-control"] == "no-store"
+        if callable(getattr(store, "expires_at", None)):
+            assert response.json()["expires_at"] is not None
+        else:
+            assert response.json()["expires_at"] is None
         assert client.get("/api/missing").status_code == 401
         assert client.get("/auth/me", headers={"Authorization": "Bearer rejected"}).status_code == 400
         assert client.post("/logout").status_code == 403
