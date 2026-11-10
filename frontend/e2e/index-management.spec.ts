@@ -316,7 +316,6 @@ for (const width of [1440, 390])
     });
     expect(service.writes.some((row) => row.path.endsWith('/activate'))).toBe(false);
     service.ready();
-    await panel.getByRole('button', { name: 'Refresh indexes', exact: true }).click();
     await expect(panel.locator('.details')).toContainText('Ready for review');
     await panel
       .locator('.details')
@@ -401,7 +400,7 @@ test('cancel, resume and interrupted activation require separate current-state r
     .click();
   await expect(panel.locator('.details')).toContainText('Queued');
   service.ready();
-  await panel.getByRole('button', { name: 'Refresh indexes', exact: true }).click();
+  await expect(panel.locator('.details')).toContainText('Ready for review');
   service.unknownActivation();
   await panel
     .locator('.details')

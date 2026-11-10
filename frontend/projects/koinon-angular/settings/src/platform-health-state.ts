@@ -68,6 +68,8 @@ export class KoinonPlatformHealthState implements OnDestroy {
   );
   readonly healthPending = signal(false);
   readonly informationPending = signal(false);
+  readonly healthStale = signal(false);
+  readonly informationStale = signal(false);
   readonly healthError = signal('');
   readonly informationError = signal('');
 
@@ -103,6 +105,8 @@ export class KoinonPlatformHealthState implements OnDestroy {
     this.informationPending.set(false);
     this.healthError.set('');
     this.informationError.set('');
+    this.healthStale.set(false);
+    this.informationStale.set(false);
   }
   private reset(key: string) {
     this.lastKey = key;
@@ -116,10 +120,12 @@ export class KoinonPlatformHealthState implements OnDestroy {
     error: WritableSignal<string>,
     fallback: string,
     operation: (tenant: string, signal: AbortSignal) => Promise<T>,
+    background: boolean,
+    stale: WritableSignal<boolean>,
   ) {
     const key = this.key();
     if (key !== this.lastKey) this.reset(key);
-    if (!this.alive() || !this.allowed()) return;
+    if (!this.alive() || !this.allowed() || (background && this.requests.has(kind))) return;
     this.requests.get(kind)?.abort();
     const abort = new AbortController();
     this.requests.set(kind, abort);
@@ -130,18 +136,21 @@ export class KoinonPlatformHealthState implements OnDestroy {
       key === this.key() &&
       this.requests.get(kind) === abort &&
       !abort.signal.aborted;
-    result.set(null);
-    error.set('');
+    if (!background) result.set(null);
+    if (!stale()) error.set('');
     pending.set(true);
     try {
       const value = await operation(tenant, abort.signal);
       if (!current()) return;
       if (value.tenant_id !== tenant) {
+        stale.set(true);
         error.set(fallback);
         return;
       }
       this.now.set(Date.now());
       result.set({ key, value });
+      stale.set(false);
+      error.set('');
     } catch (failure) {
       if (!current()) return;
       const status = failure instanceof Error && 'status' in failure ? failure.status : undefined;
@@ -149,7 +158,10 @@ export class KoinonPlatformHealthState implements OnDestroy {
         if (status === 401) this.f.authRequired.set(true);
         this.clear();
         this.accessError.set('Current organization administrator access is required.');
-      } else error.set(fallback);
+      } else {
+        stale.set(true);
+        error.set(fallback);
+      }
     } finally {
       if (this.requests.get(kind) === abort) {
         pending.set(false);
@@ -157,7 +169,7 @@ export class KoinonPlatformHealthState implements OnDestroy {
       }
     }
   }
-  async loadHealth() {
+  async loadHealth(background = false) {
     return this.read(
       'health',
       this.healthResult,
@@ -169,9 +181,11 @@ export class KoinonPlatformHealthState implements OnDestroy {
         if (!transport) throw new Error('Missing host transport');
         return createPlatformHealthApi(transport).health(tenant, { signal });
       },
+      background,
+      this.healthStale,
     );
   }
-  async loadInformation() {
+  async loadInformation(background = false) {
     return this.read(
       'information',
       this.informationResult,
@@ -183,6 +197,8 @@ export class KoinonPlatformHealthState implements OnDestroy {
         if (!transport) throw new Error('Missing host transport');
         return createPlatformHealthApi(transport).systemInformation(tenant, { signal });
       },
+      background,
+      this.informationStale,
     );
   }
   ngOnDestroy() {

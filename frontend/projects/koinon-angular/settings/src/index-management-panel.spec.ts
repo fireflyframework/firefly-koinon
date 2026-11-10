@@ -220,3 +220,30 @@ it('carries an authorized explicit workspace and clears it when its owner-bound 
   await fixture.whenStable();
   expect(fixture.componentInstance.workspace()).toBe('');
 });
+
+it('observes indexes automatically, pauses the model editor, and stops after destruction', async () => {
+  const { fixture, calls } = setup();
+  await fixture.whenStable();
+  vi.useFakeTimers();
+  try {
+    window.dispatchEvent(new Event('focus'));
+    await vi.advanceTimersByTimeAsync(31000);
+    const count = calls.length;
+    expect(count).toBeGreaterThan(2);
+    expect(calls.every((call) => call.method === 'GET')).toBe(true);
+    fixture.componentInstance.editing.set(true);
+    fixture.detectChanges();
+    await vi.advanceTimersByTimeAsync(65000);
+    expect(calls).toHaveLength(count);
+    fixture.componentInstance.editing.set(false);
+    fixture.detectChanges();
+    await vi.advanceTimersByTimeAsync(31000);
+    expect(calls.length).toBeGreaterThan(count);
+    fixture.destroy();
+    const stopped = calls.length;
+    await vi.advanceTimersByTimeAsync(65000);
+    expect(calls).toHaveLength(stopped);
+  } finally {
+    vi.useRealTimers();
+  }
+});

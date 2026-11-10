@@ -39,6 +39,7 @@ interface IndexView {
   plan: IndexPlanView | null;
   review: ActionReview | null;
   unknown: SavedIndexWrite | null;
+  stale: boolean;
   loading: boolean;
   busy: boolean;
   error: string;
@@ -57,6 +58,7 @@ const empty = (): IndexView => ({
   plan: null,
   review: null,
   unknown: null,
+  stale: false,
   loading: false,
   busy: false,
   error: '',
@@ -80,9 +82,10 @@ export class IndexManagementState {
   private scope: IndexManagementScope;
   private session: Session | null = null;
   private alive = true;
-  readonly view = computed(() =>
-    this.alive && sameIndexScope(this.scope, this.ports.scope()) ? this.state() : empty(),
-  );
+  readonly view = computed(() => {
+    const state = this.state();
+    return this.alive && sameIndexScope(this.scope, this.ports.scope()) ? state : empty();
+  });
   constructor(private readonly ports: Ports) {
     this.scope = ports.scope();
     this.restore();
@@ -135,7 +138,7 @@ export class IndexManagementState {
     )
       throw Error('Response scope disagrees');
   }
-  private async run(manage: boolean, work: (s: Session) => Promise<void>) {
+  private async run(manage: boolean, work: (s: Session) => Promise<void>, observation = false) {
     this.syncScope();
     if (
       !this.alive ||
@@ -151,9 +154,15 @@ export class IndexManagementState {
       client: this.ports.client(),
     };
     this.session = s;
-    this.set(s, { loading: !manage, busy: manage, error: '', notice: '' });
+    this.set(s, {
+      loading: !manage,
+      busy: manage,
+      error: observation && this.state().stale ? this.state().error : '',
+      notice: '',
+    });
     try {
       await work(s);
+      if (observation) this.set(s, { stale: false, error: '' });
     } catch (failure) {
       if (!this.current(s)) return;
       const status = failure instanceof Error && 'status' in failure ? failure.status : null;
@@ -172,6 +181,7 @@ export class IndexManagementState {
         this.ports.denied?.(status);
       } else
         this.set(s, {
+          ...(observation ? { stale: true } : {}),
           error: this.state().unknown
             ? 'The result is not confirmed. Inspect current indexes before deciding what to do next.'
             : 'Index information could not be verified. Refresh the current state before continuing.',
@@ -286,7 +296,7 @@ export class IndexManagementState {
   }
   async load(page = this.view().page, filter = this.view().filter) {
     if (!Number.isSafeInteger(page) || page < 1) return;
-    return this.run(false, (s) => this.read(s, page, filter));
+    return this.run(false, (s) => this.read(s, page, filter), true);
   }
   async select(id: string) {
     return this.run(false, async (s) => {

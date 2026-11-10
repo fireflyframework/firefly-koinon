@@ -12,12 +12,17 @@ import {
 } from '@angular/core';
 import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
 import {
+  KoinonBadge,
   KoinonButton,
   KoinonClientContext,
   KoinonDatePipe,
   KoinonFacade,
   KoinonTextPipe,
 } from '@fireflyframework/koinon-angular';
+import { UploadObservationLoop } from '@fireflyframework/koinon-angular/workbench/availability';
+import { KoinonError } from '@fireflyframework/koinon-sdk';
+import { statusTone } from '@fireflyframework/koinon-angular/workbench/core';
+import { activityAdministrator } from './activity-access';
 import { createAvailabilityApi } from '@fireflyframework/koinon-sdk/availability';
 import type { ProcessingResponse } from '@fireflyframework/koinon-sdk/availability';
 registerKoinonSpanish({
@@ -30,10 +35,11 @@ registerKoinonSpanish({
   'Processing observations could not be verified.':
     'No se han podido verificar los estados de procesamiento.',
   'Status not verified': 'Estado sin verificar',
+  'Processing failed': 'Error de procesamiento',
 });
 @Component({
   selector: 'ffk-processing-history',
-  imports: [KoinonButton, KoinonTextPipe, KoinonDatePipe],
+  imports: [KoinonBadge, KoinonButton, KoinonTextPipe, KoinonDatePipe],
   template: `<section aria-label="Current knowledge processing">
     <h2>{{ 'Knowledge processing' | ffkText }}</h2>
     <p>
@@ -42,20 +48,26 @@ registerKoinonSpanish({
           | ffkText
       }}
     </p>
-    <ffk-button (click)="load(page())" [loading]="pending()">{{ 'Refresh' | ffkText }}</ffk-button>
     @if (error()) {
       <p role="status">{{ error() | ffkText }}</p>
+      @if (!denied) {
+        <ffk-button variant="quiet" icon="refresh" (click)="load(page())" [loading]="pending()">{{
+          'Try again' | ffkText
+        }}</ffk-button>
+      }
     }
     <div class="records">
       @for (row of current()?.items || []; track row.id) {
         <article>
           <strong>{{ name(row.resource_id) }}</strong>
           <p>{{ row.operation }}</p>
-          <p>{{ label(row.state) | ffkText }}</p>
-          @if (row.availability.read?.state === 'ready') {
+          <ffk-badge [tone]="stale() ? 'attention' : tone(row.state)">{{
+            (stale() ? 'Status not verified' : label(row.state)) | ffkText
+          }}</ffk-badge>
+          @if (!stale() && row.availability.read?.state === 'ready') {
             <p>{{ 'Text remains available from the observed version' | ffkText }}</p>
           }
-          @if (row.availability.search?.state === 'ready') {
+          @if (!stale() && row.availability.search?.state === 'ready') {
             <p>{{ 'Searchable' | ffkText }}</p>
           }
           <small>{{ row.updated_at | ffkDate: undefined : 'datetime' }}</small>
@@ -99,6 +111,7 @@ registerKoinonSpanish({
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KoinonProcessingHistory {
+  readonly tone = statusTone;
   private facade = inject(KoinonFacade);
   private clients = inject(KoinonClientContext);
   private request?: AbortController;
@@ -106,6 +119,16 @@ export class KoinonProcessingHistory {
   readonly page = signal(1);
   readonly pending = signal(false);
   readonly error = signal('');
+  readonly stale = signal(false);
+  protected denied = false;
+  private alive = true;
+  private expiry?: ReturnType<typeof setTimeout>;
+  readonly now = signal(Date.now());
+  readonly allowed = computed(
+    () =>
+      activityAdministrator(this.facade.context(), this.facade.tenantId(), this.now()) &&
+      this.facade.tenantPermissions().has('jobs:manage'),
+  );
   private identity: object | null = null;
   private epoch = 0;
   readonly key = computed(() => {
@@ -119,21 +142,90 @@ export class KoinonProcessingHistory {
       this.clients.revision(),
       this.facade.tenantId(),
       this.facade.workspaceId(),
+      this.allowed(),
     ]);
   });
   readonly current = computed(() =>
-    this.result()?.key === this.key() ? this.result()!.value : null,
+    this.allowed() && this.result()?.key === this.key() ? this.result()!.value : null,
   );
+  private readonly visible = signal(
+    typeof document === 'undefined' || document.visibilityState !== 'hidden',
+  );
+  private readonly polling = new UploadObservationLoop({
+    active: () =>
+      this.alive &&
+      !this.denied &&
+      !this.pending() &&
+      !!this.clients.getTransport() &&
+      !!this.facade.context()?.subject &&
+      !!this.facade.tenantId() &&
+      this.allowed(),
+    visible: () => this.visible(),
+    interval: () =>
+      this.current()?.items.some(
+        (row) =>
+          ['queued', 'processing', 'indexing'].includes(row.state) ||
+          ['queued', 'processing', 'indexing'].includes(row.availability.phase ?? '') ||
+          row.availability.search?.state === 'pending' ||
+          row.availability.query?.state === 'pending',
+      )
+        ? 5000
+        : 30000,
+    read: async () => {
+      await this.load(this.page(), true);
+      return !this.error();
+    },
+  });
+  private readonly reenter = () => {
+    this.visible.set(document.visibilityState !== 'hidden');
+    this.now.set(Date.now());
+    this.polling.reset();
+  };
   constructor() {
+    effect(() => {
+      this.now();
+      clearTimeout(this.expiry);
+      const times = (this.facade.context()?.memberships ?? [])
+        .map((grant) => (grant.expires_at ? Date.parse(grant.expires_at) : NaN))
+        .filter((time) => time > Date.now());
+      if (times.length)
+        this.expiry = setTimeout(
+          () => this.now.set(Date.now()),
+          Math.min(Math.max(1, Math.min(...times) - Date.now() + 1), 2147483647),
+        );
+    });
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', this.reenter);
+      window.addEventListener('focus', this.reenter);
+    }
+    effect(() => {
+      this.key();
+      this.pending();
+      this.visible();
+      this.facade.tenantPermissions();
+      this.polling.update();
+    });
     effect(() => {
       this.key();
       untracked(() => {
         this.request?.abort();
         this.result.set(null);
+        this.denied = false;
+        this.stale.set(false);
+        this.polling.reset();
         void this.load(1);
       });
     });
-    inject(DestroyRef).onDestroy(() => this.request?.abort());
+    inject(DestroyRef).onDestroy(() => {
+      this.alive = false;
+      this.polling.dispose();
+      clearTimeout(this.expiry);
+      this.request?.abort();
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', this.reenter);
+        window.removeEventListener('focus', this.reenter);
+      }
+    });
   }
   name(id: string) {
     return this.facade.entries().find((row) => row.id === id)?.name || 'Knowledge processing';
@@ -146,23 +238,20 @@ export class KoinonProcessingHistory {
           processing: 'Processing',
           indexing: 'Indexing',
           complete: 'Complete',
-          failed: 'Needs attention',
+          failed: 'Processing failed',
           cancelled: 'Stopped',
           reconciliation_required: 'Review required',
         } as Record<string, string>
       )[state] || 'Status not verified'
     );
   }
-  async load(page: number) {
+  async load(page: number, background = false) {
+    if (!this.alive || this.denied || (background && this.pending())) return;
     this.request?.abort();
-    this.error.set('');
-    this.result.set(null);
+    if (!this.stale()) this.error.set('');
+    if (!background) this.result.set(null);
     const transport = this.clients.getTransport();
-    if (
-      !transport ||
-      !this.facade.tenantId() ||
-      !this.facade.tenantPermissions().has('jobs:manage')
-    ) {
+    if (!transport || !this.facade.tenantId() || !this.allowed()) {
       this.pending.set(false);
       return;
     }
@@ -171,7 +260,11 @@ export class KoinonProcessingHistory {
     this.request = controller;
     this.pending.set(true);
     const current = () =>
-      !controller.signal.aborted && this.request === controller && this.key() === key;
+      this.alive &&
+      !controller.signal.aborted &&
+      this.request === controller &&
+      this.key() === key &&
+      this.allowed();
     try {
       const value = await createAvailabilityApi(transport).processing(
         this.facade.tenantId(),
@@ -179,13 +272,29 @@ export class KoinonProcessingHistory {
         { signal: controller.signal },
       );
       if (current()) {
+        if (!Array.isArray(value.items) || value.items.length > 25)
+          throw new Error('Invalid processing observation page');
         this.result.set({ key, value });
         this.page.set(page);
+        this.stale.set(false);
+        this.error.set('');
       }
-    } catch {
-      if (current()) this.error.set('Processing observations could not be verified.');
+    } catch (error) {
+      if (current()) {
+        this.stale.set(true);
+        this.error.set('Processing observations could not be verified.');
+        if (error instanceof KoinonError && [401, 403].includes(error.status)) {
+          this.denied = true;
+          this.result.set(null);
+          if (error.status === 401) this.facade.authRequired.set(true);
+        }
+      }
     } finally {
-      if (current()) this.pending.set(false);
+      if (this.request === controller) {
+        this.request = undefined;
+        this.pending.set(false);
+        this.polling.update();
+      }
     }
   }
 }

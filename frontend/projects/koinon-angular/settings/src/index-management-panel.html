@@ -22,13 +22,6 @@
           >{{ 'Plan a new index' | ffkText }}</ffk-button
         >
       }
-      <ffk-button
-        variant="quiet"
-        icon="refresh"
-        [label]="'Refresh indexes' | ffkText"
-        [disabled]="!canRead() || v.loading || v.busy"
-        (click)="refresh()"
-      />
     </div>
   </header>
   <div class="filters">
@@ -81,6 +74,15 @@
   }
   @if (v.error) {
     <p class="feedback error" role="alert">{{ v.error | ffkText }}</p>
+    @if (canRead()) {
+      <ffk-button
+        variant="quiet"
+        icon="refresh"
+        [disabled]="v.loading || v.busy"
+        (click)="refresh()"
+        >{{ 'Try again' | ffkText }}</ffk-button
+      >
+    }
   }
   @if (v.notice) {
     <p class="feedback" role="status">{{ v.notice | ffkText }}</p>
@@ -152,7 +154,9 @@
   @if (canRead()) {
     @if (v.activeKnown) {
       <div class="active-target">
-        <span>{{ 'Active native target' | ffkText }}</span>
+        <span>{{
+          (v.stale ? 'Last observed native target' : 'Active native target') | ffkText
+        }}</span>
         @if (v.active; as active) {
           <strong>{{ active.model_id || ('Model not reported' | ffkText) }}</strong
           ><span>{{ active.dimensions | ffkValue }} {{ 'dimensions' | ffkText }}</span>

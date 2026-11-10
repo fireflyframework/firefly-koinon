@@ -1,6 +1,9 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 export const PLATFORM_HEALTH_SPANISH: Readonly<Record<string, string>> = {
+  'Available observations update automatically.':
+    'Las observaciones disponibles se actualizan automáticamente.',
+  'Status temporarily unavailable': 'Estado temporalmente no disponible',
   'Platform health': 'Salud de la plataforma',
   'Review service checks and find the next step when something needs attention.':
     'Revisa las comprobaciones de los servicios y los pasos sugeridos cuando algo necesita atención.',

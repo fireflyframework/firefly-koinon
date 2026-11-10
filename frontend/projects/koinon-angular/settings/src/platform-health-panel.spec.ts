@@ -114,7 +114,7 @@ async function setup(spanish = false) {
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();
-  return { fixture, report, info };
+  return { fixture, report, info, transport };
 }
 it('separates configured models from observed checks and exposes bounded evidence details', async () => {
   const { fixture } = await setup();
@@ -182,4 +182,27 @@ it('does not render a private URL or path as a package version, build revision o
   expect(el.textContent).not.toContain('internal.example');
   expect(el.textContent).toContain('Not reported');
   expect(el.querySelector('.artifacts')?.textContent).toContain('Unknown');
+});
+
+it('refreshes passive health reports automatically without running provider probes', async () => {
+  const { fixture, transport, report } = await setup();
+  let reads = 0;
+  transport.request = async <T>(method: unknown, path: string) => {
+    expect(method).toBe('GET');
+    expect(path).toBe('/tenants/north/platform/health');
+    reads++;
+    return report as T;
+  };
+  vi.useFakeTimers();
+  try {
+    window.dispatchEvent(new Event('focus'));
+    await vi.advanceTimersByTimeAsync(65000);
+    expect(reads).toBeGreaterThanOrEqual(2);
+    fixture.destroy();
+    const stopped = reads;
+    await vi.advanceTimersByTimeAsync(65000);
+    expect(reads).toBe(stopped);
+  } finally {
+    vi.useRealTimers();
+  }
 });

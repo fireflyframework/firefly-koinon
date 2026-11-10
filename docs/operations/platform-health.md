@@ -6,11 +6,17 @@ Platform health provides passive operational observations for the current organi
 
 Open the account menu, choose **Settings**, then select **Platform health** under **Operations**. On a small screen, use the Settings section selector. The **Health** tab shows separate counts for checks needing attention, checks not performed or expired, checks passed and components not enabled. These are counts of the returned checks, rather than a declaration that the whole installation is healthy.
 
-Choose a service row to inspect its reason, evidence basis, observation validity and coverage. **Observed records** describes a bounded sample. A partial sample does not establish an organization-wide total. **Refresh observations** performs a fresh read; an existing settings destination appears only when the current user can open it.
+Choose a service row to inspect its reason, evidence basis, observation validity and coverage. **Observed records** describes a bounded sample. A partial sample does not establish an organization-wide total. The open report refreshes automatically; an existing settings destination appears only when the current user can open it.
 
 [![Platform health with the attention filter and a selected ingestion check](../assets/screenshots/platform-health-1440.png)](../assets/screenshots/platform-health-1440.png)
 
 This example uses controlled service data. Counts and times explain the controls; they are not measurements of an installation. On a phone, the same summary and filter use a single column. [View the mobile health page](../assets/screenshots/platform-health-390.png).
+
+## Automatic observations
+
+The open report refreshes every 30 seconds without losing the selected service or filter. A hidden browser tab uses the same low-frequency interval. Only passive report reads run automatically; they do not test models, send messages or write to storage.
+
+If a read fails, the previous report stays visible with an error and its checks become unverified. Retrying does not briefly restore a green state. A successful current read restores verified statuses; an expired observation remains unknown. Losing administrator access clears the reports and stops background reads until account authority is refreshed. Leaving the page cancels its observation requests.
 
 ## Authority
 
@@ -35,7 +41,7 @@ The reader admits at most 100 index targets and 32 native workspace bindings per
 
 ## Diagnose a problem in order
 
-Start with a concrete symptom, such as a file that is still processing or a conversation that cannot run. Confirm the current organization, then choose **Refresh observations**. Read the observation time and coverage before interpreting a status. The summary counts checks; it does not estimate availability, uptime or healthy replica counts.
+Start with a concrete symptom, such as a file that is still processing or a conversation that cannot run. Confirm the current organization, then wait for the next automatic observation or choose **Try again** after an error. Read the observation time and coverage before interpreting a status. The summary counts checks; it does not estimate availability, uptime or healthy replica counts.
 
 1. **Check the database observations.** Open an affected database row and read its safe explanation. Connection availability and runtime-role safety are separate checks. Ask the deployment operator to inspect the appropriate datasource, private network, TLS and role configuration. Do not paste connection URLs or credentials into an incident report.
 2. **Check the relevant document or structured index.** Inspect the active target and the returned coverage. A ready historical target does not satisfy the current active pointer. Queued or building work is incomplete; a failed physical-index check requires the supported [index lifecycle](knowledge-indexes.md) or operator provisioning procedure, not broader runtime DDL permissions.

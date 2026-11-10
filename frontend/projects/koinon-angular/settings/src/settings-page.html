@@ -279,18 +279,36 @@
           <div class="assistant-first-start">
             <h3>{{ 'Set up your organization assistant' | ffkText }}</h3>
             @if (usableProviders().length) {
-              <p>{{ 'Create an agent configuration with its model and knowledge tools, check it, then select it in Organization chat.' | ffkText }}</p>
-              <ffk-button variant="primary" icon="plus" (click)="beginAgent()">{{ 'Create assistant configuration' | ffkText }}</ffk-button>
+              <p>
+                {{
+                  'Create an agent configuration with its model and knowledge tools, check it, then select it in Organization chat.'
+                    | ffkText
+                }}
+              </p>
+              <ffk-button variant="primary" icon="plus" (click)="beginAgent()">{{
+                'Create assistant configuration' | ffkText
+              }}</ffk-button>
             } @else {
-              <p>{{ 'A model connection is needed before an assistant can be configured. Review a connection and its offered checks first.' | ffkText }}</p>
+              <p>
+                {{
+                  'A model connection is needed before an assistant can be configured. Review a connection and its offered checks first.'
+                    | ffkText
+                }}
+              </p>
               @if (allowed('providers:write')) {
-                <ffk-button variant="quiet" icon="link" (click)="openSection('providers')">{{ 'Manage connections' | ffkText }}</ffk-button>
+                <ffk-button variant="quiet" icon="link" (click)="openSection('providers')">{{
+                  'Manage connections' | ffkText
+                }}</ffk-button>
               }
             }
           </div>
         }
         <ffk-organization-chat-settings />
-        <details class="additional-agents" [open]="additionalAgentsExpanded()" (toggle)="additionalAgentsExpanded.set($any($event.target).open)">
+        <details
+          class="additional-agents"
+          [open]="additionalAgentsExpanded()"
+          (toggle)="additionalAgentsExpanded.set($any($event.target).open)"
+        >
           <summary>{{ 'Additional agent configurations' | ffkText }}</summary>
           <p>
             {{
@@ -732,7 +750,9 @@
               <tr>
                 <td>{{ source.name }}</td>
                 <td>
-                  <ffk-badge>{{ status(source.status) | ffkText }}</ffk-badge>
+                  <ffk-badge [tone]="tone(source.status)">{{
+                    status(source.status) | ffkText
+                  }}</ffk-badge>
                 </td>
                 <td>
                   <ffk-button variant="quiet" (click)="actions?.resource?.(source.id)">{{
@@ -858,10 +878,9 @@
                   }
                 </td>
                 <td>
-                  <ffk-badge
-                    [tone]="tone(job.status)"
-                    >{{ status(job.status) | ffkText }}</ffk-badge
-                  >
+                  <ffk-badge [tone]="tone(job.status)">{{
+                    status(job.status) | ffkText
+                  }}</ffk-badge>
                 </td>
                 <td>{{ job.progress | ffkValue }}%</td>
                 <td>
