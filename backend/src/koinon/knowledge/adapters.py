@@ -339,6 +339,7 @@ class NativeDomains:
         validate_processing=None,
         validate_publication=None,
         content_file=None,
+        _source_publication=None,
     ):
         from flycanon.core.services.sources.intake_service import IntakeService
         from flycanon.interfaces.dtos.source import SourceMetadata, SubmitSourceRequest
@@ -363,6 +364,7 @@ class NativeDomains:
                 logical_source_key=source_catalog_id,
                 operation_id=f"upload:{source_catalog_id}",
                 authorize_commit=authorize_commit,
+                **({"source_publication": _source_publication} if _source_publication is not None else {}),
                 **(
                     {
                         "publication_guard": publication_guard,
@@ -640,7 +642,8 @@ class NativeDomains:
             native_scope("canon", tenant_id, workspace_id, actor),
             curated,
             candidate_scope(policy_digest=policy.digest if policy else None)
-            if answer and purpose != "rlm" else nullcontext(),
+            if answer and purpose != "rlm"
+            else nullcontext(),
         ):
             bus = self._resolve(DefaultQueryBus)
             result = {"hits": []}
@@ -913,7 +916,13 @@ class NativeDomains:
         authorize_commit=None,
         expected_source_version_id=None,
         expected_extraction_id=None,
+        _publication_guard=None,
+        _source_publication=None,
     ):
+        if _source_publication is not None and (
+            not logical_source_key or not operation_id or _publication_guard is None
+        ):
+            raise ValueError("A publication binding requires its exact versioned source operation")
         if logical_source_key is not None:
             from koinon.knowledge.document_lineage import replace_document
 
@@ -933,6 +942,8 @@ class NativeDomains:
                 authorize_commit=authorize_commit,
                 expected_source_version_id=expected_source_version_id,
                 expected_extraction_id=expected_extraction_id,
+                **({"_publication_guard": _publication_guard} if _publication_guard is not None else {}),
+                **({"_source_publication": _source_publication} if _source_publication is not None else {}),
             )
         from flycanon.core.services.sources.intake_service import IntakeService
         from flycanon.interfaces.dtos.source import SubmitSourceRequest
@@ -1238,6 +1249,8 @@ class NativeDomains:
         _knowledge_settings_snapshot=None,
         _query_commit: QueryCommit | None = None,
         _query_publication_guard: QueryPublicationGuard | None = None,
+        _source_operation=None,
+        _query_local_authorize=None,
     ):
         from flyquery.core.services.datasets.dataset_service import DatasetService
         from flyquery.core.services.query.runtime import StructuredQueryRuntimeFactory
@@ -1263,7 +1276,7 @@ class NativeDomains:
                 or dataset_id not in dataset_allowlist
             ):
                 raise InvalidRequestException("Native dataset scope mismatch", code="DOMAIN_SCOPE_MISMATCH")
-            if conversation_id:
+            if conversation_id and _source_operation is None:
                 from flyquery.core.services.query.conversation_service import ConversationService
 
                 conversation = await self._resolve(ConversationService).get_with_turns(UUID(conversation_id))
@@ -1289,9 +1302,19 @@ class NativeDomains:
                     raise InvalidRequestException(
                         "This query surface accepts read-only SQL", code="READ_ONLY_SQL_REQUIRED"
                     )
-                response = await self._resolve(SqlExecuteController).execute(
-                    request, SqlExecuteRequest(dataset_id=UUID(dataset_id), sql=sql)
-                )
+                controller = self._resolve(SqlExecuteController)
+                body = SqlExecuteRequest(dataset_id=UUID(dataset_id), sql=sql)
+                if _source_operation is not None:
+                    prepared = await controller.prepare_execute(request, body)
+                    response = await self._publish_source_query(
+                        prepared,
+                        controller._query_repo,
+                        _capture,
+                        _source_operation,
+                        _query_local_authorize,
+                    )
+                else:
+                    response = await controller.execute(request, body)
                 raw = _json(response)
                 if _capture is not None:
                     attempts = [
@@ -1323,11 +1346,21 @@ class NativeDomains:
                 AsyncExitStack() as native,
             ):
                 runtime = await native.enter_async_context(
-                    self._resolve(StructuredQueryRuntimeFactory).unit(
-                        settings_overrides=policy.structured.model_dump() if policy else None
+                    (
+                        self._resolve(StructuredQueryRuntimeFactory).operation
+                        if _source_operation is not None
+                        else self._resolve(StructuredQueryRuntimeFactory).unit
+                    )(
+                        settings_overrides=policy.structured.model_dump() if policy else None,
+                        with_conversation=bool(conversation_id),
                     )
                 )
-                result = await runtime.pipeline.answer(
+                compute = (
+                    runtime.pipeline.prepare_answer
+                    if _source_operation is not None
+                    else runtime.pipeline.answer
+                )
+                result = await compute(
                     tenant_id=tenant_id,
                     workspace_id=UUID(workspace_id),
                     dataset_id=UUID(dataset_id),
@@ -1336,8 +1369,23 @@ class NativeDomains:
                     dataset_allowlist=dataset_allowlist,
                     conversation_id=UUID(conversation_id) if conversation_id else None,
                 )
+                if _source_operation is not None:
+                    result = await self._publish_source_query(
+                        result,
+                        runtime.query_repository,
+                        _capture,
+                        _source_operation,
+                        _query_local_authorize,
+                        pipeline=runtime.pipeline,
+                        commit=_query_commit,
+                        publication_guard=_query_publication_guard,
+                    )
                 output = _json(result)
-                if _query_commit is not None and _query_publication_guard is not None:
+                if (
+                    _source_operation is None
+                    and _query_commit is not None
+                    and _query_publication_guard is not None
+                ):
                     async with _query_publication_guard():
                         await _query_commit(output)
                         await native.aclose()
@@ -1345,19 +1393,96 @@ class NativeDomains:
                 _capture.query(tenant_id, workspace_id, actor, dataset_id, output)
             return output
 
+    async def _publish_source_query(
+        self,
+        prepared,
+        repository,
+        receipt,
+        operation,
+        local_authorize,
+        *,
+        pipeline=None,
+        commit=None,
+        publication_guard=None,
+    ):
+        from pyfly.data.relational.datasource_registry import DataSourceRegistry
+        from pyfly.data.transaction import infrastructure_unit
+
+        prepared.bind_manifest(receipt.structured_source_manifest)
+        try:
+            await receipt.authorize()
+            await operation.release()
+            async with operation.local_fence():
+                if local_authorize is not None:
+                    await local_authorize()
+                async with AsyncExitStack() as guards:
+                    if publication_guard is not None:
+                        await guards.enter_async_context(publication_guard())
+                    async with infrastructure_unit(self._resolve(DataSourceRegistry).get("structured")):
+                        result = (
+                            await pipeline.publish(prepared)
+                            if pipeline is not None
+                            else await prepared.publish(repository, None, None)
+                        )
+                        if commit is not None:
+                            await commit(_json(result))
+            await operation.release()
+            return result
+        except BaseException:
+            # A native commit error is ambiguous. Inspect its fixed identity
+            # outside every unit before considering any private artifact orphaned.
+            prepared.invalidate()
+            await self._cleanup_prepared_query(prepared, repository)
+            raise
+
+    async def _cleanup_prepared_query(self, prepared, repository):
+        import asyncio
+
+        from flyquery.core.services.storage.object_store import ObjectStore
+
+        if not prepared.artifacts:
+            return
+        try:
+            async with asyncio.timeout(5):
+                retained = await repository.prepared_reference(prepared.query_id)
+                if retained is not None:
+                    return
+                store = self._resolve(ObjectStore)
+                for key in prepared.artifacts:
+                    await store.delete(key)
+        except Exception:
+            # Keep uncertain objects private for the existing retention sweep.
+            return
+
+    @evidence_bound("structured")
     async def schema(self, *, tenant_id, workspace_id, dataset_id, actor, _capture=None):
         from flyquery.core.services.tables.table_service import TableService
 
         with native_scope("structured", tenant_id, workspace_id, actor):
-            service = self._resolve(TableService)
-            tables = await service.list_for_dataset(
-                UUID(dataset_id), tenant_id=tenant_id, workspace_id=UUID(workspace_id)
-            )
-            output = []
-            for table in tables:
-                objects = await service.list_objects(
-                    table["id"], tenant_id=tenant_id, workspace_id=UUID(workspace_id)
+            if _capture is not None and _capture.structured_source_operation is not None:
+                from flyquery.core.services.retrieval.search_index import ProductSearchIndex
+                from pyfly.data.relational.datasource_registry import DataSourceRegistry
+
+                source = self._resolve(DataSourceRegistry).get("structured")
+                catalog = await ProductSearchIndex(source.sessionmaker).schema_catalog(
+                    UUID(dataset_id), tenant_id, UUID(workspace_id)
                 )
+            else:
+                service = self._resolve(TableService)
+                tables = await service.list_for_dataset(
+                    UUID(dataset_id), tenant_id=tenant_id, workspace_id=UUID(workspace_id)
+                )
+                catalog = [
+                    (
+                        table,
+                        await service.list_objects(
+                            table["id"], tenant_id=tenant_id, workspace_id=UUID(workspace_id)
+                        ),
+                    )
+                    for table in tables
+                ]
+            output = []
+            for table, objects in catalog:
                 if _capture is not None:
                     _capture.schema(tenant_id, workspace_id, actor, dataset_id, table, objects)
                 columns = [

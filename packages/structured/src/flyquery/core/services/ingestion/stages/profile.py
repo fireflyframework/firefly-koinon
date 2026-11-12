@@ -37,12 +37,19 @@ import json
 import logging
 import re
 import uuid
+from contextlib import nullcontext
 from typing import Any
 
 import sqlalchemy as sa
 from pyfly.data.transaction import infrastructure_unit
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from flyquery.core.services.ingestion.lineage import (
+    StructuredStageGuard,
+    StructuredStagePhase,
+    StructuredStageTarget,
+    schema_column_name,
+)
 from flyquery.core.services.ingestion.native_call import run_native
 from flyquery.core.services.ingestion.resources import (
     IngestionResourceLimitError,
@@ -143,6 +150,7 @@ async def run_profile(
     n_rows_actual: int,
     session_factory: async_sessionmaker[AsyncSession],
     settings: Any,  # FlyquerySettings
+    guard: StructuredStageGuard | None = None,
 ) -> dict[str, Any]:
     """Execute Stage 5: profile."""
     if n_rows_actual > settings.profile_row_threshold:
@@ -154,7 +162,12 @@ async def run_profile(
         )
         return {"snapshot_id": str(snapshot_id), "skipped": True, "reason": "row_threshold"}
 
-    columns = await _load_columns(tenant_id, snapshot_id, session_factory)
+    async with (
+        guard.unit(StructuredStagePhase.PROFILE_READ, StructuredStageTarget(tenant_id, snapshot_id))
+        if guard is not None
+        else nullcontext()
+    ):
+        columns = await _load_columns(tenant_id, snapshot_id, session_factory)
     profiled = 0
 
     # Collect profiles first so a second pass can detect self-referencing
@@ -162,7 +175,7 @@ async def run_profile(
     computed: dict[str, tuple[uuid.UUID, str, dict[str, Any]]] = {}
     for col in columns:
         col_id: uuid.UUID = col["id"]
-        col_name: str = col["qualified_name"].rsplit(".", 1)[-1]
+        col_name: str = col["column_name"]
         data_type: str = col["data_type"] or ""
 
         profile = await run_native(_profile_column_sync, parquet_key, col_name, data_type, n_rows_actual)
@@ -184,7 +197,15 @@ async def run_profile(
         logger.warning("stage=profile self-reference detection failed snapshot=%s err=%s", snapshot_id, exc)
 
     for col_id, _dt, profile in computed.values():
-        await _persist_profile(col_id, profile, tenant_id, session_factory)
+        async with (
+            guard.unit(
+                StructuredStagePhase.PROFILE_WRITE,
+                StructuredStageTarget(tenant_id, snapshot_id, object_id=col_id),
+            )
+            if guard is not None
+            else nullcontext()
+        ):
+            await _persist_profile(col_id, profile, tenant_id, session_factory)
         profiled += 1
 
     logger.info(
@@ -377,8 +398,12 @@ async def _load_columns(
         result = await s.execute(
             sa.text(
                 """
-                SELECT id, qualified_name, data_type
-                FROM flyquery_schema_objects
+                SELECT id, qualified_name, data_type,
+                    (SELECT min(p.qualified_name) FROM flyquery_schema_objects p
+                     WHERE p.tenant_id=c.tenant_id AND p.workspace_id=c.workspace_id
+                       AND p.table_id=c.table_id AND p.snapshot_id=c.snapshot_id AND p.kind='TABLE'
+                       AND (p.id=c.parent_id OR c.parent_id IS NULL) HAVING count(*)=1) AS parent_qualified_name
+                FROM flyquery_schema_objects c
                 WHERE snapshot_id = :sid
                   AND tenant_id = :tenant
                   AND kind = 'COLUMN'
@@ -388,7 +413,10 @@ async def _load_columns(
             ),
             {"sid": snapshot_id, "tenant": tenant_id},
         )
-        return [dict(r) for r in result.mappings().all()]
+        return [
+            {**row, "column_name": schema_column_name(row["qualified_name"], row["parent_qualified_name"])}
+            for row in result.mappings().all()
+        ]
 
 
 async def _persist_profile(

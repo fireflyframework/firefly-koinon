@@ -1,5 +1,6 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -34,3 +35,16 @@ class QueryOperationReceipt(NativeValue):
     identity: QueryOperationIdentity
     result: BatchQueryOutcome
     snapshots: tuple[QuerySnapshotReference, ...] = Field(max_length=128)
+    source_manifest: dict[str, str] = Field(max_length=500)
+
+
+class NativeCommitDescriptor(NativeValue):
+    schema_: Literal["koinon.native-query-commit.v1"] = Field(
+        default="koinon.native-query-commit.v1", alias="schema"
+    )
+    operation_id: UUID
+    query_id: UUID
+    identity_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    receipt_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    manifest_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    outcome: Literal["succeeded", "failed"]

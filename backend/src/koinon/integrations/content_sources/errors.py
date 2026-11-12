@@ -25,7 +25,17 @@ ErrorCode = Literal[
 
 
 class SourceError(Exception):
-    def __init__(self, code: ErrorCode, *, retry_after: int | None = None) -> None:
+    def __init__(
+        self,
+        code: ErrorCode,
+        *,
+        retry_after: int | None = None,
+        http_status: int | None = None,
+        definitive_read_denial: bool = False,
+    ) -> None:
         self.code = code
         self.retry_after = retry_after
+        self.http_status = http_status
+        # A masked target read is not proof of deletion or complete enumeration.
+        self.definitive_read_denial = definitive_read_denial
         super().__init__(code)

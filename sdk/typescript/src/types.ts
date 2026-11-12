@@ -1,6 +1,6 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
-import type {AttachmentCapabilities,AttachmentHistorySummary,CatalogProposal,ProposalUpdate,OrganizationKnowledgeSnapshot,McpOAuthClientInput,SourceReference} from './generated.js';
+import type {ReaderSourceSelection,AttachmentCapabilities,AttachmentHistorySummary,CatalogProposal,ProposalUpdate,OrganizationKnowledgeSnapshot,McpOAuthClientInput,SourceReference} from './generated.js';
 export type Json = null | boolean | number | string | Json[] | {[key:string]:Json};
 export type ResourceKind = 'workspace'|'project'|'collection'|'corpus'|'source'|'document'|'dataset'|'chunk'|'table'|'index_version'|'query_session';
 export interface CatalogEntry {
@@ -26,10 +26,10 @@ export interface ContextResponse {workspace_permissions?:Record<string,string[]>
 export interface ProviderCapability {id:string;name:string;kind:string;configured:boolean;available:boolean;reason?:string|null;capabilities:string[]}
 export interface Capabilities {attachments?:AttachmentCapabilities;catalog?:{ready:boolean};agentic?:{configured:boolean;verified:boolean};domains?:Record<string,DomainCapability>;providers:ProviderCapability[];features:{id:string;name:string;available:boolean;reason?:string|null}[]}
 export interface Citation {id?:string;source_id?:string;asset_id?:string;document_id?:string;chunk_id?:string;title?:string;text?:string;page?:number|null;section?:string|null;url?:string|null}
-export interface SearchRequest {question:string;workspace_id?:string;project_id?:string;collection_id?:string;asset_ids?:string[];limit?:number;answer?:boolean}
+export interface SearchRequest {reader_source_connections?:ReaderSourceSelection[]|null;question:string;workspace_id?:string;project_id?:string;collection_id?:string;asset_ids?:string[];limit?:number;answer?:boolean}
 export interface SearchHit {id:string;title:string;text:string;score?:number|null;asset_id:string;source_id?:string;source_reference?:SourceReference|null;citations?:Citation[]}
 export interface SearchResponse {knowledge_settings_snapshot?:OrganizationKnowledgeSnapshot|null;hits:SearchHit[];answer?:string;citations?:Citation[]}
-export interface QueryRequest {dataset_id:string;question?:string;conversation_id?:string|null;sql?:string|null}
+export interface QueryRequest {reader_source_connections?:ReaderSourceSelection[]|null;dataset_id:string;question?:string;conversation_id?:string|null;sql?:string|null}
 export interface QueryResponse {knowledge_settings_snapshot?:OrganizationKnowledgeSnapshot|null;query_id:string;sql?:string|null;execution_status:'OK'|'REFINED_OK'|'FAILED'|'REJECTED_BY_FIREWALL'|null;preview?:Record<string,Json>[]|null;row_count?:number|null;truncated?:boolean;elapsed_ms?:number|null;chart_hint?:'line'|'bar'|'table'|'pie'|'none'|null;explanation?:string|null;clarification?:ClarificationFrame|null;grounded_summary?:Record<string,Json>|null;usage?:UsageSummary|null;snapshot_pins?:Record<string,string>;citations?:Citation[]}
 export interface Column {id:string;name:string;data_type:string;description?:string|null;pii_tag?:string|null}
 export interface SchemaTable {sheet_or_json_path?:string|null;id:string;name:string;snapshot_id?:string|null;columns:Column[]}
@@ -83,7 +83,7 @@ export interface AnswerSelectionValidation {repairs:number;errors:string[]}
 export interface AnswerPublication {format:'verified-unicode-v1';chunk_size:128;chunk_count:number;text_sha256:string}
 export interface AnswerPolicy {outcome:'grounded'|'refused'|'review_required'|'product_help';code?:string|null;reason?:string|null;validation?:AnswerSelectionValidation|null;publication?:AnswerPublication|null}
 export interface ChatMessage {tool_activities?:ToolActivity[];tool_activity_count?:number;tool_activity_has_more?:boolean;attachments?:AttachmentHistorySummary[];answer_policy?:AnswerPolicy;presentation?:Presentation;id:string;run_id?:string;event_cursor?:string;role:'user'|'assistant';text:string;status:MessageStatus;citations:Citation[];artifacts:OpenUIArtifact[];created_at:string}
-export interface RunInput {attachment_ids?:string[];agent_id:string;message:string;scope?:KnowledgeScope;client_request_id:string}
+export interface RunInput {reader_source_connections?:ReaderSourceSelection[]|null;attachment_ids?:string[];agent_id:string;message:string;scope?:KnowledgeScope;client_request_id:string}
 export interface ChatRun {event_cursor?:string;run_id:string;message_id:string;status?:MessageStatus}
 export type ChatEventData = {chunk_index?:number;text_offset?:number;chunk_count?:number;proposal_update?:ProposalUpdate;tool_activity?:ToolActivity;answer_policy?:AnswerPolicy;presentation?:Presentation;text?:string;stage?:string;message?:string;status?:MessageStatus;code?:string|null;message_id?:string;artifact?:OpenUIArtifact;citation?:Citation};
 export type EvidenceResult = {id:string;run_id:string}&({kind:'search';data:SearchResponse}|{kind:'query';data:QueryResponse}|{kind:'schema';data:DatasetSchema}|{kind:'lineage';data:Lineage}|{kind:'attachment';data:AttachmentEvidence}|{kind:'proposal';data:CatalogProposal});

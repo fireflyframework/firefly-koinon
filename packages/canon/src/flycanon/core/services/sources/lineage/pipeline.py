@@ -24,7 +24,7 @@ from flycanon.core.services.sources.intake_transforms import (
     merge_artifacts,
 )
 from flycanon.core.services.sources.lineage.capture import artifact, manifest, signature
-from flycanon.core.services.sources.lineage.dtos import Admission, DocumentScope
+from flycanon.core.services.sources.lineage.dtos import Admission, DocumentScope, SourcePublicationBinding
 from flycanon.core.services.sources.lineage.ports import (
     LineageQuery,
     LineageRecord,
@@ -66,6 +66,7 @@ class DocumentLineagePipeline:
         validate_publication: StageAuthorization | None = None,
         original_reference=None,
         prepared_document=None,
+        source_publication: SourcePublicationBinding | None = None,
     ) -> SourceRow:
         service = self.components
         if not service.settings.store_originals:
@@ -95,6 +96,7 @@ class DocumentLineagePipeline:
                 expected_source_version_id=expected_source_version_id,
                 expected_extraction_id=expected_extraction_id,
                 original_reference=original_reference,
+                source_publication=source_publication,
             )
         completed = await self.lineage.committed(scope, admission.source_id, admission.version_id)
         if completed is not None:

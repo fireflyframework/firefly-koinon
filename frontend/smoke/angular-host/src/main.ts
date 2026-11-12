@@ -1,6 +1,9 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 // This separate workspace consumes the packed library; it has no source path alias.
 import { Component, signal } from '@angular/core';
+import { KoinonOrganizationDirectory } from '@fireflyframework/koinon-angular/workbench/directory';
+import { KoinonOrganizationDirectory as compatibleDirectory } from '@fireflyframework/koinon-angular/workbench/page';
+import { KoinonWorkbench as startupWorkbench } from '@fireflyframework/koinon-angular/workbench/startup';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { FetchTransport, KoinonClient } from '@fireflyframework/koinon-sdk';
 import {
@@ -8,6 +11,8 @@ import {
   KoinonWorkbench,
   provideKoinonClient,
 } from '@fireflyframework/koinon-angular/workbench';
+if (KoinonOrganizationDirectory !== compatibleDirectory || KoinonWorkbench !== startupWorkbench)
+  throw new Error('Workbench entry points must share component and service identities');
 const csrf = () => {
   const part = document.cookie
     .split(';')

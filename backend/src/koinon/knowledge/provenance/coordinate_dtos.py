@@ -7,6 +7,7 @@ from typing import Annotated, Literal
 from pydantic import Field, StrictBool, StrictFloat, StrictInt, StrictStr, model_validator
 
 from koinon.evidence.dtos import Frozen, Identifier, Revision
+from koinon.integrations.content_sources.read_dtos import ReaderReadInput
 
 Position = Annotated[int, Field(strict=True, ge=0, le=9007199254740991)]
 PathPart = Annotated[str, Field(strict=True, max_length=4096)] | Position
@@ -39,7 +40,7 @@ class CoordinateDependency(Frozen):
     version: Label | None
 
 
-class CoordinateCellRequest(Frozen):
+class CoordinateCellRequest(ReaderReadInput, Frozen):
     snapshot_id: Identifier
     cells: tuple[CoordinateCellPosition, ...] = Field(min_length=1, max_length=1000)
 

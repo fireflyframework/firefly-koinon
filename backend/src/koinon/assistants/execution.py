@@ -24,6 +24,7 @@ from pyfly.container.container import Container
 from pyfly.kernel import ConflictException, InvalidRequestException, ServiceUnavailableException
 from pyfly.security.context import SecurityContext
 from pyfly.security.context_holder import SecurityContextHolder
+from sqlalchemy import select
 
 from koinon.answers.dtos import EvidenceAnswerPlan
 from koinon.answers.model_dtos import ModelAnswerPlan
@@ -36,13 +37,15 @@ from koinon.assistants.connections import (
     provider_state,
 )
 from koinon.assistants.context_budget import ConservativeTokenEstimator, history_budget
-from koinon.assistants.entities import ChatRun
+from koinon.assistants.entities import ChatRun, ChatThread
 from koinon.assistants.grounding import evidence_view
 from koinon.assistants.lifecycle import timestamp
 from koinon.assistants.memory.service import PersonalConversationMemory
 from koinon.assistants.model_bindings import BorrowedModel, bind_model
 from koinon.assistants.queue import AssistantQueue
+from koinon.assistants.run_sources import run_choices, run_source_unit
 from koinon.assistants.service import AssistantService
+from koinon.assistants.source_model import SourceAuthorizedModel
 from koinon.assistants.tool_activity import tracked_tool
 from koinon.assistants.tool_offering import AssistantToolAvailability
 from koinon.assistants.tool_offering_dtos import ToolOffering
@@ -55,6 +58,7 @@ from koinon.operations.failure_diagnostics import failure_metadata
 from koinon.organization_branding.service import OrganizationBrandingService
 from koinon.organization_knowledge.dtos import OrganizationKnowledgeSnapshot
 from koinon.organization_knowledge.runtime import bind_snapshot, snapshot_for_run
+from koinon.security.authority import primary_authority
 
 logger = logging.getLogger(__name__)
 _NATIVE_POLICY_REFUSALS = frozenset(
@@ -84,6 +88,10 @@ class AssistantExecutor:
         self.prompt = PromptLoader.from_file(Path(__file__).parent / "prompts" / "knowledge-guide.yaml")
 
     async def authority(self, run_id: str, worker_id: str):
+        async with run_source_unit(self.assistants, run_id, worker_id, purpose="authority"):
+            return await self._authority_local(run_id, worker_id)
+
+    async def _authority_local(self, run_id: str, worker_id: str):
         run = await self.assistants.runs.find_by_id(run_id)
         if (
             run is None
@@ -108,6 +116,17 @@ class AssistantExecutor:
             )
         await self.assistants.validate_scope(thread.subject, run.tenant_id, run.scope, agent.scope)
         return run, thread, agent, provider
+
+    async def model_authority(self, run_id, worker_id):
+        run, thread, _, _ = await self.authority(run_id, worker_id)
+        await self.memory.authorize(thread.subject, run.tenant_id, run.id)
+        # Memory performs its own remote checks; fence again after those awaits.
+        async with run_source_unit(self.assistants, run_id, worker_id, purpose="authority"):
+            await self._authority_local(run_id, worker_id)
+
+    async def offering(self, run, thread, enabled):
+        async with run_source_unit(self.assistants, run.id, run.worker_id):
+            return await self.tool_availability.resolve(thread.subject, run.tenant_id, run.scope, enabled)
 
     def knowledge_evidence(self) -> NativeKnowledgeEvidence:
         if not self.container.contains_type(NativeKnowledgeEvidence):
@@ -136,15 +155,14 @@ class AssistantExecutor:
         private_search_enabled: bool = True,
         offering: ToolOffering | None = None,
         private_facts: list | None = None,
+        generation_receipt: dict | None = None,
     ):
         if attachment_refs:
             offering = private_offering(attachment_refs, search_enabled=private_search_enabled)
         else:
             run, thread, _, _ = await self.authority(run_id, worker_id)
             if offering is None:
-                offering = await self.tool_availability.resolve(
-                    thread.subject, run.tenant_id, run.scope, enabled
-                )
+                offering = await self.offering(run, thread, enabled)
             assert offering is not None
             offered_names = offering.tools
             enabled = [name for name in enabled if name in offered_names]
@@ -162,7 +180,14 @@ class AssistantExecutor:
                         ]
                     )
                 )
-                await self.queue.observation(run_id, worker_id, kind, observed_assets, capture=capture)
+                await self.queue.observation(
+                    run_id,
+                    worker_id,
+                    kind,
+                    observed_assets,
+                    capture=capture,
+                    **(generation_receipt or {}),
+                )
 
         @asynccontextmanager
         async def captured_call(kind, method, *args, assets=(), **kwargs):
@@ -171,22 +196,23 @@ class AssistantExecutor:
                 snapshot = self.policy_for_run(run) if kind in {"search", "query"} else None
                 limits = await self.queue.capture_limits(run_id, worker_id, kind)
                 capture = None
-                with bind_snapshot(snapshot, thread.subject) if snapshot is not None else nullcontext():
-                    try:
-                        capture = await method(*args, _limits=limits, **kwargs)
-                        yield capture
-                    except NativeEvidenceFailure as error:
-                        await record_observation(kind, error.capture, assets)
-                        raise
-                    except asyncio.CancelledError as error:
-                        receipt = failure_capture(error) or capture
-                        if receipt is not None:
-                            try:
-                                async with asyncio.timeout(2):
-                                    await record_observation(kind, receipt, assets)
-                            except Exception:
-                                logger.info("Cancelled native receipt could not be retained")
-                        raise
+                async with run_choices(self.assistants, run_id, worker_id):
+                    with bind_snapshot(snapshot, thread.subject) if snapshot is not None else nullcontext():
+                        try:
+                            capture = await method(*args, _limits=limits, **kwargs)
+                            yield capture
+                        except NativeEvidenceFailure as error:
+                            await record_observation(kind, error.capture, assets)
+                            raise
+                        except asyncio.CancelledError as error:
+                            receipt = failure_capture(error) or capture
+                            if receipt is not None:
+                                try:
+                                    async with asyncio.timeout(2):
+                                        await record_observation(kind, receipt, assets)
+                                except Exception:
+                                    logger.info("Cancelled native receipt could not be retained")
+                            raise
 
         async def evidence(kind: str, capture: CapturedEvidence, assets: list[str]):
             data = capture.data
@@ -476,6 +502,10 @@ class AssistantExecutor:
             logger.info("Optional conversation title was unavailable")
 
     async def generate(self, run_id: str, worker_id: str):
+        async with run_choices(self.assistants, run_id, worker_id):
+            return await self._generate(run_id, worker_id)
+
+    async def _generate(self, run_id: str, worker_id: str):
         started = asyncio.get_running_loop().time()
         run, thread, agent_config, provider = await self.authority(run_id, worker_id)
         if not self.container.contains_type(OrganizationBrandingService):
@@ -544,6 +574,7 @@ class AssistantExecutor:
         observed_tools: set[str] = set()
         private_facts = []
         async with self.models.build_with_secret(spec, secret or "unused") as model:
+            model = SourceAuthorizedModel(model, lambda: self.model_authority(run_id, worker_id))
             binding_output_mode = output_mode_for(provider.kind, agent_config.model_options)
             if agent_config.model_options.get("output_mode") is not None:
                 try:
@@ -571,14 +602,13 @@ class AssistantExecutor:
                     options_sha256=options_fingerprint(state["api"], agent_config.model_options),
                 ),
             ):
-                user_message = await self.assistants.message_repository.find_by_id(run.user_message_id)
+                async with run_source_unit(self.assistants, run_id, worker_id):
+                    user_message = await self.assistants.message_repository.find_by_id(run.user_message_id)
                 private_search_enabled = not capability or capability["tools"]["supported"] is not False
                 offering = (
                     private_offering(refs, search_enabled=private_search_enabled)
                     if refs
-                    else await self.tool_availability.resolve(
-                        thread.subject, run.tenant_id, run.scope, agent_config.tools
-                    )
+                    else await self.offering(run, thread, agent_config.tools)
                 )
                 prompt = self.prompt.render(
                     identity_labels=identity_labels,
@@ -588,6 +618,7 @@ class AssistantExecutor:
                     **preferences,
                 )
                 factory = self.container.resolve(AgentFactory)
+                generation_receipt = {}
                 tools = await self.tools(
                     run.id,
                     worker_id,
@@ -597,6 +628,7 @@ class AssistantExecutor:
                     offering=offering,
                     private_facts=private_facts,
                     private_search_enabled=private_search_enabled,
+                    generation_receipt=generation_receipt,
                 )
                 budget = history_budget(
                     self.assistants.settings,
@@ -712,6 +744,7 @@ class AssistantExecutor:
                     binding_output_mode=binding_output_mode,
                     model_options_sha256=options_fingerprint(state["api"], agent_config.model_options),
                 )
+                generation_receipt.update(generation_id=generation_id, attempt=run.attempts)
                 history = await self.history(
                     run, token_budget=budget, attachment_refs=refs, generation_id=generation_id
                 )
@@ -817,14 +850,20 @@ class AssistantExecutor:
         await self.queue.finish(run_id, worker_id)
 
     async def execute(self, run_id: str, worker_id: str):
-        run = await self.assistants.runs.find_by_id(run_id)
-        if run is None:
+        async with primary_authority(fresh=True):
+            identity = (
+                await self.assistants.runs._require_session().execute(
+                    select(ChatThread.subject, ChatRun.access_token_id)
+                    .join(ChatRun, ChatRun.thread_id == ChatThread.id)
+                    .where(ChatRun.id == run_id)
+                )
+            ).first()
+        if identity is None:
             return
-        thread = await self.assistants.threads.find_by_id(run.thread_id)
-        issuer, _, subject = thread.subject.partition("|")
+        issuer, _, subject = identity.subject.partition("|")
         attributes = {"iss": issuer, "sub": subject}
-        if run.access_token_id:
-            attributes["koinon_token_id"] = run.access_token_id
+        if identity.access_token_id:
+            attributes["koinon_token_id"] = identity.access_token_id
         with SecurityContextHolder.using(SecurityContext(user_id=subject, attributes=attributes)):
             await self._execute(run_id, worker_id)
 

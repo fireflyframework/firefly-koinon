@@ -60,6 +60,13 @@ class SnapshotLineage:
 
 
 @dataclass(frozen=True, slots=True)
+class SnapshotIdentityPage:
+    snapshot_ids: tuple[str, ...]
+    scan_full: bool
+    current_snapshot_id: str | None
+
+
+@dataclass(frozen=True, slots=True)
 class LineagePage:
     items: tuple[SnapshotLineage, ...]
     total: int

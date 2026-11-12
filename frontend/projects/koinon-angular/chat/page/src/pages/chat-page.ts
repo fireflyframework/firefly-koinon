@@ -1,9 +1,9 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 import { statusTone } from '@fireflyframework/koinon-angular/workbench/core';
-import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
+import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench/core';
 import { CHAT_SPANISH } from './chat-spanish';
-import { KoinonTextPipe, KoinonDatePipe, KoinonI18n } from '@fireflyframework/koinon-angular';
+import { KoinonTextPipe, KoinonDatePipe, KoinonI18n } from '@fireflyframework/koinon-angular/workbench/core';
 import { A11yModule } from '@angular/cdk/a11y';
 import {
   Component,
@@ -24,17 +24,11 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import type { Citation, ChatThread, ChatFolder, ChatMessage } from '@fireflyframework/koinon-sdk';
-import {
-  KoinonAssistant,
-  KoinonFacade,
-  KoinonClientContext,
-  KoinonButton,
-  KoinonBadge,
-  KoinonIcon,
-  KoinonSkeleton,
-} from '@fireflyframework/koinon-angular';
-import { KoinonEvidenceGroups } from '@fireflyframework/koinon-angular';
+import type { Citation, ChatThread, ChatFolder, ChatMessage, ReaderSourceSelection } from '@fireflyframework/koinon-sdk';
+import { KoinonReaderSourceSelector } from '@fireflyframework/koinon-angular/workbench/sources';
+import { KoinonAssistant } from '@fireflyframework/koinon-angular/workbench/bootstrap';
+import { KoinonFacade, KoinonClientContext, organizationContextKey, KoinonButton, KoinonBadge, KoinonIcon, KoinonSkeleton } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonEvidenceGroups } from '@fireflyframework/koinon-angular/chat/state';
 import { KoinonOpenUiArtifact } from '@fireflyframework/koinon-angular/chat/evidence';
 import { KoinonConversationSidebar } from '../conversation-sidebar/conversation-sidebar';
 import { KoinonChatAttachments } from '../services/chat-attachments';
@@ -53,6 +47,7 @@ registerKoinonSpanish(CHAT_SPANISH);
   selector: 'ffk-chat-page',
   providers: [KoinonChatAttachments, KoinonEvidenceGroups],
   imports: [
+    KoinonReaderSourceSelector,
     KoinonTextPipe,
     A11yModule,
     KoinonDatePipe,
@@ -75,6 +70,9 @@ registerKoinonSpanish(CHAT_SPANISH);
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KoinonChatPage implements OnInit, AfterViewInit, OnDestroy {
+  readonly sourceSelectorOpen=signal(false);
+  readonly readerSources=signal<ReaderSourceSelection[]|null>(null);
+  selectReaderSources(selection:ReaderSourceSelection[]|null){if(this.a.running()||this.a.pending())return;this.readerSources.set(selection);this.a.newConversation();}
   readonly tone = statusTone;
   @Input() actions?: {
     agentId?: () => string;
@@ -168,6 +166,7 @@ export class KoinonChatPage implements OnInit, AfterViewInit, OnDestroy {
   );
   readonly failedAvatar = signal('');
   constructor() {
+    effect(()=>{organizationContextKey(this.f,this.clients);this.f.context();this.f.authRequired();this.readerSources.set(null);this.sourceSelectorOpen.set(false);});
     effect(() => {
       this.a.contextVersion();
       this.draft = '';
@@ -400,7 +399,7 @@ export class KoinonChatPage implements OnInit, AfterViewInit, OnDestroy {
     this.draft = '';
     const ids = this.files.ids();
     const contextVersion = this.a.contextVersion();
-    const admitted = await this.a.send(text, ids);
+    const admitted = await this.a.send(text, ids, this.readerSources());
     if (contextVersion !== this.a.contextVersion()) return;
     if (admitted) this.files.sent();
     else if (!this.draft) this.draft = text;

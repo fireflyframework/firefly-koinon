@@ -16,14 +16,8 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import {
-  KoinonButton,
-  KoinonDatePipe,
-  KoinonValuePipe,
-  KoinonSidePanel,
-  KoinonSkeleton,
-  KoinonTextPipe,
-} from '@fireflyframework/koinon-angular';
+import { KoinonButton, KoinonDatePipe, KoinonValuePipe, KoinonSkeleton, KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonSidePanel } from '@fireflyframework/koinon-angular/workbench/panels';
 import type { Export, ExportReviewRequest } from '@fireflyframework/koinon-sdk';
 import { KoinonKnowledgeArtifacts } from '../services/knowledge-artifacts';
 import type { ExportSelection } from '../services/artifact-selections';

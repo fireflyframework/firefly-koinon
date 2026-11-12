@@ -1,6 +1,7 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
-import { DEFAULT_BRANDING, contrast, previewBrandStyles } from './branding-values';
+import { previewBrandStyles } from '@fireflyframework/koinon-angular/workbench/page';
+import { DEFAULT_BRANDING, contrast } from './branding-values';
 import { applyBrandColor, paletteChecks } from '../../../../settings/src/identity/identity-palette';
 it.each(['#ffb34a', '#ffffff', '#000000', '#ffff00', '#2563eb', '#777777'])(
   'derives readable controls and links from brand color %s',

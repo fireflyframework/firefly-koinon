@@ -28,7 +28,95 @@ file focuses on the stage's per-row text shaping + the no-op contract.
 
 from __future__ import annotations
 
+import pytest
+
 from flyquery.core.services.ingestion.stages.embed import _build_embed_text
+
+
+@pytest.mark.parametrize("denied", ["embed_read", "model", "embed_write", None])
+async def test_source_stage_guard_blocks_read_model_and_output_independently(monkeypatch, denied):
+    from contextlib import asynccontextmanager
+    from hashlib import sha256
+    from types import SimpleNamespace
+    from uuid import uuid4
+
+    from flyquery.core.services.ingestion.stages import embed
+
+    snapshot, object_id = uuid4(), uuid4()
+    row = {"id": object_id, "qualified_name": "sales.amount", "data_type": "INTEGER"}
+    state = {"phase": None, "native": False, "reads": 0, "models": 0, "writes": 0}
+
+    class Denied(Exception):
+        pass
+
+    class Guard:
+        @asynccontextmanager
+        async def unit(self, phase, target):
+            assert target.tenant_id == "tenant" and target.snapshot_id == snapshot
+            assert not state["native"] and state["phase"] is None
+            if phase == "embed_write":
+                assert target.object_id == object_id
+                assert target.input_sha256 == sha256(_build_embed_text(row).encode()).hexdigest()
+            if phase == denied:
+                raise Denied
+            state["phase"] = phase
+            try:
+                yield
+            finally:
+                state["phase"] = None
+
+        async def before_model(self, targets):
+            assert not state["native"] and state["phase"] is None
+            assert len(targets) == 1 and targets[0].object_id == object_id
+            assert targets[0].input_sha256 == sha256(_build_embed_text(row).encode()).hexdigest()
+            if denied == "model":
+                raise Denied
+
+    class Session:
+        async def execute(self, statement, values):
+            if "SELECT" in str(statement):
+                assert state["phase"] == "embed_read"
+                state["reads"] += 1
+                return SimpleNamespace(mappings=lambda: SimpleNamespace(all=lambda: [row]))
+            assert state["phase"] == "embed_write"
+            state["writes"] += 1
+
+    @asynccontextmanager
+    async def native(_):
+        state["native"] = True
+        try:
+            yield Session()
+        finally:
+            state["native"] = False
+
+    class Embedder:
+        model = "test"
+
+        async def embed_batch(self, texts):
+            assert not state["native"] and state["phase"] is None
+            state["models"] += 1
+            return [None for _ in texts]
+
+    monkeypatch.setattr(embed, "infrastructure_unit", native)
+    invocation = embed.run_embed(
+        tenant_id="tenant",
+        snapshot_id=snapshot,
+        session_factory=object(),
+        embedder=Embedder(),
+        guard=Guard(),
+    )
+    if denied:
+        with pytest.raises(Denied):
+            await invocation
+    else:
+        assert (await invocation)["objects_processed"] == 1
+    assert (state["reads"], state["models"], state["writes"]) == {
+        "embed_read": (0, 0, 0),
+        "model": (1, 0, 0),
+        "embed_write": (1, 1, 0),
+        None: (1, 1, 1),
+    }[denied]
+    assert not state["native"] and state["phase"] is None
 
 
 def test_redacted_samples_do_not_return_through_profile_values() -> None:

@@ -15,6 +15,7 @@ from pyfly.oauth2 import OAuth2Tokens
 from pyfly.security.context import SecurityContext
 from pyfly.session.adapters.memory import InMemorySessionStore
 from pyfly.session.ports.outbound import SessionStore
+from test_source_migration_postgres import source_database as source_database
 
 from koinon.catalog.entities import Membership, Tenant
 from koinon.catalog.errors import AccessDenied
@@ -24,10 +25,17 @@ from koinon.integrations.content_sources.errors import SourceError
 
 
 @pytest.fixture
-async def lifecycle(tmp_path, monkeypatch):
+async def lifecycle(tmp_path, monkeypatch, request):
     from koinon.integrations.content_sources.lifecycle import SourceConnectionService
     from koinon.integrations.content_sources.settings import ContentSourceSettings
 
+    url = f"sqlite+aiosqlite:///{tmp_path / 'connections.db'}"
+    if getattr(request, "param", None) == "postgres":
+        from test_source_migration_postgres import upgrade_sources
+
+        target, _, engine = request.getfixturevalue("source_database")
+        upgrade_sources(engine)
+        url = target.set(drivername="postgresql+asyncpg").render_as_string(hide_password=False)
     context = ApplicationContext(
         Config(
             {
@@ -38,7 +46,7 @@ async def lifecycle(tmp_path, monkeypatch):
                         "relational": {
                             "enabled": True,
                             "ddl-auto": "create",
-                            "url": f"sqlite+aiosqlite:///{tmp_path / 'connections.db'}",
+                            "url": url,
                         }
                     },
                 }
@@ -57,9 +65,12 @@ async def lifecycle(tmp_path, monkeypatch):
     from koinon.authorized_applications.entities import AuthorizedApplication  # noqa: F401
     from koinon.knowledge.bulk.authority import BulkAuthority
     from koinon.knowledge.bulk.repositories import BulkRepository
+    from koinon.workers.admission import WorkAdmission, WorkAdmissionSettings
 
     context.register_bean(BulkAuthority)
     context.register_bean(BulkRepository)
+    context.register_bean(WorkAdmissionSettings)
+    context.register_bean(WorkAdmission)
     await context.start()
     settings = context.get_bean(ContentSourceSettings)
     settings.master_key = base64.b64encode(bytes(range(32))).decode()
@@ -121,8 +132,19 @@ async def lifecycle(tmp_path, monkeypatch):
             issuer = "https://accounts.google.com"
 
             async def verify(self, token, *, nonce):
+                return (await self.verify_with_profile(token, nonce=nonce)).account
+
+            async def verify_with_profile(self, token, *, nonce):
+                from koinon.integrations.content_sources.identity import (
+                    SourceDisplayProfile,
+                    VerifiedSourceIdentity,
+                )
+
                 assert token == "signed-id" and nonce
-                return Account("google_drive", "verified-alice")
+                return VerifiedSourceIdentity(
+                    Account("google_drive", "verified-alice"),
+                    SourceDisplayProfile.model_validate(state.get("display", {})),
+                )
 
         yield Verifier()
 
@@ -414,3 +436,53 @@ async def test_workspace_only_reader_can_own_a_personal_connection_without_tenan
     assert connected.status == "connected"
     assert (await rows.find_by_id("issuer|alice")).workspace_id == "permitted-space"
     assert len(await rows.find_all(subject="issuer|alice")) == 1
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("lifecycle", ["postgres"], indirect=True)
+async def test_account_display_is_owner_bound_projected_and_preserved_only_with_the_grant(lifecycle):
+    from dataclasses import asdict
+
+    from koinon.integrations.content_sources.entities import PersonalSourceConnection
+    from koinon.security.authority import primary_authority
+
+    service, _, remote, _ = lifecycle
+    remote["display"] = {
+        "display_name": "Alice Smith",
+        "display_address": "alice@example.invalid",
+        "display_address_verified": True,
+    }
+    start, state = await begin(service)
+    assert start.callback_uri == "https://app.example.test/sources/callback"
+    connected = await complete(service, start, state)
+    assert connected.display_name == "Alice Smith"
+    assert connected.display_address == "alice@example.invalid" and connected.display_address_verified
+    assert connected.account == Account("google_drive", "verified-alice")
+    async with primary_authority(read_only=False):
+        row = await service.connections.owned("tenant", "issuer|alice", start.connection_id)
+        grant = service.vault.decrypt("tenant", "issuer|alice", row.id, "grant", row.secret_ciphertext)
+        assert grant["display"] == remote["display"]
+        grant["expires_at"] = 0
+        grant["unused_secret"] = "must-never-be-projected"
+        row.secret_ciphertext = service.vault.encrypt("tenant", "issuer|alice", row.id, "grant", grant)
+    for actor, tenant in (("issuer|bob", "tenant"), ("issuer|alice", "other")):
+        with pytest.raises((SourceError, AccessDenied)):
+            await service.get(actor, tenant, start.connection_id)
+    visible = await service.get("issuer|alice", "tenant", start.connection_id)
+    assert "must-never-be-projected" not in str(asdict(visible))
+    assert "access-one" not in str(asdict(visible)) and "refresh-one" not in str(asdict(visible))
+    refreshed = await service.read_grant("issuer|alice", "tenant", start.connection_id, connected.account)
+    visible = await service.get("issuer|alice", "tenant", start.connection_id)
+    assert (visible.display_name, visible.display_address, visible.display_address_verified) == (
+        "Alice Smith",
+        "alice@example.invalid",
+        True,
+    )
+    await service.disconnect("issuer|alice", "tenant", start.connection_id, refreshed.revision)
+    visible = await service.get("issuer|alice", "tenant", start.connection_id)
+    assert visible.display_name is None and visible.display_address is None
+    assert visible.display_address_verified is False
+    async with primary_authority():
+        assert (
+            await service.connections._require_session().get(PersonalSourceConnection, start.connection_id)
+        ).secret_ciphertext is None

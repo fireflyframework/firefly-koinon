@@ -1,7 +1,7 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
-import { KoinonTextPipe } from '@fireflyframework/koinon-angular';
+import { KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench/core';
 import type { NativeReadOrigin } from '@fireflyframework/koinon-sdk';
 const FIELDS: readonly (readonly [keyof NativeReadOrigin, string])[] = [
   ['original_filename', 'Original file'],

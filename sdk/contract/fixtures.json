@@ -1124,6 +1124,13 @@
       "reason": "reason-value"
     },
     "AvailabilityRequest": {
+      "reader_source_connections": [
+        {
+          "provider": "sharepoint",
+          "external_tenant": "external_tenant-value",
+          "connection_id": "connection_id-value"
+        }
+      ],
       "asset_ids": [
         "asset_ids-value"
       ],
@@ -1359,6 +1366,14 @@
       "expected_revision": 1,
       "operation": "retry_processing"
     },
+    "CalendarSchedule": {
+      "kind": "calendar",
+      "timezone": "timezone-value",
+      "time": "time-value",
+      "weekdays": [
+        1
+      ]
+    },
     "Capabilities": {
       "attachments": {
         "storage": {
@@ -1451,6 +1466,66 @@
     "CapabilityState": {
       "supported": false,
       "verified": false
+    },
+    "CatalogBrowseInput": {
+      "parent_id": "parent_id-value",
+      "workspace_id": "workspace_id-value",
+      "project_id": "project_id-value",
+      "kind": "kind-value",
+      "include_archived": false,
+      "view": "raw",
+      "q": "q-value",
+      "status": "status-value",
+      "format": "format-value",
+      "tag": "tag-value",
+      "page_size": 1,
+      "sort": "name",
+      "order": "asc",
+      "cursor": "cursor-valuexxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "reader_source_connections": [
+        {
+          "provider": "sharepoint",
+          "external_tenant": "external_tenant-value",
+          "connection_id": "connection_id-value"
+        }
+      ]
+    },
+    "CatalogBrowseOutput": {
+      "items": [
+        {
+          "created_by": "created_by-value",
+          "updated_by": "updated_by-value",
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "kind": "kind-value",
+          "name": "name-value",
+          "parent_id": "parent_id-value",
+          "workspace_id": "workspace_id-value",
+          "project_id": "project_id-value",
+          "description": "description-value",
+          "status": "status-value",
+          "system_managed": false,
+          "metadata": {
+            "example": {
+              "decimal": "12345678901234567890.12345678901234567890",
+              "integer": "9007199254740993"
+            }
+          },
+          "created_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "actors": {
+        "example": {
+          "subject": "subject-value",
+          "display_name": "display_name-value",
+          "avatar_data_url": "avatar_data_url-value",
+          "avatar_version": "avatar_version-value"
+        }
+      },
+      "next_cursor": "next_cursor-value",
+      "total": null,
+      "total_is_exact": false
     },
     "CatalogCapability": {
       "ready": false
@@ -2417,6 +2492,13 @@
       "column": 1
     },
     "CoordinateCellRequest": {
+      "reader_source_connections": [
+        {
+          "provider": "sharepoint",
+          "external_tenant": "external_tenant-value",
+          "connection_id": "connection_id-value"
+        }
+      ],
       "snapshot_id": "snapshot_id-value",
       "cells": [
         {
@@ -2926,6 +3008,20 @@
       "total": 1,
       "next_offset": 1
     },
+    "DocumentChunksReadInput": {
+      "reader_source_connections": [
+        {
+          "provider": "sharepoint",
+          "external_tenant": "external_tenant-value",
+          "connection_id": "connection_id-value"
+        }
+      ],
+      "offset": 1,
+      "limit": 1,
+      "page": 1,
+      "section": "section-value",
+      "q": "q-value"
+    },
     "DocumentEvidence": {
       "kind": "document_passage",
       "source": {
@@ -3161,6 +3257,18 @@
       "char_end": 1,
       "offset_basis": "offset_basis-value",
       "created_at": "2026-10-27T12:34:56Z"
+    },
+    "DocumentPartsReadInput": {
+      "reader_source_connections": [
+        {
+          "provider": "sharepoint",
+          "external_tenant": "external_tenant-value",
+          "connection_id": "connection_id-value"
+        }
+      ],
+      "page": 1,
+      "page_size": 1,
+      "kind": "artifact"
     },
     "DocumentReingestInput": {
       "acknowledge_chunk_invalidation": false
@@ -3688,6 +3796,39 @@
       "truncated": false,
       "created_at": "2026-10-27T12:34:56Z",
       "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "ExportBrowseInput": {
+      "q": "q-value",
+      "status": "all",
+      "page_size": 1,
+      "cursor": "cursor-value",
+      "reader_source_connections": [
+        {
+          "provider": "sharepoint",
+          "external_tenant": "external_tenant-value",
+          "connection_id": "connection_id-value"
+        }
+      ]
+    },
+    "ExportBrowsePage": {
+      "items": [
+        {
+          "id": "id-value",
+          "kind": "conversation",
+          "format": "markdown",
+          "title": "title-value",
+          "status": "ready",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "completeness": "selected_messages",
+          "row_count": 1,
+          "truncated": false,
+          "created_at": "2026-10-27T12:34:56Z",
+          "expires_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "next_cursor": "next_cursor-value",
+      "total": null,
+      "total_is_exact": false
     },
     "ExportCreate": {
       "review_id": "review_id-value",
@@ -4461,6 +4602,66 @@
       "unknown": 1,
       "disabled": 1
     },
+    "HistoryBrowseInput": {
+      "q": "q-value",
+      "page_size": 1,
+      "cursor": "cursor-value",
+      "status": "active",
+      "folder_id": "folder_id-value",
+      "workspace_id": "workspace_id-value",
+      "project_id": "project_id-value",
+      "unfiled": false,
+      "reader_source_connections": [
+        {
+          "provider": "sharepoint",
+          "external_tenant": "external_tenant-value",
+          "connection_id": "connection_id-value"
+        }
+      ]
+    },
+    "HistoryBrowsePage": {
+      "items": [
+        {
+          "id": "id-value",
+          "title": "title-value",
+          "title_source": "default",
+          "revision": 1,
+          "folder_id": "folder_id-value",
+          "archived_at": "2026-10-27T12:34:56Z",
+          "scope": {
+            "workspace_id": "workspace_id-value",
+            "project_id": "project_id-value",
+            "collection_id": "collection_id-value",
+            "asset_ids": [
+              "asset_ids-value"
+            ]
+          },
+          "created_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "next_cursor": "next_cursor-value",
+      "total": null,
+      "total_is_exact": false
+    },
+    "HistoryThreadOutput": {
+      "id": "id-value",
+      "title": "title-value",
+      "title_source": "default",
+      "revision": 1,
+      "folder_id": "folder_id-value",
+      "archived_at": "2026-10-27T12:34:56Z",
+      "scope": {
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "collection_id": "collection_id-value",
+        "asset_ids": [
+          "asset_ids-value"
+        ]
+      },
+      "created_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z"
+    },
     "IdentityActivation": {
       "expected_revision": 1,
       "validation_id": "validation_id-value"
@@ -4792,6 +4993,10 @@
       "expected_revision": 1
     },
     "Input": {},
+    "IntervalSchedule": {
+      "kind": "interval",
+      "seconds": 900
+    },
     "Invitation": {
       "id": "id-value",
       "tenant_id": "tenant_id-value",
@@ -5597,6 +5802,67 @@
       "label": "label-value",
       "kind": "kind-value"
     },
+    "LineageReadInput": {
+      "reader_source_connections": [
+        {
+          "provider": "sharepoint",
+          "external_tenant": "external_tenant-value",
+          "connection_id": "connection_id-value"
+        }
+      ],
+      "asset_id": "asset_id-value"
+    },
+    "ManualSchedule": {
+      "kind": "manual"
+    },
+    "MappingReviewInput": {
+      "connection_id": "connection_id-value",
+      "drive_id": "drive_id-value",
+      "root_id": "root_id-value",
+      "destination": {
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "parent_id": "parent_id-value"
+      },
+      "recursive": false,
+      "removal_policy": "retire",
+      "schema_version": 1,
+      "mode": "document",
+      "hierarchy": "preserve",
+      "excluded_ids": [
+        "excluded_ids-value"
+      ],
+      "formats": [
+        "formats-value"
+      ],
+      "schedule": {
+        "kind": "manual"
+      },
+      "replacement_resolutions": [
+        {
+          "object_id": "object_id-value",
+          "remote_version": "remote_version-value",
+          "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "baseline_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "new_locator_set_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "replacements": [
+            {
+              "new_locator": "new_locator-value",
+              "previous_table_id": "previous_table_id-value"
+            }
+          ],
+          "removed_table_ids": [
+            "removed_table_ids-value"
+          ]
+        }
+      ]
+    },
+    "MappingReviewOutput": {
+      "id": "id-value",
+      "revision": 1,
+      "status": "reviewed",
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
     "McpActivityCounts": {
       "requests": {
         "value": 1,
@@ -5943,6 +6209,30 @@
       "availability": "available"
     },
     "MemoryValue": {},
+    "MessageBrowseInput": {
+      "page_size": 1,
+      "cursor": "cursor-value",
+      "reader_source_connections": [
+        {
+          "provider": "sharepoint",
+          "external_tenant": "external_tenant-value",
+          "connection_id": "connection_id-value"
+        }
+      ]
+    },
+    "MessageBrowsePage": {
+      "items": [
+        {
+          "example": {
+            "decimal": "12345678901234567890.12345678901234567890",
+            "integer": "9007199254740993"
+          }
+        }
+      ],
+      "next_cursor": "next_cursor-value",
+      "total": null,
+      "total_is_exact": false
+    },
     "MessageSelection": {
       "thread_id": "thread_id-value",
       "message_ids": [
@@ -6318,6 +6608,9 @@
       "language": "language-value",
       "complete": false,
       "run_id": "run_id-value"
+    },
+    "OperationInput": {
+      "operation_id": "operation_id-valuexxxxxxxxxxxxxxxxxx"
     },
     "OperationalLimits": {
       "worker_concurrency": 1,
@@ -8067,6 +8360,13 @@
       }
     },
     "ProcessingRequest": {
+      "reader_source_connections": [
+        {
+          "provider": "sharepoint",
+          "external_tenant": "external_tenant-value",
+          "connection_id": "connection_id-value"
+        }
+      ],
       "page": 1,
       "page_size": 1,
       "workspace_id": "workspace_id-value"
@@ -8451,6 +8751,13 @@
       "question": "question-value"
     },
     "QueryRequest": {
+      "reader_source_connections": [
+        {
+          "provider": "sharepoint",
+          "external_tenant": "external_tenant-value",
+          "connection_id": "connection_id-value"
+        }
+      ],
       "dataset_id": "dataset_id-value",
       "question": "question-value",
       "conversation_id": "conversation_id-value",
@@ -8547,6 +8854,52 @@
       "format": "parquet",
       "csv_mode": "spreadsheet_safe"
     },
+    "ReaderPageInput": {
+      "reader_source_connections": [
+        {
+          "provider": "sharepoint",
+          "external_tenant": "external_tenant-value",
+          "connection_id": "connection_id-value"
+        }
+      ],
+      "page": 1,
+      "page_size": 1
+    },
+    "ReaderReadInput": {
+      "reader_source_connections": [
+        {
+          "provider": "sharepoint",
+          "external_tenant": "external_tenant-value",
+          "connection_id": "connection_id-value"
+        }
+      ]
+    },
+    "ReaderSelectionInput": {
+      "expected_revision": 1,
+      "operation_id": "operation_id-value",
+      "connections": [
+        {
+          "provider": "sharepoint",
+          "external_tenant": "external_tenant-value",
+          "connection_id": "connection_id-value"
+        }
+      ]
+    },
+    "ReaderSelectionOutput": {
+      "revision": 1,
+      "connections": [
+        {
+          "provider": "sharepoint",
+          "external_tenant": "external_tenant-value",
+          "connection_id": "connection_id-value"
+        }
+      ]
+    },
+    "ReaderSourceSelection": {
+      "provider": "sharepoint",
+      "external_tenant": "external_tenant-value",
+      "connection_id": "connection_id-value"
+    },
     "RecipientProvider": {
       "id": "id-value",
       "display_name": "display_name-value"
@@ -8578,6 +8931,26 @@
       "dataset_id": "dataset_id-value",
       "table_id": "table_id-value",
       "expected_snapshot_id": "expected_snapshot_id-value"
+    },
+    "ReplacementMemberInput": {
+      "new_locator": "new_locator-value",
+      "previous_table_id": "previous_table_id-value"
+    },
+    "ReplacementResolutionInput": {
+      "object_id": "object_id-value",
+      "remote_version": "remote_version-value",
+      "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "baseline_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "new_locator_set_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "replacements": [
+        {
+          "new_locator": "new_locator-value",
+          "previous_table_id": "previous_table_id-value"
+        }
+      ],
+      "removed_table_ids": [
+        "removed_table_ids-value"
+      ]
     },
     "ResultColumn": {
       "name": "name-value",
@@ -8620,6 +8993,13 @@
       "bypass_rls": false
     },
     "RunInput": {
+      "reader_source_connections": [
+        {
+          "provider": "sharepoint",
+          "external_tenant": "external_tenant-value",
+          "connection_id": "connection_id-value"
+        }
+      ],
       "attachment_ids": [
         "attachment_ids-value"
       ],
@@ -8698,6 +9078,13 @@
       ]
     },
     "SearchRequest": {
+      "reader_source_connections": [
+        {
+          "provider": "sharepoint",
+          "external_tenant": "external_tenant-value",
+          "connection_id": "connection_id-value"
+        }
+      ],
       "question": "question-value",
       "workspace_id": "workspace_id-value",
       "project_id": "project_id-value",
@@ -8824,6 +9211,36 @@
       "created_at": "2026-10-27T12:34:56Z",
       "expires_at": "2026-10-27T12:34:56Z",
       "revoked_at": "2026-10-27T12:34:56Z"
+    },
+    "ShareBrowseInput": {
+      "q": "q-value",
+      "status": "all",
+      "page_size": 1,
+      "cursor": "cursor-value",
+      "reader_source_connections": [
+        {
+          "provider": "sharepoint",
+          "external_tenant": "external_tenant-value",
+          "connection_id": "connection_id-value"
+        }
+      ]
+    },
+    "ShareBrowsePage": {
+      "items": [
+        {
+          "id": "id-value",
+          "title": "title-value",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "status": "active",
+          "recipient_policy": "organization_current_acl",
+          "created_at": "2026-10-27T12:34:56Z",
+          "expires_at": "2026-10-27T12:34:56Z",
+          "revoked_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "next_cursor": "next_cursor-value",
+      "total": null,
+      "total_is_exact": false
     },
     "ShareCreate": {
       "review_id": "review_id-value",
@@ -8995,6 +9412,646 @@
         "branding_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
       }
     },
+    "SnapshotHistoryReadInput": {
+      "reader_source_connections": [
+        {
+          "provider": "sharepoint",
+          "external_tenant": "external_tenant-value",
+          "connection_id": "connection_id-value"
+        }
+      ],
+      "cursor": "cursor-value",
+      "page_size": 1
+    },
+    "SnapshotPageReadInput": {
+      "reader_source_connections": [
+        {
+          "provider": "sharepoint",
+          "external_tenant": "external_tenant-value",
+          "connection_id": "connection_id-value"
+        }
+      ],
+      "page": 1,
+      "page_size": 1,
+      "snapshot_id": "snapshot_id-value"
+    },
+    "SnapshotReadInput": {
+      "reader_source_connections": [
+        {
+          "provider": "sharepoint",
+          "external_tenant": "external_tenant-value",
+          "connection_id": "connection_id-value"
+        }
+      ],
+      "snapshot_id": "snapshot_id-value"
+    },
+    "SourceAccountOutput": {
+      "provider": "sharepoint",
+      "subject": "subject-value",
+      "tenant_id": "tenant_id-value"
+    },
+    "SourceAuthorizationCompletion": {
+      "challenge_id": "challenge_id-value",
+      "state": "state-value",
+      "code": "code-value"
+    },
+    "SourceAuthorizationInput": {
+      "provider": "sharepoint"
+    },
+    "SourceAuthorizationOutput": {
+      "connection_id": "connection_id-value",
+      "challenge_id": "challenge_id-value",
+      "authorization_url": "authorization_url-value",
+      "callback_uri": "callback_uri-value",
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "SourceCapabilitiesOutput": {
+      "accounts_available": false,
+      "inbound_only": true,
+      "synchronization_available": false,
+      "providers": [
+        {
+          "provider": "sharepoint",
+          "display_name": "display_name-value",
+          "consent_available": false,
+          "unavailable_reason": "disabled"
+        }
+      ],
+      "modes": [
+        "document"
+      ],
+      "formats": [
+        {
+          "extension": "extension-value",
+          "mode": "document"
+        }
+      ],
+      "schedule": {
+        "min_interval_seconds": 1,
+        "max_interval_seconds": 1,
+        "calendar_timezones": "iana",
+        "max_calendar_weekdays": 7
+      }
+    },
+    "SourceConnectionOutput": {
+      "id": "id-value",
+      "provider": "sharepoint",
+      "status": "pending",
+      "revision": 1,
+      "account": {
+        "provider": "sharepoint",
+        "subject": "subject-value",
+        "tenant_id": "tenant_id-value"
+      },
+      "display_name": "display_name-value",
+      "display_address": "display_address-value",
+      "display_address_verified": false,
+      "synchronization_available": false
+    },
+    "SourceConnectionPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "provider": "sharepoint",
+          "status": "pending",
+          "revision": 1,
+          "account": {
+            "provider": "sharepoint",
+            "subject": "subject-value",
+            "tenant_id": "tenant_id-value"
+          },
+          "display_name": "display_name-value",
+          "display_address": "display_address-value",
+          "display_address_verified": false,
+          "synchronization_available": false
+        }
+      ],
+      "next_cursor": "next_cursor-value",
+      "synchronization_available": false
+    },
+    "SourceConnectionRevision": {
+      "expected_revision": 1
+    },
+    "SourceControlInput": {
+      "operation_id": "operation_id-valuexxxxxxxxxxxxxxxxxx",
+      "expected_revision": 1
+    },
+    "SourceControlOutput": {
+      "operation_id": "operation_id-value",
+      "receipt_id": "receipt_id-value",
+      "action": "sync",
+      "control_revision": 1,
+      "run_id": "run_id-value",
+      "disposition": "queued"
+    },
+    "SourceControlReceipt": {
+      "kind": "control",
+      "receipt": {
+        "operation_id": "operation_id-value",
+        "receipt_id": "receipt_id-value",
+        "action": "sync",
+        "control_revision": 1,
+        "run_id": "run_id-value",
+        "disposition": "queued"
+      }
+    },
+    "SourceDestinationPresentation": {
+      "segments": [
+        {
+          "id": "id-value",
+          "kind": "kind-value",
+          "name": "name-value"
+        }
+      ]
+    },
+    "SourceDestinationSegment": {
+      "id": "id-value",
+      "kind": "kind-value",
+      "name": "name-value"
+    },
+    "SourceDiscoveredMember": {
+      "locator": "locator-value",
+      "name": "name-value",
+      "ambiguous": false
+    },
+    "SourceExistingPolicyReviewInput": {
+      "operation_id": "operation_id-valuexxxxxxxxxxxxxxxxxx",
+      "connection_id": "connection_id-value",
+      "drive_id": "drive_id-value",
+      "root_id": "root_id-value",
+      "destination": {
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "parent_id": "parent_id-value"
+      },
+      "recursive": false,
+      "removal_policy": "retire",
+      "schema_version": 1,
+      "mode": "document",
+      "hierarchy": "preserve",
+      "excluded_ids": [
+        "excluded_ids-value"
+      ],
+      "formats": [
+        "formats-value"
+      ],
+      "schedule": {
+        "kind": "manual"
+      },
+      "replacement_resolutions": [
+        {
+          "object_id": "object_id-value",
+          "remote_version": "remote_version-value",
+          "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "baseline_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "new_locator_set_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "replacements": [
+            {
+              "new_locator": "new_locator-value",
+              "previous_table_id": "previous_table_id-value"
+            }
+          ],
+          "removed_table_ids": [
+            "removed_table_ids-value"
+          ]
+        }
+      ],
+      "expected_revision": 1
+    },
+    "SourceFolderPage": {
+      "folder": {
+        "item_id": "item_id-value",
+        "name": "name-value",
+        "kind": "file",
+        "version": "version-value",
+        "size_bytes": 1,
+        "mime_type": "mime_type-value",
+        "parents": [
+          "parents-value"
+        ],
+        "can_download": false,
+        "modified_at": "modified_at-value"
+      },
+      "items": [
+        {
+          "item_id": "item_id-value",
+          "name": "name-value",
+          "kind": "file",
+          "version": "version-value",
+          "size_bytes": 1,
+          "mime_type": "mime_type-value",
+          "parents": [
+            "parents-value"
+          ],
+          "can_download": false,
+          "modified_at": "modified_at-value"
+        }
+      ],
+      "next_cursor": "next_cursor-value"
+    },
+    "SourceFormatCapability": {
+      "extension": "extension-value",
+      "mode": "document"
+    },
+    "SourceItemOutput": {
+      "item_id": "item_id-value",
+      "name": "name-value",
+      "kind": "file",
+      "version": "version-value",
+      "size_bytes": 1,
+      "mime_type": "mime_type-value",
+      "parents": [
+        "parents-value"
+      ],
+      "can_download": false,
+      "modified_at": "modified_at-value"
+    },
+    "SourceLocationOutput": {
+      "id": "id-value",
+      "name": "name-value",
+      "kind": "site"
+    },
+    "SourceLocationPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "name": "name-value",
+          "kind": "site"
+        }
+      ],
+      "next_cursor": "next_cursor-value"
+    },
+    "SourceMappingOutput": {
+      "id": "id-value",
+      "revision": 1,
+      "policy_revision": 1,
+      "latest_review_revision": 1,
+      "control_revision": 1,
+      "connection_id": "connection_id-value",
+      "policy": {
+        "connection_id": "connection_id-value",
+        "drive_id": "drive_id-value",
+        "root_id": "root_id-value",
+        "destination": {
+          "workspace_id": "workspace_id-value",
+          "project_id": "project_id-value",
+          "parent_id": "parent_id-value"
+        },
+        "recursive": false,
+        "removal_policy": "retire",
+        "schema_version": 1,
+        "mode": "document",
+        "hierarchy": "preserve",
+        "excluded_ids": [
+          "excluded_ids-value"
+        ],
+        "formats": [
+          "formats-value"
+        ],
+        "schedule": {
+          "kind": "manual"
+        },
+        "replacement_resolutions": [
+          {
+            "object_id": "object_id-value",
+            "remote_version": "remote_version-value",
+            "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "baseline_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "new_locator_set_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "replacements": [
+              {
+                "new_locator": "new_locator-value",
+                "previous_table_id": "previous_table_id-value"
+              }
+            ],
+            "removed_table_ids": [
+              "removed_table_ids-value"
+            ]
+          }
+        ]
+      },
+      "presentation": {
+        "source_root": {
+          "name": "name-value",
+          "relative_path": [
+            "relative_path-value"
+          ]
+        },
+        "destination": {
+          "segments": [
+            {
+              "id": "id-value",
+              "kind": "kind-value",
+              "name": "name-value"
+            }
+          ]
+        },
+        "unavailable_reason": "access_denied"
+      },
+      "status": "reviewed",
+      "next_run_at": "2026-10-27T12:34:56Z",
+      "can_pause": false,
+      "can_resume": false,
+      "can_retire": false,
+      "can_sync": false
+    },
+    "SourceMappingPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "status": "reviewed",
+          "connection_id": "connection_id-value",
+          "policy_revision": 1,
+          "latest_review_revision": 1,
+          "control_revision": 1,
+          "next_run_at": "2026-10-27T12:34:56Z",
+          "presentation": {
+            "source_root": {
+              "name": "name-value",
+              "relative_path": [
+                "relative_path-value"
+              ]
+            },
+            "destination": {
+              "segments": [
+                {
+                  "id": "id-value",
+                  "kind": "kind-value",
+                  "name": "name-value"
+                }
+              ]
+            },
+            "unavailable_reason": "access_denied"
+          }
+        }
+      ],
+      "next_cursor": "next_cursor-value"
+    },
+    "SourceMappingPresentation": {
+      "source_root": {
+        "name": "name-value",
+        "relative_path": [
+          "relative_path-value"
+        ]
+      },
+      "destination": {
+        "segments": [
+          {
+            "id": "id-value",
+            "kind": "kind-value",
+            "name": "name-value"
+          }
+        ]
+      },
+      "unavailable_reason": "access_denied"
+    },
+    "SourceMappingSummary": {
+      "id": "id-value",
+      "status": "reviewed",
+      "connection_id": "connection_id-value",
+      "policy_revision": 1,
+      "latest_review_revision": 1,
+      "control_revision": 1,
+      "next_run_at": "2026-10-27T12:34:56Z",
+      "presentation": {
+        "source_root": {
+          "name": "name-value",
+          "relative_path": [
+            "relative_path-value"
+          ]
+        },
+        "destination": {
+          "segments": [
+            {
+              "id": "id-value",
+              "kind": "kind-value",
+              "name": "name-value"
+            }
+          ]
+        },
+        "unavailable_reason": "access_denied"
+      }
+    },
+    "SourceMappingValidationAbandonInput": {
+      "expected_revision": 1
+    },
+    "SourceMappingValidationContinueInput": {
+      "expected_revision": 1,
+      "continuation_token": "continuation_token-value"
+    },
+    "SourceMappingValidationInput": {
+      "connection_id": "connection_id-value",
+      "drive_id": "drive_id-value",
+      "root_id": "root_id-value",
+      "destination": {
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "parent_id": "parent_id-value"
+      },
+      "recursive": false,
+      "removal_policy": "retire",
+      "schema_version": 1,
+      "mode": "document",
+      "hierarchy": "preserve",
+      "excluded_ids": [
+        "excluded_ids-value"
+      ],
+      "formats": [
+        "formats-value"
+      ],
+      "schedule": {
+        "kind": "manual"
+      },
+      "replacement_resolutions": [
+        {
+          "object_id": "object_id-value",
+          "remote_version": "remote_version-value",
+          "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "baseline_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "new_locator_set_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "replacements": [
+            {
+              "new_locator": "new_locator-value",
+              "previous_table_id": "previous_table_id-value"
+            }
+          ],
+          "removed_table_ids": [
+            "removed_table_ids-value"
+          ]
+        }
+      ],
+      "operation_id": "operation_id-value",
+      "mapping_id": "mapping_id-value",
+      "expected_revision": 1
+    },
+    "SourceMappingValidationItem": {
+      "item_id": "item_id-value",
+      "name": "name-value",
+      "kind": "file",
+      "version": "version-value",
+      "filename": "filename-value",
+      "export_mime": "export_mime-value",
+      "reason": "reason-value",
+      "relative_path": [
+        "relative_path-value"
+      ],
+      "destination_relative_path": [
+        "destination_relative_path-value"
+      ],
+      "size_bytes": 1,
+      "collision": "none",
+      "action": "create"
+    },
+    "SourceMappingValidationItemPage": {
+      "validation_id": "validation_id-value",
+      "revision": 1,
+      "items": [
+        {
+          "item_id": "item_id-value",
+          "name": "name-value",
+          "kind": "file",
+          "version": "version-value",
+          "filename": "filename-value",
+          "export_mime": "export_mime-value",
+          "reason": "reason-value",
+          "relative_path": [
+            "relative_path-value"
+          ],
+          "destination_relative_path": [
+            "destination_relative_path-value"
+          ],
+          "size_bytes": 1,
+          "collision": "none",
+          "action": "create"
+        }
+      ],
+      "visible_count": 1,
+      "next_cursor": "next_cursor-value",
+      "total": 1
+    },
+    "SourceMappingValidationOutput": {
+      "validation_id": "validation_id-value",
+      "revision": 1,
+      "state": "scanning",
+      "expires_at": "2026-10-27T12:34:56Z",
+      "continuation_token": "continuation_token-value",
+      "enumeration_complete": false,
+      "observed_count": 1,
+      "total": 1,
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "reason_code": "SOURCE_NAME_COLLISION"
+    },
+    "SourcePolicyApplyInput": {
+      "operation_id": "operation_id-valuexxxxxxxxxxxxxxxxxx",
+      "expected_revision": 1,
+      "review_id": "review_id-value",
+      "review_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "SourcePolicyOperationOutput": {
+      "schema": "koinon.source-policy-operation.v1",
+      "receipt_id": "receipt_id-value",
+      "operation_id": "operation_id-value",
+      "action": "review",
+      "mapping_id": "mapping_id-value",
+      "policy_id": "policy_id-value",
+      "expected_policy_revision": 1,
+      "result_policy_revision": 1,
+      "review_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "review_expires_at": "2026-10-27T12:34:56Z",
+      "disposition": "reviewed"
+    },
+    "SourcePolicyReceipt": {
+      "kind": "policy",
+      "receipt": {
+        "schema": "koinon.source-policy-operation.v1",
+        "receipt_id": "receipt_id-value",
+        "operation_id": "operation_id-value",
+        "action": "review",
+        "mapping_id": "mapping_id-value",
+        "policy_id": "policy_id-value",
+        "expected_policy_revision": 1,
+        "result_policy_revision": 1,
+        "review_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "review_expires_at": "2026-10-27T12:34:56Z",
+        "disposition": "reviewed"
+      }
+    },
+    "SourcePolicyReviewInput": {
+      "operation_id": "operation_id-valuexxxxxxxxxxxxxxxxxx",
+      "connection_id": "connection_id-value",
+      "drive_id": "drive_id-value",
+      "root_id": "root_id-value",
+      "destination": {
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "parent_id": "parent_id-value"
+      },
+      "recursive": false,
+      "removal_policy": "retire",
+      "schema_version": 1,
+      "mode": "document",
+      "hierarchy": "preserve",
+      "excluded_ids": [
+        "excluded_ids-value"
+      ],
+      "formats": [
+        "formats-value"
+      ],
+      "schedule": {
+        "kind": "manual"
+      },
+      "replacement_resolutions": [
+        {
+          "object_id": "object_id-value",
+          "remote_version": "remote_version-value",
+          "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "baseline_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "new_locator_set_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "replacements": [
+            {
+              "new_locator": "new_locator-value",
+              "previous_table_id": "previous_table_id-value"
+            }
+          ],
+          "removed_table_ids": [
+            "removed_table_ids-value"
+          ]
+        }
+      ]
+    },
+    "SourcePreviewItem": {
+      "item_id": "item_id-value",
+      "name": "name-value",
+      "kind": "kind-value",
+      "version": "version-value",
+      "filename": "filename-value",
+      "export_mime": "export_mime-value",
+      "reason": "reason-value",
+      "ancestry": [
+        "ancestry-value"
+      ],
+      "relative_path": [
+        "relative_path-value"
+      ],
+      "destination_relative_path": [
+        "destination_relative_path-value"
+      ],
+      "collision": "none",
+      "size_bytes": 1,
+      "action": "create"
+    },
+    "SourcePreviousMember": {
+      "table_id": "table_id-value",
+      "catalog_table_id": "catalog_table_id-value",
+      "locator": "locator-value",
+      "name": "name-value"
+    },
+    "SourceProviderCapability": {
+      "provider": "sharepoint",
+      "display_name": "display_name-value",
+      "consent_available": false,
+      "unavailable_reason": "disabled"
+    },
     "SourceReference": {
       "id": "id-value",
       "asset_id": "asset_id-value",
@@ -9019,6 +10076,168 @@
       "quote": "quote-value",
       "current_revision": "current_revision-value",
       "availability": "available"
+    },
+    "SourceReplacementPreview": {
+      "object_id": "object_id-value",
+      "remote_version": "remote_version-value",
+      "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "baseline_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "new_locator_set_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "parser_fingerprint": "parser_fingerprint-value",
+      "previous_members": [
+        {
+          "table_id": "table_id-value",
+          "catalog_table_id": "catalog_table_id-value",
+          "locator": "locator-value",
+          "name": "name-value"
+        }
+      ],
+      "new_members": [
+        {
+          "locator": "locator-value",
+          "name": "name-value",
+          "ambiguous": false
+        }
+      ]
+    },
+    "SourceReplacementPreviewInput": {
+      "expected_revision": 1,
+      "remote_version": "remote_version-value"
+    },
+    "SourceReviewPage": {
+      "review_id": "review_id-value",
+      "policy_revision": 1,
+      "review_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "expires_at": "2026-10-27T12:34:56Z",
+      "items": [
+        {
+          "item_id": "item_id-value",
+          "name": "name-value",
+          "kind": "kind-value",
+          "version": "version-value",
+          "filename": "filename-value",
+          "export_mime": "export_mime-value",
+          "reason": "reason-value",
+          "ancestry": [
+            "ancestry-value"
+          ],
+          "relative_path": [
+            "relative_path-value"
+          ],
+          "destination_relative_path": [
+            "destination_relative_path-value"
+          ],
+          "collision": "none",
+          "size_bytes": 1,
+          "action": "create"
+        }
+      ],
+      "next_cursor": "next_cursor-value",
+      "enumeration_complete": false,
+      "total": 1,
+      "observed_count": 1,
+      "known_bytes": 1,
+      "unknown_size_count": 1,
+      "can_apply": false,
+      "destination": {
+        "segments": [
+          {
+            "id": "id-value",
+            "kind": "kind-value",
+            "name": "name-value"
+          }
+        ]
+      }
+    },
+    "SourceRootPresentation": {
+      "name": "name-value",
+      "relative_path": [
+        "relative_path-value"
+      ]
+    },
+    "SourceRunItem": {
+      "id": "id-value",
+      "object_id": "object_id-value",
+      "generation": 1,
+      "remote_version": "remote_version-value",
+      "kind": "file",
+      "name": "name-value",
+      "relative_path": [
+        "relative_path-value"
+      ],
+      "status": "observed",
+      "error_code": "error_code-value",
+      "source_id": "source_id-value",
+      "asset_id": "asset_id-value",
+      "attempt_id": "attempt_id-value",
+      "updated_at": "2026-10-27T12:34:56Z"
+    },
+    "SourceRunItemPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "object_id": "object_id-value",
+          "generation": 1,
+          "remote_version": "remote_version-value",
+          "kind": "file",
+          "name": "name-value",
+          "relative_path": [
+            "relative_path-value"
+          ],
+          "status": "observed",
+          "error_code": "error_code-value",
+          "source_id": "source_id-value",
+          "asset_id": "asset_id-value",
+          "attempt_id": "attempt_id-value",
+          "updated_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "next_cursor": "next_cursor-value"
+    },
+    "SourceRunOutput": {
+      "id": "id-value",
+      "mapping_id": "mapping_id-value",
+      "policy_revision": 1,
+      "control_revision": 1,
+      "status": "queued",
+      "stopping": false,
+      "retry_of_run_id": "retry_of_run_id-value",
+      "counters": {
+        "example": 1
+      },
+      "enumeration_complete": false,
+      "created_at": "2026-10-27T12:34:56Z",
+      "finished_at": "2026-10-27T12:34:56Z",
+      "can_cancel": false,
+      "can_retry": false
+    },
+    "SourceRunPage": {
+      "items": [
+        {
+          "id": "id-value",
+          "mapping_id": "mapping_id-value",
+          "policy_revision": 1,
+          "control_revision": 1,
+          "status": "queued",
+          "stopping": false,
+          "retry_of_run_id": "retry_of_run_id-value",
+          "counters": {
+            "example": 1
+          },
+          "enumeration_complete": false,
+          "created_at": "2026-10-27T12:34:56Z",
+          "finished_at": "2026-10-27T12:34:56Z",
+          "can_cancel": false,
+          "can_retry": false
+        }
+      ],
+      "next_cursor": "next_cursor-value"
+    },
+    "SourceScheduleCapability": {
+      "min_interval_seconds": 1,
+      "max_interval_seconds": 1,
+      "calendar_timezones": "iana",
+      "max_calendar_weekdays": 7
     },
     "SqlAttemptReceipt": {
       "result_id": "result_id-value",
@@ -9630,6 +10849,45 @@
       "has_previous": false,
       "current_snapshot_id": "current_snapshot_id-value"
     },
+    "TableSnapshotReadPage": {
+      "items": [
+        {
+          "dataset_id": "dataset_id-value",
+          "table_id": "table_id-value",
+          "native_dataset_id": "native_dataset_id-value",
+          "native_table_id": "native_table_id-value",
+          "snapshot_id": "snapshot_id-value",
+          "status": "recorded",
+          "snapshot_status": "PARTIAL",
+          "level": "file_section",
+          "operation": "upload",
+          "predecessor_snapshot_id": "predecessor_snapshot_id-value",
+          "artifact": {
+            "id": "id-value",
+            "original_filename": "original_filename-value",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "byte_size": 1,
+            "file_format": "file_format-value",
+            "compression": "compression-value",
+            "actor": "actor-value",
+            "admitted_at": "2026-10-27T12:34:56Z"
+          },
+          "sheet_or_json_path": "sheet_or_json_path-value",
+          "table_label": "table_label-value",
+          "parquet_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "parquet_byte_size": 1,
+          "schema_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "row_count": 1,
+          "actor": "actor-value",
+          "recorded_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "next_cursor": "next_cursor-value",
+      "total": null,
+      "pages": null,
+      "total_is_exact": false,
+      "current_snapshot_id": "current_snapshot_id-value"
+    },
     "TableSnapshotSummary": {
       "dataset_id": "dataset_id-value",
       "table_id": "table_id-value",
@@ -9895,6 +11153,22 @@
       "expected_contact_revision": 1,
       "reason": "recipient_reported_not_received",
       "acknowledge_possible_duplicate": true
+    },
+    "SourceOperationReceipt": {
+      "kind": "policy",
+      "receipt": {
+        "schema": "koinon.source-policy-operation.v1",
+        "receipt_id": "receipt_id-value",
+        "operation_id": "operation_id-value",
+        "action": "review",
+        "mapping_id": "mapping_id-value",
+        "policy_id": "policy_id-value",
+        "expected_policy_revision": 1,
+        "result_policy_revision": 1,
+        "review_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "review_expires_at": "2026-10-27T12:34:56Z",
+        "disposition": "reviewed"
+      }
     },
     "KnowledgeCommitOutcome": {
       "status": "committed",

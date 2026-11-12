@@ -1,10 +1,11 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
 
+
 from pyfly.container import repository
 from pyfly.data.relational.sqlalchemy import Repository
 from pyfly.data.transaction import transactional
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, case, func, or_, select
 
 from koinon.assistants.entities import (
     AgentConfiguration,
@@ -15,6 +16,8 @@ from koinon.assistants.entities import (
     Provider,
     ToolResult,
 )
+from koinon.assistants.history.classification import local_conversation
+from koinon.assistants.source_reads import captured_predicate, has_history_capture, protected_hydration
 
 
 @repository(name="assistants.providers")
@@ -31,11 +34,45 @@ class AgentRepository(Repository[AgentConfiguration, str]):
 class ChatThreadRepository(Repository[ChatThread, str]):
     """Private conversations."""
 
+    @protected_hydration
+    async def find_by_id(self, id, **filters):
+        if has_history_capture():
+            return await self.metadata(id)
+        return await super().find_by_id(id, **filters)
+
+    @transactional(read_only=True, read_from_primary=True)
+    async def metadata(self, id):
+        session = self._require_session()
+        identity = (
+            await session.execute(
+                select(ChatThread.tenant_id, ChatThread.title_source).where(ChatThread.id == id)
+            )
+        ).first()
+        if identity is None:
+            return None
+        safe = ChatThread.title_source.in_(("default", "manual", "user_prompt"))
+        if identity.title_source not in ("default", "manual", "user_prompt"):
+            safe = or_(safe, local_conversation(identity.tenant_id, session))
+        columns = [column for column in ChatThread.__table__.columns if column.name != "title"]
+        row = (
+            await session.execute(
+                select(*columns, case((safe, ChatThread.title), else_="Conversation").label("title")).where(
+                    ChatThread.id == id
+                )
+            )
+        ).first()
+        return ChatThread(**row._mapping) if row is not None else None
+
 
 @repository(name="assistants.messages")
 class ChatMessageRepository(Repository[ChatMessage, str]):
     """Durable visible conversation history."""
 
+    @protected_hydration
+    async def find_by_id(self, id, **filters):
+        return await super().find_by_id(id, **filters)
+
+    @protected_hydration
     @transactional(read_only=True, read_from_primary=True)
     async def snapshot_messages(self, thread_id: str, message_ids: list[str]):
         return (
@@ -59,11 +96,12 @@ class ChatMessageRepository(Repository[ChatMessage, str]):
             .where(ChatMessage.thread_id == thread_id, ToolResult.kind == "attachment")
         )
 
+    @protected_hydration
     async def find_thread_messages(self, thread_id, *, before=None, limit=100):
         statement = (
             select(ChatMessage, ChatRun.id, ChatRun.sequence)
             .outerjoin(ChatRun, ChatRun.message_id == ChatMessage.id)
-            .where(ChatMessage.thread_id == thread_id)
+            .where(ChatMessage.thread_id == thread_id, captured_predicate(ChatMessage))
         )
         if before is not None:
             timestamp, message_id = before
@@ -86,12 +124,21 @@ class ChatMessageRepository(Repository[ChatMessage, str]):
 class ChatRunRepository(Repository[ChatRun, str]):
     """Recoverable generation queue."""
 
+    @protected_hydration
+    async def find_by_id(self, id, **filters):
+        return await super().find_by_id(id, **filters)
+
+    @protected_hydration
     async def recent_title_runs(self, thread_id: str):
         return list(
             (
                 await self._require_session().scalars(
                     select(ChatRun)
-                    .where(ChatRun.thread_id == thread_id, ChatRun.status.in_(["completed", "running"]))
+                    .where(
+                        ChatRun.thread_id == thread_id,
+                        ChatRun.status.in_(["completed", "running"]),
+                        captured_predicate(ChatRun),
+                    )
                     .order_by(ChatRun.created_at.desc(), ChatRun.id.desc())
                     .limit(2)
                 )
@@ -145,6 +192,7 @@ class ChatEventRepository(Repository[ChatEvent, str]):
             .outerjoin(reset, ChatEvent.run_id == reset.c.reset_run)
             .where(
                 ChatEvent.run_id.in_(run_ids),
+                captured_predicate(ChatEvent),
                 ChatEvent.type == "tool_activity",
                 call_id.is_not(None),
                 ChatEvent.sequence > func.coalesce(reset.c.reset_sequence, 0),
@@ -159,6 +207,7 @@ class ChatEventRepository(Repository[ChatEvent, str]):
 
         return ToolActivity.model_validate(data["tool_activity"]).model_dump(exclude_none=True)
 
+    @protected_hydration
     async def activity_page(self, run_id: str, *, page: int, page_size: int):
         latest = self._latest_activity([run_id])
         session = self._require_session()
@@ -177,6 +226,7 @@ class ChatEventRepository(Repository[ChatEvent, str]):
             "pages": (total + page_size - 1) // page_size,
         }
 
+    @protected_hydration
     async def activity_previews(self, run_ids: list[str], *, limit: int = 5):
         if not run_ids:
             return {}
@@ -200,6 +250,7 @@ class ChatEventRepository(Repository[ChatEvent, str]):
             result[row.run_id]["total"] = row.total
         return result
 
+    @protected_hydration
     async def publication_range(self, run_id: str, sequence: int, count: int):
         if not 1 <= count <= 2000:
             raise ValueError("Invalid sealed publication range")
@@ -209,6 +260,7 @@ class ChatEventRepository(Repository[ChatEvent, str]):
                     select(ChatEvent)
                     .where(
                         ChatEvent.run_id == run_id,
+                        captured_predicate(ChatEvent),
                         ChatEvent.sequence >= sequence,
                         ChatEvent.sequence < sequence + count,
                     )
@@ -218,12 +270,17 @@ class ChatEventRepository(Repository[ChatEvent, str]):
             ).all()
         )
 
+    @protected_hydration
     async def find_after(self, run_id: str, sequence: int):
         return list(
             (
                 await self._require_session().scalars(
                     select(ChatEvent)
-                    .where(ChatEvent.run_id == run_id, ChatEvent.sequence > sequence)
+                    .where(
+                        ChatEvent.run_id == run_id,
+                        ChatEvent.sequence > sequence,
+                        captured_predicate(ChatEvent),
+                    )
                     .order_by(ChatEvent.sequence)
                     .limit(500)
                 )
@@ -234,3 +291,16 @@ class ChatEventRepository(Repository[ChatEvent, str]):
 @repository(name="assistants.tool_results")
 class ToolResultRepository(Repository[ToolResult, str]):
     """Authorized evidence referenced by typed OpenUI components."""
+
+    @protected_hydration
+    async def find_all(self, **filters):
+        if not has_history_capture():
+            return await super().find_all(**filters)
+        return list(
+            await self._require_session().scalars(
+                select(ToolResult).where(
+                    captured_predicate(ToolResult),
+                    *(getattr(ToolResult, key) == value for key, value in filters.items()),
+                )
+            )
+        )

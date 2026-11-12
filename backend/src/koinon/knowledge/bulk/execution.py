@@ -9,6 +9,7 @@ from pyfly.container import Provider, service
 from pyfly.kernel import ConflictException, ServiceUnavailableException
 from pyfly.security.context_holder import SecurityContextHolder
 
+from koinon.catalog.errors import AccessDenied
 from koinon.knowledge.bulk.authority import execution_context
 from koinon.knowledge.bulk.ports import BulkIntakePort
 from koinon.knowledge.bulk.queue import BulkLease, BulkQueue
@@ -23,14 +24,45 @@ class BulkExecutor:
     async def execute(self, lease: BulkLease) -> None:
         try:
             with SecurityContextHolder.using(execution_context(lease.subject, lease.token_id)):
-                await self.queue.check(lease)
+                inspection_only = False
+                try:
+                    await self.queue.check(lease)
+                except (ConflictException, AccessDenied) as denied:
+                    if not isinstance(denied, AccessDenied) and denied.code != "SOURCE_PUBLICATION_DENIED":
+                        raise
+                    # Cancellation can follow a successful native commit whose
+                    # primary acknowledgement was lost. Recover that exact receipt
+                    # without reserving or creating any additional native work.
+                    try:
+                        await self.queue.reconcile_source(lease)
+                    except ConflictException as unavailable:
+                        if unavailable.code == "SOURCE_PUBLICATION_DENIED":
+                            raise denied from unavailable
+                        raise
+                    inspection_only = True
                 native = self.intakes.get()
                 if native is None:
                     raise ServiceUnavailableException(
                         "Canonical durable intake is unavailable", code="BULK_NATIVE_REQUIRED"
                     )
-                await native.reserve(lease)
-                observed = await native.inspect(lease)
+                if not inspection_only:
+                    await native.reserve(lease)
+                observed = await (
+                    native.inspect_committed(lease) if inspection_only else native.inspect(lease)
+                )
+                if inspection_only:
+                    if observed.status != "committed" or observed.receipt is None:
+                        await self.queue.failed(lease, code="BULK_NATIVE_OUTCOME_UNRESOLVED", unknown=True)
+                        return
+                    if (
+                        observed.receipt.sha256 != lease.sha256
+                        or observed.receipt.size_bytes != lease.size_bytes
+                    ):
+                        raise ConflictException(
+                            "Native receipt differs from admitted bytes", code="BULK_NATIVE_RECEIPT_CONFLICT"
+                        )
+                    await native.settle_source_receipt(lease, observed.receipt)
+                    return
                 recovery = getattr(lease, "recovery_operation", None)
                 expected_failure = getattr(lease, "recovery_failure", None)
                 expected_state = {

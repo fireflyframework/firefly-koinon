@@ -5,6 +5,7 @@ import {
   KoinonError,
   type CatalogEntry,
   type KoinonTransport,
+  type RequestOptions,
 } from '@fireflyframework/koinon-sdk';
 import { provideKoinonClient } from '../client-provider';
 import { KoinonFacade } from '../koinon-facade';
@@ -82,11 +83,11 @@ it('uses the observed server parent and timestamp, preserves stale-conflict feed
   const fresh = { ...folder, updated_at: '2026-11-01T02:00:00Z' };
   const { fixture } = await setup(
     async <T>(method: string, path: string, options?: { body?: unknown }) => {
-      if (method === 'POST') {
+      if (method === 'POST' && path.endsWith('/move')) {
         writes.push(options?.body);
         throw new KoinonError(409, 'CONFLICT', 'Folder changed. Refresh before moving.');
       }
-      return (path.endsWith('/folder') ? fresh : { items: [] }) as T;
+      return (path.endsWith('/folder/read') ? fresh : { items: [] }) as T;
     },
   );
   fixture.componentInstance.choose('destination');
@@ -108,7 +109,7 @@ it('discards an in-flight result and clears selected names when the actor change
   });
   const { fixture, facade } = await setup(
     async <T>(method: string, path: string) =>
-      (method === 'POST' ? response : path.endsWith('/folder') ? folder : { items: [] }) as T,
+      (path.endsWith('/move') ? response : path.endsWith('/folder/read') ? folder : { items: [] }) as T,
   );
   fixture.componentInstance.choose('destination');
   const moved = vi.fn();
@@ -121,6 +122,18 @@ it('discards an in-flight result and clears selected names when the actor change
   await fixture.whenStable();
   expect(moved).not.toHaveBeenCalled();
   expect(facade.selected()).toBeNull();
+  expect(fixture.componentInstance.fresh()).toBeNull();
+  expect(fixture.componentInstance.destination()).toBeNull();
+});
+
+it('reads a move candidate with explicit reader intent and clears it when that intent changes',async()=>{
+  const calls:unknown[]=[];
+  const {fixture,facade}=await setup(async<T>(method:string,path:string,options?:RequestOptions)=>{
+    if(path.endsWith('/read')){calls.push([method,options?.body]);return folder as T;}
+    return {items:[],next_cursor:null} as T;
+  });
+  expect(calls).toEqual([['POST',{reader_source_connections:null}]]);
+  facade.readerSources.set([]);fixture.detectChanges();
   expect(fixture.componentInstance.fresh()).toBeNull();
   expect(fixture.componentInstance.destination()).toBeNull();
 });

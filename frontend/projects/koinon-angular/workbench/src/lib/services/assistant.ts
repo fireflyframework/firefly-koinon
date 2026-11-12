@@ -12,6 +12,7 @@ import type {
   ThreadPatch,
   ToolActivity,
   ChatFolder,
+  ReaderSourceSelection,
 } from '@fireflyframework/koinon-sdk';
 import { KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonClientContext } from '@fireflyframework/koinon-angular/workbench/core';
@@ -400,7 +401,7 @@ export class KoinonAssistant implements OnDestroy {
       if (epoch === this.epoch) this.pending.set(false);
     }
   }
-  async send(text: string, attachmentIds: readonly string[] = []): Promise<boolean> {
+  async send(text: string, attachmentIds: readonly string[] = [], readerSources: readonly ReaderSourceSelection[] | null = null): Promise<boolean> {
     if (this.running() || this.pending() || !text.trim()) return false;
     const agent = this.selectedAgent();
     if (!this.canUseAgent(agent)) {
@@ -410,6 +411,7 @@ export class KoinonAssistant implements OnDestroy {
     const epoch = this.epoch,
       tenant = this.f.tenantId(),
       client = this.clients.get();
+    const readerSelection = readerSources === null ? null : readerSources.map(row => ({...row}));
     this.pending.set(true);
     this.error.set('');
     let admitted = false;
@@ -422,6 +424,7 @@ export class KoinonAssistant implements OnDestroy {
         scope: this.scope(),
         client_request_id: crypto.randomUUID(),
         ...(attachmentIds.length ? { attachment_ids: [...attachmentIds] } : {}),
+        ...(readerSelection === null ? {} : {reader_source_connections: readerSelection}),
       });
       admitted = true;
       if (epoch !== this.epoch) return true;

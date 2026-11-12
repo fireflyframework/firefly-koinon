@@ -85,33 +85,16 @@
     <span class="keyboard-hint"
       ><kbd>↑</kbd><kbd>↓</kbd>{{ copy().navigate }}<kbd>↵</kbd>{{ copy().select }}</span
     >
-    @if (search.page().page !== undefined && (search.page().pages ?? 0) > 0) {
+    @if (search.page().next_cursor) {
       <nav [attr.aria-label]="copy().resources">
-        <span class="page-label"
-          >{{ 'Page' | ffkText }} {{ search.page().page }} / {{ search.page().pages }}
-          @if (search.page().total !== undefined) {
-            <span class="total">
-             , {{ search.page().total }}
-              {{ copy().results.toLocaleLowerCase(i18n.preferences().locale) }}</span
-            >
-          }
-        </span>
-        <button
-          type="button"
-          data-page="previous"
-          [attr.aria-label]="'Previous page' | ffkText"
-          [disabled]="search.pending() || (search.page().page ?? 1) <= 1"
-          (click)="search.goToPage((search.page().page ?? 1) - 1)"
-        >
-          <ffk-icon name="chevron-left" />
-        </button>
         <button
           type="button"
           data-page="next"
-          [attr.aria-label]="'Next page' | ffkText"
-          [disabled]="search.pending() || (search.page().page ?? 1) >= (search.page().pages ?? 0)"
-          (click)="search.goToPage((search.page().page ?? 1) + 1)"
+          [attr.aria-label]="'Continue browsing' | ffkText"
+          [disabled]="search.pending()"
+          (click)="search.nextPage()"
         >
+          {{ 'Continue browsing' | ffkText }}
           <ffk-icon name="chevron" />
         </button>
       </nav>

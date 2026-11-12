@@ -41,6 +41,7 @@ class OAuthProtocolBoundary:
         stateless = path in {
             "/.well-known/oauth-protected-resource/mcp",
             "/.well-known/oauth-authorization-server/oauth2/mcp",
+            "/oauth2/mcp/.well-known/oauth-authorization-server",
             "/oauth2/mcp/token",
         }
         if scope.get("method") == "POST" and path in {"/oauth2/mcp/token", "/oauth2/mcp/authorize"}:
@@ -303,6 +304,7 @@ def install_oauth(app, context):
     for path, endpoint, methods in (
         ("/.well-known/oauth-protected-resource/mcp", protected_resource, ["GET"]),
         ("/.well-known/oauth-authorization-server/oauth2/mcp", metadata, ["GET"]),
+        ("/oauth2/mcp/.well-known/oauth-authorization-server", metadata, ["GET"]),
         ("/oauth2/mcp/authorize", authorize, ["GET", "POST"]),
         ("/oauth2/mcp/token", token, ["POST"]),
         ("/oauth2/mcp/font", font, ["GET"]),

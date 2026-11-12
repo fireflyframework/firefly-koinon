@@ -1,5 +1,6 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 export const CHAT_SPANISH: Readonly<Record<string, string>> = {
+  'Sources for answers':'Fuentes para las respuestas',
   'The verified answer stream could not be reconciled. Reopen the conversation.':
     'No se pudo reconciliar la respuesta verificada. Vuelve a abrir el chat.',
   Failed: 'Fallido',

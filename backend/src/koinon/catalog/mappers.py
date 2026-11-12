@@ -3,7 +3,8 @@
 
 
 from koinon.api.json_values import portable_json
-from koinon.catalog.entities import INTERNAL_METADATA_KEYS, AuditEvent, CatalogEntry
+from koinon.catalog.audit_history import AuditHistoryEvent
+from koinon.catalog.entities import INTERNAL_METADATA_KEYS, CatalogEntry
 
 
 def entry_dto(entry: CatalogEntry) -> dict:
@@ -49,7 +50,7 @@ def member_dto(member) -> dict:
     }
 
 
-def audit_dto(event: AuditEvent) -> dict:
+def audit_dto(event: AuditHistoryEvent) -> dict:
     return {
         **{field: getattr(event, field) for field in ("id", "tenant_id", "subject", "action", "resource_id")},
         "details": portable_json(event.details),

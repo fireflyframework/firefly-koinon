@@ -5,6 +5,7 @@
 import asyncio
 import hashlib
 import json
+from contextlib import asynccontextmanager
 from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
@@ -12,7 +13,7 @@ from uuid import uuid4
 from pyfly.container import service
 
 from koinon.integrations.content_sources.browse import PersonalSourceBrowser
-from koinon.integrations.content_sources.dtos import SourceScope
+from koinon.integrations.content_sources.dtos import Account, SourceScope
 from koinon.integrations.content_sources.errors import SourceError
 from koinon.integrations.content_sources.lifecycle import SourceConnectionService, _no_remote_unit
 from koinon.integrations.content_sources.mapping_ancestry import FolderAncestry, overlaps
@@ -37,7 +38,16 @@ class SourceMappingReviews:
         self.browser, self.records = browser, records
         self._slots = asyncio.Semaphore(4)
 
-    async def review(self, actor: str, tenant: str, request: MappingReviewInput) -> MappingReviewOutput:
+    @asynccontextmanager
+    async def verified(
+        self,
+        actor: str,
+        tenant: str,
+        request: MappingReviewInput,
+        *,
+        existing_mapping_id=None,
+        before_commit=None,
+    ):
         _no_remote_unit()
         await self.authority.catalog._refresh_managed_memberships(actor)
         async with primary_authority(read_only=False):
@@ -52,6 +62,17 @@ class SourceMappingReviews:
             candidates = await self.records.review_candidates(
                 tenant, account, request.drive_id, at=admitted_at
             )
+            if existing_mapping_id is not None:
+                existing = await self.records.owned(tenant, actor, existing_mapping_id)
+                if existing is None or (existing.connection_id, existing.drive_id, existing.root_id) != (
+                    request.connection_id,
+                    request.drive_id,
+                    request.root_id,
+                ):
+                    raise SourceError("access_denied")
+                candidates = tuple(
+                    candidate for candidate in candidates if candidate.id != existing_mapping_id
+                )
 
         # A single current grant spans both observations; refresh/reconnect invalidates the proof.
         grant = await self.connections.read_grant(actor, tenant, request.connection_id, account)
@@ -64,8 +85,11 @@ class SourceMappingReviews:
                 self.browser._source(scope, _OperationToken(account, grant.token)) as adapter,
             ):
                 proof = await FolderAncestry(adapter, scope).capture(roots)
+                from koinon.integrations.content_sources.mapping_validation import effective_selection
+
+                selected = effective_selection(request, proof.root_kind(request.root_id))
                 if any(
-                    overlaps(proof, request.root_id, request.recursive, row.root_id, row.recursive)
+                    overlaps(proof, request.root_id, selected.recursive, row.root_id, row.recursive)
                     for row in candidates
                 ):
                     raise SourceError("scope_mismatch")
@@ -75,6 +99,8 @@ class SourceMappingReviews:
         except TimeoutError:
             raise SourceError("timeout") from None
         await self.connections.confirm_read_grant(actor, tenant, request.connection_id, grant)
+        if before_commit is not None:
+            await before_commit()
         await self.authority.catalog._refresh_managed_memberships(actor)
         async with primary_authority(read_only=False):
             await self.authority.destination(actor, tenant, request.destination, write=True)
@@ -96,11 +122,14 @@ class SourceMappingReviews:
             ):
                 raise SourceError("authority_changed")
             current = await self.records.review_candidates(tenant, account, request.drive_id, at=admitted_at)
+            if existing_mapping_id is not None:
+                current = tuple(candidate for candidate in current if candidate.id != existing_mapping_id)
             if current != candidates:
                 raise SourceError("authority_changed")
             now = datetime.now(UTC)
             expires = now + timedelta(minutes=15)
-            payload = request.model_dump(mode="json")
+            payload = selected.model_dump(mode="json")
+            payload["root_kind"] = proof.root_kind(request.root_id)
             payload["connection_revision"] = grant.revision
             # Retain only the chosen ancestry; cross-owner candidate metadata stays private and transient.
             payload["ancestry"] = list(proof.ancestors(request.root_id))
@@ -110,6 +139,11 @@ class SourceMappingReviews:
             digest = hashlib.sha256(
                 json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
             ).hexdigest()
+            yield row, proof, payload, digest, now, expires
+
+    async def review(self, actor: str, tenant: str, request: MappingReviewInput) -> MappingReviewOutput:
+        async with self.verified(actor, tenant, request) as (row, proof, payload, digest, now, expires):
+            account = Account(row.provider, row.external_subject, row.external_tenant)
             identifier = str(uuid4())
             await self.records.save(
                 SourceMapping(

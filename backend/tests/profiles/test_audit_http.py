@@ -3,13 +3,38 @@
 import importlib.util
 from pathlib import Path
 
+import pytest
+from test_audit_pages import postgres
+from test_audit_pages import source_database as source_database
+
 spec = importlib.util.spec_from_file_location(
     "audit_native_web_fixture", Path(__file__).resolve().parents[1] / "web/conftest.py"
 )
 assert spec and spec.loader
 native = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(native)
-client, bearer = native.client, native.bearer
+bearer = native.bearer
+
+
+@pytest.fixture
+def client(source_database, tmp_path, monkeypatch, request):
+    import koinon.app as application_module
+
+    target, _, engine = source_database
+    postgres.upgrade_sources(engine)
+    original = application_module.create_application
+
+    def application(values):
+        values["pyfly"]["data"]["relational"].update(
+            {
+                "url": target.set(drivername="postgresql+asyncpg").render_as_string(hide_password=False),
+                "ddl-auto": "none",
+            }
+        )
+        return original(values)
+
+    monkeypatch.setattr(application_module, "create_application", application)
+    yield from native.client.__wrapped__(tmp_path, monkeypatch, request)
 
 
 def test_native_audit_filters_pages_actors_and_tenant_permissions(client):

@@ -20,7 +20,7 @@ import uuid
 from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import BigInteger, CheckConstraint, String, text
+from sqlalchemy import BigInteger, CheckConstraint, ForeignKey, String, text
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -29,6 +29,9 @@ from flyquery.models.entities import Base
 
 class Example(Base):
     __tablename__ = "flyquery_examples"
+    source_provenance_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("flyquery_metadata_provenance.id"), nullable=True, default=None
+    )
     __table_args__ = (
         CheckConstraint("source IN ('USER_CURATED','AGENT_LEARNED')", name="ck_examples_source"),
         CheckConstraint("quality IN ('PROPOSED','APPROVED','REJECTED')", name="ck_examples_quality"),

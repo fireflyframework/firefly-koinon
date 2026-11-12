@@ -48,18 +48,18 @@ export {
 export { KoinonFilterBar } from './lib/molecules/filter-bar';
 export { KoinonSidePanel } from '@fireflyframework/koinon-angular/workbench';
 
-export { KoinonConversationGroups } from './lib/services/conversation-groups';
+export { KoinonConversationGroups } from '@fireflyframework/koinon-angular/chat/state';
 export type {
   ConversationPage,
   ConversationBranch,
-} from './lib/services/conversation-group-models';
+} from '@fireflyframework/koinon-angular/chat/state';
 
 export {
   KoinonCommandPalette,
   type KoinonCommand,
 } from '@fireflyframework/koinon-angular/workbench';
 
-export { KoinonEvidenceGroups } from './lib/services/evidence-groups';
+export { KoinonEvidenceGroups } from '@fireflyframework/koinon-angular/chat/state';
 
 import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
 import { SPANISH } from './lib/foundations/spanish';

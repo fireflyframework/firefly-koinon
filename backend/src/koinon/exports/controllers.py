@@ -17,7 +17,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 from koinon.evidence.http import private_json
-from koinon.exports.dtos import ExportCreate, ExportReviewRequest
+from koinon.exports.dtos import ExportBrowseInput, ExportCreate, ExportReviewRequest
 from koinon.exports.service import KnowledgeExports
 from koinon.security.identity import identity_from_request
 
@@ -64,6 +64,14 @@ class ExportController:
                 page=page,
                 page_size=page_size,
             )
+        )
+
+    @post_mapping("/browse")
+    async def browse(
+        self, tenant_id: PathVar[str], body: Valid[Body[ExportBrowseInput]], request: Request
+    ) -> JSONResponse:
+        return private_json(
+            await self.exports.browse(identity_from_request(request).subject, tenant_id, body)
         )
 
     @get_mapping("/{export_id}")

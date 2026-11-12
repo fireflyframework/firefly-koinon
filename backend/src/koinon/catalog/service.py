@@ -18,13 +18,19 @@ from pyfly.kernel import ConflictException, InvalidRequestException
 from koinon.catalog.ancestry import MAX_ANCESTRY, MAX_FOLDER_ANCESTRY, validated_ancestry
 from koinon.catalog.entities import INTERNAL_METADATA_KEYS, AuditEvent, CatalogEntry, Membership
 from koinon.catalog.errors import AccessDenied, InvalidHierarchy
-from koinon.catalog.ports import ManagedMembershipReader, MembershipEventRecorder, MembershipRecord
+from koinon.catalog.ports import (
+    ManagedMembershipReader,
+    MembershipEventRecorder,
+    MembershipRecord,
+    SourceCatalogPolicy,
+)
 from koinon.catalog.repositories import (
     AuditRepository,
     CatalogRepository,
     MembershipRepository,
     TenantRepository,
 )
+from koinon.catalog.source_mutations import source_mutation
 from koinon.security.authority import primary_authority
 from koinon.security.policy_reads import snapshot_values
 from koinon.tokens.authorization import TokenRestriction
@@ -90,6 +96,7 @@ class CatalogService:
         managed_memberships: ManagedMembershipReader | None = None,
         managed_provider: Provider[ManagedMembershipReader | None] | None = None,
         membership_events: MembershipEventRecorder | None = None,
+        source_policy: Provider[SourceCatalogPolicy | None] | None = None,
     ):
         self.tenant_repository = tenant_repository
         self.membership_repository = membership_repository
@@ -99,6 +106,7 @@ class CatalogService:
         self._managed_memberships = managed_memberships
         self._managed_provider = managed_provider
         self.membership_events = membership_events
+        self.source_policy = source_policy
 
     @staticmethod
     def require_knowledge_review(kind):
@@ -107,6 +115,11 @@ class CatalogService:
                 "Use an explicitly confirmed knowledge intent for repository changes",
                 code="KNOWLEDGE_REVIEW_REQUIRED",
             )
+
+    async def _publication_state(self, permit, target_id):
+        from koinon.integrations.content_sources.source_publication import publication_state
+
+        return await publication_state(permit, self.catalog_repository._require_session(), target_id)
 
     @property
     def managed_memberships(self) -> ManagedMembershipReader | None:
@@ -247,6 +260,24 @@ class CatalogService:
             else rows[0]
         )
 
+    async def get_identity(self, subject: str, tenant_id: str, entry_id: str):
+        """Authorize a path without loading its name, metadata or retained payload."""
+        entry = await self.catalog_repository.identity(tenant_id, entry_id)
+        if entry is None:
+            raise AccessDenied("Resource is not accessible in the selected context", code="ACCESS_DENIED")
+        await self.authorize(subject, tenant_id, "catalog:read", entry.workspace_id)
+        if self.restriction:
+            await self.restriction.resource(
+                subject,
+                entry,
+                parent_reader=lambda identifier: self.catalog_repository.identity(tenant_id, identifier),
+            )
+        if entry.kind == "knowledge_item":
+            bounds = await self.curated_read_bounds(subject, tenant_id)
+            if not await self.catalog_repository.curated_visible(tenant_id, entry.id, **bounds):
+                raise AccessDenied("Knowledge source roots are unavailable", code="ACCESS_DENIED")
+        return entry
+
     async def get(self, subject: str, tenant_id: str, entry_id: str) -> CatalogEntry:
         entry = await self._scoped_entry(tenant_id, entry_id)
         await self.authorize(subject, tenant_id, "catalog:read", entry.workspace_id)
@@ -291,6 +322,7 @@ class CatalogService:
         kind: str | None = None,
         workspace_id: str | None = None,
         include_archived: bool = False,
+        _include_imported: bool = False,
     ) -> list[CatalogEntry]:
         if parent_id is not None:
             parent = await self.get(subject, tenant_id, parent_id)
@@ -313,7 +345,11 @@ class CatalogService:
             filters["kind"] = kind
         if workspace_id is not None:
             filters["workspace_id"] = workspace_id
-        rows = await self.catalog_repository.find_all(**filters)
+        rows = (
+            await self.catalog_repository.find_all(**filters)
+            if _include_imported
+            else await self.catalog_repository.local_list(**filters)
+        )
         tenant_wide = any(m.workspace_id is None for m in grants)
         allowed_workspaces = {m.workspace_id for m in grants}
         visible = [entry for entry in rows if tenant_wide or entry.workspace_id in allowed_workspaces]
@@ -341,7 +377,7 @@ class CatalogService:
             visible = [entry for entry in visible if entry.kind != "knowledge_item" or entry.id in admitted]
         if include_archived:
             return visible
-        ancestry = {entry.id: entry for entry in await self.catalog_repository.find_all(tenant_id=tenant_id)}
+        ancestry = {entry.id: entry for entry in await self.catalog_repository.ancestry_identities(tenant_id)}
 
         def active(entry):
             seen = set()
@@ -356,6 +392,7 @@ class CatalogService:
 
         return [entry for entry in visible if active(entry)]
 
+    @source_mutation
     @transactional
     async def create(
         self,
@@ -367,6 +404,7 @@ class CatalogService:
         parent_id: str | None = None,
         metadata: dict | None = None,
         description: str = "",
+        _source_create_id: str | None = None,
     ) -> CatalogEntry:
         await self._lock_tenant(tenant_id)
         self.require_knowledge_review(kind)
@@ -387,6 +425,7 @@ class CatalogService:
             parent_id=parent_id,
             metadata=metadata,
             description=description,
+            create_id=_source_create_id,
         )
 
     async def _write_create(
@@ -515,6 +554,7 @@ class CatalogService:
                 "This catalog entry changed. Refresh it before continuing", code="CATALOG_CHANGED"
             )
 
+    @source_mutation
     @transactional
     async def update(
         self,
@@ -524,6 +564,7 @@ class CatalogService:
         changes: dict,
         *,
         expected_updated_at: datetime | None = None,
+        _source_expected_revision: int | None = None,
     ) -> CatalogEntry:
         await self._lock_tenant(tenant_id)
         entry = await self._scoped_entry(tenant_id, entry_id, lock=True)
@@ -532,6 +573,8 @@ class CatalogService:
             await self.restriction.resource(subject, entry, write=True)
         self.require_knowledge_review(entry.kind)
         self._check_expected_update(entry, expected_updated_at)
+        if _source_expected_revision is not None and entry.mutation_revision != _source_expected_revision:
+            raise ConflictException("Source publication target changed", code="SOURCE_PUBLICATION_DENIED")
         if set(changes) - {"name", "description", "status", "metadata"}:
             raise InvalidHierarchy("Resource scope and ancestry are immutable", code="IMMUTABLE_SCOPE")
         if "name" in changes:
@@ -561,6 +604,91 @@ class CatalogService:
         await self._audit(subject, tenant_id, "catalog.updated", entry.id, {"fields": sorted(changes)})
         return saved
 
+    @source_mutation
+    @transactional
+    async def _merge_latest(
+        self,
+        subject: str,
+        tenant_id: str,
+        entry_id: str,
+        version_id: str,
+        *,
+        _source_expected_revision: int | None = None,
+        _source_write=None,
+    ):
+        """Merge one admitted server pointer without loading retained metadata."""
+        from sqlalchemy import cast, func, select, update
+        from sqlalchemy.dialects.postgresql import JSONB
+
+        from koinon.integrations.content_sources.source_publication import publication_target
+
+        session = self.catalog_repository._require_session()
+        admission, _ = publication_target(_source_write, session, entry_id)
+        await self.authorize(subject, tenant_id, "catalog:write", admission.destination[0])
+        target = (
+            await session.execute(
+                select(
+                    CatalogEntry.id,
+                    CatalogEntry.parent_id,
+                    CatalogEntry.kind,
+                    CatalogEntry.mutation_revision,
+                    CatalogEntry.workspace_id,
+                    CatalogEntry.project_id,
+                ).where(CatalogEntry.id == entry_id, CatalogEntry.tenant_id == tenant_id)
+            )
+        ).one_or_none()
+        version = (
+            await session.execute(
+                select(
+                    CatalogEntry.parent_id,
+                    CatalogEntry.kind,
+                    CatalogEntry.workspace_id,
+                    CatalogEntry.project_id,
+                ).where(CatalogEntry.id == version_id, CatalogEntry.tenant_id == tenant_id)
+            )
+        ).one_or_none()
+        if (
+            target is None
+            or version is None
+            or target.mutation_revision != _source_expected_revision
+            or target.kind not in {"source", "document", "dataset", "table"}
+            or version.kind != "index_version"
+            or version.parent_id != (target.parent_id if target.kind in {"document", "table"} else target.id)
+            or (target.workspace_id, target.project_id) != admission.destination[:2]
+            or (version.workspace_id, version.project_id) != admission.destination[:2]
+        ):
+            raise ConflictException("Source content version changed", code="SOURCE_PUBLICATION_DENIED")
+        changed = await session.scalar(
+            update(CatalogEntry)
+            .where(
+                CatalogEntry.id == entry_id,
+                CatalogEntry.tenant_id == tenant_id,
+                CatalogEntry.mutation_revision == _source_expected_revision,
+            )
+            .values(
+                metadata_json=cast(CatalogEntry.metadata_json, JSONB).op("||")(
+                    func.jsonb_build_object("latest_content_version_id", version_id)
+                ),
+                updated_at=datetime.now(UTC),
+                updated_by=subject,
+            )
+            .returning(CatalogEntry.id)
+            .execution_options(synchronize_session=False)
+        )
+        if changed is None:
+            raise ConflictException("Source publication target changed", code="SOURCE_PUBLICATION_DENIED")
+        await self._audit(
+            subject,
+            tenant_id,
+            "catalog.updated",
+            entry_id,
+            {
+                "fields": ["latest_content_version_id"],
+            },
+        )
+        return await self._publication_state(_source_write, entry_id)
+
+    @source_mutation
     @transactional
     async def delete(self, subject: str, tenant_id: str, entry_id: str) -> None:
         await self._lock_tenant(tenant_id)
@@ -735,11 +863,12 @@ class CatalogService:
             await self.membership_events.membership_changed(actor, saved, before)
         return saved
 
+    @primary_authority()
     async def audit(self, subject: str, tenant_id: str) -> list[AuditEvent]:
         await self.authorize(subject, tenant_id, "audit:read")
         if self.audit_repository is None:
             raise RuntimeError("Audit repository is unavailable")
-        return await self.audit_repository.find_all(tenant_id=tenant_id)
+        return await self.audit_repository.local_list(tenant_id)
 
     @primary_authority()
     async def audit_page(
@@ -757,6 +886,7 @@ class CatalogService:
         page_size: int = 25,
         sort: str = "created_at",
         order: str = "desc",
+        _identities_only: bool = False,
     ) -> dict:
         await self.authorize(actor, tenant_id, "audit:read")
 
@@ -803,6 +933,7 @@ class CatalogService:
             raise RuntimeError("Audit repository is unavailable")
         return await self.audit_repository.find_page(
             tenant_id,
+            identities_only=_identities_only,
             q=q.strip(),
             action=action,
             subject=subject,
@@ -815,6 +946,7 @@ class CatalogService:
             members=self.effective_membership_rows(),
         )
 
+    @source_mutation
     @transactional
     async def archive(
         self,
@@ -841,6 +973,7 @@ class CatalogService:
             await self._audit(subject, tenant_id, "catalog.archived", entry.id)
         return entry
 
+    @source_mutation
     @transactional
     async def restore(
         self,
@@ -890,6 +1023,8 @@ class CatalogService:
         page_size=100,
         sort="name",
         order="asc",
+        _include_imported=False,
+        _identities_only=False,
     ) -> dict:
         from koinon.catalog.summaries import FORMATS
 
@@ -911,13 +1046,13 @@ class CatalogService:
             or (tag is not None and not 1 <= len(tag.strip()) <= 64)
         ):
             raise InvalidHierarchy("Choose valid filters and a page size from 1 to 100", code="INVALID_PAGE")
-        parent = await self.get(subject, tenant_id, parent_id) if parent_id else None
+        parent = await self.get_identity(subject, tenant_id, parent_id) if parent_id else None
         if parent:
             if workspace_id is not None and workspace_id != parent.workspace_id:
                 raise InvalidHierarchy("Parent and selected workspace disagree", code="INVALID_WORKSPACE")
             workspace_id = parent.workspace_id
         if project_id:
-            project = await self.get(subject, tenant_id, project_id)
+            project = await self.get_identity(subject, tenant_id, project_id)
             if project.kind != "project":
                 raise InvalidHierarchy("Choose a project in this organization", code="INVALID_PROJECT")
             if workspace_id is not None and project.workspace_id != workspace_id:
@@ -968,4 +1103,6 @@ class CatalogService:
             page_size=page_size,
             sort=sort,
             order=order,
+            _include_imported=_include_imported,
+            _identities_only=_identities_only,
         )

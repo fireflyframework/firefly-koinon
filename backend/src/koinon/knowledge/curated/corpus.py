@@ -83,7 +83,7 @@ class CuratedBodyCorpus(CuratedCorpusPort):
             async with infrastructure_unit(self.reads.native.datasource(), read_only=True) as session:
                 hits = await self.ranked(session, tenant_id, native_workspace_id, selected, query, limit)
                 database = await database_context(session)
-        policy = await self._validate_release(subject, tenant_id, native_workspace_id, admitted)
+        policy = await self._source_release(subject, tenant_id, native_workspace_id, admitted)
         if policy != stamp:
             raise AccessDenied(
                 "Knowledge authority changed during this read; retry in the current scope",
@@ -107,7 +107,7 @@ class CuratedBodyCorpus(CuratedCorpusPort):
     @transactional(
         datasource="primary",
         name=PRIMARY_POLICY_UNIT,
-        propagation=Propagation.REQUIRES_NEW,
+        propagation=Propagation.REQUIRED,
         isolation=Isolation.SERIALIZABLE,
         read_only=True,
         read_from_primary=True,
@@ -151,13 +151,19 @@ class CuratedBodyCorpus(CuratedCorpusPort):
         admitted = tuple(admitted)
         item_ids = tuple(selection.item_id for selection in admitted)
         stamp = await self.release.observe(subject, tenant_id, item_ids)
-        policy = await self._validate_release(subject, tenant_id, None, admitted)
+        policy = await self._source_release(subject, tenant_id, None, admitted)
         if policy != stamp:
             raise AccessDenied(
                 "Knowledge authority changed during this read; retry in the current scope",
                 code="KNOWLEDGE_AUTHORITY_CHANGED",
             )
         await self.release.require_unchanged(subject, tenant_id, item_ids, stamp)
+
+    async def _source_release(self, subject, tenant_id, workspace, admitted):
+        async with self.reads.source_scope(
+            subject, tenant_id, tuple((selection.item_id, selection.version) for selection in admitted)
+        ):
+            return await self._validate_release(subject, tenant_id, workspace, admitted)
 
     async def ranked(self, session, tenant_id, workspace_id, selected, query, limit):
         return await self.projections.ranked(session, tenant_id, workspace_id, selected, query, limit)

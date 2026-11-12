@@ -1,5 +1,7 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
+import { registerKoinonSpanish as registerPanelSpanish } from '@fireflyframework/koinon-angular/workbench/core';
+import { PANEL_SPANISH } from '../foundations/panel-spanish.generated';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
@@ -31,6 +33,7 @@ type PaletteOption =
   | { kind: 'resource'; key: string; entry: CatalogEntry }
   | { kind: 'search'; key: string; query: string };
 let nextPalette = 0;
+registerPanelSpanish(PANEL_SPANISH);
 @Component({
   selector: 'ffk-command-palette-content',
   imports: [CdkTrapFocus, KoinonIcon, KoinonTextPipe],

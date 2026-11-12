@@ -6,11 +6,13 @@ from datetime import timedelta
 from pyfly.container import Provider, service
 from pyfly.data.relational.sqlalchemy import LockMode, transactional
 from pyfly.kernel import ConflictException, InvalidRequestException
-from sqlalchemy import and_, or_, select
+from sqlalchemy import JSON, and_, cast, func, or_, select, update
 
+from koinon.answers.release_proofs import AnswerReleaseProofPublisher, current_publication
 from koinon.assistants.entities import ChatRun
 from koinon.assistants.lifecycle import timestamp
 from koinon.assistants.product_context import AssistantProductContext
+from koinon.assistants.run_sources import queue_source_unit
 from koinon.assistants.service import AssistantService
 from koinon.knowledge.capture_dtos import CapturedEvidence
 
@@ -21,9 +23,14 @@ class AssistantQueue:
         self,
         assistants: AssistantService,
         product_context: Provider[AssistantProductContext | None] | None = None,
+        release_proofs: Provider[AnswerReleaseProofPublisher | None] | None = None,
     ):
         self.assistants = assistants
         self.product_context = product_context
+        self.release_proofs = release_proofs
+
+    def proof_publisher(self):
+        return self.release_proofs.get() if self.release_proofs is not None else None
 
     @transactional
     async def claim(self, worker_id: str) -> ChatRun | None:
@@ -47,11 +54,14 @@ class AssistantQueue:
         )
         if run is None:
             return None
-        message = await service.message_repository.find_by_id(run.message_id)
         if run.attempts >= 2:
-            run.status, run.error_code, message.status = "failed", "WORKER_LEASE_EXPIRED", "failed"
+            run.status, run.error_code = "failed", "WORKER_LEASE_EXPIRED"
             run.lease_until, run.worker_id = None, None
-            await service.message_repository.save(message)
+            from koinon.assistants.entities import ChatMessage
+
+            await session.execute(
+                update(ChatMessage).where(ChatMessage.id == run.message_id).values(status="failed")
+            )
             await service.record_event(
                 run,
                 "failed",
@@ -65,19 +75,26 @@ class AssistantQueue:
         run.status, run.worker_id = "running", worker_id
         run.attempts += 1
         run.lease_until = now + timedelta(seconds=service.settings.lease_seconds)
-        message.status = "running"
+        from koinon.assistants.entities import ChatMessage
+
+        message_values: dict[str, object] = {"status": "running"}
         if run.attempts > 1:
-            message.text, message.citations, message.artifacts = "", [], []
-            message.answer_policy = {}
-            await service.record_event(run, "message_reset", {"message_id": message.id, "status": "running"})
-        await service.message_repository.save(message)
+            message_values.update(text="", citations=[], artifacts=[], answer_policy={})
+            await service.record_event(
+                run, "message_reset", {"message_id": run.message_id, "status": "running"}
+            )
+        await session.execute(
+            update(ChatMessage).where(ChatMessage.id == run.message_id).values(**message_values)
+        )
         await service.record_event(
             run, "tool_activity", {"stage": "starting", "message": "Preparing your answer"}
         )
         return run
 
-    async def locked(self, run_id: str, worker_id: str) -> ChatRun:
-        run = await self.assistants.runs.find_by_id(run_id, lock=LockMode.PESSIMISTIC_WRITE)
+    async def locked(self, run_id: str, worker_id: str, *, read_only=False) -> ChatRun:
+        run = await self.assistants.runs.find_by_id(
+            run_id, **({} if read_only else {"lock": LockMode.PESSIMISTIC_WRITE})
+        )
         if (
             run is None
             or run.status != "running"
@@ -133,6 +150,7 @@ class AssistantQueue:
                     "generation": value.model_dump(mode="json"),
                     "origin_token_id": run.access_token_id,
                     "worker_id": worker_id,
+                    "attempt": run.attempts,
                 },
             )
         )
@@ -180,18 +198,29 @@ class AssistantQueue:
         ):
             raise ConflictException("Worker no longer owns this tool invocation", code="RUN_LEASE_LOST")
         if value.get("result_id"):
-            result = await self.assistants.results.find_by_id(value["result_id"])
-            if result is None or result.run_id != run_id:
+            from koinon.assistants.entities import ToolResult
+
+            result_run = await self.assistants.runs._require_session().scalar(
+                select(ToolResult.run_id).where(ToolResult.id == value["result_id"])
+            )
+            if result_run != run_id:
                 raise InvalidRequestException("Tool result is outside this answer", code="EVIDENCE_DENIED")
         return await self.assistants.record_event(run, "tool_activity", {"tool_activity": value})
 
     async def provenance_failure(self, run_id, worker_id, code):
         run = await self.assistants.runs.find_by_id(run_id)
         from koinon.answers.dtos import EvidenceAnswerPlan
+        from koinon.assistants.entities import ChatMessage
         from koinon.catalog.errors import AccessDenied
+        from koinon.security.authority import primary_authority
 
-        message = await self.assistants.message_repository.find_by_id(run.message_id)
-        preferences = message.presentation or {}
+        async with primary_authority():
+            preferences = (
+                await self.assistants.runs._require_session().scalar(
+                    select(ChatMessage.presentation).where(ChatMessage.id == run.message_id)
+                )
+                or {}
+            )
         from koinon.answers.language import effective_language
 
         language = effective_language(preferences)
@@ -207,27 +236,48 @@ class AssistantQueue:
 
     @transactional
     async def finish(self, run_id: str, worker_id: str, *, code: str | None = None):
+        from koinon.assistants.entities import ToolResult
+
         run = await self.locked(run_id, worker_id)
-        generations = [
-            row
-            for row in await self.assistants.results.find_all(run_id=run_id)
-            if row.kind == "generation" and row.payload.get("worker_id") == worker_id
-        ]
+        session = self.assistants.runs._require_session()
+        generations = (
+            await session.execute(
+                select(
+                    ToolResult.id, ToolResult.created_at, ToolResult.payload["generation"].label("generation")
+                ).where(
+                    ToolResult.run_id == run_id,
+                    ToolResult.kind == "generation",
+                    ToolResult.payload["worker_id"].as_string() == worker_id,
+                )
+            )
+        ).all()
         result = (
-            max(generations, key=lambda row: (row.payload["generation"]["start_sequence"], row.created_at))
+            max(generations, key=lambda row: (row.generation["start_sequence"], row.created_at))
             if generations
             else None
         )
-        if result is not None and result.payload["generation"].get("finished_at") is None:
-            value = dict(result.payload["generation"])
+        if result is not None and result.generation.get("finished_at") is None:
+            value = dict(result.generation)
             value.update(finished_at=timestamp().isoformat(), status="failed" if code else "completed")
-            result.payload = {**result.payload, "generation": value}
-            await self.assistants.results.save(result)
+            await session.execute(
+                update(ToolResult)
+                .where(ToolResult.id == result.id)
+                .values(
+                    payload={
+                        "generation": value,
+                        "origin_token_id": run.access_token_id,
+                        "worker_id": worker_id,
+                        "attempt": run.attempts,
+                    }
+                )
+            )
         run.status, run.error_code = ("failed", code) if code else ("completed", None)
         run.worker_id, run.lease_until = None, None
-        message = await self.assistants.message_repository.find_by_id(run.message_id)
-        message.status = run.status
-        await self.assistants.message_repository.save(message)
+        from koinon.assistants.entities import ChatMessage
+
+        await self.assistants.runs._require_session().execute(
+            update(ChatMessage).where(ChatMessage.id == run.message_id).values(status=run.status)
+        )
         await self.assistants.record_event(
             run,
             "failed" if code else "completed",
@@ -389,14 +439,16 @@ class AssistantQueue:
                         if read.domain == "knowledge" and read.knowledge_item_id is not None
                     },
                 )
-            thread = await self.assistants.threads.find_by_id(run.thread_id)
+            thread = await self.assistants.threads.find_by_id(run.thread_id) if authorized else None
+            if authorized and thread is None:
+                raise ValueError("Native receipt conversation is unavailable")
             entries = {}
             for read in reads:
                 if read.entity_id not in entries:
                     entries[read.entity_id] = (
                         await self.assistants.catalog.get(thread.subject, run.tenant_id, read.entity_id)
-                        if authorized
-                        else await self.assistants.catalog.catalog_repository.find_by_id(read.entity_id)
+                        if thread is not None
+                        else await self.forensic_entry(read.entity_id)
                     )
                 entry = entries[read.entity_id]
                 if (
@@ -410,19 +462,79 @@ class AssistantQueue:
             values["sql_attempts"] = [row.model_dump(mode="json", by_alias=True) for row in attempts]
             if capture.rlm_tools is not None:
                 values["rlm_tools"] = [row.model_dump(mode="json") for row in tools]
+            if not authorized:
+                from koinon.assistants.observation import native_receipts
+
+                values = native_receipts(reads, attempts, tools, include_tools=capture.rlm_tools is not None)
         except (TypeError, ValueError) as error:
             raise InvalidRequestException(
                 "Native read receipt is invalid", code="EVIDENCE_CAPTURE_INVALID"
             ) from error
         return values
 
-    @transactional
+    async def forensic_entry(self, asset_id):
+        from koinon.catalog.entities import CatalogEntry
+
+        return (
+            await self.assistants.runs._require_session().execute(
+                select(
+                    CatalogEntry.id,
+                    CatalogEntry.tenant_id,
+                    CatalogEntry.kind,
+                    CatalogEntry.workspace_id,
+                    CatalogEntry.project_id,
+                ).where(CatalogEntry.id == asset_id)
+            )
+        ).first()
+
+    async def forensic_budget(self, run_id, generation_id, payload):
+        from pyfly.kernel import ServiceUnavailableException
+
+        from koinon.assistants.entities import ToolResult
+
+        session = self.assistants.runs._require_session()
+        filters = [ToolResult.run_id == run_id]
+        if generation_id is not None:
+            filters.append(ToolResult.payload["generation_id"].as_string() == generation_id)
+        for key in ("native_reads", "sql_attempts", "rlm_tools"):
+            count = await session.scalar(
+                select(func.coalesce(func.sum(func.json_array_length(ToolResult.payload[key])), 0)).where(
+                    *filters
+                )
+            )
+            if count + len(payload.get(key, ())) > 1000:
+                raise ServiceUnavailableException(
+                    "Source audit budget exceeded", code="EVIDENCE_BUDGET_EXCEEDED"
+                )
+        array = ToolResult.payload["source_manifest"]["sources"]
+        elements = (
+            func.json_array_elements(array)
+            if session.bind.dialect.name == "postgresql"
+            else func.json_each(array)
+        ).table_valued("value", joins_implicitly=True)
+        source_id = (
+            cast(elements.c.value, JSON)["id"].as_string()
+            if session.bind.dialect.name == "postgresql"
+            else func.json_extract(elements.c.value, "$.id")
+        )
+        identifiers = set(
+            await session.scalars(
+                select(source_id).select_from(ToolResult, elements).where(*filters).distinct().limit(501)
+            )
+        )
+        identifiers.update(source["id"] for source in payload["source_manifest"]["sources"])
+        if len(identifiers) > 500:
+            raise ServiceUnavailableException("Source audit budget exceeded", code="EVIDENCE_BUDGET_EXCEEDED")
+
+    @queue_source_unit
+    @transactional(read_only=True, read_from_primary=True)
     async def capture_limits(self, run_id, worker_id, kind):
         from pyfly.kernel import ServiceUnavailableException
 
         from koinon.knowledge.capture_dtos import NativeCaptureLimits
 
-        run = await self.locked(run_id, worker_id)
+        run = await self.locked(run_id, worker_id, read_only=True)
+        await self.authorize_consumption(run, worker_id)
         rows = await self.assistants.active_results(run)
         reads = 1000 - sum(len(row.payload.get("native_reads", [])) for row in rows)
         attempts = 1000 - sum(len(row.payload.get("sql_attempts", [])) for row in rows)
@@ -464,19 +576,62 @@ class AssistantQueue:
             )
 
     @transactional
-    async def observation(self, run_id, worker_id, kind, assets, *, capture):
+    async def observation(
+        self, run_id, worker_id, kind, assets, *, capture, generation_id=None, attempt=None
+    ):
         import json
 
         from koinon.assistants.entities import ToolResult
         from koinon.assistants.lifecycle import identifier
+        from koinon.assistants.observation import source_identity
+        from koinon.assistants.run_sources import _capture_digest
         from koinon.evidence.dtos import SourceReference
 
-        run = await self.locked(run_id, worker_id)
+        run = await self.assistants.runs.find_by_id(run_id, lock=LockMode.PESSIMISTIC_WRITE)
+        if run is None:
+            raise ConflictException("Worker no longer owns this observation", code="RUN_LEASE_LOST")
+        if run.status == "cancelled":
+            if generation_id is None or type(attempt) is not int or attempt != run.attempts:
+                raise ConflictException("Observation producer changed", code="RUN_LEASE_LOST")
+        else:
+            await self.locked(run_id, worker_id)
+        session = self.assistants.runs._require_session()
+        generations = (
+            await session.execute(
+                select(
+                    ToolResult.id,
+                    ToolResult.created_at,
+                    ToolResult.payload["generation"].label("generation"),
+                    ToolResult.payload["attempt"].as_integer().label("attempt"),
+                ).where(
+                    ToolResult.run_id == run_id,
+                    ToolResult.kind == "generation",
+                    ToolResult.payload["worker_id"].as_string() == worker_id,
+                )
+            )
+        ).all()
+        if generation_id is not None:
+            producer = next((row for row in generations if row.id == generation_id), None)
+            if (
+                producer is None
+                or type(attempt) is not int
+                or producer.attempt != attempt
+                or attempt != run.attempts
+                or producer.generation.get("finished_at") is not None
+            ):
+                raise ConflictException("Observation producer changed", code="RUN_LEASE_LOST")
+        else:
+            current = [row for row in generations if row.generation.get("finished_at") is None]
+            generation_id = (
+                max(current, key=lambda row: (row.generation["start_sequence"], row.created_at)).id
+                if current
+                else None
+            )
         if not isinstance(capture, CapturedEvidence) or kind not in {"search", "query", "schema"}:
             raise InvalidRequestException("Invalid audit receipt", code="EVIDENCE_CAPTURE_INVALID")
         admitted = {}
         for asset_id in assets:
-            entry = await self.assistants.catalog.catalog_repository.find_by_id(asset_id)
+            entry = await self.forensic_entry(asset_id)
             if (
                 entry is None
                 or entry.tenant_id != run.tenant_id
@@ -499,27 +654,33 @@ class AssistantQueue:
             raise InvalidRequestException(
                 "Audit receipt exceeds admitted scope", code="EVIDENCE_CAPTURE_INVALID"
             )
-        result_id = identifier()
-        generations = [
-            row
-            for row in await self.assistants.results.find_all(run_id=run_id)
-            if row.kind == "generation"
-            and row.payload.get("worker_id") == worker_id
-            and row.payload["generation"].get("finished_at") is None
-        ]
-        generation_id = (
-            max(generations, key=lambda row: (row.payload["generation"]["start_sequence"], row.created_at)).id
-            if generations
-            else None
+        receipt_sha256 = _capture_digest(capture)
+        existing = await self.assistants.runs._require_session().scalar(
+            select(ToolResult.id).where(
+                ToolResult.run_id == run_id,
+                ToolResult.kind == "observation",
+                ToolResult.payload["forensic"]["worker_id"].as_string() == worker_id,
+                ToolResult.payload["forensic"]["attempt"].as_integer() == run.attempts,
+                ToolResult.payload["forensic"]["receipt_sha256"].as_string() == receipt_sha256,
+                ToolResult.payload["generation_id"].as_string() == generation_id,
+            )
         )
+        if existing is not None:
+            return existing
+        result_id = identifier()
         payload = {
             "asset_ids": assets,
-            "origin_token_id": run.access_token_id,
             "generation_id": generation_id,
+            "forensic": {
+                "version": 1,
+                "worker_id": worker_id,
+                "attempt": run.attempts,
+                "receipt_sha256": receipt_sha256,
+            },
             "source_manifest": {
                 "version": 1,
                 "complete": False,
-                "sources": [row.model_dump(mode="json") for row in sources],
+                "sources": [source_identity(row) for row in sources],
             },
         }
         # Retain work admitted before revocation; audit reads still enforce current/original authority.
@@ -528,12 +689,13 @@ class AssistantQueue:
         )
         if len(json.dumps(payload, ensure_ascii=False, allow_nan=False).encode()) > 524288:
             raise InvalidRequestException("Audit receipt is too large", code="EVIDENCE_TOO_LARGE")
-        await self.check_audit_budget(run, payload)
+        await self.forensic_budget(run.id, generation_id, payload)
         await self.assistants.results.save(
             ToolResult(id=result_id, run_id=run.id, kind="observation", payload=payload)
         )
         return result_id
 
+    @queue_source_unit
     @transactional
     async def evidence(
         self,
@@ -623,11 +785,13 @@ class AssistantQueue:
         await self.assistants.record_event(run, "openui_delta", {"artifact": artifact})
         return result.id
 
+    @queue_source_unit
     @transactional
     async def citations(self, run_id: str, worker_id: str):
         import re
 
         run = await self.locked(run_id, worker_id)
+        await self.authorize_consumption(run, worker_id)
         message = await self.assistants.message_repository.find_by_id(run.message_id)
         admitted = {}
         for result in await self.assistants.results.find_all(run_id=run_id):
@@ -651,30 +815,36 @@ class AssistantQueue:
 
     @transactional
     async def presentation(self, run_id: str, worker_id: str, preferences: dict):
+        from koinon.assistants.entities import ChatMessage
+
         run = await self.locked(run_id, worker_id)
-        message = await self.assistants.message_repository.find_by_id(run.message_id)
-        message.presentation = {key: preferences[key] for key in ("locale", "time_zone", "response_language")}
+        presentation = {key: preferences[key] for key in ("locale", "time_zone", "response_language")}
         if preferences.get("effective_language") in {"en", "es"}:
-            message.presentation["effective_language"] = preferences["effective_language"]
-        await self.assistants.message_repository.save(message)
-        await self.assistants.record_event(run, "message_metadata", {"presentation": message.presentation})
+            presentation["effective_language"] = preferences["effective_language"]
+        await self.assistants.runs._require_session().execute(
+            update(ChatMessage).where(ChatMessage.id == run.message_id).values(presentation=presentation)
+        )
+        await self.assistants.record_event(run, "message_metadata", {"presentation": presentation})
 
     @transactional
     async def policy(self, run_id: str, worker_id: str, value):
+        from koinon.assistants.entities import ChatMessage
         from koinon.assistants.policy_dtos import AnswerPolicy
 
         policy = AnswerPolicy.model_validate(value).model_dump(exclude_none=True)
         run = await self.locked(run_id, worker_id)
-        message = await self.assistants.message_repository.find_by_id(run.message_id)
-        message.answer_policy = policy
-        await self.assistants.message_repository.save(message)
+        await self.assistants.runs._require_session().execute(
+            update(ChatMessage).where(ChatMessage.id == run.message_id).values(answer_policy=policy)
+        )
         await self.assistants.record_event(run, "message_metadata", {"answer_policy": policy})
 
-    @transactional
+    @queue_source_unit
+    @transactional(read_only=True, read_from_primary=True)
     async def fact_pool(self, run_id: str, worker_id: str):
         from koinon.answers.facts import recorded_facts
 
-        run = await self.locked(run_id, worker_id)
+        run = await self.locked(run_id, worker_id, read_only=True)
+        await self.authorize_consumption(run, worker_id)
         return tuple(
             fact
             for row in await self.assistants.active_results(run)
@@ -683,12 +853,34 @@ class AssistantQueue:
             if fact.result_id == row.id
         )
 
-    @transactional
+    async def authorize_consumption(self, run, worker_id):
+        from types import SimpleNamespace
+
+        from koinon.assistants.entities import ChatThread, ToolResult
+        from koinon.assistants.run_sources import nested_memory_checked
+
+        if nested_memory_checked(self.assistants, run.id, worker_id):
+            return
+        session = self.assistants.runs._require_session()
+        actor = await session.scalar(select(ChatThread.subject).where(ChatThread.id == run.thread_id))
+        token_ids = await session.scalars(
+            select(ToolResult.payload["origin_token_id"].as_string()).where(ToolResult.run_id == run.id)
+        )
+        await self.assistants.origin_authority(
+            actor,
+            run.tenant_id,
+            run,
+            [SimpleNamespace(payload={"origin_token_id": token_id}) for token_id in set(token_ids)],
+        )
+        await self.assistants.authorize_results(actor, run.tenant_id, run.id)
+
+    @queue_source_unit
+    @transactional(read_only=True, read_from_primary=True)
     async def validate_answer_plan(self, run_id, worker_id, plan, language, *, private_facts=()):
         from koinon.answers.private import verified_private_facts
         from koinon.answers.rendering import render_answer
 
-        run = await self.locked(run_id, worker_id)
+        run = await self.locked(run_id, worker_id, read_only=True)
         thread = await self.assistants.threads.find_by_id(run.thread_id)
         await self.assistants.validate_scope(thread.subject, run.tenant_id, run.scope)
         await self.assistants.authorize_results(thread.subject, run.tenant_id, run.id)
@@ -701,6 +893,7 @@ class AssistantQueue:
             render_answer(plan, facts, language, private_fact_ids=frozenset(fact.id for fact in private))
         return bool(facts)
 
+    @queue_source_unit
     @transactional
     async def release_answer(
         self,
@@ -918,8 +1111,11 @@ class AssistantQueue:
         if len(json.dumps(payload, ensure_ascii=False, allow_nan=False).encode()) > 524288:
             raise ValueError("The selected answer receipt exceeds the publication bound")
         await self.check_audit_budget(run, payload)
+        publisher = self.proof_publisher()
+        admission = current_publication() if publisher is not None else None
+        release_id = admission.release_id if admission is not None else identifier()
         await self.assistants.results.save(
-            ToolResult(id=identifier(), run_id=run.id, kind="answer_release", payload=payload)
+            ToolResult(id=release_id, run_id=run.id, kind="answer_release", payload=payload)
         )
         message.text, message.citations, message.answer_policy = (
             rendered.text,
@@ -928,6 +1124,8 @@ class AssistantQueue:
         )
         message.artifacts = artifacts
         await self.assistants.message_repository.save(message)
+        if publisher is not None:
+            await publisher.publish_verified_release(admission, release_id)
         await self.assistants.record_event(run, "message_metadata", {"answer_policy": policy})
         for chunk in fragments(rendered.text):
             await self.assistants.record_event(run, "message_delta", chunk)

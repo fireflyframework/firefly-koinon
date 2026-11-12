@@ -516,6 +516,7 @@ class RlsPgVectorVectorStore(PgVectorVectorStore):
         top_k: int,
         namespace: str,
         filters: list[SearchFilter] | None,
+        candidates_only: bool = False,
     ) -> list[SearchResult]:
         """ANN over ONE set, with the cast the partial index is built on.
 
@@ -527,6 +528,9 @@ class RlsPgVectorVectorStore(PgVectorVectorStore):
         boot-time width refusal: a mis-scoped query is a failure, not a wrong
         answer, and pgvector enforces it rather than our code.
         """
+        from flycanon.core.services.query import provenance
+
+        candidates_only = candidates_only or provenance.candidate_mode()
         binding = self._binding()
         width = self._width(binding)
         if len(query_embedding) != width:
@@ -544,7 +548,7 @@ class RlsPgVectorVectorStore(PgVectorVectorStore):
             where.append(clause)
             params.extend(clause_params)
         sql = f"""
-            SELECT id, text, metadata,
+            SELECT id, {"" if candidates_only else "text, metadata,"}
                    1 - (embedding::{cast}({width}) <=> $1::{cast}({width})) AS score
             FROM {self._table}
             WHERE {" AND ".join(where)}
@@ -564,9 +568,9 @@ class RlsPgVectorVectorStore(PgVectorVectorStore):
             SearchResult(
                 document=VectorDocument(
                     id=str(rec["id"]),
-                    text=rec["text"],
+                    text="" if candidates_only else rec["text"],
                     embedding=None,
-                    metadata=_load_metadata(rec["metadata"]),
+                    metadata={} if candidates_only else _load_metadata(rec["metadata"]),
                     namespace=namespace,
                 ),
                 score=float(rec["score"]),

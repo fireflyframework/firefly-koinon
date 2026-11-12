@@ -14,6 +14,12 @@ from pyfly.web import (
 )
 from starlette.requests import Request
 
+from koinon.assistants.history.browse_dtos import (
+    HistoryBrowseInput,
+    HistoryBrowsePage,
+    MessageBrowseInput,
+    MessageBrowsePage,
+)
 from koinon.assistants.history.dtos import FolderCreate, FolderPatch, ThreadPatch, TitleRequest
 from koinon.assistants.history.service import ChatHistoryService
 from koinon.assistants.title_service import TitleService
@@ -25,6 +31,24 @@ from koinon.security.identity import identity_from_request
 class ChatHistoryController:
     def __init__(self, history: ChatHistoryService, titles: TitleService):
         self.history, self.titles = history, titles
+
+    @post_mapping("/threads/browse")
+    async def browse(
+        self, tenant_id: PathVar[str], request: Request, body: Valid[Body[HistoryBrowseInput]]
+    ) -> HistoryBrowsePage:
+        return await self.history.browse(identity_from_request(request).subject, tenant_id, body)
+
+    @post_mapping("/threads/{thread_id}/messages/browse")
+    async def browse_messages(
+        self,
+        tenant_id: PathVar[str],
+        thread_id: PathVar[str],
+        request: Request,
+        body: Valid[Body[MessageBrowseInput]],
+    ) -> MessageBrowsePage:
+        return await self.history.browse_messages(
+            identity_from_request(request).subject, tenant_id, thread_id, body
+        )
 
     @get_mapping("/folders")
     async def folders(

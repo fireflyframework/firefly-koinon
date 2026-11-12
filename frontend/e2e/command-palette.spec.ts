@@ -22,7 +22,7 @@ test('New conversation opens a clean draft from Library even when history exists
   await page.route('**/bff/api/v1/tenants/*/**', (route) => {
     const request = route.request(),
       path = new URL(request.url()).pathname;
-    if (request.method() === 'POST') ++writes;
+    if (request.method() === 'POST' && !path.endsWith('/catalog/browse')) ++writes;
     if (path.endsWith('/agents'))
       return route.fulfill({
         json: { items: [{ id: 'guide', name: 'Guide', status: 'ready', checks: [] }] },
@@ -68,11 +68,11 @@ test('palette searches scoped server results and opens a resource with keyboard 
   page,
 }) => {
   await mockService(page, { organizationAgent: 'guide' });
-  const searches: Record<string, string>[] = [];
-  await page.route('**/bff/api/v1/tenants/*/catalog?**', async (route) => {
-    const url = new URL(route.request().url());
-    if (!url.searchParams.get('q')) return route.fallback();
-    searches.push(Object.fromEntries(url.searchParams));
+  const searches: Record<string, unknown>[] = [];
+  await page.route('**/bff/api/v1/tenants/*/catalog/browse', async (route) => {
+    const body = route.request().postDataJSON();
+    if (!body.q) return route.fallback();
+    searches.push(body);
     return route.fulfill({
       json: {
         items: [fixtures.find((row) => row.id === 'document-one')],
@@ -93,8 +93,7 @@ test('palette searches scoped server results and opens a resource with keyboard 
   await expect(dialog.getByRole('option', { name: /Service operating policy/ })).toBeVisible();
   expect(searches.at(-1)).toMatchObject({
     q: 'Service operating',
-    page: '1',
-    page_size: '8',
+    page_size: 8,
     view: 'library',
   });
   await input.press('Home');

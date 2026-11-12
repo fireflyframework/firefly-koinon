@@ -24,6 +24,10 @@ public SharePage list(){return list(ShareFilter.empty(),RequestOptions.defaults(
 public CompletableFuture<SharePage> listAsync(ShareFilter filter,RequestOptions options){Objects.requireNonNull(options);options=Objects.requireNonNull(filter).applyTo(options);return transport.jsonAsync("GET",prefix+"/shares",null,options,transport.type(SharePage.class));}
 public CompletableFuture<SharePage> listAsync(ShareFilter filter){return listAsync(filter,RequestOptions.defaults());}
 public CompletableFuture<SharePage> listAsync(){return listAsync(ShareFilter.empty(),RequestOptions.defaults());}
+public ShareBrowsePage browse(ShareBrowseInput input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.json("POST",prefix+"/shares/browse",input,options,transport.type(ShareBrowsePage.class));}
+public ShareBrowsePage browse(ShareBrowseInput input){return browse(input,RequestOptions.defaults());}
+public CompletableFuture<ShareBrowsePage> browseAsync(ShareBrowseInput input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.jsonAsync("POST",prefix+"/shares/browse",input,options,transport.type(ShareBrowsePage.class));}
+public CompletableFuture<ShareBrowsePage> browseAsync(ShareBrowseInput input){return browseAsync(input,RequestOptions.defaults());}
 public SharedConversation get(String shareId,RequestOptions options){Objects.requireNonNull(options);return transport.json("GET",prefix+"/shares/"+Transport.id(shareId),null,options,transport.type(SharedConversation.class));}
 public SharedConversation get(String shareId){return get(shareId,RequestOptions.defaults());}
 public CompletableFuture<SharedConversation> getAsync(String shareId,RequestOptions options){Objects.requireNonNull(options);return transport.jsonAsync("GET",prefix+"/shares/"+Transport.id(shareId),null,options,transport.type(SharedConversation.class));}
@@ -32,4 +36,8 @@ public Void revoke(String shareId,RequestOptions options){Objects.requireNonNull
 public Void revoke(String shareId){return revoke(shareId,RequestOptions.defaults());}
 public CompletableFuture<Void> revokeAsync(String shareId,RequestOptions options){Objects.requireNonNull(options);return transport.jsonAsync("DELETE",prefix+"/shares/"+Transport.id(shareId),null,options,transport.type(Void.class));}
 public CompletableFuture<Void> revokeAsync(String shareId){return revokeAsync(shareId,RequestOptions.defaults());}
+public SharedConversation read(String shareId,ReaderReadInput input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.json("POST",prefix+"/shares/"+Transport.id(shareId)+"/read",input,options,transport.type(SharedConversation.class));}
+public SharedConversation read(String shareId,ReaderReadInput input){return read(shareId,input,RequestOptions.defaults());}
+public CompletableFuture<SharedConversation> readAsync(String shareId,ReaderReadInput input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.jsonAsync("POST",prefix+"/shares/"+Transport.id(shareId)+"/read",input,options,transport.type(SharedConversation.class));}
+public CompletableFuture<SharedConversation> readAsync(String shareId,ReaderReadInput input){return readAsync(shareId,input,RequestOptions.defaults());}
 }

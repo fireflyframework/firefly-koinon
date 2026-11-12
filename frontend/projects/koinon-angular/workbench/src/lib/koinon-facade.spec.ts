@@ -73,7 +73,7 @@ describe('scoped knowledge facade', () => {
   it('reports denied creation without fabricating a saved item', async () => {
     const facade = setup(async (method, path) => {
       if (path === '/context') return context;
-      if (method === 'POST') throw new KoinonError(403, 'DENIED', 'Workspace access denied');
+      if (method === 'POST' && path.endsWith('/catalog')) throw new KoinonError(403, 'DENIED', 'Workspace access denied');
       return { items: [] };
     });
     await facade.bootstrap();
@@ -108,7 +108,7 @@ describe('mutation context changes', () => {
     let complete!: (value: unknown) => void;
     const facade = setup(async (method, path) => {
       if (path === '/context') return current;
-      if (method === 'POST')
+      if (method === 'POST' && path.endsWith('/catalog'))
         return new Promise((resolve) => {
           complete = resolve;
         });
@@ -143,7 +143,7 @@ describe('mutation context changes', () => {
     let complete!: (value: unknown) => void;
     const facade = setup(async (method, path) => {
       if (path === '/context') return context;
-      if (method === 'POST')
+      if (method === 'POST' && path.endsWith('/catalog'))
         return new Promise((resolve) => {
           complete = resolve;
         });
@@ -186,7 +186,7 @@ describe('host client changes', () => {
       return 'tenant-two';
     });
     await facade.bootstrap('tenant-one');
-    expect(events).toEqual(['/context', 'resolve', '/tenants/tenant-two/catalog']);
+    expect(events).toEqual(['/context', 'resolve', '/tenants/tenant-two/catalog/browse']);
   });
   it('does not request an organization absent from fresh context even when a host resolver returns it', async () => {
     const reads: string[] = [];
@@ -196,7 +196,7 @@ describe('host client changes', () => {
       return { items: [] };
     }, () => 'revoked');
     await facade.bootstrap();
-    expect(reads).toEqual(['/tenants/tenant-one/catalog']);
+    expect(reads).toEqual(['/tenants/tenant-one/catalog/browse']);
   });
   it('does not carry a previous identity selection into the next identity context', async () => {
     let current = context;
@@ -220,7 +220,7 @@ describe('host client changes', () => {
     current = { ...context, tenants: [...context.tenants] };
     await facade.bootstrap();
     expect(facade.tenantId()).toBe('tenant-two');
-    expect(reads.at(-1)).toBe('/tenants/tenant-two/catalog');
+    expect(reads.at(-1)).toBe('/tenants/tenant-two/catalog/browse');
   });
   it('clears scoped state without a catalog request when fresh context has no memberships', async () => {
     let current = context;
@@ -235,7 +235,7 @@ describe('host client changes', () => {
     await facade.bootstrap();
     expect(facade.tenantId()).toBe('');
     expect(facade.entries()).toEqual([]);
-    expect(reads).toEqual(['/tenants/tenant-one/catalog']);
+    expect(reads).toEqual(['/tenants/tenant-one/catalog/browse']);
   });
   it('discards the previous identity context when a new host client is supplied', async () => {
     let oldContext!: (value: unknown) => void;
@@ -265,24 +265,77 @@ describe('host client changes', () => {
   });
 });
 describe('server-paged Library', () => {
-  it('uses the server projection and total without paging cached raw entries', async () => {
+  it('continues an empty authorized page and preserves the exact reader choice', async () => {
+    const calls: Record<string, unknown>[] = [];
+    const facade = setup(async (_method, path, options) => {
+      if(path === '/context') return context;
+      const body=options?.body as Record<string,unknown>;
+      calls.push(body);
+      return {items: body['cursor'] ? [entry('later-page')] : [], actors:{}, next_cursor:body['cursor'] ? null : 'opaque'};
+    });
+    await facade.bootstrap();
+    await facade.selectReaderSources([]);
+    expect(facade.libraryPage().items).toEqual([]);
+    expect(facade.libraryPage().next_cursor).toBe('opaque');
+    await facade.nextLibraryPage();
+    expect(calls.at(-1)).toMatchObject({cursor:'opaque',reader_source_connections:[]});
+    expect(facade.libraryPage().items.map(row=>row.id)).toEqual(['later-page']);
+    expect(facade.libraryPage().total).toBeUndefined();
+  });
+  it('clears protected state and ignores late reads after the reader choice changes', async () => {
+    let complete!: (value:unknown)=>void;
+    const facade=setup(async (_method,path,options)=>{
+      if(path==='/context')return context;
+      const body=options?.body as {q?:string;reader_source_connections?:unknown};
+      if(body.q==='late' && body.reader_source_connections===null)return new Promise(resolve=>complete=resolve);
+      return {items:[],actors:{},next_cursor:null};
+    });
+    await facade.bootstrap();
+    const old=facade.loadLibrary({q:'late'});
+    await facade.selectReaderSources([]);
+    complete({items:[entry('no-longer-authorized')],actors:{},next_cursor:'old'});
+    await old;
+    expect(facade.entries()).toEqual([]);
+    expect(facade.libraryPage().next_cursor).toBeNull();
+    expect(facade.selected()).toBeNull();
+  });
+  it('uses reader-aware browsing and does not retain entries removed by fresh authorization', async () => {
+    let visible = true;
+    const calls: {method: HttpMethod; path: string; options?: RequestOptions}[] = [];
+    const facade = setup(async (method, path, options) => {
+      if (path === '/context') return context;
+      calls.push({method, path, options});
+      return {items: visible ? [entry('protected')] : [], actors: {}, next_cursor: null, total: null};
+    });
+    await facade.bootstrap();
+    expect(facade.entries().map(row => row.id)).toEqual(['protected']);
+    visible = false;
+    await facade.refresh();
+    expect(facade.entries()).toEqual([]);
+    expect(calls.at(-1)?.method).toBe('POST');
+    expect(calls.at(-1)?.path).toBe('/tenants/tenant-one/catalog/browse');
+    expect(calls.at(-1)?.options?.body).not.toHaveProperty('page');
+    expect(facade.libraryPage().total).toBeUndefined();
+  });
+  it('uses the server projection without inventing totals or numbered pages', async () => {
     const requests: RequestOptions[] = [];
     const facade = setup(async (_method, path, options) => {
       if (path === '/context') return context;
       requests.push(options ?? {});
-      return { items: [entry('observed-page')], total: 51, page: 2, page_size: 25, pages: 3 };
+      return { items: [entry('observed-page')], actors: {}, next_cursor: 'next', total: null };
     });
     await facade.bootstrap();
     await facade.loadLibrary({ page: 2, q: 'policy', sort: 'updated_at', order: 'desc' });
-    expect(requests.at(-1)?.query).toMatchObject({
+    expect(requests.at(-1)?.body).toMatchObject({
       view: 'library',
-      page: 2,
       page_size: 25,
       q: 'policy',
       sort: 'updated_at',
       order: 'desc',
     });
-    expect(facade.libraryPage().total).toBe(51);
+    expect(facade.libraryPage().total).toBeUndefined();
+    expect(facade.libraryPage().next_cursor).toBe('next');
+    expect(requests.at(-1)?.body).not.toHaveProperty('page');
     expect(facade.libraryPage().items.map((x) => x.id)).toEqual(['observed-page']);
   });
   it('discards a stale filtered page in the same tenant', async () => {
@@ -290,7 +343,7 @@ describe('server-paged Library', () => {
     const facade = setup(async (_method, path, options) =>
       path === '/context'
         ? context
-        : options?.query?.['q'] === 'old'
+        : (options?.body as {q?:string})?.q === 'old'
           ? new Promise((r) => (resolve = r))
           : { items: [entry('new-page')], total: 1, page: 1, page_size: 25, pages: 1 },
     );
@@ -375,6 +428,7 @@ it('clears collection filters when changing workspace while retaining sort and p
   const calls: RequestOptions[] = [];
   const facade = setup(async (_method, path, options) => {
     if (path === '/context') return context;
+    if(path.endsWith('/read'))return entry('another-space');
     calls.push(options ?? {});
     return { items: [] };
   });
@@ -391,9 +445,8 @@ it('clears collection filters when changing workspace while retaining sort and p
     order: 'desc',
   });
   await facade.setWorkspace('another-space');
-  expect(calls.at(-1)?.query).toMatchObject({
+  expect(calls.at(-1)?.body).toMatchObject({
     workspace_id: 'another-space',
-    page: 1,
     page_size: 50,
     sort: 'updated_at',
     order: 'desc',
@@ -413,17 +466,18 @@ it('requests only server-paginated spaces at the Library home on bootstrap, refr
     return { items: [entry('workspace')], total: 1, page: 1, page_size: 25, pages: 1 };
   });
   await facade.bootstrap();
-  expect(queries[0]?.query).toMatchObject({ view: 'library', kind: 'workspace', page: 1 });
-  expect(facade.libraryPage().total).toBe(1);
+  expect(queries[0]?.body).toMatchObject({ view: 'library', kind: 'workspace' });
+  expect(facade.libraryPage().total).toBeUndefined();
   await facade.refresh();
-  expect(queries.at(-1)?.query?.['kind']).toBe('workspace');
+  expect(queries.at(-1)?.body).toMatchObject({kind:'workspace'});
   await facade.selectTenant('tenant-two');
-  expect(queries.at(-1)?.query?.['kind']).toBe('workspace');
+  expect(queries.at(-1)?.body).toMatchObject({kind:'workspace'});
 });
 it('preserves child-folder kind filters and keeps global knowledge search separate', async () => {
   const calls: { path: string; options: RequestOptions }[] = [];
   const facade = setup(async (_method, path, options) => {
     if (path === '/context') return context;
+    if(path.endsWith('/read'))return {...entry('folder'),kind:'corpus',workspace_id:'workspace'};
     calls.push({ path, options: options || {} });
     return path.endsWith('/search') ? { sources: [], answer: null } : { items: [] };
   });
@@ -432,13 +486,128 @@ it('preserves child-folder kind filters and keeps global knowledge search separa
   facade.projectId.set('project');
   facade.parentId.set('folder');
   await facade.loadLibrary({ kind: 'document', page: 2 });
-  expect(calls.at(-1)?.options.query).toMatchObject({
+  expect(calls.at(-1)?.options.body).toMatchObject({
     kind: 'document',
     parent_id: 'folder',
     workspace_id: 'workspace',
-    page: 2,
   });
   await facade.search('operating policy', false);
   expect(calls.at(-1)?.path).toContain('/search');
   expect(calls.at(-1)?.options.body).not.toHaveProperty('kind');
+});
+
+it('hydrates fresh authorized ancestors with local-only choice and clears them when a later read is denied',async()=>{
+  const calls:{path:string;options?:RequestOptions}[]=[];
+  let denied=false;
+  const workspace=entry('workspace');
+  const folder={...entry('folder'),kind:'corpus',workspace_id:'workspace',parent_id:'workspace',name:'Authorized folder'};
+  const facade=setup(async(method,path,options)=>{
+    if(path==='/context')return context;
+    if(path.endsWith('/browse'))return {items:[],next_cursor:null};
+    calls.push({path,options});
+    if(denied)throw new KoinonError(403,'DENIED','Access denied');
+    expect(method).toBe('POST');
+    return path.includes('/folder/')?folder:workspace;
+  });
+  await facade.bootstrap();
+  facade.workspaceId.set('workspace');facade.parentId.set('folder');
+  await facade.selectReaderSources([]);
+  expect(facade.entries().map(row=>row.id)).toEqual(['folder','workspace']);
+  expect(calls.map(call=>call.path)).toEqual(['/tenants/tenant-one/catalog/folder/read','/tenants/tenant-one/catalog/workspace/read']);
+  expect(calls.every(call=>JSON.stringify(call.options?.body)==='{"reader_source_connections":[]}')).toBe(true);
+  denied=true;
+  await facade.refresh();
+  expect(facade.entries()).toEqual([]);
+  expect(facade.libraryPage().items).toEqual([]);
+  expect(facade.error()).toBe('Access denied');
+});
+
+it('reads archived items using the same local-only choice with opaque continuation',async()=>{
+  const calls:{path:string;options?:RequestOptions}[]=[];
+  const facade=setup(async(_method,path,options)=>{
+    if(path==='/context')return context;
+    calls.push({path,options});
+    return {items:[],next_cursor:'next-archive'};
+  });
+  await facade.bootstrap();await facade.selectReaderSources([]);
+  await facade.loadArchived();
+  expect(calls.at(-1)?.path).toBe('/tenants/tenant-one/catalog/browse');
+  expect(calls.at(-1)?.options?.body).toMatchObject({include_archived:true,status:'archived',reader_source_connections:[]});
+  expect(facade.archivedPage().total).toBeUndefined();
+  await facade.nextArchivedPage();
+  expect(calls.at(-1)?.options?.body).toMatchObject({cursor:'next-archive',reader_source_connections:[]});
+});
+
+it('restores only a still-authorized selected identity with fresh metadata and drops it after removal',async()=>{
+  let visible=true,name='Before replacement';
+  const facade=setup(async(_method,path)=>path==='/context'?context:{items:visible?[{...entry('workspace'),name}]:[],next_cursor:null});
+  await facade.bootstrap();facade.selected.set(facade.entries()[0]);
+  name='After replacement';
+  await facade.refresh();
+  expect(facade.selected()?.name).toBe('After replacement');
+  visible=false;await facade.refresh();
+  expect(facade.selected()).toBeNull();
+  expect(facade.notice()).toBe('The available items changed.');
+});
+
+it('does not restore a selection dismissed by the user while refresh is pending',async()=>{
+  let hold=false,complete!:(value:unknown)=>void;
+  const facade=setup(async(_method,path)=>path==='/context'?context:hold?new Promise(resolve=>{complete=resolve;}):{items:[entry('workspace')],next_cursor:null});
+  await facade.bootstrap();facade.setSelection(facade.entries()[0]);hold=true;
+  const refreshing=facade.refresh();expect(facade.selected()).toBeNull();
+  facade.setSelection(null);
+  complete({items:[entry('workspace')],next_cursor:null});await refreshing;
+  expect(facade.selected()).toBeNull();expect(facade.notice()).toBe('');
+});
+it('ignores an earlier dataset schema after the user selects another resource',async()=>{
+  let complete!:(value:unknown)=>void;
+  const facade=setup(async(_method,path)=>path==='/context'?context:path.endsWith('/schema/read')?new Promise(resolve=>{complete=resolve;}):{items:[],next_cursor:null});
+  await facade.bootstrap();facade.setSelection({...entry('dataset'),kind:'dataset'});
+  const reading=facade.loadSchema('dataset');
+  facade.setSelection(entry('workspace'));
+  complete({tables:[{name:'Old protected table'}]});await reading;
+  expect(facade.schema()).toBeNull();
+});
+
+it('discards a protected error from an earlier reader context',async()=>{
+  let fail!:(reason:Error)=>void;
+  const facade=setup(async(_method,path)=>path==='/context'?context:path.endsWith('/schema/read')?new Promise((_resolve,reject)=>{fail=reject;}):{items:[],next_cursor:null});
+  await facade.bootstrap();
+  const pending=facade.loadSchema('dataset');
+  facade.context.set({...context,subject:'new-reader'});
+  fail(new Error('Old protected filename'));
+  await pending;
+  expect(facade.error()).toBe('');
+});
+
+it('keeps admitted catalog metadata without converting unknown counts to zero',async()=>{
+  const facade=setup(async(_method,path)=>path==='/context'?context:{
+    items:[entry('workspace')],actors:{},next_cursor:'opaque-next',total:null,total_is_exact:false,
+    summaries:{workspace:{child_count:0,format:'pdf',language:'es',tags:['policy'],page_count:12},hidden:{tags:['Protected title']}},
+  });
+  await facade.bootstrap();
+  expect(facade.libraryPage().summaries).toEqual({workspace:{
+    child_count:0,document_count:null,dataset_count:null,table_count:null,row_count:null,column_count:null,
+    page_count:12,size_bytes:null,format:'pdf',language:'es',tags:['policy'],
+  }});
+  expect(facade.libraryPage().next_cursor).toBe('opaque-next');
+  expect(facade.libraryPage().total).toBeUndefined();
+  expect(facade.libraryPage().pages).toBeUndefined();
+});
+
+it('clears previous source summaries while a new reader choice is being authorized',async()=>{
+  let complete!:(value:unknown)=>void;
+  const facade=setup(async(_method,path,options)=>path==='/context'?context:
+    Array.isArray((options?.body as {reader_source_connections?:unknown})?.reader_source_connections)
+      ?new Promise(resolve=>{complete=resolve;})
+      :{items:[entry('workspace')],actors:{},next_cursor:null,summaries:{workspace:{tags:['Protected label']}}});
+  await facade.bootstrap();
+  expect(facade.libraryPage().summaries?.['workspace'].tags).toEqual(['Protected label']);
+  const changing=facade.selectReaderSources([]);
+  expect(facade.libraryPage().summaries).toBeUndefined();
+  complete({items:[entry('local')],actors:{},next_cursor:null,summaries:{local:{row_count:0}}});
+  await changing;
+  expect(Object.keys(facade.libraryPage().summaries??{})).toEqual(['local']);
+  expect(facade.libraryPage().summaries?.['local'].row_count).toBe(0);
+  expect(facade.libraryPage().summaries?.['local'].tags).toEqual([]);
 });

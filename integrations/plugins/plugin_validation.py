@@ -158,4 +158,57 @@ def validate_package(root: Path):
             }
         )
         report["connection"] = "provided_public_oauth_client"
+    if (root / "gemini-extension.json").exists():
+        allowed_components = {
+            "plugin.json",
+            "gemini-extension.json",
+            "LICENSE",
+            "NOTICE",
+            "README.md",
+            "SOURCES.json",
+            "assets",
+            "skills",
+        }
+        if not {path.name for path in root.iterdir()} <= allowed_components:
+            raise ValueError("Unexpected Gemini extension component")
+        gemini = read_json(root, "gemini-extension.json")
+        if (
+            set(gemini) != {"name", "version", "description", "mcpServers"}
+            or gemini["name"] != manifest["name"]
+            or gemini["version"] != manifest["version"]
+            or gemini["description"] != manifest["description"]
+            or not isinstance(gemini["mcpServers"], dict)
+            or set(gemini["mcpServers"]) != {"koinon"}
+        ):
+            raise ValueError("Use the canonical inert Gemini extension manifest")
+        server = gemini["mcpServers"]["koinon"]
+        if not isinstance(server, dict) or set(server) != {"httpUrl", "oauth"}:
+            raise ValueError("Only Gemini Streamable HTTP OAuth transport is supported")
+        auth = server["oauth"]
+        if (
+            not isinstance(auth, dict)
+            or set(auth) != {"enabled", "clientId", "redirectUri", "scopes"}
+            or auth["enabled"] is not True
+            or not isinstance(auth["redirectUri"], str)
+        ):
+            raise ValueError(
+                "Use an explicit public OAuth client and registered callback"
+            )
+        DeploymentProfile.model_validate(
+            {
+                "name": "validation",
+                "server_url": server["httpUrl"],
+                "public_client_id": auth["clientId"],
+                "callback_port": 1,
+                "scopes": auth["scopes"],
+                "gemini_redirect_uri": auth["redirectUri"],
+            }
+        )
+        report.update(
+            {
+                "connection": "provided_public_oauth_client",
+                "gemini_manifest": "documented_strict_structure",
+                "installed_host_acceptance": "not_performed",
+            }
+        )
     return report

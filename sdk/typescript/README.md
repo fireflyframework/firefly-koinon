@@ -35,7 +35,31 @@ for (const document of documents.items) console.log(document.id, document.name);
 
 The bearer callback is evaluated per request and can return a promise. Supply a personal token or an API-audience OIDC access token; renewal belongs to the host. For BFF browser sessions use `/bff/api/v1`, included credentials and a freshly decoded CSRF cookie callback. Do not send bearer credentials to the BFF. The host supplies cookie access and login. `FetchTransport` has no background session or client-close method; the caller owns abort signals and asynchronous iterators.
 
+## Choose reader sources
+
+Search, query, and cursor browse accept `reader_source_connections`. Omit it or send
+`null` to use the authenticated caller's saved selection; send `[]` to exclude imported
+sources. An explicit list replaces the saved selection for that operation. Each choice
+contains `provider`, `connection_id`, and optional `external_tenant`; at most 100 distinct
+provider and external-tenant pairs are accepted. The server checks account ownership and
+current source access. A connection identifier never grants access by itself.
+
+Use `client.catalog.browse` and `client.exports.browse` for reader-authorized cursor pages. Preserve `next_cursor`,
+including on an empty page. `total: null` and `total_is_exact: false` mean that the server
+has not calculated an exact total. Existing numbered catalog/export lists retain their
+local-only behavior. Saved reader-selection replacement requires native browser session
+authority, the current revision, and a caller-generated operation UUID; a headless bearer
+credential cannot stand in for browser consent.
+
 ## Follow a workflow
+
+Load personal document-source management separately with `createContentSourcesApi` from
+`@fireflyframework/koinon-sdk/content-sources`. Its `list`, `get`, `disconnect`, `sites`, `drives`, and
+`children` methods require the owner's verified identity; personal API tokens cannot call them.
+Listing uses `cursor` and `limit`, and disconnect takes the current `expected_revision`.
+Consent initiation and completion require the native browser session and have no headless helper.
+Deployment operators must enable and configure the source-account service first.
+`synchronization_available` is currently `false`: account connection and browsing do not import documents.
 
 These links target guides in the source repository:
 

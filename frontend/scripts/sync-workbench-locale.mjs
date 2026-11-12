@@ -25,10 +25,12 @@ function dictionary(file) {
 function sources(path, panels = false) {
   return readdirSync(path, { withFileTypes: true }).flatMap((item) =>
     item.isDirectory()
-      ? sources(resolve(path, item.name), panels)
+      ? item.name === 'sources'
+        ? []
+        : sources(resolve(path, item.name), panels)
       : !item.name.endsWith('.spec.ts') &&
           !['workbench-spanish.generated.ts', 'panel-spanish.generated.ts'].includes(item.name) &&
-          /^(account-(?:panel|page)|authorized-applications(?:-panel)?|mcp-connection-panel|workbench-dialogs|move-folder|table-lineage-panel|table-coordinates)\./.test(
+          /^(account-(?:panel|page)|authorized-applications(?:-panel)?|mcp-connection-panel|workbench-dialogs|move-folder|table-lineage-panel|table-coordinates|sign-in|command-palette-content|document-viewer|library-upload-panel|coordinate-labels)\./.test(
             item.name,
           ) === panels &&
           item.name !== 'assistant.ts' &&
@@ -39,7 +41,8 @@ function sources(path, panels = false) {
 }
 const all = dictionary(resolve(root, 'src/lib/foundations/spanish.ts'));
 const content = ['src/lib', 'core/src/lib', 'availability/src/lib', 'panels/src/lib']
-  .flatMap(path => sources(resolve(root, 'workbench', path))).join('\n');
+  .flatMap((path) => sources(resolve(root, 'workbench', path)))
+  .join('\n');
 const selected = Object.fromEntries(
   Object.entries(all).filter(
     ([key]) => content.includes(key) || content.includes(key.replaceAll("'", "\\'")),

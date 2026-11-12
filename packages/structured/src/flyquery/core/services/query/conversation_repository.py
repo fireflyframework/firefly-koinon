@@ -175,6 +175,7 @@ class ConversationRepository:
         table_qnames_json: list[str],
         snapshot_pins_json: dict[str, str],
         elapsed_ms: int | None = None,
+        query_id: uuid.UUID | None = None,
     ) -> dict[str, Any]:
         """Append a new turn to an existing conversation.
 
@@ -209,12 +210,12 @@ class ConversationRepository:
                     INSERT INTO flyquery_conversation_turns
                         (tenant_id, workspace_id, conversation_id, turn_index,
                          question, executed_sql, summary,
-                         table_qnames_json, snapshot_pins_json, elapsed_ms)
+                         table_qnames_json, snapshot_pins_json, elapsed_ms, citations_json)
                     VALUES
                         (:tenant_id, :workspace_id, :conversation_id, :turn_index,
                          :question, :executed_sql, :summary,
                          CAST(:table_qnames AS jsonb), CAST(:snapshot_pins AS jsonb),
-                         :elapsed_ms)
+                         :elapsed_ms,CAST(:citations AS jsonb))
                     RETURNING id, tenant_id, workspace_id, conversation_id, turn_index,
                               question, executed_sql, summary,
                               table_qnames_json, snapshot_pins_json, citations_json,
@@ -231,6 +232,7 @@ class ConversationRepository:
                     "table_qnames": json.dumps(table_qnames_json),
                     "snapshot_pins": json.dumps(snapshot_pins_json),
                     "elapsed_ms": elapsed_ms,
+                    "citations": json.dumps({"query_id": str(query_id)} if query_id is not None else {}),
                 },
             )
             turn = dict(result.mappings().one())

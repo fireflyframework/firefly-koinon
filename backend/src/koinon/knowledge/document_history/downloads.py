@@ -19,6 +19,8 @@ from pyfly.security.context import SecurityContext
 from pyfly.security.context_holder import SecurityContextHolder
 
 from koinon.catalog.errors import AccessDenied
+from koinon.integrations.content_sources.errors import SourceError
+from koinon.integrations.content_sources.read_context import reader_source_scope, reader_source_snapshot
 from koinon.knowledge.document_history.ports import DocumentHistoryPort
 from koinon.knowledge.service import KnowledgeFacade
 from koinon.security.authority import PRIMARY_POLICY_UNIT
@@ -39,6 +41,33 @@ class OriginalDownloads:
         self.knowledge, self.history = knowledge, history
         self.scratch = scratch
         self.slots = Bulkhead(max_concurrent=1)
+
+    def _source_guard(self, subject, tenant, document, version, operation):
+        """Carry intent and immutable identity, never an authorization operation, into ASGI."""
+        if operation is None:
+
+            async def local_guard():
+                return None
+
+            return local_guard
+        snapshot = operation.selection
+        pins = frozenset(operation.used)
+        states = tuple((identifiers, tuple(rows)) for identifiers, rows in operation._entry_states.items())
+        reader = self.knowledge.source_reader.get()
+
+        async def fresh_guard():
+            with (
+                reader_source_scope(subject, tenant, snapshot.connections),
+                reader_source_snapshot(subject, tenant, snapshot),
+            ):
+                fresh = await reader.entries(subject, tenant, (document,), version_id=version)
+                if frozenset(fresh.used) != pins or tuple(fresh._entry_states.items()) != states:
+                    raise SourceError("authority_changed")
+                await fresh.release()
+                async with fresh.read_fence():
+                    pass
+
+        return fresh_guard
 
     @staticmethod
     def _receipt(receipt):
@@ -110,6 +139,11 @@ class OriginalDownloads:
 
         try:
             before = await self._scope(subject, tenant, document, context)
+            with SecurityContextHolder.using(context):
+                source_operation = await self.knowledge.authorize_source_entries(
+                    subject, tenant, (document,), version_id=source_version_id
+                )
+            source_guard = self._source_guard(subject, tenant, document, source_version_id, source_operation)
             native = dict(actor=subject, tenant_id=tenant, workspace_id=before[1], source_id=before[2])
             with SecurityContextHolder.using(context):
                 expected = await self.history.original_identity(source_version_id=source_version_id, **native)
@@ -133,6 +167,7 @@ class OriginalDownloads:
 
             async def guard():
                 with SecurityContextHolder.using(context):
+                    await source_guard()
                     observed = await self.history.original_identity(
                         source_version_id=source_version_id, **native
                     )

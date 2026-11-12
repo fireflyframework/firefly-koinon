@@ -284,5 +284,6 @@ async def test_private_context_never_exposes_shared_persisting_domain_tools():
     executor.tool_availability = AssistantToolAvailability(
         SimpleNamespace(authorize=AsyncMock()), SimpleNamespace(validate_scope=AsyncMock(return_value={}))
     )
-    ordinary = await executor.tools("run", "worker", enabled)
+    offering = await executor.tool_availability.resolve("issuer|reader", "north", {}, enabled)
+    ordinary = await executor.tools("run", "worker", enabled, offering=offering)
     assert [tool.name for tool in ordinary] == enabled

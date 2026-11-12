@@ -54,6 +54,14 @@ public AnswerAudit audit(String runId,RequestOptions options){Objects.requireNon
 public AnswerAudit audit(String runId){return audit(runId,RequestOptions.defaults());}
 public CompletableFuture<AnswerAudit> auditAsync(String runId,RequestOptions options){Objects.requireNonNull(options);return transport.jsonAsync("GET",prefix+"/chat/runs/"+Transport.id(runId)+"/audit",null,options,transport.type(AnswerAudit.class));}
 public CompletableFuture<AnswerAudit> auditAsync(String runId){return auditAsync(runId,RequestOptions.defaults());}
+public HistoryBrowsePage browse(HistoryBrowseInput input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.json("POST",prefix+"/chat/threads/browse",input,options,transport.type(HistoryBrowsePage.class));}
+public HistoryBrowsePage browse(HistoryBrowseInput input){return browse(input,RequestOptions.defaults());}
+public CompletableFuture<HistoryBrowsePage> browseAsync(HistoryBrowseInput input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.jsonAsync("POST",prefix+"/chat/threads/browse",input,options,transport.type(HistoryBrowsePage.class));}
+public CompletableFuture<HistoryBrowsePage> browseAsync(HistoryBrowseInput input){return browseAsync(input,RequestOptions.defaults());}
+public MessageBrowsePage browseMessages(String threadId,MessageBrowseInput input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.json("POST",prefix+"/chat/threads/"+Transport.id(threadId)+"/messages/browse",input,options,transport.type(MessageBrowsePage.class));}
+public MessageBrowsePage browseMessages(String threadId,MessageBrowseInput input){return browseMessages(threadId,input,RequestOptions.defaults());}
+public CompletableFuture<MessageBrowsePage> browseMessagesAsync(String threadId,MessageBrowseInput input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.jsonAsync("POST",prefix+"/chat/threads/"+Transport.id(threadId)+"/messages/browse",input,options,transport.type(MessageBrowsePage.class));}
+public CompletableFuture<MessageBrowsePage> browseMessagesAsync(String threadId,MessageBrowseInput input){return browseMessagesAsync(threadId,input,RequestOptions.defaults());}
 public ChatThread get(String threadId,RequestOptions options){Objects.requireNonNull(options);return transport.json("GET",prefix+"/chat/threads/"+Transport.id(threadId),null,options,transport.type(ChatThread.class));}
 public ChatThread get(String threadId){return get(threadId,RequestOptions.defaults());}
 public CompletableFuture<ChatThread> getAsync(String threadId,RequestOptions options){Objects.requireNonNull(options);return transport.jsonAsync("GET",prefix+"/chat/threads/"+Transport.id(threadId),null,options,transport.type(ChatThread.class));}
@@ -70,4 +78,8 @@ public Void delete(String threadId,ThreadDeleteFilter filter,RequestOptions opti
 public Void delete(String threadId,ThreadDeleteFilter filter){return delete(threadId,filter,RequestOptions.defaults());}
 public CompletableFuture<Void> deleteAsync(String threadId,ThreadDeleteFilter filter,RequestOptions options){Objects.requireNonNull(options);options=Objects.requireNonNull(filter).applyTo(options);return transport.jsonAsync("DELETE",prefix+"/chat/threads/"+Transport.id(threadId),null,options,transport.type(Void.class));}
 public CompletableFuture<Void> deleteAsync(String threadId,ThreadDeleteFilter filter){return deleteAsync(threadId,filter,RequestOptions.defaults());}
+public ChatThread read(String threadId,ReaderReadInput input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.json("POST",prefix+"/chat/threads/"+Transport.id(threadId)+"/read",input,options,transport.type(ChatThread.class));}
+public ChatThread read(String threadId,ReaderReadInput input){return read(threadId,input,RequestOptions.defaults());}
+public CompletableFuture<ChatThread> readAsync(String threadId,ReaderReadInput input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.jsonAsync("POST",prefix+"/chat/threads/"+Transport.id(threadId)+"/read",input,options,transport.type(ChatThread.class));}
+public CompletableFuture<ChatThread> readAsync(String threadId,ReaderReadInput input){return readAsync(threadId,input,RequestOptions.defaults());}
 }

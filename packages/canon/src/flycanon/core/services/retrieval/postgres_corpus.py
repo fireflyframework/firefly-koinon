@@ -173,6 +173,7 @@ class PostgresCorpus:
         tenant_id: str = "default",
         workspace_id: str = "default",
         source_ids: Sequence[str] | None = None,
+        candidates_only: bool = False,
     ) -> list[ChunkHit]:
         """Return the top-``top_k`` chunks ranked by Postgres BM25.
 
@@ -195,17 +196,24 @@ class PostgresCorpus:
         q = (query or "").strip()
         if not q:
             return []
+        from flycanon.core.services.query import provenance
+
+        candidates_only = candidates_only or provenance.candidate_mode()
         source_predicate = "" if source_ids is None else "AND c.source_id = ANY(CAST(:source_ids AS text[]))"
+        payload = (
+            ""
+            if candidates_only
+            else """
+                c.content AS content, c.section_path, c.page, c.metadata_json,
+                COALESCE(s.filename, s.uri, s.id) AS source_path,
+        """
+        )
         sql = text(
             f"""
             SELECT
                 c.id          AS chunk_id,
                 c.source_id   AS doc_id,
-                c.content     AS content,
-                c.section_path,
-                c.page,
-                c.metadata_json,
-                COALESCE(s.filename, s.uri, s.id) AS source_path,
+                {payload}
                 ts_rank_cd(c.tsv, plainto_tsquery(:cfg, :q)) AS score
             FROM canon_chunks AS c
             JOIN canon_sources AS s ON s.id = c.source_id
@@ -233,6 +241,9 @@ class PostgresCorpus:
 
         hits: list[ChunkHit] = []
         for row in rows:
+            if candidates_only:
+                hits.append(ChunkHit(row["chunk_id"], float(row["score"] or 0.0), "", doc_id=row["doc_id"]))
+                continue
             metadata: dict[str, Any] = dict(row["metadata_json"] or {})
             if row["section_path"]:
                 metadata.setdefault("section_path", str(row["section_path"]))

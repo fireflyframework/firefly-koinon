@@ -4,6 +4,21 @@ import { TestBed } from '@angular/core/testing';
 import { expect, it, vi } from 'vitest';
 import type { CatalogEntry } from '@fireflyframework/koinon-sdk';
 import { KoinonFolderTree } from '../organisms/folder-tree';
+it('keeps keyboard continuation available when a filtered folder page is empty',async()=>{
+  const fixture=TestBed.createComponent(KoinonFolderTree);
+  const loads:number[]=[];
+  fixture.componentRef.setInput('contextKey','reader');
+  fixture.componentRef.setInput('loadChildren',async(_id:string,page:number)=>{
+    loads.push(page);return{ids:[],page,next_cursor:page===1?'opaque':null};
+  });
+  fixture.detectChanges();await fixture.whenStable();fixture.detectChanges();
+  const more=fixture.nativeElement.querySelector('[role="treeitem"]') as HTMLElement;
+  expect(more.getAttribute('tabindex')).toBe('0');
+  more.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+  await fixture.whenStable();fixture.detectChanges();
+  expect(loads).toEqual([1,2]);expect(fixture.nativeElement.querySelector('[role="treeitem"]')).toBeNull();
+  fixture.destroy();
+});
 it('reveals the known space without selecting it as an upload destination', async () => {
   const rows = [
     { id: 'space', kind: 'workspace', name: 'Research space', parent_id: null, status: 'ready' },

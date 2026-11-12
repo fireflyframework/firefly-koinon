@@ -3,7 +3,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createHash } from 'node:crypto';
 import { mkdir } from 'node:fs/promises';
-import { mockService } from './fixtures';
+import { mockService,mockReaderAccounts,chooseReaderMode } from './fixtures';
 // The native PDF handoff requires full Chromium, which the hosted browser lane installs.
 test.use({ channel: 'chromium' });
 const text =
@@ -40,6 +40,7 @@ async function fixture(
   options: { pending?: boolean; denied?: boolean; image?: boolean } = {},
 ) {
   await mockService(page);
+  const readerCalls:{path:string;body:Record<string,unknown>}[]=[];
   let originals = 0;
   let denied = !!options.denied;
   const media = options.image ? 'image/png' : 'application/pdf';
@@ -53,6 +54,7 @@ async function fixture(
   await page.route('**/bff/api/v1/**', async (route) => {
     const req = route.request(),
       path = new URL(req.url()).pathname.replace('/bff/api/v1', '');
+    if(req.method()==='POST' && (path.endsWith('/read')||path.endsWith('/browse')||path.endsWith('/availability')))readerCalls.push({path,body:req.postDataJSON()});
     if (path.endsWith('/catalog/availability'))
       return route.fulfill({
         json: {
@@ -67,12 +69,15 @@ async function fixture(
         },
       });
     if (!path.includes('/documents/')) return route.fallback();
+    expect(req.method()).toBe('POST');
+    expect(req.postDataJSON()).toHaveProperty('reader_source_connections');
+    expect(new URL(req.url()).search).toBe('');
     if (denied)
       return route.fulfill({
         status: 403,
         json: { code: 'ACCESS_DENIED', detail: 'Private error should not be rendered' },
       });
-    if (path.endsWith('/original')) {
+    if (path.endsWith('/original/read')) {
       originals++;
       return route.fulfill({
         contentType: 'application/octet-stream',
@@ -90,7 +95,7 @@ async function fixture(
       source_version_id: 'serving-old',
       extraction_id: 'view-old',
     };
-    if (path.endsWith('/parts/part-one'))
+    if (path.endsWith('/parts/part-one/read'))
       return route.fulfill({
         json: {
           ...identity,
@@ -102,7 +107,7 @@ async function fixture(
           page_basis: 'recorded_loader',
         },
       });
-    if (path.endsWith('/parts'))
+    if (path.endsWith('/parts/read'))
       return route.fulfill({
         json: {
           items: [
@@ -121,7 +126,7 @@ async function fixture(
           pages: 1,
         },
       });
-    if (path.endsWith('/versions/serving-old'))
+    if (path.endsWith('/versions/serving-old/read'))
       return route.fulfill({
         json: {
           ...identity,
@@ -139,6 +144,7 @@ async function fixture(
     await page.getByRole('button', { name, exact: true }).click();
   return {
     originals: () => originals,
+    readerCalls,
     revoke: () => {
       denied = true;
     },
@@ -363,4 +369,23 @@ test('separate document details still support the normal reviewed metadata edito
   await expect(
     page.getByRole('button', { name: 'Reviewed operating policy.pdf', exact: true }),
   ).toBeVisible();
+});
+
+for(const mode of ['local','explicit'] as const)test(`document detail and original retain ${mode} intent instead of saved account B`,async({page})=>{
+  await page.setViewportSize({width:390,height:900});
+  const service=await fixture(page);await mockReaderAccounts(page);
+  const offset=service.readerCalls.length;
+  const choices=await chooseReaderMode(page,mode);
+  await page.getByRole('button',{name:'Service operating policy.pdf',exact:true}).click();
+  const panel=page.getByRole('dialog',{name:'Service operating policy.pdf',exact:true});
+  await expect(panel.locator('.document-text')).toContainText(text);
+  const download=page.waitForEvent('download');
+  await panel.getByRole('button',{name:'Download original',exact:true}).click();await download;
+  const pendingReads=service.readerCalls.slice(offset);
+  const appliedRead=pendingReads.findIndex(row=>row.path.endsWith('/catalog/browse'));
+  expect(appliedRead).toBeGreaterThanOrEqual(0);
+  const reads=pendingReads.slice(appliedRead);
+  expect(reads.some(row=>row.path.endsWith('/original/read'))).toBe(true);
+  expect(reads.some(row=>row.path.endsWith('/catalog/browse'))).toBe(true);
+  for(const read of reads)expect(read.body.reader_source_connections).toEqual(choices);
 });

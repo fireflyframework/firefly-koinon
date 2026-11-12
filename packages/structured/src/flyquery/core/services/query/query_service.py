@@ -40,6 +40,7 @@ from __future__ import annotations
 import logging
 import time
 import uuid
+from copy import copy
 from typing import Any
 
 from flyquery.core.agents.model_bindings import model_reference
@@ -128,6 +129,38 @@ class QueryService:
         self._semantic_repo = semantic_repo
         self._conversation_service = conversation_service
 
+    async def prepare_answer(self, **arguments):
+        """Compute privately; defer all visible writes to an explicit publication unit."""
+        from flyquery.core.services.query.prepared import (
+            DeferredConversation,
+            DeferredQueries,
+            PreparedQuery,
+            no_query_unit,
+        )
+
+        no_query_unit()
+        prepared = PreparedQuery()
+        pipeline = copy(self)
+        pipeline._query_repo = DeferredQueries(prepared)
+        pipeline._result_uploader = copy(self._result_uploader)
+        pipeline._result_uploader._query_repo = pipeline._query_repo
+        pipeline._result_uploader._prepared = prepared
+        if self._conversation_service is not None:
+            pipeline._conversation_service = DeferredConversation(prepared, self._conversation_service)
+        if autolearn_allowed(self._settings, arguments["scopes"]):
+            pipeline._auto_learner = self._auto_learner.deferred(prepared)
+        try:
+            prepared.seal(await pipeline.answer(**arguments))
+            return prepared
+        except BaseException:
+            await prepared.abort_preparation(getattr(self._result_uploader, "_store", None))
+            raise
+
+    async def publish(self, prepared):
+        """Write one prepared answer through the caller's native unit."""
+        examples = getattr(getattr(self._auto_learner, "_service", None), "_repo", None)
+        return await prepared.publish(self._query_repo, self._conversation_service, examples)
+
     async def answer(
         self,
         *,
@@ -194,6 +227,22 @@ class QueryService:
         # ------------------------------------------------------------------
         # 1. Hybrid retrieval
         # ------------------------------------------------------------------
+        starting_point_sql: str | None = None
+        prior_table_qnames: list[str] = []
+        prior_snapshot_pins: dict[str, str] = {}
+
+        if conversation_id is not None and self._conversation_service is not None:
+            prior_turn = await self._conversation_service.last_turn(conversation_id)
+            if prior_turn is not None:
+                starting_point_sql = prior_turn.get("executed_sql")
+                prior_table_qnames = prior_turn.get("table_qnames_json") or []
+                prior_snapshot_pins = prior_turn.get("snapshot_pins_json") or {}
+
+        for component in (self._retriever, self._table_resolver):
+            bind_pins = getattr(component, "bind_snapshot_pins", None)
+            if bind_pins is not None:
+                bind_pins(prior_snapshot_pins)
+
         bundle = await self._retriever.retrieve(
             question,
             dataset_id=dataset_id,
@@ -222,17 +271,6 @@ class QueryService:
         # ------------------------------------------------------------------
         # 2b. Load drill-down context from prior turn (Phase E)
         # ------------------------------------------------------------------
-        starting_point_sql: str | None = None
-        prior_table_qnames: list[str] = []
-        prior_snapshot_pins: dict[str, str] = {}
-
-        if conversation_id is not None and self._conversation_service is not None:
-            prior_turn = await self._conversation_service.last_turn(conversation_id)
-            if prior_turn is not None:
-                starting_point_sql = prior_turn.get("executed_sql")
-                prior_table_qnames = prior_turn.get("table_qnames_json") or []
-                prior_snapshot_pins = prior_turn.get("snapshot_pins_json") or {}
-
         bundle["starting_point_sql"] = starting_point_sql
         bundle["prior_table_qnames"] = prior_table_qnames
         bundle["snapshot_pins"] = dict(prior_snapshot_pins)

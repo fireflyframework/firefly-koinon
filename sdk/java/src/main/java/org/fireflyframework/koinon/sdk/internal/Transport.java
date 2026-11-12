@@ -237,7 +237,18 @@ public final class Transport implements AutoCloseable {
 
   public CompletableFuture<BinaryResponse> binaryAsync(
       String method, String path, RequestOptions options) {
-    var request = request(method, path, HttpRequest.BodyPublishers.noBody(), options, null, "*/*");
+    return binaryAsync(method, path, null, options);
+  }
+
+  public BinaryResponse binary(String method, String path, Object body, RequestOptions options) {
+    return Blocking.await(binaryAsync(method, path, body, options));
+  }
+
+  public CompletableFuture<BinaryResponse> binaryAsync(
+      String method, String path, Object body, RequestOptions options) {
+    var request = request(method, path,
+        body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofByteArray(codec.encode(body)),
+        options, body == null ? null : "application/json", "*/*");
     return exchange(
         request,
         options,
@@ -263,9 +274,21 @@ public final class Transport implements AutoCloseable {
 
   public CompletableFuture<FileDownload> downloadAsync(
       String method, String path, Path target, long maxBytes, RequestOptions options) {
+    return downloadAsync(method, path, null, target, maxBytes, options);
+  }
+
+  public FileDownload download(
+      String method, String path, Object body, Path target, long maxBytes, RequestOptions options) {
+    return Blocking.await(downloadAsync(method, path, body, target, maxBytes, options));
+  }
+
+  public CompletableFuture<FileDownload> downloadAsync(
+      String method, String path, Object body, Path target, long maxBytes, RequestOptions options) {
     if (maxBytes < 1) throw new IllegalArgumentException("Download byte limit must be positive");
     var destination = target.toAbsolutePath().normalize();
-    var request = request(method, path, HttpRequest.BodyPublishers.noBody(), options, null, "*/*");
+    var request = request(method, path,
+        body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofByteArray(codec.encode(body)),
+        options, body == null ? null : "application/json", "*/*");
     return exchange(
         request,
         options,

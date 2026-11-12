@@ -5,9 +5,10 @@ from urllib.parse import parse_qs, urlsplit
 
 import httpx
 import pytest
+from pyfly.oauth2 import OAuth2Client, OAuth2Endpoints, generate_pkce
+
 from koinon.integrations.content_sources.errors import SourceError
 from koinon.integrations.content_sources.oauth import ReadOnlySourceOAuth, SourceOAuthConfig
-from pyfly.oauth2 import OAuth2Client, OAuth2Endpoints, generate_pkce
 
 
 async def test_native_oauth_client_is_borrowed_and_must_match_source_configuration():

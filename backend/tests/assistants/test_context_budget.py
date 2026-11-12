@@ -54,6 +54,7 @@ async def test_native_memory_preserves_whole_recent_turns_within_token_budget(po
         scoped=AsyncMock(return_value=SimpleNamespace(id="recent", access_token_id=None)),
     )
     memory = object.__new__(PersonalConversationMemory)
+    memory.source_reader = None
     memory.assistants = SimpleNamespace(get=lambda: service)
     memory.settings = SimpleNamespace(max_history_messages=40, max_history_tokens=512)
     memory.repository = SimpleNamespace(

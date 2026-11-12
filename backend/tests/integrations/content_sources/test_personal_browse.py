@@ -4,11 +4,12 @@ from contextlib import asynccontextmanager
 
 import httpx
 import pytest
-from koinon.integrations.content_sources.discovery import GoogleDriveDiscovery
-from koinon.integrations.content_sources.errors import SourceError
 from pyfly.client import HttpxClientAdapter
 from test_connection_lifecycle import begin, complete
 from test_connection_lifecycle import lifecycle as lifecycle
+
+from koinon.integrations.content_sources.discovery import GoogleDriveDiscovery
+from koinon.integrations.content_sources.errors import SourceError
 
 
 async def test_personal_browse_uses_reader_grant_and_opaque_bound_continuation(lifecycle, monkeypatch):

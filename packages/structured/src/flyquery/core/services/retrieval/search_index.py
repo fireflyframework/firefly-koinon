@@ -30,6 +30,8 @@ import uuid
 from dataclasses import dataclass, field
 
 import sqlalchemy as sa
+from pyfly.data.transaction import infrastructure_unit
+from pyfly.kernel import ServiceUnavailableException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from flyquery.core.services.query.value_anchoring import coerce_profile, semantic_role
@@ -583,4 +585,395 @@ class SearchIndex:
                 },
             )
             for r in rows.mappings()
+        ]
+
+
+class ProductSearchIndex:
+    """Bounded identity admission followed by exact detached hydration."""
+
+    def __init__(self, sessions):
+        self._sessions = sessions
+        self._pins = {}
+
+    def bind_snapshot_pins(self, pins):
+        self._pins = dict(pins)
+
+    async def _read(self, statement, parameters):
+        async with infrastructure_unit(self._sessions, read_only=True) as session:
+            rows = await session.execute(sa.text(statement), parameters)
+            return [dict(row) for row in rows.mappings()]
+
+    async def schema_catalog(self, dataset_id, tenant_id, workspace_id):
+        """Read a bounded catalog from exact admitted table/snapshot identities."""
+        import json
+
+        from flyquery.core.services.query import provenance
+
+        parameters = {"ds": dataset_id, "tenant": tenant_id, "workspace": workspace_id}
+        revision = "md5(jsonb_build_array(t.name,t.qualified_name,t.sheet_or_json_path)::text)"
+        candidates = await self._read(
+            f"""SELECT t.id AS table_id,s.id AS snapshot_id,{revision} AS revision
+            FROM flyquery_tables t
+            JOIN flyquery_schema_snapshots s ON s.id=t.current_snapshot_id AND s.table_id=t.id
+              AND s.dataset_id=t.dataset_id AND s.tenant_id=t.tenant_id AND s.workspace_id=t.workspace_id
+            WHERE t.dataset_id=:ds AND t.tenant_id=:tenant AND t.workspace_id=:workspace
+              AND t.is_active=true AND s.status='READY'
+            ORDER BY t.id LIMIT 501""",
+            parameters,
+        )
+        if len(candidates) > 500:
+            raise ServiceUnavailableException(
+                "Schema catalog exceeds its bounded read", code="EVIDENCE_UNAVAILABLE"
+            )
+        selected = await provenance.admit_rows("table", candidates)
+        if len(selected) != len(candidates):
+            raise ServiceUnavailableException(
+                "Schema catalog is not fully admitted", code="EVIDENCE_UNAVAILABLE"
+            )
+        if not selected:
+            return []
+        parameters["pins"] = json.dumps(
+            [
+                {
+                    "table_id": str(row["table_id"]),
+                    "snapshot_id": str(row["snapshot_id"]),
+                    "revision": row["revision"],
+                }
+                for row in selected
+            ]
+        )
+        tables = await self._read(
+            f"""SELECT t.id,t.name,t.sheet_or_json_path,s.id AS current_snapshot_id
+            FROM jsonb_to_recordset(CAST(:pins AS jsonb)) AS p(table_id uuid,snapshot_id uuid,revision text)
+            JOIN flyquery_tables t ON t.id=p.table_id AND {revision}=p.revision
+            JOIN flyquery_schema_snapshots s ON s.id=p.snapshot_id AND s.table_id=t.id
+              AND s.dataset_id=t.dataset_id AND s.tenant_id=t.tenant_id AND s.workspace_id=t.workspace_id
+            WHERE t.dataset_id=:ds AND t.tenant_id=:tenant AND t.workspace_id=:workspace
+              AND t.is_active=true AND s.status='READY' ORDER BY t.id""",
+            parameters,
+        )
+        if len(tables) != len(selected):
+            raise ServiceUnavailableException("Admitted schema changed", code="EVIDENCE_UNAVAILABLE")
+        objects = await self._read(
+            """SELECT o.id,o.table_id,o.snapshot_id,o.kind,o.qualified_name,o.data_type,o.description,o.pii_tag
+            FROM jsonb_to_recordset(CAST(:pins AS jsonb)) AS p(table_id uuid,snapshot_id uuid,revision text)
+            JOIN flyquery_schema_objects o ON o.table_id=p.table_id AND o.snapshot_id=p.snapshot_id
+            WHERE o.tenant_id=:tenant AND o.workspace_id=:workspace ORDER BY o.id LIMIT 10001""",
+            parameters,
+        )
+        if len(objects) > 10000:
+            raise ServiceUnavailableException(
+                "Schema catalog exceeds its bounded read", code="EVIDENCE_UNAVAILABLE"
+            )
+        return [(table, [row for row in objects if row["table_id"] == table["id"]]) for table in tables]
+
+    async def _schema(self, dataset_id, *, mode="all", query=None, embedding=None, limit=500):
+        from flyquery.core.agents.model_bindings import embedding_for
+        from flyquery.core.services.query import provenance
+
+        limit = max(1, min(limit, 2000))
+        import json
+
+        params = {"ds": dataset_id, "lim": limit, "snapshot_pins": json.dumps(self._pins)}
+        score, condition, order = "1.0", "", "o.id"
+        if mode == "bm25":
+            params["q"] = query
+            score = "ts_rank(o.content_tsv, plainto_tsquery('english', :q))"
+            condition = "AND o.content_tsv @@ plainto_tsquery('english', :q)"
+            order = "score DESC, o.id"
+        elif mode == "vector":
+            params["emb"] = str(embedding)
+            score = "1 - (o.embedding <=> CAST(:emb AS vector))"
+            condition = "AND o.embedding IS NOT NULL"
+            order = "o.embedding <=> CAST(:emb AS vector), o.id"
+        elif mode == "columns":
+            condition = "AND o.kind = 'COLUMN'"
+        binding = embedding_for("structured.embedding") if mode == "vector" else None
+        if binding is not None and binding.versioned:
+            from flyquery.core.services.retrieval.versioned_search import schema_rows
+
+            async with infrastructure_unit(self._sessions, read_only=True) as session:
+                candidates = [
+                    dict(row)
+                    for row in await schema_rows(
+                        session,
+                        binding,
+                        embedding,
+                        dataset_id,
+                        limit,
+                        identity_only=True,
+                        snapshot_pins=self._pins,
+                    )
+                ]
+        else:
+            snapshot = (
+                "COALESCE(CAST(CAST(:snapshot_pins AS jsonb)->>t.qualified_name AS uuid), t.current_snapshot_id)"
+                if self._pins
+                else "t.current_snapshot_id"
+            )
+            active = (
+                "(o.is_active=true OR CAST(:snapshot_pins AS jsonb) ? t.qualified_name)"
+                if self._pins
+                else "o.is_active=true"
+            )
+            candidates = await self._read(
+                f"""SELECT o.id, o.table_id, o.snapshot_id, {score} AS score
+                FROM flyquery_schema_objects o JOIN flyquery_tables t ON t.id=o.table_id
+                WHERE t.dataset_id=:ds AND t.is_active=true AND {active}
+                  AND o.snapshot_id={snapshot} {condition}
+                ORDER BY {order} LIMIT :lim""",
+                params,
+            )
+        selected = await provenance.admit_rows("schema", candidates)
+        if not selected:
+            return []
+        # Bind the exact admitted identity, table and snapshot. A changed current
+        # pointer can never substitute a newer body between these two units.
+        import json
+
+        pins = json.dumps(
+            [
+                {
+                    "id": str(row["id"]),
+                    "table_id": str(row["table_id"]),
+                    "snapshot_id": str(row["snapshot_id"]),
+                }
+                for row in selected
+            ]
+        )
+        hydrated = await self._read(
+            """SELECT o.id,o.table_id,o.snapshot_id,o.qualified_name,o.description,o.data_type,o.kind,
+                      o.profile_json,o.sample_values_json,o.governance_json
+            FROM flyquery_schema_objects o JOIN flyquery_tables t ON t.id=o.table_id
+            JOIN jsonb_to_recordset(CAST(:pins AS jsonb)) AS p(id uuid,table_id uuid,snapshot_id uuid)
+              ON o.id=p.id AND o.table_id=p.table_id AND o.snapshot_id=p.snapshot_id
+            WHERE t.dataset_id=:ds AND t.is_active=true""",
+            {"pins": pins, "ds": dataset_id},
+        )
+        by_id = {row["id"]: row for row in hydrated}
+        if set(by_id) != {row["id"] for row in selected}:
+            raise ServiceUnavailableException("Admitted schema changed", code="EVIDENCE_UNAVAILABLE")
+        return [{**by_id[row["id"]], "score": row["score"]} for row in selected]
+
+    async def bm25_schema_objects(self, query, dataset_id, limit=30):
+        return [
+            _schema_hit(row, float(row["score"]))
+            for row in await self._schema(
+                dataset_id,
+                mode="bm25",
+                query=query,
+                limit=limit,
+            )
+        ]
+
+    async def vector_schema_objects(self, query_embedding, dataset_id, limit=30):
+        return [
+            _schema_hit(row, float(row["score"]))
+            for row in await self._schema(
+                dataset_id,
+                mode="vector",
+                embedding=query_embedding,
+                limit=limit,
+            )
+        ]
+
+    async def all_schema_objects(self, dataset_id, *, limit=500):
+        rows = await self._schema(dataset_id, limit=limit)
+        hits = [_schema_hit(row, 1.0) for row in rows]
+        for hit in hits:
+            if hit.metadata["kind"] == "TABLE":
+                hit.metadata["columns"] = [
+                    row["qualified_name"].rsplit(".", 1)[-1]
+                    for row in rows
+                    if row["kind"] == "COLUMN"
+                    and str(row["table_id"]) == hit.metadata["table_id"]
+                    and str(row["snapshot_id"]) == hit.metadata["snapshot_id"]
+                ]
+        return hits
+
+    async def column_value_catalog(self, dataset_id, *, limit=2000):
+        rows = await self._schema(dataset_id, mode="columns", limit=limit)
+        output = []
+        for row in rows:
+            profile = coerce_profile(row["profile_json"], row["sample_values_json"], max_values=40)
+            output.append(
+                {
+                    "id": str(row["id"]),
+                    "qualified_name": row["qualified_name"],
+                    "table_id": str(row["table_id"]),
+                    "snapshot_id": str(row["snapshot_id"]),
+                    "data_type": row["data_type"],
+                    "semantic_type": _semantic_type(row["governance_json"]),
+                    **{name: profile[name] for name in ("distinct", "values", "min", "max", "mixed_sign")},
+                    "value_access": row["sample_values_json"] != [],
+                    "original_header": _original_header(row["governance_json"]),
+                }
+            )
+        return output
+
+    async def _metadata(self, kind, table, identity, where, params, *, order="m.id", limit=50):
+        from flyquery.core.services.query import provenance
+
+        candidates = await self._read(
+            f"SELECT m.id,md5(to_jsonb(m)::text) AS revision,{identity} "
+            f"FROM {table} m WHERE {where} ORDER BY {order} LIMIT :lim",
+            {**params, "lim": max(1, min(limit, 500))},
+        )
+        selected = await provenance.admit_rows(kind, candidates)
+        if not selected:
+            return []
+        import json
+
+        rows = await self._read(
+            f"SELECT m.* FROM {table} m JOIN jsonb_to_recordset(CAST(:pins AS jsonb)) "
+            "AS p(id uuid,revision text) ON m.id=p.id AND md5(to_jsonb(m)::text)=p.revision",
+            {"pins": json.dumps([{"id": str(row["id"]), "revision": row["revision"]} for row in selected])},
+        )
+        by_id = {row["id"]: row for row in rows}
+        if set(by_id) != {row["id"] for row in selected}:
+            raise ServiceUnavailableException("Admitted metadata changed", code="EVIDENCE_UNAVAILABLE")
+        return [by_id[row["id"]] for row in selected]
+
+    async def approved_examples(self, query, query_embedding, workspace_id, dataset_id=None, limit=10):
+        from flyquery.core.agents.model_bindings import embedding_for
+
+        params = {"workspace": workspace_id}
+        where = "m.workspace_id=:workspace AND m.quality='APPROVED'"
+        if dataset_id is not None:
+            where += " AND m.dataset_id=:ds"
+            params["ds"] = dataset_id
+        binding = embedding_for("structured.embedding")
+        order = "m.created_at DESC,m.id"
+        if query_embedding is not None:
+            params["emb"] = str(query_embedding)
+            order = "m.embedding <=> CAST(:emb AS vector),m.id"
+        if binding is not None and binding.versioned and query_embedding is not None:
+            from flyquery.core.services.retrieval.versioned_search import example_rows
+
+            async with infrastructure_unit(self._sessions, read_only=True) as session:
+                identities = await example_rows(
+                    session,
+                    binding,
+                    query_embedding,
+                    workspace_id,
+                    dataset_id,
+                    limit,
+                    identity_only=True,
+                )
+            params["ids"] = [row["id"] for row in identities]
+            where += " AND m.id=ANY(:ids)"
+        rows = await self._metadata(
+            "example",
+            "flyquery_examples",
+            "m.dataset_id,m.source,"
+            "m.citations_json->>'query_id' AS query_id,"
+            "(m.citations_json-'query_id') <> '{}'::jsonb AS unknown_lineage",
+            where,
+            params,
+            order=order,
+            limit=limit,
+        )
+        return [
+            Hit(
+                "example",
+                row["id"],
+                f"Q: {row['question']}\nSQL: {row['generated_sql']}",
+                1.0 / (index + 1),
+                {"question": row["question"], "generated_sql": row["generated_sql"]},
+            )
+            for index, row in enumerate(rows)
+        ]
+
+    async def published_metrics(self, query, dataset_id, limit=8):
+        rows = await self._metadata(
+            "metric",
+            "flyquery_semantic_metrics",
+            "m.dataset_id,m.metadata_json->'source_manifest' AS source_manifest",
+            "m.dataset_id=:ds AND m.status='PUBLISHED'",
+            {"ds": dataset_id},
+            limit=limit,
+        )
+        return [
+            Hit(
+                "metric",
+                row["id"],
+                f"metric:{row['name']} — {row['label'] or ''}\n{row['description'] or ''}",
+                1.0,
+                {
+                    "name": row["name"],
+                    "label": row["label"],
+                    "compiled_sql_template": row["compiled_sql_template"],
+                },
+            )
+            for row in rows
+        ]
+
+    async def get_by_name(self, name, dataset_id, *, tenant_id, workspace_id):
+        rows = await self._metadata(
+            "metric",
+            "flyquery_semantic_metrics",
+            "m.dataset_id,m.metadata_json->'source_manifest' AS source_manifest",
+            "m.dataset_id=:ds AND m.workspace_id=:ws AND m.tenant_id=:tenant AND m.name=:name AND m.status='PUBLISHED'",
+            {"ds": dataset_id, "ws": workspace_id, "tenant": tenant_id, "name": name},
+            limit=1,
+        )
+        return rows[0] if rows else None
+
+    async def glossary_hits(self, query, workspace_id, limit=8):
+        rows = await self._metadata(
+            "glossary",
+            "flyquery_glossary_terms",
+            "m.related_columns_json AS columns,m.related_metrics_json AS metrics",
+            "m.workspace_id=:ws",
+            {"ws": workspace_id},
+            limit=limit,
+        )
+        return [
+            Hit(
+                "glossary",
+                row["id"],
+                f"term:{row['term']}\n{row['definition']}",
+                1.0,
+                {
+                    "term": row["term"],
+                    "definition": row["definition"],
+                    "related_metrics": list(row["related_metrics_json"] or []),
+                },
+            )
+            for row in rows
+        ]
+
+    async def approved_relations(self, dataset_id, threshold=0.85):
+        rows = await self._metadata(
+            "relation",
+            "flyquery_relations",
+            "m.from_table_id,m.to_table_id",
+            "m.status='APPROVED' AND m.confidence>=:threshold AND EXISTS "
+            "(SELECT 1 FROM flyquery_tables t WHERE t.id=m.from_table_id AND t.dataset_id=:ds)",
+            {"ds": dataset_id, "threshold": threshold},
+            order="m.confidence DESC,m.id",
+            limit=500,
+        )
+        if not rows:
+            return []
+        # Endpoint names are read only after both identities are authorized.
+        names = await self._read(
+            "SELECT id,qualified_name FROM flyquery_tables WHERE id=ANY(:ids)",
+            {"ids": list({row[key] for row in rows for key in ("from_table_id", "to_table_id")})},
+        )
+        by_id = {row["id"]: row["qualified_name"] for row in names}
+        return [
+            Hit(
+                "relation",
+                row["id"],
+                f"{by_id[row['from_table_id']]}.{row['from_column_name']} {row['kind']} "
+                f"{by_id[row['to_table_id']]}.{row['to_column_name']}",
+                float(row["confidence"]),
+                {
+                    "from_qualified_name": f"{by_id[row['from_table_id']]}.{row['from_column_name']}",
+                    "to_qualified_name": f"{by_id[row['to_table_id']]}.{row['to_column_name']}",
+                    "relation_type": row["kind"],
+                },
+            )
+            for row in rows
         ]

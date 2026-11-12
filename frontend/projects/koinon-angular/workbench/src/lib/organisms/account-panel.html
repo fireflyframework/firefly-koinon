@@ -186,7 +186,7 @@
             | ffkText
         }}
       </p>
-      <div class="actions">
+      <ng-container *ngTemplateOutlet="sessionNotice;context:{surface:'dialog'}"/><div class="actions">
         <ffk-button type="submit" variant="primary" [loading]="account.pending()">{{
           'Save preferences' | ffkText
         }}</ffk-button>
@@ -221,7 +221,7 @@
         [value]="secret()"
         spellcheck="false"
       ></textarea>
-      <div class="actions">
+      <ng-container *ngTemplateOutlet="sessionNotice;context:{surface:'dialog'}"/><div class="actions">
         <ffk-button icon="copy" (click)="copyToken()">{{ 'Copy token' | ffkText }}</ffk-button
         ><ffk-button variant="primary" (click)="clearSecret()">{{ 'Done' | ffkText }}</ffk-button>
       </div>
@@ -353,7 +353,7 @@
             | ffkText
         }}
       </p>
-      <div class="actions">
+      <ng-container *ngTemplateOutlet="sessionNotice;context:{surface:'dialog'}"/><div class="actions">
         <ffk-button variant="neutral" icon="close" (click)="creating.set(false)">{{
           'Cancel' | ffkText
         }}</ffk-button
@@ -442,3 +442,5 @@
     />
   }
 }
+
+@if(tab() === 'applications' || (tab() === 'profile' && !account.profile()) || (tab() === 'tokens' && !secret() && !creating())) {<ng-container *ngTemplateOutlet="sessionNotice;context:{surface:'dialog'}"/>}

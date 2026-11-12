@@ -47,6 +47,28 @@ def statement(query: LineageQuery):
     clauses.extend(table.c[key] == value for key, value in query.equal.items())
     clauses.extend(table.c[key].in_(values) for key, values in query.included.items())
     selected = select(SourceRow if query.entity == "source" else table).where(*clauses)
+    if query.projection is not None:
+        if query.projection != "intake_receipt":
+            raise ValueError("Unknown lineage projection")
+        columns = {
+            "version": (
+                "id",
+                "source_id",
+                "artifact_id",
+                "logical_key",
+                "predecessor_id",
+                "expected_extraction_id",
+                "source_publication_json",
+            ),
+            "artifact": ("id", "source_id", "sha256", "bytes", "object_key"),
+            "extraction": ("id", "source_id", "version_id"),
+        }.get(query.entity)
+        if columns is None:
+            raise ValueError("This entity has no intake receipt projection")
+        fields = [table.c[name] for name in columns]
+        if query.entity == "extraction":
+            fields.append(table.c.projection["n_chunks"].as_integer().label("n_chunks"))
+        selected = selected.with_only_columns(*fields)
     if query.order:
         selected = selected.order_by(
             *(table.c[key[1:]].desc() if key.startswith("-") else table.c[key] for key in query.order)

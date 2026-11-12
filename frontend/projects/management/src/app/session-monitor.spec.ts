@@ -128,3 +128,20 @@ it('captures in-memory recovery before authenticated session denial and ignores 
   expect(monitor.remaining()).toBe(null);
   expect(monitor.message()).toBe('');
 });
+
+it.each(['renewed', 'changed'])('ignores %s revalidation finishing after the monitor stops', async (mode) => {
+  const { f } = setup();
+  vi.spyOn(window, 'open').mockReturnValue(null);
+  await flush();
+  if (mode === 'renewed') await monitor.renew();
+  let finish!: (allowed: boolean) => void;
+  f.revalidateSession.mockImplementation(() => new Promise<boolean>((resolve) => { finish = resolve; }));
+  const check = monitor.read();
+  await flush({ ...observed, subject: mode === 'changed' ? 'bob' : observed.subject, authenticated_at: '2026-11-01T10:00:10Z' });
+  expect(f.revalidateSession).toHaveBeenCalled();
+  monitor.stop();
+  finish(true);
+  await check;
+  expect(monitor.remaining()).toBe(null);
+  expect(monitor.message()).toBe('');
+});

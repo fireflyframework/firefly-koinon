@@ -1,11 +1,12 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, nullcontext
 from dataclasses import dataclass, field
 from datetime import datetime
+from uuid import uuid4
 
-from pyfly.container import service
+from pyfly.container import Provider, service
 from pyfly.data.relational.datasource_registry import DataSourceRegistry
 from pyfly.data.relational.sqlalchemy import Propagation, transactional
 from pyfly.data.transaction import TransactionTemplate
@@ -15,10 +16,12 @@ from pyfly.security.context_holder import SecurityContextHolder
 from koinon.knowledge.bulk.authority import BulkAuthority, execution_context
 from koinon.knowledge.bulk.dtos import BulkDestination
 from koinon.knowledge.bulk.entities import BulkTableReservation
+from koinon.knowledge.bulk.ports import SourceIntakeWriter, SourcePublicationFence
 from koinon.knowledge.bulk.recovery_intent import NativeFailureProof, recovery_failure, recovery_operation
 from koinon.knowledge.bulk.repositories import BulkRepository
 from koinon.knowledge.bulk.settings import BulkSettings
 from koinon.knowledge.bulk.structured_dtos import StructuredTablePlan
+from koinon.security.authority import primary_authority
 
 
 @dataclass(frozen=True)
@@ -61,6 +64,8 @@ class BulkQueue:
         authority: BulkAuthority,
         settings: BulkSettings,
         datasources: DataSourceRegistry,
+        source_fences: Provider[SourcePublicationFence | None] | None = None,
+        source_writers: Provider[SourceIntakeWriter | None] | None = None,
     ):
         self.records, self.authority, self.settings, self.datasources = (
             records,
@@ -68,6 +73,17 @@ class BulkQueue:
             settings,
             datasources,
         )
+        self.source_fences = source_fences
+        self.source_writers = source_writers
+
+    async def source_check(self, lease: BulkLease, *, reconcile: bool = False) -> None:
+        guard = self.source_fences.get() if self.source_fences is not None else None
+        if guard is not None:
+            await (guard.reconcile(lease) if reconcile else guard.check(lease))
+        elif await self.records.source_owned(lease.tenant_id, lease.item_id):
+            raise ConflictException(
+                "Source publication fence is unavailable", code="SOURCE_PUBLICATION_DENIED"
+            )
 
     @transactional(propagation=Propagation.REQUIRES_NEW)
     async def claim(self, worker_id: str) -> BulkLease | None:
@@ -110,16 +126,33 @@ class BulkQueue:
             expires_at=job.lease_until,
         )
 
-    @transactional(propagation=Propagation.REQUIRES_NEW)
     async def load_claimed(self, item_id: str, worker_id: str, attempt: int) -> BulkLease:
-        lease = self._lease(*await self.records.claimed(item_id, worker_id, attempt))
-        await self._check(lease)
+        lease = await self._load_claimed(item_id, worker_id, attempt)
+        await self.check(lease)
         return lease
 
     @transactional(propagation=Propagation.REQUIRES_NEW)
+    async def _load_claimed(self, item_id: str, worker_id: str, attempt: int) -> BulkLease:
+        lease = self._lease(*await self.records.claimed(item_id, worker_id, attempt))
+        return lease
+
     async def reserve_tables(
         self, lease: BulkLease, plans: tuple[StructuredTablePlan, ...]
     ) -> tuple[StructuredTablePlan, ...]:
+        writer = self.source_writers.get() if self.source_writers is not None else None
+        admission = await writer.admission_for(lease) if writer is not None else None
+        if writer is not None and admission is not None:
+            async with self.publication(lease) as admission:
+                return await self._reserve_tables(
+                    lease, plans, _source_writer=writer, _source_admission=admission
+                )
+        return await self._reserve_tables_local(lease, plans)
+
+    @transactional(propagation=Propagation.REQUIRES_NEW)
+    async def _reserve_tables_local(self, lease, plans):
+        return await self._reserve_tables(lease, plans)
+
+    async def _reserve_tables(self, lease, plans, *, _source_writer=None, _source_admission=None):
         if (
             not 1 <= len(plans) <= 16
             or tuple(p.ordinal for p in plans) != tuple(range(len(plans)))
@@ -129,7 +162,7 @@ class BulkQueue:
         ):
             raise ConflictException("Use a complete bounded table plan", code="BULK_TABLE_LIMIT")
         with SecurityContextHolder.using(execution_context(lease.subject, lease.token_id)):
-            await self._check(lease)
+            await self._check(lease, _source_admission=_source_admission)
             _, item, batch = await self.records.fenced(
                 lease.tenant_id, lease.item_id, lease.worker_id, lease.attempt
             )
@@ -146,51 +179,90 @@ class BulkQueue:
                         "Reserved tables cannot be replaced", code="BULK_NATIVE_RECEIPT_CONFLICT"
                     )
             else:
-                for plan in plans:
-                    table = await self.authority.catalog.create(
-                        lease.subject,
-                        lease.tenant_id,
-                        kind="table",
-                        name=plan.name,
-                        parent_id=item.asset_id,
-                        metadata={"snapshot_id": str(plan.snapshot_id), "bulk_item_id": item.id},
-                    )
-                    await self.authority.catalog.update(
-                        lease.subject, lease.tenant_id, table.id, {"status": "pending"}
-                    )
-                    await self.records.add_table_reservation(
-                        BulkTableReservation(
-                            item_id=item.id,
-                            ordinal=plan.ordinal,
-                            table_id=str(plan.table_id),
-                            snapshot_id=str(plan.snapshot_id),
-                            catalog_table_id=table.id,
+                entries = tuple(
+                    (
+                        str(uuid4()),
+                        item.asset_id,
+                        dict(
+                            kind="table",
                             name=plan.name,
-                        )
+                            description="",
+                            metadata={"snapshot_id": str(plan.snapshot_id), "bulk_item_id": item.id},
+                        ),
                     )
+                    for plan in plans
+                )
+                publication = (
+                    _source_writer.open(_source_admission, _source_writer.creation_operations(entries))
+                    if _source_writer is not None
+                    else nullcontext(None)
+                )
+                async with publication as permit:
+                    for plan, (identifier, parent, values) in zip(plans, entries, strict=True):
+                        private = {"_source_create_id": identifier, "_source_write": permit} if permit else {}
+                        table = await self.authority.catalog.create(
+                            lease.subject, lease.tenant_id, parent_id=parent, **values, **private
+                        )
+                        private = {"_source_write": permit, "_source_parent_id": parent} if permit else {}
+                        await self.authority.catalog.update(
+                            lease.subject, lease.tenant_id, table.id, {"status": "pending"}, **private
+                        )
+                        await self.records.add_table_reservation(
+                            BulkTableReservation(
+                                item_id=item.id,
+                                ordinal=plan.ordinal,
+                                table_id=str(plan.table_id),
+                                snapshot_id=str(plan.snapshot_id),
+                                catalog_table_id=table.id,
+                                name=plan.name,
+                            )
+                        )
                 batch.revision += 1
                 rows = await self.records.table_reservations(item.id)
+            if _source_writer is not None:
+                await _source_writer.pin_table_targets(
+                    _source_admission, lease, tuple(row.catalog_table_id for row in rows)
+                )
             return tuple(
                 plan.model_copy(update={"catalog_table_id": row.catalog_table_id})
                 for plan, row in zip(plans, rows, strict=True)
             )
 
-    async def _check(self, lease: BulkLease) -> None:
+    async def _check(
+        self, lease: BulkLease, *, reconcile_source: bool = False, _source_admission=None
+    ) -> None:
         with SecurityContextHolder.using(execution_context(lease.subject, lease.token_id)):
-            await self.authority.destination(lease.subject, lease.tenant_id, lease.destination, write=True)
-            await self.authority.item(
-                lease.subject,
-                lease.tenant_id,
-                lease.source_id,
-                lease.asset_id,
-                lease.destination,
-                lease.sha256,
-            )
+            if _source_admission is None:
+                await self.authority.destination(
+                    lease.subject, lease.tenant_id, lease.destination, write=True
+                )
+                await self.authority.item(
+                    lease.subject,
+                    lease.tenant_id,
+                    lease.source_id,
+                    lease.asset_id,
+                    lease.destination,
+                    lease.sha256,
+                )
+            else:
+                writer = self.source_writers.get() if self.source_writers is not None else None
+                if writer is None:
+                    raise ConflictException(
+                        "Source producer is unavailable", code="SOURCE_PUBLICATION_DENIED"
+                    )
+                writer.require_fence(_source_admission)
+                await self.authority.source_destination(_source_admission)
             candidate = await self.records.item(lease.batch_id, lease.item_id)
             if candidate is None:
                 raise ConflictException("Reserved item is unavailable", code="BULK_LEASE_LOST")
-            if candidate.mode == "dataset":
+            if _source_admission is not None:
+                batch = await self.records.scoped(lease.tenant_id, lease.subject, lease.batch_id)
+                if batch is None:
+                    raise ConflictException("Reserved batch is unavailable", code="BULK_LEASE_LOST")
+                await self.authority.source_item(_source_admission, batch, candidate)
+            elif candidate.mode == "dataset":
                 await self.authority.dataset(lease.subject, lease.tenant_id, candidate, lease.destination)
+            await self.source_check(lease, reconcile=reconcile_source)
             job, item, batch = await self.records.fenced(
                 lease.tenant_id, lease.item_id, lease.worker_id, lease.attempt
             )
@@ -212,13 +284,51 @@ class BulkQueue:
             ):
                 raise ConflictException("Reserved native workspace changed", code="BULK_NATIVE_SCOPE_CHANGED")
 
-    @transactional(propagation=Propagation.REQUIRES_NEW)
     async def check(self, lease: BulkLease) -> None:
-        await self._check(lease)
+        async with self.publication(lease):
+            return
 
     @transactional(propagation=Propagation.REQUIRES_NEW)
+    async def reconcile_source(self, lease: BulkLease) -> None:
+        await self._reconcile_source(lease)
+
+    async def _reconcile_source(self, lease: BulkLease):
+        """Receipt authority is immutable execution identity, never permission to execute or disclose."""
+        if lease.token_id is not None:
+            raise ConflictException("Source receipt identity is required", code="SOURCE_PUBLICATION_DENIED")
+        await self.records.receipt_authority_lock(lease.tenant_id, lease.subject)
+        if not await self.records.source_owned(lease.tenant_id, lease.item_id):
+            raise ConflictException("Source receipt identity is required", code="SOURCE_PUBLICATION_DENIED")
+        await self.source_check(lease, reconcile=True)
+        job, item, batch = await self.records.receipt_execution(
+            lease.tenant_id,
+            lease.subject,
+            lease.batch_id,
+            lease.item_id,
+        )
+        if (
+            batch is None
+            or item is None
+            or job is None
+            or batch.token_id is not None
+            or job.id != lease.job_id
+            or job.attempts != lease.attempt
+            or (item.status == "succeeded" and (job.status != "succeeded" or job.worker_id is not None))
+            or (item.status != "succeeded" and job.worker_id != lease.worker_id)
+            or item.mode != lease.mode
+            or (batch.workspace_id, batch.project_id, batch.parent_id)
+            != (lease.destination.workspace_id, lease.destination.project_id, lease.destination.parent_id)
+            or (item.source_id, item.asset_id, item.sha256, item.size_bytes)
+            != (lease.source_id, lease.asset_id, lease.sha256, lease.size_bytes)
+        ):
+            raise ConflictException("Source receipt identity differs", code="SOURCE_PUBLICATION_DENIED")
+        return job, item, batch
+
     async def original(self, lease: BulkLease) -> BulkOriginal:
-        await self._check(lease)
+        async with self.publication(lease):
+            return await self._original(lease)
+
+    async def _original(self, lease: BulkLease) -> BulkOriginal:
         _, item, _ = await self.records.fenced(lease.tenant_id, lease.item_id, lease.worker_id, lease.attempt)
         upload = await self.records.upload_by_id(item.winning_upload_id) if item.winning_upload_id else None
         if upload is None or upload.item_id != item.id or upload.status != "verified":
@@ -235,11 +345,23 @@ class BulkQueue:
         )
 
     @asynccontextmanager
-    async def publication(self, lease: BulkLease) -> AsyncIterator[None]:
+    async def publication(self, lease: BulkLease) -> AsyncIterator:
         # Native publication crosses datasource transaction boundaries, which end repository operation scopes.
+        writer = self.source_writers.get() if self.source_writers is not None else None
+        admission = await writer.admission_for(lease) if writer is not None else None
+        if writer is not None and admission is not None:
+            with SecurityContextHolder.using(execution_context(lease.subject, lease.token_id)):
+                async with (
+                    writer.prepare(admission, execution=lease),
+                    primary_authority(read_only=False, fresh=True),
+                    writer.fence(admission),
+                ):
+                    await self._check(lease, _source_admission=admission)
+                    yield admission
+            return
         async with TransactionTemplate(self.datasources.get("primary")).transaction():
             await self._check(lease)
-            yield
+            yield None
             await self.records.fenced(lease.tenant_id, lease.item_id, lease.worker_id, lease.attempt)
 
     @transactional(propagation=Propagation.REQUIRES_NEW)

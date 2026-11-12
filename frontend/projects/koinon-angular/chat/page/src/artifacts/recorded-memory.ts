@@ -1,12 +1,7 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
-import {
-  KoinonButton,
-  KoinonDatePipe,
-  KoinonTextPipe,
-  KoinonValuePipe,
-} from '@fireflyframework/koinon-angular';
+import { KoinonButton, KoinonDatePipe, KoinonTextPipe, KoinonValuePipe } from '@fireflyframework/koinon-angular/workbench/core';
 import type { MemoryReceipt, MemoryTurnReference } from '@fireflyframework/koinon-sdk';
 
 @Component({

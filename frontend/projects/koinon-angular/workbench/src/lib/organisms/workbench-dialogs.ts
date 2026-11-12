@@ -20,7 +20,7 @@ import { KoinonFormField } from '@fireflyframework/koinon-angular/workbench/pane
 import { KoinonCitationPanel } from '@fireflyframework/koinon-angular/workbench/panels';
 import { KoinonPagination } from '../molecules/pagination';
 import { KoinonSearchField } from '../molecules/search-field';
-registerKoinonSpanish(PANEL_SPANISH);
+registerKoinonSpanish({...PANEL_SPANISH, 'Sync from an account':'Sincronizar desde una cuenta','Your original files stay unchanged.':'Tus archivos originales no se modifican.', 'Create space': 'Crear espacio', 'Create project': 'Crear proyecto', 'Create folder': 'Crear carpeta'});
 @Component({
   selector: 'ffk-workbench-dialogs',
   imports: [

@@ -4,6 +4,52 @@ import pytest
 from pyfly.kernel import ConflictException
 
 
+async def test_source_denial_precedes_saved_result_validation_or_hydration(queries, monkeypatch):
+    from types import SimpleNamespace
+    from uuid import uuid4
+
+    from pyfly.data.relational.datasource_registry import DataSourceRegistry
+    from sqlalchemy import event, update
+
+    from koinon.integrations.content_sources.errors import SourceError
+    from koinon.knowledge.bulk_queries.entities import QueryBatchItem
+    from koinon.knowledge.bulk_queries.service import QueryBatches
+
+    service = queries.context.get_bean(QueryBatches)
+    batch = await service.create("issuer|analyst", "north", request(queries), "source-denied")
+    item = (await service.items("issuer|analyst", "north", batch.id)).items[0]
+    registry = queries.context.get_bean(DataSourceRegistry)
+    async with registry.primary.engine.begin() as connection:
+        await connection.execute(
+            update(QueryBatchItem)
+            .where(QueryBatchItem.id == item.id)
+            .values(result_json={"query_id": str(uuid4()), "preview": [{"private": "never hydrate"}]})
+        )
+
+    class Reader:
+        async def begin(self, *args):
+            return object()
+
+        async def sources(self, subject, tenant, references, *, operation):
+            assert references[0].asset_id == queries.dataset.id
+            raise SourceError("access_denied")
+
+    monkeypatch.setattr(service.authority.facade(), "source_reader", SimpleNamespace(get=lambda: Reader()))
+    loaded = []
+
+    def observe(connection, cursor, statement, parameters, context, executemany):
+        if statement.lstrip().upper().startswith("SELECT") and "result_json" in statement:
+            loaded.append(statement)
+
+    event.listen(registry.primary.engine.sync_engine, "before_cursor_execute", observe)
+    try:
+        with pytest.raises(SourceError, match="access_denied"):
+            await service.result("issuer|analyst", "north", batch.id, item.id)
+        assert loaded and all("JSON_EXTRACT" in statement or "->>" in statement for statement in loaded)
+    finally:
+        event.remove(registry.primary.engine.sync_engine, "before_cursor_execute", observe)
+
+
 def request(env, question="Count"):
     from koinon.knowledge.bulk_queries.dtos import QueryBatchCreate
 
@@ -138,11 +184,13 @@ async def test_queued_cancellation_is_idempotent_and_unknown_native_outcomes_are
     batch = await service.create("issuer|analyst", "north", request(queries), "unknown-create")
     lease = await queue.claim("worker")
     native = SimpleNamespace(
-        inspect=AsyncMock(return_value=("admitted", None)), execute=AsyncMock(), acknowledge=AsyncMock()
+        inspect_commit_metadata=AsyncMock(return_value=("admitted", None)),
+        execute=AsyncMock(),
+        acknowledge_commit_metadata=AsyncMock(),
     )
     await QueryBatchExecutor(queue, native).execute(lease)
     native.execute.assert_not_awaited()
-    native.acknowledge.assert_not_awaited()
+    native.acknowledge_commit_metadata.assert_not_awaited()
     item = (await service.items("issuer|analyst", "north", batch.id)).items[0]
     assert item.status == "reconciling" and item.error_code == "BULK_QUERY_OUTCOME_UNRESOLVED"
     assert await queue.claim("worker") is None

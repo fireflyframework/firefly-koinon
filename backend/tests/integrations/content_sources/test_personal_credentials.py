@@ -47,3 +47,41 @@ def test_missing_vault_key_fails_closed_without_creating_ephemeral_credentials()
 
     with pytest.raises(ServiceUnavailableException, match="deployment encryption key"):
         SourceCredentialVault(ContentSourceSettings()).encrypt("tenant", "reader", "connection", "grant", {})
+
+
+@pytest.mark.parametrize(
+    ("purpose", "maximum"),
+    [
+        ("validation-request", 2097152),
+        ("validation-root", 1048576),
+        ("validation-checkpoint", 1048576),
+        ("validation-walk", 8388608),
+        ("validation-entry", 16384),
+    ],
+)
+def test_validation_envelopes_apply_the_exact_ciphertext_bound_without_widening_other_purposes(
+    purpose, maximum
+):
+    import json
+
+    from koinon.integrations.content_sources.credentials import SourceCredentialVault
+    from koinon.integrations.content_sources.settings import ContentSourceSettings
+
+    vault = SourceCredentialVault(
+        ContentSourceSettings(master_key=base64.b64encode(bytes(range(32))).decode())
+    )
+    # AES-GCM envelope includes a 16-byte salt, 12-byte nonce, 16-byte tag, base64 and one version byte.
+    payload_limit = ((maximum - 1) // 4) * 3 - 44
+    overhead = len(json.dumps({"data": ""}, separators=(",", ":")).encode())
+    value = {"data": "x" * (payload_limit - overhead)}
+    envelope = vault.encrypt("tenant", "reader", "validation", purpose, value)
+    assert maximum - 4 <= len(envelope) <= maximum
+    assert vault.decrypt("tenant", "reader", "validation", purpose, envelope) == value
+    with pytest.raises(ValueError):
+        vault.encrypt("tenant", "reader", "validation", purpose, {"data": value["data"] + "x"})
+    with pytest.raises(ServiceUnavailableException):
+        vault.decrypt("tenant", "reader", "validation", purpose, envelope + b"xxxx")
+    with pytest.raises(ServiceUnavailableException):
+        vault.decrypt("tenant", "reader", "validation", "grant", envelope)
+    with pytest.raises(ValueError):
+        vault.encrypt("tenant", "reader", "validation", "validation-continue", {"data": "x" * 262144})

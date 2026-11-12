@@ -25,6 +25,22 @@ From this directory, the equivalent commands are `mvn verify` and `mvn install`.
 
 This SDK is installed in your local Maven repository; these commands do not publish to Maven Central. Compilation targets Java 21 bytecode with `-Xlint:all -Werror`; CI has Java 21 and 25 jobs. `tools/sdk/check_java_consumer.py` checks JAR notices, bytecode and an external typed consumer. Package checks do not establish live authenticated API, provider or production acceptance.
 
+## Choose reader sources
+
+Search, query, and cursor browse accept `reader_source_connections`. Omit it or send
+`null` to use the authenticated caller's saved selection; send `[]` to exclude imported
+sources. An explicit list replaces the saved selection for that operation. Each choice
+contains `provider`, `connection_id`, and optional `external_tenant`; at most 100 distinct
+provider and external-tenant pairs are accepted. The server checks account ownership and
+current source access. A connection identifier never grants access by itself.
+
+Use `client.catalog(tenant).browse` and `client.exports(tenant).browse` for reader-authorized cursor pages. Preserve `next_cursor`,
+including on an empty page. `total: null` and `total_is_exact: false` mean that the server
+has not calculated an exact total. Existing numbered catalog/export lists retain their
+local-only behavior. Saved reader-selection replacement requires native browser session
+authority, the current revision, and a caller-generated operation UUID; a headless bearer
+credential cannot stand in for browser consent.
+
 ## Connect
 
 The caller supplies an API root ending in `/api/v1` and a token supplier. This complete helper only reads the authorized context when explicitly called.
@@ -49,6 +65,14 @@ Use a scoped personal API token or verified OIDC access token issued for the API
 Close the client after its outstanding work finishes. It closes an HTTP client it owns. If you inject an `HttpClient`, disable redirects and close it yourself after closing the SDK. Redirects are rejected to keep credentials on the configured origin. Never log bearer tokens, provider credentials or complete credential-bearing requests.
 
 ## Practical guides
+
+Use `client.contentSources(tenant)` for personal document-source account status, pagination,
+disconnect, and provider browsing. These operations require the owner's verified identity;
+personal API tokens cannot call them. The generated source filters preserve cursors and source IDs,
+and `SourceConnectionRevision` binds disconnect to the current revision. Source consent requires
+the native browser session and has no headless helper. Deployment operators must enable and configure
+the source-account service first. `synchronization_available` is currently `false`: account connection
+and browsing do not import documents.
 
 - [Java quickstart and authentication](../../docs/guides/headless-java.md)
 - [Knowledge lifecycle, source files, append and immutable history](../../docs/guides/java-knowledge.md)

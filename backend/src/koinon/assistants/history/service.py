@@ -2,11 +2,22 @@
 # SPDX-License-Identifier: Apache-2.0
 """Private conversation organization with current knowledge authorization and revisions."""
 
-from pyfly.container import service
+import base64
+import json
+from hashlib import sha256
+
+from pyfly.container import Provider, service
 from pyfly.data.relational.sqlalchemy import transactional
 from pyfly.kernel import ConflictException, InvalidRequestException
+from sqlalchemy import select
 
-from koinon.assistants.entities import ChatThread
+from koinon.assistants.entities import ChatMessage, ChatThread
+from koinon.assistants.history.browse_dtos import (
+    HistoryBrowseInput,
+    HistoryBrowsePage,
+    MessageBrowseInput,
+    MessageBrowsePage,
+)
 from koinon.assistants.history.dtos import one_line
 from koinon.assistants.history.entities import ChatFolder
 from koinon.assistants.history.mappers import folder_dto
@@ -15,7 +26,10 @@ from koinon.assistants.history.settings import ChatHistorySettings
 from koinon.assistants.lifecycle import identifier, timestamp
 from koinon.assistants.mappers import thread_dto
 from koinon.assistants.service import AssistantService
+from koinon.assistants.source_reads import source_history
 from koinon.catalog.errors import AccessDenied
+from koinon.integrations.content_sources.read_context import reader_source_scope
+from koinon.integrations.content_sources.read_cursors import SourceBrowseCursors
 from koinon.security.authority import primary_authority
 from koinon.web.pagination import sql_page
 
@@ -23,9 +37,14 @@ from koinon.web.pagination import sql_page
 @service(name="assistants.history")
 class ChatHistoryService:
     def __init__(
-        self, assistants: AssistantService, folders: ChatFolderRepository, settings: ChatHistorySettings
+        self,
+        assistants: AssistantService,
+        folders: ChatFolderRepository,
+        settings: ChatHistorySettings,
+        cursors: Provider[SourceBrowseCursors | None] | None = None,
     ):
         self.assistants, self.folders, self.settings = assistants, folders, settings
+        self.cursors = cursors
 
     async def folder(self, subject: str, tenant_id: str, folder_id: str) -> ChatFolder:
         row = await self.folders.find_by_id(folder_id)
@@ -36,16 +55,9 @@ class ChatHistoryService:
 
     async def _describe_folder(self, subject, tenant_id, row):
         count = 0
-        for thread in await self.assistants.threads.find_all(
-            subject=subject, tenant_id=tenant_id, folder_id=row.id
-        ):
-            if thread.archived_at is not None or thread.deleted_at is not None:
-                continue
-            try:
-                await self.assistants.validate_scope(subject, tenant_id, thread.scope)
-            except AccessDenied:
-                continue
-            count += 1
+        for thread in await self.assistants.list_threads(subject, tenant_id, authorize_empty=False):
+            if thread["folder_id"] == row.id and thread["archived_at"] is None:
+                count += 1
         return folder_dto(row, conversation_count=count)
 
     @primary_authority()
@@ -129,18 +141,9 @@ class ChatHistoryService:
             sorts=("name", "created_at", "updated_at"),
         )
         counts = {}
-        for thread in await self.assistants.threads.find_all(subject=subject, tenant_id=tenant_id):
-            if (
-                thread.folder_id not in visible
-                or thread.archived_at is not None
-                or thread.deleted_at is not None
-            ):
-                continue
-            try:
-                await self.assistants.validate_scope(subject, tenant_id, thread.scope)
-            except AccessDenied:
-                continue
-            counts[thread.folder_id] = counts.get(thread.folder_id, 0) + 1
+        for thread in await self.assistants.list_threads(subject, tenant_id, authorize_empty=False):
+            if thread["folder_id"] in visible and thread["archived_at"] is None:
+                counts[thread["folder_id"]] = counts.get(thread["folder_id"], 0) + 1
         return {
             **result,
             "items": [folder_dto(row, conversation_count=counts.get(row.id, 0)) for row in result["items"]],
@@ -225,7 +228,8 @@ class ChatHistoryService:
         result = await self.assistants.create_thread(subject, tenant_id, values)
         row = await self.assistants.thread(subject, tenant_id, result["id"])
         row.folder_id = folder.id if folder else None
-        return thread_dto(await self.assistants.threads.save(row))
+        await self.assistants.threads.save(row)
+        return thread_dto(await self.assistants.threads.metadata(row.id))
 
     @primary_authority()
     async def thread_page(
@@ -284,7 +288,146 @@ class ChatHistoryService:
         )
         return {**result, "items": [thread_dto(row) for row in result["items"]]}
 
-    @primary_authority()
+    async def browse(self, subject, tenant_id, body: HistoryBrowseInput) -> HistoryBrowsePage:
+        if body.folder_id and body.unfiled:
+            raise InvalidRequestException("Choose valid conversation filters", code="INVALID_PAGE")
+        reader = self.assistants.source_reader.get() if self.assistants.source_reader is not None else None
+        operation = await reader.begin(subject, tenant_id, body.reader_source_connections) if reader else None
+        cursors = self.cursors.get() if self.cursors is not None else None
+        cursors = cursors or SourceBrowseCursors()
+        binding = sha256(
+            json.dumps(
+                {
+                    "filters": body.model_dump(exclude={"cursor", "reader_source_connections"}),
+                    "selection_revision": operation.selection.revision if operation else None,
+                    "selections": [
+                        choice.model_dump(mode="json") for choice in operation.selection.connections
+                    ]
+                    if operation
+                    else [],
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode()
+        ).hexdigest()
+        position = await cursors.read(subject, tenant_id, binding, body.cursor, resource="history")
+        size = min(body.page_size, 20)
+        async with primary_authority(fresh=True):
+            predicates = [
+                ChatThread.subject == subject,
+                ChatThread.tenant_id == tenant_id,
+                ChatThread.deleted_at.is_(None),
+            ]
+            if body.status != "all":
+                predicates.append(
+                    ChatThread.archived_at.is_(None)
+                    if body.status == "active"
+                    else ChatThread.archived_at.is_not(None)
+                )
+            if body.folder_id:
+                await self.folder(subject, tenant_id, body.folder_id)
+                predicates.append(ChatThread.folder_id == body.folder_id)
+            if body.unfiled:
+                predicates.append(ChatThread.folder_id.is_(None))
+            for key in ("workspace_id", "project_id"):
+                value = getattr(body, key)
+                if value:
+                    predicates.append(ChatThread.scope[key].as_string() == value)
+            ids = tuple(
+                await self.assistants.threads._require_session().scalars(
+                    select(ChatThread.id)
+                    .where(*predicates)
+                    .order_by(ChatThread.created_at, ChatThread.id)
+                    .offset((position - 1) * size)
+                    .limit(size)
+                )
+            )
+        items = []
+        for thread_id in ids:
+            try:
+                row = await self.get_thread(subject, tenant_id, thread_id)
+            except AccessDenied:
+                continue
+            if body.q.strip().casefold() in row["title"].casefold():
+                items.append(row)
+        if operation is not None:
+            await operation.release()
+        next_cursor = (
+            await cursors.issue(subject, tenant_id, binding, position + 1, resource="history")
+            if len(ids) == size
+            else None
+        )
+        return HistoryBrowsePage(items=items, next_cursor=next_cursor)
+
+    async def browse_messages(
+        self, subject, tenant_id, thread_id, body: MessageBrowseInput
+    ) -> MessageBrowsePage:
+        await self.assistants.thread_identity(subject, tenant_id, thread_id)
+        reader = self.assistants.source_reader.get() if self.assistants.source_reader is not None else None
+        operation = await reader.begin(subject, tenant_id, body.reader_source_connections) if reader else None
+        cursors = self.cursors.get() if self.cursors is not None else None
+        cursors = cursors or SourceBrowseCursors()
+        async with primary_authority(fresh=True):
+            newest = (
+                await self.assistants.threads._require_session().execute(
+                    select(ChatMessage.id, ChatMessage.created_at)
+                    .where(ChatMessage.thread_id == thread_id)
+                    .order_by(ChatMessage.created_at.desc(), ChatMessage.id.desc())
+                    .limit(1)
+                )
+            ).first()
+        binding = sha256(
+            json.dumps(
+                {
+                    "kind": "messages",
+                    "thread": thread_id,
+                    "page_size": body.page_size,
+                    "head": (newest.id, newest.created_at.isoformat()) if newest else None,
+                    "selection_revision": operation.selection.revision if operation else None,
+                    "selections": [
+                        choice.model_dump(mode="json") for choice in operation.selection.connections
+                    ]
+                    if operation
+                    else [],
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode()
+        ).hexdigest()
+        position = await cursors.read(subject, tenant_id, binding, body.cursor, resource="history")
+        before = None
+        if position > 1:
+            async with primary_authority(fresh=True):
+                boundary = (
+                    await self.assistants.threads._require_session().execute(
+                        select(ChatMessage.id, ChatMessage.created_at)
+                        .where(ChatMessage.thread_id == thread_id)
+                        .order_by(ChatMessage.created_at.desc(), ChatMessage.id.desc())
+                        .offset((position - 1) * body.page_size - 1)
+                        .limit(1)
+                    )
+                ).first()
+            if boundary is None:
+                raise cursors.restart()
+            before = (
+                base64.urlsafe_b64encode(json.dumps([boundary.created_at.isoformat(), boundary.id]).encode())
+                .decode()
+                .rstrip("=")
+            )
+        with reader_source_scope(subject, tenant_id, body.reader_source_connections):
+            result = await self.assistants.message_page(
+                subject, tenant_id, thread_id, before=before, limit=body.page_size
+            )
+        if operation is not None:
+            await operation.release()
+        cursor = (
+            await cursors.issue(subject, tenant_id, binding, position + 1, resource="history")
+            if result["next_cursor"]
+            else None
+        )
+        return MessageBrowsePage(items=result["items"], next_cursor=cursor)
+
+    @source_history()
     async def get_thread(self, subject, tenant_id, thread_id):
         return thread_dto(await self.assistants.thread(subject, tenant_id, thread_id))
 
@@ -329,7 +472,8 @@ class ChatHistoryService:
             row.title, row.title_source = one_line(values["title"]), "manual"
         row.revision += 1
         row.updated_at = timestamp()
-        return thread_dto(await self.assistants.threads.save(row))
+        await self.assistants.threads.save(row)
+        return thread_dto(await self.assistants.threads.metadata(row.id))
 
     @transactional
     async def apply_generated_title(self, subject, tenant_id, thread_id, title, *, expected_revision) -> bool:
@@ -340,7 +484,7 @@ class ChatHistoryService:
         value = one_line(title)
         if len(value) > 120:
             raise InvalidRequestException("Choose a title up to 120 characters", code="INVALID_THREAD")
-        row.title, row.title_source = value, "ai"
+        row.title, row.title_source = value, "user_prompt"
         row.revision += 1
         row.updated_at = timestamp()
         await self.assistants.threads.save(row)

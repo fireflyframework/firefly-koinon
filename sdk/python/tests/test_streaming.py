@@ -1,7 +1,7 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
 import asyncio
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 import pytest
 
@@ -19,8 +19,11 @@ async def http_server(reply):
             await reply(request.decode(), reader, writer)
         finally:
             writer.close()
-            await writer.wait_closed()
-            tasks.discard(asyncio.current_task())
+            try:
+                with suppress(ConnectionResetError):
+                    await writer.wait_closed()
+            finally:
+                tasks.discard(asyncio.current_task())
 
     server = await asyncio.start_server(handle, "127.0.0.1", 0)
     try:
@@ -77,7 +80,8 @@ async def test_real_http_early_close_releases_connection():
             b'id: 1\ndata: {"text":"started"}\n\n'
         )
         await writer.drain()
-        await reader.read()
+        with suppress(ConnectionResetError):
+            await reader.read()
         disconnected.set()
 
     async with http_server(reply) as base, KoinonClient(base, token_provider=lambda: "fresh") as client:
@@ -126,7 +130,9 @@ async def test_real_http_cancellation_releases_connection():
         writer.write(b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nConnection: close\r\n\r\n")
         await writer.drain()
         opened.set()
-        await reader.read()
+        # Cancellation may close an unread response with a TCP reset instead of EOF.
+        with suppress(ConnectionResetError):
+            await reader.read()
         disconnected.set()
 
     async with http_server(reply) as base, KoinonClient(base, token_provider=lambda: "fresh") as client:

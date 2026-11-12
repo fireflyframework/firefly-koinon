@@ -2,27 +2,134 @@
 # SPDX-License-Identifier: Apache-2.0
 """Canonical authorization precedes every exact native lineage lookup."""
 
+import hashlib
+import json
 from dataclasses import asdict
 from uuid import UUID
 
 from pydantic import ValidationError
+from pyfly.cache.ports.outbound import CacheAdapter
 from pyfly.container import Provider, service
 from pyfly.data.relational.datasource_registry import NoSuchDataSourceError
 from pyfly.kernel import InvalidRequestException, ServiceUnavailableException
 
 from koinon.catalog.errors import AccessDenied, InvalidHierarchy
+from koinon.integrations.content_sources.errors import SourceError
+from koinon.integrations.content_sources.read_cursors import SourceBrowseCursors
+from koinon.integrations.content_sources.read_requests import source_entry_read
 from koinon.knowledge.entities import DomainBinding
 from koinon.knowledge.lineage.dtos import SnapshotLineage
 from koinon.knowledge.lineage.ports import StructuredSnapshotLineagePort
 from koinon.knowledge.provenance.dtos import TableProvenance, TableSnapshotPage, TableSnapshotSummary
+from koinon.knowledge.provenance.read_dtos import SnapshotHistoryReadInput, TableSnapshotReadPage
 from koinon.knowledge.service import KnowledgeFacade
 
 
 @service
 class TableProvenanceService:
-    def __init__(self, knowledge: KnowledgeFacade, lineage: Provider[StructuredSnapshotLineagePort | None]):
+    def __init__(
+        self,
+        knowledge: KnowledgeFacade,
+        lineage: Provider[StructuredSnapshotLineagePort | None],
+        cache: Provider[CacheAdapter | None] | None = None,
+    ):
         self.knowledge = knowledge
         self.lineage = lineage
+        self.cache = cache
+
+    async def read_history(self, subject, tenant_id, dataset_id, table_id, request: SnapshotHistoryReadInput):
+        reader = self.knowledge.source_reader.get() if self.knowledge.source_reader is not None else None
+        if reader is None:
+            raise ServiceUnavailableException(
+                "Source reader is unavailable", code="SOURCE_READER_UNAVAILABLE"
+            )
+        operation = await reader.begin(subject, tenant_id, request.reader_source_connections)
+        dataset, table = await self._bindings(subject, tenant_id, dataset_id, table_id, identities_only=True)
+        binding = hashlib.sha256(
+            json.dumps(
+                {
+                    "resource": "table_snapshots",
+                    "dataset": dataset_id,
+                    "table": table_id,
+                    "native": (dataset.native_workspace_id, dataset.native_id, table.native_id),
+                    "page_size": request.page_size,
+                    "selection_revision": operation.selection.revision,
+                    "selections": [
+                        value.model_dump(mode="json") for value in operation.selection.connections
+                    ],
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode()
+        ).hexdigest()
+        cursors = SourceBrowseCursors(self.cache)
+        position = await cursors.read(subject, tenant_id, binding, request.cursor, resource="history")
+        page = await self._reader().read_table_identities(
+            actor=subject,
+            tenant_id=tenant_id,
+            workspace_id=dataset.native_workspace_id,
+            dataset_id=dataset.native_id,
+            table_id=table.native_id,
+            page=position,
+            page_size=request.page_size,
+        )
+        if len(page.snapshot_ids) > request.page_size or len(set(page.snapshot_ids)) != len(
+            page.snapshot_ids
+        ):
+            raise ServiceUnavailableException(
+                "History identities are incomplete", code="PROVENANCE_PAGE_INVALID"
+            )
+        admitted = []
+        for identifier in page.snapshot_ids:
+            try:
+                await reader.entries(
+                    subject, tenant_id, (table_id,), version_id=identifier, operation=operation
+                )
+            except SourceError as error:
+                if error.code == "size_exceeded":
+                    raise
+                continue
+            except AccessDenied:
+                continue
+            admitted.append(identifier)
+        await operation.release()
+        rows = ()
+        async with operation.read_fence():
+            if admitted:
+                rows = await self._reader().read_snapshots(
+                    actor=subject,
+                    tenant_id=tenant_id,
+                    workspace_id=dataset.native_workspace_id,
+                    dataset_id=dataset.native_id,
+                    snapshot_ids=tuple(admitted),
+                )
+            if len(rows) != len(admitted) or {row.snapshot_id for row in rows} != set(admitted):
+                raise ServiceUnavailableException(
+                    "History identities changed", code="PROVENANCE_PAGE_INVALID"
+                )
+            for row in rows:
+                self._scope(row, tenant_id, dataset, table)
+        await operation.release()
+        cursor = (
+            await cursors.issue(subject, tenant_id, binding, position + 1, resource="history")
+            if page.scan_full
+            else None
+        )
+        async with operation.read_fence():
+            return TableSnapshotReadPage(
+                items=tuple(
+                    TableSnapshotSummary.model_validate(
+                        self._detail(row, dataset_id, table_id).model_dump(
+                            include=set(TableSnapshotSummary.model_fields)
+                        )
+                    )
+                    for row in rows
+                ),
+                next_cursor=cursor,
+                current_snapshot_id=page.current_snapshot_id
+                if page.current_snapshot_id in admitted
+                else None,
+            )
 
     def _reader(self) -> StructuredSnapshotLineagePort:
         reader = self.lineage.get()
@@ -33,10 +140,14 @@ class TableProvenanceService:
         return reader
 
     async def _bindings(
-        self, subject: str, tenant_id: str, dataset_id: str, table_id: str
+        self, subject: str, tenant_id: str, dataset_id: str, table_id: str, *, identities_only=False
     ) -> tuple[DomainBinding, DomainBinding]:
-        dataset = (await self.knowledge._chain(subject, tenant_id, dataset_id))[0]
-        table = (await self.knowledge._chain(subject, tenant_id, table_id))[0]
+        dataset = (
+            await self.knowledge._chain(subject, tenant_id, dataset_id, identities_only=identities_only)
+        )[0]
+        table = (await self.knowledge._chain(subject, tenant_id, table_id, identities_only=identities_only))[
+            0
+        ]
         if dataset.kind != "dataset" or table.kind != "table":
             raise InvalidHierarchy("Choose a dataset and one of its tables", code="INVALID_TABLE")
         if table.parent_id != dataset.id:
@@ -87,30 +198,31 @@ class TableProvenanceService:
     async def snapshot(
         self, subject: str, tenant_id: str, dataset_id: str, table_id: str, snapshot_id: str
     ) -> TableProvenance:
-        try:
-            requested = str(UUID(snapshot_id))
-        except (ValueError, TypeError, AttributeError) as error:
-            raise InvalidRequestException("Choose a valid snapshot", code="INVALID_SNAPSHOT") from error
-        dataset, table = await self._bindings(subject, tenant_id, dataset_id, table_id)
-        try:
-            rows = await self._reader().read_snapshots(
-                actor=subject,
-                tenant_id=tenant_id,
-                workspace_id=dataset.native_workspace_id,
-                dataset_id=dataset.native_id,
-                snapshot_ids=(requested,),
-            )
-        except NoSuchDataSourceError:
-            raise ServiceUnavailableException(
-                "Configure the structured datasource to inspect version provenance",
-                code="PROVENANCE_UNAVAILABLE",
-            ) from None
-        if len(rows) != 1:
-            raise ServiceUnavailableException(
-                "The recorded provenance is incomplete", code="PROVENANCE_RECORD_INVALID"
-            )
-        self._scope(rows[0], tenant_id, dataset, table, requested)
-        return self._detail(rows[0], dataset_id, table_id)
+        async with source_entry_read(self.knowledge, subject, tenant_id, (table_id,), version_id=snapshot_id):
+            try:
+                requested = str(UUID(snapshot_id))
+            except (ValueError, TypeError, AttributeError) as error:
+                raise InvalidRequestException("Choose a valid snapshot", code="INVALID_SNAPSHOT") from error
+            dataset, table = await self._bindings(subject, tenant_id, dataset_id, table_id)
+            try:
+                rows = await self._reader().read_snapshots(
+                    actor=subject,
+                    tenant_id=tenant_id,
+                    workspace_id=dataset.native_workspace_id,
+                    dataset_id=dataset.native_id,
+                    snapshot_ids=(requested,),
+                )
+            except NoSuchDataSourceError:
+                raise ServiceUnavailableException(
+                    "Configure the structured datasource to inspect version provenance",
+                    code="PROVENANCE_UNAVAILABLE",
+                ) from None
+            if len(rows) != 1:
+                raise ServiceUnavailableException(
+                    "The recorded provenance is incomplete", code="PROVENANCE_RECORD_INVALID"
+                )
+            self._scope(rows[0], tenant_id, dataset, table, requested)
+            return self._detail(rows[0], dataset_id, table_id)
 
     async def history(
         self,

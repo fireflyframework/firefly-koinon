@@ -19,7 +19,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint, text
+from sqlalchemy import Boolean, ForeignKey, Index, String, text
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -28,7 +28,16 @@ from flyquery.models.entities import Base
 
 class Table(Base):
     __tablename__ = "flyquery_tables"
-    __table_args__ = (UniqueConstraint("dataset_id", "name", name="uq_tables_dataset_name"),)
+    __table_args__ = (
+        Index(
+            "uq_tables_dataset_live_name",
+            "dataset_id",
+            "name",
+            unique=True,
+            postgresql_where=text("is_active"),
+            sqlite_where=text("is_active"),
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")

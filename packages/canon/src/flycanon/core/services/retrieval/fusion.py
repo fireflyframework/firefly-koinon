@@ -158,6 +158,10 @@ class HybridRetriever:
 
     async def hydrate(self, ranking: Sequence[tuple[str, float]]) -> list[ChunkHit]:
         """Resolve ranked IDs through the current corpus, including its custom metadata."""
+        from flycanon.core.services.query import provenance
+
+        if provenance.candidate_mode():
+            return [ChunkHit(chunk_id=identifier, score=score, content="") for identifier, score in ranking]
         top_ids = [cid for cid, _ in ranking]
         if not top_ids:
             return []

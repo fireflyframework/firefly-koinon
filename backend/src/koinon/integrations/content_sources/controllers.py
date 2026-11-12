@@ -19,14 +19,19 @@ from koinon.integrations.content_sources.api_dtos import (
     SourceAuthorizationCompletion,
     SourceAuthorizationInput,
     SourceAuthorizationOutput,
+    SourceCapabilitiesOutput,
     SourceConnectionOutput,
+    SourceConnectionPage,
     SourceConnectionRevision,
     SourceFolderPage,
     SourceLocationPage,
 )
 from koinon.integrations.content_sources.browse import PersonalSourceBrowser
+from koinon.integrations.content_sources.dtos import bounded
 from koinon.integrations.content_sources.errors import SourceError
 from koinon.integrations.content_sources.lifecycle import SourceConnectionService
+from koinon.integrations.content_sources.parsing import path_id
+from koinon.integrations.content_sources.presentation import SourcePresentation
 from koinon.security.identity import identity_from_request
 
 
@@ -70,11 +75,48 @@ async def _safe(operation):
         ) from None
 
 
+def _browse_parameter(value: str, *, limit: int = 1024, identifier: bool = False) -> str:
+    try:
+        bounded(value, limit=limit)
+        if identifier:
+            path_id(value)
+    except (ValueError, SourceError):
+        raise InvalidRequestException(
+            "Invalid source browsing parameter.", code="SOURCE_INVALID_PARAMETER"
+        ) from None
+    return value
+
+
+@rest_controller
+@request_mapping("/api/v1/tenants/{tenant_id}/content-sources")
+class SourceCapabilitiesController:
+    def __init__(self, presentation: SourcePresentation):
+        self.presentation = presentation
+
+    @get_mapping("/capabilities")
+    async def get(self, tenant_id: PathVar[str], request: Request) -> SourceCapabilitiesOutput:
+        return await self.presentation.capabilities(_actor(request), tenant_id)
+
+
 @rest_controller
 @request_mapping("/api/v1/tenants/{tenant_id}/content-sources")
 class ContentConnectionsController:
     def __init__(self, connections: SourceConnectionService, browser: PersonalSourceBrowser):
         self.connections, self.browser = connections, browser
+
+    @get_mapping("/connections")
+    async def list(
+        self,
+        tenant_id: PathVar[str],
+        request: Request,
+        cursor: QueryParam[str | None] = None,
+        limit: QueryParam[int] = 25,
+    ) -> dict:
+        actor = _actor(request)
+        if not 1 <= limit <= 100 or (cursor is not None and not 1 <= len(cursor) <= 64):
+            raise InvalidRequestException("Invalid connection page.", code="SOURCE_INVALID_PAGE")
+        result = await _safe(self.connections.list(actor, tenant_id, cursor=cursor, limit=limit))
+        return SourceConnectionPage.model_validate(asdict(result)).model_dump(mode="json")
 
     @post_mapping("/authorizations", status_code=201)
     async def begin(
@@ -128,7 +170,9 @@ class ContentConnectionsController:
         q: QueryParam[str],
         cursor: QueryParam[str | None] = None,
     ) -> dict:
-        result = await _safe(self.browser.sites(_actor(request), tenant_id, connection_id, q, cursor=cursor))
+        actor = _actor(request)
+        query = _browse_parameter(q, limit=256)
+        result = await _safe(self.browser.sites(actor, tenant_id, connection_id, query, cursor=cursor))
         return SourceLocationPage.model_validate(asdict(result)).model_dump(mode="json")
 
     @get_mapping("/connections/{connection_id}/drives")
@@ -140,8 +184,11 @@ class ContentConnectionsController:
         site_id: QueryParam[str | None] = None,
         cursor: QueryParam[str | None] = None,
     ) -> dict:
+        actor = _actor(request)
+        if site_id is not None:
+            _browse_parameter(site_id, identifier=True)
         result = await _safe(
-            self.browser.drives(_actor(request), tenant_id, connection_id, site_id=site_id, cursor=cursor)
+            self.browser.drives(actor, tenant_id, connection_id, site_id=site_id, cursor=cursor)
         )
         return SourceLocationPage.model_validate(asdict(result)).model_dump(mode="json")
 
@@ -155,9 +202,13 @@ class ContentConnectionsController:
         folder_id: QueryParam[str | None] = None,
         cursor: QueryParam[str | None] = None,
     ) -> dict:
+        actor = _actor(request)
+        _browse_parameter(drive_id, identifier=True)
+        if folder_id is not None:
+            _browse_parameter(folder_id, identifier=True)
         result = await _safe(
             self.browser.children(
-                _actor(request), tenant_id, connection_id, drive_id, folder_id=folder_id, cursor=cursor
+                actor, tenant_id, connection_id, drive_id, folder_id=folder_id, cursor=cursor
             )
         )
         return SourceFolderPage.model_validate(asdict(result)).model_dump(mode="json")

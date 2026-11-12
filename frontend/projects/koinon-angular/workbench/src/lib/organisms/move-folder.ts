@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 import {
   ChangeDetectionStrategy,
@@ -5,6 +6,7 @@ import {
   DestroyRef,
   EventEmitter,
   Input,
+  TemplateRef,
   OnInit,
   Output,
   effect,
@@ -50,7 +52,7 @@ export function canMoveFolderTo(
 
 @Component({
   selector: 'ffk-move-folder',
-  imports: [KoinonButton, KoinonTextPipe, KoinonFolderTree],
+  imports: [NgTemplateOutlet, KoinonButton, KoinonTextPipe, KoinonFolderTree],
   template: ` <p>{{ 'Choose a destination in the same space and project.' | ffkText }}</p>
     @if (error()) {
       <p role="alert">{{ error() | ffkText }}</p>
@@ -62,7 +64,7 @@ export function canMoveFolderTo(
       <ffk-folder-tree
         [entries]="entries()"
         [currentId]="current.parent_id || ''"
-        [contextKey]="tenant"
+        [contextKey]="facade.readerContextKey() + facade.readerRevision()"
         [loadChildren]="loadChildren"
         [canSelect]="canSelect"
         (selected)="choose($event)"
@@ -75,7 +77,7 @@ export function canMoveFolderTo(
     } @else if (loading()) {
       <p role="status">{{ 'Loading folder' | ffkText }}</p>
     }
-    <div class="actions">
+    <ng-container *ngTemplateOutlet="sessionNotice;context:{surface:'dialog'}"/><div class="actions">
       <ffk-button variant="quiet" [disabled]="pending()" (click)="closed.emit()">{{
         'Cancel' | ffkText
       }}</ffk-button>
@@ -106,6 +108,7 @@ export function canMoveFolderTo(
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KoinonMoveFolder implements OnInit {
+  @Input() sessionNotice: TemplateRef<unknown> | null = null;
   @Input({ required: true }) source!: CatalogEntry;
   @Output() closed = new EventEmitter<void>();
   readonly facade = inject(KoinonFacade);
@@ -128,6 +131,7 @@ export class KoinonMoveFolder implements OnInit {
       this.facade.workspaceId();
       this.facade.projectId();
       this.facade.parentId();
+      this.facade.readerContextKey();
       this.clients.revision();
       if (this.started && !this.current()) {
         this.request.abort();
@@ -154,6 +158,7 @@ export class KoinonMoveFolder implements OnInit {
       this.facade.workspaceId(),
       this.facade.projectId(),
       this.facade.parentId(),
+      this.facade.readerContextKey(),
     ]);
   }
   entries() {
@@ -182,7 +187,7 @@ export class KoinonMoveFolder implements OnInit {
     try {
       const entry = await this.clients
         .get()
-        .catalog.get(this.tenant, this.source.id, { signal: this.request.signal });
+        .catalog.read(this.tenant, this.source.id,{reader_source_connections:this.facade.readerSources()}, { signal: this.request.signal });
       if (!this.current()) return;
       if (
         !this.facade.canWrite() ||
@@ -234,7 +239,7 @@ export class KoinonMoveFolder implements OnInit {
       if (!this.current()) return;
       await this.facade.loadLibrary({ page: 1 });
       if (!this.current()) return;
-      this.facade.selected.set(entry);
+      this.facade.setSelection(entry);
       this.closed.emit();
     } catch (error) {
       if (this.current())

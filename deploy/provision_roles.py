@@ -19,66 +19,324 @@ ROLES = (
 
 
 EMAIL_RECOVERY_TABLES = (
-    "koinon_welcome_recoveries", "koinon_email_provider_bindings",
-    "koinon_email_operation_inspections", "koinon_email_operation_observations",
+    "koinon_welcome_recoveries",
+    "koinon_email_provider_bindings",
+    "koinon_email_operation_inspections",
+    "koinon_email_operation_observations",
 )
 
 
 def grant_table(connection, table, role, *, document_control=False):
+    if table == "koinon_content_structure_publications":
+        from koinon.integrations.content_sources.structure_publication_guards import (
+            READ_ENTRYPOINTS,
+        )
+
+        target, relation = sql.Identifier(role), sql.Identifier(table)
+        connection.execute(
+            sql.SQL("REVOKE ALL ON TABLE public.{} FROM {}").format(relation, target)
+        )
+        columns = connection.execute(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name=%s",
+            (table,),
+        ).fetchall()
+        connection.execute(
+            sql.SQL("REVOKE ALL ({}) ON TABLE public.{} FROM {}").format(
+                sql.SQL(",").join(sql.Identifier(column) for (column,) in columns),
+                relation,
+                target,
+            )
+        )
+        connection.execute(
+            sql.SQL("GRANT SELECT ON TABLE public.{} TO {}").format(relation, target)
+        )
+        for signature in READ_ENTRYPOINTS:
+            connection.execute(
+                sql.SQL("GRANT EXECUTE ON FUNCTION public.{} TO {}").format(
+                    sql.SQL(signature), target
+                )
+            )
+        return
+    if table in {"koinon_source_account_operations", "koinon_source_account_waiters"}:
+        target, relation = sql.Identifier(role), sql.Identifier(table)
+        connection.execute(
+            sql.SQL("REVOKE ALL ON TABLE public.{} FROM {}").format(relation, target)
+        )
+        connection.execute(
+            sql.SQL(
+                "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.{} TO {}"
+            ).format(relation, target)
+        )
+        return
+    if table in RELEASE_PROOF_TABLES:
+        target, relation = sql.Identifier(role), sql.Identifier(table)
+        connection.execute(
+            sql.SQL("REVOKE ALL ON TABLE public.{} FROM {}").format(relation, target)
+        )
+        columns = connection.execute(
+            "SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND "
+            "table_name=%s",
+            (table,),
+        ).fetchall()
+        connection.execute(
+            sql.SQL("REVOKE ALL ({}) ON TABLE public.{} FROM {}").format(
+                sql.SQL(",").join(sql.Identifier(column) for (column,) in columns),
+                relation,
+                target,
+            )
+        )
+        connection.execute(
+            sql.SQL("GRANT SELECT ON TABLE public.{} TO {}").format(relation, target)
+        )
+        if table == "koinon_answer_release_proofs":
+            connection.execute(
+                sql.SQL(
+                    "GRANT EXECUTE ON FUNCTION public.koinon_compare_release_proofs(jsonb) TO {}"
+                ).format(target)
+            )
+        return
     if table in {
-        "canon_readiness_generations", "canon_readiness_changes", "canon_readiness_pending",
-        "koinon_knowledge_readiness_generations", "koinon_knowledge_readiness_changes",
+        "koinon_content_mapping_validations",
+        "koinon_content_mapping_validation_entries",
+    }:
+        target, relation = sql.Identifier(role), sql.Identifier(table)
+        connection.execute(
+            sql.SQL("REVOKE ALL ON TABLE public.{} FROM {}").format(relation, target)
+        )
+        connection.execute(
+            sql.SQL(
+                "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.{} TO {}"
+            ).format(relation, target)
+        )
+        # Row guards retain live recovery identities and require fenced payload cleanup.
+        # TRUNCATE and schema ownership are deliberately not granted.
+        return
+    if table == "koinon_content_publication_transactions":
+        connection.execute(
+            sql.SQL("REVOKE ALL ON TABLE public.{} FROM {}").format(
+                sql.Identifier(table), sql.Identifier(role)
+            )
+        )
+        connection.execute(
+            sql.SQL(
+                "GRANT EXECUTE ON FUNCTION public.koinon_open_source_publication(text,jsonb) TO {}"
+            ).format(sql.Identifier(role))
+        )
+        return
+    if table in {
+        "koinon_catalog_history_identities",
+        "koinon_catalog_history_edges",
+        "lattice_audit",
+    }:
+        target, relation = sql.Identifier(role), sql.Identifier(table)
+        connection.execute(
+            sql.SQL("REVOKE ALL ON TABLE public.{} FROM {}").format(relation, target)
+        )
+        columns = connection.execute(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name=%s",
+            (table,),
+        ).fetchall()
+        connection.execute(
+            sql.SQL("REVOKE ALL ({}) ON TABLE public.{} FROM {}").format(
+                sql.SQL(",").join(sql.Identifier(column) for (column,) in columns),
+                relation,
+                target,
+            )
+        )
+        privileges = "SELECT, INSERT" if table == "lattice_audit" else "SELECT"
+        connection.execute(
+            sql.SQL("GRANT {} ON TABLE public.{} TO {}").format(
+                sql.SQL(privileges), relation, target
+            )
+        )
+        return
+    if table in {
+        "koinon_content_connections",
+        "koinon_content_authorizations",
+        "koinon_content_mappings",
+        "koinon_content_objects",
+        "koinon_content_imports",
+        "koinon_content_publication_baselines",
+        "koinon_content_publication_targets",
+        "koinon_content_policies",
+        "koinon_content_sync_states",
+        "koinon_content_sync_runs",
+        "koinon_content_sync_work",
+        "koinon_content_sync_observations",
+        "koinon_content_folder_bindings",
+        "koinon_content_folder_publications",
+        "koinon_content_imported_assets",
+        "koinon_content_imported_versions",
+        "koinon_content_reader_sets",
+        "koinon_content_reader_selections",
+        "koinon_content_reader_operations",
+        "koinon_content_control_operations",
+        "koinon_content_policy_operations",
+        "flyquery_metadata_provenance",
+    }:
+        target, relation = sql.Identifier(role), sql.Identifier(table)
+        connection.execute(
+            sql.SQL("REVOKE ALL ON TABLE public.{} FROM {}").format(relation, target)
+        )
+        columns = connection.execute(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name=%s",
+            (table,),
+        ).fetchall()
+        connection.execute(
+            sql.SQL("REVOKE ALL ({}) ON TABLE public.{} FROM {}").format(
+                sql.SQL(",").join(sql.Identifier(column) for (column,) in columns),
+                relation,
+                target,
+            )
+        )
+        connection.execute(
+            sql.SQL("GRANT SELECT, INSERT ON TABLE public.{} TO {}").format(
+                relation, target
+            )
+        )
+        if table in {
+            "koinon_content_publication_targets",
+            "koinon_content_sync_observations",
+            "koinon_content_imported_assets",
+            "koinon_content_imported_versions",
+            "koinon_content_folder_publications",
+            "koinon_content_reader_selections",
+            "koinon_content_reader_operations",
+            "koinon_content_control_operations",
+            "koinon_content_policy_operations",
+            "flyquery_metadata_provenance",
+        }:
+            return
+        update = (
+            "UPDATE(receipt_json,committed_at)"
+            if table == "koinon_content_imports"
+            else "UPDATE"
+        )
+        if table == "koinon_content_publication_baselines":
+            update = "UPDATE(descriptor_json,acknowledgement_json)"
+            connection.execute(
+                sql.SQL(
+                    "GRANT EXECUTE ON FUNCTION public.koinon_open_source_publication(text,jsonb),"
+                    " public.koinon_publication_current(text,text) TO {}"
+                ).format(target)
+            )
+        if table == "koinon_content_policies":
+            update = "UPDATE(accepted_by,accepted_session_hash,accepted_operation_id,accepted_at)"
+        connection.execute(
+            sql.SQL("GRANT {} ON TABLE public.{} TO {}").format(
+                sql.SQL(update), relation, target
+            )
+        )
+        return
+    if table in {
+        "canon_readiness_generations",
+        "canon_readiness_changes",
+        "canon_readiness_pending",
+        "koinon_knowledge_readiness_generations",
+        "koinon_knowledge_readiness_changes",
         "koinon_knowledge_readiness_pending",
     }:
         target, relation = sql.Identifier(role), sql.Identifier(table)
-        connection.execute(sql.SQL("REVOKE ALL ON TABLE public.{} FROM {}").format(relation, target))
+        connection.execute(
+            sql.SQL("REVOKE ALL ON TABLE public.{} FROM {}").format(relation, target)
+        )
         columns = connection.execute(
             "SELECT column_name FROM information_schema.columns "
-            "WHERE table_schema='public' AND table_name=%s", (table,)
+            "WHERE table_schema='public' AND table_name=%s",
+            (table,),
         ).fetchall()
-        connection.execute(sql.SQL("REVOKE ALL ({}) ON TABLE public.{} FROM {}").format(
-            sql.SQL(",").join(sql.Identifier(column) for (column,) in columns), relation, target
-        ))
+        connection.execute(
+            sql.SQL("REVOKE ALL ({}) ON TABLE public.{} FROM {}").format(
+                sql.SQL(",").join(sql.Identifier(column) for (column,) in columns),
+                relation,
+                target,
+            )
+        )
         if table.endswith("_pending"):
             return
-        connection.execute(sql.SQL("GRANT SELECT ON TABLE public.{} TO {}").format(relation, target))
+        connection.execute(
+            sql.SQL("GRANT SELECT ON TABLE public.{} TO {}").format(relation, target)
+        )
         if table.endswith("_generations"):
-            connection.execute(sql.SQL("GRANT UPDATE(fence) ON TABLE public.{} TO {}").format(relation, target))
+            connection.execute(
+                sql.SQL("GRANT UPDATE(fence) ON TABLE public.{} TO {}").format(
+                    relation, target
+                )
+            )
         if table == "canon_readiness_generations":
-            connection.execute(sql.SQL(
-                "GRANT EXECUTE ON FUNCTION public.koinon_ensure_canon_readiness(text) TO {}"
-            ).format(target))
+            connection.execute(
+                sql.SQL(
+                    "GRANT EXECUTE ON FUNCTION public.koinon_ensure_canon_readiness(text) TO {}"
+                ).format(target)
+            )
         if table == "koinon_knowledge_readiness_generations":
-            connection.execute(sql.SQL(
-                "GRANT EXECUTE ON FUNCTION public.koinon_lock_knowledge_readiness(text,bigint) TO {}"
-            ).format(target))
+            connection.execute(
+                sql.SQL(
+                    "GRANT EXECUTE ON FUNCTION public.koinon_lock_knowledge_readiness(text,bigint) TO {}"
+                ).format(target)
+            )
         return
-    if table in {"koinon_knowledge_mode_index_attempts", "koinon_knowledge_mode_index_resolutions"}:
+    if table in {
+        "koinon_knowledge_mode_index_attempts",
+        "koinon_knowledge_mode_index_resolutions",
+    }:
         target, relation = sql.Identifier(role), sql.Identifier(table)
-        connection.execute(sql.SQL("REVOKE ALL ON TABLE public.{} FROM {}").format(relation, target))
+        connection.execute(
+            sql.SQL("REVOKE ALL ON TABLE public.{} FROM {}").format(relation, target)
+        )
         columns = connection.execute(
-            "SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name=%s", (table,)
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name=%s",
+            (table,),
         ).fetchall()
-        connection.execute(sql.SQL("REVOKE ALL ({}) ON TABLE public.{} FROM {}").format(
-            sql.SQL(",").join(sql.Identifier(column) for (column,) in columns), relation, target
-        ))
-        connection.execute(sql.SQL("GRANT SELECT, INSERT ON TABLE public.{} TO {}").format(relation, target))
+        connection.execute(
+            sql.SQL("REVOKE ALL ({}) ON TABLE public.{} FROM {}").format(
+                sql.SQL(",").join(sql.Identifier(column) for (column,) in columns),
+                relation,
+                target,
+            )
+        )
+        connection.execute(
+            sql.SQL("GRANT SELECT, INSERT ON TABLE public.{} TO {}").format(
+                relation, target
+            )
+        )
         if table.endswith("_resolutions"):
-            connection.execute(sql.SQL("GRANT UPDATE(status,revision,updated_at) ON TABLE public.{} TO {}").format(relation, target))
+            connection.execute(
+                sql.SQL(
+                    "GRANT UPDATE(status,revision,updated_at) ON TABLE public.{} TO {}"
+                ).format(relation, target)
+            )
         return
     if table in EMAIL_RECOVERY_TABLES:
         target = sql.Identifier(role)
         relation = sql.Identifier(table)
-        connection.execute(sql.SQL("REVOKE ALL ON TABLE public.{} FROM {}").format(relation, target))
+        connection.execute(
+            sql.SQL("REVOKE ALL ON TABLE public.{} FROM {}").format(relation, target)
+        )
         names = connection.execute(
             "SELECT column_name FROM information_schema.columns "
-            "WHERE table_schema='public' AND table_name=%s ORDER BY ordinal_position", (table,)
+            "WHERE table_schema='public' AND table_name=%s ORDER BY ordinal_position",
+            (table,),
         ).fetchall()
         if not names:
-            raise RuntimeError("Apply the email recovery migration before provisioning its privileges")
+            raise RuntimeError(
+                "Apply the email recovery migration before provisioning its privileges"
+            )
         columns = sql.SQL(", ").join(sql.Identifier(name) for (name,) in names)
-        connection.execute(sql.SQL("REVOKE UPDATE ({}) ON TABLE public.{} FROM {}").format(columns, relation, target))
-        connection.execute(sql.SQL("GRANT SELECT, INSERT ON TABLE public.{} TO {}").format(relation, target))
+        connection.execute(
+            sql.SQL("REVOKE UPDATE ({}) ON TABLE public.{} FROM {}").format(
+                columns, relation, target
+            )
+        )
+        connection.execute(
+            sql.SQL("GRANT SELECT, INSERT ON TABLE public.{} TO {}").format(
+                relation, target
+            )
+        )
         return
     if table == "koinon_operator_delivery_contacts":
         from koinon.communications.contact_guards import (
@@ -329,7 +587,10 @@ def grant_table(connection, table, role, *, document_control=False):
 
 
 def grant_sequence(connection, name, role):
-    publisher = name.startswith("canon_knowledge_outbox_")
+    publisher = name.startswith("canon_knowledge_outbox_") or name in {
+        "koinon_source_account_fence_seq",
+        "koinon_source_account_ticket_seq",
+    }
     if publisher:
         connection.execute(
             sql.SQL("REVOKE ALL ON SEQUENCE public.{} FROM {}").format(
@@ -356,8 +617,11 @@ CONTACT_OPERATOR_READ_TABLES = (
     "koinon_communication_policies",
 )
 CONTACT_OPERATOR_APPEND_TABLES = (
-    "lattice_audit", "koinon_communication_outbox", "koinon_welcome_recoveries",
-    "koinon_email_provider_bindings", "koinon_email_operation_inspections",
+    "lattice_audit",
+    "koinon_communication_outbox",
+    "koinon_welcome_recoveries",
+    "koinon_email_provider_bindings",
+    "koinon_email_operation_inspections",
     "koinon_email_operation_observations",
 )
 
@@ -369,8 +633,7 @@ def _contact_operator_role(connection, role):
         (role,),
     ).fetchone()
     memberships = connection.execute(
-        "SELECT 1 FROM pg_auth_members m JOIN pg_roles r ON r.oid=m.member "
-        "WHERE r.rolname=%s LIMIT 1",
+        "SELECT 1 FROM pg_auth_members m JOIN pg_roles r ON r.oid=m.member WHERE r.rolname=%s LIMIT 1",
         (role,),
     ).fetchone()
     creates = connection.execute(
@@ -412,7 +675,8 @@ def check_contact_operator(connection, role, *, dependencies=True):
         if result != (True, table in append, False, False):
             raise RuntimeError("Contact operator table privileges require review")
         columns = connection.execute(
-            "SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name=%s",
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name=%s",
             (table,),
         ).fetchall()
         for (name,) in columns:
@@ -502,11 +766,230 @@ def grant_contact_operator(connection, role, *, dependencies=True):
     check_contact_operator(connection, role, dependencies=dependencies)
 
 
-def provision(*, grants=False, check=False, contacts_operator_role=None):
+RELEASE_PROOF_TABLES = (
+    "koinon_answer_release_proofs",
+    "koinon_answer_release_proof_pins",
+    "koinon_answer_release_proof_sources",
+    "koinon_answer_release_projection_jobs",
+)
+RELEASE_PROOF_ENTRYPOINTS = {
+    "publisher": (
+        "koinon_capture_release_proof(text)",
+        "koinon_publish_release_proof(text,text,text,integer)",
+    ),
+    "maintenance": (
+        "koinon_capture_release_proof(text)",
+        "koinon_prepare_release_backfill(text,text,text,integer)",
+        "koinon_backfill_release_proof(text,text,text,text,integer)",
+        "koinon_claim_release_projection(text,text,text)",
+        "koinon_release_projection_candidates(text,text,integer,integer)",
+        "koinon_checkpoint_release_projection(text,text,integer,text,timestamptz,text)",
+    ),
+    "api": (),
+}
+
+
+def grant_release_proof_role(connection, role, *, kind, check=False):
+    """Grant explicit existing process identities, never create credentials here."""
+    if kind not in RELEASE_PROOF_ENTRYPOINTS:
+        raise ValueError("Unknown answer proof process kind")
+    row = connection.execute(
+        "SELECT "
+        "rolcanlogin,rolsuper,rolinherit,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls FROM "
+        "pg_roles WHERE rolname=%s",
+        (role,),
+    ).fetchone()
+    if row != (True, False, False, False, False, False, False):
+        raise RuntimeError(
+            "Proof process requires an existing ordinary LOGIN NOINHERIT role"
+        )
+    if connection.execute(
+        "SELECT EXISTS(SELECT FROM pg_auth_members WHERE roleid=(SELECT oid FROM pg_roles WHERE "
+        "rolname=%s) OR member=(SELECT oid FROM pg_roles WHERE rolname=%s))",
+        (role, role),
+    ).fetchone()[0]:
+        raise RuntimeError(
+            "Proof process roles must be isolated from SET ROLE and inherited privileges"
+        )
+    target = sql.Identifier(role)
+    allowed = set(RELEASE_PROOF_ENTRYPOINTS[kind]) | {
+        "koinon_compare_release_proofs(jsonb)"
+    }
+    from koinon.answers.release_proof_guards import FUNCTIONS
+
+    if not check:
+        for table in RELEASE_PROOF_TABLES:
+            grant_table(connection, table, role)
+        connection.execute(sql.SQL("GRANT USAGE ON SCHEMA public TO {}").format(target))
+        for signature, _ in FUNCTIONS:
+            connection.execute(
+                sql.SQL("REVOKE ALL ON FUNCTION public.{} FROM {}").format(
+                    sql.SQL(signature), target
+                )
+            )
+            if signature in allowed:
+                connection.execute(
+                    sql.SQL("GRANT EXECUTE ON FUNCTION public.{} TO {}").format(
+                        sql.SQL(signature), target
+                    )
+                )
+        if kind == "maintenance":
+            for table in (
+                "koinon_chat_threads",
+                "koinon_chat_runs",
+                "koinon_chat_messages",
+                "koinon_chat_tool_results",
+                "koinon_chat_events",
+            ):
+                connection.execute(
+                    sql.SQL("GRANT SELECT ON TABLE public.{} TO {}").format(
+                        sql.Identifier(table), target
+                    )
+                )
+    for signature, _ in FUNCTIONS:
+        actual = connection.execute(
+            "SELECT has_function_privilege(%s,%s,'EXECUTE')",
+            (role, "public." + signature),
+        ).fetchone()[0]
+        if actual != (signature in allowed):
+            raise RuntimeError(
+                "Proof entrypoint privileges do not match the configured process"
+            )
+    for table in RELEASE_PROOF_TABLES:
+        for privilege in ("INSERT", "UPDATE", "DELETE", "TRUNCATE", "TRIGGER"):
+            if connection.execute(
+                "SELECT has_table_privilege(%s,%s,%s)",
+                (role, "public." + table, privilege),
+            ).fetchone()[0]:
+                raise RuntimeError("Proof process has direct table mutation privileges")
+        if connection.execute(
+            "SELECT EXISTS(SELECT FROM information_schema.columns WHERE table_schema='public' AND "
+            "table_name=%s AND "
+            "(has_column_privilege(%s,table_schema||'.'||table_name,column_name,'INSERT') OR "
+            "has_column_privilege(%s,table_schema||'.'||table_name,column_name,'UPDATE')))",
+            (table, role, role),
+        ).fetchone()[0]:
+            raise RuntimeError("Proof process has direct column mutation privileges")
+
+
+def grant_source_structure_role(connection, role, *, worker=False, check=False):
+    """Apply the exact structural interface to an existing isolated process role."""
+    from koinon.integrations.content_sources.structure_publication_guards import (
+        ALL_SIGNATURES,
+        ENTRYPOINTS,
+        READ_ENTRYPOINTS,
+        TABLE,
+    )
+
+    flags = connection.execute(
+        "SELECT rolcanlogin,rolsuper,rolinherit,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls "
+        "FROM pg_roles WHERE rolname=%s",
+        (role,),
+    ).fetchone()
+    membership = connection.execute(
+        "SELECT EXISTS(SELECT FROM pg_auth_members WHERE roleid=(SELECT oid FROM pg_roles WHERE rolname=%s) "
+        "OR member=(SELECT oid FROM pg_roles WHERE rolname=%s))",
+        (role, role),
+    ).fetchone()[0]
+    if flags != (True, False, False, False, False, False, False) or membership:
+        raise ValueError(
+            "Structural source process requires an isolated ordinary LOGIN NOINHERIT role"
+        )
+    allowed = set(READ_ENTRYPOINTS) | (set(ENTRYPOINTS) if worker else set())
+    target = sql.Identifier(role)
+    if not check:
+        grant_table(connection, TABLE, role)
+        connection.execute(sql.SQL("GRANT USAGE ON SCHEMA public TO {}").format(target))
+        for signature in ALL_SIGNATURES:
+            connection.execute(
+                sql.SQL("REVOKE ALL ON FUNCTION public.{} FROM {}").format(
+                    sql.SQL(signature), target
+                )
+            )
+            if signature in allowed:
+                connection.execute(
+                    sql.SQL("GRANT EXECUTE ON FUNCTION public.{} TO {}").format(
+                        sql.SQL(signature), target
+                    )
+                )
+    for signature in ALL_SIGNATURES:
+        actual = connection.execute(
+            "SELECT has_function_privilege(%s,%s,'EXECUTE')",
+            (role, "public." + signature),
+        ).fetchone()[0]
+        if actual != (signature in allowed):
+            raise ValueError(
+                "Structural source entrypoint privileges do not match the configured process"
+            )
+    for privilege in (
+        "INSERT",
+        "UPDATE",
+        "DELETE",
+        "TRUNCATE",
+        "TRIGGER",
+        "REFERENCES",
+    ):
+        if connection.execute(
+            "SELECT has_table_privilege(%s,%s,%s)", (role, "public." + TABLE, privilege)
+        ).fetchone()[0]:
+            raise ValueError("Structural proof table mutation must remain private")
+    if connection.execute(
+        "SELECT EXISTS(SELECT FROM information_schema.columns WHERE table_schema='public' "
+        "AND table_name=%s AND (has_column_privilege(%s,table_schema||'.'||table_name,column_name,'INSERT') "
+        "OR has_column_privilege(%s,table_schema||'.'||table_name,column_name,'UPDATE') "
+        "OR has_column_privilege(%s,table_schema||'.'||table_name,column_name,'REFERENCES')))",
+        (TABLE, role, role, role),
+    ).fetchone()[0]:
+        raise ValueError("Structural proof column mutation must remain private")
+
+
+def proof_process_urls(publisher_role, maintenance_role):
+    """Use only explicitly supplied private process credentials, never API credentials."""
+    publisher = os.environ.get("KOINON_ANSWER_PUBLISHER_DATABASE_URL")
+    maintenance = os.environ.get("KOINON_ANSWER_MAINTENANCE_DATABASE_URL")
+    if bool(publisher) != bool(maintenance):
+        raise ValueError(
+            "Configure both answer publisher and maintenance database URLs"
+        )
+    if not publisher:
+        return [], publisher_role, maintenance_role
+    try:
+        urls = [make_url(publisher), make_url(maintenance)]
+    except Exception:
+        raise ValueError(
+            "Invalid answer proof process connection configuration"
+        ) from None
+    if (
+        publisher_role
+        and publisher_role != urls[0].username
+        or maintenance_role
+        and maintenance_role != urls[1].username
+    ):
+        raise ValueError("Configured answer proof role identity differs from its URL")
+    if any(url.get_backend_name() != "postgresql" for url in urls):
+        raise ValueError("Answer proof processes require PostgreSQL")
+    return (
+        [(urls[0], False, ROLES[0][2]), (urls[1], False, ())],
+        urls[0].username,
+        urls[1].username,
+    )
+
+
+def provision(
+    *,
+    grants=False,
+    check=False,
+    contacts_operator_role=None,
+    answer_publisher_role=None,
+    answer_maintenance_role=None,
+):
     admin = make_url(os.environ["KOINON_MIGRATION_DATABASE_URL"])
     urls = [
         (make_url(os.environ[key]), bypass, prefixes) for key, bypass, prefixes in ROLES
     ]
+    process_urls, answer_publisher_role, answer_maintenance_role = proof_process_urls(
+        answer_publisher_role, answer_maintenance_role
+    )
     if len({url.username for url, _, _ in urls}) != len(urls):
         raise ValueError("Each runtime/control datasource requires a distinct role")
     if contacts_operator_role and contacts_operator_role in {
@@ -515,6 +998,16 @@ def provision(*, grants=False, check=False, contacts_operator_role=None):
         raise ValueError(
             "The contact operator must be distinct from every runtime/control role"
         )
+    proof_roles = [
+        role for role in (answer_publisher_role, answer_maintenance_role) if role
+    ]
+    if len(set(proof_roles)) != len(proof_roles) or set(proof_roles) & {
+        url.username for url, _, _ in urls
+    }:
+        raise ValueError(
+            "Answer publisher and maintenance must be distinct from API and each other"
+        )
+    urls.extend(process_urls)
     for url, _, _ in urls:
         if not url.username or not url.password or url.username == admin.username:
             raise ValueError(
@@ -594,6 +1087,34 @@ def provision(*, grants=False, check=False, contacts_operator_role=None):
                 grant_contact_operator(connection, contacts_operator_role)
             else:
                 raise ValueError("Use --grant or --check with --contacts-operator-role")
+        for role, kind in (
+            (answer_publisher_role, "publisher"),
+            (answer_maintenance_role, "maintenance"),
+        ):
+            if role:
+                if not grants and not check:
+                    if process_urls:
+                        continue  # Role creation precedes the additive schema migration.
+                    raise ValueError("Use --grant or --check with answer proof roles")
+                grant_release_proof_role(connection, role, kind=kind, check=check)
+        if proof_roles and (grants or check):
+            grant_release_proof_role(
+                connection, urls[0][0].username, kind="api", check=check
+            )
+            if connection.execute(
+                "SELECT to_regclass('public.koinon_content_structure_publications')"
+            ).fetchone()[0]:
+                grant_source_structure_role(
+                    connection, urls[0][0].username, check=check
+                )
+                for role, worker in (
+                    (answer_publisher_role, True),
+                    (answer_maintenance_role, False),
+                ):
+                    if role:
+                        grant_source_structure_role(
+                            connection, role, worker=worker, check=check
+                        )
 
 
 if __name__ == "__main__":
@@ -605,6 +1126,12 @@ if __name__ == "__main__":
         "--check", action="store_true", help="Read privileges without changes"
     )
     parser.add_argument(
+        "--answer-publisher-role", help="Existing isolated trusted worker role"
+    )
+    parser.add_argument(
+        "--answer-maintenance-role", help="Existing isolated trusted maintenance role"
+    )
+    parser.add_argument(
         "--contacts-operator-role",
         help="Existing distinct operator role for reviewed delivery contact changes",
     )
@@ -613,4 +1140,6 @@ if __name__ == "__main__":
         grants=args.grant,
         check=args.check,
         contacts_operator_role=args.contacts_operator_role,
+        answer_publisher_role=args.answer_publisher_role,
+        answer_maintenance_role=args.answer_maintenance_role,
     )

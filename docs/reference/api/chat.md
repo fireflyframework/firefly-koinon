@@ -19,6 +19,8 @@ Use the linked wire models for field constraints. Operation metadata does not en
 - [Result](#assistantcontroller-result) (GET)
 - [Activities](#assistantcontroller-activities) (GET)
 - [Audit](#assistantcontroller-audit) (GET)
+- [Browse](#chathistorycontroller-browse) (POST)
+- [Browse messages](#chathistorycontroller-browse-messages) (POST)
 - [Folders](#chathistorycontroller-folders) (GET)
 - [Create folder](#chathistorycontroller-create-folder) (POST)
 - [Folder](#chathistorycontroller-folder) (GET)
@@ -28,6 +30,7 @@ Use the linked wire models for field constraints. Operation metadata does not en
 - [Patch thread](#chathistorycontroller-patch-thread) (PATCH)
 - [Title suggestion](#chathistorycontroller-title-suggestion) (POST)
 - [Delete thread](#chathistorycontroller-delete-thread) (DELETE)
+- [Thread read](#chathistoryreadcontroller-thread-read) (POST)
 - [Capabilities](#chatattachmentscontroller-capabilities) (GET)
 - [Upload](#chatattachmentscontroller-upload) (POST)
 - [List files](#chatattachmentscontroller-list-files) (GET)
@@ -476,6 +479,91 @@ No operation-specific headers are declared in the canonical metadata.
 
 Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
 
+<!-- operation: ChatHistoryController.browse -->
+<a id="chathistorycontroller-browse"></a>
+## Browse
+
+```http
+POST /api/v1/tenants/{tenant_id}/chat/threads/browse
+```
+
+Contract operation: `ChatHistoryController.browse`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `browse_threads` |
+| TypeScript | `chat.browse` |
+| Java | `client.chat.browse` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[HistoryBrowseInput]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`HistoryBrowseInput`](../models/historybrowseinput.md) |
+| Response schema | [`HistoryBrowsePage`](../models/historybrowsepage.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: ChatHistoryController.browse_messages -->
+<a id="chathistorycontroller-browse-messages"></a>
+## Browse messages
+
+```http
+POST /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/messages/browse
+```
+
+Contract operation: `ChatHistoryController.browse_messages`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `browse_messages` |
+| TypeScript | `chat.browseMessages` |
+| Java | `client.chat.browseMessages` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `thread_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[MessageBrowseInput]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`MessageBrowseInput`](../models/messagebrowseinput.md) |
+| Response schema | [`MessageBrowsePage`](../models/messagebrowsepage.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
 <!-- operation: ChatHistoryController.folders -->
 <a id="chathistorycontroller-folders"></a>
 ## Folders
@@ -856,6 +944,49 @@ These are the declared path, query and body arguments. Multipart and binary inpu
 | Request schema | No request schema declared |
 | Response schema | No response body |
 | Success status | `204` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: ChatHistoryReadController.thread_read -->
+<a id="chathistoryreadcontroller-thread-read"></a>
+## Thread read
+
+```http
+POST /api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/read
+```
+
+Contract operation: `ChatHistoryReadController.thread_read`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `read_thread` |
+| TypeScript | `chat.read` |
+| Java | `client.chat.read` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `thread_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[ReaderReadInput]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`ReaderReadInput`](../models/readerreadinput.md) |
+| Response schema | [`ChatThread`](../models/chatthread.md) |
+| Success status | `200` |
 | Declared encoding | `application/json` |
 
 Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.

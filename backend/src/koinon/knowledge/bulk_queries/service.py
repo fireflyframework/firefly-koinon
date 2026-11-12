@@ -1,7 +1,8 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
 from datetime import timedelta
-from uuid import uuid4
+from types import SimpleNamespace
+from uuid import UUID, uuid4
 
 from pydantic import ValidationError
 from pyfly.container import service
@@ -35,6 +36,7 @@ from koinon.knowledge.bulk_queries.dtos import (
 )
 from koinon.knowledge.bulk_queries.entities import QueryBatch, QueryBatchItem
 from koinon.knowledge.bulk_queries.native import BulkQueryNative
+from koinon.knowledge.bulk_queries.native_values import NativeCommitDescriptor, QueryOperationIdentity
 from koinon.knowledge.bulk_queries.queue import QueryBatchQueue, canonical_digest
 from koinon.knowledge.bulk_queries.repositories import QueryBatchRepository
 from koinon.security.authority import PRIMARY_POLICY_UNIT
@@ -99,7 +101,7 @@ class QueryBatches:
             if row is None:
                 raise AccessDenied("Private query batch unavailable", code="ACCESS_DENIED")
         if resources:
-            for item in await self.records.items(row.id):
+            for item in await self.records.items_metadata(row.id):
                 await self.authority.item(subject, tenant, row.workspace_id, item, write=write)
         return row
 
@@ -297,7 +299,7 @@ class QueryBatches:
                     status=row.status,
                     job_id=row.job_id,
                     error_code=row.error_code,
-                    query_id=(row.result_json or {}).get("query_id"),
+                    query_id=row.query_id,
                 )
                 for row in rows
             ],
@@ -341,9 +343,105 @@ class QueryBatches:
         )
 
     async def result(self, subject: str, tenant: str, batch_id: str, item_id: str) -> QueryBatchResult:
+        identity = await self._result_identity(subject, tenant, batch_id, item_id)
+        provider = getattr(self.authority.facade(), "source_reader", None)
+        reader = provider.get() if provider is not None else None
+        if identity.native_commit_json is not None:
+            return await self._descriptor_result(subject, tenant, batch_id, item_id, identity, reader)
+        operation = None
+        if reader is not None and identity.query_id:
+            reference = SimpleNamespace(
+                id=identity.query_id,
+                kind="dataset",
+                asset_id=identity.dataset_id,
+                query_id=identity.query_id,
+                snapshot_id=None,
+                source_version_id=None,
+                knowledge_version_id=None,
+            )
+            operation = await reader.begin(subject, tenant)
+            await reader.sources(subject, tenant, (reference,), operation=operation)
         result = await self._result(subject, tenant, batch_id, item_id)
+        if (str(result.result.query_id) if result.result is not None else None) != identity.query_id:
+            raise ConflictException("Query result identity changed", code="BULK_QUERY_RECEIPT_CONFLICT")
         await self._guard(subject, tenant, batch_id)
+        if operation is not None:
+            await operation.release()
         return result
+
+    async def _descriptor_result(self, subject, tenant, batch_id, item_id, identity, reader):
+        from koinon.integrations.content_sources.errors import SourceError
+        from koinon.knowledge.capture_receipt import NativeEvidenceReceipt
+        from koinon.knowledge.native_provenance import StructuredSourceAdmission
+
+        if reader is None or reader.native is None or reader.native.get() is None:
+            raise SourceError("unavailable")
+        try:
+            descriptor = NativeCommitDescriptor.model_validate(identity.native_commit_json)
+        except ValidationError:
+            raise ConflictException(
+                "Query commit metadata is invalid", code="BULK_QUERY_RECEIPT_CONFLICT"
+            ) from None
+        if descriptor.operation_id != UUID(item_id) or str(descriptor.query_id) != identity.query_id:
+            raise ConflictException("Query result identity differs", code="BULK_QUERY_RECEIPT_CONFLICT")
+        binding = SimpleNamespace(
+            native_workspace_id=identity.native_workspace_id, native_id=identity.native_dataset_id
+        )
+        projection = await reader.native.get().terminal_query_manifest(
+            subject, tenant, binding, identity.query_id
+        )
+        if (
+            projection.query_id != descriptor.query_id
+            or projection.manifest_sha256 != descriptor.manifest_sha256
+        ):
+            raise ConflictException("Query source manifest differs", code="BULK_QUERY_RECEIPT_CONFLICT")
+        operation = await reader.begin(subject, tenant)
+        receipt = NativeEvidenceReceipt(subject, tenant)
+        await StructuredSourceAdmission(receipt, operation, identity.dataset_id, binding)._snapshots(
+            projection.source_manifest
+        )
+        # Empty manifests are usable only with the verified immutable native receipt,
+        # whose required source_manifest field proves this publication consumed none.
+        committed = await self.native.authorized_result(identity.native_identity, descriptor)
+        if committed.source_manifest != projection.source_manifest:
+            raise ConflictException("Query source manifest differs", code="BULK_QUERY_RECEIPT_CONFLICT")
+        await self._guard(subject, tenant, batch_id)
+        await operation.release()
+        return QueryBatchResult(
+            batch_id=batch_id,
+            item_id=item_id,
+            status=descriptor.outcome,
+            result=committed.result,
+            error_code=identity.error_code,
+        )
+
+    @transactional(
+        datasource="primary",
+        name=PRIMARY_POLICY_UNIT,
+        propagation=Propagation.REQUIRES_NEW,
+        isolation=Isolation.SERIALIZABLE,
+        read_only=True,
+        read_from_primary=True,
+    )
+    async def _result_identity(self, subject, tenant, batch_id, item_id):
+        batch = await self._scope(subject, tenant, batch_id)
+        identity = await self.records.result_identity(batch_id, item_id)
+        if identity is None:
+            raise AccessDenied("Private query item unavailable", code="ACCESS_DENIED")
+        if identity.native_commit_json is not None:
+            identity.native_identity = QueryOperationIdentity(
+                operation_id=UUID(item_id),
+                tenant_id=tenant,
+                subject=subject,
+                workspace_id=UUID(identity.native_workspace_id),
+                dataset_id=UUID(identity.native_dataset_id),
+                catalog_workspace_id=batch.workspace_id,
+                catalog_dataset_id=identity.dataset_id,
+                question=identity.question,
+                policy_sha256=identity.policy_digest,
+                connections_sha256=canonical_digest(identity.connection_json),
+            )
+        return identity
 
     def _action(self, row: QueryBatch, action: str, body: QueryBatchAction, key: str) -> bool:
         key_hash = key_digest(key)
@@ -369,8 +467,8 @@ class QueryBatches:
         row = await self._scope(subject, tenant, batch_id, write=True, resources=False)
         if self._action(row, "cancel", body, key):
             row.cancelled = True
-            for item in await self.records.items(row.id):
-                if item.result_json is not None or item.status in {"failed", "cancelled"}:
+            for item in await self.records.items_metadata(row.id):
+                if item.native_commit_json is not None or item.status in {"succeeded", "failed", "cancelled"}:
                     continue
                 job = await self.records.job(item.job_id)
                 if job is None:
@@ -380,15 +478,16 @@ class QueryBatches:
                 else:
                     try:
                         lease = self.queue.lease(job, item, row)
-                        status, receipt = await self.native.inspect(lease)
+                        status, receipt = await self.native.inspect_commit_metadata(lease)
                         if status == "committed" and receipt is not None:
-                            await self.native.acknowledge_committed(lease, receipt)
+                            await self.native.acknowledge_commit_metadata(lease, receipt)
                             continue
                         item.status = "cancelled" if status == "absent" else "reconciling"
                         item.error_code = None if status == "absent" else "BULK_QUERY_OUTCOME_UNRESOLVED"
                     except Exception:
                         item.status = "reconciling"
                         item.error_code = "BULK_QUERY_CANCEL_UNKNOWN"
+                await self.records.set_item_state(item.id, item.status, item.error_code)
                 if job.status in {"queued", "running"}:
                     await self.jobs.cancel(tenant, job.id)
             row.revision += 1
@@ -399,21 +498,21 @@ class QueryBatches:
     async def reconcile(
         self, subject: str, tenant: str, batch_id: str, item_id: str, body: QueryBatchAction, key: str
     ) -> QueryBatchView:
-        row = await self._scope(subject, tenant, batch_id, write=True)
+        row = await self._scope(subject, tenant, batch_id, write=True, resources=False)
         if not self._action(row, "reconcile:" + item_id, body, key):
             return await self._view(row)
-        item = await self.records.item(batch_id, item_id, lock=True)
+        item = await self.records.item_metadata(batch_id, item_id, lock=True)
         if item is None:
             raise AccessDenied("Private query item unavailable", code="ACCESS_DENIED")
-        if item.result_json is not None:
+        if item.result_query_id is not None or item.native_commit_json is not None:
             return await self._view(row)
         job = await self.records.job(item.job_id)
         if job is None:
             raise ConflictException("Query job unavailable", code="BULK_QUERY_RECEIPT_CONFLICT")
         lease = self.queue.lease(job, item, row)
-        status, receipt = await self.native.inspect(lease)
+        status, receipt = await self.native.inspect_commit_metadata(lease)
         if status == "committed" and receipt is not None:
-            await self.native.acknowledge_committed(lease, receipt)
+            await self.native.acknowledge_commit_metadata(lease, receipt)
         elif status == "absent":
             item.status = "cancelled" if row.cancelled else "failed"
             item.error_code = None if row.cancelled else "BULK_QUERY_NOT_STARTED"
@@ -426,6 +525,8 @@ class QueryBatches:
             job.status = "failed"
             job.lease_until = None
             job.worker_id = None
+        if status != "committed":
+            await self.records.set_item_state(item.id, item.status, item.error_code)
         row.revision += 1
         await self.records.flush()
         return await self._view(row)

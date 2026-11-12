@@ -23,16 +23,9 @@ import {
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import {
-  KoinonButton,
-  KoinonConversationGroups,
-  KoinonI18n,
-  KoinonIcon,
-  KoinonSearchField,
-  KoinonSidePanel,
-  KoinonSkeleton,
-  KoinonTextPipe,
-} from '@fireflyframework/koinon-angular';
+import { KoinonButton, KoinonI18n, KoinonIcon, KoinonSearchField, KoinonSkeleton, KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonConversationGroups } from '@fireflyframework/koinon-angular/chat/state';
+import { KoinonSidePanel } from '@fireflyframework/koinon-angular/workbench/panels';
 import type { ChatFolder, ChatThread, TitleSuggestion } from '@fireflyframework/koinon-sdk';
 export interface NewConversationContext {
   folder: ChatFolder | null;

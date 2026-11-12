@@ -1,7 +1,18 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
-import { Component, Input, OnInit, effect, inject, signal } from '@angular/core';
-import { KoinonButton, type KoinonWorkbench } from '@fireflyframework/koinon-angular/workbench';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  HostListener,
+  Input,
+  OnInit,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
+import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
+import type { KoinonWorkbench } from '@fireflyframework/koinon-angular/workbench/bootstrap';
 import type { SessionMonitor } from './session-monitor';
 import { SessionService } from './session.service';
 
@@ -12,8 +23,9 @@ const spanish: Readonly<Record<string, string>> = {
   'Your session has ended.': 'Tu sesión ha caducado.',
   'Renew session': 'Renovar sesión',
   'Waiting for sign-in': 'Esperando el inicio de sesión',
-  'Complete sign-in in the new window. This page will keep your work.':
-    'Completa el inicio de sesión en la nueva ventana. Esta página conservará tu trabajo.',
+  'Complete sign-in in the new window, then return here.':
+    'Completa el inicio de sesión en la nueva ventana y vuelve aquí.',
+  'View session details': 'Ver detalles de sesión',
   'Renewal could not be confirmed. No requests were retried.':
     'No se ha podido confirmar la renovación. No se ha repetido ninguna solicitud.',
   'Your account changed. The previous draft was cleared.':
@@ -30,50 +42,76 @@ const spanish: Readonly<Record<string, string>> = {
 @Component({
   selector: 'app-session-notice',
   imports: [KoinonButton],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `@if (monitor(); as m) {
     @if (visible(m)) {
-      <aside class="notice" [attr.aria-label]="text('Session')">
-        <div class="copy">
-          @if (warning(m) || workbench.f.authRequired()) {
-            <p role="status">
-              {{
-                text(
-                  workbench.f.authRequired()
-                    ? 'Your session has ended.'
-                    : m.remaining() === 0
-                      ? 'Checking your session.'
-                      : 'Your session ends soon.'
-                )
-              }}
-              @if (!workbench.f.authRequired() && m.remaining() !== null && m.remaining()! > 0) {
-                <span role="timer" aria-live="off">{{ time(m.remaining()!) }}</span>
-              }
-            </p>
+      @if (surface === 'account') {
+        <button
+          class="session-trigger"
+          type="button"
+          [attr.aria-expanded]="expanded()"
+          aria-controls="session-details"
+          [attr.aria-label]="status(m) + ' ' + text('View session details')"
+          (click)="expanded.set(!expanded())"
+        >
+          <span class="indicator" aria-hidden="true"></span>{{ text('Session') }}
+        </button>
+        <span class="sr-only" role="status">{{ status(m) }}</span>
+      }
+      @if (surface !== 'account' || expanded()) {
+        <aside
+          [id]="surface === 'account' ? 'session-details' : null"
+          class="notice"
+          [class.compact]="surface === 'dialog'"
+          [class.details]="surface === 'account'"
+          [attr.aria-label]="text('Session')"
+          role="region"
+        >
+          <div class="copy">
+            <p [attr.role]="surface === 'account' ? null : 'status'">{{ status(m) }}</p>
+            @if (m.message() && (m.renewing() || warning(m) || workbench.f.authRequired())) {
+              <p>{{ text(m.message()) }}</p>
+            }
+            @if (
+              surface !== 'dialog' &&
+              !workbench.f.authRequired() &&
+              m.remaining() !== null &&
+              m.remaining()! > 0
+            ) {
+              <span role="timer" aria-live="off">{{ time(m.remaining()!) }}</span>
+            }
+          </div>
+          @if (
+            surface !== 'auth' &&
+            m.canRenew() &&
+            (warning(m) || workbench.f.authRequired() || m.renewing())
+          ) {
+            <ffk-button
+              type="button"
+              variant="quiet"
+              [loading]="m.renewing()"
+              (click)="m.renew()"
+              >{{ text(m.renewing() ? 'Waiting for sign-in' : 'Renew session') }}</ffk-button
+            >
           }
-          @if (m.message()) {
-            <p role="status">{{ text(m.message()) }}</p>
+          @if (surface !== 'auth' && m.message() && !warning(m) && !m.renewing()) {
+            <ffk-button
+              type="button"
+              variant="quiet"
+              icon="close"
+              [label]="text('Dismiss session message')"
+              (click)="m.message.set('')"
+            />
           }
-        </div>
-        @if (m.canRenew() && (warning(m) || workbench.f.authRequired() || m.renewing())) {
-          <ffk-button variant="quiet" [loading]="m.renewing()" (click)="m.renew()">{{
-            text(m.renewing() ? 'Waiting for sign-in' : 'Renew session')
-          }}</ffk-button>
-        }
-        @if (m.message() && !warning(m) && !m.renewing()) {
-          <ffk-button
-            variant="quiet"
-            icon="close"
-            [label]="text('Dismiss session message')"
-            (click)="m.message.set('')"
-          />
-        }
-      </aside>
+        </aside>
+      }
     }
   }`,
   styles: `
     :host {
       display: block;
       min-width: 0;
+      position: relative;
     }
     .notice {
       display: flex;
@@ -86,6 +124,66 @@ const spanish: Readonly<Record<string, string>> = {
       background: var(--ui-canvas, #f3f1eb);
       color: var(--ui-text, #272820);
       font: 400 13px/1.5 var(--ffk-font, 'Manrope Variable', Manrope, sans-serif);
+    }
+    .notice.compact {
+      margin: 12px 0 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      border-radius: 0;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 14px;
+    }
+    .notice.details {
+      position: absolute;
+      z-index: 20;
+      inset-inline-end: 0;
+      top: calc(100% + 8px);
+      width: min(360px, calc(100vw - 32px));
+      max-height: min(440px, 70vh);
+      overflow: auto;
+      box-sizing: border-box;
+      margin: 0;
+      padding: 16px;
+      flex-wrap: wrap;
+      border-radius: 12px;
+      font-size: 14px;
+    }
+    .session-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 44px;
+      padding: 6px 8px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--ui-text, #272820);
+      font: 600 13px/1.4 var(--ffk-font, 'Manrope Variable', Manrope, sans-serif);
+      cursor: pointer;
+    }
+    .session-trigger:hover {
+      background: var(--ui-canvas, #f3f1eb);
+    }
+    .session-trigger:focus-visible {
+      outline: 2px solid var(--ui-focus, #4b5b39);
+      outline-offset: 2px;
+    }
+    .indicator {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
     .copy {
       flex: 1;
@@ -111,15 +209,49 @@ const spanish: Readonly<Record<string, string>> = {
         flex-wrap: wrap;
         padding: 12px;
       }
-      .copy {
+      .notice.details {
+        position: fixed;
+        inset-inline: 16px;
+        top: 64px;
+        width: auto;
+      }
+      .notice:not(.compact) .copy {
         flex-basis: 100%;
+      }
+      .notice.compact .copy {
+        flex: 1 1 170px;
       }
     }
   `,
 })
 export class SessionNotice implements OnInit {
   @Input({ required: true }) workbench!: KoinonWorkbench;
+  @Input() surface: 'content' | 'account' | 'dialog' | 'auth' = 'content';
   private readonly sessions = inject(SessionService);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly expanded = signal(false);
+  @HostListener('document:click', ['$event']) outside(event: Event) {
+    if (!event.composedPath().includes(this.host.nativeElement)) this.expanded.set(false);
+  }
+  @HostListener('keydown.escape', ['$event']) close(event: Event) {
+    if (!this.expanded()) return;
+    event.stopPropagation();
+    this.expanded.set(false);
+    this.host.nativeElement.querySelector<HTMLButtonElement>('.session-trigger')?.focus();
+  }
+  status(monitor: SessionMonitor) {
+    return this.text(
+      monitor.renewing()
+        ? 'Waiting for sign-in'
+        : this.workbench.f.authRequired()
+          ? 'Your session has ended.'
+          : this.warning(monitor)
+            ? monitor.remaining() === 0
+              ? 'Checking your session.'
+              : 'Your session ends soon.'
+            : monitor.message(),
+    );
+  }
   readonly monitor = signal<SessionMonitor | null>(null);
   constructor() {
     effect(() => {
@@ -129,6 +261,19 @@ export class SessionNotice implements OnInit {
         this.workbench.f.authRequired();
         this.workbench.f.context();
         monitor.draft.track();
+        if (!this.visible(monitor)) {
+          const root = this.host.nativeElement.getRootNode() as Document | ShadowRoot;
+          if (this.host.nativeElement.contains(root.activeElement)) {
+            const dialog = this.host.nativeElement.closest('[role="dialog"]');
+            const next = dialog
+              ? dialog.querySelector<HTMLButtonElement>('.dialog-actions button:not([disabled])')
+              : this.host.nativeElement
+                  .closest('ffk-shell')
+                  ?.querySelector<HTMLButtonElement>('.account-avatar');
+            next?.focus();
+          }
+          this.expanded.set(false);
+        }
       }
     });
   }

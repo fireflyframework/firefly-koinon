@@ -20,6 +20,7 @@ interface Draft {
 export class LibrarySessionDraft {
   private open: Draft | null = null;
   private saved: Draft | null = null;
+  private generation = 0;
   constructor(private readonly w: KoinonWorkbench) {}
   track(): void {
     if (this.w.f.authRequired()) {
@@ -47,22 +48,26 @@ export class LibrarySessionDraft {
   capture(): void {
     if (!this.open || this.w.formName.length > 160 || this.w.formDescription.length > 8000) return;
     this.saved = { ...this.open, name: this.w.formName, description: this.w.formDescription };
+    this.generation++;
     this.open = null;
   }
   clear(): void {
+    this.generation++;
     this.open = this.saved = null;
   }
   async restore(): Promise<boolean> {
     const draft = this.saved;
+    const generation = this.generation;
     this.saved = null;
-    if (
-      !draft ||
-      draft.subject !== this.w.f.context()?.subject ||
-      draft.tenant !== this.w.f.tenantId()
-    )
-      return false;
+    if (!draft) return false;
+    const current = () =>
+      generation === this.generation &&
+      draft.subject === this.w.f.context()?.subject &&
+      draft.tenant === this.w.f.tenantId() &&
+      !this.w.f.authRequired();
+    if (!current()) return false;
     if (draft.parent) {
-      if (!(await this.w.f.loadResource(draft.parent))) return false;
+      if (!(await this.w.f.loadResource(draft.parent)) || !current()) return false;
       const parent = this.w.f.selected();
       if (
         !parent ||
@@ -73,17 +78,23 @@ export class LibrarySessionDraft {
         return false;
       await this.w.openFolder(draft.parent);
     }
-    if (!this.w.f.canWrite()) return false;
+    if (!current() || !this.w.f.canWrite()) return false;
     if (draft.dialog === 'edit') {
-      if (!draft.entry || !(await this.w.f.loadResource(draft.entry.id))) return false;
-      const current = this.w.f.selected();
       if (
-        !current ||
-        current.system_managed ||
-        current.status === 'archived' ||
+        !draft.entry ||
+        !(await this.w.f.loadResource(draft.entry.id)) ||
+        !current() ||
+        !this.w.f.canWrite()
+      )
+        return false;
+      const currentEntry = this.w.f.selected();
+      if (
+        !currentEntry ||
+        currentEntry.system_managed ||
+        currentEntry.status === 'archived' ||
         !draft.entry.updated_at ||
-        current.updated_at !== draft.entry.updated_at ||
-        current.parent_id !== draft.entry.parent_id
+        currentEntry.updated_at !== draft.entry.updated_at ||
+        currentEntry.parent_id !== draft.entry.parent_id
       )
         return false;
     }

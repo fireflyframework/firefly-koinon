@@ -109,6 +109,7 @@ def union_name(schema):
     refs = tuple(variant["$ref"].split("/")[-1] for variant in variants)
     name = "IdentityProviderCredential" if "KeycloakCredential" in refs else "IdentityProviderSettings" if "KeycloakSettings" in refs else "AttachmentPromotionInput" if "AddKnowledge" in refs else "ExportReviewRequest" if "ConversationExportInput" in refs else None
     name = name or ("KnowledgeCommitOutcome" if "CommittedKnowledge" in refs else "KnowledgeOrigin" if "UserStatementOrigin" in refs else "KnowledgeEvidence" if "UserStatementEvidence" in refs else None)
+    name = name or ("SourceOperationReceipt" if "SourcePolicyReceipt" in refs else "SourceSchedule" if "ManualSchedule" in refs else None)
     if name:
         unions[name] = (schema["discriminator"]["propertyName"], refs)
         for branch in refs:

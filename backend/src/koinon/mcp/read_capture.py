@@ -4,9 +4,16 @@
 
 from hashlib import sha256
 
+from mcp.server.mcpserver.exceptions import ToolError
 from pyfly.context import ApplicationContext
 
+from koinon.catalog.mappers import entry_dto
+from koinon.catalog.service import CatalogService
+from koinon.integrations.content_sources.errors import SourceError
+from koinon.integrations.content_sources.read_context import reader_source_scope
+from koinon.integrations.content_sources.read_service import SourceReader
 from koinon.knowledge.capture_dtos import CapturedEvidence, DocumentRead, NativeCaptureLimits
+from koinon.knowledge.curated.reads import CuratedKnowledgeReads
 from koinon.knowledge.evidence_capture import NativeKnowledgeEvidence, document_reference
 from koinon.knowledge.external_reviews.read_receipts import ExternalReadReceipts, not_recorded
 from koinon.mcp.private_reviews import authenticated_operation
@@ -14,13 +21,33 @@ from koinon.mcp.private_reviews import authenticated_operation
 
 def native_read_capture(context: ApplicationContext):
     async def capture(raw: str, tenant_id: str, operation: str, arguments: dict):
-        async def work(principal):
+        values = dict(arguments)
+        choices = values.pop("reader_source_connections", None)
+
+        async def execute(principal):
             native = context.get_bean(NativeKnowledgeEvidence)
             limits = NativeCaptureLimits(sources=64, receipt_bytes=262144)
             if operation == "search":
-                observed = await native.search(principal, tenant_id, _limits=limits, **arguments)
+                observed = await native.search(principal, tenant_id, _limits=limits, **values)
             elif operation == "query":
-                observed = await native.query(principal, tenant_id, _limits=limits, **arguments)
+                observed = await native.query(principal, tenant_id, _limits=limits, **values)
+            elif operation == "schema":
+                observed = await native.schema(principal, tenant_id, _limits=limits, **values)
+                return {
+                    **observed.data,
+                    "read_receipt": not_recorded("incomplete_or_unsupported_source_manifest"),
+                }
+            elif operation == "catalog":
+                row = await context.get_bean(CatalogService).get(principal, tenant_id, values["source_id"])
+                return {**entry_dto(row), "read_receipt": not_recorded("catalog_is_not_source_evidence")}
+            elif operation == "curated":
+                data = await context.get_bean(CuratedKnowledgeReads).version(
+                    principal, tenant_id, values["source_id"], values.get("version")
+                )
+                return {
+                    **data.model_dump(mode="json"),
+                    "read_receipt": not_recorded("transitive_lineage_unqualified"),
+                }
             elif operation == "fetch" and arguments.get("kind") == "document":
                 document_id = arguments["source_id"]
                 data = await native.knowledge.document_chunks(
@@ -58,6 +85,15 @@ def native_read_capture(context: ApplicationContext):
             )
             return {**observed.data, "read_receipt": receipt}
 
-        return await authenticated_operation(context, raw, work)
+        async def work(principal):
+            with reader_source_scope(principal, tenant_id, choices):
+                if choices is not None:
+                    await context.get_bean(SourceReader).begin(principal, tenant_id)
+                return await execute(principal)
+
+        try:
+            return await authenticated_operation(context, raw, work)
+        except SourceError:
+            raise ToolError("Source read is unavailable or no longer authorized") from None
 
     return capture

@@ -3,9 +3,11 @@
 """Actual PostgreSQL memory observations retain JSON application authority once per ID."""
 
 import base64
+import importlib.util
 import json
 import os
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from uuid import uuid4
 
 import psycopg
@@ -46,6 +48,28 @@ async def pg_assistants(request):
     with psycopg.connect(uri, autocommit=True) as owner:
         owner.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(database)))
     url = url.set(drivername="postgresql+asyncpg", database=database)
+    relational_options = dict(getattr(request, "param", {}))
+    migrated = relational_options.pop("migrated_primary", False)
+    if migrated:
+        from alembic import command
+        from sqlalchemy import create_engine
+
+        root = Path(__file__).resolve().parents[3]
+        spec = importlib.util.spec_from_file_location("assistant_test_migrations", root / "deploy/migrate.py")
+        migration = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(migration)
+        engine = create_engine(url.set(drivername="postgresql+psycopg"))
+        try:
+            with engine.connect() as connection:
+                command.upgrade(
+                    migration.history_config(
+                        "native", root / "deploy/migrations/native_versions", connection
+                    ),
+                    "head",
+                )
+                connection.commit()
+        finally:
+            engine.dispose()
     context = ApplicationContext(
         Config(
             {
@@ -57,9 +81,9 @@ async def pg_assistants(request):
                     "data": {
                         "relational": {
                             "enabled": True,
-                            "ddl-auto": "create",
+                            "ddl-auto": "none" if migrated else "create",
                             "url": str(url),
-                            **getattr(request, "param", {}),
+                            **relational_options,
                         }
                     },
                 },

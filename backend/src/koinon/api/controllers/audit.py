@@ -1,6 +1,7 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
 from pyfly.container import rest_controller
+from pyfly.kernel import ServiceUnavailableException
 from pyfly.web import PathVar, QueryParam, get_mapping, request_mapping
 from starlette.requests import Request
 
@@ -32,9 +33,8 @@ class AuditController:
         sort: QueryParam[str] = "created_at",
         order: QueryParam[str] = "desc",
     ) -> dict:
-        result = await self.catalog.audit_page(
-            identity_from_request(request).subject,
-            tenant_id,
+        actor = identity_from_request(request).subject
+        filters = dict(
             q=q,
             action=action,
             subject=subject,
@@ -46,10 +46,18 @@ class AuditController:
             sort=sort,
             order=order,
         )
+        result = await self.catalog.audit_page(actor, tenant_id, **filters)
         actors = await self.profiles.author_summaries(
             {row.subject for row in result["items"]},
-            actor=identity_from_request(request).subject,
+            actor=actor,
             tenant_id=tenant_id,
             permission="audit:read",
         )
+        current = await self.catalog.audit_page(actor, tenant_id, **filters, _identities_only=True)
+        if current["items"] != [row.id for row in result["items"]] or any(
+            current[key] != result[key] for key in ("total", "page", "page_size", "pages")
+        ):
+            raise ServiceUnavailableException(
+                "Audit history changed; refresh to continue", code="AUDIT_UNAVAILABLE"
+            )
         return {**result, "items": [audit_dto(row) for row in result["items"]], "actors": actors}

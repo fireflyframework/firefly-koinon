@@ -3,6 +3,7 @@
 """Bounded catalog ancestry checks shared by creation and folder movement."""
 
 from collections.abc import Awaitable, Callable, Mapping
+from typing import Protocol
 
 from koinon.catalog.entities import CatalogEntry
 from koinon.catalog.errors import InvalidHierarchy
@@ -11,11 +12,34 @@ MAX_ANCESTRY = 16
 MAX_FOLDER_ANCESTRY = 12
 
 
-async def validated_ancestry(
-    entry: CatalogEntry,
-    read: Callable[[str], Awaitable[CatalogEntry]],
+class CatalogAncestryNode(Protocol):
+    @property
+    def id(self) -> str: ...
+
+    @property
+    def tenant_id(self) -> str: ...
+
+    @property
+    def kind(self) -> str: ...
+
+    @property
+    def parent_id(self) -> str | None: ...
+
+    @property
+    def workspace_id(self) -> str | None: ...
+
+    @property
+    def project_id(self) -> str | None: ...
+
+    @property
+    def status(self) -> str: ...
+
+
+async def validated_ancestry[AncestryNode: CatalogAncestryNode | CatalogEntry](
+    entry: AncestryNode,
+    read: Callable[[str], Awaitable[AncestryNode]],
     parents: Mapping[str, frozenset[str | None]],
-) -> list[CatalogEntry]:
+) -> list[AncestryNode]:
     chain, seen = [], set()
     current = entry
     while True:

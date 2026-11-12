@@ -23,9 +23,7 @@ def generate(directory: Path):
     }
 
     def write(name, value):
-        descriptor = os.open(
-            directory / name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600
-        )
+        descriptor = os.open(directory / name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(descriptor, "w") as target:
             target.write(value + "\n")
 
@@ -52,6 +50,10 @@ def generate(directory: Path):
         "KOINON_MCP_ENABLED": "true",
         "KOINON_MCP_OAUTH_ENABLED": "true",
         "KOINON_MCP_OAUTH_ENCRYPTION_KEY": mcp_oauth_key,
+        "KOINON_PROCESS_ROLE": "api",
+        "KOINON_ANSWER_PROOFS_ENABLED": "true",
+        "KOINON_ANSWER_PROOFS_API_ROLE": "koinon_catalog",
+        "KOINON_ANSWER_PROOFS_PUBLISHER_ROLE": "koinon_answer_publisher",
     }
     for key, role in (
         ("KOINON_DATABASE_URL", "koinon_catalog"),
@@ -60,16 +62,12 @@ def generate(directory: Path):
         ("KOINON_STRUCTURED_DATABASE_URL", "koinon_structured"),
         ("KOINON_STRUCTURED_ADMIN_DATABASE_URL", "koinon_structured_admin"),
     ):
-        runtime[key] = (
-            f"postgresql+asyncpg://{role}:{secrets.token_urlsafe(36)}@127.0.0.1:18783/koinon"
-        )
+        runtime[key] = f"postgresql+asyncpg://{role}:{secrets.token_urlsafe(36)}@127.0.0.1:18783/koinon"
     runtime["PYFLY_DATA_RELATIONAL_URL"] = runtime["KOINON_DATABASE_URL"]
     runtime["FLYCANON_DATABASE_URL"] = runtime["KOINON_CANON_DATABASE_URL"]
     runtime["FLYCANON_ADMIN_DATABASE_URL"] = runtime["KOINON_CANON_ADMIN_DATABASE_URL"]
     runtime["FLYQUERY_DATABASE_URL"] = runtime["KOINON_STRUCTURED_DATABASE_URL"]
-    runtime["FLYQUERY_DATABASE_URL_ADMIN"] = runtime[
-        "KOINON_STRUCTURED_ADMIN_DATABASE_URL"
-    ]
+    runtime["FLYQUERY_DATABASE_URL_ADMIN"] = runtime["KOINON_STRUCTURED_ADMIN_DATABASE_URL"]
     migration = {
         key: value
         for key, value in runtime.items()
@@ -79,10 +77,22 @@ def generate(directory: Path):
     migration["KOINON_MIGRATION_DATABASE_URL"] = (
         f"postgresql+asyncpg://koinon_migrator:{values['database_admin_password']}@127.0.0.1:18783/koinon"
     )
-    write("runtime.env", "\n".join(f"{key}={value}" for key, value in runtime.items()))
-    write(
-        "migration.env", "\n".join(f"{key}={value}" for key, value in migration.items())
+    worker = {**runtime, "KOINON_PROCESS_ROLE": "worker"}
+    worker["KOINON_DATABASE_URL"] = (
+        f"postgresql+asyncpg://koinon_answer_publisher:{secrets.token_urlsafe(36)}@127.0.0.1:18783/koinon"
     )
+    worker["PYFLY_DATA_RELATIONAL_URL"] = worker["KOINON_DATABASE_URL"]
+    maintenance = {
+        "KOINON_ANSWER_MAINTENANCE_DATABASE_URL": (
+            f"postgresql+asyncpg://koinon_answer_maintenance:{secrets.token_urlsafe(36)}@127.0.0.1:18783/koinon"
+        )
+    }
+    migration["KOINON_ANSWER_PUBLISHER_DATABASE_URL"] = worker["KOINON_DATABASE_URL"]
+    migration.update(maintenance)
+    write("worker.env", "\n".join(f"{key}={value}" for key, value in worker.items()))
+    write("maintenance.env", "\n".join(f"{key}={value}" for key, value in maintenance.items()))
+    write("runtime.env", "\n".join(f"{key}={value}" for key, value in runtime.items()))
+    write("migration.env", "\n".join(f"{key}={value}" for key, value in migration.items()))
     return directory
 
 

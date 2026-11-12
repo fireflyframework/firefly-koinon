@@ -1,5 +1,6 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
+from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Protocol, runtime_checkable
@@ -24,6 +25,13 @@ class ManagedMembership:
 
 
 MembershipRecord = Membership | ManagedMembership
+
+
+@runtime_checkable
+class SourceCatalogPolicy(Protocol):
+    def mutation(
+        self, actor: str, tenant: str, identifiers: tuple[str, ...], *, action: str, target: str | None
+    ) -> AbstractAsyncContextManager[None]: ...
 
 
 @runtime_checkable

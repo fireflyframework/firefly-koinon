@@ -117,7 +117,25 @@ def environment_configuration() -> dict:
         ),
     )
     koinon = base.setdefault("koinon", {})
+    process_role = value("PROCESS_ROLE", "koinon.process.role", None)
+    if process_role is not None:
+        if process_role not in {"api", "worker"}:
+            raise ValueError("KOINON_PROCESS_ROLE must select api or worker")
+        koinon.setdefault("process", {})["role"] = process_role
     koinon["security"] = asdict(security)
+    proof = koinon.setdefault("answers", {}).setdefault("release_proofs", {})
+    proof["enabled"] = boolean(
+        value("ANSWER_PROOFS_ENABLED", "koinon.answers.release_proofs.enabled", False),
+        "ANSWER_PROOFS_ENABLED",
+    )
+    proof["api_role"] = string(
+        "ANSWER_PROOFS_API_ROLE", "koinon.answers.release_proofs.api_role", "koinon_catalog"
+    )
+    proof["publisher_role"] = string(
+        "ANSWER_PROOFS_PUBLISHER_ROLE",
+        "koinon.answers.release_proofs.publisher_role",
+        "koinon_answer_publisher",
+    )
     from koinon.communications.settings import InstallationLinks
 
     koinon["public_url"] = InstallationLinks(public_url=string("PUBLIC_URL", "koinon.public_url")).public_url

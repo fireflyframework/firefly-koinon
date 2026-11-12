@@ -10,7 +10,7 @@ import { KoinonResourceList } from '../organisms/resource-list';
 import { friendlyStatus } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonLibraryContextMenu } from '../organisms/library-context-menu';
 import { canRunLibraryAction, type LibraryAction, type LibraryActionRequest, type LibraryContextRequest } from '../services/library-context-actions';
-registerKoinonSpanish({ 'Actions for this location': 'Acciones para esta ubicación', 'Library items': 'Elementos de la biblioteca' });
+registerKoinonSpanish({ 'Actions for this location': 'Acciones para esta ubicación', 'Library items': 'Elementos de la biblioteca', 'Library actions':'Acciones de la biblioteca', 'Synchronization':'Sincronización' });
 @Component({
   selector: 'ffk-library-template',
   imports: [
@@ -27,6 +27,7 @@ registerKoinonSpanish({ 'Actions for this location': 'Acciones para esta ubicaci
     <div class="breadcrumb">
       <ffk-breadcrumb [items]="trail" (folderSelected)="folderSelected.emit($event)" />
       <div class="location-actions">
+        @if (synchronizationAvailable) {<ffk-button variant="neutral" icon="link" (click)="synchronizationRequested.emit()">{{ 'Synchronization' | ffkText }}</ffk-button>}
         @if (uploadsAvailable) {<ffk-button variant="neutral" icon="upload" (click)="uploadsRequested.emit()">{{ 'Uploads' | ffkText }}</ffk-button>}
         @if (canAdd) {
           <ffk-button variant="neutral" icon="history" (click)="archivedRequested.emit()">{{
@@ -39,6 +40,15 @@ registerKoinonSpanish({ 'Actions for this location': 'Acciones para esta ubicaci
           }}</ffk-button>
         }
       </div>
+      <details class="mobile-location-actions">
+        <summary>{{'Library actions'|ffkText}}</summary>
+        <div>
+          @if(synchronizationAvailable){<button type="button" (click)="closeLibraryActions($event); synchronizationRequested.emit()" (keydown.escape)="closeLibraryActions($event)">{{'Synchronization'|ffkText}}</button>}
+          @if(uploadsAvailable){<button type="button" (click)="closeLibraryActions($event); uploadsRequested.emit()" (keydown.escape)="closeLibraryActions($event)">{{'Uploads'|ffkText}}</button>}
+          @if(canAdd){<button type="button" (click)="closeLibraryActions($event); archivedRequested.emit()" (keydown.escape)="closeLibraryActions($event)">{{'Archived'|ffkText}}</button>}
+          @if(browseAvailable){<button type="button" (click)="closeLibraryActions($event); browseRequested.emit()" (keydown.escape)="closeLibraryActions($event)">{{'Browse folders'|ffkText}}</button>}
+        </div>
+      </details>
     </div>
     <header class="library-heading">
       <div>
@@ -140,7 +150,7 @@ registerKoinonSpanish({ 'Actions for this location': 'Acciones para esta ubicaci
         }
         <span class="item-count"
           >{{ pageInfo?.total ?? items.length }}
-          {{ ((pageInfo?.total ?? items.length) === 1 ? 'item' : 'items') | ffkText }}</span
+          {{ (pageInfo?.next_cursor !== undefined ? (items.length===1?'item on this page':'items on this page') : ((pageInfo?.total ?? items.length) === 1 ? 'item' : 'items')) | ffkText }}</span
         >
         @if (hasLocationActions()) {
           <button class="location-menu" type="button" aria-haspopup="menu" [attr.aria-expanded]="!!contextMenu && !contextMenu.entry" [attr.aria-label]="'Actions for this location' | ffkText" [title]="'Actions for this location' | ffkText" [disabled]="loading" (click)="openLocationContext($event)" (keydown)="locationContextKey($event, true)"><ffk-icon name="more" /></button>
@@ -205,9 +215,9 @@ registerKoinonSpanish({ 'Actions for this location': 'Acciones para esta ubicaci
           (tagSelected)="filterChanged.emit({ tag: $event, page: 1 })"
           [selectedId]="selectedId"
           [loading]="loading"
-          [emptyTitle]="hasFilters() ? 'No matching items' : emptyTitle"
+          [emptyTitle]="pageInfo?.next_cursor ? 'No matching items on this page.' : hasFilters() ? 'No matching items' : emptyTitle"
           [emptyDescription]="
-            hasFilters() ? 'Try another name or clear the folder filter.' : emptyDescription
+            pageInfo?.next_cursor ? 'Continue browsing' : hasFilters() ? 'Try another name or clear the folder filter.' : emptyDescription
           "
           (opened)="opened.emit($event)"
           (selected)="selected.emit($event)"
@@ -220,6 +230,7 @@ registerKoinonSpanish({ 'Actions for this location': 'Acciones para esta ubicaci
           [page]="pageInfo"
           label="Library"
           [loading]="loading"
+          (continued)="continued.emit()"
           (pageChanged)="filterChanged.emit({ page: $event })"
           (sizeChanged)="filterChanged.emit({ page_size: $event, page: 1 })"
         />
@@ -235,6 +246,9 @@ registerKoinonSpanish({ 'Actions for this location': 'Acciones para esta ubicaci
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KoinonLibraryTemplate implements OnChanges {
+  @Input() synchronizationAvailable=false;
+  @Output() synchronizationRequested=new EventEmitter<void>();
+  closeLibraryActions(event:Event){const details=(event.target as HTMLElement).closest('details');if(details){details.open=false;details.querySelector('summary')?.focus();}}
   @Input() canEdit = false;
   @Input() canRead = true;
   @Output() actionRequested = new EventEmitter<LibraryActionRequest>();
@@ -340,6 +354,7 @@ export class KoinonLibraryTemplate implements OnChanges {
   @Output() browseRequested = new EventEmitter<void>();
   @Output() archivedRequested = new EventEmitter<void>();
   @Output() filterChanged = new EventEmitter<CatalogFilter>();
+  @Output() continued = new EventEmitter<void>();
   hasFilters() {
     return !!(
       this.filter.q ||

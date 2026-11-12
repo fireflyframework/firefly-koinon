@@ -16,6 +16,7 @@ from pyfly.kernel import ConflictException, InvalidRequestException, ServiceUnav
 from koinon.assistants.connections import admit_output_mode, provider_state
 from koinon.assistants.model_bindings import current_model_binding
 from koinon.assistants.service import AssistantService
+from koinon.assistants.source_reads import _title_model_boundary, release_history, source_history
 from koinon.assistants.title_dtos import TitleSuggestion, TitleText
 from koinon.catalog.errors import AccessDenied
 
@@ -25,9 +26,24 @@ class TitleService:
     def __init__(self, assistants: AssistantService, models: ModelFactory, container: Container):
         self.assistants, self.models, self.container = assistants, models, container
 
+    @source_history()
     async def propose(
         self, subject: str, tenant_id: str, thread_id: str, agent_id: str, *, expected_revision: int
     ) -> TitleSuggestion:
+        return await self._propose(
+            subject, tenant_id, thread_id, agent_id, expected_revision=expected_revision
+        )
+
+    async def _propose(
+        self,
+        subject,
+        tenant_id,
+        thread_id,
+        agent_id,
+        *,
+        expected_revision,
+        before_model=release_history,
+    ):
         thread = await self.assistants.thread(subject, tenant_id, thread_id)
         if getattr(thread, "revision", 1) != expected_revision:
             raise ConflictException(
@@ -56,10 +72,12 @@ class TitleService:
                 raise
             if scoped != run.scope:
                 continue
-            await self.assistants.owned_run(subject, tenant_id, run.id)
+            await self.assistants.authorize_prompt_run(subject, tenant_id, run.id)
             admitted_runs.append(run.id)
             for identifier in (run.user_message_id,):
                 message = await self.assistants.message_repository.find_by_id(identifier)
+                if message.role != "user":
+                    raise AccessDenied("Title input is unavailable", code="ACCESS_DENIED")
                 if message.text:
                     excerpts.append(
                         {
@@ -130,12 +148,14 @@ class TitleService:
                 retries=0,
             )
             for run_id in admitted_runs:
-                await self.assistants.owned_run(subject, tenant_id, run_id)
-            result = await native.run(
-                json.dumps(excerpts, ensure_ascii=False), usage_limits=UsageLimits(request_limit=1)
-            )
+                await self.assistants.authorize_prompt_run(subject, tenant_id, run_id)
+            await before_model()
+            async with _title_model_boundary():
+                result = await native.run(
+                    json.dumps(excerpts, ensure_ascii=False), usage_limits=UsageLimits(request_limit=1)
+                )
         for run_id in admitted_runs:
-            await self.assistants.owned_run(subject, tenant_id, run_id)
+            await self.assistants.authorize_prompt_run(subject, tenant_id, run_id)
         latest = await self.assistants.thread(subject, tenant_id, thread_id)
         current_agent = await self.assistants.scoped(self.assistants.agents, tenant_id, agent_id)
         current_provider = await self.assistants.scoped(self.assistants.providers, tenant_id, provider.id)

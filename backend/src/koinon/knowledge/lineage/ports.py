@@ -2,11 +2,26 @@
 # SPDX-License-Identifier: Apache-2.0
 from abc import ABC, abstractmethod
 
-from koinon.knowledge.lineage.dtos import LineagePage, SnapshotLineage
+from koinon.knowledge.lineage.dtos import LineagePage, SnapshotIdentityPage, SnapshotLineage
 
 
 class StructuredSnapshotLineagePort(ABC):
     """Internal native IDs only; caller first authorizes canonical ancestors and PAT bounds."""
+
+    @abstractmethod
+    async def read_table_identities(
+        self,
+        *,
+        actor: str,
+        tenant_id: str,
+        workspace_id: str,
+        dataset_id: str,
+        table_id: str,
+        page: int = 1,
+        page_size: int = 25,
+    ) -> SnapshotIdentityPage:
+        """Return bounded identities only, before authorizing individual retained origins."""
+        ...
 
     @abstractmethod
     async def read_snapshots(

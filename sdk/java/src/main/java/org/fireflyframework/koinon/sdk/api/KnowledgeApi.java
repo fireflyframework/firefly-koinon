@@ -24,4 +24,8 @@ public Lineage lineage(){return lineage(LineageFilter.empty(),RequestOptions.def
 public CompletableFuture<Lineage> lineageAsync(LineageFilter filter,RequestOptions options){Objects.requireNonNull(options);options=Objects.requireNonNull(filter).applyTo(options);return transport.jsonAsync("GET",prefix+"/lineage",null,options,transport.type(Lineage.class));}
 public CompletableFuture<Lineage> lineageAsync(LineageFilter filter){return lineageAsync(filter,RequestOptions.defaults());}
 public CompletableFuture<Lineage> lineageAsync(){return lineageAsync(LineageFilter.empty(),RequestOptions.defaults());}
+public Lineage readLineage(LineageReadInput input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.json("POST",prefix+"/lineage/read",input,options,transport.type(Lineage.class));}
+public Lineage readLineage(LineageReadInput input){return readLineage(input,RequestOptions.defaults());}
+public CompletableFuture<Lineage> readLineageAsync(LineageReadInput input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.jsonAsync("POST",prefix+"/lineage/read",input,options,transport.type(Lineage.class));}
+public CompletableFuture<Lineage> readLineageAsync(LineageReadInput input){return readLineageAsync(input,RequestOptions.defaults());}
 }

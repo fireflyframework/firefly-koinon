@@ -22,8 +22,9 @@ from koinon.integrations.content_sources.entities import (
     SourceAuthorizationChallenge,
 )
 from koinon.integrations.content_sources.errors import SourceError
-from koinon.integrations.content_sources.identity import SourceIdentityVerifier
+from koinon.integrations.content_sources.identity import SourceDisplayProfile, SourceIdentityVerifier
 from koinon.integrations.content_sources.oauth import ReadOnlySourceOAuth
+from koinon.integrations.content_sources.presentation import SourcePresentation
 from koinon.integrations.content_sources.registrations import SourceRegistration, SourceRegistrations
 from koinon.integrations.content_sources.repositories import (
     SourceChallengeRepository,
@@ -50,6 +51,7 @@ class SourceAuthorizationStart:
     challenge_id: str
     authorization_url: str = field(repr=False)
     expires_at: datetime
+    callback_uri: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,6 +61,17 @@ class PersonalConnection:
     status: str
     revision: int
     account: Account | None
+    display_name: str | None = None
+    display_address: str | None = None
+    display_address_verified: bool = False
+    synchronization_available: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class PersonalConnectionPage:
+    items: tuple[PersonalConnection, ...]
+    next_cursor: str | None
+    synchronization_available: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -92,10 +105,12 @@ class SourceConnectionService:
         registrations: SourceRegistrations,
         catalog: CatalogService,
         sessions: SourceBrowserSessions,
+        presentation: SourcePresentation,
     ):
         self.connections, self.challenges = connections, challenges
         self.vault, self.registrations, self.catalog = vault, registrations, catalog
         self.sessions = sessions
+        self.presentation = presentation
 
     def _oauth(self, registration: SourceRegistration):
         return ReadOnlySourceOAuth(registration.config, client_secret=registration.client_secret)
@@ -170,7 +185,16 @@ class SourceConnectionService:
                     status="pending",
                 )
             )
-        return SourceAuthorizationStart(identifier, challenge_id, url, expires)
+            await self.catalog._audit(
+                actor,
+                tenant,
+                "source.authorization_requested",
+                identifier,
+                {"provider": provider, "revision": 1, "outcome": "success"},
+            )
+        return SourceAuthorizationStart(
+            identifier, challenge_id, url, expires, registration.config.redirect_uri
+        )
 
     async def _consume(self, actor, tenant, session, identifier, state):
         async with primary_authority(read_only=False):
@@ -195,11 +219,14 @@ class SourceConnectionService:
             return row.id, row.revision, registration, private
 
     @staticmethod
-    def _grant(tokens, *, previous=None):
+    def _grant(tokens, *, previous=None, display: SourceDisplayProfile | None = None):
         refresh = tokens.refresh_token or (previous or {}).get("refresh_token")
         if not refresh or tokens.expires_in is None or tokens.expires_in <= 0:
             raise SourceError("reconnect_required")
         return {
+            "display": (
+                display or SourceDisplayProfile.model_validate((previous or {}).get("display", {}))
+            ).model_dump(),
             "access_token": tokens.access_token,
             "refresh_token": refresh,
             "expires_at": (datetime.now(UTC) + timedelta(seconds=tokens.expires_in)).timestamp(),
@@ -221,9 +248,11 @@ class SourceConnectionService:
             if not tokens.id_token:
                 raise SourceError("invalid_identity")
             async with self._identity(registration) as verifier:
-                account = await verifier.verify(tokens.id_token, nonce=private["nonce"])
-                issuer = verifier.issuer
-            ciphertext = self.vault.encrypt(tenant, actor, connection_id, "grant", self._grant(tokens))
+                verified = await verifier.verify_with_profile(tokens.id_token, nonce=private["nonce"])
+                account, issuer = verified.account, verifier.issuer
+            ciphertext = self.vault.encrypt(
+                tenant, actor, connection_id, "grant", self._grant(tokens, display=verified.display)
+            )
         except SourceError:
             raise
         except Exception:
@@ -248,7 +277,14 @@ class SourceConnectionService:
             if not await self.challenges.complete(tenant, actor, identifier, _hash(session)):
                 raise SourceError("reconnect_required")
             row = await self.connections.owned(tenant, actor, connection_id)
-            return connection_view(row)
+            await self.catalog._audit(
+                actor,
+                tenant,
+                "source.connected",
+                connection_id,
+                {"provider": row.provider, "revision": row.revision, "outcome": "success"},
+            )
+            return self._view(row)
 
     async def disconnect(self, actor, tenant, identifier, revision):
         await self._authorize(actor, tenant)
@@ -256,6 +292,51 @@ class SourceConnectionService:
             await self._member(actor, tenant)
             if not await self.connections.disconnect(tenant, actor, identifier, revision):
                 raise SourceError("access_denied")
+            row = await self.connections.owned(tenant, actor, identifier)
+            await self.catalog._audit(
+                actor,
+                tenant,
+                "source.disconnected",
+                identifier,
+                {"provider": row.provider, "revision": row.revision, "outcome": "success"},
+            )
+
+    async def list(self, actor: str, tenant: str, *, cursor: str | None = None, limit: int = 25):
+        if type(limit) is not int or not 1 <= limit <= 100:
+            raise ValueError("Connection page size must be between 1 and 100")
+        if cursor is not None:
+            bounded(cursor, limit=64)
+        await self._authorize(actor, tenant)
+        async with primary_authority():
+            await self._member(actor, tenant)
+            rows = await self.connections.page(tenant, actor, cursor=cursor, limit=limit)
+            items = tuple(self._view(row) for row in rows[:limit])
+            return PersonalConnectionPage(
+                items,
+                rows[limit - 1].id if len(rows) > limit else None,
+                self.presentation.synchronization_available(),
+            )
+
+    def _view(self, row: PersonalSourceConnection) -> PersonalConnection:
+        view = replace(
+            connection_view(row), synchronization_available=self.presentation.synchronization_available()
+        )
+        if row.status == "connected":
+            try:
+                if self.registrations.get(row.provider).fingerprint != row.config_fingerprint:
+                    raise SourceError("reconnect_required")
+                if row.refresh_expires_at is not None and row.refresh_expires_at <= datetime.now(UTC):
+                    raise SourceError("reconnect_required")
+            except SourceError:
+                view = replace(view, status="reconnect_required")
+        if view.status == "connected" and row.secret_ciphertext is not None:
+            private = self.vault.decrypt(row.tenant_id, row.owner, row.id, "grant", row.secret_ciphertext)
+            try:
+                display = SourceDisplayProfile.model_validate(private.get("display", {}))
+            except ValueError:
+                display = SourceDisplayProfile()
+            view = replace(view, **display.model_dump())
+        return view
 
     async def connected(self, actor: str, tenant: str, identifier: str) -> PersonalConnection:
         await self._authorize(actor, tenant)
@@ -275,16 +356,7 @@ class SourceConnectionService:
             row = await self.connections.owned(tenant, actor, identifier)
             if row is None:
                 raise SourceError("access_denied")
-            view = connection_view(row)
-            if row.status == "connected":
-                try:
-                    if self.registrations.get(row.provider).fingerprint != row.config_fingerprint:
-                        raise SourceError("reconnect_required")
-                    if row.refresh_expires_at is not None and row.refresh_expires_at <= datetime.now(UTC):
-                        raise SourceError("reconnect_required")
-                except SourceError:
-                    view = replace(view, status="reconnect_required")
-            return view
+            return self._view(row)
 
     async def access_token(self, actor: str, tenant: str, identifier: str, account: Account) -> str:
         """Internal reader-bound acquisition; never expose this value through an API DTO."""
@@ -357,6 +429,13 @@ class SourceConnectionService:
                 tenant, actor, identifier, revision, operation, ciphertext, (tokens.scope or "").split()
             ):
                 raise SourceError("reconnect_required")
+            await self.catalog._audit(
+                actor,
+                tenant,
+                "source.refresh_completed",
+                identifier,
+                {"provider": account.provider, "revision": revision + 1, "outcome": "success"},
+            )
         return SourceReadGrant(
             tenant,
             actor,

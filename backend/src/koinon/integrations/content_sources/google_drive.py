@@ -213,9 +213,16 @@ class GoogleDriveSource:
 
     async def get_item(self, item_id: str) -> RemoteItem:
         item_id = identifier(item_id)
-        value = await self._http.json(
-            self._url("files/" + path_id(item_id), supportsAllDrives="true", fields=_FIELDS)
-        )
+        try:
+            value = await self._http.json(
+                self._url("files/" + path_id(item_id), supportsAllDrives="true", fields=_FIELDS)
+            )
+        except SourceError as error:
+            if error.http_status == 404:
+                raise SourceError("unavailable", definitive_read_denial=True) from None
+            raise
+        if value.get("id") == item_id and value.get("trashed") is True:
+            raise SourceError("unavailable", definitive_read_denial=True)
         item = self._item(value)
         if item.item_id != item_id or value.get("trashed") is True:
             raise SourceError("unavailable")

@@ -68,6 +68,8 @@ class JobService:
         job = await self.repository.find_by_id(job_id, lock=LockMode.PESSIMISTIC_WRITE)
         if job is None or job.tenant_id != tenant_id:
             raise JobConflict("Job is unavailable in this context", code="JOB_UNAVAILABLE")
+        if job.kind == "content.source.reconcile":
+            raise JobConflict("Use the source lifecycle for this job", code="SOURCE_LIFECYCLE_REQUIRED")
         if worker_id is not None and (
             job.status != "running"
             or job.worker_id != worker_id

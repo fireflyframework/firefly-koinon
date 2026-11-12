@@ -39,6 +39,8 @@ export class KoinonDocumentViewer {
       this.facade.workspaceId(),
       this.facade.projectId(),
       this.facade.context()?.subject,
+      this.facade.readerSources(),
+      this.facade.readerRevision(),
       this.facade.authRequired(),
       [...this.facade.permissions()].sort(),
     ]),
@@ -125,6 +127,7 @@ export class KoinonDocumentViewer {
         this.facade.tenantId(),
         {
           asset_ids: [entry.id],
+          reader_source_connections:this.facade.readerSources(),
           ...(entry.workspace_id ? { workspace_id: entry.workspace_id } : {}),
         },
         { signal },
@@ -140,7 +143,7 @@ export class KoinonDocumentViewer {
       }
       const version = await this.clients
         .get()
-        .documents.version(this.facade.tenantId(), entry.id, versionId, { signal });
+        .documents.readVersion(this.facade.tenantId(), entry.id, versionId,{reader_source_connections:this.facade.readerSources()}, { signal });
       if (!current()) return;
       if (
         version.document_id !== entry.id ||
@@ -161,12 +164,12 @@ export class KoinonDocumentViewer {
     if (!entry || !version || !this.extraction) return;
     const result = await this.clients
       .get()
-      .documents.parts(
+      .documents.readParts(
         this.facade.tenantId(),
         entry.id,
         version.source_version_id,
         this.extraction,
-        { page, page_size: 25, kind: 'chunk' },
+        { page, page_size: 25, kind: 'chunk', reader_source_connections:this.facade.readerSources() },
         { signal },
       );
     if (!current()) return;
@@ -214,12 +217,13 @@ export class KoinonDocumentViewer {
     if (!entry || !version) return;
     const value = await this.clients
       .get()
-      .documents.part(
+      .documents.readPart(
         this.facade.tenantId(),
         entry.id,
         version.source_version_id,
         this.extraction,
         part.source_part_id,
+        {reader_source_connections:this.facade.readerSources()},
         { signal },
       );
     if (!current()) return;
@@ -267,7 +271,7 @@ export class KoinonDocumentViewer {
         entry = this.target()!;
       const value: BinaryDownload = await this.clients
         .get()
-        .documents.versionOriginal(this.facade.tenantId(), entry.id, version.source_version_id, {
+        .documents.readVersionOriginal(this.facade.tenantId(), entry.id, version.source_version_id,{reader_source_connections:this.facade.readerSources()}, {
           signal,
         });
       if (!current()) return;

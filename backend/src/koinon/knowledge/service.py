@@ -16,6 +16,7 @@ from pyfly.kernel import (
 from koinon.catalog.errors import AccessDenied, InvalidHierarchy
 from koinon.catalog.mappers import entry_dto
 from koinon.catalog.service import PARENTS, CatalogService
+from koinon.integrations.content_sources.read_service import SourceReader
 from koinon.knowledge.adapters import NativeDomains
 from koinon.knowledge.bulk_queries.query_ports import QueryAuthorize, QueryCommit, QueryPublicationGuard
 from koinon.knowledge.capture_receipt import NativeEvidenceReceipt
@@ -53,24 +54,58 @@ class KnowledgeFacade:
         settings: KnowledgeSettings,
         curated: Provider[CuratedCorpusPort | None] | None = None,
         knowledge_settings: OrganizationKnowledgeService | None = None,
+        source_reader: Provider[SourceReader | None] | None = None,
     ):
         self.catalog, self.bindings, self.domains, self.settings = catalog, bindings, domains, settings
         self.curated = curated
         self.knowledge_settings = knowledge_settings
+        self.source_reader = source_reader
 
-    async def _chain(self, subject: str, tenant_id: str, entry_id: str, permission="catalog:read"):
+    async def authorize_source_entries(
+        self,
+        subject,
+        tenant,
+        identifiers,
+        *,
+        version_id=None,
+        extraction_id=None,
+        part_id=None,
+        operation=None,
+    ):
+        reader = self.source_reader.get() if self.source_reader is not None else None
+        if reader is None:
+            return None
+        return await reader.entries(
+            subject,
+            tenant,
+            identifiers,
+            version_id=version_id,
+            extraction_id=extraction_id,
+            part_id=part_id,
+            operation=operation,
+        )
+
+    async def _chain(
+        self, subject: str, tenant_id: str, entry_id: str, permission="catalog:read", *, identities_only=False
+    ):
         await self.catalog._refresh_managed_memberships(subject)
         async with policy_read():
-            return await self._read_chain(subject, tenant_id, entry_id, permission)
+            return await self._read_chain(
+                subject, tenant_id, entry_id, permission, identities_only=identities_only
+            )
 
-    async def _read_chain(self, subject: str, tenant_id: str, entry_id: str, permission="catalog:read"):
+    async def _read_chain(
+        self, subject: str, tenant_id: str, entry_id: str, permission="catalog:read", *, identities_only=False
+    ):
         chain, seen = [], set()
         current = entry_id
         while current is not None:
             if current in seen or len(seen) >= 16:
                 raise InvalidHierarchy("Catalog ancestry is cyclic or too deep", code="INVALID_ANCESTRY")
             seen.add(current)
-            entry = await self.catalog.get(subject, tenant_id, current)
+            entry = await (self.catalog.get_identity if identities_only else self.catalog.get)(
+                subject, tenant_id, current
+            )
             if entry.status == "archived":
                 raise AccessDenied("This resource or its ancestor is archived", code="RESOURCE_ARCHIVED")
             chain.append(entry)
@@ -284,7 +319,16 @@ class KnowledgeFacade:
             )
 
     async def _admit_search(
-        self, subject, tenant_id, *, workspace_id, project_id, collection_id, asset_ids, curated
+        self,
+        subject,
+        tenant_id,
+        *,
+        workspace_id,
+        project_id,
+        collection_id,
+        asset_ids,
+        curated,
+        _source_admitted=False,
     ) -> SearchAdmission:
         await self.catalog._refresh_managed_memberships(subject)
         async with policy_read():
@@ -312,7 +356,7 @@ class KnowledgeFacade:
                         )
             if asset_ids is not None and (
                 not isinstance(asset_ids, list)
-                or len(asset_ids) > 128
+                or len(asset_ids) > (1000 if _source_admitted else 128)
                 or any(
                     not isinstance(identifier, str) or not 1 <= len(identifier) <= 64
                     for identifier in asset_ids
@@ -408,13 +452,36 @@ class KnowledgeFacade:
         asset_ids=None,
         limit=10,
         answer=False,
+        reader_source_connections=None,
         _capture: NativeEvidenceReceipt | None = None,
     ):
         if not question.strip() or not 1 <= limit <= 100:
             raise InvalidRequestException(
                 "Supply a question and a limit from 1 to 100", code="INVALID_SEARCH"
             )
+        reader = self.source_reader.get() if self.source_reader is not None else None
+        source_operation = (
+            await reader.begin(subject, tenant_id, reader_source_connections) if reader else None
+        )
         curated = self.curated.get() if self.curated is not None else None
+        if reader is not None:
+            if asset_ids is not None and (
+                not isinstance(asset_ids, list)
+                or len(asset_ids) > 128
+                or any(not isinstance(value, str) or not 1 <= len(value) <= 64 for value in asset_ids)
+            ):
+                raise InvalidRequestException(
+                    "Select at most 128 valid asset IDs", code="INVALID_ASSET_SCOPE"
+                )
+            asset_ids = await reader.search_assets(
+                subject,
+                tenant_id,
+                asset_ids=asset_ids,
+                operation=source_operation,
+                workspace_id=workspace_id,
+                project_id=project_id,
+                collection_id=collection_id,
+            )
         admission = await self._admit_search(
             subject,
             tenant_id,
@@ -423,6 +490,7 @@ class KnowledgeFacade:
             collection_id=collection_id,
             asset_ids=asset_ids,
             curated=curated,
+            _source_admitted=reader is not None,
         )
         assets, groups, curated_groups = admission.assets, admission.documents, admission.curated
         hits, citations, answers = [], [], []
@@ -433,6 +501,8 @@ class KnowledgeFacade:
             if _capture is not None
             else NativeEvidenceReceipt(subject, tenant_id, operation="search")
         )
+        if source_operation is not None:
+            source_operation.bind_receipt(receipt)
         if not groups:
             identifiers = tuple(
                 dict.fromkeys(
@@ -594,6 +664,8 @@ class KnowledgeFacade:
         if answer:
             response.update(answer="\n\n".join(answers), citations=citations)
         response["knowledge_settings_snapshot"] = policy.model_dump(mode="json")
+        if source_operation is not None:
+            await source_operation.release()
         return response
 
     async def query(
@@ -605,11 +677,19 @@ class KnowledgeFacade:
         question,
         conversation_id=None,
         sql=None,
+        reader_source_connections=None,
         _capture: NativeEvidenceReceipt | None = None,
         _query_commit: QueryCommit | None = None,
         _query_publication_guard: QueryPublicationGuard | None = None,
         _query_authorize: QueryAuthorize | None = None,
     ):
+        reader = self.source_reader.get() if self.source_reader is not None else None
+        source_operation = (
+            await reader.begin(subject, tenant_id, reader_source_connections) if reader else None
+        )
+        source_operation = await self.authorize_source_entries(
+            subject, tenant_id, (dataset_id,), operation=source_operation
+        )
         chain = await self._chain(subject, tenant_id, dataset_id, "query:execute")
         if chain[0].kind != "dataset":
             raise InvalidHierarchy("Select a dataset", code="INVALID_DATASET")
@@ -617,18 +697,28 @@ class KnowledgeFacade:
         binding = await self.binding(tenant_id, dataset_id, "structured", entry=chain[0])
         policy = await settings_for_operation(self.knowledge_settings, subject, tenant_id)
         _capture = _capture or NativeEvidenceReceipt(subject, tenant_id)
+        if source_operation is not None:
+            from koinon.knowledge.native_provenance import bind_structured_source
+
+            bind_structured_source(_capture, source_operation, dataset_id, binding)
 
         async def authorize_model():
             if _query_authorize is not None:
                 await _query_authorize()
             current = await self._chain(subject, tenant_id, dataset_id, "query:execute")
             self._ready_dataset(current[0])
+            if source_operation is not None and source_operation.used:
+                await source_operation.release()
 
         _capture.authorize_model = authorize_model
 
         async def commit(value):
             if _query_commit is not None:
                 await _query_commit({**value, "knowledge_settings_snapshot": policy.model_dump(mode="json")})
+
+        async def local_authorize():
+            current = await self._chain(subject, tenant_id, dataset_id, "query:execute")
+            self._ready_dataset(current[0])
 
         result = await self.domains.query(
             tenant_id=tenant_id,
@@ -641,6 +731,11 @@ class KnowledgeFacade:
             sql=sql,
             actor=subject,
             _knowledge_settings_snapshot=policy,
+            **(
+                {"_source_operation": source_operation, "_query_local_authorize": local_authorize}
+                if source_operation is not None
+                else {}
+            ),
             **({"_capture": _capture} if _capture is not None else {}),
             **(
                 {"_query_commit": commit, "_query_publication_guard": _query_publication_guard}
@@ -648,14 +743,26 @@ class KnowledgeFacade:
                 else {}
             ),
         )
+        if source_operation is not None:
+            await source_operation.release()
         return {**result, "knowledge_settings_snapshot": policy.model_dump(mode="json")}
 
     async def schema(self, subject, tenant_id, dataset_id, *, _capture: NativeEvidenceReceipt | None = None):
+        reader = self.source_reader.get() if self.source_reader is not None else None
+        source_operation = await reader.begin(subject, tenant_id, None) if reader else None
+        source_operation = await self.authorize_source_entries(
+            subject, tenant_id, (dataset_id,), operation=source_operation
+        )
         chain = await self._chain(subject, tenant_id, dataset_id)
         if chain[0].kind != "dataset":
             raise InvalidHierarchy("Select a dataset", code="INVALID_DATASET")
         self._ready_dataset(chain[0])
         binding = await self.binding(tenant_id, dataset_id, "structured", entry=chain[0])
+        _capture = _capture or NativeEvidenceReceipt(subject, tenant_id)
+        if source_operation is not None:
+            from koinon.knowledge.native_provenance import bind_structured_source
+
+            bind_structured_source(_capture, source_operation, dataset_id, binding)
         result = await self.domains.schema(
             tenant_id=tenant_id,
             workspace_id=binding.native_workspace_id,
@@ -664,7 +771,13 @@ class KnowledgeFacade:
             **({"_capture": _capture} if _capture is not None else {}),
         )
         table_ids = {}
-        for table in await self.catalog.list(subject, tenant_id, kind="table", parent_id=dataset_id):
+        for table in await self.catalog.list(
+            subject,
+            tenant_id,
+            kind="table",
+            parent_id=dataset_id,
+            **({"_include_imported": True} if source_operation is not None else {}),
+        ):
             await self._chain(subject, tenant_id, table.id)
             native = await self.binding(tenant_id, table.id, "structured", entry=table)
             table_ids[native.native_id] = table.id
@@ -672,6 +785,8 @@ class KnowledgeFacade:
             if str(table["id"]) not in table_ids:
                 raise AccessDenied("Schema returned an unadmitted table", code="DOMAIN_SCOPE_MISMATCH")
             table["id"] = table_ids[str(table["id"])]
+        if source_operation is not None:
+            await source_operation.release()
         return result
 
     @staticmethod
@@ -694,6 +809,7 @@ class KnowledgeFacade:
     async def document_chunks(
         self, subject, tenant_id, document_id, *, offset=0, limit=50, page=None, section=None, q=None
     ):
+        source_operation = await self.authorize_source_entries(subject, tenant_id, (document_id,))
         chain, binding = await self._document(subject, tenant_id, document_id)
         if (
             not 0 <= offset <= 100000
@@ -714,6 +830,8 @@ class KnowledgeFacade:
             section=section,
             q=q,
         )
+        if source_operation is not None:
+            await source_operation.release()
         return {
             **result,
             "document_id": document_id,
@@ -722,16 +840,23 @@ class KnowledgeFacade:
         }
 
     async def document_original(self, subject, tenant_id, document_id):
+        source_operation = await self.authorize_source_entries(subject, tenant_id, (document_id,))
         _, binding = await self._document(subject, tenant_id, document_id)
-        return await self.domains.document_original(
+        result = await self.domains.document_original(
             tenant_id=tenant_id,
             workspace_id=binding.native_workspace_id,
             source_id=binding.native_id,
             actor=subject,
             max_bytes=self.settings.max_upload_bytes,
         )
+        if source_operation is not None:
+            await source_operation.release()
+        return result
 
     async def lineage(self, subject, tenant_id, asset_id=None):
+        source_operation = (
+            await self.authorize_source_entries(subject, tenant_id, (asset_id,)) if asset_id else None
+        )
         entries = (
             [*await self._chain(subject, tenant_id, asset_id)]
             if asset_id
@@ -758,7 +883,13 @@ class KnowledgeFacade:
             )
             table_ids = {}
             if asset.kind == "dataset":
-                for table in await self.catalog.list(subject, tenant_id, kind="table", parent_id=asset_id):
+                for table in await self.catalog.list(
+                    subject,
+                    tenant_id,
+                    kind="table",
+                    parent_id=asset_id,
+                    **({"_include_imported": True} if source_operation is not None else {}),
+                ):
                     await self._chain(subject, tenant_id, table.id)
                     native = await self.binding(tenant_id, table.id, domain, entry=table)
                     table_ids[native.native_id] = table.id
@@ -782,6 +913,8 @@ class KnowledgeFacade:
                 for edge in retained.get("edges", [])
             )
         admitted = set(list(nodes)[: self.settings.max_lineage_nodes])
+        if source_operation is not None:
+            await source_operation.release()
         return {
             "nodes": [node for key, node in nodes.items() if key in admitted],
             "edges": [edge for edge in edges if edge["source"] in admitted and edge["target"] in admitted],

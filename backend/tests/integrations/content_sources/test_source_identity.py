@@ -9,9 +9,10 @@ import httpx
 import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
+from pyfly.client import HttpxClientAdapter
+
 from koinon.integrations.content_sources.errors import SourceError
 from koinon.integrations.content_sources.oauth import SourceOAuthConfig
-from pyfly.client import HttpxClientAdapter
 
 KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 TENANT = "12345678-1234-1234-1234-123456789012"
@@ -114,3 +115,61 @@ async def test_jwks_fetch_does_not_forward_a_borrowed_clients_credentials():
         async with SourceIdentityVerifier(config, http_client=HttpxClientAdapter(client=client)) as identity:
             assert (await identity.verify(signed(), nonce="bound-nonce")).subject == "stable-subject"
         assert not client.is_closed
+
+
+@pytest.mark.parametrize(
+    "claims,expected",
+    [
+        (
+            {"name": "Alice Smith", "email": "alice@example.invalid", "email_verified": True},
+            ("Alice Smith", "alice@example.invalid", True),
+        ),
+        (
+            {"name": "Alice Smith", "email": "alice@example.invalid", "email_verified": "true"},
+            ("Alice Smith", "alice@example.invalid", False),
+        ),
+        ({"name": "bad\nname", "email": "not-an-address", "email_verified": True}, (None, None, False)),
+        ({"name": "x" * 256, "email": "x" * 321}, (None, None, False)),
+        ({}, (None, None, False)),
+    ],
+)
+async def test_verified_profile_is_bounded_presentation_separate_from_account(claims, expected):
+    from koinon.integrations.content_sources.identity import SourceIdentityVerifier
+
+    config = SourceOAuthConfig("google_drive", "content-client", "https://app.example/callback")
+    async with SourceIdentityVerifier(
+        config, http_client=native_client([]), owns_http_client=True
+    ) as verifier:
+        verified = await verifier.verify_with_profile(signed(**claims), nonce="bound-nonce")
+        plain = await verifier.verify(signed(), nonce="bound-nonce")
+        assert verified.account == plain and hash(verified.account) == hash(plain)
+        assert (
+            verified.display.display_name,
+            verified.display.display_address,
+            verified.display.display_address_verified,
+        ) == expected
+        with pytest.raises(SourceError, match="invalid_identity"):
+            await verifier.verify_with_profile(signed(**{**claims, "nonce": "wrong"}), nonce="bound-nonce")
+
+
+async def test_microsoft_profile_address_is_never_assumed_verified():
+    from koinon.integrations.content_sources.identity import SourceIdentityVerifier
+
+    config = SourceOAuthConfig(
+        "sharepoint", "content-client", "https://app.example/callback", tenant_id=TENANT
+    )
+    claims = {
+        "iss": f"https://login.microsoftonline.com/{TENANT}/v2.0",
+        "tid": TENANT,
+        "oid": "22345678-1234-1234-1234-123456789012",
+        "name": "Alice",
+        "email": "alice@example.invalid",
+        "email_verified": True,
+    }
+    async with SourceIdentityVerifier(
+        config, http_client=native_client([]), owns_http_client=True
+    ) as verifier:
+        verified = await verifier.verify_with_profile(signed(**claims), nonce="bound-nonce")
+    assert verified.display.display_address == "alice@example.invalid"
+    assert verified.display.display_address_verified is False
+    assert verified.account.subject == claims["oid"]

@@ -25,6 +25,8 @@ async def replace_document(
     authorize_commit=None,
     expected_source_version_id=None,
     expected_extraction_id=None,
+    _publication_guard=None,
+    _source_publication=None,
 ):
     from flycanon.core.services.sources.intake_service import IntakeService
     from flycanon.core.services.sources.lineage.dtos import DocumentScope
@@ -65,7 +67,9 @@ async def replace_document(
             "sha256": source.content_sha256
         }
         new_digest = sha256(content).hexdigest()
-        if original["sha256"] != expected_sha256 and (force_reingest or original["sha256"] != new_digest):
+        if original["sha256"] != expected_sha256 and (
+            force_reingest or _source_publication is not None or original["sha256"] != new_digest
+        ):
             raise ConflictException(
                 "Document content changed; reload its current version", code="CONTENT_VERSION_CONFLICT"
             )
@@ -89,7 +93,7 @@ async def replace_document(
                     )
                 ).scalars()
             )
-        if original["sha256"] == new_digest and not force_reingest:
+        if original["sha256"] == new_digest and not force_reingest and _source_publication is None:
             if authorize_commit is not None:
                 await authorize_commit()
             return {
@@ -123,6 +127,8 @@ async def replace_document(
                 expected_source_version_id=expected_source_version_id,
                 expected_extraction_id=expected_extraction_id,
                 authorize_commit=authorize_commit,
+                **({"publication_guard": _publication_guard} if _publication_guard is not None else {}),
+                **({"source_publication": _source_publication} if _source_publication is not None else {}),
             )
         receipt = (updated.metadata_json or {}).get("_source_lineage") or {}
         if not receipt.get("version_id") or not receipt.get("extraction_id"):

@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "api_prefix": "/api/v1",
   "status": "Canonical API contract; development snapshot",
-  "canonical_operation_count": 255,
+  "canonical_operation_count": 315,
   "qualified_compatibility_operations": [
     {
       "operation": "GlossaryController.list_terms",
@@ -238,6 +238,7 @@
     "raw_data": "JSON number|string|boolean|null recursively; never coerce exact strings"
   },
   "authentication": {
+    "content_sources": "verified owner identity required; personal tokens cannot manage or browse source connections; source consent requires a native browser session",
     "headless": "caller-supplied bearer, fresh per request; renewal owned by caller",
     "browser": "same operation suffix under /bff/api/v1 with native cookie session and CSRF on writes",
     "tokens_management": "interactive verified identity required; PAT cannot mint or manage PATs",
@@ -251,6 +252,16 @@
     "paging": "honor only endpoint-declared query parameters; Page fields optional for items-only endpoints"
   },
   "excluded": [
+    {
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/authorizations",
+      "operation": "ContentConnectionsController.begin",
+      "reason": "source consent initiation requires native browser session authority and CSRF; no headless consent helper"
+    },
+    {
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/authorizations/complete",
+      "operation": "ContentConnectionsController.complete",
+      "reason": "single-use source consent completion requires the initiating native browser session and CSRF"
+    },
     {
       "path": "/auth/me",
       "reason": "browser session introspection; headless SDK uses verified bearer/profile/context"
@@ -335,7 +346,7 @@
       "category": "canonical",
       "operation": "AuditController.audit",
       "source": "backend/src/koinon/api/controllers/audit.py",
-      "line": 20,
+      "line": 21,
       "parameters": [
         {
           "name": "tenant_id",
@@ -421,7 +432,39 @@
       "request_schema": null,
       "response_schema": "Page[AuditEvent]",
       "success_status": 200,
-      "source_sha256": "5ebbe1ddaf9761282740d98fe2eb58df9233bc5d6ff07826ad3d60696bde44dc",
+      "source_sha256": "30d3c11e19306ff35238bedcdd0fcaf8877b5de7c8e616a04e6511fa427b20b8",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/catalog/browse",
+      "category": "canonical",
+      "operation": "CatalogController.catalog_browse",
+      "source": "backend/src/koinon/api/controllers/catalog.py",
+      "line": 36,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[CatalogBrowseInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "CatalogBrowseOutput",
+      "sdk_python": "browse_catalog",
+      "sdk_typescript": "catalog.browse",
+      "sdk_java": "client.catalog.browse",
+      "request_schema": "CatalogBrowseInput",
+      "response_schema": "CatalogBrowseOutput",
+      "success_status": 200,
+      "source_sha256": "74837a53b5c974ca958a4f5c128d56b7c0e5bb6ea86b7c61f64081616dc839eb",
       "encoding": "application/json",
       "headers": []
     },
@@ -431,7 +474,7 @@
       "category": "canonical",
       "operation": "CatalogController.catalog_list",
       "source": "backend/src/koinon/api/controllers/catalog.py",
-      "line": 31,
+      "line": 42,
       "parameters": [
         {
           "name": "tenant_id",
@@ -545,7 +588,7 @@
       "request_schema": null,
       "response_schema": "Page[CatalogEntry]",
       "success_status": 200,
-      "source_sha256": "05ca78aafa47348ca8ddc3e3c252bc49e087f27c369344b996cf7c9fcdbf95c4",
+      "source_sha256": "74837a53b5c974ca958a4f5c128d56b7c0e5bb6ea86b7c61f64081616dc839eb",
       "encoding": "application/json",
       "headers": []
     },
@@ -555,7 +598,7 @@
       "category": "canonical",
       "operation": "CatalogController.catalog_create",
       "source": "backend/src/koinon/api/controllers/catalog.py",
-      "line": 80,
+      "line": 91,
       "parameters": [
         {
           "name": "tenant_id",
@@ -577,7 +620,7 @@
       "request_schema": "CatalogCreate",
       "response_schema": "CatalogEntry",
       "success_status": 201,
-      "source_sha256": "05ca78aafa47348ca8ddc3e3c252bc49e087f27c369344b996cf7c9fcdbf95c4",
+      "source_sha256": "74837a53b5c974ca958a4f5c128d56b7c0e5bb6ea86b7c61f64081616dc839eb",
       "encoding": "application/json",
       "headers": []
     },
@@ -587,7 +630,7 @@
       "category": "canonical",
       "operation": "CatalogController.catalog_get",
       "source": "backend/src/koinon/api/controllers/catalog.py",
-      "line": 89,
+      "line": 100,
       "parameters": [
         {
           "name": "tenant_id",
@@ -609,7 +652,7 @@
       "request_schema": null,
       "response_schema": "CatalogEntry",
       "success_status": 200,
-      "source_sha256": "05ca78aafa47348ca8ddc3e3c252bc49e087f27c369344b996cf7c9fcdbf95c4",
+      "source_sha256": "74837a53b5c974ca958a4f5c128d56b7c0e5bb6ea86b7c61f64081616dc839eb",
       "encoding": "application/json",
       "headers": []
     },
@@ -619,7 +662,7 @@
       "category": "canonical",
       "operation": "CatalogController.catalog_patch",
       "source": "backend/src/koinon/api/controllers/catalog.py",
-      "line": 93,
+      "line": 112,
       "parameters": [
         {
           "name": "tenant_id",
@@ -647,7 +690,7 @@
       "request_schema": "CatalogUpdate",
       "response_schema": "CatalogEntry",
       "success_status": 200,
-      "source_sha256": "05ca78aafa47348ca8ddc3e3c252bc49e087f27c369344b996cf7c9fcdbf95c4",
+      "source_sha256": "74837a53b5c974ca958a4f5c128d56b7c0e5bb6ea86b7c61f64081616dc839eb",
       "encoding": "application/json",
       "headers": []
     },
@@ -657,7 +700,7 @@
       "category": "canonical",
       "operation": "CatalogController.catalog_archive",
       "source": "backend/src/koinon/api/controllers/catalog.py",
-      "line": 110,
+      "line": 129,
       "parameters": [
         {
           "name": "tenant_id",
@@ -686,7 +729,7 @@
       "request_schema": null,
       "response_schema": "CatalogEntry",
       "success_status": 200,
-      "source_sha256": "05ca78aafa47348ca8ddc3e3c252bc49e087f27c369344b996cf7c9fcdbf95c4",
+      "source_sha256": "74837a53b5c974ca958a4f5c128d56b7c0e5bb6ea86b7c61f64081616dc839eb",
       "encoding": "application/json",
       "headers": []
     },
@@ -696,7 +739,7 @@
       "category": "canonical",
       "operation": "CatalogController.catalog_restore",
       "source": "backend/src/koinon/api/controllers/catalog.py",
-      "line": 128,
+      "line": 147,
       "parameters": [
         {
           "name": "tenant_id",
@@ -725,7 +768,7 @@
       "request_schema": null,
       "response_schema": "CatalogEntry",
       "success_status": 200,
-      "source_sha256": "05ca78aafa47348ca8ddc3e3c252bc49e087f27c369344b996cf7c9fcdbf95c4",
+      "source_sha256": "74837a53b5c974ca958a4f5c128d56b7c0e5bb6ea86b7c61f64081616dc839eb",
       "encoding": "application/json",
       "headers": []
     },
@@ -735,7 +778,7 @@
       "category": "canonical",
       "operation": "CatalogController.catalog_delete",
       "source": "backend/src/koinon/api/controllers/catalog.py",
-      "line": 146,
+      "line": 165,
       "parameters": [
         {
           "name": "tenant_id",
@@ -757,7 +800,7 @@
       "request_schema": null,
       "response_schema": "void",
       "success_status": 204,
-      "source_sha256": "05ca78aafa47348ca8ddc3e3c252bc49e087f27c369344b996cf7c9fcdbf95c4",
+      "source_sha256": "74837a53b5c974ca958a4f5c128d56b7c0e5bb6ea86b7c61f64081616dc839eb",
       "encoding": "application/json",
       "headers": []
     },
@@ -796,6 +839,44 @@
       "response_schema": "CatalogEntry",
       "success_status": 200,
       "source_sha256": "a19f6fe88a53dc833e16dc24b90ba65fc90043fdaa940166655cd78491040dfd",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/catalog/{entry_id}/read",
+      "category": "canonical",
+      "operation": "CatalogReadController.catalog_get_read",
+      "source": "backend/src/koinon/api/controllers/catalog_reads.py",
+      "line": 24,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "entry_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ReaderReadInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "read_catalog_entry",
+      "sdk_typescript": "catalog.read",
+      "sdk_java": "client.catalog.read",
+      "request_schema": "ReaderReadInput",
+      "response_schema": "CatalogEntry",
+      "success_status": 200,
+      "source_sha256": "b5c44dd5be28dd2f7408e14f1bef20efed318c456335e1af44fe5a03df9da3ed",
       "encoding": "application/json",
       "headers": []
     },
@@ -1859,12 +1940,82 @@
       "headers": []
     },
     {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/chat/threads/browse",
+      "category": "canonical",
+      "operation": "ChatHistoryController.browse",
+      "source": "backend/src/koinon/assistants/history/controllers.py",
+      "line": 36,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[HistoryBrowseInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "HistoryBrowsePage",
+      "sdk_python": "browse_threads",
+      "sdk_typescript": "chat.browse",
+      "sdk_java": "client.chat.browse",
+      "request_schema": "HistoryBrowseInput",
+      "response_schema": "HistoryBrowsePage",
+      "success_status": 200,
+      "source_sha256": "76688e341241c002391b93008c0fccf54c7bc7933386a355dc7407ab5dbf6cc9",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/messages/browse",
+      "category": "canonical",
+      "operation": "ChatHistoryController.browse_messages",
+      "source": "backend/src/koinon/assistants/history/controllers.py",
+      "line": 42,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "thread_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[MessageBrowseInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "MessageBrowsePage",
+      "sdk_python": "browse_messages",
+      "sdk_typescript": "chat.browseMessages",
+      "sdk_java": "client.chat.browseMessages",
+      "request_schema": "MessageBrowseInput",
+      "response_schema": "MessageBrowsePage",
+      "success_status": 200,
+      "source_sha256": "76688e341241c002391b93008c0fccf54c7bc7933386a355dc7407ab5dbf6cc9",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
       "method": "GET",
       "path": "/api/v1/tenants/{tenant_id}/chat/folders",
       "category": "canonical",
       "operation": "ChatHistoryController.folders",
       "source": "backend/src/koinon/assistants/history/controllers.py",
-      "line": 30,
+      "line": 54,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1936,7 +2087,7 @@
       "request_schema": null,
       "response_schema": "Page[ChatFolder]",
       "success_status": 200,
-      "source_sha256": "8457df3c778b10e43efe99d555be31a5936a2b03867030e12cac61532197fe29",
+      "source_sha256": "76688e341241c002391b93008c0fccf54c7bc7933386a355dc7407ab5dbf6cc9",
       "encoding": "application/json",
       "headers": []
     },
@@ -1946,7 +2097,7 @@
       "category": "canonical",
       "operation": "ChatHistoryController.create_folder",
       "source": "backend/src/koinon/assistants/history/controllers.py",
-      "line": 57,
+      "line": 81,
       "parameters": [
         {
           "name": "tenant_id",
@@ -1968,7 +2119,7 @@
       "request_schema": "FolderCreate",
       "response_schema": "ChatFolder",
       "success_status": 201,
-      "source_sha256": "8457df3c778b10e43efe99d555be31a5936a2b03867030e12cac61532197fe29",
+      "source_sha256": "76688e341241c002391b93008c0fccf54c7bc7933386a355dc7407ab5dbf6cc9",
       "encoding": "application/json",
       "headers": []
     },
@@ -1978,7 +2129,7 @@
       "category": "canonical",
       "operation": "ChatHistoryController.folder",
       "source": "backend/src/koinon/assistants/history/controllers.py",
-      "line": 67,
+      "line": 91,
       "parameters": [
         {
           "name": "tenant_id",
@@ -2000,7 +2151,7 @@
       "request_schema": null,
       "response_schema": "ChatFolder",
       "success_status": 200,
-      "source_sha256": "8457df3c778b10e43efe99d555be31a5936a2b03867030e12cac61532197fe29",
+      "source_sha256": "76688e341241c002391b93008c0fccf54c7bc7933386a355dc7407ab5dbf6cc9",
       "encoding": "application/json",
       "headers": []
     },
@@ -2010,7 +2161,7 @@
       "category": "canonical",
       "operation": "ChatHistoryController.patch_folder",
       "source": "backend/src/koinon/assistants/history/controllers.py",
-      "line": 71,
+      "line": 95,
       "parameters": [
         {
           "name": "tenant_id",
@@ -2038,7 +2189,7 @@
       "request_schema": "FolderPatch",
       "response_schema": "ChatFolder",
       "success_status": 200,
-      "source_sha256": "8457df3c778b10e43efe99d555be31a5936a2b03867030e12cac61532197fe29",
+      "source_sha256": "76688e341241c002391b93008c0fccf54c7bc7933386a355dc7407ab5dbf6cc9",
       "encoding": "application/json",
       "headers": []
     },
@@ -2048,7 +2199,7 @@
       "category": "canonical",
       "operation": "ChatHistoryController.delete_folder",
       "source": "backend/src/koinon/assistants/history/controllers.py",
-      "line": 83,
+      "line": 107,
       "parameters": [
         {
           "name": "tenant_id",
@@ -2076,7 +2227,7 @@
       "request_schema": null,
       "response_schema": "void",
       "success_status": 204,
-      "source_sha256": "8457df3c778b10e43efe99d555be31a5936a2b03867030e12cac61532197fe29",
+      "source_sha256": "76688e341241c002391b93008c0fccf54c7bc7933386a355dc7407ab5dbf6cc9",
       "encoding": "application/json",
       "headers": []
     },
@@ -2086,7 +2237,7 @@
       "category": "canonical",
       "operation": "ChatHistoryController.thread",
       "source": "backend/src/koinon/assistants/history/controllers.py",
-      "line": 95,
+      "line": 119,
       "parameters": [
         {
           "name": "tenant_id",
@@ -2108,7 +2259,7 @@
       "request_schema": null,
       "response_schema": "ChatThread",
       "success_status": 200,
-      "source_sha256": "8457df3c778b10e43efe99d555be31a5936a2b03867030e12cac61532197fe29",
+      "source_sha256": "76688e341241c002391b93008c0fccf54c7bc7933386a355dc7407ab5dbf6cc9",
       "encoding": "application/json",
       "headers": []
     },
@@ -2118,7 +2269,7 @@
       "category": "canonical",
       "operation": "ChatHistoryController.patch_thread",
       "source": "backend/src/koinon/assistants/history/controllers.py",
-      "line": 99,
+      "line": 123,
       "parameters": [
         {
           "name": "tenant_id",
@@ -2146,7 +2297,7 @@
       "request_schema": "ThreadPatch",
       "response_schema": "ChatThread",
       "success_status": 200,
-      "source_sha256": "8457df3c778b10e43efe99d555be31a5936a2b03867030e12cac61532197fe29",
+      "source_sha256": "76688e341241c002391b93008c0fccf54c7bc7933386a355dc7407ab5dbf6cc9",
       "encoding": "application/json",
       "headers": []
     },
@@ -2156,7 +2307,7 @@
       "category": "canonical",
       "operation": "ChatHistoryController.title_suggestion",
       "source": "backend/src/koinon/assistants/history/controllers.py",
-      "line": 111,
+      "line": 135,
       "parameters": [
         {
           "name": "tenant_id",
@@ -2184,7 +2335,7 @@
       "request_schema": "TitleRequest",
       "response_schema": "TitleSuggestion",
       "success_status": 200,
-      "source_sha256": "8457df3c778b10e43efe99d555be31a5936a2b03867030e12cac61532197fe29",
+      "source_sha256": "76688e341241c002391b93008c0fccf54c7bc7933386a355dc7407ab5dbf6cc9",
       "encoding": "application/json",
       "headers": []
     },
@@ -2194,7 +2345,7 @@
       "category": "canonical",
       "operation": "ChatHistoryController.delete_thread",
       "source": "backend/src/koinon/assistants/history/controllers.py",
-      "line": 129,
+      "line": 153,
       "parameters": [
         {
           "name": "tenant_id",
@@ -2222,7 +2373,45 @@
       "request_schema": null,
       "response_schema": "void",
       "success_status": 204,
-      "source_sha256": "8457df3c778b10e43efe99d555be31a5936a2b03867030e12cac61532197fe29",
+      "source_sha256": "76688e341241c002391b93008c0fccf54c7bc7933386a355dc7407ab5dbf6cc9",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/chat/threads/{thread_id}/read",
+      "category": "canonical",
+      "operation": "ChatHistoryReadController.thread_read",
+      "source": "backend/src/koinon/assistants/history/read_controller.py",
+      "line": 24,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "thread_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ReaderReadInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "read_thread",
+      "sdk_typescript": "chat.read",
+      "sdk_java": "client.chat.read",
+      "request_schema": "ReaderReadInput",
+      "response_schema": "ChatThread",
+      "success_status": 200,
+      "source_sha256": "a3397755cb6025af4431dbd9f0661975a1257fa61efa0a3f7c9767f5c84ec2b3",
       "encoding": "application/json",
       "headers": []
     },
@@ -4366,7 +4555,7 @@
       "request_schema": "ExportReviewRequest",
       "response_schema": "ExportReview",
       "success_status": 201,
-      "source_sha256": "397ef3c46d85f5242b9d086b35e6424e771630aea19a40ddddf146526993deef",
+      "source_sha256": "0a615daaf2fe9051208b3dcda75929d601561550f91d37777c26abc6e4a25732",
       "encoding": "application/json",
       "headers": []
     },
@@ -4398,7 +4587,7 @@
       "request_schema": "ExportCreate",
       "response_schema": "Export",
       "success_status": 201,
-      "source_sha256": "397ef3c46d85f5242b9d086b35e6424e771630aea19a40ddddf146526993deef",
+      "source_sha256": "0a615daaf2fe9051208b3dcda75929d601561550f91d37777c26abc6e4a25732",
       "encoding": "application/json",
       "headers": []
     },
@@ -4452,7 +4641,39 @@
       "request_schema": null,
       "response_schema": "ExportPage",
       "success_status": 200,
-      "source_sha256": "397ef3c46d85f5242b9d086b35e6424e771630aea19a40ddddf146526993deef",
+      "source_sha256": "0a615daaf2fe9051208b3dcda75929d601561550f91d37777c26abc6e4a25732",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/exports/browse",
+      "category": "canonical",
+      "operation": "ExportController.browse",
+      "source": "backend/src/koinon/exports/controllers.py",
+      "line": 70,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ExportBrowseInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "browse_exports",
+      "sdk_typescript": "exports.browse",
+      "sdk_java": "client.exports.browse",
+      "request_schema": "ExportBrowseInput",
+      "response_schema": "ExportBrowsePage",
+      "success_status": 200,
+      "source_sha256": "0a615daaf2fe9051208b3dcda75929d601561550f91d37777c26abc6e4a25732",
       "encoding": "application/json",
       "headers": []
     },
@@ -4462,7 +4683,7 @@
       "category": "canonical",
       "operation": "ExportController.get",
       "source": "backend/src/koinon/exports/controllers.py",
-      "line": 70,
+      "line": 78,
       "parameters": [
         {
           "name": "tenant_id",
@@ -4484,7 +4705,7 @@
       "request_schema": null,
       "response_schema": "Export",
       "success_status": 200,
-      "source_sha256": "397ef3c46d85f5242b9d086b35e6424e771630aea19a40ddddf146526993deef",
+      "source_sha256": "0a615daaf2fe9051208b3dcda75929d601561550f91d37777c26abc6e4a25732",
       "encoding": "application/json",
       "headers": []
     },
@@ -4494,7 +4715,7 @@
       "category": "canonical",
       "operation": "ExportController.download",
       "source": "backend/src/koinon/exports/controllers.py",
-      "line": 76,
+      "line": 84,
       "parameters": [
         {
           "name": "tenant_id",
@@ -4516,7 +4737,7 @@
       "request_schema": null,
       "response_schema": "BinaryDownload",
       "success_status": 200,
-      "source_sha256": "397ef3c46d85f5242b9d086b35e6424e771630aea19a40ddddf146526993deef",
+      "source_sha256": "0a615daaf2fe9051208b3dcda75929d601561550f91d37777c26abc6e4a25732",
       "encoding": "binary",
       "headers": []
     },
@@ -4526,7 +4747,7 @@
       "category": "canonical",
       "operation": "ExportController.cancel",
       "source": "backend/src/koinon/exports/controllers.py",
-      "line": 91,
+      "line": 99,
       "parameters": [
         {
           "name": "tenant_id",
@@ -4548,7 +4769,1396 @@
       "request_schema": null,
       "response_schema": "void",
       "success_status": 204,
-      "source_sha256": "397ef3c46d85f5242b9d086b35e6424e771630aea19a40ddddf146526993deef",
+      "source_sha256": "0a615daaf2fe9051208b3dcda75929d601561550f91d37777c26abc6e4a25732",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/exports/{export_id}/read",
+      "category": "canonical",
+      "operation": "ExportReadController.get_read",
+      "source": "backend/src/koinon/exports/read_controller.py",
+      "line": 25,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "export_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ReaderReadInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "read_export",
+      "sdk_typescript": "exports.read",
+      "sdk_java": "client.exports.read",
+      "request_schema": "ReaderReadInput",
+      "response_schema": "Export",
+      "success_status": 200,
+      "source_sha256": "ae0064f875e39309d26b46cecfad50f6e9cea4aab585fccbe9ff238bec3268db",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/exports/{export_id}/download/read",
+      "category": "canonical",
+      "operation": "ExportReadController.download_read",
+      "source": "backend/src/koinon/exports/read_controller.py",
+      "line": 38,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "export_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ReaderReadInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "read_export_download",
+      "sdk_typescript": "exports.readDownload",
+      "sdk_java": "client.exports.readDownload",
+      "request_schema": "ReaderReadInput",
+      "response_schema": "BinaryDownload",
+      "success_status": 200,
+      "source_sha256": "ae0064f875e39309d26b46cecfad50f6e9cea4aab585fccbe9ff238bec3268db",
+      "encoding": "binary",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/capabilities",
+      "category": "canonical",
+      "operation": "SourceCapabilitiesController.get",
+      "source": "backend/src/koinon/integrations/content_sources/controllers.py",
+      "line": 97,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "SourceCapabilitiesOutput",
+      "sdk_python": "source_capabilities",
+      "sdk_typescript": "contentSources.capabilities",
+      "sdk_java": "client.contentSources.capabilities",
+      "request_schema": null,
+      "response_schema": "SourceCapabilitiesOutput",
+      "success_status": 200,
+      "source_sha256": "5fa9f45f629b136f609346633fd8c1595802482c18b86122cca7180f03d362ba",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/connections",
+      "category": "canonical",
+      "operation": "ContentConnectionsController.list",
+      "source": "backend/src/koinon/integrations/content_sources/controllers.py",
+      "line": 108,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "cursor",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "limit",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "source_connections",
+      "sdk_typescript": "contentSources.list",
+      "sdk_java": "client.contentSources.list",
+      "request_schema": null,
+      "response_schema": "SourceConnectionPage",
+      "success_status": 200,
+      "source_sha256": "5fa9f45f629b136f609346633fd8c1595802482c18b86122cca7180f03d362ba",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/connections/{connection_id}",
+      "category": "canonical",
+      "operation": "ContentConnectionsController.get",
+      "source": "backend/src/koinon/integrations/content_sources/controllers.py",
+      "line": 147,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "connection_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "source_connection",
+      "sdk_typescript": "contentSources.get",
+      "sdk_java": "client.contentSources.get",
+      "request_schema": null,
+      "response_schema": "SourceConnectionOutput",
+      "success_status": 200,
+      "source_sha256": "5fa9f45f629b136f609346633fd8c1595802482c18b86122cca7180f03d362ba",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/connections/{connection_id}/disconnect",
+      "category": "canonical",
+      "operation": "ContentConnectionsController.disconnect",
+      "source": "backend/src/koinon/integrations/content_sources/controllers.py",
+      "line": 152,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "connection_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[SourceConnectionRevision]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "disconnect_source_connection",
+      "sdk_typescript": "contentSources.disconnect",
+      "sdk_java": "client.contentSources.disconnect",
+      "request_schema": "SourceConnectionRevision",
+      "response_schema": "SourceConnectionOutput",
+      "success_status": 200,
+      "source_sha256": "5fa9f45f629b136f609346633fd8c1595802482c18b86122cca7180f03d362ba",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/connections/{connection_id}/sites",
+      "category": "canonical",
+      "operation": "ContentConnectionsController.sites",
+      "source": "backend/src/koinon/integrations/content_sources/controllers.py",
+      "line": 165,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "connection_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "q",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": true
+        },
+        {
+          "name": "cursor",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "source_sites",
+      "sdk_typescript": "contentSources.sites",
+      "sdk_java": "client.contentSources.sites",
+      "request_schema": null,
+      "response_schema": "SourceLocationPage",
+      "success_status": 200,
+      "source_sha256": "5fa9f45f629b136f609346633fd8c1595802482c18b86122cca7180f03d362ba",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/connections/{connection_id}/drives",
+      "category": "canonical",
+      "operation": "ContentConnectionsController.drives",
+      "source": "backend/src/koinon/integrations/content_sources/controllers.py",
+      "line": 179,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "connection_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "site_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "cursor",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "source_drives",
+      "sdk_typescript": "contentSources.drives",
+      "sdk_java": "client.contentSources.drives",
+      "request_schema": null,
+      "response_schema": "SourceLocationPage",
+      "success_status": 200,
+      "source_sha256": "5fa9f45f629b136f609346633fd8c1595802482c18b86122cca7180f03d362ba",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/connections/{connection_id}/children",
+      "category": "canonical",
+      "operation": "ContentConnectionsController.children",
+      "source": "backend/src/koinon/integrations/content_sources/controllers.py",
+      "line": 196,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "connection_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "drive_id",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": true
+        },
+        {
+          "name": "folder_id",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "cursor",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "source_children",
+      "sdk_typescript": "contentSources.children",
+      "sdk_java": "client.contentSources.children",
+      "request_schema": null,
+      "response_schema": "SourceFolderPage",
+      "success_status": 200,
+      "source_sha256": "5fa9f45f629b136f609346633fd8c1595802482c18b86122cca7180f03d362ba",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/mappings",
+      "category": "canonical",
+      "operation": "SourceMappingController.mappings_page",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_api.py",
+      "line": 29,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "limit",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        },
+        {
+          "name": "cursor",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "source_mappings",
+      "sdk_typescript": "contentSources.mappings",
+      "sdk_java": "client.contentSources.mappings",
+      "request_schema": null,
+      "response_schema": "SourceMappingPage",
+      "success_status": 200,
+      "source_sha256": "cc63d8ec1bb22a2aa715a9de022327a4eb3a73f41f3d384df882766a33dbce58",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/mappings/{mapping_id}",
+      "category": "canonical",
+      "operation": "SourceMappingController.get",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_api.py",
+      "line": 39,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "mapping_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "source_mapping",
+      "sdk_typescript": "contentSources.mapping",
+      "sdk_java": "client.contentSources.mapping",
+      "request_schema": null,
+      "response_schema": "SourceMappingOutput",
+      "success_status": 200,
+      "source_sha256": "cc63d8ec1bb22a2aa715a9de022327a4eb3a73f41f3d384df882766a33dbce58",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/mappings/{mapping_id}/runs",
+      "category": "canonical",
+      "operation": "SourceMappingController.runs",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_api.py",
+      "line": 44,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "mapping_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "limit",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        },
+        {
+          "name": "cursor",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "source_mapping_runs",
+      "sdk_typescript": "contentSources.runs",
+      "sdk_java": "client.contentSources.runs",
+      "request_schema": null,
+      "response_schema": "SourceRunPage",
+      "success_status": 200,
+      "source_sha256": "cc63d8ec1bb22a2aa715a9de022327a4eb3a73f41f3d384df882766a33dbce58",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/operations/{operation_id}",
+      "category": "canonical",
+      "operation": "SourceMappingController.initial_operation",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_api.py",
+      "line": 57,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "operation_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "action",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": true
+        }
+      ],
+      "return_annotation": "SourceOperationReceipt",
+      "sdk_python": "source_initial_operation",
+      "sdk_typescript": "contentSources.initialOperation",
+      "sdk_java": "client.contentSources.initialOperation",
+      "request_schema": null,
+      "response_schema": "SourceOperationReceipt",
+      "success_status": 200,
+      "source_sha256": "cc63d8ec1bb22a2aa715a9de022327a4eb3a73f41f3d384df882766a33dbce58",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/mappings/{mapping_id}/operations/{operation_id}",
+      "category": "canonical",
+      "operation": "SourceMappingController.operation",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_api.py",
+      "line": 67,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "mapping_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "operation_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "action",
+          "annotation": "QueryParam[str]",
+          "location": "query",
+          "required": true
+        }
+      ],
+      "return_annotation": "SourceOperationReceipt",
+      "sdk_python": "source_operation",
+      "sdk_typescript": "contentSources.operation",
+      "sdk_java": "client.contentSources.operation",
+      "request_schema": null,
+      "response_schema": "SourceOperationReceipt",
+      "success_status": 200,
+      "source_sha256": "cc63d8ec1bb22a2aa715a9de022327a4eb3a73f41f3d384df882766a33dbce58",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/runs/{run_id}",
+      "category": "canonical",
+      "operation": "SourceMappingController.run",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_api.py",
+      "line": 80,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "run_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "source_run",
+      "sdk_typescript": "contentSources.run",
+      "sdk_java": "client.contentSources.run",
+      "request_schema": null,
+      "response_schema": "SourceRunOutput",
+      "success_status": 200,
+      "source_sha256": "cc63d8ec1bb22a2aa715a9de022327a4eb3a73f41f3d384df882766a33dbce58",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/runs/{run_id}/items",
+      "category": "canonical",
+      "operation": "SourceMappingController.run_items",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_api.py",
+      "line": 85,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "run_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "limit",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        },
+        {
+          "name": "cursor",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "SourceRunItemPage",
+      "sdk_python": "source_run_items",
+      "sdk_typescript": "contentSources.runItems",
+      "sdk_java": "client.contentSources.runItems",
+      "request_schema": null,
+      "response_schema": "SourceRunItemPage",
+      "success_status": 200,
+      "source_sha256": "cc63d8ec1bb22a2aa715a9de022327a4eb3a73f41f3d384df882766a33dbce58",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/runs/{run_id}/cancel",
+      "category": "canonical",
+      "operation": "SourceMappingController.cancel",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_api.py",
+      "line": 98,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "run_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[SourceControlInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "cancel_source_run",
+      "sdk_typescript": "contentSources.cancelRun",
+      "sdk_java": "client.contentSources.cancelRun",
+      "request_schema": "SourceControlInput",
+      "response_schema": "SourceControlOutput",
+      "success_status": 200,
+      "source_sha256": "cc63d8ec1bb22a2aa715a9de022327a4eb3a73f41f3d384df882766a33dbce58",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/runs/{run_id}/retry",
+      "category": "canonical",
+      "operation": "SourceMappingController.retry",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_api.py",
+      "line": 110,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "run_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[SourceControlInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "retry_source_run",
+      "sdk_typescript": "contentSources.retryRun",
+      "sdk_java": "client.contentSources.retryRun",
+      "request_schema": "SourceControlInput",
+      "response_schema": "SourceControlOutput",
+      "success_status": 200,
+      "source_sha256": "cc63d8ec1bb22a2aa715a9de022327a4eb3a73f41f3d384df882766a33dbce58",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/mapping-reviews",
+      "category": "canonical",
+      "operation": "SourceMappingController.review",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_api.py",
+      "line": 122,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[SourcePolicyReviewInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "review_source_mapping",
+      "sdk_typescript": "contentSources.reviewMapping",
+      "sdk_java": "client.contentSources.reviewMapping",
+      "request_schema": "SourcePolicyReviewInput",
+      "response_schema": "SourcePolicyOperationOutput",
+      "success_status": 201,
+      "source_sha256": "cc63d8ec1bb22a2aa715a9de022327a4eb3a73f41f3d384df882766a33dbce58",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/mapping-reviews/{review_id}/items",
+      "category": "canonical",
+      "operation": "SourceMappingController.items",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_api.py",
+      "line": 129,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "review_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "limit",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        },
+        {
+          "name": "cursor",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "source_review_items",
+      "sdk_typescript": "contentSources.reviewItems",
+      "sdk_java": "client.contentSources.reviewItems",
+      "request_schema": null,
+      "response_schema": "SourceReviewPage",
+      "success_status": 200,
+      "source_sha256": "cc63d8ec1bb22a2aa715a9de022327a4eb3a73f41f3d384df882766a33dbce58",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/mappings",
+      "category": "canonical",
+      "operation": "SourceMappingController.create",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_api.py",
+      "line": 146,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[SourcePolicyApplyInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "create_source_mapping",
+      "sdk_typescript": "contentSources.createMapping",
+      "sdk_java": "client.contentSources.createMapping",
+      "request_schema": "SourcePolicyApplyInput",
+      "response_schema": "SourcePolicyOperationOutput",
+      "success_status": 201,
+      "source_sha256": "cc63d8ec1bb22a2aa715a9de022327a4eb3a73f41f3d384df882766a33dbce58",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/mappings/{mapping_id}/reviews",
+      "category": "canonical",
+      "operation": "SourceMappingController.revise",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_api.py",
+      "line": 155,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "mapping_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[SourceExistingPolicyReviewInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "revise_source_mapping",
+      "sdk_typescript": "contentSources.reviseMapping",
+      "sdk_java": "client.contentSources.reviseMapping",
+      "request_schema": "SourceExistingPolicyReviewInput",
+      "response_schema": "SourcePolicyOperationOutput",
+      "success_status": 201,
+      "source_sha256": "cc63d8ec1bb22a2aa715a9de022327a4eb3a73f41f3d384df882766a33dbce58",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/mappings/{mapping_id}/apply",
+      "category": "canonical",
+      "operation": "SourceMappingController.apply",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_api.py",
+      "line": 175,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "mapping_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[SourcePolicyApplyInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "apply_source_mapping",
+      "sdk_typescript": "contentSources.applyMapping",
+      "sdk_java": "client.contentSources.applyMapping",
+      "request_schema": "SourcePolicyApplyInput",
+      "response_schema": "SourcePolicyOperationOutput",
+      "success_status": 200,
+      "source_sha256": "cc63d8ec1bb22a2aa715a9de022327a4eb3a73f41f3d384df882766a33dbce58",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/mappings/{mapping_id}/sync",
+      "category": "canonical",
+      "operation": "SourceMappingController.sync",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_api.py",
+      "line": 196,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "mapping_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[SourceControlInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "sync_source_mapping",
+      "sdk_typescript": "contentSources.syncMapping",
+      "sdk_java": "client.contentSources.syncMapping",
+      "request_schema": "SourceControlInput",
+      "response_schema": "SourceControlOutput",
+      "success_status": 200,
+      "source_sha256": "cc63d8ec1bb22a2aa715a9de022327a4eb3a73f41f3d384df882766a33dbce58",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/mappings/{mapping_id}/pause",
+      "category": "canonical",
+      "operation": "SourceMappingController.pause",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_api.py",
+      "line": 206,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "mapping_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[SourceControlInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "pause_source_mapping",
+      "sdk_typescript": "contentSources.pauseMapping",
+      "sdk_java": "client.contentSources.pauseMapping",
+      "request_schema": "SourceControlInput",
+      "response_schema": "SourceControlOutput",
+      "success_status": 200,
+      "source_sha256": "cc63d8ec1bb22a2aa715a9de022327a4eb3a73f41f3d384df882766a33dbce58",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/mappings/{mapping_id}/resume",
+      "category": "canonical",
+      "operation": "SourceMappingController.resume",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_api.py",
+      "line": 216,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "mapping_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[SourceControlInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "resume_source_mapping",
+      "sdk_typescript": "contentSources.resumeMapping",
+      "sdk_java": "client.contentSources.resumeMapping",
+      "request_schema": "SourceControlInput",
+      "response_schema": "SourceControlOutput",
+      "success_status": 200,
+      "source_sha256": "cc63d8ec1bb22a2aa715a9de022327a4eb3a73f41f3d384df882766a33dbce58",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/mappings/{mapping_id}/retire",
+      "category": "canonical",
+      "operation": "SourceMappingController.retire",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_api.py",
+      "line": 226,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "mapping_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[SourceControlInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "dict",
+      "sdk_python": "retire_source_mapping",
+      "sdk_typescript": "contentSources.retireMapping",
+      "sdk_java": "client.contentSources.retireMapping",
+      "request_schema": "SourceControlInput",
+      "response_schema": "SourceControlOutput",
+      "success_status": 200,
+      "source_sha256": "cc63d8ec1bb22a2aa715a9de022327a4eb3a73f41f3d384df882766a33dbce58",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/mapping-validations",
+      "category": "canonical",
+      "operation": "SourceMappingValidationController.begin",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_validation_api.py",
+      "line": 29,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[SourceMappingValidationInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "SourceMappingValidationOutput",
+      "sdk_python": "begin_source_mapping_validation",
+      "sdk_typescript": "contentSources.beginValidation",
+      "sdk_java": "client.contentSources.beginValidation",
+      "request_schema": "SourceMappingValidationInput",
+      "response_schema": "SourceMappingValidationOutput",
+      "success_status": 201,
+      "source_sha256": "32b40eb73fc22b8d76c2cbb7f5a241e90a162e3b2bccb2e4de00dd2b75400903",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/mapping-validations/operations/{operation_id}",
+      "category": "canonical",
+      "operation": "SourceMappingValidationController.receipt",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_validation_api.py",
+      "line": 37,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "operation_id",
+          "annotation": "PathVar[UUID]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "SourceMappingValidationOutput",
+      "sdk_python": "source_mapping_validation_receipt",
+      "sdk_typescript": "contentSources.validationReceipt",
+      "sdk_java": "client.contentSources.validationReceipt",
+      "request_schema": null,
+      "response_schema": "SourceMappingValidationOutput",
+      "success_status": 200,
+      "source_sha256": "32b40eb73fc22b8d76c2cbb7f5a241e90a162e3b2bccb2e4de00dd2b75400903",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/mapping-validations/{validation_id}",
+      "category": "canonical",
+      "operation": "SourceMappingValidationController.status",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_validation_api.py",
+      "line": 45,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "validation_id",
+          "annotation": "PathVar[UUID]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "SourceMappingValidationOutput",
+      "sdk_python": "source_mapping_validation",
+      "sdk_typescript": "contentSources.validation",
+      "sdk_java": "client.contentSources.validation",
+      "request_schema": null,
+      "response_schema": "SourceMappingValidationOutput",
+      "success_status": 200,
+      "source_sha256": "32b40eb73fc22b8d76c2cbb7f5a241e90a162e3b2bccb2e4de00dd2b75400903",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/mapping-validations/{validation_id}/continue",
+      "category": "canonical",
+      "operation": "SourceMappingValidationController.advance",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_validation_api.py",
+      "line": 53,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "validation_id",
+          "annotation": "PathVar[UUID]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[SourceMappingValidationContinueInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "SourceMappingValidationOutput",
+      "sdk_python": "advance_source_mapping_validation",
+      "sdk_typescript": "contentSources.advanceValidation",
+      "sdk_java": "client.contentSources.advanceValidation",
+      "request_schema": "SourceMappingValidationContinueInput",
+      "response_schema": "SourceMappingValidationOutput",
+      "success_status": 200,
+      "source_sha256": "32b40eb73fc22b8d76c2cbb7f5a241e90a162e3b2bccb2e4de00dd2b75400903",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/mapping-validations/{validation_id}/items",
+      "category": "canonical",
+      "operation": "SourceMappingValidationController.items",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_validation_api.py",
+      "line": 67,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "validation_id",
+          "annotation": "PathVar[UUID]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "cursor",
+          "annotation": "QueryParam[str | None]",
+          "location": "query",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "limit",
+          "annotation": "QueryParam[int]",
+          "location": "query",
+          "required": false,
+          "default": 25
+        }
+      ],
+      "return_annotation": "SourceMappingValidationItemPage",
+      "sdk_python": "source_mapping_validation_items",
+      "sdk_typescript": "contentSources.validationItems",
+      "sdk_java": "client.contentSources.validationItems",
+      "request_schema": null,
+      "response_schema": "SourceMappingValidationItemPage",
+      "success_status": 200,
+      "source_sha256": "32b40eb73fc22b8d76c2cbb7f5a241e90a162e3b2bccb2e4de00dd2b75400903",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/mapping-validations/{validation_id}/abandon",
+      "category": "canonical",
+      "operation": "SourceMappingValidationController.abandon",
+      "source": "backend/src/koinon/integrations/content_sources/mapping_validation_api.py",
+      "line": 82,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "validation_id",
+          "annotation": "PathVar[UUID]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[SourceMappingValidationAbandonInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "SourceMappingValidationOutput",
+      "sdk_python": "abandon_source_mapping_validation",
+      "sdk_typescript": "contentSources.abandonValidation",
+      "sdk_java": "client.contentSources.abandonValidation",
+      "request_schema": "SourceMappingValidationAbandonInput",
+      "response_schema": "SourceMappingValidationOutput",
+      "success_status": 200,
+      "source_sha256": "32b40eb73fc22b8d76c2cbb7f5a241e90a162e3b2bccb2e4de00dd2b75400903",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/reader-selection",
+      "category": "canonical",
+      "operation": "SourceReaderSelectionController.get",
+      "source": "backend/src/koinon/integrations/content_sources/reader_selection_controller.py",
+      "line": 21,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        }
+      ],
+      "return_annotation": "ReaderSelectionOutput",
+      "sdk_python": "reader_source_selection",
+      "sdk_typescript": "contentSources.readerSelection",
+      "sdk_java": "client.contentSources.readerSelection",
+      "request_schema": null,
+      "response_schema": "ReaderSelectionOutput",
+      "success_status": 200,
+      "source_sha256": "7805d7bf375537b08b78cdf57616d2dec5865aa7731117febd91297415743dbd",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/tenants/{tenant_id}/content-sources/reader-selection",
+      "category": "canonical",
+      "operation": "SourceReaderSelectionController.replace",
+      "source": "backend/src/koinon/integrations/content_sources/reader_selection_controller.py",
+      "line": 25,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ReaderSelectionInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "ReaderSelectionOutput",
+      "sdk_python": "replace_reader_source_selection",
+      "sdk_typescript": "contentSources.replaceReaderSelection",
+      "sdk_java": "client.contentSources.replaceReaderSelection",
+      "request_schema": "ReaderSelectionInput",
+      "response_schema": "ReaderSelectionOutput",
+      "success_status": 200,
+      "source_sha256": "7805d7bf375537b08b78cdf57616d2dec5865aa7731117febd91297415743dbd",
+      "sdk_typescript_factory": "createContentSourcesApi",
+      "sdk_typescript_module": "@fireflyframework/koinon-sdk/content-sources",
       "encoding": "application/json",
       "headers": []
     },
@@ -5006,7 +6616,7 @@
       "category": "canonical",
       "operation": "KnowledgeAvailabilityController.observe",
       "source": "backend/src/koinon/knowledge/availability/controller.py",
-      "line": 21,
+      "line": 22,
       "parameters": [
         {
           "name": "tenant_id",
@@ -5021,14 +6631,14 @@
           "required": true
         }
       ],
-      "return_annotation": "JSONResponse",
+      "return_annotation": "Response",
       "sdk_python": "knowledge_availability",
       "sdk_typescript": "availability.observe",
       "sdk_java": "client.catalog.availability",
       "request_schema": "AvailabilityRequest",
       "response_schema": "AvailabilityResponse",
       "success_status": 200,
-      "source_sha256": "18a3a3131196a157100161e1142f200933a451e89aa637cca6911135e003dca5",
+      "source_sha256": "dc07ee60bdb7228c5252f1b058f8b8e2438f0da18b7eb9decf006e22ce3792c3",
       "sdk_typescript_factory": "createAvailabilityApi",
       "sdk_typescript_module": "@fireflyframework/koinon-sdk/availability",
       "encoding": "application/json",
@@ -5040,7 +6650,7 @@
       "category": "canonical",
       "operation": "KnowledgeAvailabilityController.processing",
       "source": "backend/src/koinon/knowledge/availability/controller.py",
-      "line": 29,
+      "line": 31,
       "parameters": [
         {
           "name": "tenant_id",
@@ -5055,14 +6665,14 @@
           "required": true
         }
       ],
-      "return_annotation": "JSONResponse",
+      "return_annotation": "Response",
       "sdk_python": "knowledge_processing",
       "sdk_typescript": "availability.processing",
       "sdk_java": "client.catalog.processing",
       "request_schema": "ProcessingRequest",
       "response_schema": "ProcessingResponse",
       "success_status": 200,
-      "source_sha256": "18a3a3131196a157100161e1142f200933a451e89aa637cca6911135e003dca5",
+      "source_sha256": "dc07ee60bdb7228c5252f1b058f8b8e2438f0da18b7eb9decf006e22ce3792c3",
       "sdk_typescript_factory": "createAvailabilityApi",
       "sdk_typescript_module": "@fireflyframework/koinon-sdk/availability",
       "encoding": "application/json",
@@ -6804,6 +8414,88 @@
     },
     {
       "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-items/{item_id}/read",
+      "category": "canonical",
+      "operation": "CuratedKnowledgeReadController.get_read",
+      "source": "backend/src/koinon/knowledge/curated/read_controller.py",
+      "line": 24,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "item_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ReaderReadInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "read_knowledge_item",
+      "sdk_typescript": "knowledgeItems.read",
+      "sdk_java": "client.knowledgeItems.read",
+      "request_schema": "ReaderReadInput",
+      "response_schema": "KnowledgeItemView",
+      "success_status": 200,
+      "source_sha256": "adbcb8812e5dd9af9377298000280e94848f2fdf301b66f61b34252b669cb19f",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/knowledge-items/{item_id}/versions/{version}/read",
+      "category": "canonical",
+      "operation": "CuratedKnowledgeReadController.version_read",
+      "source": "backend/src/koinon/knowledge/curated/read_controller.py",
+      "line": 37,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "item_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "version",
+          "annotation": "PathVar[int]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ReaderReadInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "read_knowledge_version",
+      "sdk_typescript": "knowledgeItems.readVersion",
+      "sdk_java": "client.knowledgeItems.readVersion",
+      "request_schema": "ReaderReadInput",
+      "response_schema": "KnowledgeItemView",
+      "success_status": 200,
+      "source_sha256": "adbcb8812e5dd9af9377298000280e94848f2fdf301b66f61b34252b669cb19f",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
       "path": "/api/v1/tenants/{tenant_id}/datasets/{dataset_id}/files",
       "category": "canonical",
       "operation": "DatasetFilesController.append",
@@ -7122,6 +8814,282 @@
       "response_schema": "BinaryDownload",
       "success_status": 200,
       "source_sha256": "490c6711727b1888c39d377a4b8264f8e4e297bcdb9899b4d6bee8c7cb87a4aa",
+      "encoding": "binary",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/documents/{document_id}/versions/read",
+      "category": "canonical",
+      "operation": "DocumentHistoryReadController.versions_read",
+      "source": "backend/src/koinon/knowledge/document_history/read_controller.py",
+      "line": 27,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "document_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ReaderPageInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "read_document_versions",
+      "sdk_typescript": "documents.readVersions",
+      "sdk_java": "client.documents.readVersions",
+      "request_schema": "ReaderPageInput",
+      "response_schema": "DocumentVersionPage",
+      "success_status": 200,
+      "source_sha256": "760d245d9fe7c2be3d187f685b15855bcb15a7e8e8b5066260115767da629667",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/read",
+      "category": "canonical",
+      "operation": "DocumentHistoryReadController.version_read",
+      "source": "backend/src/koinon/knowledge/document_history/read_controller.py",
+      "line": 42,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "document_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "source_version_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ReaderReadInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "read_document_version",
+      "sdk_typescript": "documents.readVersion",
+      "sdk_java": "client.documents.readVersion",
+      "request_schema": "ReaderReadInput",
+      "response_schema": "DocumentVersion",
+      "success_status": 200,
+      "source_sha256": "760d245d9fe7c2be3d187f685b15855bcb15a7e8e8b5066260115767da629667",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/extractions/read",
+      "category": "canonical",
+      "operation": "DocumentHistoryReadController.extractions_read",
+      "source": "backend/src/koinon/knowledge/document_history/read_controller.py",
+      "line": 56,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "document_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "source_version_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ReaderPageInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "read_document_extractions",
+      "sdk_typescript": "documents.readExtractions",
+      "sdk_java": "client.documents.readExtractions",
+      "request_schema": "ReaderPageInput",
+      "response_schema": "DocumentExtractionPage",
+      "success_status": 200,
+      "source_sha256": "760d245d9fe7c2be3d187f685b15855bcb15a7e8e8b5066260115767da629667",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/extractions/{extraction_id}/parts/read",
+      "category": "canonical",
+      "operation": "DocumentHistoryReadController.parts_read",
+      "source": "backend/src/koinon/knowledge/document_history/read_controller.py",
+      "line": 72,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "document_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "source_version_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "extraction_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[DocumentPartsReadInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "read_document_parts",
+      "sdk_typescript": "documents.readParts",
+      "sdk_java": "client.documents.readParts",
+      "request_schema": "DocumentPartsReadInput",
+      "response_schema": "DocumentPartPage",
+      "success_status": 200,
+      "source_sha256": "760d245d9fe7c2be3d187f685b15855bcb15a7e8e8b5066260115767da629667",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/extractions/{extraction_id}/parts/{source_part_id}/read",
+      "category": "canonical",
+      "operation": "DocumentHistoryReadController.part_read",
+      "source": "backend/src/koinon/knowledge/document_history/read_controller.py",
+      "line": 96,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "document_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "source_version_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "extraction_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "source_part_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ReaderReadInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "read_document_part",
+      "sdk_typescript": "documents.readPart",
+      "sdk_java": "client.documents.readPart",
+      "request_schema": "ReaderReadInput",
+      "response_schema": "DocumentPartContent",
+      "success_status": 200,
+      "source_sha256": "760d245d9fe7c2be3d187f685b15855bcb15a7e8e8b5066260115767da629667",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/documents/{document_id}/versions/{source_version_id}/original/read",
+      "category": "canonical",
+      "operation": "DocumentHistoryReadController.original_read",
+      "source": "backend/src/koinon/knowledge/document_history/read_controller.py",
+      "line": 114,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "document_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "source_version_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ReaderReadInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "read_document_version_original",
+      "sdk_typescript": "documents.readVersionOriginal",
+      "sdk_java": "client.documents.readVersionOriginal",
+      "request_schema": "ReaderReadInput",
+      "response_schema": "BinaryDownload",
+      "success_status": 200,
+      "source_sha256": "760d245d9fe7c2be3d187f685b15855bcb15a7e8e8b5066260115767da629667",
       "encoding": "binary",
       "headers": []
     },
@@ -8239,6 +10207,372 @@
       "success_status": 200,
       "source_sha256": "d759c25229cdf4d1a0f99b628cd660604272935cddb743f5c3b86c5940ab9bc1",
       "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/provenance/read",
+      "category": "canonical",
+      "operation": "TableProvenanceReadController.snapshot_read",
+      "source": "backend/src/koinon/knowledge/provenance/read_controllers.py",
+      "line": 31,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "dataset_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "table_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[SnapshotReadInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "read_table_provenance",
+      "sdk_typescript": "dataset.readTableProvenance",
+      "sdk_java": "client.datasets.readTableProvenance",
+      "request_schema": "SnapshotReadInput",
+      "response_schema": "TableProvenance",
+      "success_status": 200,
+      "source_sha256": "f2ce97dde30d65300a91cc9f6ba46d187abe10f1cdd27d9b4c2fc893ae24aa2e",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/snapshots/read",
+      "category": "canonical",
+      "operation": "TableProvenanceReadController.history_read",
+      "source": "backend/src/koinon/knowledge/provenance/read_controllers.py",
+      "line": 45,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "dataset_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "table_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[SnapshotHistoryReadInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "read_table_snapshots",
+      "sdk_typescript": "dataset.readTableSnapshots",
+      "sdk_java": "client.datasets.readTableSnapshots",
+      "request_schema": "SnapshotHistoryReadInput",
+      "response_schema": "TableSnapshotReadPage",
+      "success_status": 200,
+      "source_sha256": "f2ce97dde30d65300a91cc9f6ba46d187abe10f1cdd27d9b4c2fc893ae24aa2e",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates/read",
+      "category": "canonical",
+      "operation": "TableProvenanceReadController.manifest_read",
+      "source": "backend/src/koinon/knowledge/provenance/read_controllers.py",
+      "line": 59,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "dataset_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "table_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[SnapshotReadInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "read_table_coordinates",
+      "sdk_typescript": "dataset.readTableCoordinates",
+      "sdk_java": "client.datasets.readTableCoordinates",
+      "request_schema": "SnapshotReadInput",
+      "response_schema": "TableCoordinateManifest",
+      "success_status": 200,
+      "source_sha256": "f2ce97dde30d65300a91cc9f6ba46d187abe10f1cdd27d9b4c2fc893ae24aa2e",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates/rows/read",
+      "category": "canonical",
+      "operation": "TableProvenanceReadController.rows_read",
+      "source": "backend/src/koinon/knowledge/provenance/read_controllers.py",
+      "line": 73,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "dataset_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "table_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[SnapshotPageReadInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "read_table_coordinate_rows",
+      "sdk_typescript": "dataset.readTableCoordinateRows",
+      "sdk_java": "client.datasets.readTableCoordinateRows",
+      "request_schema": "SnapshotPageReadInput",
+      "response_schema": "TableRowRangePage",
+      "success_status": 200,
+      "source_sha256": "f2ce97dde30d65300a91cc9f6ba46d187abe10f1cdd27d9b4c2fc893ae24aa2e",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/datasets/{dataset_id}/tables/{table_id}/coordinates/columns/read",
+      "category": "canonical",
+      "operation": "TableProvenanceReadController.columns_read",
+      "source": "backend/src/koinon/knowledge/provenance/read_controllers.py",
+      "line": 95,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "dataset_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "table_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[SnapshotPageReadInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "read_table_coordinate_columns",
+      "sdk_typescript": "dataset.readTableCoordinateColumns",
+      "sdk_java": "client.datasets.readTableCoordinateColumns",
+      "request_schema": "SnapshotPageReadInput",
+      "response_schema": "TableColumnBindingPage",
+      "success_status": 200,
+      "source_sha256": "f2ce97dde30d65300a91cc9f6ba46d187abe10f1cdd27d9b4c2fc893ae24aa2e",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/datasets/{dataset_id}/schema/read",
+      "category": "canonical",
+      "operation": "KnowledgeReadController.schema_read",
+      "source": "backend/src/koinon/knowledge/read_controller.py",
+      "line": 27,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "dataset_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ReaderReadInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "read_dataset_schema",
+      "sdk_typescript": "dataset.readSchema",
+      "sdk_java": "client.datasets.readSchema",
+      "request_schema": "ReaderReadInput",
+      "response_schema": "DatasetSchema",
+      "success_status": 200,
+      "source_sha256": "79f24597f125a4c72d9439739c00457f5fe6d2bb3ed28c6de3716f69dc1eed29",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/lineage/read",
+      "category": "canonical",
+      "operation": "KnowledgeReadController.lineage_read",
+      "source": "backend/src/koinon/knowledge/read_controller.py",
+      "line": 40,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[LineageReadInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "read_lineage",
+      "sdk_typescript": "readLineage",
+      "sdk_java": "client.knowledge.readLineage",
+      "request_schema": "LineageReadInput",
+      "response_schema": "Lineage",
+      "success_status": 200,
+      "source_sha256": "79f24597f125a4c72d9439739c00457f5fe6d2bb3ed28c6de3716f69dc1eed29",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/documents/{document_id}/chunks/read",
+      "category": "canonical",
+      "operation": "KnowledgeReadController.document_chunks_read",
+      "source": "backend/src/koinon/knowledge/read_controller.py",
+      "line": 52,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "document_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[DocumentChunksReadInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "read_document_chunks",
+      "sdk_typescript": "documents.readChunks",
+      "sdk_java": "client.documents.readChunks",
+      "request_schema": "DocumentChunksReadInput",
+      "response_schema": "DocumentChunks",
+      "success_status": 200,
+      "source_sha256": "79f24597f125a4c72d9439739c00457f5fe6d2bb3ed28c6de3716f69dc1eed29",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/documents/{document_id}/original/read",
+      "category": "canonical",
+      "operation": "KnowledgeReadController.document_original_read",
+      "source": "backend/src/koinon/knowledge/read_controller.py",
+      "line": 67,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "document_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ReaderReadInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "read_document_original",
+      "sdk_typescript": "documents.readOriginal",
+      "sdk_java": "client.documents.readOriginal",
+      "request_schema": "ReaderReadInput",
+      "response_schema": "BinaryDownload",
+      "success_status": 200,
+      "source_sha256": "79f24597f125a4c72d9439739c00457f5fe6d2bb3ed28c6de3716f69dc1eed29",
+      "encoding": "binary",
       "headers": []
     },
     {
@@ -9924,7 +12258,7 @@
       "request_schema": "ShareReviewInput",
       "response_schema": "ShareReview",
       "success_status": 201,
-      "source_sha256": "21b4c891e79bd778f6cda460b19de0604c65905193342c0e16918bc700d95213",
+      "source_sha256": "ebad9c2f7bb7e8824e8aa9fafb94f0dbc13836b57bf162eaf419f6527b334a78",
       "encoding": "application/json",
       "headers": []
     },
@@ -9956,7 +12290,7 @@
       "request_schema": "ShareCreate",
       "response_schema": "Share",
       "success_status": 201,
-      "source_sha256": "21b4c891e79bd778f6cda460b19de0604c65905193342c0e16918bc700d95213",
+      "source_sha256": "ebad9c2f7bb7e8824e8aa9fafb94f0dbc13836b57bf162eaf419f6527b334a78",
       "encoding": "application/json",
       "headers": []
     },
@@ -10010,7 +12344,39 @@
       "request_schema": null,
       "response_schema": "SharePage",
       "success_status": 200,
-      "source_sha256": "21b4c891e79bd778f6cda460b19de0604c65905193342c0e16918bc700d95213",
+      "source_sha256": "ebad9c2f7bb7e8824e8aa9fafb94f0dbc13836b57bf162eaf419f6527b334a78",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/shares/browse",
+      "category": "canonical",
+      "operation": "ShareController.browse",
+      "source": "backend/src/koinon/sharing/controllers.py",
+      "line": 69,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ShareBrowseInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "JSONResponse",
+      "sdk_python": "browse_shares",
+      "sdk_typescript": "shares.browse",
+      "sdk_java": "client.shares.browse",
+      "request_schema": "ShareBrowseInput",
+      "response_schema": "ShareBrowsePage",
+      "success_status": 200,
+      "source_sha256": "ebad9c2f7bb7e8824e8aa9fafb94f0dbc13836b57bf162eaf419f6527b334a78",
       "encoding": "application/json",
       "headers": []
     },
@@ -10020,7 +12386,7 @@
       "category": "canonical",
       "operation": "ShareController.get",
       "source": "backend/src/koinon/sharing/controllers.py",
-      "line": 69,
+      "line": 75,
       "parameters": [
         {
           "name": "tenant_id",
@@ -10042,7 +12408,7 @@
       "request_schema": null,
       "response_schema": "SharedConversation",
       "success_status": 200,
-      "source_sha256": "21b4c891e79bd778f6cda460b19de0604c65905193342c0e16918bc700d95213",
+      "source_sha256": "ebad9c2f7bb7e8824e8aa9fafb94f0dbc13836b57bf162eaf419f6527b334a78",
       "encoding": "application/json",
       "headers": []
     },
@@ -10052,7 +12418,7 @@
       "category": "canonical",
       "operation": "ShareController.revoke",
       "source": "backend/src/koinon/sharing/controllers.py",
-      "line": 81,
+      "line": 87,
       "parameters": [
         {
           "name": "tenant_id",
@@ -10074,7 +12440,45 @@
       "request_schema": null,
       "response_schema": "void",
       "success_status": 204,
-      "source_sha256": "21b4c891e79bd778f6cda460b19de0604c65905193342c0e16918bc700d95213",
+      "source_sha256": "ebad9c2f7bb7e8824e8aa9fafb94f0dbc13836b57bf162eaf419f6527b334a78",
+      "encoding": "application/json",
+      "headers": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/tenants/{tenant_id}/shares/{share_id}/read",
+      "category": "canonical",
+      "operation": "ShareReadController.get_read",
+      "source": "backend/src/koinon/sharing/read_controller.py",
+      "line": 24,
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "share_id",
+          "annotation": "PathVar[str]",
+          "location": "path",
+          "required": true
+        },
+        {
+          "name": "body",
+          "annotation": "Valid[Body[ReaderReadInput]]",
+          "location": "body",
+          "required": true
+        }
+      ],
+      "return_annotation": "Response",
+      "sdk_python": "read_share",
+      "sdk_typescript": "shares.read",
+      "sdk_java": "client.shares.read",
+      "request_schema": "ReaderReadInput",
+      "response_schema": "SharedConversation",
+      "success_status": 200,
+      "source_sha256": "8b142e22be5b97d537f5f02c51f0a0931a4e993c2ed4dee5cde563d103b6bb23",
       "encoding": "application/json",
       "headers": []
     },

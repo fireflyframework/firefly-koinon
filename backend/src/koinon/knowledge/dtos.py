@@ -5,6 +5,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from koinon.integrations.content_sources.read_dtos import ReaderSourceSelection, validate_selections
+
 
 class DocumentRevisionPreconditions(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -29,6 +31,13 @@ class SearchInput(BaseModel):
     )
     limit: int = Field(default=10, ge=1, le=100)
     answer: bool = False
+    reader_source_connections: list[ReaderSourceSelection] | None = Field(default=None, max_length=100)
+
+    @model_validator(mode="after")
+    def reader_accounts(self):
+        if self.reader_source_connections is not None:
+            validate_selections(tuple(self.reader_source_connections))
+        return self
 
 
 class QueryInput(BaseModel):
@@ -37,6 +46,13 @@ class QueryInput(BaseModel):
     question: str = Field(default="", max_length=8000)
     conversation_id: str | None = None
     sql: str | None = Field(default=None, min_length=1, max_length=65536)
+    reader_source_connections: list[ReaderSourceSelection] | None = Field(default=None, max_length=100)
+
+    @model_validator(mode="after")
+    def reader_accounts(self):
+        if self.reader_source_connections is not None:
+            validate_selections(tuple(self.reader_source_connections))
+        return self
 
 
 class DocumentReingestInput(BaseModel):

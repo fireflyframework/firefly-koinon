@@ -16,6 +16,8 @@ Use the linked wire models for field constraints. Operation metadata does not en
 - [List](#curatedknowledgecontroller-list) (GET)
 - [Get](#curatedknowledgecontroller-get) (GET)
 - [Version](#curatedknowledgecontroller-version) (GET)
+- [Get read](#curatedknowledgereadcontroller-get-read) (POST)
+- [Version read](#curatedknowledgereadcontroller-version-read) (POST)
 
 <!-- operation: CuratedKnowledgeController.preview -->
 <a id="curatedknowledgecontroller-preview"></a>
@@ -307,6 +309,93 @@ These are the declared path, query and body arguments. Multipart and binary inpu
 | Contract | Value |
 | --- | --- |
 | Request schema | No request schema declared |
+| Response schema | [`KnowledgeItemView`](../models/knowledgeitemview.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: CuratedKnowledgeReadController.get_read -->
+<a id="curatedknowledgereadcontroller-get-read"></a>
+## Get read
+
+```http
+POST /api/v1/tenants/{tenant_id}/knowledge-items/{item_id}/read
+```
+
+Contract operation: `CuratedKnowledgeReadController.get_read`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `read_knowledge_item` |
+| TypeScript | `knowledgeItems.read` |
+| Java | `client.knowledgeItems.read` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `item_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[ReaderReadInput]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`ReaderReadInput`](../models/readerreadinput.md) |
+| Response schema | [`KnowledgeItemView`](../models/knowledgeitemview.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: CuratedKnowledgeReadController.version_read -->
+<a id="curatedknowledgereadcontroller-version-read"></a>
+## Version read
+
+```http
+POST /api/v1/tenants/{tenant_id}/knowledge-items/{item_id}/versions/{version}/read
+```
+
+Contract operation: `CuratedKnowledgeReadController.version_read`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `read_knowledge_version` |
+| TypeScript | `knowledgeItems.readVersion` |
+| Java | `client.knowledgeItems.readVersion` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `item_id` | path | `PathVar[str]` | Yes | Not specified |
+| `version` | path | `PathVar[int]` | Yes | Not specified |
+| `body` | body | `Valid[Body[ReaderReadInput]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`ReaderReadInput`](../models/readerreadinput.md) |
 | Response schema | [`KnowledgeItemView`](../models/knowledgeitemview.md) |
 | Success status | `200` |
 | Declared encoding | `application/json` |

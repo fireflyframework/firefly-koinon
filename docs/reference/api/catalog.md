@@ -9,6 +9,7 @@ Use the linked wire models for field constraints. Operation metadata does not en
 
 ## On this page
 
+- [Catalog browse](#catalogcontroller-catalog-browse) (POST)
 - [Catalog list](#catalogcontroller-catalog-list) (GET)
 - [Catalog create](#catalogcontroller-catalog-create) (POST)
 - [Catalog get](#catalogcontroller-catalog-get) (GET)
@@ -17,9 +18,52 @@ Use the linked wire models for field constraints. Operation metadata does not en
 - [Catalog restore](#catalogcontroller-catalog-restore) (POST)
 - [Catalog delete](#catalogcontroller-catalog-delete) (DELETE)
 - [Move](#cataloghierarchycontroller-move) (POST)
+- [Catalog get read](#catalogreadcontroller-catalog-get-read) (POST)
 - [Get](#catalogproposalcontroller-get) (GET)
 - [Confirm](#catalogproposalcontroller-confirm) (POST)
 - [Cancel](#catalogproposalcontroller-cancel) (POST)
+
+<!-- operation: CatalogController.catalog_browse -->
+<a id="catalogcontroller-catalog-browse"></a>
+## Catalog browse
+
+```http
+POST /api/v1/tenants/{tenant_id}/catalog/browse
+```
+
+Contract operation: `CatalogController.catalog_browse`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `browse_catalog` |
+| TypeScript | `catalog.browse` |
+| Java | `client.catalog.browse` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[CatalogBrowseInput]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`CatalogBrowseInput`](../models/catalogbrowseinput.md) |
+| Response schema | [`CatalogBrowseOutput`](../models/catalogbrowseoutput.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
 
 <!-- operation: CatalogController.catalog_list -->
 <a id="catalogcontroller-catalog-list"></a>
@@ -362,6 +406,49 @@ These are the declared path, query and body arguments. Multipart and binary inpu
 | Contract | Value |
 | --- | --- |
 | Request schema | [`CatalogMove`](../models/catalogmove.md) |
+| Response schema | [`CatalogEntry`](../models/catalogentry.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: CatalogReadController.catalog_get_read -->
+<a id="catalogreadcontroller-catalog-get-read"></a>
+## Catalog get read
+
+```http
+POST /api/v1/tenants/{tenant_id}/catalog/{entry_id}/read
+```
+
+Contract operation: `CatalogReadController.catalog_get_read`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `read_catalog_entry` |
+| TypeScript | `catalog.read` |
+| Java | `client.catalog.read` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `entry_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[ReaderReadInput]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`ReaderReadInput`](../models/readerreadinput.md) |
 | Response schema | [`CatalogEntry`](../models/catalogentry.md) |
 | Success status | `200` |
 | Declared encoding | `application/json` |

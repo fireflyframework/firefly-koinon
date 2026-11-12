@@ -12,6 +12,7 @@ from koinon.catalog.ancestry import MAX_ANCESTRY, MAX_FOLDER_ANCESTRY, validated
 from koinon.catalog.entities import CatalogEntry
 from koinon.catalog.errors import AccessDenied, InvalidHierarchy
 from koinon.catalog.service import PARENTS, CatalogService
+from koinon.catalog.source_mutations import source_mutation
 
 
 @service
@@ -19,6 +20,7 @@ class CatalogHierarchyService:
     def __init__(self, catalog: CatalogService):
         self.catalog = catalog
 
+    @source_mutation
     @transactional
     async def move(
         self,
@@ -28,7 +30,8 @@ class CatalogHierarchyService:
         *,
         parent_id: str,
         expected_parent_id: str,
-        expected_updated_at: datetime,
+        expected_updated_at: datetime | None = None,
+        _source_expected_revision: int | None = None,
     ) -> CatalogEntry:
         catalog = self.catalog
         await catalog._lock_tenant(tenant_id)
@@ -41,7 +44,11 @@ class CatalogHierarchyService:
                 raise AccessDenied("Folder moves require knowledge-space access", code="TOKEN_SCOPE_DENIED")
         if entry.kind not in {"collection", "corpus"}:
             raise InvalidHierarchy("Select an organizational folder to move", code="INVALID_MOVE_KIND")
-        if entry.parent_id != expected_parent_id or entry.updated_at != expected_updated_at:
+        if entry.parent_id != expected_parent_id or (
+            entry.mutation_revision != _source_expected_revision
+            if _source_expected_revision is not None
+            else entry.updated_at != expected_updated_at
+        ):
             raise ConflictException(
                 "This folder changed. Refresh it before moving it", code="CATALOG_CHANGED"
             )

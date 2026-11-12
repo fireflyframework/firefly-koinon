@@ -3,7 +3,7 @@ import { DOCUMENT } from '@angular/common';
 import { Injectable, OnDestroy, inject, signal } from '@angular/core';
 import type { PrimaryDestination } from '@fireflyframework/koinon-angular/workbench/page';
 type AccountSection =
-  'profile' | 'tokens' | 'applications' | 'notifications' | 'notification-preferences';
+  'profile' | 'tokens' | 'applications' | 'notifications' | 'notification-preferences' | 'connected-sources';
 const pendingKey = 'koinon.pending-account-navigation';
 interface PendingNavigation {
   view: PrimaryDestination;
@@ -20,12 +20,12 @@ export class AccountNavigation implements OnDestroy {
     const pathname = this.window?.location.pathname ?? '';
     const path = pathname.startsWith(this.base) ? pathname.slice(this.base.length) : '';
     const section =
-      /^account\/(profile|tokens|applications|notifications|notification-preferences)\/?$/.exec(
+      /^account\/(profile|tokens|applications|notifications|notification-preferences|connected-sources)\/?$/.exec(
         path,
       )?.[1];
     this.section.set((section as AccountSection) || null);
     this.view.set(
-      ['library', 'chat', 'my-activity', 'activity', 'settings'].includes(path)
+      path === 'library/synchronization' ? 'synchronization' : ['library', 'chat', 'my-activity', 'activity', 'settings'].includes(path)
         ? (path as PrimaryDestination)
         : 'chat',
     );
@@ -62,7 +62,7 @@ export class AccountNavigation implements OnDestroy {
       'view' in value &&
       'accountSection' in value &&
       typeof value.view === 'string' &&
-      ['library', 'chat', 'my-activity', 'activity', 'settings'].includes(value.view) &&
+      ['library', 'chat', 'my-activity', 'activity', 'settings', 'synchronization'].includes(value.view) &&
       (value.accountSection === null ||
         (typeof value.accountSection === 'string' &&
           [
@@ -71,6 +71,7 @@ export class AccountNavigation implements OnDestroy {
             'applications',
             'notifications',
             'notification-preferences',
+            'connected-sources',
           ].includes(value.accountSection)))
     );
   }
@@ -93,7 +94,7 @@ export class AccountNavigation implements OnDestroy {
       ? 'account/' + saved.accountSection
       : saved.view === 'chat'
         ? ''
-        : saved.view;
+        : saved.view === 'synchronization' ? 'library/synchronization' : saved.view;
     url.pathname = this.base + path;
     if (url.href !== this.window.location.href)
       this.window.history.replaceState(
@@ -109,7 +110,7 @@ export class AccountNavigation implements OnDestroy {
   navigate(view: PrimaryDestination) {
     this.section.set(null);
     this.view.set(view);
-    this.write(view === 'chat' ? '' : view);
+    this.write(view === 'chat' ? '' : view === 'synchronization' ? 'library/synchronization' : view);
   }
   private write(path: string) {
     if (!this.window) return;

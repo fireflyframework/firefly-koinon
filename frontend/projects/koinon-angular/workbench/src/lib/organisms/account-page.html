@@ -25,7 +25,9 @@
       <header>
         <h1 id="account-page-title" tabindex="-1">{{ title() | ffkText }}</h1>
       </header>
-      @if(section === 'notifications' || section === 'notification-preferences'){
+      @if(section === 'connected-sources'){
+        @defer (when section === 'connected-sources') {<ffk-connected-sources/>} @loading {<p role="status">{{'Loading…'|ffkText}}</p>} @error {<p role="alert">{{'This panel could not be opened. Refresh this page and try again.'|ffkText}}</p>}
+      }@else if(section === 'notifications' || section === 'notification-preferences'){
       @if(communications();as component){<ng-container *ngComponentOutlet="component;inputs:{mode:section,actions:communicationActions}"/>}@else if(communicationsError()){<p role="alert">{{communicationsError()|ffkText}}</p>}
 
       }@else{<ffk-account-panel [initialTab]="section" [pageMode]="true" />}

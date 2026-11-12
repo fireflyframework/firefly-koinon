@@ -79,6 +79,9 @@ class ResultUploader:
 
             # Key layout: flyquery/{tenant}/{workspace}/{dataset}/results/{query_id}.parquet
             key = f"flyquery/{tenant_id}/{workspace_id}/{dataset_id}/results/{query_id}.parquet"
+            prepared = getattr(self, "_prepared", None)
+            if prepared is not None:
+                prepared.artifacts.add(key)
             await self._store.put(key, parquet_bytes, content_type="application/x-parquet")
             result_object_key = key
 

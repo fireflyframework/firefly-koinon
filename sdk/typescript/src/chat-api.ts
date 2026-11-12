@@ -1,6 +1,7 @@
+import type {ReaderReadInput} from './generated.js';
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
-import type {AttachmentCapabilities,AttachmentView,AttachmentPage,PrivateChunkPage,AttachmentRevision,AttachmentPromotionInput,AttachmentPromotionView,CatalogProposal,ProposalConfirmation,ProposalRevision,AnswerAudit} from './generated.js';
+import type {MessageBrowseInput,MessageBrowsePage,HistoryBrowseInput,HistoryBrowsePage,AttachmentCapabilities,AttachmentView,AttachmentPage,PrivateChunkPage,AttachmentRevision,AttachmentPromotionInput,AttachmentPromotionView,CatalogProposal,ProposalConfirmation,ProposalRevision,AnswerAudit} from './generated.js';
 import type {ActivityFilter,ToolActivity,AttachmentFilter,AttachmentChunkFilter,ChatThread,ThreadPatch,TitleRequest,TitleSuggestion,ChatFolder,FolderFilter,FolderCreate,FolderPatch,ThreadFilter,ThreadCreate,Page,ChatMessage,RunInput,ChatRun,ChatEventData,EvidenceResult} from './types.js';
 import type {KoinonTransport,RequestOptions,BinaryDownload} from './transport.js';
 const id=encodeURIComponent;
@@ -8,6 +9,8 @@ const tenant=(value:string)=>`/tenants/${id(value)}`;
 export function createChatApi(transport:KoinonTransport){
   const multipart=(file:Blob,filename?:string)=>{const body=new FormData();const named='name' in file&&typeof file.name==='string'?file.name:undefined;const selected=filename??named;if(!selected)throw new Error('A replacement filename with its supported extension is required');body.set('file',file,selected);return body;};
  return {
+   browse:(tenantId:string,input:HistoryBrowseInput={},options:RequestOptions={})=>transport.request<HistoryBrowsePage>('POST',`${tenant(tenantId)}/chat/threads/browse`,{...options,body:input}),
+   browseMessages:(tenantId:string,threadId:string,input:MessageBrowseInput={},options:RequestOptions={})=>transport.request<MessageBrowsePage>('POST',`${tenant(tenantId)}/chat/threads/${id(threadId)}/messages/browse`,{...options,body:input}),
    proposals:{
     get:(tenantId:string,runId:string,proposalId:string,options:RequestOptions={})=>transport.request<CatalogProposal>('GET',`${tenant(tenantId)}/chat/runs/${id(runId)}/proposals/${id(proposalId)}`,options),
     confirm:(tenantId:string,runId:string,proposalId:string,input:ProposalConfirmation,options:RequestOptions={})=>transport.request<CatalogProposal>('POST',`${tenant(tenantId)}/chat/runs/${id(runId)}/proposals/${id(proposalId)}/confirm`,{...options,body:input}),
@@ -27,6 +30,7 @@ export function createChatApi(transport:KoinonTransport){
     retry:(tenantId:string,threadId:string,attachmentId:string,input:AttachmentRevision,idempotencyKey:string,options:RequestOptions={})=>transport.request<AttachmentView>('POST',`${tenant(tenantId)}/chat/threads/${id(threadId)}/attachments/${id(attachmentId)}/retry`,{...options,body:input,headers:{...options.headers,'Idempotency-Key':idempotencyKey}}),
     remove:(tenantId:string,threadId:string,attachmentId:string,expectedRevision:number,options:RequestOptions={})=>transport.request<void>('DELETE',`${tenant(tenantId)}/chat/threads/${id(threadId)}/attachments/${id(attachmentId)}`,{...options,query:{expected_revision:expectedRevision}}),
    },
+   read:(tenantId:string,threadId:string,input:ReaderReadInput,options:RequestOptions={})=>transport.request<ChatThread>('POST',`${tenant(tenantId)}/chat/threads/${id(threadId)}/read`,{...options,body:input}),
    get:(tenantId:string,threadId:string,options:RequestOptions={})=>transport.request<ChatThread>('GET',`${tenant(tenantId)}/chat/threads/${id(threadId)}`,options),
    update:(tenantId:string,threadId:string,input:ThreadPatch,options:RequestOptions={})=>transport.request<ChatThread>('PATCH',`${tenant(tenantId)}/chat/threads/${id(threadId)}`,{...options,body:input}),
    delete:(tenantId:string,threadId:string,expectedRevision:number,options:RequestOptions={})=>transport.request<void>('DELETE',`${tenant(tenantId)}/chat/threads/${id(threadId)}`,{...options,query:{expected_revision:expectedRevision}}),

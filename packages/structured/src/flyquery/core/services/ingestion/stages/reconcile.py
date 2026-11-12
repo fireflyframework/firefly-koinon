@@ -32,10 +32,12 @@ import json
 import logging
 import re
 import uuid
-from dataclasses import dataclass
-from typing import Any, cast
+from contextlib import nullcontext
+from dataclasses import dataclass, replace
+from typing import Any, Literal, Self, cast
 
 import sqlalchemy as sa
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pyfly.data.transaction import infrastructure_unit
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -93,6 +95,75 @@ _DEFAULT_AUTO_CONFIRM_THRESHOLD = 0.8
 logger = logging.getLogger(__name__)
 
 
+class _FrozenValue(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", populate_by_name=True)
+
+
+class ColumnTypeValue(_FrozenValue):
+    data_type: str
+
+
+class ColumnRenameValue(_FrozenValue):
+    column_name: str
+    data_type: str | None
+
+
+class RenameCandidate(_FrozenValue):
+    name: str
+    confidence: float | None = Field(ge=0, le=1)
+    rationale: str | None
+
+
+class RenameCandidatesValue(_FrozenValue):
+    candidates: tuple[RenameCandidate, ...]
+
+
+class ReconcileChange(_FrozenValue):
+    id: uuid.UUID
+    column_name: str
+    change: Literal["ADDED", "REMOVED", "TYPE_CHANGED", "RENAMED", "RENAMED_CANDIDATE"]
+    before_json: ColumnTypeValue | ColumnRenameValue | None
+    after_json: ColumnTypeValue | ColumnRenameValue | RenameCandidatesValue | None
+    llm_rationale: str | None = None
+
+    @model_validator(mode="after")
+    def exact_payload(self) -> Self:
+        shapes = {
+            "ADDED": (type(None), ColumnTypeValue),
+            "REMOVED": (ColumnTypeValue, type(None)),
+            "TYPE_CHANGED": (ColumnTypeValue, ColumnTypeValue),
+            "RENAMED": (ColumnRenameValue, ColumnRenameValue),
+            "RENAMED_CANDIDATE": (ColumnRenameValue, RenameCandidatesValue),
+        }
+        before, after = shapes[self.change]
+        if not isinstance(self.before_json, before) or not isinstance(self.after_json, after):
+            raise ValueError("Schema change payload does not match its kind")
+        return self
+
+
+class DeferredReconcileChanges(_FrozenValue):
+    schema_version: Literal["koinon.structured-reconcile-changes.v1"] = Field(
+        default="koinon.structured-reconcile-changes.v1", alias="schema"
+    )
+    tenant_id: str
+    workspace_id: uuid.UUID
+    table_id: uuid.UUID
+    previous_snapshot_id: uuid.UUID
+    next_snapshot_id: uuid.UUID
+    removed_object_ids: tuple[uuid.UUID, ...]
+    changes: tuple[ReconcileChange, ...]
+
+    @model_validator(mode="after")
+    def distinct_identities(self) -> Self:
+        if self.previous_snapshot_id == self.next_snapshot_id:
+            raise ValueError("Replacement snapshots must be distinct")
+        if len(set(self.removed_object_ids)) != len(self.removed_object_ids):
+            raise ValueError("Removed column identities must be distinct")
+        if len({change.id for change in self.changes}) != len(self.changes):
+            raise ValueError("Schema change identities must be distinct")
+        return self
+
+
 @dataclass
 class ReconcileResult:
     snapshot_id: uuid.UUID
@@ -102,6 +173,7 @@ class ReconcileResult:
     added_columns: list[str]
     removed_columns: list[str]
     type_changed: list[str]
+    pending_changes: DeferredReconcileChanges | None = None
 
 
 async def run_reconcile(
@@ -115,17 +187,36 @@ async def run_reconcile(
     session_factory: async_sessionmaker[AsyncSession],
     settings: Any | None = None,
     snapshot_id: uuid.UUID | None = None,
+    guard: lineage.StructuredStageGuard | None = None,
+    defer_live_changes: bool = False,
 ) -> ReconcileResult:
     """Execute Stage 3: reconcile."""
     mat = parsed.result
     snapshot_id = snapshot_id or uuid.uuid4()
+
+    def scoped(phase, target_snapshot):
+        return (
+            guard.unit(
+                phase,
+                lineage.StructuredStageTarget(
+                    tenant_id,
+                    target_snapshot,
+                    table_id=parsed.table_id,
+                ),
+            )
+            if guard is not None
+            else nullcontext()
+        )
 
     # Snapshot hash = hash of (column_name, data_type) pairs for change detection
     col_sig = sorted((c.name, c.data_type) for c in mat.columns)
     snapshot_hash = hashlib.sha256(json.dumps(col_sig).encode()).hexdigest()
 
     # --- Insert snapshot (PARTIAL) ---
-    async with infrastructure_unit(session_factory) as s:
+    async with (
+        scoped(lineage.StructuredStagePhase.RECONCILE_WRITE, snapshot_id),
+        infrastructure_unit(session_factory) as s,
+    ):
         await s.execute(
             sa.text(
                 """
@@ -176,10 +267,14 @@ async def run_reconcile(
         )
 
     # --- Find previous snapshot for diff ---
-    prev_snapshot = await _get_latest_ready_snapshot(tenant_id, parsed.table_id, snapshot_id, session_factory)
+    async with scoped(lineage.StructuredStagePhase.RECONCILE_READ, None):
+        prev_snapshot = await _get_latest_ready_snapshot(
+            tenant_id, parsed.table_id, snapshot_id, session_factory
+        )
     prev_columns: dict[str, str] = {}  # name → data_type
     if prev_snapshot:
-        prev_columns = await _get_snapshot_columns(prev_snapshot["id"], tenant_id, session_factory)
+        async with scoped(lineage.StructuredStagePhase.RECONCILE_READ, prev_snapshot["id"]):
+            prev_columns = await _get_snapshot_columns(prev_snapshot["id"], tenant_id, session_factory)
 
     new_columns: dict[str, str] = {c.name: c.data_type for c in mat.columns}
 
@@ -199,9 +294,10 @@ async def run_reconcile(
 
     prev_snapshot_columns_detail: list[dict[str, Any]] = []
     if prev_snapshot:
-        prev_snapshot_columns_detail = await _get_snapshot_columns_detail(
-            prev_snapshot["id"], tenant_id, session_factory
-        )
+        async with scoped(lineage.StructuredStagePhase.RECONCILE_READ, prev_snapshot["id"]):
+            prev_snapshot_columns_detail = await _get_snapshot_columns_detail(
+                prev_snapshot["id"], tenant_id, session_factory
+            )
 
     confirmed_renames: dict[str, str] = {}  # old_name → new_name
     confirmed_rationales: dict[str, str] = {}  # old_name → LLM rationale
@@ -217,6 +313,11 @@ async def run_reconcile(
             new_columns=new_columns,
             prev_detail=prev_snapshot_columns_detail,
             settings=settings,
+            guard=guard,
+            model_targets=(
+                lineage.StructuredStageTarget(tenant_id, prev_snap_id, table_id=parsed.table_id),
+                lineage.StructuredStageTarget(tenant_id, snapshot_id, table_id=parsed.table_id),
+            ),
         )
 
         # Update added/removed to exclude confirmed renames
@@ -227,44 +328,72 @@ async def run_reconcile(
                 added.remove(new_name)
 
     # --- Mark removed columns as is_active=false on their old schema_objects rows ---
-    if prev_snapshot and removed:
-        await _mark_removed_columns_inactive(
-            tenant_id=tenant_id,
-            prev_snapshot_id=cast("uuid.UUID", prev_snap_id),
-            removed_names=removed,
-            session_factory=session_factory,
-        )
+    if prev_snapshot and removed and not defer_live_changes:
+        async with scoped(lineage.StructuredStagePhase.RECONCILE_WRITE, prev_snap_id):
+            await _mark_removed_columns_inactive(
+                tenant_id=tenant_id,
+                prev_snapshot_id=cast("uuid.UUID", prev_snap_id),
+                removed_names=removed,
+                session_factory=session_factory,
+            )
 
     # --- Write schema_changes ---
-    if prev_snapshot and (added or removed or type_changed or confirmed_renames or candidate_renames):
-        await _write_schema_changes(
+    pending_changes = None
+    if prev_snapshot and defer_live_changes:
+        pending_changes = DeferredReconcileChanges(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
             table_id=parsed.table_id,
-            prev_snapshot_id=prev_snap_id,
+            previous_snapshot_id=prev_snapshot["id"],
             next_snapshot_id=snapshot_id,
-            prev_columns=prev_columns,
-            new_columns=new_columns,
-            added=added,
-            removed=removed,
-            type_changed=type_changed,
-            confirmed_renames=confirmed_renames,
-            confirmed_rationales=confirmed_rationales,
-            candidate_renames=candidate_renames,
-            session_factory=session_factory,
+            removed_object_ids=tuple(
+                row["id"] for row in prev_snapshot_columns_detail if row["col_name"] in removed
+            ),
+            changes=_schema_change_records(
+                prev_columns=prev_columns,
+                new_columns=new_columns,
+                added=added,
+                removed=removed,
+                type_changed=type_changed,
+                confirmed_renames=confirmed_renames,
+                confirmed_rationales=confirmed_rationales,
+                candidate_renames=candidate_renames,
+            ),
         )
+    elif prev_snapshot and (added or removed or type_changed or confirmed_renames or candidate_renames):
+        async with scoped(lineage.StructuredStagePhase.RECONCILE_WRITE, snapshot_id):
+            await _write_schema_changes(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                table_id=parsed.table_id,
+                prev_snapshot_id=prev_snap_id,
+                next_snapshot_id=snapshot_id,
+                prev_columns=prev_columns,
+                new_columns=new_columns,
+                added=added,
+                removed=removed,
+                type_changed=type_changed,
+                confirmed_renames=confirmed_renames,
+                confirmed_rationales=confirmed_rationales,
+                candidate_renames=candidate_renames,
+                session_factory=session_factory,
+            )
 
     # --- Load annotation transplant candidates from previous snapshot ---
     human_annotations: dict[str, dict[str, Any]] = {}
     if prev_snapshot:
-        human_annotations = await _load_human_annotations(
-            cast("uuid.UUID", prev_snap_id), tenant_id, session_factory
-        )
+        async with scoped(lineage.StructuredStagePhase.RECONCILE_READ, prev_snap_id):
+            human_annotations = await _load_human_annotations(
+                cast("uuid.UUID", prev_snap_id), tenant_id, session_factory
+            )
 
     # --- Insert schema_objects (TABLE + per-column COLUMN) ---
     table_obj_id = uuid.uuid4()
     table_source_hash = hashlib.sha256(f"{parsed.qualified_name}:TABLE".encode()).hexdigest()
-    async with infrastructure_unit(session_factory) as s:
+    async with (
+        scoped(lineage.StructuredStagePhase.RECONCILE_WRITE, snapshot_id),
+        infrastructure_unit(session_factory) as s,
+    ):
         await s.execute(
             sa.text(
                 """
@@ -368,6 +497,7 @@ async def run_reconcile(
         added_columns=added,
         removed_columns=removed,
         type_changed=type_changed,
+        pending_changes=pending_changes,
     )
 
 
@@ -406,16 +536,23 @@ async def _get_snapshot_columns(
         result = await s.execute(
             sa.text(
                 """
-                SELECT qualified_name, data_type
-                FROM flyquery_schema_objects
+                SELECT qualified_name, data_type,
+                    (SELECT min(p.qualified_name) FROM flyquery_schema_objects p
+                     WHERE p.tenant_id=c.tenant_id AND p.workspace_id=c.workspace_id
+                       AND p.table_id=c.table_id AND p.snapshot_id=c.snapshot_id AND p.kind='TABLE'
+                       AND (p.id=c.parent_id OR c.parent_id IS NULL) HAVING count(*)=1) AS parent_qualified_name
+                FROM flyquery_schema_objects c
                 WHERE snapshot_id = :sid AND tenant_id = :tenant AND kind = 'COLUMN'
                 """
             ),
             {"sid": snapshot_id, "tenant": tenant_id},
         )
         rows = result.mappings().all()
-        # qualified_name is like "dataset.table.col_name"; extract last part
-        return {row["qualified_name"].rsplit(".", 1)[-1]: row["data_type"] or "" for row in rows}
+        return {
+            lineage.schema_column_name(row["qualified_name"], row["parent_qualified_name"]): row["data_type"]
+            or ""
+            for row in rows
+        }
 
 
 async def _load_human_annotations(
@@ -432,8 +569,12 @@ async def _load_human_annotations(
                     qualified_name,
                     description, description_source,
                     synonyms_json, pii_tag, pii_source,
-                    business_owner, governance_json
-                FROM flyquery_schema_objects
+                    business_owner, governance_json,
+                    (SELECT min(p.qualified_name) FROM flyquery_schema_objects p
+                     WHERE p.tenant_id=c.tenant_id AND p.workspace_id=c.workspace_id
+                       AND p.table_id=c.table_id AND p.snapshot_id=c.snapshot_id AND p.kind='TABLE'
+                       AND (p.id=c.parent_id OR c.parent_id IS NULL) HAVING count(*)=1) AS parent_qualified_name
+                FROM flyquery_schema_objects c
                 WHERE snapshot_id = :sid AND tenant_id = :tenant AND kind = 'COLUMN'
                   AND (
                     description_source = 'HUMAN'
@@ -446,7 +587,7 @@ async def _load_human_annotations(
         )
         out: dict[str, dict[str, Any]] = {}
         for row in result.mappings().all():
-            col_name = row["qualified_name"].rsplit(".", 1)[-1]
+            col_name = lineage.schema_column_name(row["qualified_name"], row["parent_qualified_name"])
             out[col_name] = {
                 "description": row["description"],
                 "description_source": row["description_source"],
@@ -473,8 +614,12 @@ async def _mark_removed_columns_inactive(
     if not removed_names:
         return
     async with infrastructure_unit(session_factory) as s:
-        for col_name in removed_names:
-            # qualified_name ends with ".<col_name>", so we match the suffix.
+        columns = await _get_snapshot_columns_detail(
+            snapshot_id=prev_snapshot_id, tenant_id=tenant_id, session_factory=session_factory
+        )
+        for column in columns:
+            if column["col_name"] not in removed_names:
+                continue
             await s.execute(
                 sa.text(
                     """
@@ -483,15 +628,159 @@ async def _mark_removed_columns_inactive(
                     WHERE snapshot_id = :snap_id
                       AND tenant_id = :tenant
                       AND kind = 'COLUMN'
-                      AND qualified_name LIKE :pattern
+                      AND id = :object_id
                     """
                 ),
                 {
                     "snap_id": prev_snapshot_id,
                     "tenant": tenant_id,
-                    "pattern": f"%.{col_name}",
+                    "object_id": column["id"],
                 },
             )
+
+
+def _schema_change_records(
+    *,
+    prev_columns: dict[str, str],
+    new_columns: dict[str, str],
+    added: list[str],
+    removed: list[str],
+    type_changed: list[str],
+    confirmed_renames: dict[str, str] | None,
+    confirmed_rationales: dict[str, str] | None,
+    candidate_renames: list[tuple[str, list[dict[str, Any]]]] | None,
+) -> tuple[ReconcileChange, ...]:
+    changes = []
+    groups: tuple[tuple[Literal["ADDED", "REMOVED", "TYPE_CHANGED"], list[str]], ...] = (
+        ("ADDED", added),
+        ("REMOVED", removed),
+        ("TYPE_CHANGED", type_changed),
+    )
+    for kind, names in groups:
+        for name in names:
+            changes.append(
+                ReconcileChange(
+                    id=uuid.uuid4(),
+                    column_name=name,
+                    change=kind,
+                    before_json=ColumnTypeValue(data_type=prev_columns[name]) if kind != "ADDED" else None,
+                    after_json=ColumnTypeValue(data_type=new_columns[name]) if kind != "REMOVED" else None,
+                )
+            )
+    for old, new in (confirmed_renames or {}).items():
+        changes.append(
+            ReconcileChange(
+                id=uuid.uuid4(),
+                column_name=old,
+                change="RENAMED",
+                before_json=ColumnRenameValue(column_name=old, data_type=prev_columns.get(old)),
+                after_json=ColumnRenameValue(column_name=new, data_type=new_columns.get(new)),
+                llm_rationale=(confirmed_rationales or {}).get(old) or None,
+            )
+        )
+    for old, candidates in candidate_renames or ():
+        changes.append(
+            ReconcileChange(
+                id=uuid.uuid4(),
+                column_name=old,
+                change="RENAMED_CANDIDATE",
+                before_json=ColumnRenameValue(column_name=old, data_type=prev_columns.get(old)),
+                after_json=RenameCandidatesValue(
+                    candidates=tuple(RenameCandidate.model_validate(candidate) for candidate in candidates)
+                ),
+                llm_rationale=(candidates[0].get("rationale") or None) if candidates else None,
+            )
+        )
+    return tuple(changes)
+
+
+async def publish_reconcile_changes(session: AsyncSession, changes: DeferredReconcileChanges) -> None:
+    """Apply retained changes inside the caller's guarded final native transaction.
+
+    The producer verifies the immutable operation and old-head baseline before
+    calling this helper, before promoting the new snapshot to READY. This helper
+    neither opens nor commits a transaction and grants no source authority.
+    """
+    if not session.in_transaction():
+        raise lineage.LineageConflict("Deferred schema publication needs an active native transaction")
+    params = {
+        "tenant": changes.tenant_id,
+        "workspace": changes.workspace_id,
+        "table": changes.table_id,
+        "previous": changes.previous_snapshot_id,
+        "next": changes.next_snapshot_id,
+        "removed": list(changes.removed_object_ids),
+    }
+    snapshots = (
+        await session.execute(
+            sa.text(
+                "SELECT id,status FROM flyquery_schema_snapshots "
+                "WHERE id IN (:previous,:next) AND tenant_id=:tenant "
+                "AND workspace_id=:workspace AND table_id=:table ORDER BY id FOR UPDATE"
+            ),
+            params,
+        )
+    ).all()
+    if dict(snapshots) != {changes.previous_snapshot_id: "READY", changes.next_snapshot_id: "PARTIAL"}:
+        raise lineage.LineageConflict("Deferred schema publication no longer matches its snapshots")
+    removed = (
+        (
+            await session.execute(
+                sa.text(
+                    "SELECT id,qualified_name,is_active,"
+                    "(SELECT min(p.qualified_name) FROM flyquery_schema_objects p "
+                    "WHERE p.tenant_id=c.tenant_id AND p.workspace_id=c.workspace_id "
+                    "AND p.table_id=c.table_id AND p.snapshot_id=c.snapshot_id AND p.kind='TABLE' "
+                    "AND (p.id=c.parent_id OR c.parent_id IS NULL) HAVING count(*)=1) AS parent_qualified_name "
+                    "FROM flyquery_schema_objects c "
+                    "WHERE id=ANY(CAST(:removed AS uuid[])) AND tenant_id=:tenant "
+                    "AND workspace_id=:workspace AND table_id=:table AND snapshot_id=:previous "
+                    "AND kind='COLUMN' ORDER BY id FOR UPDATE"
+                ),
+                params,
+            )
+        )
+        .mappings()
+        .all()
+    )
+    removed_names = {change.column_name for change in changes.changes if change.change == "REMOVED"}
+    if (
+        {row["id"] for row in removed} != set(changes.removed_object_ids)
+        or any(not row["is_active"] for row in removed)
+        or {
+            lineage.schema_column_name(row["qualified_name"], row["parent_qualified_name"]) for row in removed
+        }
+        != removed_names
+    ):
+        raise lineage.LineageConflict("Deferred schema publication no longer matches its removed columns")
+    if removed:
+        await session.execute(
+            sa.text(
+                "UPDATE flyquery_schema_objects SET is_active=false,last_changed_at=now() "
+                "WHERE id=ANY(CAST(:removed AS uuid[])) AND tenant_id=:tenant "
+                "AND workspace_id=:workspace AND table_id=:table AND snapshot_id=:previous"
+            ),
+            params,
+        )
+    for change in changes.changes:
+        await session.execute(
+            sa.text(
+                "INSERT INTO flyquery_schema_changes "
+                "(id,tenant_id,workspace_id,table_id,prev_snapshot_id,next_snapshot_id,"
+                "column_name,change,before_json,after_json,llm_rationale) "
+                "VALUES(:id,:tenant,:workspace,:table,:previous,:next,:column,:kind,"
+                "CAST(:before AS jsonb),CAST(:after AS jsonb),:rationale)"
+            ),
+            {
+                **params,
+                "id": change.id,
+                "column": change.column_name,
+                "kind": change.change,
+                "before": change.before_json.model_dump_json() if change.before_json is not None else None,
+                "after": change.after_json.model_dump_json() if change.after_json is not None else None,
+                "rationale": change.llm_rationale,
+            },
+        )
 
 
 async def _write_schema_changes(
@@ -682,8 +971,12 @@ async def _get_snapshot_columns_detail(
         result = await s.execute(
             sa.text(
                 """
-                SELECT qualified_name, data_type, description, sample_values_json
-                FROM flyquery_schema_objects
+                SELECT id, qualified_name, data_type, description, sample_values_json,
+                    (SELECT min(p.qualified_name) FROM flyquery_schema_objects p
+                     WHERE p.tenant_id=c.tenant_id AND p.workspace_id=c.workspace_id
+                       AND p.table_id=c.table_id AND p.snapshot_id=c.snapshot_id AND p.kind='TABLE'
+                       AND (p.id=c.parent_id OR c.parent_id IS NULL) HAVING count(*)=1) AS parent_qualified_name
+                FROM flyquery_schema_objects c
                 WHERE snapshot_id = :sid AND tenant_id = :tenant AND kind = 'COLUMN'
                 ORDER BY qualified_name
                 """
@@ -693,7 +986,7 @@ async def _get_snapshot_columns_detail(
         rows = []
         for r in result.mappings().all():
             d = dict(r)
-            d["col_name"] = (d.get("qualified_name") or "").rsplit(".", 1)[-1]
+            d["col_name"] = lineage.schema_column_name(d["qualified_name"], d["parent_qualified_name"])
             rows.append(d)
         return rows
 
@@ -706,6 +999,8 @@ async def _detect_renames(
     new_columns: dict[str, str],
     prev_detail: list[dict[str, Any]],
     settings: Any | None,
+    guard: lineage.StructuredStageGuard | None = None,
+    model_targets: tuple[lineage.StructuredStageTarget, ...] = (),
 ) -> tuple[dict[str, str], dict[str, str], list[tuple[str, list[dict[str, Any]]]]]:
     """Detect column renames via position+type signature + optional LLM agent.
 
@@ -766,6 +1061,8 @@ async def _detect_renames(
                         prev_detail=prev_detail,
                         new_columns=new_columns,
                         settings=settings,
+                        guard=guard,
+                        model_targets=model_targets,
                     )
                     if ranked and ranked[0]["confidence"] >= _DEFAULT_AUTO_CONFIRM_THRESHOLD:
                         # Top proposal passes the auto-confirm threshold.
@@ -795,6 +1092,8 @@ async def _invoke_rename_agent(
     prev_detail: list[dict[str, Any]],
     new_columns: dict[str, str],
     settings: Any | None,
+    guard: lineage.StructuredStageGuard | None = None,
+    model_targets: tuple[lineage.StructuredStageTarget, ...] = (),
 ) -> list[dict[str, Any]] | None:
     """Call RenameDetectionAgent. Returns the full ranked list of proposals
     (each ``{name, confidence, rationale}``) or ``None`` on failure / no result.
@@ -838,6 +1137,17 @@ async def _invoke_rename_agent(
         )
 
         agent = build_rename_detection_agent(settings)
+    except Exception as exc:  # noqa: BLE001 -- optional model construction
+        logger.warning("rename_detection_agent unavailable (skip LLM): %s", exc)
+        return None
+
+    if guard is not None:
+        if not model_targets:
+            raise lineage.LineageDenied("Rename input identities are unavailable")
+        digest = hashlib.sha256(prompt.encode()).hexdigest()
+        await guard.before_model(tuple(replace(target, input_sha256=digest) for target in model_targets))
+
+    try:
         result = await agent.run(prompt)
         proposals = result.output.items
 

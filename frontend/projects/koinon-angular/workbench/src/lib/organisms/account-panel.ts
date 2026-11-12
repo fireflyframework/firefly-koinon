@@ -1,7 +1,9 @@
+import { NgTemplateOutlet } from '@angular/common';
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 import {
   Component,
   Input,
+  TemplateRef,
   OnInit,
   OnChanges,
   PendingTasks,
@@ -41,7 +43,7 @@ import {
 } from '../services/token-permissions';
 @Component({
   selector: 'ffk-account-panel',
-  imports: [
+  imports: [NgTemplateOutlet,
     FormsModule,
     KoinonOrganizationInformation,
     KoinonTextPipe,
@@ -57,6 +59,7 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KoinonAccountPanel implements OnInit, OnChanges {
+  @Input() sessionNotice: TemplateRef<unknown> | null = null;
   @Input() pageMode = false;
   @Input() initialTab: 'profile' | 'tokens' | 'applications' = 'profile';
   readonly account = inject(KoinonAccount);

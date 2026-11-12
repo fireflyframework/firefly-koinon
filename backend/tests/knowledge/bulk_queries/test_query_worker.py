@@ -4,6 +4,8 @@ from datetime import timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
+import pytest
+
 from koinon.workers.admission import WorkAdmission, WorkAdmissionSettings
 
 
@@ -38,3 +40,36 @@ async def test_query_worker_uses_shared_owned_process_fence_and_never_dispatches
     assert command[1:5] == ["-I", "-B", "-m", "koinon.knowledge.bulk_queries.worker"]
     assert options["start_new_session"] is True
     queue.failed.assert_awaited_once_with(lease, code="BULK_CHILD_OUTCOME_UNCONFIRMED", unknown=True)
+
+
+@pytest.mark.parametrize("crash_after_commit", [False, True])
+async def test_committed_query_recovers_without_live_model_authority_or_second_execution(crash_after_commit):
+    from koinon.knowledge.bulk_queries.execution import QueryBatchExecutor
+
+    state = {"committed": not crash_after_commit, "executions": 0, "acknowledged": []}
+    descriptor = object()
+    lease = SimpleNamespace(subject="reader", token_id=None)
+
+    async def inspect(_):
+        return ("committed", descriptor) if state["committed"] else ("absent", None)
+
+    async def check(_):
+        if state["committed"]:
+            raise PermissionError("Source and model connection were revoked after native commit")
+
+    async def execute(_):
+        state["executions"] += 1
+        state["committed"] = True
+        raise ConnectionError("Lost acknowledgement after native commit")
+
+    async def acknowledge(_, value):
+        state["acknowledged"].append(value)
+
+    native = SimpleNamespace(
+        inspect_commit_metadata=inspect, execute=execute, acknowledge_commit_metadata=acknowledge
+    )
+    queue = SimpleNamespace(check=check, failed=AsyncMock())
+    await QueryBatchExecutor(queue, native).execute(lease)
+    assert state["acknowledged"] == [descriptor]
+    assert state["executions"] == int(crash_after_commit)
+    queue.failed.assert_not_awaited()

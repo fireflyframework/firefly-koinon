@@ -20,6 +20,8 @@ function setup(
     workspaceId: signal('space'),
     projectId: signal(''),
     permissions: signal(new Set(['catalog:read'])),
+    readerSources: signal(null),
+    readerRevision: signal(0),
     authRequired: signal(false),
     context: signal({ subject: 'issuer|admin', tenants: [], workspaces: [] }),
     entries: signal([]),
@@ -117,7 +119,7 @@ it('filters command names/descriptions and refuses a command revoked after it wa
 });
 it('selects real catalog entries, uses server pagination and fences a stale resource click', async () => {
   vi.useFakeTimers();
-  const pages: number[] = [];
+  const pages: (string|undefined)[] = [];
   const resource: CatalogEntry = {
     id: 'policy',
     name: 'Policy.pdf',
@@ -133,9 +135,9 @@ it('selects real catalog entries, uses server pagination and fences a stale reso
   };
   const { fixture, palette, facade } = setup(
     async <T>(_method: unknown, _path: string, options?: RequestOptions) => {
-      const page = Number(options!.query!['page']);
-      pages.push(page);
-      return { items: [resource], page, page_size: 8, pages: 3, total: 19 } as T;
+      const cursor = (options!.body as {cursor?:string}).cursor;
+      pages.push(cursor);
+      return { items: [resource], actors:{},next_cursor:cursor?null:'opaque',total:null } as T;
     },
   );
   const chosen = vi.fn();
@@ -146,11 +148,12 @@ it('selects real catalog entries, uses server pagination and fences a stale reso
   fixture.detectChanges();
   const stale = palette.options().find((option) => option.kind === 'resource')!;
   expect(stale).toBeDefined();
-  expect(fixture.nativeElement.textContent).toContain('19');
+  expect(fixture.nativeElement.textContent).not.toContain('19');
+  expect(fixture.nativeElement.textContent).toContain('Continue browsing');
   (fixture.nativeElement.querySelector('[data-page="next"]') as HTMLButtonElement).click();
   await Promise.resolve();
   fixture.detectChanges();
-  expect(pages).toEqual([1, 2]);
+  expect(pages).toEqual([undefined, 'opaque']);
   facade.context.set({ ...facade.context(), subject: 'issuer|other' });
   palette.choose(stale);
   expect(chosen).not.toHaveBeenCalled();

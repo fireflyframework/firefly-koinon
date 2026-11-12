@@ -3,7 +3,7 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/exports/dtos.py
-SHA256: fe525b40ca458f0d51cefc2550b1322b3e5f04a0c67cd1d30a6bc1fa6d4583c9
+SHA256: ba4139dd5b1364e805997aa82093abd7842b17317fe8beb96d3e5aae8b09f75f
 
 Server authorization and semantic validation remain authoritative.
 """
@@ -22,6 +22,7 @@ from koinon_sdk.evidence import (
     SourceReference,
     StoredResult,
 )
+from koinon_sdk.reader_sources import ReaderSourceSelection
 
 
 class Input(InputModel):
@@ -100,3 +101,18 @@ class ExportPage(Frozen):
     page: int
     page_size: int
     pages: int
+
+
+class ExportBrowseInput(Input):
+    q: str = Field(default="", max_length=512)
+    status: Literal["all", "ready", "cancelled", "expired"] = "all"
+    page_size: int = Field(default=25, ge=1, le=100)
+    cursor: str | None = Field(default=None, max_length=128)
+    reader_source_connections: list[ReaderSourceSelection] | None = Field(default=None, max_length=100)
+
+
+class ExportBrowsePage(Frozen):
+    items: tuple[Export, ...]
+    next_cursor: str | None = None
+    total: None = None
+    total_is_exact: Literal[False] = False

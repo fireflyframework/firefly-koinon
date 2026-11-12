@@ -25,6 +25,10 @@ public ExportPage list(){return list(ExportFilter.empty(),RequestOptions.default
 public CompletableFuture<ExportPage> listAsync(ExportFilter filter,RequestOptions options){Objects.requireNonNull(options);options=Objects.requireNonNull(filter).applyTo(options);return transport.jsonAsync("GET",prefix+"/exports",null,options,transport.type(ExportPage.class));}
 public CompletableFuture<ExportPage> listAsync(ExportFilter filter){return listAsync(filter,RequestOptions.defaults());}
 public CompletableFuture<ExportPage> listAsync(){return listAsync(ExportFilter.empty(),RequestOptions.defaults());}
+public ExportBrowsePage browse(ExportBrowseInput input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.json("POST",prefix+"/exports/browse",input,options,transport.type(ExportBrowsePage.class));}
+public ExportBrowsePage browse(ExportBrowseInput input){return browse(input,RequestOptions.defaults());}
+public CompletableFuture<ExportBrowsePage> browseAsync(ExportBrowseInput input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.jsonAsync("POST",prefix+"/exports/browse",input,options,transport.type(ExportBrowsePage.class));}
+public CompletableFuture<ExportBrowsePage> browseAsync(ExportBrowseInput input){return browseAsync(input,RequestOptions.defaults());}
 public Export get(String exportId,RequestOptions options){Objects.requireNonNull(options);return transport.json("GET",prefix+"/exports/"+Transport.id(exportId),null,options,transport.type(Export.class));}
 public Export get(String exportId){return get(exportId,RequestOptions.defaults());}
 public CompletableFuture<Export> getAsync(String exportId,RequestOptions options){Objects.requireNonNull(options);return transport.jsonAsync("GET",prefix+"/exports/"+Transport.id(exportId),null,options,transport.type(Export.class));}
@@ -39,4 +43,14 @@ public Void cancel(String exportId,RequestOptions options){Objects.requireNonNul
 public Void cancel(String exportId){return cancel(exportId,RequestOptions.defaults());}
 public CompletableFuture<Void> cancelAsync(String exportId,RequestOptions options){Objects.requireNonNull(options);return transport.jsonAsync("DELETE",prefix+"/exports/"+Transport.id(exportId),null,options,transport.type(Void.class));}
 public CompletableFuture<Void> cancelAsync(String exportId){return cancelAsync(exportId,RequestOptions.defaults());}
+public Export read(String exportId,ReaderReadInput input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.json("POST",prefix+"/exports/"+Transport.id(exportId)+"/read",input,options,transport.type(Export.class));}
+public Export read(String exportId,ReaderReadInput input){return read(exportId,input,RequestOptions.defaults());}
+public CompletableFuture<Export> readAsync(String exportId,ReaderReadInput input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.jsonAsync("POST",prefix+"/exports/"+Transport.id(exportId)+"/read",input,options,transport.type(Export.class));}
+public CompletableFuture<Export> readAsync(String exportId,ReaderReadInput input){return readAsync(exportId,input,RequestOptions.defaults());}
+public BinaryResponse readDownload(String exportId,ReaderReadInput input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.binary("POST",prefix+"/exports/"+Transport.id(exportId)+"/download/read",input,options);}
+public BinaryResponse readDownload(String exportId,ReaderReadInput input){return readDownload(exportId,input,RequestOptions.defaults());}
+public CompletableFuture<BinaryResponse> readDownloadAsync(String exportId,ReaderReadInput input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.binaryAsync("POST",prefix+"/exports/"+Transport.id(exportId)+"/download/read",input,options);}
+public CompletableFuture<BinaryResponse> readDownloadAsync(String exportId,ReaderReadInput input){return readDownloadAsync(exportId,input,RequestOptions.defaults());}
+public FileDownload downloadReadDownload(String exportId,ReaderReadInput input,Path target,long maxBytes,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.download("POST",prefix+"/exports/"+Transport.id(exportId)+"/download/read",input,target,maxBytes,options);}
+public CompletableFuture<FileDownload> downloadReadDownloadAsync(String exportId,ReaderReadInput input,Path target,long maxBytes,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.downloadAsync("POST",prefix+"/exports/"+Transport.id(exportId)+"/download/read",input,target,maxBytes,options);}
 }

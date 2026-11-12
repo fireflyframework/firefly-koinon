@@ -35,6 +35,18 @@ function setup() {
   fixture.detectChanges();
   return fixture;
 }
+it('keeps an empty authorized cursor page navigable without a global count', () => {
+  const fixture=setup();
+  fixture.componentRef.setInput('items',[]);
+  fixture.componentRef.setInput('pageInfo',{items:[],next_cursor:'opaque'});
+  const continued=vi.fn();fixture.componentInstance.continued.subscribe(continued);
+  fixture.detectChanges();
+  expect(fixture.nativeElement.textContent).toContain('No matching items on this page.');
+  const button=Array.from(fixture.nativeElement.querySelectorAll('button')).find(node=>(node as HTMLButtonElement).textContent?.trim()==='Continue browsing') as HTMLButtonElement;
+  expect(button).toBeDefined();button.click();expect(continued).toHaveBeenCalledOnce();
+  expect(fixture.nativeElement.textContent).not.toMatch(/Page 1 of|0 of 0/);
+  fixture.componentRef.setInput('loading',true);fixture.detectChanges();expect(button.disabled).toBe(true);
+});
 it('sorts the entire library through accessible column headers and resets the page', () => {
   const fixture = setup();
   const changes: unknown[] = [];

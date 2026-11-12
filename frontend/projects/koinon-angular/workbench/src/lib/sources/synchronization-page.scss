@@ -1,0 +1,132 @@
+// Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
+.synchronization {
+  max-width: 1240px;
+  margin: 0 auto;
+}
+.breadcrumb {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.breadcrumb button {
+  border: 0;
+  padding-inline: 0;
+  color: var(--ui-muted);
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+}
+h1 {
+  margin: 0 0 12px;
+  font-size: 27px;
+  line-height: 1.25;
+  font-weight: 550;
+}
+h3 {
+  font-size: 15px;
+  margin: 24px 0 10px;
+}
+.steps {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  margin: 24px 0;
+  gap: 24px;
+  border-bottom: 1px solid var(--ui-line);
+}
+.steps li {
+  padding: 10px 0;
+  color: var(--ui-muted);
+}
+.steps li[aria-current] {
+  color: var(--ui-text);
+  border-bottom: 2px solid var(--ui-accent);
+  font-weight: 600;
+}
+.steps span {
+  margin-inline-start: 0.4em;
+  display: none;
+}
+.wizard {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr);
+  gap: 40px;
+}
+.wizard-main,
+aside {
+  min-width: 0;
+}
+aside {
+  padding-left: 24px;
+  border-left: 1px solid var(--ui-line);
+}
+label:not(.choice) {
+  display: grid;
+  gap: 6px;
+  margin: 16px 0;
+}
+input:not([type='checkbox'], [type='radio']),
+select {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
+  border: 1px solid var(--ui-line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--ui-surface);
+  color: var(--ui-text);
+}
+dt {
+  color: var(--ui-muted);
+  margin-top: 16px;
+}
+dd {
+  margin: 4px 0 12px;
+  overflow-wrap: anywhere;
+}
+.preview article {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--ui-line);
+}
+.preview article div {
+  display: grid;
+  overflow-wrap: anywhere;
+}
+.preview article div:last-child {
+  grid-column: 1/-1;
+}
+@media (max-width: 760px) {
+  header {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .wizard {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  aside {
+    order: -1;
+    border-left: 0;
+    padding: 0;
+  }
+  .steps li:not([aria-current]) {
+    display: none;
+  }
+  .steps span {
+    display: inline;
+  }
+  .preview article {
+    grid-template-columns: 1fr;
+  }
+  .steps {
+    gap: 0;
+  }
+}

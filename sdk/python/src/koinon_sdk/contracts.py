@@ -9,6 +9,7 @@ from pydantic import AwareDatetime, Field, JsonValue
 
 from koinon_sdk._base import DocumentRevisionPreconditions as DocumentRevisionPreconditions
 from koinon_sdk.models import CatalogEntry, InputModel, KnowledgeScope, ModelParameters, ResponseModel
+from koinon_sdk.reader_sources import ReaderSourceSelection
 
 Role = Literal["viewer", "analyst", "editor", "operator", "admin"]
 
@@ -81,6 +82,7 @@ class InvitationFilter(TypedDict, total=False):
 
 
 class SearchContext(TypedDict, total=False):
+    reader_source_connections: list[ReaderSourceSelection] | None
     workspace_id: str
     project_id: str
     collection_id: str
@@ -90,6 +92,7 @@ class SearchContext(TypedDict, total=False):
 
 
 class QueryContext(TypedDict, total=False):
+    reader_source_connections: list[ReaderSourceSelection] | None
     conversation_id: str
     sql: str
 
@@ -125,6 +128,7 @@ class CatalogUpdate(InputModel):
 
 
 class SearchRequest(InputModel):
+    reader_source_connections: list[ReaderSourceSelection] | None = Field(default=None, max_length=100)
     question: str
     workspace_id: str | None = None
     project_id: str | None = None
@@ -135,6 +139,7 @@ class SearchRequest(InputModel):
 
 
 class QueryRequest(InputModel):
+    reader_source_connections: list[ReaderSourceSelection] | None = Field(default=None, max_length=100)
     dataset_id: str
     question: str = ""
     conversation_id: str | None = None

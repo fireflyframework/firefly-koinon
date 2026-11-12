@@ -24,6 +24,7 @@ class ConversationOutputPort(ABC):
         message_ids: list[str],
         *,
         snapshot: ConversationSnapshot | None = None,
+        reader_subject: str | None = None,
     ) -> None: ...
 
 

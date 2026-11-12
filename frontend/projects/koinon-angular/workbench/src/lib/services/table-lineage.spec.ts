@@ -29,12 +29,10 @@ const summary = {
 };
 const history = {
   items: [summary],
-  total: 27,
-  page: 1,
-  page_size: 25,
-  pages: 2,
-  has_next: true,
-  has_previous: false,
+  total: null,
+  pages: null,
+  total_is_exact: false,
+  next_cursor: 'a'.repeat(43),
   current_snapshot_id: 'current',
 };
 function setup(request: KoinonTransport['request']) {
@@ -44,6 +42,8 @@ function setup(request: KoinonTransport['request']) {
     projectId: signal('p'),
     context: signal({ subject: 'owner' }),
     permissions: signal(new Set(['catalog:read'])),
+    readerSources: signal<null|[]>(null),
+    readerRevision: signal(0),
     authRequired: signal(false),
   };
   const transport: KoinonTransport = {
@@ -65,24 +65,24 @@ function setup(request: KoinonTransport['request']) {
 it('reads bounded server history then only the exact selected version, without substituting current metadata', async () => {
   const calls: { path: string; options?: RequestOptions }[] = [];
   const { state } = setup(async <T>(method: unknown, path: string, options?: RequestOptions) => {
-    expect(method).toBe('GET');
+    expect(method).toBe('POST');
     calls.push({ path, options });
-    return (path.endsWith('/snapshots') ? history : summary) as T;
+    return (path.endsWith('/snapshots/read') ? history : summary) as T;
   });
   await state.open(target);
   expect(calls).toHaveLength(1);
-  expect(calls[0].options?.query).toEqual({ page: 1, page_size: 25 });
-  expect(state.history()?.total).toBe(27);
+  expect(calls[0].options?.body).toEqual({ cursor: undefined, page_size: 25, reader_source_connections: null });
+  expect(state.history()?.total).toBeNull();
   await state.selectVersion('old');
-  expect(calls[1].path).toBe('/tenants/north/datasets/dataset/tables/table/provenance');
-  expect(calls[1].options?.query).toEqual({ snapshot_id: 'old' });
+  expect(calls[1].path).toBe('/tenants/north/datasets/dataset/tables/table/provenance/read');
+  expect(calls[1].options?.body).toEqual({ snapshot_id: 'old', reader_source_connections: null });
   expect(state.detail()?.status).toBe('not_recorded');
   expect(state.detail()?.artifact).toBeUndefined();
   expect(state.isCurrent()).toBe(false);
 });
 it('forwards server pagination and rejects a foreign or mismatched returned version', async () => {
   const { state } = setup(async <T>(_method: unknown, path: string, options?: RequestOptions) => {
-    if (path.endsWith('/snapshots')) return { ...history, page: options?.query?.['page'] } as T;
+    if (path.endsWith('/snapshots/read')) return { ...history, next_cursor: (options?.body as {cursor?:string})?.cursor ? null : history.next_cursor } as T;
     return {
       ...summary,
       snapshot_id: 'different',
@@ -90,8 +90,8 @@ it('forwards server pagination and rejects a foreign or mismatched returned vers
     } as T;
   });
   await state.open(target);
-  await state.goToPage(2);
-  expect(state.history()?.page).toBe(2);
+  await state.nextPage();
+  expect(state.history()?.next_cursor).toBeNull();
   await state.selectVersion('old');
   expect(state.detail()).toBeNull();
   expect(state.error()).toContain('requested');
@@ -151,8 +151,8 @@ it('keeps permission failures actionable and expires the session only on authent
 it('discards an earlier version request when another version is selected', async () => {
   let finish!: (value: unknown) => void;
   const { state } = setup(<T>(_method: unknown, path: string, options?: RequestOptions) => {
-    if (path.endsWith('/snapshots')) return Promise.resolve(history as T);
-    if (options?.query?.['snapshot_id'] === 'old')
+    if (path.endsWith('/snapshots/read')) return Promise.resolve(history as T);
+    if ((options?.body as {snapshot_id?:string})?.snapshot_id === 'old')
       return new Promise<T>((resolve) => {
         finish = (value) => resolve(value as T);
       });
@@ -167,4 +167,22 @@ it('discards an earlier version request when another version is selected', async
   expect(state.detail()?.snapshot_id).toBe('current');
   state.close();
   expect(state.detail()).toBeNull();
+});
+
+it('continues an empty authorized history page with the exact local-only choice and clears it on selection change', async () => {
+  const calls: RequestOptions[]=[];
+  const {state,facade}=setup(async <T>(_method:unknown,_path:string,options?:RequestOptions)=>{
+    calls.push(options!);
+    return {...history,items:calls.length===1?[]:[summary],next_cursor:calls.length===1?history.next_cursor:null} as T;
+  });
+  facade.readerSources.set([]);
+  await state.open(target);
+  expect(state.history()?.items).toEqual([]);
+  expect(state.history()?.next_cursor).toBe(history.next_cursor);
+  await state.nextPage();
+  expect(calls[1].body).toEqual({cursor:history.next_cursor,page_size:25,reader_source_connections:[]});
+  expect(calls[1].query).toBeUndefined();
+  expect(state.history()?.items[0].snapshot_id).toBe('old');
+  facade.readerSources.set(null);
+  expect(state.history()).toBeNull();
 });

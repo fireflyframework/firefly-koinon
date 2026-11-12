@@ -13,3 +13,5 @@ export * from './src/lib/atoms/badge';
 export * from './src/lib/atoms/skeleton';
 export * from './src/lib/atoms/file-formats';
 export * from './src/lib/atoms/file-type-icon';
+export * from './src/lib/molecules/search-field';
+export * from './src/lib/molecules/pagination';

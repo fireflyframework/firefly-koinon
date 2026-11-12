@@ -1,7 +1,7 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 import { Injectable, OnDestroy, effect, inject, signal } from '@angular/core';
-import { KoinonClientContext, KoinonFacade } from '@fireflyframework/koinon-angular';
+import { KoinonClientContext, KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
 import {
   KoinonError,
   type DocumentPartContent,

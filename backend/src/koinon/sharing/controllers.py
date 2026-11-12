@@ -18,7 +18,7 @@ from starlette.responses import JSONResponse, Response
 
 from koinon.evidence.http import private_json
 from koinon.security.identity import identity_from_request
-from koinon.sharing.dtos import ShareCreate, ShareReviewInput
+from koinon.sharing.dtos import ShareBrowseInput, ShareCreate, ShareReviewInput
 from koinon.sharing.service import ConversationShares
 
 
@@ -64,6 +64,12 @@ class ShareController:
                 page_size=page_size,
             )
         )
+
+    @post_mapping("/browse")
+    async def browse(
+        self, tenant_id: PathVar[str], body: Valid[Body[ShareBrowseInput]], request: Request
+    ) -> JSONResponse:
+        return private_json(await self.shares.browse(identity_from_request(request).subject, tenant_id, body))
 
     @get_mapping("/{share_id}")
     async def get(self, tenant_id: PathVar[str], share_id: PathVar[str], request: Request) -> Response:

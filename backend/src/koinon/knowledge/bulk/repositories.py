@@ -5,7 +5,8 @@ from datetime import UTC, datetime, timedelta
 from pyfly.container import repository
 from pyfly.data.relational.sqlalchemy import Repository
 from pyfly.kernel import ConflictException, ServiceUnavailableException
-from sqlalchemy import and_, exists, func, literal, or_, select
+from sqlalchemy import and_, cast, exists, func, literal, or_, select, update
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import aliased
@@ -31,6 +32,203 @@ from koinon.tokens.entities import PersonalToken
 
 @repository(name="knowledge.bulk.repository")
 class BulkRepository(Repository[BulkBatch, str]):
+    async def receipt_authority_lock(self, tenant_id: str, subject: str) -> None:
+        session = self._require_session()
+        await session.scalar(select(Tenant.id).where(Tenant.id == tenant_id).with_for_update())
+        await session.execute(
+            select(Membership.id)
+            .where(
+                Membership.tenant_id == tenant_id,
+                Membership.subject == subject,
+            )
+            .order_by(Membership.id)
+            .with_for_update(read=True)
+        )
+
+    async def receipt_item(self, batch_id: str, item_id: str, *, lock: bool = False):
+        query = select(
+            BulkItem.id,
+            BulkItem.batch_id,
+            BulkItem.job_id,
+            BulkItem.mode,
+            BulkItem.status,
+            BulkItem.source_id,
+            BulkItem.asset_id,
+            BulkItem.sha256,
+            BulkItem.size_bytes,
+            BulkItem.native_workspace_id,
+        ).where(BulkItem.batch_id == batch_id, BulkItem.id == item_id)
+        if lock:
+            query = query.with_for_update()
+        return (await self._require_session().execute(query)).one_or_none()
+
+    async def receipt_execution(self, tenant: str, subject: str, batch_id: str, item_id: str):
+        session = self._require_session()
+        batch = (
+            await session.execute(
+                select(
+                    BulkBatch.id,
+                    BulkBatch.token_id,
+                    BulkBatch.workspace_id,
+                    BulkBatch.project_id,
+                    BulkBatch.parent_id,
+                )
+                .where(
+                    BulkBatch.id == batch_id,
+                    BulkBatch.tenant_id == tenant,
+                    BulkBatch.subject == subject,
+                )
+                .with_for_update()
+            )
+        ).one_or_none()
+        item = await self.receipt_item(batch_id, item_id, lock=True)
+        job = (
+            (
+                await session.execute(
+                    select(
+                        Job.id,
+                        Job.status,
+                        Job.worker_id,
+                        Job.attempts,
+                    )
+                    .where(
+                        Job.id == item.job_id,
+                        Job.tenant_id == tenant,
+                        Job.resource_id == item.asset_id,
+                        Job.kind == "knowledge.bulk.intake",
+                    )
+                    .with_for_update()
+                )
+            ).one_or_none()
+            if item and item.job_id
+            else None
+        )
+        return job, item, batch
+
+    async def receipt_matches(self, item_id: str, receipt: dict, *, allow_missing: bool) -> bool:
+        condition = cast(BulkItem.receipt_json, JSONB) == receipt
+        if allow_missing:
+            condition = or_(BulkItem.receipt_json.is_(None), condition)
+        return bool(
+            await self._require_session().scalar(
+                select(BulkItem.id).where(
+                    BulkItem.id == item_id,
+                    condition,
+                )
+            )
+        )
+
+    async def source_receipt_reservation(self, tenant: str, subject: str, batch_id: str, item_id: str):
+        from koinon.integrations.content_sources.import_entities import SourceImportAttempt
+        from koinon.integrations.content_sources.publication_entities import SourcePublicationBaseline
+
+        return (
+            await self._require_session().execute(
+                select(
+                    BulkItem.id,
+                    BulkItem.mode,
+                    BulkItem.native_workspace_id,
+                    BulkItem.source_id,
+                    BulkItem.asset_id,
+                    BulkItem.sha256,
+                    BulkItem.size_bytes,
+                    BulkItem.reservation_json["native_dataset_id"].as_string().label("dataset_id"),
+                    BulkItem.reservation_json["native_file_id"].as_string().label("file_id"),
+                    BulkItem.reservation_json["catalog_file_version_id"]
+                    .as_string()
+                    .label("catalog_file_version_id"),
+                    SourceImportAttempt.id.label("source_attempt_id"),
+                    SourcePublicationBaseline.descriptor_sha256.label("source_publication_sha256"),
+                )
+                .join(BulkBatch, BulkBatch.id == BulkItem.batch_id)
+                .join(
+                    SourceImportAttempt,
+                    SourceImportAttempt.intake_item_id == BulkItem.id,
+                )
+                .join(
+                    SourcePublicationBaseline,
+                    SourcePublicationBaseline.attempt_id == SourceImportAttempt.id,
+                )
+                .where(
+                    BulkBatch.id == batch_id,
+                    BulkBatch.tenant_id == tenant,
+                    BulkBatch.subject == subject,
+                    BulkItem.id == item_id,
+                    SourceImportAttempt.tenant_id == tenant,
+                    SourcePublicationBaseline.tenant_id == tenant,
+                )
+            )
+        ).one_or_none()
+
+    async def settle_receipt(self, job_id: str, item_id: str, batch_id: str, receipt: dict) -> None:
+        session = self._require_session()
+        await session.execute(
+            update(BulkItem)
+            .where(BulkItem.id == item_id)
+            .values(
+                receipt_json=receipt,
+                native_id=receipt["native_asset_id"],
+                status="succeeded",
+                error_code=None,
+            )
+        )
+        await session.execute(
+            update(Job)
+            .where(Job.id == job_id)
+            .values(
+                status="succeeded",
+                progress=100,
+                worker_id=None,
+                lease_until=None,
+                result={"batch_id": batch_id, "item_id": item_id},
+            )
+        )
+        await session.execute(
+            update(BulkBatch)
+            .where(BulkBatch.id == batch_id)
+            .values(
+                revision=BulkBatch.revision + 1,
+            )
+        )
+
+    async def source_owned(self, tenant: str, item_id: str) -> bool:
+        # Fail closed even if the optional source adapter is missing from composition.
+        from koinon.integrations.content_sources.import_entities import SourceImportAttempt
+        from koinon.integrations.content_sources.sync_entities import SourceImportedAsset
+
+        session = self._require_session()
+        row = (
+            await session.execute(
+                select(BulkBatch.request_json["_source_admission"], BulkItem.asset_id)
+                .join(BulkItem, BulkItem.batch_id == BulkBatch.id)
+                .where(BulkBatch.tenant_id == tenant, BulkItem.id == item_id)
+            )
+        ).first()
+        if row is None:
+            return False
+        return (
+            row[0] is not None
+            or bool(
+                await session.scalar(
+                    select(
+                        exists().where(
+                            SourceImportAttempt.tenant_id == tenant,
+                            SourceImportAttempt.intake_item_id == item_id,
+                        )
+                    )
+                )
+            )
+            or bool(
+                await session.scalar(
+                    select(
+                        exists().where(
+                            SourceImportedAsset.tenant_id == tenant, SourceImportedAsset.asset_id == row[1]
+                        )
+                    )
+                )
+            )
+        )
+
     async def table_reservations(self, item_id: str) -> list[BulkTableReservation]:
         return list(
             (

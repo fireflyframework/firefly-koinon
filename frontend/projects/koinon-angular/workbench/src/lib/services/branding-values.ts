@@ -160,21 +160,3 @@ export function brandSymbol(value: BrandingValues, base: string) {
     (value.assistant_name === 'koinon' ? base + '/logos/koinon-symbol-color.svg' : '')
   );
 }
-
-export function previewBrandStyles(
-  value: BrandingValues,
-  theme: 'light' | 'dark',
-): Record<string, string> {
-  const resolved = resolveBranding(value),
-    styles: Record<string, string> = {};
-  for (const mode of ['light', 'dark'] as const)
-    for (const key of PALETTE_FIELDS) {
-      const color = resolved.palette[mode][key];
-      styles[`--koinon-brand-${mode}-${key}`] = hex.test(color)
-        ? color
-        : DEFAULT_BRANDING.palette[mode][key];
-    }
-  for (const key of PALETTE_FIELDS)
-    styles[`--koinon-brand-${key}`] = styles[`--koinon-brand-${theme}-${key}`];
-  return styles;
-}

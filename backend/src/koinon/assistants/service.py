@@ -6,14 +6,17 @@ import base64
 import hashlib
 import json
 from datetime import datetime
+from types import SimpleNamespace
 
 from pyfly.container import Provider, service
 from pyfly.data.relational.sqlalchemy import LockMode, transactional
 from pyfly.kernel import ConflictException, InvalidRequestException, ServiceUnavailableException
 from pyfly.security.context_holder import SecurityContextHolder
+from sqlalchemy import select
 
 from koinon.assistants.configuration_service import AssistantConfigurationService
 from koinon.assistants.entities import AgentConfiguration, ChatMessage, ChatRun, ChatThread
+from koinon.assistants.history.classification import local_history_filter
 from koinon.assistants.lifecycle import identifier, timestamp
 from koinon.assistants.mappers import message_dto, thread_dto
 from koinon.assistants.memory.mappers import digest as memory_digest
@@ -31,8 +34,10 @@ from koinon.assistants.repositories import (
 )
 from koinon.assistants.scope import KnowledgeScopePolicy
 from koinon.assistants.settings import AssistantSettings, ProviderSecrets
+from koinon.assistants.source_reads import source_history
 from koinon.catalog.errors import AccessDenied
 from koinon.catalog.service import CatalogService
+from koinon.integrations.content_sources.read_service import SourceReader
 from koinon.knowledge.attachments.ports import AttachmentRef, ChatAttachmentAccess
 from koinon.operations.settings import OperationalSettings
 from koinon.organization_knowledge.runtime import snapshot_for_run
@@ -62,6 +67,7 @@ class AssistantService:
         attachment_provider: Provider[ChatAttachmentAccess | None] | None = None,
         organization_knowledge: OrganizationKnowledgeService | None = None,
         memory: Provider[ChatMemoryAccess | None] | None = None,
+        source_reader: Provider[SourceReader | None] | None = None,
     ):
         self.catalog, self.providers, self.agents = catalog, providers, agents
         self.threads, self.message_repository, self.runs, self.events = threads, messages, runs, events
@@ -74,6 +80,7 @@ class AssistantService:
         self.attachment_provider = attachment_provider
         self.organization_knowledge = organization_knowledge
         self.memory = memory
+        self.source_reader = source_reader
 
     def _attachment_access(self) -> ChatAttachmentAccess | None:
         if self.attachments is not None:
@@ -119,11 +126,48 @@ class AssistantService:
             )
         )
 
-    async def list_threads(self, subject: str, tenant_id: str, *, scope: dict | None = None) -> list[dict]:
+    async def thread_identity(self, subject, tenant_id, thread_id):
+        """Validate ownership and scope without loading a protected conversation title."""
+        async with primary_authority():
+            row = (
+                await self.threads._require_session().execute(
+                    select(
+                        ChatThread.id,
+                        ChatThread.subject,
+                        ChatThread.tenant_id,
+                        ChatThread.scope,
+                        ChatThread.revision,
+                    ).where(
+                        ChatThread.id == thread_id,
+                        ChatThread.subject == subject,
+                        ChatThread.tenant_id == tenant_id,
+                        ChatThread.deleted_at.is_(None),
+                    )
+                )
+            ).first()
+            if row is None:
+                raise AccessDenied("Conversation is unavailable", code="ACCESS_DENIED")
+            await self.validate_scope(subject, tenant_id, row.scope)
+            return SimpleNamespace(**row._mapping)
+
+    async def list_threads(
+        self, subject: str, tenant_id: str, *, scope: dict | None = None, authorize_empty=True
+    ) -> list[dict]:
         if scope is not None:
             await self.validate_scope(subject, tenant_id, scope)
         visible = []
-        for row in await self.threads.find_all(subject=subject, tenant_id=tenant_id):
+        async with primary_authority():
+            session = self.threads._require_session()
+            rows = list(
+                await session.scalars(
+                    select(ChatThread).where(
+                        ChatThread.subject == subject,
+                        ChatThread.tenant_id == tenant_id,
+                        await local_history_filter(session, subject, tenant_id),
+                    )
+                )
+            )
+        for row in rows:
             if row.deleted_at is not None:
                 continue
             try:
@@ -131,13 +175,14 @@ class AssistantService:
             except AccessDenied:
                 continue
             visible.append(thread_dto(row))
-        if not visible and scope is None:
+        if not visible and scope is None and authorize_empty:
             await self.catalog.authorize(subject, tenant_id, "chat:use")
         return sorted(visible, key=lambda row: row["updated_at"], reverse=True)
 
     async def messages(self, subject: str, tenant_id: str, thread_id: str) -> list[dict]:
         return (await self.message_page(subject, tenant_id, thread_id, limit=100))["items"]
 
+    @source_history()
     async def message_page(
         self, subject: str, tenant_id: str, thread_id: str, *, before=None, limit=50
     ) -> dict:
@@ -217,10 +262,27 @@ class AssistantService:
                 )
         return {"items": items, "next_cursor": next_cursor}
 
-    @transactional
     async def submit(self, subject: str, tenant_id: str, thread_id: str, values: dict) -> dict:
+        from koinon.assistants.run_selection import capture_selection, request_choices
+
+        choices = request_choices(values)
+        existing = await self.runs.find_all(
+            thread_id=thread_id, client_request_id=values.get("client_request_id")
+        )
+        selection = None if existing else await capture_selection(self, subject, tenant_id, choices)
+        return await self._submit(subject, tenant_id, thread_id, values, choices, selection)
+
+    @transactional
+    async def _submit(self, subject, tenant_id, thread_id, values, choices, selection):
+        from koinon.assistants.run_selection import lock_selection
+
         # Match metadata mutations: tenant admission lock precedes the conversation lock.
         await self.catalog._lock_tenant(tenant_id)
+        existing = await self.runs.find_all(
+            thread_id=thread_id, client_request_id=values.get("client_request_id")
+        )
+        if not existing and selection is not None:
+            await lock_selection(self, subject, tenant_id, selection)
         thread = await self.thread(subject, tenant_id, thread_id, lock=True)
         if thread.archived_at is not None:
             raise ConflictException(
@@ -260,6 +322,8 @@ class AssistantService:
         # Preserve existing text-only idempotency keys across the additive attachment upgrade.
         if refs:
             payload.append([[ref.id, ref.sha256, ref.revision] for ref in refs])
+        if choices is not None:
+            payload.append({"reader_source_connections": [item.model_dump(mode="json") for item in choices]})
         digest = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
         existing = await self.runs.find_all(thread_id=thread_id, client_request_id=key)
         if existing:
@@ -268,6 +332,10 @@ class AssistantService:
                     "Request identifier belongs to another message", code="IDEMPOTENCY_CONFLICT"
                 )
             return {"run_id": existing[0].id, "message_id": existing[0].message_id, "event_cursor": "0"}
+        if selection is None:
+            raise ConflictException(
+                "The original request is unavailable; retry submission", code="REQUEST_CHANGED"
+            )
         if any(row.status in {"queued", "running"} for row in await self.runs.find_all(thread_id=thread_id)):
             raise ConflictException("Wait for or cancel the current answer", code="THREAD_BUSY")
         await self.require_queue_capacity(subject, tenant_id)
@@ -295,6 +363,7 @@ class AssistantService:
                 agent_revision=agent.revision,
                 provider_revision=provider.revision,
                 knowledge_settings_snapshot=knowledge_settings.model_dump(mode="json"),
+                reader_source_selection=selection.model_dump(mode="json"),
                 scope=scope,
                 client_request_id=key,
                 payload_hash=digest,
@@ -340,6 +409,7 @@ class AssistantService:
         await self.runs.save(run)
         return event
 
+    @source_history(by="run")
     async def run_events(self, subject: str, tenant_id: str, run_id: str, after=0) -> list[dict]:
         run = await self.owned_run(subject, tenant_id, run_id)
         try:
@@ -484,7 +554,7 @@ class AssistantService:
             "event_cursor": str(run.sequence),
         }
 
-    @primary_authority()
+    @source_history(by="run")
     async def activity_page(
         self, subject: str, tenant_id: str, run_id: str, *, page: int = 1, page_size: int = 25
     ):
@@ -496,42 +566,14 @@ class AssistantService:
         return await self.events.activity_page(run_id, page=page, page_size=page_size)
 
     async def active_results(self, run, rows=None):
-        from koinon.answers.contexts import current_release_context
+        from koinon.answers.contexts import active_result_rows
 
         rows = list(await self.results.find_all(run_id=run.id)) if rows is None else rows
         reset = await self.events.latest_reset(run.id)
-        rows = [
-            row
-            for row in rows
-            if row.kind != "answer_release" or current_release_context(row.payload, reset or 0)
-        ]
-        if reset is None:
-            return rows
-        message = await self.message_repository.find_by_id(run.message_id)
-        ids = {
-            value["id"]
-            for value in message.artifacts or []
-            if value.get("run_id") == run.id and value.get("id")
-        }
-        generations = [
-            row
-            for row in rows
-            if row.kind == "generation" and row.payload["generation"]["start_sequence"] >= reset
-        ]
-        current = (
-            max(generations, key=lambda row: (row.payload["generation"]["start_sequence"], row.created_at))
-            if generations
-            else None
+        message = await self.message_repository.find_by_id(run.message_id) if reset is not None else None
+        return active_result_rows(
+            rows, reset=reset, run_id=run.id, artifacts=message.artifacts if message is not None else None
         )
-        return [
-            row
-            for row in rows
-            if row.id in ids
-            or row.kind == "answer_release"
-            and row.payload.get("generation_id") is None
-            or current is not None
-            and (row.id == current.id or row.payload.get("generation_id") == current.id)
-        ]
 
     async def origin_authority(self, subject, tenant_id, run, rows, *, include_run=True):
         from pyfly.security.context import SecurityContext
@@ -558,6 +600,15 @@ class AssistantService:
                     for asset_id in row.payload.get("asset_ids", []):
                         await self.catalog.get(subject, tenant_id, asset_id)
 
+    async def authorize_prompt_run(self, subject, tenant_id, run_id):
+        run = await self.scoped(self.runs, tenant_id, run_id)
+        await self.thread_identity(subject, tenant_id, run.thread_id)
+        await self.validate_scope(subject, tenant_id, run.scope)
+        await self.origin_authority(subject, tenant_id, run, ())
+        attachments = self._attachment_access()
+        if attachments is not None:
+            await attachments.for_run(subject, tenant_id, run.thread_id, run_id)
+
     async def authorize_results(
         self,
         subject: str,
@@ -567,8 +618,26 @@ class AssistantService:
         require_origin=True,
         require_memory=True,
         result_rows=None,
+        reader_subject=None,
     ):
-        run = await self.scoped(self.runs, tenant_id, run_id)
+        if result_rows is None:
+            run = await self.scoped(self.runs, tenant_id, run_id)
+        else:
+            async with primary_authority():
+                row = (
+                    await self.runs._require_session().execute(
+                        select(
+                            ChatRun.id,
+                            ChatRun.tenant_id,
+                            ChatRun.thread_id,
+                            ChatRun.scope,
+                            ChatRun.access_token_id,
+                        ).where(ChatRun.id == run_id, ChatRun.tenant_id == tenant_id)
+                    )
+                ).first()
+                if row is None:
+                    raise AccessDenied("Conversation is unavailable", code="ACCESS_DENIED")
+                run = SimpleNamespace(**row._mapping)
         rows = await self.active_results(run) if result_rows is None else result_rows
         for result in rows:
             for asset_id in result.payload.get("asset_ids", []):
@@ -578,7 +647,12 @@ class AssistantService:
         if require_memory and require_origin and self.memory is not None:
             access = self.memory.get()
             if access is not None:
-                await access.authorize(subject, tenant_id, run_id)
+                await access.authorize(
+                    subject,
+                    tenant_id,
+                    run_id,
+                    **({"reader_subject": reader_subject} if reader_subject is not None else {}),
+                )
 
     @primary_authority()
     async def thread_page(
@@ -650,6 +724,7 @@ class AssistantService:
     ) -> dict:
         return await self.scope_policy.validate_scope(subject, tenant_id, requested, limit)
 
+    @source_history(by="run")
     async def result(self, subject: str, tenant_id: str, run_id: str, result_id: str) -> dict:
         run = await self.owned_run(subject, tenant_id, run_id, require_origin=False)
         rows = await self.results.find_all(id=result_id, run_id=run_id)

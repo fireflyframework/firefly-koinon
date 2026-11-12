@@ -112,6 +112,7 @@ class ChatRun(Base):
     agent_revision: Mapped[int] = mapped_column()
     provider_revision: Mapped[int] = mapped_column()
     knowledge_settings_snapshot: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    reader_source_selection: Mapped[dict | None] = mapped_column(JSON(none_as_null=True), nullable=True)
     scope: Mapped[dict] = mapped_column(JSON, default=dict)
     client_request_id: Mapped[str] = mapped_column(String(255))
     payload_hash: Mapped[str] = mapped_column(String(64))

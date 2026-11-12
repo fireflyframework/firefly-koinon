@@ -38,7 +38,31 @@ if __name__ == "__main__":
 
 The callback can be synchronous or asynchronous and is evaluated per request. Supply a personal token or an OIDC access token for the API audience; an ID token or model-provider key is not suitable. Replace the environment lookup with host-owned renewal for expiring tokens. Never copy browser cookies to a service or use the cookie-only BFF prefix. `async with` closes the HTTP client; a DI host can close it during its own shutdown.
 
+## Choose reader sources
+
+Search, query, and cursor browse accept `reader_source_connections`. Omit it or send
+`null` to use the authenticated caller's saved selection; send `[]` to exclude imported
+sources. An explicit list replaces the saved selection for that operation. Each choice
+contains `provider`, `connection_id`, and optional `external_tenant`; at most 100 distinct
+provider and external-tenant pairs are accepted. The server checks account ownership and
+current source access. A connection identifier never grants access by itself.
+
+Use `browse_catalog` and `browse_exports` for reader-authorized cursor pages. Preserve `next_cursor`,
+including on an empty page. `total: null` and `total_is_exact: false` mean that the server
+has not calculated an exact total. Existing numbered catalog/export lists retain their
+local-only behavior. Saved reader-selection replacement requires native browser session
+authority, the current revision, and a caller-generated operation UUID; a headless bearer
+credential cannot stand in for browser consent.
+
 ## Follow a workflow
+
+Personal document-source accounts use `source_connections`, `source_connection`,
+`disconnect_source_connection`, `source_sites`, `source_drives`, and `source_children`.
+These operations require the owner's verified identity; personal API tokens cannot call them.
+Connection listing uses `cursor` and `limit`, and disconnect requires `SourceConnectionRevision`.
+Consent initiation and completion require the native browser session and are deliberately absent from
+the headless SDK. Deployment operators must enable and configure the source-account service first.
+`synchronization_available` is currently `false`: account connection and browsing do not import documents.
 
 These links target the guides in the source repository:
 

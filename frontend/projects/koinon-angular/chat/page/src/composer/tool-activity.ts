@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import type { ToolActivity } from '@fireflyframework/koinon-sdk';
-import { KoinonIcon, KoinonTextPipe } from '@fireflyframework/koinon-angular';
+import { KoinonIcon, KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench/core';
 @Component({
   selector: 'ffk-tool-activity',
   imports: [KoinonIcon, KoinonTextPipe],

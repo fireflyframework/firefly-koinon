@@ -61,6 +61,8 @@ function setup(request: KoinonTransport['request']) {
     projectId: signal('p'),
     context: signal({ subject: 'owner' }),
     permissions: signal(new Set(['catalog:read'])),
+    readerSources: signal<null|[]>(null),
+    readerRevision: signal(0),
     authRequired: signal(false),
   };
   const transport: KoinonTransport = {
@@ -83,15 +85,15 @@ it('opens only the selected immutable manifest, then uses real server row pagina
   const calls: { path: string; options?: RequestOptions }[] = [];
   const { state } = setup(async <T>(_method: unknown, path: string, options?: RequestOptions) => {
     calls.push({ path, options });
-    return (path.endsWith('/rows') ? rows(Number(options?.query?.['page'])) : manifest) as T;
+    return (path.endsWith('/rows/read') ? rows(Number((options?.body as {page?:number})?.page)) : manifest) as T;
   });
   await state.open(target);
   expect(calls).toHaveLength(1);
-  expect(calls[0].path).toBe('/tenants/north/datasets/dataset/tables/table/coordinates');
-  expect(calls[0].options?.query).toEqual({ snapshot_id: 'selected' });
+  expect(calls[0].path).toBe('/tenants/north/datasets/dataset/tables/table/coordinates/read');
+  expect(calls[0].options?.body).toEqual({ snapshot_id: 'selected',reader_source_connections:null });
   expect(state.rowsPage()).toBeNull();
   await state.choose('rows');
-  expect(calls[1].options?.query).toEqual({ snapshot_id: 'selected', page: 1, page_size: 25 });
+  expect(calls[1].options?.body).toEqual({ snapshot_id: 'selected', page: 1, page_size: 25,reader_source_connections:null });
   await state.pageRows(2);
   expect(state.rowsPage()?.page).toBe(2);
   expect(state.rowsPage()?.total).toBe(30);
@@ -128,6 +130,7 @@ it('converts one-based user input to exact zero-based cell positions without sen
   expect(calls[1].options?.body).toEqual({
     snapshot_id: 'selected',
     cells: [{ row: 1, column: 0 }],
+    reader_source_connections:null,
   });
   expect(state.selection()?.items[0].source_row).toBe(4);
   await state.find('1.5', '1');
@@ -195,7 +198,7 @@ it('rejects a mismatched response and never substitutes current metadata for an 
 it('rejects pages or cell receipts whose immutable mapping disagrees with the selected manifest', async () => {
   const { state } = setup(
     async <T>(_method: unknown, path: string) =>
-      (path.endsWith('/rows')
+      (path.endsWith('/rows/read')
         ? { ...rows(), manifest: { ...manifest, mapping_sha256: 'c'.repeat(64) } }
         : manifest) as T,
   );
@@ -263,7 +266,7 @@ it('uses the column SDK operation and hides known metadata after a later denial'
       calls.push({ path, options });
       if (deny) throw new KoinonError(403, 'DENIED', 'Access denied');
       return (
-        path.endsWith('/columns')
+        path.endsWith('/columns/read')
           ? {
               manifest,
               items: [0, 1].map((i) => ({
@@ -287,8 +290,8 @@ it('uses the column SDK operation and hides known metadata after a later denial'
   await state.open(target);
   await state.choose('columns');
   expect(state.columnsPage()?.items).toHaveLength(2);
-  expect(calls[1].path).toBe('/tenants/north/datasets/dataset/tables/table/coordinates/columns');
-  expect(calls[1].options?.query).toEqual({ snapshot_id: 'selected', page: 1, page_size: 25 });
+  expect(calls[1].path).toBe('/tenants/north/datasets/dataset/tables/table/coordinates/columns/read');
+  expect(calls[1].options?.body).toEqual({ snapshot_id: 'selected', page: 1, page_size: 25,reader_source_connections:null });
   deny = true;
   await state.choose('rows');
   expect(state.manifest()).toBeNull();

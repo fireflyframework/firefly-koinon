@@ -3,10 +3,12 @@
 """Verify content-grant identity separately from the application's sign-in session."""
 
 import hmac
+from dataclasses import dataclass
 from typing import Self
 from uuid import UUID
 
 from koinon_storage.client_lifecycle import ClientLifecycle
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pyfly.client import HttpxClientAdapter
 from pyfly.client.exceptions import ServiceClientException
 from pyfly.client.ports.outbound import StreamingHttpClientPort
@@ -19,6 +21,49 @@ from koinon.integrations.content_sources.oauth import SourceOAuthConfig
 from koinon.integrations.content_sources.transport import SourceTransport
 
 _MICROSOFT_CONSUMERS = "9188040d-6c67-4c5b-b112-36a304b66dad"
+
+
+class SourceDisplayProfile(BaseModel):
+    """Presentation from verified claims; never part of account authorization."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+    display_name: str | None = Field(default=None, max_length=255)
+    display_address: str | None = Field(default=None, max_length=320)
+    display_address_verified: bool = False
+
+    @field_validator("display_name", "display_address")
+    @classmethod
+    def plain(cls, value):
+        return bounded(value, limit=320) if value is not None else None
+
+    @classmethod
+    def from_verified_claims(cls, provider, claims):
+        def text(key, limit):
+            try:
+                return bounded(claims.get(key), limit=limit).strip() or None
+            except ValueError:
+                return None
+
+        name, address = text("name", 255), text("email", 320)
+        if address is not None and (
+            address.count("@") != 1
+            or any(character.isspace() for character in address)
+            or any(not part for part in address.split("@"))
+        ):
+            address = None
+        return cls(
+            display_name=name,
+            display_address=address,
+            display_address_verified=(
+                address is not None and provider == "google_drive" and claims.get("email_verified") is True
+            ),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class VerifiedSourceIdentity:
+    account: Account
+    display: SourceDisplayProfile
 
 
 class SourceIdentityVerifier:
@@ -87,6 +132,9 @@ class SourceIdentityVerifier:
             return bytes(body)
 
     async def verify(self, id_token: str, *, nonce: str) -> Account:
+        return (await self.verify_with_profile(id_token, nonce=nonce)).account
+
+    async def verify_with_profile(self, id_token: str, *, nonce: str) -> VerifiedSourceIdentity:
         try:
             bounded(nonce)
             with self._lifecycle.operation():
@@ -104,6 +152,9 @@ class SourceIdentityVerifier:
                 if claims.get("tid") != self.tenant:
                     raise ValueError
                 subject = str(UUID(claims.get("oid", "")))
-            return Account(self.config.provider, subject, self.tenant)
+            return VerifiedSourceIdentity(
+                Account(self.config.provider, subject, self.tenant),
+                SourceDisplayProfile.from_verified_claims(self.config.provider, claims),
+            )
         except (SecurityException, ServiceClientException, ValueError, TypeError, AttributeError):
             raise SourceError("invalid_identity") from None

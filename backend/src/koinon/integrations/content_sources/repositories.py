@@ -18,6 +18,19 @@ from koinon.integrations.content_sources.entities import (
 
 @repository(name="content_sources.connection_repository")
 class SourceConnectionRepository(Repository[PersonalSourceConnection, str]):
+    async def page(self, tenant_id: str, owner: str, *, cursor: str | None, limit: int):
+        statement = select(PersonalSourceConnection).where(
+            PersonalSourceConnection.tenant_id == tenant_id,
+            PersonalSourceConnection.owner == owner,
+        )
+        if cursor is not None:
+            statement = statement.where(PersonalSourceConnection.id > cursor)
+        return list(
+            await self._require_session().scalars(
+                statement.order_by(PersonalSourceConnection.id).limit(limit + 1)
+            )
+        )
+
     @staticmethod
     def _owner(tenant_id, owner, identifier):
         return (

@@ -43,7 +43,7 @@ import uuid
 from collections import defaultdict
 from typing import Any
 
-from flyquery.core.services.retrieval.search_index import Hit, SearchIndex
+from flyquery.core.services.retrieval.search_index import Hit, ProductSearchIndex, SearchIndex
 
 
 def _rrf(rankings: list[list[Hit]], k: int = 60) -> list[Hit]:
@@ -70,10 +70,14 @@ class HybridRetriever:
     skipped and results come from BM25 only.
     """
 
-    def __init__(self, index: SearchIndex, embedder: Any, rrf_k: int = 60) -> None:
+    def __init__(self, index: SearchIndex | ProductSearchIndex, embedder: Any, rrf_k: int = 60) -> None:
         self._index = index
         self._embedder = embedder
         self._rrf_k = rrf_k
+
+    def bind_snapshot_pins(self, pins: dict[str, str]) -> None:
+        if isinstance(self._index, ProductSearchIndex):
+            self._index.bind_snapshot_pins(pins)
 
     async def retrieve(
         self,

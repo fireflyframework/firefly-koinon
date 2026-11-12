@@ -2,10 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { expect, test, type Page } from '@playwright/test';
 import type { CatalogSummary } from '@fireflyframework/koinon-sdk';
-import { mkdir } from 'node:fs/promises';
-import { resolve } from 'node:path';
 import { entry, mockService } from './fixtures';
-const directory = resolve('../../control/frontend-captures/library-experience');
 const summary = (values: Partial<CatalogSummary> = {}): CatalogSummary => ({
   child_count: null,
   document_count: null,
@@ -21,6 +18,9 @@ const summary = (values: Partial<CatalogSummary> = {}): CatalogSummary => ({
   ...values,
 });
 async function setup(page: Page) {
+  const errors:string[]=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});
   const summaries: Record<string, CatalogSummary> = {
     'workspace-one': summary({ child_count: 1 }),
     'project-one': summary({ child_count: 1 }),
@@ -78,14 +78,13 @@ async function setup(page: Page) {
     );
   }
   await page.goto('/library');
-  return service;
+  return {...service,errors};
 }
 async function openLibrary(page: Page) {
   for (const name of ['Research operations', 'Operations intelligence', 'Reference library'])
     await page.getByRole('button', { name, exact: true }).click();
 }
 async function capture(page: Page, name: string) {
-  await mkdir(directory, { recursive: true });
   await page.evaluate(() => {
     document
       .querySelector<HTMLElement>('ffk-workbench')
@@ -99,15 +98,16 @@ async function capture(page: Page, name: string) {
     document.body.append(mark);
   });
   await page.screenshot({
-    path: resolve(directory, name + '.png'),
+    path: test.info().outputPath(name + '.png'),
     fullPage: true,
     animations: 'disabled',
   });
 }
-for (const width of [1440, 1024, 390])
-  test(`library columns and pagination remain readable at ${width}px`, async ({ page }) => {
+for (const width of [1440, 1024, 390]) for(const theme of ['light','dark'])
+  test(`library columns and pagination remain readable at ${width}px ${theme}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
-    await setup(page);
+    await page.addInitScript(theme=>localStorage.setItem('koinon-theme',theme),theme);
+    const service=await setup(page);
     if (width === 1440) {
       await page.getByRole('button', { name: 'Research operations', exact: true }).click();
       await page.getByRole('button', { name: 'Operations intelligence', exact: true }).click();
@@ -173,44 +173,51 @@ for (const width of [1440, 1024, 390])
       expect(Math.abs(filterBounds!.x - triggerBounds!.x)).toBeLessThan(2);
     }
     await capture(page, 'filters-' + width);
+    expect(service.errors).toEqual([]);
   });
 test('header sorting and metadata filters query the whole collection and reset pagination', async ({
   page,
 }) => {
   const service = await setup(page);
   await openLibrary(page);
-  await page.getByRole('button', { name: 'Next library page', exact: true }).click();
+  await page.getByRole('button', { name: 'Continue browsing', exact: true }).click();
   await expect(page.getByRole('navigation', { name: 'Library pagination' })).toContainText(
-    'Page 2 of 2',
+    'items on this page',
   );
   await page.getByRole('columnheader', { name: 'Name' }).getByRole('button').click();
   await expect
-    .poll(() => service.reads.filter((read) => read.query['view'] === 'library').at(-1)?.query)
-    .toMatchObject({ sort: 'name', order: 'desc', page: '1' });
+    .poll(() => service.observations.filter((read) => (read.body as {view?:string})?.view === 'library').at(-1)?.body)
+    .toMatchObject({ sort: 'name', order: 'desc' });
+  expect(service.observations.filter(read=>(read.body as {view?:string})?.view==='library').at(-1)?.body).not.toHaveProperty('cursor');
   await page.locator('button.tag:visible').filter({ hasText: 'operations' }).first().click();
   await expect
-    .poll(() => service.reads.filter((read) => read.query['view'] === 'library').at(-1)?.query)
-    .toMatchObject({ tag: 'operations', page: '1' });
+    .poll(() => service.observations.filter((read) => (read.body as {view?:string})?.view === 'library').at(-1)?.body)
+    .toMatchObject({ tag: 'operations' });
+  expect(service.observations.filter(read=>(read.body as {view?:string})?.view==='library').at(-1)?.body).not.toHaveProperty('cursor');
   await expect(page.getByRole('button', { name: 'Clear filters', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
   await page.locator('summary').filter({ hasText: 'More filters' }).click();
   await page.getByRole('textbox', { name: 'Format', exact: true }).fill('PDF');
   await page.getByRole('button', { name: 'Apply filters', exact: true }).click();
   await expect
-    .poll(() => service.reads.filter((read) => read.query['view'] === 'library').at(-1)?.query)
-    .toMatchObject({ format: 'pdf', page: '1' });
+    .poll(() => service.observations.filter((read) => (read.body as {view?:string})?.view === 'library').at(-1)?.body)
+    .toMatchObject({ format: 'pdf' });
+  expect(service.observations.filter(read=>(read.body as {view?:string})?.view==='library').at(-1)?.body).not.toHaveProperty('cursor');
   await page.locator('.filter-options select[name="sort"]').selectOption('created_at.desc');
   await page.getByRole('button', { name: 'Apply filters', exact: true }).click();
   await expect
-    .poll(() => service.reads.filter((read) => read.query['view'] === 'library').at(-1)?.query)
-    .toMatchObject({ sort: 'created_at', order: 'desc', format: 'pdf', page: '1' });
+    .poll(() => service.observations.filter((read) => (read.body as {view?:string})?.view === 'library').at(-1)?.body)
+    .toMatchObject({ sort: 'created_at', order: 'desc', format: 'pdf' });
+  expect(service.observations.filter(read=>(read.body as {view?:string})?.view==='library').at(-1)?.body).not.toHaveProperty('cursor');
   await expect.poll(() => service.observations.length).toBeGreaterThan(0);
   expect(service.writes).toEqual([]);
+  expect(service.errors).toEqual([]);
 });
-for (const width of [320, 390])
-  test(`Spanish pagination wraps complete groups at ${width}px`, async ({ page }) => {
+for (const width of [320, 390]) for(const theme of ['light','dark'])
+  test(`Spanish pagination wraps complete groups at ${width}px ${theme}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 960 });
-    await setup(page);
+    await page.addInitScript(theme=>localStorage.setItem('koinon-theme',theme),theme);
+    const service=await setup(page);
     await page.route('**/bff/api/v1/profile', (route) =>
       route.fulfill({
         json: {
@@ -226,6 +233,7 @@ for (const width of [320, 390])
     );
     await page.reload();
     await openLibrary(page);
+    await expect(page.getByRole('button',{name:'PDF',exact:true}).first()).toBeVisible();
     const nav = page.locator('ffk-pagination nav');
     await nav.scrollIntoViewIfNeeded();
     await expect(nav.getByRole('combobox')).toBeVisible();
@@ -254,4 +262,5 @@ for (const width of [320, 390])
       true,
     );
     await capture(page, 'pagination-es-' + width);
+    expect(service.errors).toEqual([]);
   });

@@ -30,6 +30,10 @@ class DocumentHistoryService:
     async def _read(self, operation, subject, tenant_id, document_id, **arguments):
         chain, binding = await self.knowledge.authorize_document_read(subject, tenant_id, document_id)
         before = self._binding(chain, binding)
+        source_operation = await self.knowledge.authorize_source_entries(
+            subject, tenant_id, (document_id,), version_id=arguments.get("source_version_id"),
+            extraction_id=arguments.get("extraction_id"), part_id=arguments.get("source_part_id"),
+        )
         result = await getattr(self.history, operation)(
             actor=subject,
             tenant_id=tenant_id,
@@ -42,6 +46,8 @@ class DocumentHistoryService:
         )
         if self._binding(current_chain, current_binding) != before:
             raise AccessDenied("The document binding changed during the read", code="DOCUMENT_SCOPE_MISMATCH")
+        if source_operation is not None:
+            await source_operation.release()
         identity = dict(document_id=document_id, catalog_source_id=before[0], native_source_id=before[2])
         return result, identity
 

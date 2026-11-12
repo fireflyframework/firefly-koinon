@@ -1073,37 +1073,44 @@ async def test_unchanged_streaming_delta_reuses_only_successful_current_authorit
         await memory.authorize("issuer|admin", "north", run.id)
 
 
-async def test_fixed_rows_cannot_be_silently_reselected_away_after_reset():
+async def test_fixed_rows_cannot_be_silently_reselected_away_after_reset(assistants, monkeypatch):
     from types import SimpleNamespace
     from unittest.mock import AsyncMock
 
     from koinon.assistants.service import AssistantService
     from koinon.catalog.errors import AccessDenied
 
-    run = SimpleNamespace(id="target")
+    service, _ = assistants
+    _, agent = await configured(service)
+    thread = await service.create_thread("issuer|admin", "north", {})
+    run = await service.submit(
+        "issuer|admin",
+        "north",
+        thread["id"],
+        {"agent_id": agent["id"], "message": "Question", "client_request_id": "fixed-results"},
+    )
     fixed = SimpleNamespace(id="old-result", payload={"asset_ids": ["revoked-source"]})
     denied = AsyncMock(side_effect=AccessDenied("Source was revoked"))
-    service = SimpleNamespace(
-        scoped=AsyncMock(return_value=run),
-        runs=object(),
-        active_results=AsyncMock(return_value=[]),
-        catalog=SimpleNamespace(get=denied),
-        origin_authority=AsyncMock(),
-        memory=None,
-    )
+    monkeypatch.setattr(service.catalog, "get", denied)
+    active = AsyncMock(return_value=[])
+    monkeypatch.setattr(service, "active_results", active)
     with pytest.raises(AccessDenied):
         await AssistantService.authorize_results(
-            service, "owner", "north", "target", require_memory=False, result_rows=(fixed,)
+            service, "issuer|admin", "north", run["run_id"], require_memory=False, result_rows=(fixed,)
         )
-    denied.assert_awaited_once_with("owner", "north", "revoked-source")
-    service.active_results.assert_not_awaited()
+    denied.assert_awaited_once_with("issuer|admin", "north", "revoked-source")
+    active.assert_not_awaited()
 
 
 async def test_page_captured_before_retry_cannot_use_post_reset_empty_manifest(assistants, monkeypatch):
+    import asyncio
+    from contextvars import copy_context
+
     from sqlalchemy import update
 
     from koinon.assistants.lifecycle import timestamp
     from koinon.assistants.memory.repositories import ChatMemoryRepository
+    from koinon.assistants.source_reads import _capture
     from koinon.catalog.errors import AccessDenied
     from koinon.tokens.entities import PersonalToken
 
@@ -1124,7 +1131,9 @@ async def test_page_captured_before_retry_cannot_use_post_reset_empty_manifest(a
         nonlocal reset
         if not reset:
             reset = True
-            await service.retry("issuer|admin", "north", run.id)
+            request_context = copy_context()
+            request_context.run(_capture.set, None)
+            await asyncio.create_task(service.retry("issuer|admin", "north", run.id), context=request_context)
         return await original(repository, *args, **kwargs)
 
     monkeypatch.setattr(ChatMemoryRepository, "active_manifests", reset_before_read)
@@ -1162,14 +1171,22 @@ async def test_event_capture_reset_is_checked_at_final_statement(assistants, mon
     assert reset
 
 
-async def test_as_of_page_body_remains_valid_when_only_new_deltas_append(assistants, monkeypatch):
+async def test_changed_page_is_denied_and_incremental_polling_recovers(assistants, monkeypatch):
+    import asyncio
+    from contextvars import copy_context
+
     from koinon.assistants.memory.repositories import ChatMemoryRepository
+    from koinon.assistants.source_reads import _capture
+    from koinon.catalog.errors import AccessDenied
 
     service, history, queue, memory, folder, source, old, target, run, generation = await memory_pair(
         assistants
     )
     await queue.append(run.id, "pair-worker", "message_delta", {"text": "First captured chunk"})
     cursor = (await service.runs.find_by_id(run.id)).sequence
+    stable = await service.message_page("issuer|admin", "north", target["id"])
+    stable_answer = next(item for item in stable["items"] if item.get("run_id") == run.id)
+    assert stable_answer["event_cursor"] == str(cursor)
     original = ChatMemoryRepository.active_manifests
     appended = False
 
@@ -1177,17 +1194,29 @@ async def test_as_of_page_body_remains_valid_when_only_new_deltas_append(assista
         nonlocal appended
         if not appended:
             appended = True
-            await queue.append(run.id, "pair-worker", "message_delta", {"text": " Later chunk"})
+            request_context = copy_context()
+            request_context.run(_capture.set, None)
+            await asyncio.create_task(
+                queue.append(run.id, "pair-worker", "message_delta", {"text": " Later chunk"}),
+                context=request_context,
+            )
         return await original(repository, *args, **kwargs)
 
     monkeypatch.setattr(ChatMemoryRepository, "active_manifests", append_before_memory)
+    with pytest.raises(AccessDenied):
+        await service.message_page("issuer|admin", "north", target["id"])
+    assert appended
     page = await service.message_page("issuer|admin", "north", target["id"])
     answer = next(item for item in page["items"] if item.get("run_id") == run.id)
     from koinon.answers.receipts import legacy_notice
 
     assert answer["text"] == legacy_notice("en")
-    assert answer["event_cursor"] == str(cursor)
-    assert (await service.runs.find_by_id(run.id)).sequence > cursor
+    latest = (await service.runs.find_by_id(run.id)).sequence
+    assert latest > cursor
+    assert answer["event_cursor"] == str(latest)
+    assert stable_answer["text"] == answer["text"]
+    events = await service.run_events("issuer|admin", "north", run.id, after=cursor)
+    assert events and all(int(item["id"]) > cursor for item in events)
 
 
 async def test_native100_message_page_can_hold51_assistants_at_two_half_turn_boundaries(assistants):

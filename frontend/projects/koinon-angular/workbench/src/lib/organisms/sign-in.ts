@@ -1,5 +1,7 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
+import { registerKoinonSpanish as registerPanelSpanish } from '@fireflyframework/koinon-angular/workbench/core';
+import { PANEL_SPANISH } from '../foundations/panel-spanish.generated';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -12,6 +14,7 @@ import { KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench/core'
 import { KoinonButton } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonIcon } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonPoweredBy } from '../atoms/powered-by';
+registerPanelSpanish(PANEL_SPANISH);
 @Component({
   selector: 'ffk-sign-in',
   imports: [KoinonTextPipe, KoinonButton, KoinonIcon, KoinonPoweredBy],

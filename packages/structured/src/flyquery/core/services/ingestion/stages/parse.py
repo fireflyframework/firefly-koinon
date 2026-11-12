@@ -438,6 +438,7 @@ async def run_parse(
     max_tables: int | None = None,
     extract_only: bool = False,
     reserve_tables: Callable[[tuple[ProposedTable, ...]], Awaitable[tuple[uuid.UUID, ...]]] | None = None,
+    _defer_table_bindings: bool = False,
 ) -> list[ParsedTable]:
     """Execute Stage 2: parse."""
     if append_only and existing_table_id is not None:
@@ -447,6 +448,13 @@ async def run_parse(
     ):
         raise InvalidRequestException(
             "Reserved parsing requires bounded new tables", code="INVALID_APPEND_TARGET"
+        )
+    if type(_defer_table_bindings) is not bool or (
+        _defer_table_bindings and (reserve_tables is None or not extract_only)
+    ):
+        raise InvalidRequestException(
+            "Prepared replacement requires reserved identities and extraction-only parsing",
+            code="INVALID_PREPARED_REPLACEMENT",
         )
     if max_tables is not None and (type(max_tables) is not int or not 1 <= max_tables <= 128):
         raise InvalidRequestException("Use a table bound from 1 to 128", code="INVALID_TABLE_BOUND")
@@ -705,7 +713,7 @@ async def run_parse(
             # downstream FKs (snapshot, schema_objects) would point at
             # the freshly-generated UUID and fail with
             # ``ForeignKeyViolationError``.
-            if existing_table_id is None:
+            if existing_table_id is None and not _defer_table_bindings:
                 table_id = await _insert_table(
                     table_id=table_id,
                     tenant_id=tenant_id,
@@ -822,9 +830,9 @@ async def _insert_table(
     on 2026-05-24).
     """
     conflict = (
-        "ON CONFLICT (dataset_id, name) DO NOTHING"
+        "ON CONFLICT (dataset_id, name) WHERE is_active DO NOTHING"
         if append_only
-        else "ON CONFLICT (dataset_id, name) DO UPDATE "
+        else "ON CONFLICT (dataset_id, name) WHERE is_active DO UPDATE "
         "SET source_file_id = EXCLUDED.source_file_id, updated_at = now()"
     )
     async with infrastructure_unit(session_factory) as s:

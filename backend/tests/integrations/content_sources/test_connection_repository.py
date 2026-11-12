@@ -10,10 +10,11 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 @pytest.fixture
 async def stored(tmp_path):
+    from pyfly.data.relational.sqlalchemy import Base
+
     from koinon.catalog.entities import Tenant
     from koinon.integrations.content_sources.entities import PersonalSourceConnection
     from koinon.integrations.content_sources.repositories import SourceConnectionRepository
-    from pyfly.data.relational.sqlalchemy import Base
 
     engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'sources.db'}")
     async with engine.begin() as connection:

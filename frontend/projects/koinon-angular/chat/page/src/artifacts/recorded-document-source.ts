@@ -11,16 +11,11 @@ import {
   PendingTasks,
   inject,
 } from '@angular/core';
-import {
-  KoinonButton,
-  KoinonIcon,
-  KoinonSidePanel,
-  KoinonSkeleton,
-  KoinonTextPipe,
-} from '@fireflyframework/koinon-angular';
+import { KoinonButton, KoinonIcon, KoinonSkeleton, KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonSidePanel } from '@fireflyframework/koinon-angular/workbench/panels';
 import type { SourceReference } from '@fireflyframework/koinon-sdk';
 import { KoinonRecordedDocumentSourceState } from './recorded-document-source-state';
-import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
+import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench/core';
 import { RECORDED_SOURCE_SPANISH } from './recorded-source-spanish';
 
 registerKoinonSpanish(RECORDED_SOURCE_SPANISH);

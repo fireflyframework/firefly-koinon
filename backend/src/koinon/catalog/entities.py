@@ -5,7 +5,19 @@
 from datetime import UTC, datetime
 
 from pyfly.data.relational.sqlalchemy import Base, UtcDateTime
-from sqlalchemy import DDL, JSON, CheckConstraint, ForeignKey, Index, String, UniqueConstraint, event
+from sqlalchemy import (
+    DDL,
+    JSON,
+    BigInteger,
+    CheckConstraint,
+    FetchedValue,
+    ForeignKey,
+    Index,
+    String,
+    UniqueConstraint,
+    event,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from koinon.catalog.system_guards import system_space_guards
@@ -24,6 +36,7 @@ class Tenant(Base):
 
 class CatalogEntry(Base):
     __tablename__ = "lattice_catalog"
+    __mapper_args__ = {"eager_defaults": True}
     __table_args__ = (
         Index("ix_lattice_scope_kind", "tenant_id", "workspace_id", "kind"),
         UniqueConstraint("tenant_id", "system_key", name="uq_catalog_system_key"),
@@ -52,6 +65,9 @@ class CatalogEntry(Base):
     updated_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=lambda: datetime.now(UTC))
     system_key: Mapped[str | None] = mapped_column(String(64), nullable=True)
     installation_run_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    mutation_revision: Mapped[int] = mapped_column(
+        BigInteger, server_default=text("1"), server_onupdate=FetchedValue()
+    )
 
 
 class Membership(Base):
@@ -70,6 +86,7 @@ class Membership(Base):
 
 class AuditEvent(Base):
     __tablename__ = "lattice_audit"
+    __table_args__ = (Index("ix_catalog_audit_resource", "resource_id"),)
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("lattice_tenants.id"), index=True)
     subject: Mapped[str] = mapped_column(String(512))
@@ -82,3 +99,6 @@ class AuditEvent(Base):
 for dialect in ("sqlite", "postgresql"):
     for statement in system_space_guards(dialect):
         event.listen(CatalogEntry.__table__, "after_create", DDL(statement).execute_if(dialect=dialect))
+
+# Register database-owned history for direct metadata users as well as package scanning.
+from koinon.catalog import history_entities as history_entities  # noqa: E402

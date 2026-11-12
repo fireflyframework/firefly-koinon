@@ -22,12 +22,15 @@ def test_document_product_extension_preserves_standalone_head():
     standalone.set_main_option("path_separator", "os")
     assert ScriptDirectory.from_config(standalone).get_heads() == ["0017_embedding_sets"]
     product = ScriptDirectory.from_config(deploy.history_config("canon", versions, None))
-    assert product.get_heads() == ["0022_readiness_generations"]
+    assert product.get_heads() == ["0023_source_publication_baseline"]
     assert product.get_revision("0018_index_provisioning").down_revision == "0017_embedding_sets"
     assert product.get_revision("0019_curated_knowledge").down_revision == "0018_index_provisioning"
     assert product.get_revision("0020_source_lineage").down_revision == "0019_curated_knowledge"
     assert product.get_revision("0021_pinned_originals").down_revision == "0020_source_lineage"
     assert product.get_revision("0022_readiness_generations").down_revision == "0021_pinned_originals"
+    assert (
+        product.get_revision("0023_source_publication_baseline").down_revision == "0022_readiness_generations"
+    )
 
 
 def test_structured_product_extension_preserves_standalone_head():
@@ -41,9 +44,18 @@ def test_structured_product_extension_preserves_standalone_head():
     standalone.set_main_option("script_location", str(versions.parent))
     standalone.set_main_option("version_locations", str(versions))
     standalone.set_main_option("path_separator", "os")
-    assert ScriptDirectory.from_config(standalone).get_heads() == ["0015_versioned_embedding_sets"]
+    assert ScriptDirectory.from_config(standalone).get_heads() == ["0016_live_table_names"]
     product = ScriptDirectory.from_config(deploy.history_config("structured", versions, None))
-    assert product.get_heads() == ["0020_bulk_query_operations"]
+    assert product.get_heads() == ["0026_live_table_names"]
+    assert product.get_revision("0026_live_table_names").down_revision == (
+        "0025_source_publication_baseline",
+        "0016_live_table_names",
+    )
+    assert product.get_revision("0016_live_table_names").down_revision == "0015_versioned_embedding_sets"
+    assert (
+        product.get_revision("0025_source_publication_baseline").down_revision
+        == "0024_replacement_member_locators"
+    )
     assert product.get_revision("0020_bulk_query_operations").down_revision == "0019_consumer_context"
     assert product.get_revision("0019_consumer_context").down_revision == "0018_bulk_operations"
     assert product.get_revision("0018_bulk_operations").down_revision == "0017_snapshot_coordinates"

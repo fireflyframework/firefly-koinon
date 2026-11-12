@@ -7,9 +7,10 @@ import hashlib
 import json
 import secrets
 from collections.abc import Sequence
-from contextlib import suppress
-from dataclasses import dataclass, field, replace
+from contextlib import nullcontext, suppress
+from dataclasses import asdict, dataclass, field, replace
 from datetime import timedelta
+from functools import wraps
 from pathlib import Path
 from uuid import uuid4
 
@@ -50,7 +51,12 @@ from koinon.knowledge.bulk.dtos import (
     aggregate_status,
 )
 from koinon.knowledge.bulk.entities import BulkBatch, BulkItem, BulkRecovery, BulkUpload, BulkUploadState, now
-from koinon.knowledge.bulk.ports import BulkIntakePort
+from koinon.knowledge.bulk.ports import (
+    BulkIntakePort,
+    SourceIntakeAdmission,
+    SourceIntakeGuard,
+    SourceIntakeWriter,
+)
 from koinon.knowledge.bulk.queue import BulkQueue
 from koinon.knowledge.bulk.recovery_intent import PENDING_RECOVERY, ProcessingRecoveryIntent
 from koinon.knowledge.bulk.repositories import BulkRepository
@@ -58,7 +64,41 @@ from koinon.knowledge.bulk.settings import BulkSettings
 from koinon.knowledge.bulk.storage import BulkStorage, LocalWriterPermit
 from koinon.knowledge.bulk.upload_formats import upload_formats
 from koinon.knowledge.service import KnowledgeSettings
-from koinon.security.authority import PRIMARY_POLICY_UNIT
+from koinon.security.authority import PRIMARY_POLICY_UNIT, primary_authority
+
+
+def source_staging(method, *, read_only=False):
+    """Each private staging phase obtains fresh proof outside its short local transaction."""
+    ordinary = transactional(
+        propagation=Propagation.REQUIRES_NEW,
+        read_only=read_only,
+        read_from_primary=True,
+        name=PRIMARY_POLICY_UNIT if read_only else None,
+        isolation=Isolation.SERIALIZABLE if read_only else Isolation.DEFAULT,
+    )(method)
+    local = transactional(method)
+
+    @wraps(method)
+    async def invoke(self, *args, _source_admission=None, _source_execution=None, **kwargs):
+        if _source_admission is None:
+            if _source_execution is not None:
+                raise ConflictException("Private source admission is required", code="SOURCE_INTAKE_REQUIRED")
+            return await ordinary(self, *args, **kwargs)
+        writer = self.source_writers.get() if self.source_writers is not None else None
+        if writer is None or not writer.is_run_execution(_source_execution):
+            raise ConflictException("Private source execution is required", code="SOURCE_INTAKE_REQUIRED")
+        async with (
+            writer.prepare(_source_admission, execution=_source_execution),
+            primary_authority(read_only=False, fresh=True),
+            writer.fence(_source_admission),
+        ):
+            return await local(self, *args, _source_admission=_source_admission, **kwargs)
+
+    return invoke
+
+
+def source_staging_read(method):
+    return source_staging(method, read_only=True)
 
 
 def digest(value: object) -> str:
@@ -109,6 +149,8 @@ class FileBatches:
         authority: BulkAuthority,
         intakes: Provider[BulkIntakePort | None] | None = None,
         knowledge_settings: KnowledgeSettings | None = None,
+        source_guards: Provider[SourceIntakeGuard | None] | None = None,
+        source_writers: Provider[SourceIntakeWriter | None] | None = None,
     ):
         self.catalog, self.records, self.storage, self.settings, self.jobs, self.authority = (
             catalog,
@@ -121,6 +163,8 @@ class FileBatches:
 
         self.intakes = intakes
         self.knowledge_settings = knowledge_settings or KnowledgeSettings()
+        self.source_guards = source_guards
+        self.source_writers = source_writers
 
     @transactional(
         datasource="primary",
@@ -164,12 +208,27 @@ class FileBatches:
             max_active_batches_per_subject=self.settings.max_active_batches_per_subject,
         )
 
-    async def _scope(self, subject: str, tenant: str, identifier: str, *, write: bool = False) -> BulkBatch:
+    async def _scope(
+        self, subject: str, tenant: str, identifier: str, *, write: bool = False, _source_admission=None
+    ) -> BulkBatch:
+        if _source_admission is not None:
+            writer = self.source_writers.get() if self.source_writers is not None else None
+            if writer is None or (subject, tenant) != (_source_admission.owner, _source_admission.tenant_id):
+                raise ConflictException("Source staging identity differs", code="SOURCE_INTAKE_REQUIRED")
+            writer.require_fence(_source_admission)
         if write:
             await self.records.authority_lock(tenant, subject, token_identity())
         row = await self.records.scoped(tenant, subject, identifier, lock=write)
         if row is None or row.token_id != token_identity():
             raise AccessDenied("Private intake batch is unavailable", code="ACCESS_DENIED")
+        if _source_admission is not None:
+            if (
+                row.request_json.get("_source_admission") != json.loads(json.dumps(asdict(_source_admission)))
+                or row.token_id is not None
+                or (row.workspace_id, row.project_id, row.parent_id) != _source_admission.destination
+            ):
+                raise ConflictException("Source staging identity differs", code="SOURCE_INTAKE_REQUIRED")
+            return row
         await self.authority.destination(
             subject,
             tenant,
@@ -203,10 +262,22 @@ class FileBatches:
             expires_at=row.expires_at,
         )
 
-    async def _item_for_write(self, subject: str, tenant: str, row: BulkBatch, item_id: str) -> BulkItem:
+    async def _item_for_write(
+        self, subject: str, tenant: str, row: BulkBatch, item_id: str, *, _source_admission=None
+    ) -> BulkItem:
         item = await self.records.item(row.id, item_id)
         if item is None:
             raise AccessDenied("Intake item is unavailable", code="ACCESS_DENIED")
+        if _source_admission is not None:
+            writer = self.source_writers.get() if self.source_writers is not None else None
+            if writer is None:
+                raise ConflictException("Source staging identity differs", code="SOURCE_INTAKE_REQUIRED")
+            writer.require_fence(_source_admission)
+            await self.authority.source_item(_source_admission, row, item)
+            current = await self.records.item(row.id, item_id, lock=True)
+            if current is None:
+                raise AccessDenied("Intake item is unavailable", code="ACCESS_DENIED")
+            return current
         await self.authority.item(
             subject,
             tenant,
@@ -231,9 +302,46 @@ class FileBatches:
             raise AccessDenied("Intake item is unavailable", code="ACCESS_DENIED")
         return current
 
-    @transactional(propagation=Propagation.REQUIRES_NEW)
-    async def create(self, subject: str, tenant: str, request: FileBatchCreate, key: str) -> FileBatchView:
+    async def create(
+        self,
+        subject: str,
+        tenant: str,
+        request: FileBatchCreate,
+        key: str,
+        *,
+        _source_admission: SourceIntakeAdmission | None = None,
+        _source_execution: object | None = None,
+    ) -> FileBatchView:
+        if _source_admission is None:
+            if _source_execution is not None:
+                raise ConflictException("Private source admission is required", code="SOURCE_INTAKE_REQUIRED")
+            return await self._create(subject, tenant, request, key)
+        writer = self.source_writers.get() if self.source_writers is not None else None
+        if writer is None or not writer.is_run_execution(_source_execution):
+            raise ConflictException("Private source execution is required", code="SOURCE_INTAKE_REQUIRED")
+        async with (
+            writer.prepare(_source_admission, execution=_source_execution),
+            primary_authority(read_only=False, fresh=True),
+            writer.fence(_source_admission),
+        ):
+            return await self._create(
+                subject, tenant, request, key, _source_admission=_source_admission, _source_writer=writer
+            )
+
+    @transactional
+    async def _create(
+        self,
+        subject: str,
+        tenant: str,
+        request: FileBatchCreate,
+        key: str,
+        *,
+        _source_admission: SourceIntakeAdmission | None = None,
+        _source_writer: SourceIntakeWriter | None = None,
+    ) -> FileBatchView:
         request = FileBatchCreate.model_validate(request.model_dump(mode="python")).model_copy(deep=True)
+        if (_source_admission is None) != (_source_writer is None):
+            raise ConflictException("Private source admission is required", code="SOURCE_INTAKE_REQUIRED")
         self.settings.validate()
         key_hash = key_digest(key)
         total = sum(item.size_bytes for item in request.items)
@@ -245,14 +353,48 @@ class FileBatches:
             raise PayloadTooLargeException(
                 "Bulk manifest exceeds configured bounds", code="BULK_MANIFEST_LIMIT"
             )
-        await self.authority.destination(subject, tenant, request.destination, write=True)
+        if _source_admission is None:
+            await self.authority.destination(subject, tenant, request.destination, write=True)
+        else:
+            await self.authority.source_destination(_source_admission)
+        source_guard = None
+        source_payload = None
+        if _source_admission is not None:
+            source_guard = self.source_guards.get() if self.source_guards is not None else None
+            if (
+                source_guard is None
+                or _source_writer is None
+                or _source_admission.tenant_id != tenant
+                or _source_admission.owner != subject
+                or token_identity() is not None
+                or _source_admission.destination
+                != (
+                    request.destination.workspace_id,
+                    request.destination.project_id,
+                    request.destination.parent_id,
+                )
+                or len(_source_admission.items) != len(request.items)
+                or len(request.items) != 1
+            ):
+                raise ConflictException(
+                    "Private source admission is unavailable", code="SOURCE_INTAKE_REQUIRED"
+                )
+            await source_guard.admit(_source_admission)
+            source_payload = asdict(_source_admission)
         self.storage.configured()
         previous = await self.records.keyed(tenant, key_hash)
-        request_hash = digest([subject, token_identity(), request.model_dump(mode="json")])
+        hash_input = [subject, token_identity(), request.model_dump(mode="json")]
+        if source_payload is not None:
+            hash_input.append(source_payload)
+        request_hash = digest(hash_input)
         if previous:
             if previous.request_hash != request_hash:
                 raise ConflictException("Key belongs to a different admission", code="IDEMPOTENCY_CONFLICT")
-            return await self._view(await self._scope(subject, tenant, previous.id))
+            return await self._view(
+                previous if _source_admission is not None else await self._scope(subject, tenant, previous.id)
+            )
+        if _source_writer is not None and _source_admission is not None:
+            await _source_writer.validate_intake(_source_admission, request.items)
         quota = await self.records.quota("tenant:" + tenant)
         history, active, actor_active = await self.records.admission_counts(tenant, subject)
         if history >= self.settings.max_batches_per_tenant:
@@ -272,7 +414,10 @@ class FileBatches:
             **request.destination.model_dump(),
             key_hash=key_hash,
             request_hash=request_hash,
-            request_json=request.model_dump(mode="json"),
+            request_json={
+                **request.model_dump(mode="json"),
+                **({"_source_admission": source_payload} if source_payload is not None else {}),
+            },
             actions_json={},
             revision=1,
             total_bytes=total,
@@ -281,52 +426,76 @@ class FileBatches:
         )
         row = await self.records.save(row)
         for ordinal, item in enumerate(request.items):
-            item_id = str(uuid4())
-            metadata = {"sha256": item.sha256, "bytes": item.size_bytes, "mode": item.mode}
-            source = await self.catalog.create(
-                subject, tenant, kind="source", name=item.filename, parent_id=row.parent_id, metadata=metadata
-            )
-            await self.catalog.update(subject, tenant, source.id, {"status": "pending"})
-            asset = await self.catalog.create(
-                subject,
-                tenant,
-                kind=item.mode,
+            item_id, source_id, asset_id, version_id = (str(uuid4()) for _ in range(4))
+            source_values = dict(
+                kind="source",
                 name=item.filename,
-                parent_id=source.id,
-                metadata={"sha256": item.sha256},
+                description="",
+                metadata={
+                    "sha256": item.sha256,
+                    "bytes": item.size_bytes,
+                    "mode": item.mode,
+                },
             )
-            await self.catalog.update(subject, tenant, asset.id, {"status": "pending"})
-            reservation = None
+            asset_values = dict(
+                kind=item.mode, name=item.filename, description="", metadata={"sha256": item.sha256}
+            )
+            version_values = dict(
+                kind="index_version",
+                name=item.filename,
+                description="",
+                metadata={
+                    "operation": "bulk.intake",
+                    "bulk_item_id": item_id,
+                    "sha256": item.sha256,
+                    "bytes": item.size_bytes,
+                },
+            )
+            entries = [(source_id, row.parent_id, source_values), (asset_id, source_id, asset_values)]
             if item.mode == "dataset":
-                version = await self.catalog.create(
-                    subject,
-                    tenant,
-                    kind="index_version",
-                    name=item.filename,
-                    parent_id=asset.id,
-                    metadata={
-                        "operation": "bulk.intake",
-                        "bulk_item_id": item_id,
-                        "sha256": item.sha256,
-                        "bytes": item.size_bytes,
-                    },
-                )
-                await self.catalog.update(subject, tenant, version.id, {"status": "pending"})
-                reservation = DatasetReservation(
-                    native_dataset_id=uuid4(), native_file_id=uuid4(), catalog_file_version_id=version.id
-                ).model_dump(mode="json")
-            await self.records.add_item(
-                BulkItem(
+                entries.append((version_id, asset_id, version_values))
+            operations = (
+                _source_writer.creation_operations(tuple(entries)) if _source_writer is not None else ()
+            )
+            admission_unit = (
+                _source_writer.open(_source_admission, operations)
+                if _source_writer is not None and _source_admission is not None
+                else nullcontext(None)
+            )
+            async with admission_unit as permit:
+                for index, (identifier, parent, values) in enumerate(entries):
+                    parent = row.parent_id if index == 0 else source_id if index == 1 else asset_id
+                    private = {"_source_create_id": identifier, "_source_write": permit} if permit else {}
+                    created = await self.catalog.create(
+                        subject, tenant, parent_id=parent, **values, **private
+                    )
+                    # Ordinary callers retain the catalog's identifier allocation.
+                    if index == 0:
+                        source_id = created.id
+                    elif index == 1:
+                        asset_id = created.id
+                    else:
+                        version_id = created.id
+                    private = {"_source_write": permit, "_source_parent_id": parent} if permit else {}
+                    await self.catalog.update(subject, tenant, created.id, {"status": "pending"}, **private)
+                reservation = None
+                if item.mode == "dataset":
+                    reservation = DatasetReservation(
+                        native_dataset_id=uuid4(), native_file_id=uuid4(), catalog_file_version_id=version_id
+                    ).model_dump(mode="json")
+                intake_item = BulkItem(
                     id=item_id,
                     batch_id=row.id,
                     ordinal=ordinal,
                     **item.model_dump(),
-                    source_id=source.id,
-                    asset_id=asset.id,
+                    source_id=source_id,
+                    asset_id=asset_id,
                     status="awaiting_upload",
                     reservation_json=reservation,
                 )
-            )
+                await self.records.add_item(intake_item)
+                if source_guard is not None and _source_admission is not None:
+                    await source_guard.bind(_source_admission, ordinal, intake_item)
         quota.reserved_bytes += total
         await self.records.flush()
         return await self._view(row)
@@ -464,14 +633,22 @@ class FileBatches:
         await self._output_guard(subject, tenant, identifier)
         return result
 
-    @transactional(propagation=Propagation.REQUIRES_NEW)
+    @source_staging
     async def _begin_upload(
-        self, subject: str, tenant: str, batch: str, item_id: str, content: bytes | None, key: str
+        self,
+        subject: str,
+        tenant: str,
+        batch: str,
+        item_id: str,
+        content: bytes | None,
+        key: str,
+        *,
+        _source_admission=None,
     ) -> UploadTicket:
-        row = await self._scope(subject, tenant, batch, write=True)
+        row = await self._scope(subject, tenant, batch, write=True, _source_admission=_source_admission)
         global_quota = await self.records.quota("global:uploads")
         quota = await self.records.quota("tenant:" + tenant)
-        item = await self._item_for_write(subject, tenant, row, item_id)
+        item = await self._item_for_write(subject, tenant, row, item_id, _source_admission=_source_admission)
         if item.size_bytes > self.storage.effective_file_limit():
             raise PayloadTooLargeException("Original exceeds the current byte limit", code="BULK_FILE_LIMIT")
         if content is not None and (
@@ -539,14 +716,22 @@ class FileBatches:
             storage_identity=storage_identity,
         )
 
-    @transactional(propagation=Propagation.REQUIRES_NEW)
+    @source_staging
     async def _finish_upload(
-        self, subject: str, tenant: str, batch: str, item_id: str, ticket: UploadTicket, object_reference=None
+        self,
+        subject: str,
+        tenant: str,
+        batch: str,
+        item_id: str,
+        ticket: UploadTicket,
+        object_reference=None,
+        *,
+        _source_admission=None,
     ) -> StagedFileReceipt:
-        row = await self._scope(subject, tenant, batch, write=True)
+        row = await self._scope(subject, tenant, batch, write=True, _source_admission=_source_admission)
         global_quota = await self.records.quota("global:uploads")
         quota = await self.records.quota("tenant:" + tenant)
-        item = await self._item_for_write(subject, tenant, row, item_id)
+        item = await self._item_for_write(subject, tenant, row, item_id, _source_admission=_source_admission)
         upload = await self.records.upload_by_id(ticket.upload_id, lock=True)
         if (
             item is None
@@ -608,12 +793,19 @@ class FileBatches:
         ):
             raise ConflictException("Upload writer lease was lost", code="BULK_UPLOAD_LEASE_LOST")
 
-    @transactional(propagation=Propagation.REQUIRES_NEW)
+    @source_staging
     async def _writer_check(
-        self, subject: str, tenant: str, batch: str, item_id: str, ticket: UploadTicket
+        self,
+        subject: str,
+        tenant: str,
+        batch: str,
+        item_id: str,
+        ticket: UploadTicket,
+        *,
+        _source_admission=None,
     ) -> None:
-        row = await self._scope(subject, tenant, batch, write=True)
-        item = await self._item_for_write(subject, tenant, row, item_id)
+        row = await self._scope(subject, tenant, batch, write=True, _source_admission=_source_admission)
+        item = await self._item_for_write(subject, tenant, row, item_id, _source_admission=_source_admission)
         upload = await self.records.upload_by_id(ticket.upload_id, lock=True)
         if (
             upload is None
@@ -708,17 +900,27 @@ class FileBatches:
             await self._expire_staging(tenant, upload_id, generation)
 
     async def _reserve_upload(
-        self, subject: str, tenant: str, batch: str, item_id: str, content: bytes | None, key: str
+        self,
+        subject: str,
+        tenant: str,
+        batch: str,
+        item_id: str,
+        content: bytes | None,
+        key: str,
+        *,
+        _source_admission=None,
+        _source_execution=None,
     ) -> UploadTicket:
+        source = dict(_source_admission=_source_admission, _source_execution=_source_execution)
         permit = self.storage.writer_permit()
         try:
             try:
-                ticket = await self._begin_upload(subject, tenant, batch, item_id, content, key)
+                ticket = await self._begin_upload(subject, tenant, batch, item_id, content, key, **source)
             except RateLimitException as error:
                 if error.code != "BULK_UPLOAD_LIMIT":
                     raise
                 await self._expire_staging_capacity()
-                ticket = await self._begin_upload(subject, tenant, batch, item_id, content, key)
+                ticket = await self._begin_upload(subject, tenant, batch, item_id, content, key, **source)
             if ticket.write:
                 return replace(ticket, local_permit=permit)
             permit.close()
@@ -756,7 +958,11 @@ class FileBatches:
         content: bytes | Path | None,
         received_bytes: int,
         received_sha256: str,
+        *,
+        _source_admission=None,
+        _source_execution=None,
     ) -> StagedFileReceipt:
+        source = dict(_source_admission=_source_admission, _source_execution=_source_execution)
         if current_unit_of_work("primary") is not None:
             raise ConflictException(
                 "Blob staging requires independently committed units", code="BULK_AMBIENT_TRANSACTION"
@@ -788,13 +994,13 @@ class FileBatches:
                     raise ConflictException(
                         "Original differs from stream receipt", code="BULK_CONTENT_MISMATCH"
                     )
-                await self._writer_check(subject, tenant, batch, item_id, ticket)
+                await self._writer_check(subject, tenant, batch, item_id, ticket, **source)
                 task = asyncio.create_task(operation())
                 reference = await asyncio.shield(task)
             else:
-                return await self.receipt(subject, tenant, batch, item_id)
+                return await self.receipt(subject, tenant, batch, item_id, **source)
             return await self._finish_upload(
-                subject, tenant, batch, item_id, ticket, object_reference=reference
+                subject, tenant, batch, item_id, ticket, object_reference=reference, **source
             )
         except BaseException:
             if task is not None:
@@ -814,14 +1020,30 @@ class FileBatches:
                 ticket.local_permit.close()
 
     async def stage(
-        self, subject: str, tenant: str, batch: str, item_id: str, content: bytes, key: str
+        self,
+        subject: str,
+        tenant: str,
+        batch: str,
+        item_id: str,
+        content: bytes | Path,
+        key: str,
+        *,
+        _source_admission=None,
+        _source_execution=None,
     ) -> StagedFileReceipt:
+        source = dict(_source_admission=_source_admission, _source_execution=_source_execution)
         if current_unit_of_work("primary") is not None:
             raise ConflictException(
                 "Blob staging requires independently committed units", code="BULK_AMBIENT_TRANSACTION"
             )
         key_digest(key)
-        ticket = await self._reserve_upload(subject, tenant, batch, item_id, content, key)
+        if isinstance(content, Path):
+            with source_file(content, self.storage.effective_file_limit()) as original:
+                _, size, sha256 = original
+            candidate = None
+        else:
+            size, sha256, candidate = len(content), hashlib.sha256(content).hexdigest(), content
+        ticket = await self._reserve_upload(subject, tenant, batch, item_id, candidate, key, **source)
         return await self.finish_stream(
             subject,
             tenant,
@@ -829,8 +1051,9 @@ class FileBatches:
             item_id,
             ticket,
             content,
-            len(content),
-            hashlib.sha256(content).hexdigest(),
+            size,
+            sha256,
+            **source,
         )
 
     @transactional(propagation=Propagation.REQUIRES_NEW)
@@ -1081,18 +1304,11 @@ class FileBatches:
             await self._abort_recovery(tenant, ticket)
             raise
 
-    @transactional(
-        datasource="primary",
-        name=PRIMARY_POLICY_UNIT,
-        propagation=Propagation.REQUIRES_NEW,
-        isolation=Isolation.SERIALIZABLE,
-        read_only=True,
-        read_from_primary=True,
-    )
+    @source_staging_read
     async def _receipt(
-        self, subject: str, tenant: str, batch: str, item_id: str
+        self, subject: str, tenant: str, batch: str, item_id: str, *, _source_admission=None
     ) -> tuple[StagedFileReceipt, BulkUpload]:
-        await self._scope(subject, tenant, batch)
+        await self._scope(subject, tenant, batch, _source_admission=_source_admission)
         item = await self.records.item(batch, item_id)
         upload = (
             await self.records.upload_by_id(item.winning_upload_id)
@@ -1114,8 +1330,18 @@ class FileBatches:
             size_bytes=item.size_bytes,
         ), upload
 
-    async def receipt(self, subject: str, tenant: str, batch: str, item_id: str) -> StagedFileReceipt:
-        result, upload = await self._receipt(subject, tenant, batch, item_id)
+    async def receipt(
+        self,
+        subject: str,
+        tenant: str,
+        batch: str,
+        item_id: str,
+        *,
+        _source_admission=None,
+        _source_execution=None,
+    ) -> StagedFileReceipt:
+        source = dict(_source_admission=_source_admission, _source_execution=_source_execution)
+        result, upload = await self._receipt(subject, tenant, batch, item_id, **source)
         if upload.object_reference_json is not None:
             import tempfile
 
@@ -1136,7 +1362,12 @@ class FileBatches:
             await self.storage.read(
                 upload.object_key, result.size_bytes, result.sha256, storage_identity=self.storage.identity()
             )
-        await self._output_guard(subject, tenant, batch)
+        if _source_admission is None:
+            await self._output_guard(subject, tenant, batch)
+        else:
+            current, _ = await self._receipt(subject, tenant, batch, item_id, **source)
+            if current != result:
+                raise ConflictException("Source staging receipt changed", code="BULK_UPLOAD_CONFLICT")
         return result
 
     def _action(self, row: BulkBatch, action: str, key: str, body: BulkAction) -> bool:
@@ -1156,11 +1387,18 @@ class FileBatches:
         row.actions_json = {**row.actions_json, key_hash: expected}
         return True
 
-    @transactional(propagation=Propagation.REQUIRES_NEW)
+    @source_staging
     async def submit(
-        self, subject: str, tenant: str, identifier: str, body: BulkAction, key: str
+        self,
+        subject: str,
+        tenant: str,
+        identifier: str,
+        body: BulkAction,
+        key: str,
+        *,
+        _source_admission=None,
     ) -> FileBatchView:
-        row = await self._scope(subject, tenant, identifier, write=True)
+        row = await self._scope(subject, tenant, identifier, write=True, _source_admission=_source_admission)
         if not self._action(row, "submit", key, body):
             return await self._view(row)
         items = await self.records.all_items(row.id)
@@ -1174,7 +1412,7 @@ class FileBatches:
                 "Every original must be staged before one submission", code="BULK_NOT_STAGED"
             )
         for item in items:
-            await self._item_for_write(subject, tenant, row, item.id)
+            await self._item_for_write(subject, tenant, row, item.id, _source_admission=_source_admission)
             item.connection_json = await self.records.connection(tenant, row.workspace_id, item.mode)
             job = await self.jobs.submit(
                 tenant,

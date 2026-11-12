@@ -30,6 +30,8 @@ for (const entry of [
   'fireflyframework-koinon-angular-workbench-availability',
   'fireflyframework-koinon-angular-workbench-panels',
   'fireflyframework-koinon-angular-workbench-page',
+  'fireflyframework-koinon-angular-workbench-startup',
+  'fireflyframework-koinon-angular-workbench-directory',
   'fireflyframework-koinon-angular-chat',
   'fireflyframework-koinon-angular-chat-page',
   'fireflyframework-koinon-angular-chat-evidence',

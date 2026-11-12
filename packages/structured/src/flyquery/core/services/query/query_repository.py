@@ -86,6 +86,8 @@ class QueryRepository:
         model_generation: str | None = None,
         model_critic: str | None = None,
         model_explainer: str | None = None,
+        query_id: uuid.UUID | None = None,
+        table_id_snapshot_pins_json: dict[str, str] | None = None,
     ) -> uuid.UUID:
         """Insert a new flyquery_queries row and return the generated id.
 
@@ -95,16 +97,16 @@ class QueryRepository:
             result = await s.execute(
                 sa.text("""
                     INSERT INTO flyquery_queries (
-                        tenant_id, workspace_id, dataset_id, question,
+                        id, tenant_id, workspace_id, dataset_id, question,
                         semantic_path_taken, candidates_json, chosen_candidate_index,
                         executed_sql, ast_classification, execution_status,
                         retries, row_count, elapsed_ms,
                         clarification_emitted, clarification_json,
                         pii_findings_json, error_json,
                         model_grounding, model_generation, model_critic, model_explainer,
-                        finalised_at, consumer_context
+                        finalised_at, consumer_context, table_id_snapshot_pins_json
                     ) VALUES (
-                        :tenant_id, :workspace_id, :dataset_id, :question,
+                        :query_id, :tenant_id, :workspace_id, :dataset_id, :question,
                         :semantic_path_taken,
                         CAST(:candidates_json AS jsonb),
                         :chosen_candidate_index,
@@ -115,11 +117,13 @@ class QueryRepository:
                         CAST(:pii_findings_json AS jsonb),
                         CAST(:error_json AS jsonb),
                         :model_grounding, :model_generation, :model_critic, :model_explainer,
-                        now(), CAST(:consumer_context AS jsonb)
+                        now(), CAST(:consumer_context AS jsonb), CAST(:snapshot_pins AS jsonb)
                     )
                     RETURNING id
                 """),
                 {
+                    "query_id": query_id or uuid.uuid4(),
+                    "snapshot_pins": json.dumps(table_id_snapshot_pins_json or {}),
                     "tenant_id": tenant_id,
                     "workspace_id": workspace_id,
                     "dataset_id": dataset_id,
@@ -146,6 +150,24 @@ class QueryRepository:
             )
             row = result.mappings().one()
             return row["id"]
+
+    async def prepared_reference(self, query_id):
+        """Resolve a fixed private operation identity without loading result bodies."""
+        async with infrastructure_unit(self._factory, read_only=True) as session:
+            row = (
+                (
+                    await session.execute(
+                        sa.text(
+                            "SELECT q.id,r.result_object_key FROM flyquery_queries q "
+                            "LEFT JOIN flyquery_query_results r ON r.query_id=q.id WHERE q.id=:id"
+                        ),
+                        {"id": query_id},
+                    )
+                )
+                .mappings()
+                .one_or_none()
+            )
+            return dict(row) if row is not None else None
 
     async def get_query(
         self,

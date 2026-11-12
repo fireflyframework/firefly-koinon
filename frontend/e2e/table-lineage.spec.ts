@@ -1,9 +1,7 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 import { test, expect, type Page } from '@playwright/test';
-import { resolve } from 'node:path';
-import { mkdir } from 'node:fs/promises';
-import { mockService } from './fixtures';
+import { mockService,mockReaderAccounts,chooseReaderMode } from './fixtures';
 const snapshot = (id: string, recorded = true) => ({
   dataset_id: 'dataset-one',
   table_id: 'table-one',
@@ -39,10 +37,15 @@ const snapshot = (id: string, recorded = true) => ({
 async function fixture(page: Page) {
   await mockService(page);
   const reads: URL[] = [];
+  const bodies: Record<string,unknown>[]=[];
   const cells: unknown[] = [];
   let denied = false;
   await page.route('**/bff/api/v1/**/tables/table-one/**', async (route) => {
     const url = new URL(route.request().url());
+    expect(route.request().method()).toBe('POST');
+    const input=route.request().postDataJSON();bodies.push(input);
+    expect(input).toHaveProperty('reader_source_connections');
+    expect(url.search).toBe('');
     reads.push(url);
     const respond = (body: unknown, status = 200) =>
       route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
@@ -100,8 +103,8 @@ async function fixture(page: Page) {
           ],
         });
       }
-      if (url.pathname.endsWith('/rows')) {
-        const current = Number(url.searchParams.get('page') ?? 1),
+      if (url.pathname.endsWith('/rows/read')) {
+        const current = Number(input.page ?? 1),
           start = (current - 1) * 25;
         return respond({
           manifest,
@@ -119,7 +122,7 @@ async function fixture(page: Page) {
           has_previous: current === 2,
         });
       }
-      if (url.pathname.endsWith('/columns'))
+      if (url.pathname.endsWith('/columns/read'))
         return respond({
           manifest,
           items: [
@@ -147,8 +150,8 @@ async function fixture(page: Page) {
         });
       return respond(manifest);
     }
-    if (url.pathname.endsWith('/snapshots')) {
-      const current = Number(url.searchParams.get('page') ?? 1);
+    if (url.pathname.endsWith('/snapshots/read')) {
+      const current = input.cursor ? 2 : 1;
       return respond({
         items:
           current === 1
@@ -159,16 +162,14 @@ async function fixture(page: Page) {
                 ...Array.from({ length: 22 }, (_, index) => snapshot('legacy-' + index, false)),
               ]
             : [snapshot('earliest', false)],
-        total: 26,
-        page: current,
-        page_size: 25,
-        pages: 2,
-        has_next: current === 1,
-        has_previous: current === 2,
+        total: null,
+        pages: null,
+        total_is_exact:false,
+        next_cursor:current===1?'a'.repeat(43):null,
         current_snapshot_id: 'current',
       });
     }
-    const id = url.searchParams.get('snapshot_id')!;
+    const id = input.snapshot_id;
     return respond({
       ...snapshot(id, id !== 'legacy' && id !== 'earliest'),
       ...(id === 'legacy' || id === 'earliest'
@@ -219,16 +220,18 @@ async function fixture(page: Page) {
   });
   return {
     reads,
+    bodies,
     cells,
     deny: () => {
       denied = true;
     },
   };
 }
-async function open(page: Page) {
+async function open(page: Page,mode?:'local'|'explicit') {
   await page.goto('/library');
   for (const name of ['Research operations', 'Operations intelligence', 'Reference library'])
     await page.getByRole('button', { name, exact: true }).click();
+  if(mode)await chooseReaderMode(page,mode);
   await page.getByRole('button', { name: 'Quarterly service activity', exact: true }).click();
   await page
     .getByRole('button', { name: 'History & lineage, service_activity', exact: true })
@@ -249,8 +252,7 @@ async function capture(page: Page, name: string) {
       'font:10px/24px Manrope,sans-serif;text-align:center;background:#10110f;color:#fff;flex:0 0 24px';
     dialog.append(note);
   });
-  await mkdir(resolve('../../../outputs'), { recursive: true });
-  await page.screenshot({ path: resolve('../../../outputs', name), animations: 'disabled' });
+  await page.screenshot({ path: test.info().outputPath(name), animations: 'disabled' });
 }
 for (const width of [1440, 390]) {
   test(`table history shows exact historical originals and processing at ${width}px`, async ({
@@ -259,14 +261,14 @@ for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     const service = await fixture(page),
       panel = await open(page);
-    await expect(panel.getByText('1–25 of 26 items')).toBeInViewport();
-    await expect(panel.getByRole('button', { name: 'Next versions page' })).toBeInViewport();
+    await expect(panel.getByText('25 items on this page')).toBeInViewport();
+    await expect(panel.getByRole('button', { name: 'Continue browsing' })).toBeInViewport();
     await capture(page, `koinon-table-history-v13-${width}.png`);
     await panel.getByRole('button').filter({ hasText: 'service-activity-september.xlsx' }).click();
     await expect(panel.getByText('Original file', { exact: true })).toBeVisible();
     await expect(panel.getByText('service-activity-september.xlsx', { exact: true })).toBeVisible();
     await expect(panel.getByText('Current', { exact: true })).toHaveCount(0);
-    expect(service.reads.at(-1)?.searchParams.get('snapshot_id')).toBe('previous');
+    expect(service.bodies.at(-1)?.['snapshot_id']).toBe('previous');
     await expect(panel.getByText('any row and column positions', { exact: false })).toBeVisible();
     await capture(page, `koinon-table-origin-v13-${width}.png`);
     expect(await panel.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
@@ -284,9 +286,9 @@ test('history uses real pages, preserves unknown origins and handles permission 
 }) => {
   const service = await fixture(page),
     panel = await open(page);
-  await panel.getByRole('button', { name: 'Next versions page' }).click();
-  await expect(panel.getByText('26–26 of 26 items')).toBeVisible();
-  expect(service.reads.at(-1)?.searchParams.get('page')).toBe('2');
+  await panel.getByRole('button', { name: 'Continue browsing' }).click();
+  await expect(panel.getByText('1 item on this page')).toBeVisible();
+  expect(service.bodies.at(-1)?.['cursor']).toBe('a'.repeat(43));
   await panel.getByRole('button').filter({ hasText: 'Original not recorded' }).click();
   await expect(panel.getByText('Its origin cannot be inferred', { exact: false })).toBeVisible();
   await expect(panel.getByText('Original file', { exact: true })).toHaveCount(0);
@@ -318,15 +320,15 @@ for (const width of [1440, 390]) {
     await expect(coordinates.locator('tbody tr').first()).toContainText('1–50');
     await coordinates.getByRole('button', { name: 'Next rows page' }).click();
     await expect(coordinates.getByText('26–26 of 26 items')).toBeVisible();
-    expect(service.reads.at(-1)?.searchParams.get('page')).toBe('2');
-    expect(service.reads.at(-1)?.searchParams.get('snapshot_id')).toBe('previous');
+    expect(service.bodies.at(-1)?.['page']).toBe(2);
+    expect(service.bodies.at(-1)?.['snapshot_id']).toBe('previous');
     await coordinates.getByRole('button', { name: 'Columns', exact: true }).click();
     await expect(coordinates.locator('tbody')).toContainText('G4');
     await coordinates.getByRole('button', { name: 'Locate a cell', exact: true }).click();
     await coordinates.getByRole('spinbutton', { name: /Processed column/ }).fill('2');
     await coordinates.getByRole('button', { name: 'Show original location', exact: true }).click();
     await expect(coordinates.locator('.location strong')).toHaveText('G5');
-    expect(service.cells).toEqual([{ snapshot_id: 'previous', cells: [{ row: 0, column: 1 }] }]);
+    expect(service.cells).toEqual([{ snapshot_id: 'previous', cells: [{ row: 0, column: 1 }],reader_source_connections:null }]);
     await panel.locator('.coordinates').evaluate(section => {
       const body = section.closest('dialog')!.querySelector<HTMLElement>('.body')!;
       body.scrollTop += section.getBoundingClientRect().top - body.getBoundingClientRect().top - 24;
@@ -373,4 +375,36 @@ test('a failed coordinates download leaves version history usable', async ({ pag
   await expect(panel.getByRole('alert')).toContainText('Source coordinates could not be opened');
   await panel.getByRole('button', { name: 'All versions', exact: true }).click();
   await expect(panel.getByRole('list', { name: 'Table versions' })).toBeVisible();
+});
+
+test('Spanish first-open coordinates retain deferred format translations', async ({ page }) => {
+  await fixture(page);
+  await page.route('**/bff/api/v1/profile', route => route.fulfill({ json: {
+    subject: 'synthetic.reviewer', display_name: 'Alex Rivera', locale: 'es-ES', time_zone: 'UTC', response_language: 'es', avatar_url: null, avatar_version: null,
+  }}));
+  await page.goto('/library');
+  for (const name of ['Research operations', 'Operations intelligence', 'Reference library'])
+    await page.getByRole('button', { name, exact: true }).click();
+  if(mode)await chooseReaderMode(page,mode);
+  await page.getByRole('button', { name: 'Quarterly service activity', exact: true }).click();
+  await page.getByRole('button', { name: 'Historial y trazabilidad, service_activity', exact: true }).click();
+  const panel = page.getByRole('dialog', { name: 'Historial y trazabilidad' });
+  await panel.getByRole('button').filter({ hasText: 'service-activity-september.xlsx' }).click();
+  await panel.getByRole('button', { name: 'Coordenadas de origen', exact: true }).click();
+  await expect(panel.locator('ffk-table-coordinates').getByText('Libro de Excel', { exact: true })).toBeVisible();
+  await expect(panel.locator('ffk-table-coordinates')).not.toContainText('Excel workbook');
+});
+
+for(const mode of ['local','explicit'] as const)test(`table history and coordinates retain ${mode} intent instead of saved account B`,async({page})=>{
+  const service=await fixture(page);await mockReaderAccounts(page);
+  const panel=await open(page,mode);
+  await panel.getByRole('button',{name:'Continue browsing',exact:true}).click();
+  await expect(panel.getByText('1 item on this page')).toBeVisible();
+  await panel.getByRole('button',{name:/Version earliest/}).click();
+  await panel.getByRole('button',{name:'Source coordinates',exact:true}).click();
+  await expect(panel.getByText('Coordinates not recorded',{exact:true})).toBeVisible();
+  const choices=mode==='local'?[]:[{provider:'google_drive',external_tenant:null,connection_id:'reader-a'}];
+  for(const body of service.bodies)expect(body.reader_source_connections).toEqual(choices);
+  expect(service.bodies[1]).toMatchObject({cursor:'a'.repeat(43)});
+  expect(service.reads.some(url=>url.pathname.endsWith('/coordinates/read'))).toBe(true);
 });

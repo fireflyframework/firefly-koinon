@@ -1,5 +1,8 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
+import { NgTemplateOutlet } from '@angular/common';
+import { registerKoinonSpanish as registerPanelSpanish } from '@fireflyframework/koinon-angular/workbench/core';
+import { PANEL_SPANISH } from '../foundations/panel-spanish.generated';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -164,9 +167,10 @@ registerKoinonSpanish({
   'This upload panel could not be connected. Close it and try again.':
     'No se ha podido conectar este panel de carga. Ciérralo y vuelve a intentarlo.',
 });
+registerPanelSpanish(PANEL_SPANISH);
 @Component({
   selector: 'ffk-library-upload-panel',
-  imports: [
+  imports: [NgTemplateOutlet,
     KoinonFileTypeIcon,
     KoinonButton,
     KoinonIcon,

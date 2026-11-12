@@ -154,7 +154,14 @@ class _GraphSource:
 
     async def get_item(self, item_id: str) -> RemoteItem:
         item_id = identifier(item_id)
-        document = await self._http.json(self._url("/items/" + path_id(item_id)))
+        try:
+            document = await self._http.json(self._url("/items/" + path_id(item_id)))
+        except SourceError as error:
+            if error.http_status == 404:
+                raise SourceError("unavailable", definitive_read_denial=True) from None
+            raise
+        if document.get("id") == item_id and "deleted" in document:
+            raise SourceError("unavailable", definitive_read_denial=True)
         item = self._item(document)
         if item.item_id != item_id or "deleted" in document:
             raise SourceError("unavailable")

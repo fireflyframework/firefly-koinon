@@ -42,7 +42,10 @@ class QueryBatchItem(Base):
             "status IN ('queued','running','succeeded','failed','cancelled','reconciling')",
             name="ck_query_item_status",
         ),
-        CheckConstraint("status != 'succeeded' OR result_json IS NOT NULL", name="ck_query_item_receipt"),
+        CheckConstraint(
+            "status != 'succeeded' OR result_json IS NOT NULL OR native_commit_json IS NOT NULL",
+            name="ck_query_item_receipt",
+        ),
     )
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     batch_id: Mapped[str] = mapped_column(String(64), ForeignKey("koinon_query_batches.id"))
@@ -57,6 +60,9 @@ class QueryBatchItem(Base):
     job_id: Mapped[str] = mapped_column(String(64), ForeignKey("lattice_jobs.id"), unique=True)
     status: Mapped[str] = mapped_column(String(24), default="queued")
     result_json: Mapped[dict | None] = mapped_column(JSON(none_as_null=True), nullable=True)
+    native_commit_json: Mapped[dict | None] = mapped_column(
+        JSON(none_as_null=True), nullable=True, default=None
+    )
     error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 

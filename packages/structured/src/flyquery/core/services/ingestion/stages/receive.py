@@ -93,7 +93,9 @@ async def run_receive(
     # --- 4. Assign file_id + build storage key ---
     file_id = file_id or uuid.uuid4()
     ext = _pick_ext(filename, file_format, compression)
-    object_store_key = f"flyquery/{tenant_id}/{workspace_id}/{dataset_id}/files/{file_id}{ext}"
+    object_store_key = original_object_key(
+        tenant_id, workspace_id, dataset_id, file_id, filename, file_format, compression
+    )
 
     # --- 5. Store in object store ---
     content_type = _content_type(file_format)
@@ -148,6 +150,20 @@ async def run_receive(
     except BaseException:
         Path(local_temp_path).unlink(missing_ok=True)
         raise
+
+
+def original_object_key(
+    tenant_id: str,
+    workspace_id: uuid.UUID,
+    dataset_id: uuid.UUID,
+    file_id: uuid.UUID,
+    filename: str,
+    file_format: str,
+    compression: str,
+) -> str:
+    """Use the same original object identity for receipt inspection and receive."""
+    ext = _pick_ext(filename, file_format, compression)
+    return f"flyquery/{tenant_id}/{workspace_id}/{dataset_id}/files/{file_id}{ext}"
 
 
 def _pick_ext(filename: str, file_format: str, compression: str) -> str:

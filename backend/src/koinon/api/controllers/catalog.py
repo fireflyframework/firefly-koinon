@@ -14,9 +14,12 @@ from pyfly.web import (
 )
 from starlette.requests import Request
 
+from koinon.catalog.browse import CatalogBrowse
+from koinon.catalog.browse_dtos import CatalogBrowseInput, CatalogBrowseOutput
 from koinon.catalog.dtos import CatalogCreate, CatalogPatch, CatalogPrecondition
 from koinon.catalog.mappers import entry_dto
 from koinon.catalog.service import CatalogService
+from koinon.integrations.content_sources.read_service import SourceReader
 from koinon.profiles.service import ProfileService
 from koinon.security.identity import identity_from_request
 
@@ -24,8 +27,16 @@ from koinon.security.identity import identity_from_request
 @rest_controller
 @request_mapping("/api/v1")
 class CatalogController:
-    def __init__(self, catalog: CatalogService, profiles: ProfileService):
-        self.catalog, self.profiles = catalog, profiles
+    def __init__(
+        self, catalog: CatalogService, profiles: ProfileService, reader: SourceReader, browse: CatalogBrowse
+    ):
+        self.catalog, self.profiles, self.reader, self.browse = catalog, profiles, reader, browse
+
+    @post_mapping("/tenants/{tenant_id}/catalog/browse")
+    async def catalog_browse(
+        self, tenant_id: PathVar[str], body: Valid[Body[CatalogBrowseInput]], request: Request
+    ) -> CatalogBrowseOutput:
+        return await self.browse.page(identity_from_request(request).subject, tenant_id, body)
 
     @get_mapping("/tenants/{tenant_id}/catalog")
     async def catalog_list(
@@ -87,7 +98,15 @@ class CatalogController:
 
     @get_mapping("/tenants/{tenant_id}/catalog/{entry_id}")
     async def catalog_get(self, tenant_id: PathVar[str], entry_id: PathVar[str], request: Request) -> dict:
-        return entry_dto(await self.catalog.get(identity_from_request(request).subject, tenant_id, entry_id))
+        actor = identity_from_request(request).subject
+        operation = await self.reader.entries(actor, tenant_id, (entry_id,))
+        if operation:
+            async with operation.read_fence():
+                entry = await self.catalog.get(actor, tenant_id, entry_id)
+            await operation.release()
+            async with operation.read_fence():
+                return entry_dto(entry)
+        return entry_dto(await self.catalog.get(actor, tenant_id, entry_id))
 
     @patch_mapping("/tenants/{tenant_id}/catalog/{entry_id}")
     async def catalog_patch(

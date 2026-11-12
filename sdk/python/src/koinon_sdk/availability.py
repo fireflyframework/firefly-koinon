@@ -3,7 +3,7 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/knowledge/availability/dtos.py
-SHA256: 0db6cc4b12d8d26a8d12d529fdfc7cd0b28fb4ebbe2a748085e3287fd5005011
+SHA256: ec7db43566f87a2e00f40ebca2a04b4493c6aaa6b1390655db85c144f8a7dc3a
 
 Server authorization and semantic validation remain authoritative.
 """
@@ -13,7 +13,8 @@ from typing import Annotated, Literal
 
 from pydantic import Field
 
-from koinon_sdk._base import InputModel, ResponseModel
+from koinon_sdk._base import ResponseModel
+from koinon_sdk.reader_sources import ReaderReadInput
 
 AvailabilityState = Literal["ready", "pending", "unavailable", "unknown", "not_applicable"]
 ProcessingPhase = Literal[
@@ -28,7 +29,7 @@ ProcessingPhase = Literal[
 ]
 
 
-class AvailabilityRequest(InputModel):
+class AvailabilityRequest(ReaderReadInput):
     asset_ids: list[Annotated[str, Field(strict=True, min_length=1, max_length=64)]] = Field(
         min_length=1, max_length=100
     )
@@ -67,7 +68,7 @@ class AvailabilityResponse(ResponseModel):
     items: dict[str, AssetAvailability]
 
 
-class ProcessingRequest(InputModel):
+class ProcessingRequest(ReaderReadInput):
     page: int = Field(default=1, ge=1, le=100000, strict=True)
     page_size: int = Field(default=25, ge=1, le=50, strict=True)
     workspace_id: str | None = Field(default=None, min_length=1, max_length=64)

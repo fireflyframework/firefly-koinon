@@ -11,6 +11,7 @@ from pyfly.data.relational.datasource_registry import NoSuchDataSourceError
 from pyfly.kernel import InvalidRequestException, ServiceUnavailableException
 
 from koinon.catalog.errors import AccessDenied
+from koinon.integrations.content_sources.read_requests import source_entry_read
 from koinon.knowledge.lineage.coordinate_dtos import CellPosition, CoordinateManifest
 from koinon.knowledge.lineage.coordinate_ports import StructuredCoordinatesPort
 from koinon.knowledge.provenance.coordinate_dtos import (
@@ -115,85 +116,103 @@ class TableCoordinateService:
     async def manifest(
         self, subject, tenant_id, dataset_id, table_id, snapshot_id
     ) -> TableCoordinateManifest:
-        scope = await self._scope(subject, tenant_id, dataset_id, table_id, snapshot_id)
-        row = await self._read(self._reader().read_manifest, scope)
-        return self._manifest(row, scope, dataset_id, table_id)
+        async with source_entry_read(
+            self.provenance.knowledge, subject, tenant_id, (table_id,), version_id=snapshot_id
+        ):
+            scope = await self._scope(subject, tenant_id, dataset_id, table_id, snapshot_id)
+            row = await self._read(self._reader().read_manifest, scope)
+            return self._manifest(row, scope, dataset_id, table_id)
 
     async def cells(
         self, subject, tenant_id, dataset_id, table_id, request: CoordinateCellRequest
     ) -> TableCoordinateSelection:
-        scope = await self._scope(subject, tenant_id, dataset_id, table_id, request.snapshot_id)
-        result = await self._read(
-            self._reader().read_cells,
-            scope,
-            cells=tuple(CellPosition(cell.row, cell.column) for cell in request.cells),
-        )
-        manifest = self._manifest(result.manifest, scope, dataset_id, table_id)
-        try:
-            value = TableCoordinateSelection.model_validate(
-                {"manifest": manifest, "items": tuple(coordinate_item(item) for item in result.items)}
-            )
-        except (ValueError, TypeError) as error:
-            raise invalid_record() from error
-        if manifest.status == "not_recorded":
-            if value.items:
-                raise invalid_record()
-        elif (
-            [(cell.output_row, cell.output_column) for cell in value.items]
-            != [(cell.row, cell.column) for cell in request.cells]
-            or any(
-                cell.output_row >= (manifest.row_count or 0)
-                or cell.output_column >= (manifest.column_count or 0)
-                for cell in value.items
-            )
-            or manifest.status == "complete"
-            and any(cell.source_row is None for cell in value.items)
+        async with source_entry_read(
+            self.provenance.knowledge,
+            subject,
+            tenant_id,
+            (table_id,),
+            version_id=request.snapshot_id,
+            connections=request.reader_source_connections,
         ):
-            raise invalid_record()
-        return value
+            scope = await self._scope(subject, tenant_id, dataset_id, table_id, request.snapshot_id)
+            result = await self._read(
+                self._reader().read_cells,
+                scope,
+                cells=tuple(CellPosition(cell.row, cell.column) for cell in request.cells),
+            )
+            manifest = self._manifest(result.manifest, scope, dataset_id, table_id)
+            try:
+                value = TableCoordinateSelection.model_validate(
+                    {"manifest": manifest, "items": tuple(coordinate_item(item) for item in result.items)}
+                )
+            except (ValueError, TypeError) as error:
+                raise invalid_record() from error
+            if manifest.status == "not_recorded":
+                if value.items:
+                    raise invalid_record()
+            elif (
+                [(cell.output_row, cell.output_column) for cell in value.items]
+                != [(cell.row, cell.column) for cell in request.cells]
+                or any(
+                    cell.output_row >= (manifest.row_count or 0)
+                    or cell.output_column >= (manifest.column_count or 0)
+                    for cell in value.items
+                )
+                or manifest.status == "complete"
+                and any(cell.source_row is None for cell in value.items)
+            ):
+                raise invalid_record()
+            return value
 
     async def _page(self, method, subject, tenant_id, dataset_id, table_id, snapshot_id, page, page_size):
-        if (
-            type(page) is not int
-            or type(page_size) is not int
-            or page < 1
-            or not 1 <= page_size <= 100
-            or (page - 1) * page_size > 1_000_000
+        async with source_entry_read(
+            self.provenance.knowledge, subject, tenant_id, (table_id,), version_id=snapshot_id
         ):
-            raise InvalidRequestException("Choose a valid page and page size up to 100", code="INVALID_PAGE")
-        scope = await self._scope(subject, tenant_id, dataset_id, table_id, snapshot_id)
-        result = await self._read(method(self._reader()), scope, page=page, page_size=page_size)
-        manifest = self._manifest(result.manifest, scope, dataset_id, table_id)
-        if (
-            type(result.total) is not int
-            or result.total < 0
-            or any(type(value) is not int for value in (result.page, result.page_size, result.total_pages))
-            or result.page != page
-            or result.page_size != page_size
-            or result.total_pages != (result.total + page_size - 1) // page_size
-            or type(result.has_next) is not bool
-            or type(result.has_previous) is not bool
-            or result.has_next != (page * page_size < result.total)
-            or result.has_previous != (page > 1)
-            or len(result.items) != min(page_size, max(0, result.total - (page - 1) * page_size))
-            or manifest.status == "not_recorded"
-            and result.total != 0
-        ):
-            raise invalid_record()
-        try:
-            items = tuple(coordinate_item(item) for item in result.items)
-        except (ValueError, TypeError) as error:
-            raise invalid_record() from error
-        return dict(
-            manifest=manifest,
-            items=items,
-            total=result.total,
-            page=page,
-            page_size=page_size,
-            pages=result.total_pages,
-            has_next=result.has_next,
-            has_previous=result.has_previous,
-        )
+            if (
+                type(page) is not int
+                or type(page_size) is not int
+                or page < 1
+                or not 1 <= page_size <= 100
+                or (page - 1) * page_size > 1_000_000
+            ):
+                raise InvalidRequestException(
+                    "Choose a valid page and page size up to 100", code="INVALID_PAGE"
+                )
+            scope = await self._scope(subject, tenant_id, dataset_id, table_id, snapshot_id)
+            result = await self._read(method(self._reader()), scope, page=page, page_size=page_size)
+            manifest = self._manifest(result.manifest, scope, dataset_id, table_id)
+            if (
+                type(result.total) is not int
+                or result.total < 0
+                or any(
+                    type(value) is not int for value in (result.page, result.page_size, result.total_pages)
+                )
+                or result.page != page
+                or result.page_size != page_size
+                or result.total_pages != (result.total + page_size - 1) // page_size
+                or type(result.has_next) is not bool
+                or type(result.has_previous) is not bool
+                or result.has_next != (page * page_size < result.total)
+                or result.has_previous != (page > 1)
+                or len(result.items) != min(page_size, max(0, result.total - (page - 1) * page_size))
+                or manifest.status == "not_recorded"
+                and result.total != 0
+            ):
+                raise invalid_record()
+            try:
+                items = tuple(coordinate_item(item) for item in result.items)
+            except (ValueError, TypeError) as error:
+                raise invalid_record() from error
+            return dict(
+                manifest=manifest,
+                items=items,
+                total=result.total,
+                page=page,
+                page_size=page_size,
+                pages=result.total_pages,
+                has_next=result.has_next,
+                has_previous=result.has_previous,
+            )
 
     async def rows(
         self, subject, tenant_id, dataset_id, table_id, snapshot_id, *, page=1, page_size=25

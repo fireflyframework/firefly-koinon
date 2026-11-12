@@ -20,6 +20,7 @@ class FolderNode:
     id: str
     parent: str | None
     version: str | None
+    kind: str = "folder"
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,6 +30,9 @@ class AncestryProof:
 
     def ancestors(self, root: str) -> tuple[str, ...]:
         return dict(self.paths)[root]
+
+    def root_kind(self, root: str) -> str:
+        return {node.id: node.kind for node in self.nodes}[root]
 
 
 class FolderAncestry:
@@ -71,11 +75,19 @@ class FolderAncestry:
                     if len(nodes) >= self.max_nodes:
                         raise SourceError("size_exceeded")
                     item = await self.reader.get_item(identifier)
-                    if item.scope != self.scope or item.item_id != identifier or item.kind != "folder":
+                    if (
+                        item.scope != self.scope or item.item_id != identifier
+                        or item.kind not in {"file", "folder"}
+                        or item.kind == "file" and identifier != root
+                    ):
                         raise SourceError("access_denied")
                     if len(item.parents) > 1:
                         raise SourceError("invalid_response")
-                    nodes[identifier] = FolderNode(identifier, next(iter(item.parents), None), item.version)
+                    nodes[identifier] = FolderNode(
+                        identifier, next(iter(item.parents), None), item.version, item.kind
+                    )
+                if nodes[identifier].kind != "folder" and identifier != root:
+                    raise SourceError("access_denied")
                 identifier = nodes[identifier].parent
             # An omitted/inaccessible parent is not proof that this folder is a drive root.
             if path[-1] != drive_root.item_id:
@@ -87,8 +99,14 @@ class FolderAncestry:
 def overlaps(
     proof: AncestryProof, left: str, left_recursive: bool, right: str, right_recursive: bool
 ) -> bool:
+    def contains(parent, recursive, child):
+        ancestors = proof.ancestors(child)
+        return proof.root_kind(parent) == "folder" and (
+            recursive and parent in ancestors or bool(ancestors) and ancestors[0] == parent
+        )
+
     return (
         left == right
-        or (left_recursive and left in proof.ancestors(right))
-        or (right_recursive and right in proof.ancestors(left))
+        or contains(left, left_recursive, right)
+        or contains(right, right_recursive, left)
     )

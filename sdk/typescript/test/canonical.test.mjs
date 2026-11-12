@@ -6,6 +6,7 @@ import {FetchTransport,KoinonClient} from '../dist/index.js';
 import {createCommunicationsApi} from '../dist/communications.js';
 import {createAvailabilityApi} from '../dist/availability.js';
 import {createPlatformHealthApi} from '../dist/platform-health.js';
+import {createContentSourcesApi} from '../dist/content-sources.js';
 
 test('canonical content and knowledge assignment helpers preserve preconditions and explicit null',async()=>{
  const seen=[];
@@ -40,6 +41,7 @@ test('canonical operation map resolves helpers and precision strings are unchang
  const client=new KoinonClient({transport:{request:async()=>({}),stream:async function*(){}}});
  assert.equal(contract.canonical_operation_count,contract.operations.length);
  const factories={
+  createContentSourcesApi:{module:'content-sources',prefix:'contentSources',api:createContentSourcesApi({request:async()=>({})})},
   createCommunicationsApi:{module:'communications',api:createCommunicationsApi({request:async()=>({})})},
   createAvailabilityApi:{module:'availability',api:createAvailabilityApi({request:async()=>({})})},
   createPlatformHealthApi:{module:'platform-health',prefix:'platformHealth',api:createPlatformHealthApi({request:async()=>({})})},

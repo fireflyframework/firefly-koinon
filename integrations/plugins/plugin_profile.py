@@ -58,6 +58,37 @@ class DeploymentProfile(BaseModel):
     callback_port: int = Field(ge=1, le=65535)
     scopes: tuple[str, ...] = ("catalog:read",)
     application_id: str | None = Field(default=None, repr=False)
+    gemini_redirect_uri: str | None = Field(default=None, repr=False)
+
+    @field_validator("gemini_redirect_uri")
+    @classmethod
+    def gemini_callback(cls, value):
+        if value is None:
+            return None
+        try:
+            parsed = urlsplit(value)
+            valid = (
+                value == value.strip()
+                and len(value) <= 2048
+                and parsed.scheme == "http"
+                and parsed.hostname in {"localhost", "127.0.0.1", "::1"}
+                and parsed.port is not None
+                and 1 <= parsed.port <= 65535
+                and parsed.path == "/oauth/callback"
+                and not parsed.username
+                and not parsed.password
+                and not parsed.query
+                and not parsed.fragment
+                and "\\" not in value
+                and not any(ord(char) < 33 or ord(char) == 127 for char in value)
+            )
+        except ValueError:
+            valid = False
+        if not valid:
+            raise ValueError(
+                "Provide the exact registered loopback HTTP /oauth/callback URL with a port"
+            )
+        return value
 
     @field_validator("server_url")
     @classmethod

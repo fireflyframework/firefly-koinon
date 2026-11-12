@@ -18,6 +18,7 @@ const text = '<script>Untrusted source</script> — política';
 const digest = 'da7fce663a4eda3011466e6f768e6cf88e680580f1cd82c857732400e168868f';
 function setup() {
   const context = signal({ subject: 'reader' }),
+    readerSources=signal<null|[]>(null),
     revision = signal(0),
     permissions = signal(new Set(['catalog:read']));
   const availability = {
@@ -28,7 +29,7 @@ function setup() {
   const request = vi.fn(
     async (_method: string, path: string, options: RequestOptions = {}): Promise<unknown> => {
       if (path.endsWith('/availability')) return { items: { document: availability } };
-      if (path.endsWith('/versions/serving-old'))
+      if (path.endsWith('/versions/serving-old/read'))
         return {
           document_id: 'document',
           source_version_id: 'serving-old',
@@ -37,7 +38,7 @@ function setup() {
           sha256: digest,
           byte_size: 9,
         };
-      if (path.endsWith('/parts'))
+      if (path.endsWith('/parts/read'))
         return {
           items: [
             {
@@ -50,12 +51,12 @@ function setup() {
               sha256: digest,
             },
           ],
-          page: options.query?.['page'] || 1,
+          page: (options.body as {page?:number})?.page || 1,
           pages: 2,
           total: 2,
           has_next: true,
         };
-      if (path.endsWith('/parts/part-1'))
+      if (path.endsWith('/parts/part-1/read'))
         return {
           document_id: 'document',
           source_version_id: 'serving-old',
@@ -65,7 +66,7 @@ function setup() {
           sha256: digest,
           text,
         };
-      if (path.endsWith('/original'))
+      if (path.endsWith('/original/read'))
         return {
           blob: new Blob(['%PDF-safe'], { type: 'application/pdf' }),
           content_type: 'application/pdf',
@@ -90,6 +91,8 @@ function setup() {
           projectId: signal('project'),
           authRequired: signal(false),
           permissions,
+          readerSources,
+          readerRevision: signal(0),
         },
       },
       {
@@ -101,12 +104,25 @@ function setup() {
   return {
     state: TestBed.inject(KoinonDocumentViewer),
     context,
+    readerSources,
     revision,
     permissions,
     request,
     availability,
   };
 }
+it('keeps local-only selection through availability and content reads, and clears old content on change',async()=>{
+  const {state,request,readerSources}=setup();
+  readerSources.set([]);
+  await state.open(entry);
+  expect(state.version()).not.toBeNull();
+  for(const [method,,options] of request.mock.calls){
+    expect(method).toBe('POST');
+    expect(options?.body).toMatchObject({reader_source_connections:[]});
+  }
+  readerSources.set(null);
+  expect(state.version()).toBeNull();expect(state.content()).toBeNull();
+});
 it('uses observed serving pins after failed replacement without eager original or latest reads', async () => {
   const { state, request } = setup();
   await state.open(entry);
@@ -115,8 +131,9 @@ it('uses observed serving pins after failed replacement without eager original o
   expect(request.mock.calls[0]![2]!.body).toEqual({
     asset_ids: ['document'],
     workspace_id: 'space',
+    reader_source_connections:null,
   });
-  expect(request.mock.calls.some((c) => /WRONG|\/original$|\/versions$/.test(c[1]))).toBe(false);
+  expect(request.mock.calls.some((c) => /WRONG|\/original\/read$|\/versions\/read$/.test(c[1]))).toBe(false);
 });
 it('does not read pending content or offer original without read capability', async () => {
   const { state, availability, request } = setup();
@@ -131,11 +148,11 @@ it('bounds paging and pins every page to the authorized extraction', async () =>
   const { state, request } = setup();
   await state.open(entry);
   await state.loadPage(2);
-  const calls = request.mock.calls.filter((c) => c[1].endsWith('/parts'));
+  const calls = request.mock.calls.filter((c) => c[1].endsWith('/parts/read'));
   expect(calls[1]![1]).toContain('/versions/serving-old/extractions/view-old/parts');
-  expect(calls[1]![2]!.query).toEqual({ page: 2, page_size: 25, kind: 'chunk' });
+  expect(calls[1]![2]!.body).toEqual({ page: 2, page_size: 25, kind: 'chunk',reader_source_connections:null });
   await state.loadPage(999);
-  expect(request.mock.calls.filter((c) => c[1].endsWith('/parts'))).toHaveLength(2);
+  expect(request.mock.calls.filter((c) => c[1].endsWith('/parts/read'))).toHaveLength(2);
 });
 it('rejects late responses from an old actor', async () => {
   const { state, request, context } = setup();
@@ -170,7 +187,7 @@ it('fails closed on mismatched document identity', async () => {
   const { state, request } = setup(),
     native = request.getMockImplementation()!;
   request.mockImplementation(async (m, p, o) =>
-    p.endsWith('/versions/serving-old')
+    p.endsWith('/versions/serving-old/read')
       ? { document_id: 'other', source_version_id: 'serving-old' }
       : native(m, p, o),
   );
@@ -202,7 +219,7 @@ it('keeps extracted text readable when the source exceeds the original transfer 
   const { state, request } = setup(),
     native = request.getMockImplementation()!;
   request.mockImplementation(async (m, p, o) =>
-    p.endsWith('/versions/serving-old')
+    p.endsWith('/versions/serving-old/read')
       ? {
           document_id: 'document',
           source_version_id: 'serving-old',
@@ -216,7 +233,7 @@ it('keeps extracted text readable when the source exceeds the original transfer 
   expect(state.content()?.text).toBe(text);
   expect(state.version()?.byte_size).toBe(134217729);
   await state.downloadOriginal();
-  expect(request.mock.calls.some((c) => c[1].endsWith('/original'))).toBe(false);
+  expect(request.mock.calls.some((c) => c[1].endsWith('/original/read'))).toBe(false);
   expect(state.error()).toContain('128 MiB');
   expect(state.content()?.text).toBe(text);
 });
@@ -288,7 +305,7 @@ it('checks the preview size budget before requesting original bytes', async () =
   const { state, request } = setup(),
     native = request.getMockImplementation()!;
   request.mockImplementation(async (m, p, o) =>
-    p.endsWith('/versions/serving-old')
+    p.endsWith('/versions/serving-old/read')
       ? {
           document_id: 'document',
           source_version_id: 'serving-old',
@@ -302,6 +319,6 @@ it('checks the preview size budget before requesting original bytes', async () =
   expect(state.content()?.text).toBe(text);
   expect(state.canPreview()).toBe(false);
   await state.previewOriginal();
-  expect(request.mock.calls.some((c) => c[1].endsWith('/original'))).toBe(false);
+  expect(request.mock.calls.some((c) => c[1].endsWith('/original/read'))).toBe(false);
   expect(state.error()).toContain('16 MiB');
 });

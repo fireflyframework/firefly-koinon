@@ -1989,6 +1989,22 @@
     "AvailabilityRequest": {
       "additionalProperties": false,
       "properties": {
+        "reader_source_connections": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ReaderSourceSelection"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reader Source Connections"
+        },
         "asset_ids": {
           "items": {
             "maxLength": 64,
@@ -2606,6 +2622,45 @@
       "title": "BulkRecoveryAction",
       "type": "object"
     },
+    "CalendarSchedule": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "calendar",
+          "title": "Kind",
+          "type": "string"
+        },
+        "timezone": {
+          "maxLength": 255,
+          "minLength": 1,
+          "title": "Timezone",
+          "type": "string"
+        },
+        "time": {
+          "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$",
+          "title": "Time",
+          "type": "string"
+        },
+        "weekdays": {
+          "items": {
+            "maximum": 7,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "maxItems": 7,
+          "minItems": 1,
+          "title": "Weekdays",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind",
+        "timezone",
+        "time"
+      ],
+      "title": "CalendarSchedule",
+      "type": "object"
+    },
     "Capabilities": {
       "additionalProperties": true,
       "properties": {
@@ -2693,6 +2748,236 @@
         }
       },
       "title": "CapabilityState",
+      "type": "object"
+    },
+    "CatalogBrowseInput": {
+      "additionalProperties": false,
+      "properties": {
+        "parent_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Id"
+        },
+        "workspace_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workspace Id"
+        },
+        "project_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Project Id"
+        },
+        "kind": {
+          "anyOf": [
+            {
+              "maxLength": 32,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Kind"
+        },
+        "include_archived": {
+          "default": false,
+          "title": "Include Archived",
+          "type": "boolean"
+        },
+        "view": {
+          "default": "library",
+          "enum": [
+            "raw",
+            "library"
+          ],
+          "title": "View",
+          "type": "string"
+        },
+        "q": {
+          "default": "",
+          "maxLength": 255,
+          "title": "Q",
+          "type": "string"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "maxLength": 32,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Status"
+        },
+        "format": {
+          "anyOf": [
+            {
+              "maxLength": 32,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Format"
+        },
+        "tag": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tag"
+        },
+        "page_size": {
+          "default": 50,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "sort": {
+          "default": "name",
+          "enum": [
+            "name",
+            "kind",
+            "created_at",
+            "updated_at"
+          ],
+          "title": "Sort",
+          "type": "string"
+        },
+        "order": {
+          "default": "asc",
+          "enum": [
+            "asc",
+            "desc"
+          ],
+          "title": "Order",
+          "type": "string"
+        },
+        "cursor": {
+          "anyOf": [
+            {
+              "maxLength": 43,
+              "minLength": 43,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cursor"
+        },
+        "reader_source_connections": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ReaderSourceSelection"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reader Source Connections"
+        }
+      },
+      "title": "CatalogBrowseInput",
+      "type": "object"
+    },
+    "CatalogBrowseOutput": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/CatalogEntry"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "actors": {
+          "additionalProperties": {
+            "$ref": "#/$defs/AuthorSummary"
+          },
+          "title": "Actors",
+          "type": "object"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Cursor"
+        },
+        "summaries": {
+          "additionalProperties": {
+            "$ref": "#/$defs/CatalogSummary"
+          },
+          "title": "Summaries",
+          "type": "object"
+        },
+        "total": {
+          "default": null,
+          "title": "Total",
+          "type": "null"
+        },
+        "total_is_exact": {
+          "const": false,
+          "default": false,
+          "title": "Total Is Exact",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "items",
+        "actors",
+        "next_cursor"
+      ],
+      "title": "CatalogBrowseOutput",
       "type": "object"
     },
     "CatalogCapability": {
@@ -5023,6 +5308,22 @@
     "CoordinateCellRequest": {
       "additionalProperties": true,
       "properties": {
+        "reader_source_connections": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ReaderSourceSelection"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reader Source Connections"
+        },
         "snapshot_id": {
           "maxLength": 64,
           "minLength": 1,
@@ -6999,6 +7300,81 @@
       "title": "DocumentChunks",
       "type": "object"
     },
+    "DocumentChunksReadInput": {
+      "additionalProperties": false,
+      "properties": {
+        "reader_source_connections": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ReaderSourceSelection"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reader Source Connections"
+        },
+        "offset": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Offset",
+          "type": "integer"
+        },
+        "limit": {
+          "default": 50,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Limit",
+          "type": "integer"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page"
+        },
+        "section": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Section"
+        },
+        "q": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Q"
+        }
+      },
+      "title": "DocumentChunksReadInput",
+      "type": "object"
+    },
     "DocumentEvidence": {
       "additionalProperties": true,
       "properties": {
@@ -7741,6 +8117,61 @@
         "created_at"
       ],
       "title": "DocumentPartSummary",
+      "type": "object"
+    },
+    "DocumentPartsReadInput": {
+      "additionalProperties": false,
+      "properties": {
+        "reader_source_connections": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ReaderSourceSelection"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reader Source Connections"
+        },
+        "page": {
+          "default": 1,
+          "maximum": 100000,
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "default": 25,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "kind": {
+          "anyOf": [
+            {
+              "enum": [
+                "artifact",
+                "section",
+                "chunk",
+                "page"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Kind"
+        }
+      },
+      "title": "DocumentPartsReadInput",
       "type": "object"
     },
     "DocumentReingestInput": {
@@ -8705,6 +9136,106 @@
         "expires_at"
       ],
       "title": "Export",
+      "type": "object"
+    },
+    "ExportBrowseInput": {
+      "additionalProperties": false,
+      "properties": {
+        "q": {
+          "default": "",
+          "maxLength": 512,
+          "title": "Q",
+          "type": "string"
+        },
+        "status": {
+          "default": "all",
+          "enum": [
+            "all",
+            "ready",
+            "cancelled",
+            "expired"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "page_size": {
+          "default": 25,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "cursor": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cursor"
+        },
+        "reader_source_connections": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ReaderSourceSelection"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reader Source Connections"
+        }
+      },
+      "title": "ExportBrowseInput",
+      "type": "object"
+    },
+    "ExportBrowsePage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/Export"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Next Cursor"
+        },
+        "total": {
+          "default": null,
+          "title": "Total",
+          "type": "null"
+        },
+        "total_is_exact": {
+          "const": false,
+          "default": false,
+          "title": "Total Is Exact",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "ExportBrowsePage",
       "type": "object"
     },
     "ExportCreate": {
@@ -11328,6 +11859,224 @@
       "title": "HealthSummary",
       "type": "object"
     },
+    "HistoryBrowseInput": {
+      "additionalProperties": false,
+      "properties": {
+        "q": {
+          "default": "",
+          "maxLength": 255,
+          "title": "Q",
+          "type": "string"
+        },
+        "page_size": {
+          "default": 25,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "cursor": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cursor"
+        },
+        "status": {
+          "default": "active",
+          "enum": [
+            "active",
+            "archived",
+            "all"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "folder_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Folder Id"
+        },
+        "workspace_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workspace Id"
+        },
+        "project_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Project Id"
+        },
+        "unfiled": {
+          "default": false,
+          "title": "Unfiled",
+          "type": "boolean"
+        },
+        "reader_source_connections": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ReaderSourceSelection"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reader Source Connections"
+        }
+      },
+      "title": "HistoryBrowseInput",
+      "type": "object"
+    },
+    "HistoryBrowsePage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/HistoryThreadOutput"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Next Cursor"
+        },
+        "total": {
+          "default": null,
+          "title": "Total",
+          "type": "null"
+        },
+        "total_is_exact": {
+          "const": false,
+          "default": false,
+          "title": "Total Is Exact",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "HistoryBrowsePage",
+      "type": "object"
+    },
+    "HistoryThreadOutput": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "title_source": {
+          "enum": [
+            "default",
+            "manual",
+            "ai"
+          ],
+          "title": "Title Source",
+          "type": "string"
+        },
+        "revision": {
+          "title": "Revision",
+          "type": "integer"
+        },
+        "folder_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Folder Id"
+        },
+        "archived_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Archived At"
+        },
+        "scope": {
+          "$ref": "#/$defs/KnowledgeScope"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "title_source",
+        "revision",
+        "folder_id",
+        "archived_at",
+        "scope",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "HistoryThreadOutput",
+      "type": "object"
+    },
     "IdentityActivation": {
       "additionalProperties": false,
       "properties": {
@@ -12544,6 +13293,28 @@
       "additionalProperties": false,
       "properties": {},
       "title": "Input",
+      "type": "object"
+    },
+    "IntervalSchedule": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "interval",
+          "title": "Kind",
+          "type": "string"
+        },
+        "seconds": {
+          "maximum": 604800,
+          "minimum": 900,
+          "title": "Seconds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "seconds"
+      ],
+      "title": "IntervalSchedule",
       "type": "object"
     },
     "Invitation": {
@@ -15829,6 +16600,206 @@
       "title": "LineageNode",
       "type": "object"
     },
+    "LineageReadInput": {
+      "additionalProperties": false,
+      "properties": {
+        "reader_source_connections": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ReaderSourceSelection"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reader Source Connections"
+        },
+        "asset_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Asset Id"
+        }
+      },
+      "title": "LineageReadInput",
+      "type": "object"
+    },
+    "ManualSchedule": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "manual",
+          "default": "manual",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "title": "ManualSchedule",
+      "type": "object"
+    },
+    "MappingReviewInput": {
+      "additionalProperties": false,
+      "properties": {
+        "connection_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Connection Id",
+          "type": "string"
+        },
+        "drive_id": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Drive Id",
+          "type": "string"
+        },
+        "root_id": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Root Id",
+          "type": "string"
+        },
+        "destination": {
+          "$ref": "#/$defs/BulkDestination"
+        },
+        "recursive": {
+          "title": "Recursive",
+          "type": "boolean"
+        },
+        "removal_policy": {
+          "enum": [
+            "retire",
+            "pause_for_review"
+          ],
+          "title": "Removal Policy",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "mode": {
+          "default": "document",
+          "enum": [
+            "document",
+            "dataset"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "hierarchy": {
+          "default": "preserve",
+          "enum": [
+            "preserve",
+            "flatten"
+          ],
+          "title": "Hierarchy",
+          "type": "string"
+        },
+        "excluded_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 1000,
+          "title": "Excluded Ids",
+          "type": "array"
+        },
+        "formats": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "title": "Formats",
+          "type": "array"
+        },
+        "schedule": {
+          "discriminator": {
+            "mapping": {
+              "calendar": "#/$defs/CalendarSchedule",
+              "interval": "#/$defs/IntervalSchedule",
+              "manual": "#/$defs/ManualSchedule"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ManualSchedule"
+            },
+            {
+              "$ref": "#/$defs/IntervalSchedule"
+            },
+            {
+              "$ref": "#/$defs/CalendarSchedule"
+            }
+          ],
+          "title": "Schedule"
+        },
+        "replacement_resolutions": {
+          "items": {
+            "$ref": "#/$defs/ReplacementResolutionInput"
+          },
+          "maxItems": 16,
+          "title": "Replacement Resolutions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "connection_id",
+        "drive_id",
+        "root_id",
+        "destination",
+        "recursive",
+        "removal_policy"
+      ],
+      "title": "MappingReviewInput",
+      "type": "object"
+    },
+    "MappingReviewOutput": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "revision": {
+          "title": "Revision",
+          "type": "integer"
+        },
+        "status": {
+          "const": "reviewed",
+          "default": "reviewed",
+          "title": "Status",
+          "type": "string"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "expires_at"
+      ],
+      "title": "MappingReviewOutput",
+      "type": "object"
+    },
     "McpActivityCounts": {
       "additionalProperties": true,
       "properties": {
@@ -17003,6 +17974,92 @@
       "additionalProperties": true,
       "properties": {},
       "title": "MemoryValue",
+      "type": "object"
+    },
+    "MessageBrowseInput": {
+      "additionalProperties": false,
+      "properties": {
+        "page_size": {
+          "default": 50,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "cursor": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cursor"
+        },
+        "reader_source_connections": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ReaderSourceSelection"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reader Source Connections"
+        }
+      },
+      "title": "MessageBrowseInput",
+      "type": "object"
+    },
+    "MessageBrowsePage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "additionalProperties": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "type": "object"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Next Cursor"
+        },
+        "total": {
+          "default": null,
+          "title": "Total",
+          "type": "null"
+        },
+        "total_is_exact": {
+          "const": false,
+          "default": false,
+          "title": "Total Is Exact",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "MessageBrowsePage",
       "type": "object"
     },
     "MessageSelection": {
@@ -18748,6 +19805,22 @@
         "run_id"
       ],
       "title": "OpenUIArtifact",
+      "type": "object"
+    },
+    "OperationInput": {
+      "additionalProperties": false,
+      "properties": {
+        "operation_id": {
+          "maxLength": 36,
+          "minLength": 36,
+          "title": "Operation Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "operation_id"
+      ],
+      "title": "OperationInput",
       "type": "object"
     },
     "OperationalLimits": {
@@ -22581,6 +23654,22 @@
     "ProcessingRequest": {
       "additionalProperties": false,
       "properties": {
+        "reader_source_connections": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ReaderSourceSelection"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reader Source Connections"
+        },
         "page": {
           "default": 1,
           "maximum": 100000,
@@ -23845,6 +24934,22 @@
     "QueryRequest": {
       "additionalProperties": false,
       "properties": {
+        "reader_source_connections": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ReaderSourceSelection"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reader Source Connections"
+        },
         "dataset_id": {
           "title": "Dataset Id",
           "type": "string"
@@ -24110,6 +25215,158 @@
       "title": "QueryResultExportInput",
       "type": "object"
     },
+    "ReaderPageInput": {
+      "additionalProperties": false,
+      "properties": {
+        "reader_source_connections": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ReaderSourceSelection"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reader Source Connections"
+        },
+        "page": {
+          "default": 1,
+          "maximum": 100000,
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "default": 25,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Page Size",
+          "type": "integer"
+        }
+      },
+      "title": "ReaderPageInput",
+      "type": "object"
+    },
+    "ReaderReadInput": {
+      "additionalProperties": false,
+      "properties": {
+        "reader_source_connections": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ReaderSourceSelection"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reader Source Connections"
+        }
+      },
+      "title": "ReaderReadInput",
+      "type": "object"
+    },
+    "ReaderSelectionInput": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "minimum": 0,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "operation_id": {
+          "format": "uuid",
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "connections": {
+          "items": {
+            "$ref": "#/$defs/ReaderSourceSelection"
+          },
+          "maxItems": 100,
+          "title": "Connections",
+          "type": "array"
+        }
+      },
+      "required": [
+        "expected_revision",
+        "operation_id",
+        "connections"
+      ],
+      "title": "ReaderSelectionInput",
+      "type": "object"
+    },
+    "ReaderSelectionOutput": {
+      "additionalProperties": true,
+      "properties": {
+        "revision": {
+          "title": "Revision",
+          "type": "integer"
+        },
+        "connections": {
+          "items": {
+            "$ref": "#/$defs/ReaderSourceSelection"
+          },
+          "title": "Connections",
+          "type": "array"
+        }
+      },
+      "required": [
+        "revision",
+        "connections"
+      ],
+      "title": "ReaderSelectionOutput",
+      "type": "object"
+    },
+    "ReaderSourceSelection": {
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "enum": [
+            "sharepoint",
+            "onedrive",
+            "google_drive"
+          ],
+          "title": "Provider",
+          "type": "string"
+        },
+        "external_tenant": {
+          "anyOf": [
+            {
+              "maxLength": 1024,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "External Tenant"
+        },
+        "connection_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Connection Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "connection_id"
+      ],
+      "title": "ReaderSourceSelection",
+      "type": "object"
+    },
     "RecipientProvider": {
       "additionalProperties": true,
       "properties": {
@@ -24271,6 +25528,93 @@
         "expected_snapshot_id"
       ],
       "title": "ReplaceTable",
+      "type": "object"
+    },
+    "ReplacementMemberInput": {
+      "additionalProperties": false,
+      "properties": {
+        "new_locator": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "New Locator",
+          "type": "string"
+        },
+        "previous_table_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Previous Table Id"
+        }
+      },
+      "required": [
+        "new_locator",
+        "previous_table_id"
+      ],
+      "title": "ReplacementMemberInput",
+      "type": "object"
+    },
+    "ReplacementResolutionInput": {
+      "additionalProperties": false,
+      "properties": {
+        "object_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Object Id",
+          "type": "string"
+        },
+        "remote_version": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Remote Version",
+          "type": "string"
+        },
+        "content_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Content Sha256",
+          "type": "string"
+        },
+        "baseline_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Baseline Sha256",
+          "type": "string"
+        },
+        "new_locator_set_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "New Locator Set Sha256",
+          "type": "string"
+        },
+        "replacements": {
+          "items": {
+            "$ref": "#/$defs/ReplacementMemberInput"
+          },
+          "maxItems": 16,
+          "minItems": 1,
+          "title": "Replacements",
+          "type": "array"
+        },
+        "removed_table_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 16,
+          "title": "Removed Table Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "object_id",
+        "remote_version",
+        "content_sha256",
+        "baseline_sha256",
+        "new_locator_set_sha256",
+        "replacements"
+      ],
+      "title": "ReplacementResolutionInput",
       "type": "object"
     },
     "ResultColumn": {
@@ -24541,6 +25885,22 @@
     "RunInput": {
       "additionalProperties": false,
       "properties": {
+        "reader_source_connections": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ReaderSourceSelection"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reader Source Connections"
+        },
         "attachment_ids": {
           "items": {
             "type": "string"
@@ -24706,6 +26066,22 @@
     "SearchRequest": {
       "additionalProperties": false,
       "properties": {
+        "reader_source_connections": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ReaderSourceSelection"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reader Source Connections"
+        },
         "question": {
           "title": "Question",
           "type": "string"
@@ -25002,6 +26378,106 @@
       "title": "Share",
       "type": "object"
     },
+    "ShareBrowseInput": {
+      "additionalProperties": false,
+      "properties": {
+        "q": {
+          "default": "",
+          "maxLength": 512,
+          "title": "Q",
+          "type": "string"
+        },
+        "status": {
+          "default": "all",
+          "enum": [
+            "all",
+            "active",
+            "revoked",
+            "expired"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "page_size": {
+          "default": 25,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "cursor": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cursor"
+        },
+        "reader_source_connections": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ReaderSourceSelection"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reader Source Connections"
+        }
+      },
+      "title": "ShareBrowseInput",
+      "type": "object"
+    },
+    "ShareBrowsePage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/Share"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Next Cursor"
+        },
+        "total": {
+          "default": null,
+          "title": "Total",
+          "type": "null"
+        },
+        "total_is_exact": {
+          "const": false,
+          "default": false,
+          "title": "Total Is Exact",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "ShareBrowsePage",
+      "type": "object"
+    },
     "ShareCreate": {
       "additionalProperties": false,
       "properties": {
@@ -25244,6 +26720,2205 @@
         "source_manifest_complete"
       ],
       "title": "SharedConversation",
+      "type": "object"
+    },
+    "SnapshotHistoryReadInput": {
+      "additionalProperties": false,
+      "properties": {
+        "reader_source_connections": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ReaderSourceSelection"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reader Source Connections"
+        },
+        "cursor": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9_-]{43}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cursor"
+        },
+        "page_size": {
+          "default": 25,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Page Size",
+          "type": "integer"
+        }
+      },
+      "title": "SnapshotHistoryReadInput",
+      "type": "object"
+    },
+    "SnapshotPageReadInput": {
+      "additionalProperties": false,
+      "properties": {
+        "reader_source_connections": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ReaderSourceSelection"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reader Source Connections"
+        },
+        "page": {
+          "default": 1,
+          "maximum": 100000,
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "default": 25,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "snapshot_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Snapshot Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "snapshot_id"
+      ],
+      "title": "SnapshotPageReadInput",
+      "type": "object"
+    },
+    "SnapshotReadInput": {
+      "additionalProperties": false,
+      "properties": {
+        "reader_source_connections": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ReaderSourceSelection"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reader Source Connections"
+        },
+        "snapshot_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Snapshot Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "snapshot_id"
+      ],
+      "title": "SnapshotReadInput",
+      "type": "object"
+    },
+    "SourceAccountOutput": {
+      "additionalProperties": true,
+      "properties": {
+        "provider": {
+          "enum": [
+            "sharepoint",
+            "onedrive",
+            "google_drive"
+          ],
+          "title": "Provider",
+          "type": "string"
+        },
+        "subject": {
+          "title": "Subject",
+          "type": "string"
+        },
+        "tenant_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Tenant Id"
+        }
+      },
+      "required": [
+        "provider",
+        "subject",
+        "tenant_id"
+      ],
+      "title": "SourceAccountOutput",
+      "type": "object"
+    },
+    "SourceAuthorizationCompletion": {
+      "additionalProperties": false,
+      "properties": {
+        "challenge_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Challenge Id",
+          "type": "string"
+        },
+        "state": {
+          "format": "password",
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "State",
+          "type": "string",
+          "writeOnly": true
+        },
+        "code": {
+          "format": "password",
+          "maxLength": 16384,
+          "minLength": 1,
+          "title": "Code",
+          "type": "string",
+          "writeOnly": true
+        }
+      },
+      "required": [
+        "challenge_id",
+        "state",
+        "code"
+      ],
+      "title": "SourceAuthorizationCompletion",
+      "type": "object"
+    },
+    "SourceAuthorizationInput": {
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "enum": [
+            "sharepoint",
+            "onedrive",
+            "google_drive"
+          ],
+          "title": "Provider",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider"
+      ],
+      "title": "SourceAuthorizationInput",
+      "type": "object"
+    },
+    "SourceAuthorizationOutput": {
+      "additionalProperties": true,
+      "properties": {
+        "connection_id": {
+          "title": "Connection Id",
+          "type": "string"
+        },
+        "challenge_id": {
+          "title": "Challenge Id",
+          "type": "string"
+        },
+        "authorization_url": {
+          "title": "Authorization Url",
+          "type": "string"
+        },
+        "callback_uri": {
+          "maxLength": 2048,
+          "title": "Callback Uri",
+          "type": "string"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection_id",
+        "challenge_id",
+        "authorization_url",
+        "callback_uri",
+        "expires_at"
+      ],
+      "title": "SourceAuthorizationOutput",
+      "type": "object"
+    },
+    "SourceCapabilitiesOutput": {
+      "additionalProperties": true,
+      "properties": {
+        "accounts_available": {
+          "title": "Accounts Available",
+          "type": "boolean"
+        },
+        "inbound_only": {
+          "const": true,
+          "default": true,
+          "title": "Inbound Only",
+          "type": "boolean"
+        },
+        "synchronization_available": {
+          "title": "Synchronization Available",
+          "type": "boolean"
+        },
+        "providers": {
+          "items": {
+            "$ref": "#/$defs/SourceProviderCapability"
+          },
+          "title": "Providers",
+          "type": "array"
+        },
+        "modes": {
+          "items": {
+            "enum": [
+              "document",
+              "dataset"
+            ],
+            "type": "string"
+          },
+          "title": "Modes",
+          "type": "array"
+        },
+        "formats": {
+          "items": {
+            "$ref": "#/$defs/SourceFormatCapability"
+          },
+          "title": "Formats",
+          "type": "array"
+        },
+        "schedule": {
+          "$ref": "#/$defs/SourceScheduleCapability"
+        }
+      },
+      "required": [
+        "accounts_available",
+        "synchronization_available",
+        "providers",
+        "modes",
+        "formats",
+        "schedule"
+      ],
+      "title": "SourceCapabilitiesOutput",
+      "type": "object"
+    },
+    "SourceConnectionOutput": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "provider": {
+          "enum": [
+            "sharepoint",
+            "onedrive",
+            "google_drive"
+          ],
+          "title": "Provider",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "pending",
+            "connected",
+            "reconnect_required",
+            "disconnected"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "revision": {
+          "title": "Revision",
+          "type": "integer"
+        },
+        "account": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceAccountOutput"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "display_name": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Display Name"
+        },
+        "display_address": {
+          "anyOf": [
+            {
+              "maxLength": 320,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Display Address"
+        },
+        "display_address_verified": {
+          "default": false,
+          "title": "Display Address Verified",
+          "type": "boolean"
+        },
+        "synchronization_available": {
+          "default": false,
+          "title": "Synchronization Available",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "provider",
+        "status",
+        "revision",
+        "account"
+      ],
+      "title": "SourceConnectionOutput",
+      "type": "object"
+    },
+    "SourceConnectionPage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/SourceConnectionOutput"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Cursor"
+        },
+        "synchronization_available": {
+          "default": false,
+          "title": "Synchronization Available",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "items",
+        "next_cursor"
+      ],
+      "title": "SourceConnectionPage",
+      "type": "object"
+    },
+    "SourceConnectionRevision": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "expected_revision"
+      ],
+      "title": "SourceConnectionRevision",
+      "type": "object"
+    },
+    "SourceControlInput": {
+      "additionalProperties": false,
+      "properties": {
+        "operation_id": {
+          "maxLength": 36,
+          "minLength": 36,
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "expected_revision": {
+          "maximum": 2147483646,
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "operation_id",
+        "expected_revision"
+      ],
+      "title": "SourceControlInput",
+      "type": "object"
+    },
+    "SourceControlOutput": {
+      "additionalProperties": true,
+      "properties": {
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "receipt_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Receipt Id",
+          "type": "string"
+        },
+        "action": {
+          "enum": [
+            "sync",
+            "pause",
+            "resume",
+            "cancel",
+            "retry",
+            "retire"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "control_revision": {
+          "title": "Control Revision",
+          "type": "integer"
+        },
+        "run_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Run Id"
+        },
+        "disposition": {
+          "enum": [
+            "queued",
+            "paused",
+            "active",
+            "stopping",
+            "reconciling",
+            "retired"
+          ],
+          "title": "Disposition",
+          "type": "string"
+        }
+      },
+      "required": [
+        "operation_id",
+        "receipt_id",
+        "action",
+        "control_revision",
+        "disposition"
+      ],
+      "title": "SourceControlOutput",
+      "type": "object"
+    },
+    "SourceControlReceipt": {
+      "additionalProperties": true,
+      "properties": {
+        "kind": {
+          "const": "control",
+          "default": "control",
+          "title": "Kind",
+          "type": "string"
+        },
+        "receipt": {
+          "$ref": "#/$defs/SourceControlOutput"
+        }
+      },
+      "required": [
+        "receipt"
+      ],
+      "title": "SourceControlReceipt",
+      "type": "object"
+    },
+    "SourceDestinationPresentation": {
+      "additionalProperties": true,
+      "properties": {
+        "segments": {
+          "items": {
+            "$ref": "#/$defs/SourceDestinationSegment"
+          },
+          "maxItems": 256,
+          "title": "Segments",
+          "type": "array"
+        }
+      },
+      "required": [
+        "segments"
+      ],
+      "title": "SourceDestinationPresentation",
+      "type": "object"
+    },
+    "SourceDestinationSegment": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 255,
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "name"
+      ],
+      "title": "SourceDestinationSegment",
+      "type": "object"
+    },
+    "SourceDiscoveredMember": {
+      "additionalProperties": true,
+      "properties": {
+        "locator": {
+          "maxLength": 2048,
+          "title": "Locator",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 255,
+          "title": "Name",
+          "type": "string"
+        },
+        "ambiguous": {
+          "title": "Ambiguous",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "locator",
+        "name",
+        "ambiguous"
+      ],
+      "title": "SourceDiscoveredMember",
+      "type": "object"
+    },
+    "SourceExistingPolicyReviewInput": {
+      "additionalProperties": false,
+      "properties": {
+        "operation_id": {
+          "maxLength": 36,
+          "minLength": 36,
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "connection_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Connection Id",
+          "type": "string"
+        },
+        "drive_id": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Drive Id",
+          "type": "string"
+        },
+        "root_id": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Root Id",
+          "type": "string"
+        },
+        "destination": {
+          "$ref": "#/$defs/BulkDestination"
+        },
+        "recursive": {
+          "title": "Recursive",
+          "type": "boolean"
+        },
+        "removal_policy": {
+          "enum": [
+            "retire",
+            "pause_for_review"
+          ],
+          "title": "Removal Policy",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "mode": {
+          "default": "document",
+          "enum": [
+            "document",
+            "dataset"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "hierarchy": {
+          "default": "preserve",
+          "enum": [
+            "preserve",
+            "flatten"
+          ],
+          "title": "Hierarchy",
+          "type": "string"
+        },
+        "excluded_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 1000,
+          "title": "Excluded Ids",
+          "type": "array"
+        },
+        "formats": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "title": "Formats",
+          "type": "array"
+        },
+        "schedule": {
+          "discriminator": {
+            "mapping": {
+              "calendar": "#/$defs/CalendarSchedule",
+              "interval": "#/$defs/IntervalSchedule",
+              "manual": "#/$defs/ManualSchedule"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ManualSchedule"
+            },
+            {
+              "$ref": "#/$defs/IntervalSchedule"
+            },
+            {
+              "$ref": "#/$defs/CalendarSchedule"
+            }
+          ],
+          "title": "Schedule"
+        },
+        "replacement_resolutions": {
+          "items": {
+            "$ref": "#/$defs/ReplacementResolutionInput"
+          },
+          "maxItems": 16,
+          "title": "Replacement Resolutions",
+          "type": "array"
+        },
+        "validation_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Validation Id"
+        },
+        "expected_revision": {
+          "maximum": 2147483646,
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "operation_id",
+        "connection_id",
+        "drive_id",
+        "root_id",
+        "destination",
+        "recursive",
+        "removal_policy",
+        "expected_revision"
+      ],
+      "title": "SourceExistingPolicyReviewInput",
+      "type": "object"
+    },
+    "SourceFolderPage": {
+      "additionalProperties": true,
+      "properties": {
+        "folder": {
+          "$ref": "#/$defs/SourceItemOutput"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/SourceItemOutput"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Cursor"
+        }
+      },
+      "required": [
+        "folder",
+        "items",
+        "next_cursor"
+      ],
+      "title": "SourceFolderPage",
+      "type": "object"
+    },
+    "SourceFormatCapability": {
+      "additionalProperties": true,
+      "properties": {
+        "extension": {
+          "title": "Extension",
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "document",
+            "dataset"
+          ],
+          "title": "Mode",
+          "type": "string"
+        }
+      },
+      "required": [
+        "extension",
+        "mode"
+      ],
+      "title": "SourceFormatCapability",
+      "type": "object"
+    },
+    "SourceItemOutput": {
+      "additionalProperties": true,
+      "properties": {
+        "item_id": {
+          "title": "Item Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "file",
+            "folder",
+            "shortcut"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Version"
+        },
+        "size_bytes": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Size Bytes"
+        },
+        "mime_type": {
+          "title": "Mime Type",
+          "type": "string"
+        },
+        "parents": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Parents",
+          "type": "array"
+        },
+        "can_download": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Can Download"
+        },
+        "modified_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Modified At"
+        }
+      },
+      "required": [
+        "item_id",
+        "name",
+        "kind",
+        "version",
+        "size_bytes",
+        "mime_type",
+        "parents",
+        "can_download",
+        "modified_at"
+      ],
+      "title": "SourceItemOutput",
+      "type": "object"
+    },
+    "SourceLocationOutput": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "site",
+            "drive"
+          ],
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "kind"
+      ],
+      "title": "SourceLocationOutput",
+      "type": "object"
+    },
+    "SourceLocationPage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/SourceLocationOutput"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Cursor"
+        }
+      },
+      "required": [
+        "items",
+        "next_cursor"
+      ],
+      "title": "SourceLocationPage",
+      "type": "object"
+    },
+    "SourceMappingOutput": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "revision": {
+          "title": "Revision",
+          "type": "integer"
+        },
+        "policy_revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Policy Revision"
+        },
+        "latest_review_revision": {
+          "title": "Latest Review Revision",
+          "type": "integer"
+        },
+        "control_revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Control Revision"
+        },
+        "connection_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Connection Id",
+          "type": "string"
+        },
+        "policy": {
+          "$ref": "#/$defs/MappingReviewInput"
+        },
+        "presentation": {
+          "$ref": "#/$defs/SourceMappingPresentation"
+        },
+        "status": {
+          "enum": [
+            "reviewed",
+            "active",
+            "paused",
+            "reconnect_required",
+            "retired"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "next_run_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Run At"
+        },
+        "can_pause": {
+          "title": "Can Pause",
+          "type": "boolean"
+        },
+        "can_resume": {
+          "title": "Can Resume",
+          "type": "boolean"
+        },
+        "can_retire": {
+          "title": "Can Retire",
+          "type": "boolean"
+        },
+        "can_sync": {
+          "title": "Can Sync",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "policy_revision",
+        "latest_review_revision",
+        "control_revision",
+        "connection_id",
+        "policy",
+        "presentation",
+        "status",
+        "next_run_at",
+        "can_pause",
+        "can_resume",
+        "can_retire",
+        "can_sync"
+      ],
+      "title": "SourceMappingOutput",
+      "type": "object"
+    },
+    "SourceMappingPage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/SourceMappingSummary"
+          },
+          "maxItems": 100,
+          "title": "Items",
+          "type": "array"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Cursor"
+        }
+      },
+      "required": [
+        "items",
+        "next_cursor"
+      ],
+      "title": "SourceMappingPage",
+      "type": "object"
+    },
+    "SourceMappingPresentation": {
+      "additionalProperties": true,
+      "properties": {
+        "source_root": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceRootPresentation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "destination": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceDestinationPresentation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "unavailable_reason": {
+          "anyOf": [
+            {
+              "enum": [
+                "access_denied",
+                "reconnect_required",
+                "unavailable"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unavailable Reason"
+        }
+      },
+      "title": "SourceMappingPresentation",
+      "type": "object"
+    },
+    "SourceMappingSummary": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "reviewed",
+            "active",
+            "paused",
+            "reconnect_required",
+            "retired"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "connection_id": {
+          "title": "Connection Id",
+          "type": "string"
+        },
+        "policy_revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Policy Revision"
+        },
+        "latest_review_revision": {
+          "title": "Latest Review Revision",
+          "type": "integer"
+        },
+        "control_revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Control Revision"
+        },
+        "next_run_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Run At"
+        },
+        "presentation": {
+          "$ref": "#/$defs/SourceMappingPresentation"
+        }
+      },
+      "required": [
+        "id",
+        "status",
+        "connection_id",
+        "policy_revision",
+        "latest_review_revision",
+        "control_revision",
+        "next_run_at",
+        "presentation"
+      ],
+      "title": "SourceMappingSummary",
+      "type": "object"
+    },
+    "SourceMappingValidationAbandonInput": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "expected_revision"
+      ],
+      "title": "SourceMappingValidationAbandonInput",
+      "type": "object"
+    },
+    "SourceMappingValidationContinueInput": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "continuation_token": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Continuation Token",
+          "type": "string"
+        }
+      },
+      "required": [
+        "expected_revision",
+        "continuation_token"
+      ],
+      "title": "SourceMappingValidationContinueInput",
+      "type": "object"
+    },
+    "SourceMappingValidationInput": {
+      "additionalProperties": false,
+      "properties": {
+        "connection_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Connection Id",
+          "type": "string"
+        },
+        "drive_id": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Drive Id",
+          "type": "string"
+        },
+        "root_id": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Root Id",
+          "type": "string"
+        },
+        "destination": {
+          "$ref": "#/$defs/BulkDestination"
+        },
+        "recursive": {
+          "title": "Recursive",
+          "type": "boolean"
+        },
+        "removal_policy": {
+          "enum": [
+            "retire",
+            "pause_for_review"
+          ],
+          "title": "Removal Policy",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "mode": {
+          "default": "document",
+          "enum": [
+            "document",
+            "dataset"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "hierarchy": {
+          "default": "preserve",
+          "enum": [
+            "preserve",
+            "flatten"
+          ],
+          "title": "Hierarchy",
+          "type": "string"
+        },
+        "excluded_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 1000,
+          "title": "Excluded Ids",
+          "type": "array"
+        },
+        "formats": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "title": "Formats",
+          "type": "array"
+        },
+        "schedule": {
+          "discriminator": {
+            "mapping": {
+              "calendar": "#/$defs/CalendarSchedule",
+              "interval": "#/$defs/IntervalSchedule",
+              "manual": "#/$defs/ManualSchedule"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ManualSchedule"
+            },
+            {
+              "$ref": "#/$defs/IntervalSchedule"
+            },
+            {
+              "$ref": "#/$defs/CalendarSchedule"
+            }
+          ],
+          "title": "Schedule"
+        },
+        "replacement_resolutions": {
+          "items": {
+            "$ref": "#/$defs/ReplacementResolutionInput"
+          },
+          "maxItems": 16,
+          "title": "Replacement Resolutions",
+          "type": "array"
+        },
+        "operation_id": {
+          "format": "uuid",
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "mapping_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mapping Id"
+        },
+        "expected_revision": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Revision"
+        }
+      },
+      "required": [
+        "connection_id",
+        "drive_id",
+        "root_id",
+        "destination",
+        "recursive",
+        "removal_policy",
+        "operation_id"
+      ],
+      "title": "SourceMappingValidationInput",
+      "type": "object"
+    },
+    "SourceMappingValidationItem": {
+      "additionalProperties": true,
+      "properties": {
+        "item_id": {
+          "title": "Item Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "file",
+            "folder",
+            "shortcut"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Version"
+        },
+        "filename": {
+          "title": "Filename",
+          "type": "string"
+        },
+        "export_mime": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Export Mime"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Reason"
+        },
+        "relative_path": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Relative Path",
+          "type": "array"
+        },
+        "destination_relative_path": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Destination Relative Path",
+          "type": "array"
+        },
+        "size_bytes": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Size Bytes"
+        },
+        "collision": {
+          "enum": [
+            "none",
+            "source_name",
+            "destination_name",
+            "local_edit"
+          ],
+          "title": "Collision",
+          "type": "string"
+        },
+        "action": {
+          "enum": [
+            "create",
+            "replace",
+            "move",
+            "skip"
+          ],
+          "title": "Action",
+          "type": "string"
+        }
+      },
+      "required": [
+        "item_id",
+        "name",
+        "kind",
+        "version",
+        "filename",
+        "export_mime",
+        "reason",
+        "relative_path",
+        "destination_relative_path",
+        "size_bytes",
+        "collision",
+        "action"
+      ],
+      "title": "SourceMappingValidationItem",
+      "type": "object"
+    },
+    "SourceMappingValidationItemPage": {
+      "additionalProperties": true,
+      "properties": {
+        "validation_id": {
+          "format": "uuid",
+          "title": "Validation Id",
+          "type": "string"
+        },
+        "revision": {
+          "title": "Revision",
+          "type": "integer"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/SourceMappingValidationItem"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "visible_count": {
+          "title": "Visible Count",
+          "type": "integer"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Cursor"
+        },
+        "total": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Total"
+        }
+      },
+      "required": [
+        "validation_id",
+        "revision",
+        "items",
+        "visible_count",
+        "next_cursor"
+      ],
+      "title": "SourceMappingValidationItemPage",
+      "type": "object"
+    },
+    "SourceMappingValidationOutput": {
+      "additionalProperties": true,
+      "properties": {
+        "validation_id": {
+          "format": "uuid",
+          "title": "Validation Id",
+          "type": "string"
+        },
+        "revision": {
+          "title": "Revision",
+          "type": "integer"
+        },
+        "state": {
+          "enum": [
+            "scanning",
+            "verifying",
+            "checking_changes",
+            "complete",
+            "blocked",
+            "stale",
+            "cleaning",
+            "abandoned",
+            "expired"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        },
+        "continuation_token": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Continuation Token"
+        },
+        "enumeration_complete": {
+          "title": "Enumeration Complete",
+          "type": "boolean"
+        },
+        "observed_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observed Count"
+        },
+        "total": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Total"
+        },
+        "manifest_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Manifest Sha256"
+        },
+        "reason_code": {
+          "anyOf": [
+            {
+              "enum": [
+                "SOURCE_NAME_COLLISION",
+                "SOURCE_DESTINATION_COLLISION",
+                "SOURCE_LOCAL_EDIT",
+                "SOURCE_CHANGED",
+                "SOURCE_AUTHORITY_CHANGED",
+                "SOURCE_SCAN_LIMIT_EXCEEDED",
+                "SOURCE_VALIDATION_CAPACITY",
+                "SOURCE_UNAVAILABLE",
+                "SOURCE_VALIDATION_REFRESH_REQUIRED",
+                "SOURCE_INVALID_SELECTION"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason Code"
+        }
+      },
+      "required": [
+        "validation_id",
+        "revision",
+        "state",
+        "expires_at",
+        "enumeration_complete"
+      ],
+      "title": "SourceMappingValidationOutput",
+      "type": "object"
+    },
+    "SourcePolicyApplyInput": {
+      "additionalProperties": false,
+      "properties": {
+        "operation_id": {
+          "maxLength": 36,
+          "minLength": 36,
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "expected_revision": {
+          "maximum": 2147483646,
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "review_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Review Id",
+          "type": "string"
+        },
+        "review_digest": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Review Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "operation_id",
+        "expected_revision",
+        "review_id",
+        "review_digest"
+      ],
+      "title": "SourcePolicyApplyInput",
+      "type": "object"
+    },
+    "SourcePolicyOperationOutput": {
+      "additionalProperties": true,
+      "properties": {
+        "schema": {
+          "const": "koinon.source-policy-operation.v1",
+          "default": "koinon.source-policy-operation.v1",
+          "title": "Schema",
+          "type": "string"
+        },
+        "receipt_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Receipt Id",
+          "type": "string"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "action": {
+          "enum": [
+            "review",
+            "apply"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "mapping_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Mapping Id",
+          "type": "string"
+        },
+        "policy_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Policy Id",
+          "type": "string"
+        },
+        "expected_policy_revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Expected Policy Revision"
+        },
+        "result_policy_revision": {
+          "title": "Result Policy Revision",
+          "type": "integer"
+        },
+        "review_digest": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Review Digest",
+          "type": "string"
+        },
+        "review_expires_at": {
+          "format": "date-time",
+          "title": "Review Expires At",
+          "type": "string"
+        },
+        "disposition": {
+          "enum": [
+            "reviewed",
+            "accepted"
+          ],
+          "title": "Disposition",
+          "type": "string"
+        }
+      },
+      "required": [
+        "receipt_id",
+        "operation_id",
+        "action",
+        "mapping_id",
+        "policy_id",
+        "expected_policy_revision",
+        "result_policy_revision",
+        "review_digest",
+        "review_expires_at",
+        "disposition"
+      ],
+      "title": "SourcePolicyOperationOutput",
+      "type": "object"
+    },
+    "SourcePolicyReceipt": {
+      "additionalProperties": true,
+      "properties": {
+        "kind": {
+          "const": "policy",
+          "default": "policy",
+          "title": "Kind",
+          "type": "string"
+        },
+        "receipt": {
+          "$ref": "#/$defs/SourcePolicyOperationOutput"
+        }
+      },
+      "required": [
+        "receipt"
+      ],
+      "title": "SourcePolicyReceipt",
+      "type": "object"
+    },
+    "SourcePolicyReviewInput": {
+      "additionalProperties": false,
+      "properties": {
+        "operation_id": {
+          "maxLength": 36,
+          "minLength": 36,
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "connection_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Connection Id",
+          "type": "string"
+        },
+        "drive_id": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Drive Id",
+          "type": "string"
+        },
+        "root_id": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Root Id",
+          "type": "string"
+        },
+        "destination": {
+          "$ref": "#/$defs/BulkDestination"
+        },
+        "recursive": {
+          "title": "Recursive",
+          "type": "boolean"
+        },
+        "removal_policy": {
+          "enum": [
+            "retire",
+            "pause_for_review"
+          ],
+          "title": "Removal Policy",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "mode": {
+          "default": "document",
+          "enum": [
+            "document",
+            "dataset"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "hierarchy": {
+          "default": "preserve",
+          "enum": [
+            "preserve",
+            "flatten"
+          ],
+          "title": "Hierarchy",
+          "type": "string"
+        },
+        "excluded_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 1000,
+          "title": "Excluded Ids",
+          "type": "array"
+        },
+        "formats": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "title": "Formats",
+          "type": "array"
+        },
+        "schedule": {
+          "discriminator": {
+            "mapping": {
+              "calendar": "#/$defs/CalendarSchedule",
+              "interval": "#/$defs/IntervalSchedule",
+              "manual": "#/$defs/ManualSchedule"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ManualSchedule"
+            },
+            {
+              "$ref": "#/$defs/IntervalSchedule"
+            },
+            {
+              "$ref": "#/$defs/CalendarSchedule"
+            }
+          ],
+          "title": "Schedule"
+        },
+        "replacement_resolutions": {
+          "items": {
+            "$ref": "#/$defs/ReplacementResolutionInput"
+          },
+          "maxItems": 16,
+          "title": "Replacement Resolutions",
+          "type": "array"
+        },
+        "validation_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Validation Id"
+        }
+      },
+      "required": [
+        "operation_id",
+        "connection_id",
+        "drive_id",
+        "root_id",
+        "destination",
+        "recursive",
+        "removal_policy"
+      ],
+      "title": "SourcePolicyReviewInput",
+      "type": "object"
+    },
+    "SourcePreviewItem": {
+      "additionalProperties": true,
+      "properties": {
+        "item_id": {
+          "title": "Item Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Version"
+        },
+        "filename": {
+          "title": "Filename",
+          "type": "string"
+        },
+        "export_mime": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Export Mime"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Reason"
+        },
+        "ancestry": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Ancestry",
+          "type": "array"
+        },
+        "relative_path": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Relative Path",
+          "type": "array"
+        },
+        "destination_relative_path": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Destination Relative Path",
+          "type": "array"
+        },
+        "collision": {
+          "enum": [
+            "none",
+            "source_name",
+            "destination_name",
+            "local_edit"
+          ],
+          "title": "Collision",
+          "type": "string"
+        },
+        "size_bytes": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Size Bytes"
+        },
+        "action": {
+          "enum": [
+            "create",
+            "replace",
+            "move",
+            "skip"
+          ],
+          "title": "Action",
+          "type": "string"
+        }
+      },
+      "required": [
+        "item_id",
+        "name",
+        "kind",
+        "version",
+        "filename",
+        "export_mime",
+        "reason",
+        "ancestry",
+        "relative_path",
+        "destination_relative_path",
+        "collision",
+        "size_bytes",
+        "action"
+      ],
+      "title": "SourcePreviewItem",
+      "type": "object"
+    },
+    "SourcePreviousMember": {
+      "additionalProperties": true,
+      "properties": {
+        "table_id": {
+          "title": "Table Id",
+          "type": "string"
+        },
+        "catalog_table_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Catalog Table Id",
+          "type": "string"
+        },
+        "locator": {
+          "maxLength": 2048,
+          "title": "Locator",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 255,
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "table_id",
+        "catalog_table_id",
+        "locator",
+        "name"
+      ],
+      "title": "SourcePreviousMember",
+      "type": "object"
+    },
+    "SourceProviderCapability": {
+      "additionalProperties": true,
+      "properties": {
+        "provider": {
+          "enum": [
+            "sharepoint",
+            "onedrive",
+            "google_drive"
+          ],
+          "title": "Provider",
+          "type": "string"
+        },
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        },
+        "consent_available": {
+          "title": "Consent Available",
+          "type": "boolean"
+        },
+        "unavailable_reason": {
+          "anyOf": [
+            {
+              "enum": [
+                "disabled",
+                "not_configured"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Unavailable Reason"
+        }
+      },
+      "required": [
+        "provider",
+        "display_name",
+        "consent_available",
+        "unavailable_reason"
+      ],
+      "title": "SourceProviderCapability",
       "type": "object"
     },
     "SourceReference": {
@@ -25539,6 +29214,598 @@
         "kind"
       ],
       "title": "SourceReference",
+      "type": "object"
+    },
+    "SourceReplacementPreview": {
+      "additionalProperties": true,
+      "properties": {
+        "object_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Object Id",
+          "type": "string"
+        },
+        "remote_version": {
+          "maxLength": 1024,
+          "title": "Remote Version",
+          "type": "string"
+        },
+        "content_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Content Sha256",
+          "type": "string"
+        },
+        "baseline_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Baseline Sha256",
+          "type": "string"
+        },
+        "new_locator_set_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "New Locator Set Sha256",
+          "type": "string"
+        },
+        "parser_fingerprint": {
+          "maxLength": 128,
+          "title": "Parser Fingerprint",
+          "type": "string"
+        },
+        "previous_members": {
+          "items": {
+            "$ref": "#/$defs/SourcePreviousMember"
+          },
+          "maxItems": 16,
+          "minItems": 1,
+          "title": "Previous Members",
+          "type": "array"
+        },
+        "new_members": {
+          "items": {
+            "$ref": "#/$defs/SourceDiscoveredMember"
+          },
+          "maxItems": 16,
+          "minItems": 1,
+          "title": "New Members",
+          "type": "array"
+        }
+      },
+      "required": [
+        "object_id",
+        "remote_version",
+        "content_sha256",
+        "baseline_sha256",
+        "new_locator_set_sha256",
+        "parser_fingerprint",
+        "previous_members",
+        "new_members"
+      ],
+      "title": "SourceReplacementPreview",
+      "type": "object"
+    },
+    "SourceReplacementPreviewInput": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_revision": {
+          "maximum": 2147483646,
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "remote_version": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Remote Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "expected_revision",
+        "remote_version"
+      ],
+      "title": "SourceReplacementPreviewInput",
+      "type": "object"
+    },
+    "SourceReviewPage": {
+      "additionalProperties": true,
+      "properties": {
+        "review_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Review Id",
+          "type": "string"
+        },
+        "validation_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Validation Id"
+        },
+        "root_kind": {
+          "default": "folder",
+          "enum": [
+            "file",
+            "folder"
+          ],
+          "title": "Root Kind",
+          "type": "string"
+        },
+        "policy_revision": {
+          "title": "Policy Revision",
+          "type": "integer"
+        },
+        "review_digest": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Review Digest",
+          "type": "string"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/SourcePreviewItem"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Cursor"
+        },
+        "enumeration_complete": {
+          "title": "Enumeration Complete",
+          "type": "boolean"
+        },
+        "total": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Total"
+        },
+        "observed_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Observed Count"
+        },
+        "known_bytes": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Known Bytes"
+        },
+        "unknown_size_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Unknown Size Count"
+        },
+        "can_apply": {
+          "title": "Can Apply",
+          "type": "boolean"
+        },
+        "destination": {
+          "$ref": "#/$defs/SourceDestinationPresentation"
+        }
+      },
+      "required": [
+        "review_id",
+        "policy_revision",
+        "review_digest",
+        "expires_at",
+        "items",
+        "next_cursor",
+        "enumeration_complete",
+        "total",
+        "observed_count",
+        "known_bytes",
+        "unknown_size_count",
+        "can_apply",
+        "destination"
+      ],
+      "title": "SourceReviewPage",
+      "type": "object"
+    },
+    "SourceRootPresentation": {
+      "additionalProperties": true,
+      "properties": {
+        "name": {
+          "maxLength": 4096,
+          "title": "Name",
+          "type": "string"
+        },
+        "relative_path": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 256,
+          "title": "Relative Path",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "relative_path"
+      ],
+      "title": "SourceRootPresentation",
+      "type": "object"
+    },
+    "SourceRunItem": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "object_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Object Id",
+          "type": "string"
+        },
+        "generation": {
+          "minimum": 1,
+          "title": "Generation",
+          "type": "integer"
+        },
+        "remote_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Remote Version"
+        },
+        "kind": {
+          "enum": [
+            "file",
+            "folder",
+            "deleted",
+            "unknown"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "relative_path": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Relative Path",
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "observed",
+            "downloading",
+            "processing",
+            "synchronized",
+            "searchable",
+            "skipped",
+            "conflict",
+            "retired",
+            "failed",
+            "indeterminate"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Error Code"
+        },
+        "source_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Source Id"
+        },
+        "asset_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Asset Id"
+        },
+        "attempt_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Attempt Id"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "object_id",
+        "generation",
+        "remote_version",
+        "kind",
+        "name",
+        "relative_path",
+        "status",
+        "error_code",
+        "source_id",
+        "asset_id",
+        "attempt_id",
+        "updated_at"
+      ],
+      "title": "SourceRunItem",
+      "type": "object"
+    },
+    "SourceRunItemPage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/SourceRunItem"
+          },
+          "maxItems": 100,
+          "title": "Items",
+          "type": "array"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Cursor"
+        }
+      },
+      "required": [
+        "items",
+        "next_cursor"
+      ],
+      "title": "SourceRunItemPage",
+      "type": "object"
+    },
+    "SourceRunOutput": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "mapping_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Mapping Id",
+          "type": "string"
+        },
+        "policy_revision": {
+          "title": "Policy Revision",
+          "type": "integer"
+        },
+        "control_revision": {
+          "title": "Control Revision",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "queued",
+            "running",
+            "reconciling",
+            "reconnect_required",
+            "succeeded",
+            "partial",
+            "failed",
+            "cancelled"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "stopping": {
+          "title": "Stopping",
+          "type": "boolean"
+        },
+        "retry_of_run_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Retry Of Run Id"
+        },
+        "counters": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Counters",
+          "type": "object"
+        },
+        "enumeration_complete": {
+          "title": "Enumeration Complete",
+          "type": "boolean"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "finished_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Finished At"
+        },
+        "can_cancel": {
+          "title": "Can Cancel",
+          "type": "boolean"
+        },
+        "can_retry": {
+          "title": "Can Retry",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "mapping_id",
+        "policy_revision",
+        "control_revision",
+        "status",
+        "stopping",
+        "retry_of_run_id",
+        "counters",
+        "enumeration_complete",
+        "created_at",
+        "finished_at",
+        "can_cancel",
+        "can_retry"
+      ],
+      "title": "SourceRunOutput",
+      "type": "object"
+    },
+    "SourceRunPage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/SourceRunOutput"
+          },
+          "maxItems": 100,
+          "title": "Items",
+          "type": "array"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Cursor"
+        }
+      },
+      "required": [
+        "items",
+        "next_cursor"
+      ],
+      "title": "SourceRunPage",
+      "type": "object"
+    },
+    "SourceScheduleCapability": {
+      "additionalProperties": true,
+      "properties": {
+        "min_interval_seconds": {
+          "title": "Min Interval Seconds",
+          "type": "integer"
+        },
+        "max_interval_seconds": {
+          "title": "Max Interval Seconds",
+          "type": "integer"
+        },
+        "calendar_timezones": {
+          "const": "iana",
+          "default": "iana",
+          "title": "Calendar Timezones",
+          "type": "string"
+        },
+        "max_calendar_weekdays": {
+          "const": 7,
+          "default": 7,
+          "title": "Max Calendar Weekdays",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "min_interval_seconds",
+        "max_interval_seconds"
+      ],
+      "title": "SourceScheduleCapability",
       "type": "object"
     },
     "SqlAttemptReceipt": {
@@ -27140,6 +31407,63 @@
       "title": "TableSnapshotPage",
       "type": "object"
     },
+    "TableSnapshotReadPage": {
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/TableSnapshotSummary"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Cursor"
+        },
+        "total": {
+          "default": null,
+          "title": "Total",
+          "type": "null"
+        },
+        "pages": {
+          "default": null,
+          "title": "Pages",
+          "type": "null"
+        },
+        "total_is_exact": {
+          "const": false,
+          "default": false,
+          "title": "Total Is Exact",
+          "type": "boolean"
+        },
+        "current_snapshot_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Current Snapshot Id"
+        }
+      },
+      "required": [
+        "items",
+        "next_cursor"
+      ],
+      "title": "TableSnapshotReadPage",
+      "type": "object"
+    },
     "TableSnapshotSummary": {
       "additionalProperties": true,
       "properties": {
@@ -28226,6 +32550,23 @@
       "title": "WelcomeRecoveryInput",
       "type": "object"
     },
+    "SourceOperationReceipt": {
+      "discriminator": {
+        "mapping": {
+          "control": "#/$defs/SourceControlReceipt",
+          "policy": "#/$defs/SourcePolicyReceipt"
+        },
+        "propertyName": "kind"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/SourcePolicyReceipt"
+        },
+        {
+          "$ref": "#/$defs/SourceControlReceipt"
+        }
+      ]
+    },
     "KnowledgeCommitOutcome": {
       "discriminator": {
         "mapping": {
@@ -28347,6 +32688,225 @@
     }
   },
   "models": {
+    "SourceMappingValidationInput": {
+      "$ref": "#/$defs/SourceMappingValidationInput"
+    },
+    "SourceMappingValidationContinueInput": {
+      "$ref": "#/$defs/SourceMappingValidationContinueInput"
+    },
+    "SourceMappingValidationAbandonInput": {
+      "$ref": "#/$defs/SourceMappingValidationAbandonInput"
+    },
+    "SourceMappingValidationOutput": {
+      "$ref": "#/$defs/SourceMappingValidationOutput"
+    },
+    "SourceMappingValidationItem": {
+      "$ref": "#/$defs/SourceMappingValidationItem"
+    },
+    "SourceMappingValidationItemPage": {
+      "$ref": "#/$defs/SourceMappingValidationItemPage"
+    },
+    "ReplacementMemberInput": {
+      "$ref": "#/$defs/ReplacementMemberInput"
+    },
+    "ReplacementResolutionInput": {
+      "$ref": "#/$defs/ReplacementResolutionInput"
+    },
+    "ManualSchedule": {
+      "$ref": "#/$defs/ManualSchedule"
+    },
+    "IntervalSchedule": {
+      "$ref": "#/$defs/IntervalSchedule"
+    },
+    "CalendarSchedule": {
+      "$ref": "#/$defs/CalendarSchedule"
+    },
+    "MappingReviewInput": {
+      "$ref": "#/$defs/MappingReviewInput"
+    },
+    "MappingReviewOutput": {
+      "$ref": "#/$defs/MappingReviewOutput"
+    },
+    "OperationInput": {
+      "$ref": "#/$defs/OperationInput"
+    },
+    "SourceControlInput": {
+      "$ref": "#/$defs/SourceControlInput"
+    },
+    "SourcePolicyReviewInput": {
+      "$ref": "#/$defs/SourcePolicyReviewInput"
+    },
+    "SourceExistingPolicyReviewInput": {
+      "$ref": "#/$defs/SourceExistingPolicyReviewInput"
+    },
+    "SourcePolicyApplyInput": {
+      "$ref": "#/$defs/SourcePolicyApplyInput"
+    },
+    "SourcePolicyOperationOutput": {
+      "$ref": "#/$defs/SourcePolicyOperationOutput"
+    },
+    "SourceDestinationSegment": {
+      "$ref": "#/$defs/SourceDestinationSegment"
+    },
+    "SourceDestinationPresentation": {
+      "$ref": "#/$defs/SourceDestinationPresentation"
+    },
+    "SourceRootPresentation": {
+      "$ref": "#/$defs/SourceRootPresentation"
+    },
+    "SourceMappingPresentation": {
+      "$ref": "#/$defs/SourceMappingPresentation"
+    },
+    "SourcePreviewItem": {
+      "$ref": "#/$defs/SourcePreviewItem"
+    },
+    "SourceReviewPage": {
+      "$ref": "#/$defs/SourceReviewPage"
+    },
+    "SourceControlOutput": {
+      "$ref": "#/$defs/SourceControlOutput"
+    },
+    "SourcePolicyReceipt": {
+      "$ref": "#/$defs/SourcePolicyReceipt"
+    },
+    "SourceControlReceipt": {
+      "$ref": "#/$defs/SourceControlReceipt"
+    },
+    "SourceMappingOutput": {
+      "$ref": "#/$defs/SourceMappingOutput"
+    },
+    "SourceRunOutput": {
+      "$ref": "#/$defs/SourceRunOutput"
+    },
+    "SourceRunItem": {
+      "$ref": "#/$defs/SourceRunItem"
+    },
+    "SourceRunItemPage": {
+      "$ref": "#/$defs/SourceRunItemPage"
+    },
+    "SourceReplacementPreviewInput": {
+      "$ref": "#/$defs/SourceReplacementPreviewInput"
+    },
+    "SourcePreviousMember": {
+      "$ref": "#/$defs/SourcePreviousMember"
+    },
+    "SourceDiscoveredMember": {
+      "$ref": "#/$defs/SourceDiscoveredMember"
+    },
+    "SourceReplacementPreview": {
+      "$ref": "#/$defs/SourceReplacementPreview"
+    },
+    "SourceMappingSummary": {
+      "$ref": "#/$defs/SourceMappingSummary"
+    },
+    "SourceMappingPage": {
+      "$ref": "#/$defs/SourceMappingPage"
+    },
+    "SourceRunPage": {
+      "$ref": "#/$defs/SourceRunPage"
+    },
+    "DocumentPartsReadInput": {
+      "$ref": "#/$defs/DocumentPartsReadInput"
+    },
+    "DocumentChunksReadInput": {
+      "$ref": "#/$defs/DocumentChunksReadInput"
+    },
+    "LineageReadInput": {
+      "$ref": "#/$defs/LineageReadInput"
+    },
+    "SnapshotReadInput": {
+      "$ref": "#/$defs/SnapshotReadInput"
+    },
+    "SnapshotPageReadInput": {
+      "$ref": "#/$defs/SnapshotPageReadInput"
+    },
+    "SnapshotHistoryReadInput": {
+      "$ref": "#/$defs/SnapshotHistoryReadInput"
+    },
+    "TableSnapshotReadPage": {
+      "$ref": "#/$defs/TableSnapshotReadPage"
+    },
+    "HistoryBrowseInput": {
+      "$ref": "#/$defs/HistoryBrowseInput"
+    },
+    "HistoryThreadOutput": {
+      "$ref": "#/$defs/HistoryThreadOutput"
+    },
+    "HistoryBrowsePage": {
+      "$ref": "#/$defs/HistoryBrowsePage"
+    },
+    "MessageBrowseInput": {
+      "$ref": "#/$defs/MessageBrowseInput"
+    },
+    "MessageBrowsePage": {
+      "$ref": "#/$defs/MessageBrowsePage"
+    },
+    "SourceProviderCapability": {
+      "$ref": "#/$defs/SourceProviderCapability"
+    },
+    "SourceFormatCapability": {
+      "$ref": "#/$defs/SourceFormatCapability"
+    },
+    "SourceScheduleCapability": {
+      "$ref": "#/$defs/SourceScheduleCapability"
+    },
+    "SourceCapabilitiesOutput": {
+      "$ref": "#/$defs/SourceCapabilitiesOutput"
+    },
+    "SourceAuthorizationInput": {
+      "$ref": "#/$defs/SourceAuthorizationInput"
+    },
+    "SourceAuthorizationCompletion": {
+      "$ref": "#/$defs/SourceAuthorizationCompletion"
+    },
+    "SourceConnectionRevision": {
+      "$ref": "#/$defs/SourceConnectionRevision"
+    },
+    "SourceAuthorizationOutput": {
+      "$ref": "#/$defs/SourceAuthorizationOutput"
+    },
+    "SourceAccountOutput": {
+      "$ref": "#/$defs/SourceAccountOutput"
+    },
+    "SourceConnectionOutput": {
+      "$ref": "#/$defs/SourceConnectionOutput"
+    },
+    "SourceConnectionPage": {
+      "$ref": "#/$defs/SourceConnectionPage"
+    },
+    "SourceLocationOutput": {
+      "$ref": "#/$defs/SourceLocationOutput"
+    },
+    "SourceLocationPage": {
+      "$ref": "#/$defs/SourceLocationPage"
+    },
+    "SourceItemOutput": {
+      "$ref": "#/$defs/SourceItemOutput"
+    },
+    "SourceFolderPage": {
+      "$ref": "#/$defs/SourceFolderPage"
+    },
+    "ReaderSourceSelection": {
+      "$ref": "#/$defs/ReaderSourceSelection"
+    },
+    "ReaderSelectionInput": {
+      "$ref": "#/$defs/ReaderSelectionInput"
+    },
+    "ReaderSelectionOutput": {
+      "$ref": "#/$defs/ReaderSelectionOutput"
+    },
+    "ReaderReadInput": {
+      "$ref": "#/$defs/ReaderReadInput"
+    },
+    "ReaderPageInput": {
+      "$ref": "#/$defs/ReaderPageInput"
+    },
+    "CatalogBrowseInput": {
+      "$ref": "#/$defs/CatalogBrowseInput"
+    },
+    "CatalogBrowseOutput": {
+      "$ref": "#/$defs/CatalogBrowseOutput"
+    },
     "PlatformValue": {
       "$ref": "#/$defs/PlatformValue"
     },
@@ -29079,6 +33639,12 @@
     "ExportPage": {
       "$ref": "#/$defs/ExportPage"
     },
+    "ExportBrowseInput": {
+      "$ref": "#/$defs/ExportBrowseInput"
+    },
+    "ExportBrowsePage": {
+      "$ref": "#/$defs/ExportBrowsePage"
+    },
     "ShareReviewInput": {
       "$ref": "#/$defs/ShareReviewInput"
     },
@@ -29096,6 +33662,12 @@
     },
     "SharePage": {
       "$ref": "#/$defs/SharePage"
+    },
+    "ShareBrowseInput": {
+      "$ref": "#/$defs/ShareBrowseInput"
+    },
+    "ShareBrowsePage": {
+      "$ref": "#/$defs/ShareBrowsePage"
     },
     "CatalogProposalPatch": {
       "$ref": "#/$defs/CatalogProposalPatch"

@@ -1,0 +1,813 @@
+<!-- Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0 -->
+<section class="synchronization" [attr.aria-busy]="state.loading() || accounts.loading()">
+  <nav class="breadcrumb" [attr.aria-label]="'Breadcrumb' | ffkText">
+    <button type="button" (click)="libraryRequested.emit()">{{ 'Library' | ffkText }}</button
+    ><button type="button" (click)="show('list')">{{ 'Synchronization' | ffkText }}</button>
+  </nav>
+  <header>
+    <div>
+      <h1 tabindex="-1">
+        {{ (stepNumber() ? 'New synchronization' : 'Synchronization') | ffkText }}
+      </h1>
+      <p>{{ 'Imports update Koinon. Your original files stay unchanged.' | ffkText }}</p>
+    </div>
+    <button type="button" (click)="accountsRequested.emit()">
+      {{ 'Connected sources' | ffkText }}
+    </button>
+  </header>
+  @if (state.loading()) {
+    <p role="status">{{ state.pendingLabel() | ffkText }}</p>
+  }
+  @if (state.notice()) {
+    <p role="status">{{ state.notice() | ffkText }}</p>
+  }
+  @if (validation() || state.error() || accounts.error()) {
+    <p role="alert" tabindex="-1">
+      {{ validation() || state.error() || accounts.error() | ffkText }}
+    </p>
+  }
+  @if (!state.uncertain() && (state.error() || accounts.error())) {
+    <button type="button" [disabled]="state.loading() || accounts.loading()" (click)="reload()">
+      {{ 'Try again' | ffkText }}
+    </button>
+  }
+  @if (state.uncertain()) {
+    <button type="button" [disabled]="state.loading()" (click)="checkRequest()">
+      {{ 'Check request' | ffkText }}
+    </button>
+  }
+  @if (confirmation(); as action) {
+    <section
+      class="confirmation"
+      role="dialog"
+      aria-modal="true"
+      cdkTrapFocus
+      [cdkTrapFocusAutoCapture]="true"
+      (keydown.escape)="cancelConfirmation($event)"
+      [attr.aria-label]="'Confirm synchronization change' | ffkText"
+    >
+      <h3>
+        {{
+          (action === 'abandon'
+            ? 'Abandon preparation? This stops preparation and cancels its pending review. Accepted synchronization rules and original files stay unchanged.'
+            : action === 'cancel'
+              ? 'Cancel this run? Completed copies stay in Koinon. No more items will be published by this run.'
+              : action === 'pause'
+                ? 'Pause synchronization? New work will not start. Work already accepted may finish. Source permissions still apply.'
+                : 'Retire synchronization? It will stop updating Koinon, and its imported copies will become unavailable. Internal history and audit records will be retained. Original files will not change.'
+          ) | ffkText
+        }}
+      </h3>
+      <div class="actions">
+        <button type="button" cdkFocusInitial (click)="cancelConfirmation()">
+          {{ 'Cancel' | ffkText }}</button
+        ><button
+          type="button"
+          [disabled]="state.loading() || state.uncertain()"
+          (click)="confirmChange()"
+        >
+          {{
+            (action === 'abandon'
+              ? 'Abandon preparation'
+              : action === 'cancel'
+                ? 'Cancel run'
+                : action === 'pause'
+                  ? 'Pause synchronization'
+                  : 'Retire synchronization'
+            ) | ffkText
+          }}
+        </button>
+      </div>
+    </section>
+  }
+  @if (accounts.capabilities()?.synchronization_available) {
+    @if (screen() === 'list') {
+      <div class="actions">
+        <button class="primary" type="button" (click)="begin()">
+          {{ 'New synchronization' | ffkText }}
+        </button>
+      </div>
+      <div class="source-rows">
+        @for (mapping of state.page().items; track mapping.id) {
+          <div class="source-row">
+            <div>
+              <strong>{{
+                mapping.presentation.source_root?.name ||
+                  ('Selection needs to be checked again' | ffkText)
+              }}</strong
+              ><small
+                >{{ 'Destination' | ffkText }}:
+                @for (segment of mapping.presentation.destination?.segments; track segment.id) {
+                  {{ segment.name }} /
+                }</small
+              ><span>{{ mapping.status | ffkText }}</span>
+              @if (mapping.next_run_at) {
+                <small
+                  >{{ 'Next sync' | ffkText }}:
+                  {{ mapping.next_run_at | ffkDate: undefined : 'datetime' }}</small
+                >
+              }
+            </div>
+            <button type="button" (click)="open(mapping.id)">
+              {{ 'View synchronization' | ffkText }}
+            </button>
+          </div>
+        } @empty {
+          @if (!state.loading()) {
+            <p>
+              {{
+                (state.page().next_cursor
+                  ? 'No matching items on this page.'
+                  : 'No matching items.'
+                ) | ffkText
+              }}
+            </p>
+          }
+        }
+      </div>
+      @if (state.page().next_cursor) {
+        <button type="button" (click)="state.load(true)" [disabled]="state.loading()">
+          {{ 'Continue browsing' | ffkText }}
+        </button>
+      }
+    } @else if (screen() === 'detail') {
+      @if (state.detail(); as mapping) {
+        <h2>
+          {{
+            mapping.presentation.source_root?.name ||
+              ('Selection needs to be checked again' | ffkText)
+          }}
+        </h2>
+        <p>{{ mapping.status | ffkText }}</p>
+        <details>
+          <summary>{{ 'Accepted rules' | ffkText }}</summary>
+          <dl>
+            <dt>{{ 'Destination' | ffkText }}</dt>
+            <dd>
+              @for (segment of mapping.presentation.destination?.segments; track segment.id) {
+                {{ segment.name }} /
+              }
+            </dd>
+            <dt>{{ 'Structure' | ffkText }}</dt>
+            <dd>
+              {{
+                (mapping.policy.hierarchy === 'preserve'
+                  ? 'Keep folder structure'
+                  : 'Put files in one folder'
+                ) | ffkText
+              }}
+            </dd>
+            <dt>{{ 'Import as' | ffkText }}</dt>
+            <dd>{{ (mapping.policy.mode === 'document' ? 'Documents' : 'Dataset') | ffkText }}</dd>
+            <dt>{{ 'File formats' | ffkText }}</dt>
+            <dd>{{ mapping.policy.formats.join(', ') }}</dd>
+            <dt>{{ 'Include subfolders' | ffkText }}</dt>
+            <dd>{{ (mapping.policy.recursive ? 'Yes' : 'No') | ffkText }}</dd>
+            <dt>{{ 'When a file leaves the selection' | ffkText }}</dt>
+            <dd>
+              {{
+                (mapping.policy.removal_policy === 'retire'
+                  ? 'Retire its imported copy'
+                  : 'Pause for review'
+                ) | ffkText
+              }}
+            </dd>
+            <dt>{{ 'Updates' | ffkText }}</dt>
+            <dd>
+              {{ scheduleLabel(mapping.policy.schedule) | ffkText }}
+              @if (mapping.policy.schedule.kind === 'interval') {
+                {{ mapping.policy.schedule.seconds / 60 }} {{ 'minutes' | ffkText }}
+              } @else if (mapping.policy.schedule.kind === 'calendar') {
+                {{ mapping.policy.schedule.time }} ({{ mapping.policy.schedule.timezone }})
+              }
+            </dd>
+          </dl>
+        </details>
+        @if (mapping.next_run_at) {
+          <p>
+            {{ 'Next sync' | ffkText }}: {{ mapping.next_run_at | ffkDate: undefined : 'datetime' }}
+          </p>
+        }
+        <div class="actions">
+          @if (mapping.can_sync) {
+            <button
+              type="button"
+              class="primary"
+              [disabled]="state.loading() || state.uncertain()"
+              (click)="command('sync')"
+            >
+              {{ 'Sync now' | ffkText }}
+            </button>
+          }
+          @if (mapping.can_pause) {
+            <button
+              type="button"
+              (click)="confirm('pause', $event)"
+              [disabled]="state.loading() || state.uncertain()"
+            >
+              {{ 'Pause synchronization' | ffkText }}
+            </button>
+          }
+          @if (mapping.can_resume) {
+            <button
+              type="button"
+              [disabled]="state.loading() || state.uncertain()"
+              (click)="command('resume')"
+            >
+              {{ 'Resume synchronization' | ffkText }}
+            </button>
+          }
+          <button type="button" [disabled]="state.loading() || state.uncertain()" (click)="edit()">
+            {{ 'Edit rules' | ffkText }}
+          </button>
+          @if (mapping.can_retire) {
+            <button
+              type="button"
+              (click)="confirm('retire', $event)"
+              [disabled]="state.loading() || state.uncertain()"
+            >
+              {{ 'Retire synchronization' | ffkText }}
+            </button>
+          }
+        </div>
+
+        <h3>{{ 'Run history' | ffkText }}</h3>
+        <button type="button" (click)="state.loadRuns()" [disabled]="state.loading()">
+          {{ 'Refresh runs' | ffkText }}
+        </button>
+        @for (run of state.runs().items; track run.id) {
+          <div class="source-row">
+            <div>
+              <strong>{{ phaseLabel(run.status) | ffkText }}</strong
+              ><small>{{ run.created_at | ffkDate: undefined : 'datetime' }}</small>
+            </div>
+            <button type="button" (click)="state.openRun(run.id)" [disabled]="state.loading()">
+              {{ 'View run' | ffkText }}
+            </button>
+          </div>
+        }
+        @if (state.runs().next_cursor) {
+          <button type="button" (click)="state.loadRuns(true)" [disabled]="state.loading()">
+            {{ 'Continue browsing' | ffkText }}
+          </button>
+        }
+        @if (state.run(); as run) {
+          <section [attr.aria-label]="'Run details' | ffkText">
+            <h3>{{ phaseLabel(run.status) | ffkText }}</h3>
+            @if (run.stopping) {
+              <p role="status">{{ 'Stopping this run…' | ffkText }}</p>
+            }
+            @if (!run.enumeration_complete) {
+              <p>{{ 'Discovery is incomplete. No total or deletion is assumed.' | ffkText }}</p>
+            }
+            <p>{{ 'Only searchable items are ready for answers.' | ffkText }}</p>
+            <div class="actions">
+              <button type="button" (click)="state.openRun(run.id)" [disabled]="state.loading()">
+                {{ 'Check status' | ffkText }}
+              </button>
+              @if (run.can_cancel) {
+                <button
+                  type="button"
+                  (click)="confirm('cancel', $event)"
+                  [disabled]="state.loading() || state.uncertain()"
+                >
+                  {{ 'Cancel run' | ffkText }}
+                </button>
+              }
+              @if (run.can_retry) {
+                <button
+                  type="button"
+                  (click)="state.runCommand('retry')"
+                  [disabled]="state.loading() || state.uncertain()"
+                >
+                  {{ 'Retry eligible items' | ffkText }}
+                </button>
+              }
+            </div>
+            @for (item of state.runItems().items; track item.id) {
+              <div class="source-row">
+                <div>
+                  <strong>{{ item.relative_path.join(' / ') || item.name }}</strong
+                  ><small>{{ phaseLabel(item.status) | ffkText }}</small>
+                  @if (item.status === 'conflict' || item.status === 'indeterminate') {
+                    <span>{{
+                      'Local changes are preserved. Check the result before trying again.' | ffkText
+                    }}</span>
+                  }
+                </div>
+              </div>
+            }
+            @if (state.runItems().next_cursor) {
+              <button
+                type="button"
+                (click)="state.openRun(run.id, true)"
+                [disabled]="state.loading()"
+              >
+                {{ 'Continue browsing' | ffkText }}
+              </button>
+            }
+          </section>
+        }
+      }
+    } @else if (authorized()) {
+      <ol class="steps" [attr.aria-label]="'Synchronization steps' | ffkText">
+        @for (step of steps; track step.screen; let index = $index) {
+          <li [attr.aria-current]="screen() === step.screen ? 'step' : null">
+            {{ step.label | ffkText }} <span>{{ index + 1 }} / 4</span>
+          </li>
+        }
+      </ol>
+      <div class="wizard">
+        <div class="wizard-main">
+          @if (screen() === 'content') {
+            <h2>{{ 'Choose content' | ffkText }}</h2>
+            <label
+              >{{ 'Connected account' | ffkText
+              }}<select
+                [value]="connectionId()"
+                (change)="chooseAccount($any($event.target).value)"
+              >
+                <option value="">{{ 'Choose an account' | ffkText }}</option>
+                @for (account of accounts.page().items; track account.id; let index = $index) {
+                  <option [value]="account.id" [disabled]="account.status !== 'connected'">
+                    {{ account.display_name || ('Connected account' | ffkText) }}
+                    {{ account.display_name ? '' : index + 1 }}
+                  </option>
+                }
+              </select></label
+            >
+            @if (accounts.page().next_cursor) {
+              <button type="button" (click)="accounts.load(true)">
+                {{ 'Continue browsing' | ffkText }}
+              </button>
+            }
+            @if (account(); as account) {
+              <ffk-source-browser [connection]="account" (selectionChange)="chooseSource($event)" />
+            }
+            <label class="choice" [hidden]="source()?.root?.kind === 'file'"
+              ><input
+                type="checkbox"
+                [checked]="recursive()"
+                (change)="recursive.set($any($event.target).checked); changed()"
+              />{{ 'Include subfolders' | ffkText }}</label
+            >
+            <label
+              >{{ 'Import as' | ffkText
+              }}<select [value]="mode()" (change)="setMode($any($event.target).value)">
+                @for (mode of accounts.capabilities()?.modes; track mode) {
+                  <option [value]="mode">
+                    {{ (mode === 'document' ? 'Documents' : 'Dataset') | ffkText }}
+                  </option>
+                }
+              </select></label
+            >
+            <fieldset>
+              <legend>{{ 'File formats' | ffkText }}</legend>
+              @for (format of availableFormats(); track format.extension) {
+                <label class="choice"
+                  ><input
+                    type="checkbox"
+                    [checked]="formats().includes(format.extension)"
+                    (change)="toggleFormat(format.extension, $any($event.target).checked)"
+                  />{{ format.extension }}</label
+                >
+              }
+            </fieldset>
+          } @else if (screen() === 'structure') {
+            <h2>{{ 'Destination folder' | ffkText }}</h2>
+            <p>{{ 'Only folders where you can add knowledge are selectable.' | ffkText }}</p>
+            <ffk-folder-tree
+              [entries]="destinations()"
+              [currentId]="destination()?.parent_id || ''"
+              [contextKey]="state.identity()"
+              [loadChildren]="loadChildren"
+              [canSelect]="canSelect"
+              [selectableKinds]="['collection', 'corpus']"
+              (selected)="chooseDestination($event)"
+            />
+            @if (destination()) {
+              <p>
+                <strong>{{ 'Selected destination' | ffkText }}</strong
+                >: {{ destinationName() }}
+              </p>
+              <details>
+                <summary>{{ 'Create folder' | ffkText }}</summary>
+                <form (submit)="$event.preventDefault(); createFolder()">
+                  <label
+                    >{{ 'Folder name' | ffkText
+                    }}<input
+                      name="folderName"
+                      [value]="folderName"
+                      (input)="folderName = $any($event.target).value"
+                      maxlength="255"
+                      required /></label
+                  ><button type="submit" [disabled]="creating()">
+                    {{ 'Create folder' | ffkText }}
+                  </button>
+                </form>
+                @if (createdFolder(); as folder) {
+                  <button type="button" (click)="chooseDestination(folder.id)">
+                    {{ 'Use this folder' | ffkText }}: {{ folder.name }}
+                  </button>
+                }
+              </details>
+            }
+            <fieldset>
+              <legend>{{ 'Structure' | ffkText }}</legend>
+              <label class="choice"
+                ><input
+                  type="radio"
+                  name="hierarchy"
+                  [checked]="hierarchy() === 'preserve'"
+                  (change)="hierarchy.set('preserve'); changed()"
+                />{{ 'Keep folder structure' | ffkText }}</label
+              ><label class="choice"
+                ><input
+                  type="radio"
+                  name="hierarchy"
+                  [checked]="hierarchy() === 'flatten'"
+                  (change)="hierarchy.set('flatten'); changed()"
+                />{{ 'Put files in one folder' | ffkText }}</label
+              >
+              <p>
+                {{
+                  'The review checks the resulting paths and conflicts before you approve.'
+                    | ffkText
+                }}
+              </p>
+            </fieldset>
+          } @else if (screen() === 'updates') {
+            <h2>{{ 'Updates' | ffkText }}</h2>
+            <label
+              >{{ 'Schedule' | ffkText
+              }}<select
+                [value]="scheduleKind()"
+                (change)="scheduleKind.set($any($event.target).value); changed()"
+              >
+                <option value="manual">{{ 'Only when I start a sync' | ffkText }}</option>
+                <option value="interval">{{ 'Every…' | ffkText }}</option>
+                <option value="daily">{{ 'Daily' | ffkText }}</option>
+                <option value="weekly">{{ 'Weekly' | ffkText }}</option>
+              </select></label
+            >
+            @if (scheduleKind() === 'interval') {
+              <label
+                >{{ 'Interval in minutes' | ffkText
+                }}<input
+                  type="number"
+                  [value]="intervalMinutes()"
+                  [min]="(accounts.capabilities()?.schedule?.min_interval_seconds || 900) / 60"
+                  [max]="(accounts.capabilities()?.schedule?.max_interval_seconds || 604800) / 60"
+                  (input)="intervalMinutes.set(+$any($event.target).value); changed()"
+              /></label>
+            }
+            @if (scheduleKind() === 'daily' || scheduleKind() === 'weekly') {
+              <label
+                >{{ 'Local time' | ffkText
+                }}<input
+                  type="time"
+                  [value]="localTime()"
+                  (input)="localTime.set($any($event.target).value); changed()" /></label
+              ><label
+                >{{ 'IANA timezone' | ffkText
+                }}<input
+                  [value]="timezone()"
+                  (input)="timezone.set($any($event.target).value); changed()"
+              /></label>
+              <p>
+                {{
+                  'After downtime, missed updates run once when service resumes. When clocks move forward, the sync uses the next valid local time. When clocks move back, it runs once at the first occurrence.'
+                    | ffkText
+                }}
+              </p>
+            }
+            @if (scheduleKind() === 'weekly') {
+              <fieldset>
+                <legend>{{ 'Weekdays' | ffkText }}</legend>
+                @for (day of days; track day; let index = $index) {
+                  <label class="choice"
+                    ><input
+                      type="checkbox"
+                      [checked]="weekdays().includes(index + 1)"
+                      (change)="toggleDay(index + 1, $any($event.target).checked)"
+                    />{{ day | ffkText }}</label
+                  >
+                }
+              </fieldset>
+            }
+            <label
+              >{{ 'When a file leaves the selection' | ffkText
+              }}<select
+                [value]="removal()"
+                (change)="removal.set($any($event.target).value); changed()"
+              >
+                <option value="retire">{{ 'Retire its imported copy' | ffkText }}</option>
+                <option value="pause_for_review">{{ 'Pause for review' | ffkText }}</option>
+              </select></label
+            >
+            <p>
+              {{
+                'Source access is checked before imported knowledge is read, regardless of this choice.'
+                  | ffkText
+              }}
+            </p>
+          } @else if (screen() === 'review') {
+            <h2>{{ 'Review synchronization' | ffkText }}</h2>
+            @if (!state.review()) {
+              @if (state.preparation(); as preparation) {
+                @if (!state.preparationUncertain()) {
+                  <p role="status">{{ phaseLabel(preparation.state) | ffkText }}</p>
+                }
+                @if (preparationReason(preparation.reason_code)) {
+                  <p>{{ preparationReason(preparation.reason_code) | ffkText }}</p>
+                }
+                <div class="actions">
+                  @if (state.canResumePreparation()) {
+                    <button type="button" class="primary" (click)="resumePreparation()">
+                      {{ 'Resume preparation' | ffkText }}
+                    </button>
+                  }
+                  @if (state.preparationComplete()) {
+                    <button
+                      type="button"
+                      class="primary"
+                      [disabled]="state.loading() || state.uncertain()"
+                      (click)="reviewPreparation()"
+                    >
+                      {{ 'Review prepared selection' | ffkText }}
+                    </button>
+                  }
+                  <button type="button" [disabled]="state.loading()" (click)="checkPreparation()">
+                    {{ 'Check status' | ffkText }}
+                  </button>
+                  @if (
+                    preparation.state === 'blocked' ||
+                    preparation.state === 'stale' ||
+                    preparation.state === 'expired'
+                  ) {
+                    <button
+                      type="button"
+                      [disabled]="state.loading() || state.uncertain()"
+                      (click)="show('content')"
+                    >
+                      {{ 'Edit selection' | ffkText }}
+                    </button>
+                    <button
+                      type="button"
+                      [disabled]="state.loading() || state.uncertain()"
+                      (click)="show('structure')"
+                    >
+                      {{ 'Change destination' | ffkText }}
+                    </button>
+                  }
+                </div>
+                @if (
+                  preparation.state === 'abandoned' ||
+                  preparation.state === 'cleaning' ||
+                  preparation.state === 'expired'
+                ) {
+                  <button
+                    type="button"
+                    [disabled]="state.loading() || state.uncertain()"
+                    (click)="prepareReview()"
+                  >
+                    {{ 'Prepare again' | ffkText }}
+                  </button>
+                }
+                <details>
+                  <summary>{{ 'Checked items' | ffkText }}</summary>
+                  <button
+                    type="button"
+                    (click)="state.loadPreparationItems()"
+                    [disabled]="state.loading()"
+                  >
+                    {{ 'Load checked items' | ffkText }}
+                  </button>
+                  @if (state.preparationItems(); as page) {
+                    <p>{{ 'Items on this page' | ffkText }}: {{ page.visible_count }}</p>
+                    @for (item of page.items; track item.item_id) {
+                      <div class="source-row">
+                        <span>{{ item.relative_path.join(' / ') || item.name }}</span
+                        ><span>{{ item.destination_relative_path.join(' / ') }}</span>
+                      </div>
+                    }
+                    @if (page.next_cursor) {
+                      <button
+                        type="button"
+                        (click)="state.loadPreparationItems(true)"
+                        [disabled]="state.loading()"
+                      >
+                        {{ 'Continue browsing' | ffkText }}
+                      </button>
+                    }
+                  }
+                </details>
+                @if (preparation.state !== 'abandoned' && preparation.state !== 'cleaning') {
+                  <button
+                    type="button"
+                    (click)="confirm('abandon', $event)"
+                    [disabled]="state.loading() || state.uncertain()"
+                  >
+                    {{ 'Abandon preparation' | ffkText }}
+                  </button>
+                }
+              }
+            }
+            @if (state.review(); as review) {
+              <p>
+                {{ 'Review expires' | ffkText }}:
+                {{ review.expires_at | ffkDate: undefined : 'datetime' }}
+              </p>
+              @if (review.observed_count !== null) {
+                <p>{{ 'Items reviewed' | ffkText }}: {{ review.observed_count }}</p>
+              }
+              @if (review.known_bytes !== null) {
+                <p>
+                  {{ 'Known size' | ffkText }}: {{ fileSize(review.known_bytes) }}
+                  @if (review.unknown_size_count) {
+                    · {{ 'Items with unknown size' | ffkText }}: {{ review.unknown_size_count }}
+                  }
+                </p>
+              }
+              @if (!review.enumeration_complete) {
+                <p>{{ 'Preview is partial. More items may be discovered.' | ffkText }}</p>
+              }
+              <div class="preview">
+                @for (item of review.items; track item.item_id) {
+                  <article>
+                    <div>
+                      <strong>{{ 'Source' | ffkText }}</strong
+                      ><span>{{ item.relative_path.join(' / ') || item.name }}</span>
+                    </div>
+                    <div>
+                      <strong>{{ 'Destination' | ffkText }}</strong
+                      ><span>{{ item.destination_relative_path.join(' / ') }}</span>
+                    </div>
+                    <div>
+                      <strong>{{ previewAction(item.action) | ffkText }}</strong>
+                      @if (item.collision !== 'none') {
+                        <span>{{
+                          (item.collision === 'local_edit'
+                            ? 'Local changes were found. Koinon will keep them.'
+                            : item.collision === 'source_name'
+                              ? 'Source files resolve to the same destination path.'
+                              : 'An item already exists at this destination path.'
+                          ) | ffkText
+                        }}</span>
+                      }
+                      @if (item.size_bytes === null) {
+                        <span>{{ 'Size unknown' | ffkText }}</span>
+                      } @else {
+                        <span>{{ fileSize(item.size_bytes) }}</span>
+                      }
+                    </div>
+                  </article>
+                }
+              </div>
+              @if (review.next_cursor) {
+                <button type="button" (click)="state.loadReview(true)" [disabled]="state.loading()">
+                  {{ 'Continue browsing' | ffkText }}
+                </button>
+              }
+              @if (!state.canApprove() && !state.loading() && !state.uncertain()) {
+                <p>
+                  {{
+                    (review.can_apply
+                      ? 'This preview has changed. Review the latest changes before starting.'
+                      : 'Resolve conflicts before approving this synchronization.'
+                    ) | ffkText
+                  }}
+                </p>
+                <button
+                  type="button"
+                  (click)="state.preparationComplete() ? reviewPreparation() : show('content')"
+                  [disabled]="state.loading() || state.uncertain()"
+                >
+                  {{
+                    (state.preparationComplete() && review.can_apply
+                      ? 'Review prepared selection'
+                      : 'Edit selection'
+                    ) | ffkText
+                  }}
+                </button>
+              }
+              <p>{{ 'Future runs use these rules until you change them.' | ffkText }}</p>
+              <button
+                type="button"
+                class="primary"
+                (click)="approve()"
+                [disabled]="!state.canApprove()"
+              >
+                {{ 'Approve synchronization' | ffkText }}
+              </button>
+            }
+          }
+          <div class="actions">
+            <button
+              type="button"
+              (click)="back()"
+              [disabled]="state.loading() || state.uncertain()"
+            >
+              {{ 'Back' | ffkText }}
+            </button>
+            @if (screen() === 'content' || screen() === 'structure') {
+              <button type="button" class="primary" (click)="next()">
+                {{ 'Continue' | ffkText }}
+              </button>
+            }
+            @if (screen() === 'updates') {
+              <button
+                type="button"
+                class="primary"
+                (click)="prepareReview()"
+                [disabled]="state.loading() || state.uncertain()"
+              >
+                {{ 'Review synchronization' | ffkText }}
+              </button>
+            }
+          </div>
+        </div>
+        <aside>
+          <details [open]="summaryOpen">
+            <summary>{{ 'Selection summary' | ffkText }}</summary>
+            <dl>
+              @if (source()) {
+                <dt>{{ 'Connected account' | ffkText }}</dt>
+                <dd>{{ account()?.display_name || ('Connected account' | ffkText) }}</dd>
+                <dt>{{ 'Source' | ffkText }}</dt>
+                <dd>{{ source()?.root?.name || ('Choose content' | ffkText) }}</dd>
+                <dt>{{ 'Destination' | ffkText }}</dt>
+                <dd>
+                  {{ destinationName() || ('Choose a writable destination folder.' | ffkText) }}
+                </dd>
+              } @else {
+                <dt>{{ 'Source' | ffkText }}</dt>
+                <dd>{{ 'Source and destination names are refreshed in the review.' | ffkText }}</dd>
+              }
+              @if (screen() === 'review') {
+                <dt>{{ 'Import as' | ffkText }}</dt>
+                <dd>{{ (mode() === 'document' ? 'Documents' : 'Dataset') | ffkText }}</dd>
+                <dt>{{ 'Include subfolders' | ffkText }}</dt>
+                <dd>{{ (recursive() ? 'Yes' : 'No') | ffkText }}</dd>
+                <dt>{{ 'Excluded items' | ffkText }}</dt>
+                <dd>
+                  @for (item of source()?.excluded; track item.item_id) {
+                    <div>{{ item.name }}</div>
+                  } @empty {
+                    {{
+                      (source() ? 'None' : 'Exclusions follow the prepared selection.') | ffkText
+                    }}
+                  }
+                </dd>
+              }
+              <dt>{{ 'File formats' | ffkText }}</dt>
+              <dd>{{ formats().join(', ') }}</dd>
+              <dt>{{ 'Structure' | ffkText }}</dt>
+              <dd>
+                {{
+                  (hierarchy() === 'preserve' ? 'Keep folder structure' : 'Put files in one folder')
+                    | ffkText
+                }}
+              </dd>
+              @if (screen() === 'review') {
+                <dt>{{ 'Schedule' | ffkText }}</dt>
+                <dd>
+                  {{
+                    (scheduleKind() === 'manual'
+                      ? 'Only when I start a sync'
+                      : scheduleKind() === 'interval'
+                        ? 'Every…'
+                        : scheduleKind() === 'daily'
+                          ? 'Daily'
+                          : 'Weekly'
+                    ) | ffkText
+                  }}
+                  @if (scheduleKind() === 'interval') {
+                    {{ intervalMinutes() }} {{ 'minutes' | ffkText }}
+                  }
+                  @if (scheduleKind() === 'daily' || scheduleKind() === 'weekly') {
+                    <div>{{ localTime() }} ({{ timezone() }})</div>
+                  }
+                  @if (scheduleKind() === 'weekly') {
+                    @for (day of weekdays(); track day) {
+                      <span>{{ days[day - 1] | ffkText }} </span>
+                    }
+                  }
+                </dd>
+                <dt>{{ 'When a file leaves the selection' | ffkText }}</dt>
+                <dd>
+                  {{
+                    (removal() === 'retire' ? 'Retire its imported copy' : 'Pause for review')
+                      | ffkText
+                  }}
+                </dd>
+              }
+            </dl>
+          </details>
+        </aside>
+      </div>
+    }
+  } @else if (accounts.capabilities()) {
+    <p>{{ 'Synchronization is not available in this installation.' | ffkText }}</p>
+  }
+</section>

@@ -25,7 +25,7 @@ def thread_dto(thread: ChatThread) -> dict:
     return {
         "id": thread.id,
         "title": thread.title,
-        "title_source": thread.title_source,
+        "title_source": "ai" if thread.title_source == "user_prompt" else thread.title_source,
         "revision": thread.revision,
         "folder_id": thread.folder_id,
         "archived_at": thread.archived_at.isoformat() if thread.archived_at else None,

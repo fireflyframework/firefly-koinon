@@ -5,12 +5,13 @@ import hashlib
 
 import httpx
 import pytest
+from pyfly.client import HttpxClientAdapter
+from test_remote_sources import Sink, Stream, Tokens, graph_item
+
 from koinon.integrations.content_sources.dtos import Account, SourceScope
 from koinon.integrations.content_sources.errors import SourceError
 from koinon.integrations.content_sources.microsoft import OneDriveSource
 from koinon.integrations.content_sources.transport import SourceTransport, checked_hosts
-from pyfly.client import HttpxClientAdapter
-from test_remote_sources import Sink, Stream, Tokens, graph_item
 
 
 async def test_transfer_has_separate_total_deadline_and_native_connect_read_limits():

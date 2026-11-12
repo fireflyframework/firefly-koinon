@@ -3,7 +3,7 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/sharing/dtos.py
-SHA256: ed1ac376f2a612ee93c01ea25ab0290513f00c6ad1b8d18410dbef95a9c414fa
+SHA256: b78892ecdb13a174174367d6e06472569ce400d0b1213879569c3350b64cb08c
 
 Server authorization and semantic validation remain authoritative.
 """
@@ -21,6 +21,7 @@ from koinon_sdk.evidence import (
     SourceReference,
 )
 from koinon_sdk.exports import Input, MessageSelection
+from koinon_sdk.reader_sources import ReaderSourceSelection
 
 
 class ShareReviewInput(MessageSelection):
@@ -76,3 +77,18 @@ class SharePage(Frozen):
     page: int
     page_size: int
     pages: int
+
+
+class ShareBrowseInput(Input):
+    q: str = Field(default="", max_length=512)
+    status: Literal["all", "active", "revoked", "expired"] = "all"
+    page_size: int = Field(default=25, ge=1, le=100)
+    cursor: str | None = Field(default=None, max_length=128)
+    reader_source_connections: list[ReaderSourceSelection] | None = Field(default=None, max_length=100)
+
+
+class ShareBrowsePage(Frozen):
+    items: tuple[Share, ...]
+    next_cursor: str | None = None
+    total: None = None
+    total_is_exact: Literal[False] = False

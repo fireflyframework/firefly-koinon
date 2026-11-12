@@ -375,6 +375,17 @@ export class KoinonActivityPanel {
         void this.refreshJobs();
       });
     });
+    effect(() => {
+      this.i18n.preferences();
+      untracked(() => {
+        if (
+          this.window === undefined &&
+          this.lastSelection &&
+          this.selection() !== this.lastSelection
+        )
+          void this.load();
+      });
+    });
     inject(DestroyRef).onDestroy(() => {
       this.alive = false;
       this.polling.dispose();

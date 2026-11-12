@@ -233,7 +233,7 @@ for (const width of [1440, 390]) {
     const destination = { ...source, id: 'reviewed-folder', name: 'Reviewed evidence' };
     service.rows.push(destination);
     const observedAt = '2026-11-01T02:00:00Z';
-    await page.route('**/bff/api/v1/tenants/tenant-one/catalog/collection-one', (route) =>
+    await page.route('**/bff/api/v1/tenants/tenant-one/catalog/collection-one/read', (route) =>
       route.fulfill({ json: { ...source, updated_at: observedAt } }),
     );
     const moves: unknown[] = [];

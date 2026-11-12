@@ -18,8 +18,13 @@ from koinon.knowledge.bulk.structured_dtos import (
 )
 
 
-@pytest.mark.parametrize("incomplete", [False, True])
-async def test_prepared_dataset_resume_publishes_without_processing_replay(tmp_path, monkeypatch, incomplete):
+@pytest.mark.parametrize(
+    ("incomplete", "missing_source_producer"),
+    [(False, None), (True, None), (False, "prepare"), (False, "finalize")],
+)
+async def test_prepared_dataset_resume_publishes_without_processing_replay(
+    tmp_path, monkeypatch, incomplete, missing_source_producer
+):
     from flyquery.core.services.ingestion.reader import ColumnSchema, MaterialiseResult, ProposedTable
     from flyquery.core.services.ingestion.stages.parse import ParsedTable
 
@@ -57,13 +62,14 @@ async def test_prepared_dataset_resume_publishes_without_processing_replay(tmp_p
         destination=BulkDestination(workspace_id="workspace", project_id="project", parent_id="parent"),
     )
     active = {"gate": 0, "unit": 0}
+    source_admission = object() if missing_source_producer == "prepare" else None
     state = None
 
     @asynccontextmanager
     async def publication(*args):
         active["gate"] += 1
         try:
-            yield
+            yield source_admission
         finally:
             active["gate"] -= 1
 
@@ -141,6 +147,8 @@ async def test_prepared_dataset_resume_publishes_without_processing_replay(tmp_p
         assert values["extract_only"] is True and values["append_only"] is True and values["max_tables"] == 16
         ids = await values["reserve_tables"]((ProposedTable("facts", None, 1, 1),))
         assert state.plan and ids[0] == state.plan[0].table_id
+        assert state.plan[0].member_key == "root"
+        assert state.plan[0].parser_fingerprint == "koinon.source-member-locators.v1"
         parquet.write_bytes(b"parquet")
         return [
             ParsedTable(
@@ -210,6 +218,13 @@ async def test_prepared_dataset_resume_publishes_without_processing_replay(tmp_p
     pipeline = module.StructuredBulkPipeline(
         operations, queue, stores, workspaces, SimpleNamespace(get=lambda: object())
     )
+    if missing_source_producer == "prepare":
+        with pytest.raises(ConflictException) as failed:
+            await pipeline.prepare(lease, identity, b"original")
+        assert failed.value.code == "SOURCE_PUBLICATION_DENIED"
+        assert state is None
+        receive.assert_not_awaited()
+        return
     if incomplete:
         with pytest.raises(ConflictException) as failed:
             await pipeline.prepare(lease, identity, b"original")
@@ -218,10 +233,27 @@ async def test_prepared_dataset_resume_publishes_without_processing_replay(tmp_p
     else:
         prepared = await pipeline.prepare(lease, identity, b"original")
         assert prepared.status == "prepared" and len(prepared.prepared) == 1
+        assert prepared.prepared[0].qualified_name == "bulk.facts"
+        assert prepared.prepared[0].sheet_or_json_path is None
+        legacy = prepared.prepared[0].model_dump(mode="json", by_alias=True)
+        legacy.pop("qualified_name")
+        legacy.pop("sheet_or_json_path", None)
+        from koinon.knowledge.bulk.structured_dtos import PreparedStructuredTable
+
+        restored = PreparedStructuredTable.model_validate(legacy)
+        assert restored.model_dump(mode="json", by_alias=True) == legacy
         stores.get.reset_mock()
         receive.reset_mock()
         parse.reset_mock()
         embed.reset_mock()
+        if missing_source_producer == "finalize":
+            source_admission = object()
+            with pytest.raises(ConflictException) as failed:
+                await pipeline.finalize(lease, identity)
+            assert failed.value.code == "SOURCE_PUBLICATION_DENIED"
+            assert state.status == "prepared"
+            published.assert_not_awaited()
+            return
         final = await pipeline.finalize(lease, identity)
         assert final.status == "committed" and final.receipt.sha256 == identity.sha256
         receive.assert_not_awaited()

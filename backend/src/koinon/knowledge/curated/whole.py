@@ -110,7 +110,10 @@ class CuratedWholeVersionReader:
     async def authorize(self, subject: str, tenant_id: str, metas: tuple[KnowledgeVersionMeta, ...]) -> None:
         item_ids = tuple(meta.item_id for meta in metas)
         stamp = await self.release.observe(subject, tenant_id, item_ids)
-        policy = await self._authorize_current(subject, tenant_id, metas)
+        async with self.reads.source_scope(
+            subject, tenant_id, tuple((meta.item_id, meta.version) for meta in metas)
+        ):
+            policy = await self._authorize_current(subject, tenant_id, metas)
         if policy != stamp:
             raise AccessDenied(
                 "Knowledge authority changed during this read; retry in the current scope",
@@ -121,7 +124,7 @@ class CuratedWholeVersionReader:
     @transactional(
         datasource="primary",
         name=PRIMARY_POLICY_UNIT,
-        propagation=Propagation.REQUIRES_NEW,
+        propagation=Propagation.REQUIRED,
         isolation=Isolation.SERIALIZABLE,
         read_only=True,
         read_from_primary=True,

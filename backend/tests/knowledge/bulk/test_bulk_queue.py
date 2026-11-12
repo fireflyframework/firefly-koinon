@@ -217,7 +217,8 @@ async def test_native_ack_binds_exact_existing_commit_atomically_without_reproce
         source_version_id=str(uuid4()),
         extraction_id=str(uuid4()),
     )
-    port.inspect = AsyncMock(return_value=NativeObservation("committed", receipt))
+    port.inspect = AsyncMock(side_effect=AssertionError("Acknowledgement must inspect only commit receipts"))
+    port.inspect_committed = AsyncMock(return_value=NativeObservation("committed", receipt))
     await port.acknowledge(lease, receipt)
     result = (await bulk.service.items("issuer|editor", "north", batch_id)).items[0]
     assert result.id == item_id and result.status == "succeeded"
@@ -230,9 +231,11 @@ async def test_native_ack_binds_exact_existing_commit_atomically_without_reproce
     assert asset_binding.native_id == receipt.native_asset_id
     job = await bulk.context.get_bean(JobService).repository.find_by_id(lease.job_id)
     assert job.status == "succeeded" and job.lease_until is None and job.progress == 100
-    port.inspect.reset_mock()
+    port.inspect_committed.assert_awaited_once_with(lease)
+    port.inspect_committed.reset_mock()
     await port.acknowledge_committed(lease, receipt)
     port.inspect.assert_not_awaited()
+    port.inspect_committed.assert_not_awaited()
     assert len(await bindings.find_all(tenant_id="north", domain="canon")) == 3
 
 
@@ -330,7 +333,8 @@ async def test_dataset_tables_are_reserved_before_native_work_and_ack_uses_exact
             NativeTableCommit(table.catalog_table_id, str(table.table_id), str(table.snapshot_id), 2, 1),
         ),
     )
-    port.inspect = AsyncMock(return_value=NativeObservation("committed", receipt))
+    port.inspect = AsyncMock(side_effect=AssertionError("Acknowledgement must inspect only commit receipts"))
+    port.inspect_committed = AsyncMock(return_value=NativeObservation("committed", receipt))
     if archive_before_ack:
         from koinon.catalog.errors import AccessDenied
 
@@ -340,6 +344,7 @@ async def test_dataset_tables_are_reserved_before_native_work_and_ack_uses_exact
         with pytest.raises(AccessDenied):
             await port.acknowledge(lease, receipt)
         port.inspect.assert_not_awaited()
+        port.inspect_committed.assert_not_awaited()
         assert len(await bindings.find_all(tenant_id="north", domain="structured")) == 1
         return
     await port.acknowledge(lease, receipt)
@@ -350,4 +355,6 @@ async def test_dataset_tables_are_reserved_before_native_work_and_ack_uses_exact
         table.table_id
     )
     await port.acknowledge_committed(lease, receipt)
+    port.inspect.assert_not_awaited()
+    port.inspect_committed.assert_awaited_once_with(lease)
     assert len(await bindings.find_all(tenant_id="north", domain="structured")) == 5

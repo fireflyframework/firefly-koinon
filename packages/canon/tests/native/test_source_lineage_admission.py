@@ -79,6 +79,45 @@ async def test_operation_retry_is_idempotent_but_changed_payload_conflicts(linea
         await lineage.admit(scope, content=b"different", **kwargs)
 
 
+@pytest.mark.parametrize("change", ["digest", "attempt", "remove", "adopt"])
+async def test_source_publication_binding_is_immutable_on_exact_document_operation(
+    lineage, session_factory, change
+):
+    from dataclasses import asdict, replace
+
+    from pyfly.kernel import ConflictException
+
+    from flycanon.core.services.sources.lineage.dtos import DocumentScope, SourcePublicationBinding
+    from flycanon.models.entities.source_lineage import source_versions
+
+    binding = SourcePublicationBinding(attempt_id="source-attempt", descriptor_sha256="a" * 64)
+    original = None if change == "adopt" else binding
+    scope = DocumentScope("tenant", "workspace", "actor")
+    kwargs = dict(
+        logical_key="source",
+        operation_id="upload:source",
+        content=b"raw",
+        filename="one.txt",
+        media_type="text/plain",
+        source_publication=original,
+    )
+    first = await lineage.admit(scope, **kwargs)
+    assert (await lineage.admit(scope, **kwargs)).version_id == first.version_id
+    async with session_factory() as session:
+        stored = (await session.execute(select(source_versions))).mappings().one()
+    assert stored["source_publication_json"] == (asdict(original) if original else None)
+    changed = {
+        "digest": replace(binding, descriptor_sha256="b" * 64),
+        "attempt": replace(binding, attempt_id="other-attempt"),
+        "remove": None,
+        "adopt": binding,
+    }[change]
+    with pytest.raises(ConflictException):
+        await lineage.admit(scope, **{**kwargs, "source_publication": changed})
+    async with session_factory() as session:
+        assert len((await session.execute(select(source_versions))).all()) == 1
+
+
 async def test_foreign_scope_cannot_read_admitted_original(lineage):
     from pyfly.kernel import ResourceNotFoundException
 
@@ -180,6 +219,55 @@ async def submit(intake, content=b"raw original", logical="doc1", operation="upl
         logical_source_key=logical,
         operation_id=operation,
     )
+
+
+async def test_native_intake_commits_the_explicit_binding_and_safe_receipt_projection(lineage, repositories):
+    from dataclasses import asdict
+
+    from flycanon.core.services.sources.lineage.dtos import DocumentScope, SourcePublicationBinding
+    from flycanon.core.services.sources.lineage.ports import LineageQuery
+    from flycanon.interfaces.dtos.source import SubmitSourceRequest
+
+    intake = intake_fixture(lineage, repositories)
+    binding = SourcePublicationBinding(attempt_id="attempt", descriptor_sha256="a" * 64)
+    source = await intake.submit(
+        request=SubmitSourceRequest(),
+        content=b"raw",
+        tenant_id="t",
+        workspace_id="w",
+        actor="actor",
+        filename="one.txt",
+        logical_source_key="source",
+        operation_id="upload:source",
+        source_publication=binding,
+    )
+    scope = DocumentScope("t", "w", "actor")
+    async with lineage.repository.read() as unit:
+        receipt = await unit.first(
+            LineageQuery(
+                "version",
+                scope,
+                source_id=source.id,
+                equal={"operation_id": "upload:source"},
+                projection="intake_receipt",
+            )
+        )
+    assert receipt["source_publication_json"] == asdict(binding)
+    assert "filename" not in receipt and "media_type" not in receipt
+    assert await lineage.committed(scope, source.id, receipt["id"]) is not None
+
+
+async def test_source_publication_binding_cannot_enter_unversioned_intake(lineage, repositories):
+    from flycanon.core.services.sources.lineage.dtos import SourcePublicationBinding
+    from flycanon.interfaces.dtos.source import SubmitSourceRequest
+
+    intake = intake_fixture(lineage, repositories)
+    with pytest.raises(ValueError, match="versioned source"):
+        await intake.submit(
+            request=SubmitSourceRequest(), content=b"raw", tenant_id="t", workspace_id="w",
+            actor="actor", filename="one.txt",
+            source_publication=SourcePublicationBinding("attempt", "a" * 64),
+        )
 
 
 async def test_retry_of_failed_admission_after_another_commit_stops_before_normalizer_and_embedding(

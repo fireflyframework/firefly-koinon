@@ -16,6 +16,9 @@ sys.path.insert(0,str(ROOT/'sdk/python/src'))
 
 # Preserve the existing required response fields exported by types.ts.
 ALIASES = {name: 'BatchQuery' + name for name in ('AgentUsage', 'UsageSummary', 'ClarificationFrame')}
+ALIASES['CatalogEntry'] = 'BrowseCatalogEntry'
+ALIASES['CatalogSummary'] = 'BrowseCatalogSummary'
+ALIASES['KnowledgeScope'] = 'BrowseKnowledgeScope'
 ALIASES['DeliveryStatus'] = 'RecoveryDeliveryStatus'
 
 
@@ -41,6 +44,11 @@ def kind(schema):
 
 def render():
     classes=[]
+    for name in ("source_validation", "source_mapping", "source_sync", "source_sync_pages", "reader_sources", "document_reads", "provenance_reads", "catalog_browse", "history_browse"):
+        module=importlib.import_module('koinon_sdk.'+name)
+        classes.extend(value for value in vars(module).values() if inspect.isclass(value) and issubclass(value,BaseModel) and value.__module__==module.__name__)
+    module=importlib.import_module('koinon_sdk.content_sources')
+    classes.extend(value for value in vars(module).values() if inspect.isclass(value) and issubclass(value,BaseModel) and value.__module__==module.__name__)
     for name in ('communications_recovery','platform_health','availability','activity','memory','bulk_queries','bulk','corporate_profiles','organization_people','document_history','mcp_applications','mcp','external_reviews','external_file_reviews','organization_branding','organization_knowledge','mode_transitions','organization_chat','authorized_applications','indexes','identity','attachments','evidence','exports','sharing','proposals','glossary','answer_audit','provenance','coordinates','curated','dataset_files'):
         module=importlib.import_module('koinon_sdk.'+name)
         classes.extend(value for value in vars(module).values() if inspect.isclass(value) and issubclass(value,BaseModel) and value.__module__==module.__name__)

@@ -9,8 +9,8 @@ import type {
   Page,
   TitleSuggestion,
 } from '@fireflyframework/koinon-sdk';
-import { KoinonFacade } from '@fireflyframework/koinon-angular/workbench';
-import { KoinonClientContext } from '@fireflyframework/koinon-angular/workbench';
+import { KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonClientContext } from '@fireflyframework/koinon-angular/workbench/core';
 import {
   emptyConversationPage,
   observedPage,

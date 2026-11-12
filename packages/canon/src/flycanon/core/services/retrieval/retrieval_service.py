@@ -224,11 +224,15 @@ class RetrievalService:
         # ``search(vector, top_k, namespace)`` has nowhere to carry.
         async def retrieve_candidates():
             with bind_embedding_set(binding) if binding is not None else contextlib.nullcontext():
-                return await retriever.retrieve(
-                    queries,
-                    top_k_per_query=effective_per_query_k,
-                    top_k_final=effective_top_k * 3,  # widen for post-filter
-                ) if documents_enabled else []
+                return (
+                    await retriever.retrieve(
+                        queries,
+                        top_k_per_query=effective_per_query_k,
+                        top_k_final=effective_top_k * 3,  # widen for post-filter
+                    )
+                    if documents_enabled
+                    else []
+                )
 
         # Only deterministic document candidate work is shared. Current hydration,
         # curated publication reads and model/immutable evidence checks still run below.
@@ -239,28 +243,52 @@ class RetrievalService:
             # provider. Compare the live immutable binding and its validated shape.
             embedding_identity = (
                 (
-                    id(borrowed), embedder.model, embedder.dimensions, embedder.zero_vector_on_failure,
-                    borrowed.embedding_model, borrowed.dimensions, borrowed.storage_dimensions,
-                    borrowed.space_id, id(borrowed.embedder),
-                    borrowed.embedder.model, borrowed.embedder.dimensions,
+                    id(borrowed),
+                    embedder.model,
+                    embedder.dimensions,
+                    embedder.zero_vector_on_failure,
+                    borrowed.embedding_model,
+                    borrowed.dimensions,
+                    borrowed.storage_dimensions,
+                    borrowed.space_id,
+                    id(borrowed.embedder),
+                    borrowed.embedder.model,
+                    borrowed.embedder.dimensions,
                 )
                 if type(embedder) is EmbeddingService and borrowed is not None
                 else embedder
             )
             key = (
-                tenant_id, workspace_id, query, effective_top_k, effective_per_query_k,
-                self._rrf_k, self._query_expansion_n, self._reranker_top_n, documents_enabled,
+                tenant_id,
+                workspace_id,
+                query,
+                effective_top_k,
+                effective_per_query_k,
+                self._rrf_k,
+                self._query_expansion_n,
+                self._reranker_top_n,
+                documents_enabled,
                 tuple(
                     tuple(value) if value is not None else None
                     for value in astuple(filters or RetrievalFilters())
                 ),
-                binding, embedding_identity,
-                *(id(resource) for resource in (
-                    self._context, self._context.corpus, self._context.vector_store,
-                    self._source_repo, self._chunk_repo, self._knowledge_repo,
-                    self._embedding_sets, self._embedding_registry,
-                )),
+                binding,
+                embedding_identity,
+                *(
+                    id(resource)
+                    for resource in (
+                        self._context,
+                        self._context.corpus,
+                        self._context.vector_store,
+                        self._source_repo,
+                        self._chunk_repo,
+                        self._knowledge_repo,
+                        self._embedding_sets,
+                        self._embedding_registry,
+                    )
+                ),
             )
+
             async def reload_candidates(ranking):
                 return await retriever.hydrate(
                     [(candidate.chunk_id, candidate.score) for candidate in ranking]
@@ -310,6 +338,7 @@ class RetrievalService:
             hydrated = ranked + hydrated[len(ranked) :]
 
         hydrated = hydrated[:effective_top_k]
+        await provenance.authorize_document_pins(provenance.hit_pins(hydrated))
         elapsed_ms = int((time.perf_counter() - start) * 1000)
         logger.info(
             "retrieval query=%s hits=%d elapsed_ms=%d",
@@ -382,7 +411,26 @@ class RetrievalService:
 
     async def _hydrate(self, chunk_hits: Sequence[object]) -> list[Hit]:
         chunk_ids = [getattr(h, "chunk_id", "") for h in chunk_hits]
-        chunk_rows = await self._chunk_repo.get_many(chunk_ids)
+        pins = None
+        if provenance.candidate_mode():
+            scope = provenance.current()
+            if scope is None:
+                from pyfly.kernel import ServiceUnavailableException
+
+                raise ServiceUnavailableException(
+                    "Document candidate authority is required", code="EVIDENCE_UNAVAILABLE"
+                )
+            candidates = await self._chunk_repo.candidate_pins(
+                chunk_ids, tenant_id=scope.tenant_id, workspace_id=scope.workspace_id
+            )
+            scores = {getattr(hit, "chunk_id", ""): float(getattr(hit, "score", 0.0)) for hit in chunk_hits}
+            candidates = tuple(replace(pin, score=scores[pin.chunk_id]) for pin in candidates)
+            pins = await provenance.admit_document_candidates(candidates)
+            chunk_rows = await self._chunk_repo.get_pinned_chunks(
+                pins, tenant_id=scope.tenant_id, workspace_id=scope.workspace_id
+            )
+        else:
+            chunk_rows = await self._chunk_repo.get_many(chunk_ids)
         rows = {row.id: row for row in chunk_rows}
         # Batch-resolve the source rows that the matched chunks belong
         # to so every hit can be enriched with filename / title /
@@ -405,6 +453,19 @@ class RetrievalService:
                 # skip rather than surface a half-resolved row.
                 continue
             metadata = dict(getattr(hit, "metadata", {}) or {})
+            if pins is not None:
+                pin = next(pin for pin in pins if pin.chunk_id == chunk_id)
+                metadata.update(
+                    {
+                        key: value
+                        for key, value in (
+                            ("source_version_id", pin.source_version_id),
+                            ("extraction_id", pin.extraction_id),
+                            ("source_part_id", pin.source_part_id),
+                        )
+                        if value is not None
+                    }
+                )
             source = sources_by_id.get(row.source_id)
             if source is not None:
                 metadata.setdefault("source_kind", source.kind)

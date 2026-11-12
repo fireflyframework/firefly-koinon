@@ -6,6 +6,7 @@ import json
 import tempfile
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
+from dataclasses import asdict
 from hashlib import sha256
 from pathlib import Path
 from typing import Any
@@ -28,6 +29,7 @@ from flycanon.core.services.sources.lineage.dtos import (
     DocumentScope,
     LineagePage,
     OriginalFileReceipt,
+    SourcePublicationBinding,
     VerifiedOriginal,
 )
 from flycanon.core.services.sources.lineage.ports import LineagePersistence, LineageQuery, LineageRecord
@@ -74,6 +76,7 @@ class DocumentLineage:
         expected_source_version_id: str | None = None,
         expected_extraction_id: str | None = None,
         original_reference: StoredObjectReference | None = None,
+        source_publication: SourcePublicationBinding | None = None,
     ) -> Admission:
         for attempt in range(2):
             try:
@@ -88,6 +91,7 @@ class DocumentLineage:
                     expected_source_version_id=expected_source_version_id,
                     expected_extraction_id=expected_extraction_id,
                     original_reference=original_reference,
+                    source_publication=source_publication,
                 )
             except DataIntegrityException as error:
                 if attempt:
@@ -119,7 +123,11 @@ class DocumentLineage:
         expected_source_version_id: str | None = None,
         expected_extraction_id: str | None = None,
         original_reference: StoredObjectReference | None = None,
+        source_publication: SourcePublicationBinding | None = None,
     ) -> Admission:
+        if source_publication is not None and type(source_publication) is not SourcePublicationBinding:
+            raise InvalidRequestException("A typed source publication binding is required")
+        publication = asdict(source_publication) if source_publication is not None else None
         if (
             not all((scope.tenant_id, scope.workspace_id, scope.actor, logical_key, operation_id))
             or max(len(logical_key), len(operation_id)) > 128
@@ -144,6 +152,7 @@ class DocumentLineage:
                 )
                 if (
                     previous["logical_key"] != logical_key
+                    or previous.get("source_publication_json") != publication
                     or artifact["sha256"] != digest
                     or artifact["bytes"] != content_size
                     or previous["filename"] != filename
@@ -279,6 +288,7 @@ class DocumentLineage:
                 "artifact_id": artifact_id,
                 "logical_key": logical_key,
                 "operation_id": operation_id,
+                "source_publication_json": publication,
                 "filename": filename,
                 "media_type": media_type,
                 "actor": scope.actor,

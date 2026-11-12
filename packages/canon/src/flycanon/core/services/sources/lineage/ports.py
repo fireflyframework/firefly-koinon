@@ -28,6 +28,7 @@ class LineageQuery:
     limit: int | None = None
     offset: int | None = None
     lock: Literal["update", "share"] | None = None
+    projection: Literal["intake_receipt"] | None = None
 
 
 @dataclass(frozen=True)

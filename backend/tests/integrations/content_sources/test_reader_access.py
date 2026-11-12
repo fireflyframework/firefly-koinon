@@ -3,13 +3,17 @@
 import asyncio
 from contextlib import asynccontextmanager
 from dataclasses import replace
+from types import SimpleNamespace
 
+import httpx
 import pytest
+from pyfly.client import HttpxClientAdapter
+from test_connection_lifecycle import begin, complete
+from test_connection_lifecycle import lifecycle as lifecycle
+
 from koinon.catalog.errors import AccessDenied
 from koinon.integrations.content_sources.dtos import RemoteItem
 from koinon.integrations.content_sources.errors import SourceError
-from test_connection_lifecycle import begin, complete
-from test_connection_lifecycle import lifecycle as lifecycle
 
 
 async def setup(lifecycle, monkeypatch, respond):
@@ -84,6 +88,105 @@ async def test_no_partial_receipt_for_changed_or_unreadable_candidates(lifecycle
     access, start, _ = await setup(lifecycle, monkeypatch, respond)
     with pytest.raises(SourceError):
         await access.check("issuer|alice", "tenant", start.connection_id, (target(),))
+
+
+@pytest.mark.parametrize("provider", ["google_drive", "onedrive", "sharepoint"])
+async def test_folder_reader_uses_real_provider_metadata_and_retains_file_download_checks(provider):
+    from koinon.integrations.content_sources.dtos import Account
+    from koinon.integrations.content_sources.google_drive import GoogleDriveSource
+    from koinon.integrations.content_sources.microsoft import OneDriveSource, SharePointSource
+    from koinon.integrations.content_sources.reader_access import (
+        PersonalSourceAccess,
+        RemoteFolderReadTarget,
+        RemoteReadTarget,
+    )
+
+    account = Account(provider, "person", None if provider == "google_drive" else "external-tenant")
+    grant = SimpleNamespace(token="synthetic-token", revision=7)
+    changed = False
+
+    class Connections:
+        async def connected(self, *args):
+            return SimpleNamespace(account=account)
+
+        async def read_grant(self, *args):
+            return grant
+
+        async def confirm_read_grant(self, *args):
+            pass
+
+    def handler(request):
+        identifier = request.url.path.rsplit("/", 1)[-1]
+        if identifier == "content":
+            return httpx.Response(403)
+        assert identifier in {"folder", "root", "file"}
+        is_file = identifier == "file"
+        name = "Changed" if changed and identifier == "folder" else identifier
+        if provider == "google_drive":
+            return httpx.Response(
+                200,
+                json={
+                    "id": identifier,
+                    "name": name,
+                    "version": "1",
+                    "mimeType": "text/plain" if is_file else "application/vnd.google-apps.folder",
+                    "parents": [] if identifier == "root" else ["root"],
+                    "capabilities": {"canDownload": False},
+                },
+            )
+        return httpx.Response(
+            200,
+            json={
+                "id": identifier,
+                "name": name,
+                "eTag": "1",
+                "parentReference": {} if identifier == "root" else {"driveId": "drive", "id": "root"},
+                **({"file": {"mimeType": "text/plain"}} if is_file else {"folder": {}}),
+            },
+        )
+
+    client = HttpxClientAdapter(
+        client=httpx.AsyncClient(transport=httpx.MockTransport(handler), trust_env=False),
+        owns_client=True,
+    )
+    source_class = {
+        "google_drive": GoogleDriveSource,
+        "onedrive": OneDriveSource,
+        "sharepoint": SharePointSource,
+    }[provider]
+
+    @asynccontextmanager
+    async def source(scope, tokens):
+        async with source_class(scope, tokens, http_client=client) as adapter:
+            yield adapter
+
+    access = PersonalSourceAccess(SimpleNamespace(_source=source), Connections())
+    folder = RemoteFolderReadTarget(
+        provider,
+        "my-drive" if provider == "google_drive" else "drive",
+        "folder",
+        "1",
+        external_tenant=account.tenant_id,
+        name="folder",
+        parents=("root",),
+        mime_type="application/vnd.google-apps.folder" if provider == "google_drive" else "",
+        size_bytes=None,
+        ancestry=("root",),
+        root_ancestry=("root",),
+    )
+    try:
+        observations = await access.check("actor", "tenant", "connection", (folder,))
+        assert len(observations) == 1
+        assert observations[0].target.item_id == "folder"
+        assert observations[0].connection_revision == 7
+        changed = True
+        with pytest.raises(SourceError, match="version_changed"):
+            await access.check("actor", "tenant", "connection", (folder,))
+        file = RemoteReadTarget(provider, folder.drive_id, "file", "1", account.tenant_id)
+        with pytest.raises(SourceError, match="access_denied"):
+            await access.check("actor", "tenant", "connection", (file,))
+    finally:
+        await client.stop()
 
 
 async def test_reader_connection_cannot_be_borrowed_or_changed_during_check(lifecycle, monkeypatch):

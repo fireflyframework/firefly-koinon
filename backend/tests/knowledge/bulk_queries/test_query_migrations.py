@@ -46,8 +46,29 @@ def test_query_additive_migrations_match_entities_and_keep_retained_rows(tmp_pat
         for entity in [QueryBatch, QueryBatchItem, QueryBatchReference, NativeQueryOperation]:
             table = entity.__table__
             columns = {column["name"]: column for column in actual.get_columns(table.name)}
-            assert set(columns) == set(table.columns.keys())
-            for column in table.columns:
+            historical = (
+                {
+                    "id",
+                    "batch_id",
+                    "ordinal",
+                    "client_item_id",
+                    "dataset_id",
+                    "question",
+                    "native_workspace_id",
+                    "native_dataset_id",
+                    "connection_json",
+                    "policy_json",
+                    "job_id",
+                    "status",
+                    "result_json",
+                    "error_code",
+                }
+                if entity is QueryBatchItem
+                else set(table.columns.keys())
+            )
+            assert set(columns) == historical
+            for name in historical:
+                column = table.columns[name]
                 assert columns[column.name]["nullable"] == column.nullable
                 assert str(columns[column.name]["type"]) == str(
                     column.type.compile(dialect=connection.dialect)

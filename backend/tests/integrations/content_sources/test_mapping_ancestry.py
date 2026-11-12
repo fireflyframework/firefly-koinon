@@ -12,14 +12,16 @@ SCOPE = SourceScope(Account("google_drive", "owner"), "drive")
 
 
 class Folders:
-    def __init__(self, parents):
+    def __init__(self, parents, kinds=None):
         self.parents = parents
+        self.kinds = kinds or {}
         self.calls = []
 
     async def get_item(self, identifier):
         self.calls.append(identifier)
         return RemoteItem(
-            SCOPE, identifier, "private title", "folder", "v1", None, "", parents=self.parents[identifier]
+            SCOPE, identifier, "private title", self.kinds.get(identifier, "folder"),
+            "v1", None, "", parents=self.parents[identifier]
         )
 
     async def root(self):
@@ -58,7 +60,33 @@ async def test_missing_parent_is_not_accepted_as_a_new_drive_root():
 
 @pytest.mark.parametrize("recursive,expected", [(False, False), (True, True)])
 async def test_only_recursive_parent_overlaps_child(recursive, expected):
-    proof = await FolderAncestry(Folders({"a": ("root",), "root": ()}), SCOPE).capture(("a", "root"))
+    proof = await FolderAncestry(
+        Folders({"a": ("nested",), "nested": ("root",), "root": ()}), SCOPE
+    ).capture(("a", "root"))
     assert overlaps(proof, "root", recursive, "a", False) is expected
     assert overlaps(proof, "a", False, "root", recursive) is expected
     assert overlaps(proof, "a", False, "a", False)
+
+
+async def test_selected_file_has_kind_and_actual_folder_ancestry_without_other_content():
+    source = Folders({"file": ("parent",), "parent": ("root",)}, {"file": "file"})
+    proof = await FolderAncestry(source, SCOPE).capture(("file",))
+    assert proof.root_kind("file") == "file"
+    assert proof.root_kind("parent") == "folder"
+    assert proof.ancestors("file") == ("parent", "root")
+    assert source.calls == ["root", "file", "parent"]
+
+
+@pytest.mark.parametrize("kind", ["file", "folder"])
+async def test_nonrecursive_folder_overlaps_its_direct_selected_child(kind):
+    proof = await FolderAncestry(
+        Folders({"child": ("root",)}, {"child": kind}), SCOPE
+    ).capture(("root", "child"))
+    assert overlaps(proof, "root", False, "child", False)
+    assert overlaps(proof, "child", False, "root", False)
+
+
+async def test_selected_file_cannot_be_reused_as_another_selected_items_parent():
+    source = Folders({"file": ("root",), "child": ("file",)}, {"file": "file"})
+    with pytest.raises(SourceError, match="access_denied"):
+        await FolderAncestry(source, SCOPE).capture(("file", "child"))

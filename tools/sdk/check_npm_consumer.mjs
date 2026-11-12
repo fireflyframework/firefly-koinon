@@ -74,7 +74,8 @@ client.organizationKnowledge.update('north',{expected_revision:0});
       .replaceAll('../dist/index.js', '@fireflyframework/koinon-sdk')
       .replaceAll('../dist/communications.js', '@fireflyframework/koinon-sdk/communications')
       .replaceAll('../dist/platform-health.js', '@fireflyframework/koinon-sdk/platform-health')
-      .replaceAll('../dist/availability.js', '@fireflyframework/koinon-sdk/availability');
+      .replaceAll('../dist/availability.js', '@fireflyframework/koinon-sdk/availability')
+      .replaceAll('../dist/content-sources.js', '@fireflyframework/koinon-sdk/content-sources');
     await writeFile(path.join(consumer, 'test', name), installedSource);
   }
   run(process.execPath, ['--test', ...files.map(name => path.join('test', name))]);

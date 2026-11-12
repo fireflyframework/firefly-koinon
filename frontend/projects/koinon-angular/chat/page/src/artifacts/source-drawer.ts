@@ -13,12 +13,8 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import {
-  KoinonButton,
-  KoinonSidePanel,
-  KoinonSkeleton,
-  KoinonTextPipe,
-} from '@fireflyframework/koinon-angular';
+import { KoinonButton, KoinonSkeleton, KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonSidePanel } from '@fireflyframework/koinon-angular/workbench/panels';
 import type { EvidenceManifest, SourceReference } from '@fireflyframework/koinon-sdk';
 import { KoinonKnowledgeArtifacts } from '../services/knowledge-artifacts';
 import type { ConversationSelection } from '../services/artifact-selections';

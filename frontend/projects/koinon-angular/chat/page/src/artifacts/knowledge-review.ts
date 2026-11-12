@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnChanges, OnDestroy, Output, PendingTasks, ElementRef, Injector, ViewChild, afterNextRender, computed, effect, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { KoinonButton, KoinonDatePipe, KoinonFacade, KoinonFolderTree, KoinonSidePanel, KoinonSkeleton, KoinonTextPipe } from '@fireflyframework/koinon-angular';
-import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
+import { KoinonButton, KoinonDatePipe, KoinonFacade, KoinonSkeleton, KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonFolderTree, KoinonSidePanel } from '@fireflyframework/koinon-angular/workbench/panels';
+import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench/core';
 import type { ChatMessage, KnowledgeIntent, ResourceKind } from '@fireflyframework/koinon-sdk';
 import { KoinonKnowledgeIntents } from '../services/knowledge-intents';
 import type { ConversationSelection } from '../services/artifact-selections';

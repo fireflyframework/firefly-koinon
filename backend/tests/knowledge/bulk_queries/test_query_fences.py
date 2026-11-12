@@ -33,7 +33,7 @@ async def test_expired_query_generation_cannot_release_reclaimed_work(queries):
     await queue.check(current)
 
 
-async def test_disabled_provider_prevents_every_native_or_model_dispatch(queries):
+async def test_disabled_provider_prevents_model_dispatch_but_permits_commit_inspection(queries):
     from koinon.assistants.repositories import ProviderRepository
     from koinon.knowledge.bulk_queries.execution import QueryBatchExecutor
     from koinon.knowledge.bulk_queries.queue import QueryBatchQueue
@@ -47,10 +47,14 @@ async def test_disabled_provider_prevents_every_native_or_model_dispatch(queries
     provider = await providers.find_by_id("model-provider")
     provider.enabled = False
     await providers.save(provider)
-    native = SimpleNamespace(inspect=AsyncMock(), execute=AsyncMock(), acknowledge=AsyncMock())
+    native = SimpleNamespace(
+        inspect_commit_metadata=AsyncMock(return_value=("absent", None)),
+        execute=AsyncMock(),
+        acknowledge_commit_metadata=AsyncMock(),
+    )
     await QueryBatchExecutor(queue, native).execute(lease)
-    native.inspect.assert_not_awaited()
+    native.inspect_commit_metadata.assert_awaited()
     native.execute.assert_not_awaited()
-    native.acknowledge.assert_not_awaited()
+    native.acknowledge_commit_metadata.assert_not_awaited()
     item = (await service.items("issuer|analyst", "north", batch.id)).items[0]
     assert item.status == "reconciling" and item.error_code == "BULK_QUERY_CONNECTION_REQUIRED"

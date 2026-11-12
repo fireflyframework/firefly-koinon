@@ -243,14 +243,14 @@
   }
   <ng-container ngProjectAs="[panel-footer]">
     @if (state.history(); as history) {
-      @if (!state.detailOpen() && history.total > 0) {
+      @if (!state.detailOpen() && (history.items.length > 0 || history.next_cursor)) {
         <ffk-pagination
           panel-footer
-          [page]="history"
+          [page]="{items:history.items,next_cursor:history.next_cursor}"
           [label]="'Versions' | ffkText"
           [showPageSize]="false"
           [loading]="state.pending()"
-          (pageChanged)="state.goToPage($event)"
+          (continued)="state.nextPage()"
         />
       }
     }

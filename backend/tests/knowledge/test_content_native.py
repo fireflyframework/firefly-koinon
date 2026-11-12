@@ -64,6 +64,92 @@ async def test_native_document_replacement_checks_version_before_ingestion_and_j
         )
 
 
+@pytest.mark.parametrize("bound", [False, True])
+async def test_same_bytes_source_replacement_keeps_its_new_operation_binding(native_document, bound):
+    from flycanon.core.services.sources.intake_service import IntakeService
+    from flycanon.core.services.sources.lineage.dtos import SourcePublicationBinding
+    from flycanon.core.services.sources.lineage.service import DocumentLineage
+
+    adapter, _, _, _ = native_document
+    configured_connections(adapter.container)
+    lineage = SimpleNamespace(
+        head=AsyncMock(return_value={"version_id": "old-version", "extraction_id": "old-extraction"})
+    )
+    intake = SimpleNamespace(
+        replace=AsyncMock(
+            return_value=SimpleNamespace(
+                n_chunks=1,
+                metadata_json={
+                    "_source_lineage": {"version_id": "new-version", "extraction_id": "new-extraction"}
+                },
+            )
+        )
+    )
+    add_bean(adapter, DocumentLineage, lineage)
+    add_bean(adapter, IntakeService, intake)
+    binding = SourcePublicationBinding("new-attempt", "a" * 64) if bound else None
+    guard = object()
+    result = await adapter.replace_document(
+        tenant_id="north",
+        workspace_id="workspace",
+        source_id="source",
+        filename="facts.txt",
+        content=b"original",
+        expected_sha256=sha256(b"original").hexdigest(),
+        actor="issuer|editor",
+        logical_source_key="retained-source",
+        operation_id="new-operation",
+        expected_source_version_id="old-version",
+        expected_extraction_id="old-extraction",
+        _publication_guard=guard,
+        _source_publication=binding,
+    )
+    if bound:
+        assert result["unchanged"] is False
+        assert (result["source_version_id"], result["extraction_id"]) == ("new-version", "new-extraction")
+        options = intake.replace.await_args.kwargs
+        assert options["source_publication"] is binding
+        assert options["publication_guard"] is guard
+        assert options["operation_id"] == "new-operation"
+        assert options["logical_source_key"] == "retained-source"
+    else:
+        assert result["unchanged"] is True
+        assert (result["source_version_id"], result["extraction_id"]) == ("old-version", "old-extraction")
+        intake.replace.assert_not_awaited()
+
+
+@pytest.mark.parametrize("missing", ["logical_source_key", "operation_id", "_publication_guard"])
+async def test_bound_document_replacement_requires_its_exact_private_execution(
+    native_document, missing, monkeypatch
+):
+    from flycanon.core.services.sources.lineage.dtos import SourcePublicationBinding
+
+    from koinon.knowledge import document_lineage
+
+    adapter, _, _, statements = native_document
+    dispatch = AsyncMock(side_effect=AssertionError("Incomplete execution reached native replacement"))
+    monkeypatch.setattr(document_lineage, "replace_document", dispatch)
+    arguments = dict(
+        tenant_id="north",
+        workspace_id="workspace",
+        source_id="source",
+        filename="facts.txt",
+        content=b"original",
+        expected_sha256=sha256(b"original").hexdigest(),
+        actor="issuer|editor",
+        logical_source_key="retained-source",
+        operation_id="new-operation",
+        _publication_guard=object(),
+        _source_publication=SourcePublicationBinding("new-attempt", "a" * 64),
+    )
+    arguments[missing] = None
+    before = len(statements)
+    with pytest.raises(ValueError, match="exact versioned source operation"):
+        await adapter.replace_document(**arguments)
+    assert len(statements) == before
+    dispatch.assert_not_awaited()
+
+
 async def test_native_table_reupload_rejects_mismatched_parent_and_stale_snapshot_before_ingestion():
     from flyquery.core.services.datasets.dataset_service import DatasetService
     from flyquery.core.services.ingestion.ingest_service import IngestService

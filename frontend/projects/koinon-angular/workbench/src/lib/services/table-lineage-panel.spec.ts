@@ -5,7 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import { KoinonTableLineagePanel } from '../organisms/table-lineage-panel';
 import { KoinonTableLineage } from './table-lineage';
 import { KoinonI18n } from '../foundations/i18n';
-import { KoinonClient, type KoinonTransport } from '@fireflyframework/koinon-sdk';
+import { KoinonClient, type KoinonTransport,type TableSnapshotReadPage } from '@fireflyframework/koinon-sdk';
 import { KoinonFacade } from '../koinon-facade';
 import { KoinonClientContext } from './client-context';
 const detail = { snapshot_id: 'past', status: 'not_recorded', snapshot_status: 'READY' };
@@ -19,12 +19,13 @@ function setup(value: Record<string, unknown> = detail) {
     }),
     detail: signal(value),
     detailOpen: signal(true),
-    history: signal(null),
+    history: signal<TableSnapshotReadPage|null>(null),
     pending: signal(false),
     error: signal(''),
     isCurrent: signal(false),
     close: vi.fn(),
     back: vi.fn(),
+    nextPage:vi.fn(),
   };
   TestBed.configureTestingModule({
     imports: [KoinonTableLineagePanel],
@@ -116,6 +117,7 @@ it('loads source coordinates only after the selected-version disclosure is opene
           context: signal({ subject: 'owner' }),
           permissions: signal(new Set(['catalog:read'])),
           authRequired: signal(false),
+          readerSources:signal(null),readerRevision:signal(0),
         },
       },
       {
@@ -141,4 +143,17 @@ it('loads source coordinates only after the selected-version disclosure is opene
   toggle!.click();
   fixture.detectChanges();
   expect(fixture.nativeElement.querySelector('ffk-table-coordinates')).toBeNull();
+});
+
+it('keeps continuation available when no versions on this page are authorized',()=>{
+  const {fixture,state}=setup();
+  state.detailOpen.set(false);
+  state.history.set({items:[],next_cursor:'a'.repeat(43),total:null,pages:null,total_is_exact:false});
+  fixture.detectChanges();
+  const next=Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>).find(button=>button.textContent?.includes('Continue browsing'));
+  expect(next).toBeDefined();
+  next!.click();
+  expect(state.nextPage).toHaveBeenCalledOnce();
+  state.pending.set(true);fixture.detectChanges();
+  expect(next!.disabled).toBe(true);
 });

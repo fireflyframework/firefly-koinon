@@ -22,10 +22,73 @@ from koinon_sdk.client import KoinonClient
 from koinon_sdk import coordinates, curated, dataset_files, authorized_applications, organization_chat
 from koinon_sdk import organization_knowledge, mode_transitions
 from koinon_sdk import organization_branding, mcp, external_reviews, external_file_reviews
-from koinon_sdk import mcp_applications, document_history
+from koinon_sdk import mcp_applications, document_history, history_browse
 from koinon_sdk import organization_people, corporate_profiles, memory, bulk, bulk_queries
+from koinon_sdk import source_validation
+from koinon_sdk import source_mapping, source_sync, source_sync_pages
+from koinon_sdk import content_sources, reader_sources, catalog_browse, document_reads, provenance_reads
 
 rows = """
+SourceMappingValidationController.begin|begin_source_mapping_validation|contentSources.beginValidation|SourceMappingValidationInput|SourceMappingValidationOutput
+SourceMappingValidationController.receipt|source_mapping_validation_receipt|contentSources.validationReceipt|-|SourceMappingValidationOutput
+SourceMappingValidationController.status|source_mapping_validation|contentSources.validation|-|SourceMappingValidationOutput
+SourceMappingValidationController.advance|advance_source_mapping_validation|contentSources.advanceValidation|SourceMappingValidationContinueInput|SourceMappingValidationOutput
+SourceMappingValidationController.items|source_mapping_validation_items|contentSources.validationItems|-|SourceMappingValidationItemPage
+SourceMappingValidationController.abandon|abandon_source_mapping_validation|contentSources.abandonValidation|SourceMappingValidationAbandonInput|SourceMappingValidationOutput
+
+SourceCapabilitiesController.get|source_capabilities|contentSources.capabilities|-|SourceCapabilitiesOutput
+SourceMappingController.mappings_page|source_mappings|contentSources.mappings|-|SourceMappingPage
+SourceMappingController.get|source_mapping|contentSources.mapping|-|SourceMappingOutput
+SourceMappingController.runs|source_mapping_runs|contentSources.runs|-|SourceRunPage
+SourceMappingController.initial_operation|source_initial_operation|contentSources.initialOperation|-|SourceOperationReceipt
+SourceMappingController.operation|source_operation|contentSources.operation|-|SourceOperationReceipt
+SourceMappingController.run|source_run|contentSources.run|-|SourceRunOutput
+SourceMappingController.run_items|source_run_items|contentSources.runItems|-|SourceRunItemPage
+SourceMappingController.cancel|cancel_source_run|contentSources.cancelRun|SourceControlInput|SourceControlOutput
+SourceMappingController.retry|retry_source_run|contentSources.retryRun|SourceControlInput|SourceControlOutput
+SourceMappingController.review|review_source_mapping|contentSources.reviewMapping|SourcePolicyReviewInput|SourcePolicyOperationOutput
+SourceMappingController.items|source_review_items|contentSources.reviewItems|-|SourceReviewPage
+SourceMappingController.create|create_source_mapping|contentSources.createMapping|SourcePolicyApplyInput|SourcePolicyOperationOutput
+SourceMappingController.revise|revise_source_mapping|contentSources.reviseMapping|SourceExistingPolicyReviewInput|SourcePolicyOperationOutput
+SourceMappingController.apply|apply_source_mapping|contentSources.applyMapping|SourcePolicyApplyInput|SourcePolicyOperationOutput
+SourceMappingController.sync|sync_source_mapping|contentSources.syncMapping|SourceControlInput|SourceControlOutput
+SourceMappingController.pause|pause_source_mapping|contentSources.pauseMapping|SourceControlInput|SourceControlOutput
+SourceMappingController.resume|resume_source_mapping|contentSources.resumeMapping|SourceControlInput|SourceControlOutput
+SourceMappingController.retire|retire_source_mapping|contentSources.retireMapping|SourceControlInput|SourceControlOutput
+
+CatalogReadController.catalog_get_read|read_catalog_entry|catalog.read|ReaderReadInput|CatalogEntry
+KnowledgeReadController.schema_read|read_dataset_schema|dataset.readSchema|ReaderReadInput|DatasetSchema
+KnowledgeReadController.lineage_read|read_lineage|readLineage|LineageReadInput|Lineage
+KnowledgeReadController.document_chunks_read|read_document_chunks|documents.readChunks|DocumentChunksReadInput|DocumentChunks
+KnowledgeReadController.document_original_read|read_document_original|documents.readOriginal|ReaderReadInput|BinaryDownload
+DocumentHistoryReadController.versions_read|read_document_versions|documents.readVersions|ReaderPageInput|DocumentVersionPage
+DocumentHistoryReadController.version_read|read_document_version|documents.readVersion|ReaderReadInput|DocumentVersion
+DocumentHistoryReadController.extractions_read|read_document_extractions|documents.readExtractions|ReaderPageInput|DocumentExtractionPage
+DocumentHistoryReadController.parts_read|read_document_parts|documents.readParts|DocumentPartsReadInput|DocumentPartPage
+DocumentHistoryReadController.part_read|read_document_part|documents.readPart|ReaderReadInput|DocumentPartContent
+DocumentHistoryReadController.original_read|read_document_version_original|documents.readVersionOriginal|ReaderReadInput|BinaryDownload
+TableProvenanceReadController.snapshot_read|read_table_provenance|dataset.readTableProvenance|SnapshotReadInput|TableProvenance
+TableProvenanceReadController.history_read|read_table_snapshots|dataset.readTableSnapshots|SnapshotHistoryReadInput|TableSnapshotReadPage
+TableProvenanceReadController.manifest_read|read_table_coordinates|dataset.readTableCoordinates|SnapshotReadInput|TableCoordinateManifest
+TableProvenanceReadController.rows_read|read_table_coordinate_rows|dataset.readTableCoordinateRows|SnapshotPageReadInput|TableRowRangePage
+TableProvenanceReadController.columns_read|read_table_coordinate_columns|dataset.readTableCoordinateColumns|SnapshotPageReadInput|TableColumnBindingPage
+CuratedKnowledgeReadController.get_read|read_knowledge_item|knowledgeItems.read|ReaderReadInput|KnowledgeItemView
+CuratedKnowledgeReadController.version_read|read_knowledge_version|knowledgeItems.readVersion|ReaderReadInput|KnowledgeItemView
+ExportReadController.get_read|read_export|exports.read|ReaderReadInput|Export
+ExportReadController.download_read|read_export_download|exports.readDownload|ReaderReadInput|BinaryDownload
+ShareReadController.get_read|read_share|shares.read|ReaderReadInput|SharedConversation
+ChatHistoryReadController.thread_read|read_thread|chat.read|ReaderReadInput|ChatThread
+
+SourceReaderSelectionController.get|reader_source_selection|contentSources.readerSelection|-|ReaderSelectionOutput
+SourceReaderSelectionController.replace|replace_reader_source_selection|contentSources.replaceReaderSelection|ReaderSelectionInput|ReaderSelectionOutput
+CatalogController.catalog_browse|browse_catalog|catalog.browse|CatalogBrowseInput|CatalogBrowseOutput
+ExportController.browse|browse_exports|exports.browse|ExportBrowseInput|ExportBrowsePage
+ContentConnectionsController.list|source_connections|contentSources.list|-|SourceConnectionPage
+ContentConnectionsController.get|source_connection|contentSources.get|-|SourceConnectionOutput
+ContentConnectionsController.disconnect|disconnect_source_connection|contentSources.disconnect|SourceConnectionRevision|SourceConnectionOutput
+ContentConnectionsController.sites|source_sites|contentSources.sites|-|SourceLocationPage
+ContentConnectionsController.drives|source_drives|contentSources.drives|-|SourceLocationPage
+ContentConnectionsController.children|source_children|contentSources.children|-|SourceFolderPage
 PlatformController.health|platform_health|platformHealth.health|-|PlatformHealth
 PlatformController.system_information|system_information|platformHealth.systemInformation|-|SystemInformation
 KnowledgeAvailabilityController.processing|knowledge_processing|availability.processing|ProcessingRequest|ProcessingResponse
@@ -174,6 +237,9 @@ ExportController.list|exports|exports.list|-|ExportPage
 ExportController.get|export|exports.get|-|Export
 ExportController.download|export_download|exports.download|-|BinaryDownload
 ExportController.cancel|cancel_export|exports.cancel|-|void
+ShareController.browse|browse_shares|shares.browse|ShareBrowseInput|ShareBrowsePage
+ChatHistoryController.browse|browse_threads|chat.browse|HistoryBrowseInput|HistoryBrowsePage
+ChatHistoryController.browse_messages|browse_messages|chat.browseMessages|MessageBrowseInput|MessageBrowsePage
 ShareController.review|review_share|shares.review|ShareReviewInput|ShareReview
 ShareController.create|create_share|shares.create|ShareCreate|Share
 ShareController.list|shares|shares.list|-|SharePage
@@ -345,6 +411,9 @@ for path in sorted((root / "backend/src/koinon").rglob("*.py")):
                 suffix = literal(decorator.args[0]) if decorator.args else ""
                 full = prefix + suffix
                 category = (
+                    "browser_auth"
+                    if cls.name == "ContentConnectionsController" and method.name in {"begin", "complete"}
+                    else
                     "gated_compatibility"
                     if full.startswith(("/api/v1/canon", "/api/v1/structured"))
                     else "canonical"
@@ -434,6 +503,9 @@ for op in inventory["operations"]:
     if ts.startswith("platformHealth."):
         op["sdk_typescript_factory"] = "createPlatformHealthApi"
         op["sdk_typescript_module"] = "@fireflyframework/koinon-sdk/platform-health"
+    if ts.startswith("contentSources."):
+        op["sdk_typescript_factory"] = "createContentSourcesApi"
+        op["sdk_typescript_module"] = "@fireflyframework/koinon-sdk/content-sources"
     if ts.startswith("availability."):
         op["sdk_typescript_factory"] = "createAvailabilityApi"
         op["sdk_typescript_module"] = "@fireflyframework/koinon-sdk/availability"
@@ -495,7 +567,7 @@ assert not mapping, mapping
 assert not unmapped, "Canonical API operations awaiting typed SDK mapping: " + ", ".join(unmapped)
 
 classes = {}
-for module in (platform_health, availability, communications, communications_recovery, activity, models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files, authorized_applications, organization_chat, organization_knowledge, mode_transitions, organization_branding, mcp, external_reviews, external_file_reviews, mcp_applications, document_history, organization_people, corporate_profiles, memory, bulk, bulk_queries):
+for module in (source_validation, source_mapping, source_sync, source_sync_pages, document_reads, provenance_reads, history_browse, content_sources, reader_sources, catalog_browse, platform_health, availability, communications, communications_recovery, activity, models, contracts, indexes, identity, attachments, evidence, exports, sharing, proposals, glossary, answer_audit, provenance, coordinates, curated, dataset_files, authorized_applications, organization_chat, organization_knowledge, mode_transitions, organization_branding, mcp, external_reviews, external_file_reviews, mcp_applications, document_history, organization_people, corporate_profiles, memory, bulk, bulk_queries):
     classes.update(
         {
             name: value
@@ -517,6 +589,9 @@ references, schemas = models_json_schema(
     [(value, "validation") for value in classes.values()],
     ref_template="#/$defs/{model}",
 )
+source_union = TypeAdapter(source_sync.SourceOperationReceipt).json_schema(ref_template="#/$defs/{model}")
+schemas["$defs"].update(source_union.pop("$defs", {}))
+schemas["$defs"]["SourceOperationReceipt"] = source_union
 schemas["models"] = {
     name: references[(value, "validation")] for name, value in classes.items()
 }
@@ -597,6 +672,7 @@ result = {
         "raw_data": "JSON number|string|boolean|null recursively; never coerce exact strings",
     },
     "authentication": {
+        "content_sources": "verified owner identity required; personal tokens cannot manage or browse source connections; source consent requires a native browser session",
         "headless": "caller-supplied bearer, fresh per request; renewal owned by caller",
         "browser": "same operation suffix under /bff/api/v1 with native cookie session and CSRF on writes",
         "tokens_management": "interactive verified identity required; PAT cannot mint or manage PATs",
@@ -610,6 +686,16 @@ result = {
         "paging": "honor only endpoint-declared query parameters; Page fields optional for items-only endpoints",
     },
     "excluded": [
+        {
+            "path": "/api/v1/tenants/{tenant_id}/content-sources/authorizations",
+            "operation": "ContentConnectionsController.begin",
+            "reason": "source consent initiation requires native browser session authority and CSRF; no headless consent helper",
+        },
+        {
+            "path": "/api/v1/tenants/{tenant_id}/content-sources/authorizations/complete",
+            "operation": "ContentConnectionsController.complete",
+            "reason": "single-use source consent completion requires the initiating native browser session and CSRF",
+        },
         {
             "path": "/auth/me",
             "reason": "browser session introspection; headless SDK uses verified bearer/profile/context",

@@ -17,17 +17,26 @@ from koinon.evidence.ports import ConversationSnapshotPort
 from koinon.tokens.repositories import PersonalTokenRepository
 
 
-async def final_turn(service, context, *, thread=None, private=False, legacy=False):
+async def final_turn(
+    service, context, *, thread=None, private=False, legacy=False, subject="issuer|viewer", generation=False
+):
     _, agent = await configured(service)
-    thread = thread or await service.create_thread("issuer|viewer", "north", {})
+    thread = thread or await service.create_thread(subject, "north", {})
     accepted = await service.submit(
-        "issuer|viewer",
+        subject,
         "north",
         thread["id"],
         {"agent_id": agent["id"], "message": "Question", "client_request_id": str(timestamp())},
     )
     queue = context.get_bean(AssistantQueue)
     run = await queue.claim("snapshot-worker")
+    if generation:
+        from koinon.assistants.memory.service import PersonalConversationMemory
+
+        generation_id = await queue.begin_generation(
+            run.id, "snapshot-worker", model_id="controlled", model_class="controlled", api="chat"
+        )
+        await context.get_bean(PersonalConversationMemory).build(run, generation_id=generation_id)
     if private:
         await queue.evidence(run.id, "snapshot-worker", "attachment", {"attachments": []}, [])
     if not legacy and not private:
@@ -125,6 +134,68 @@ async def test_revoked_originating_token_blocks_snapshot_before_delivery(assista
         await context.get_bean(ConversationSnapshotPort).snapshot(
             "issuer|viewer", "north", thread["id"], [run.message_id]
         )
+
+
+async def test_native_output_preserves_owner_identity_with_a_different_requesting_reader(assistants):
+    from koinon.evidence.ports import ConversationOutputPort
+
+    service, context = assistants
+    thread, run, _ = await final_turn(service, context)
+    snapshot = await context.get_bean(ConversationSnapshotPort).snapshot(
+        "issuer|viewer", "north", thread["id"], [run.message_id]
+    )
+    output = context.get_bean(ConversationOutputPort)
+    await output.authorize_output(
+        "issuer|viewer",
+        "north",
+        thread["id"],
+        [run.message_id],
+        snapshot=snapshot,
+        reader_subject="issuer|other",
+    )
+    with pytest.raises(AccessDenied):
+        await output.authorize_output(
+            "issuer|other",
+            "north",
+            thread["id"],
+            [run.message_id],
+            snapshot=snapshot,
+            reader_subject="issuer|viewer",
+        )
+
+
+@pytest.mark.parametrize("surface", ["messages", "snapshot", "events", "activity"])
+async def test_source_denial_precedes_protected_history_hydration(assistants, monkeypatch, surface):
+    from koinon.integrations.content_sources.errors import SourceError
+
+    service, context = assistants
+    thread, run, _ = await final_turn(service, context)
+
+    class DeniedReader:
+        async def runs(self, actor, tenant, identifiers, **kwargs):
+            raise SourceError("access_denied")
+
+    service.source_reader = SimpleNamespace(get=lambda: DeniedReader())
+    loaded = []
+    original = service.message_repository.snapshot_messages
+
+    async def tracked(*args, **kwargs):
+        loaded.append("body")
+        return await original(*args, **kwargs)
+
+    monkeypatch.setattr(service.message_repository, "snapshot_messages", tracked)
+    with pytest.raises(SourceError, match="access_denied"):
+        if surface == "snapshot":
+            await context.get_bean(ConversationSnapshotPort).snapshot(
+                "issuer|viewer", "north", thread["id"], [run.message_id]
+            )
+        elif surface == "events":
+            await service.run_events("issuer|viewer", "north", run.id)
+        elif surface == "activity":
+            await service.activity_page("issuer|viewer", "north", run.id)
+        else:
+            await service.messages("issuer|viewer", "north", thread["id"])
+    assert loaded == []
 
 
 async def test_legacy_missing_source_title_is_not_inferred_from_current_catalog():

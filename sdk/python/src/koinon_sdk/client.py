@@ -30,6 +30,7 @@ from koinon_sdk.availability import (
     ProcessingResponse,
 )
 from koinon_sdk.bulk_client import BulkClientMixin
+from koinon_sdk.catalog_browse import CatalogBrowseInput, CatalogBrowseOutput
 from koinon_sdk.communications_client import CommunicationsClientMixin
 from koinon_sdk.connection_filters import (
     AttachmentChunkFilter,
@@ -42,6 +43,7 @@ from koinon_sdk.connection_filters import (
     IndexScope,
     ShareFilter,
 )
+from koinon_sdk.content_sources_client import ContentSourcesClientMixin
 from koinon_sdk.contracts import (
     AgentFilter,
     AuditFilter,
@@ -62,7 +64,9 @@ from koinon_sdk.contracts import (
     MembershipFilter,
     MemberUpdate,
     QueryContext,
+    QueryRequest,
     SearchContext,
+    SearchRequest,
     StatusFilter,
     ThreadFilter,
     ThreadPatch,
@@ -101,6 +105,8 @@ from koinon_sdk.document_history import (
 from koinon_sdk.evidence import EvidenceManifest
 from koinon_sdk.exports import (
     Export,
+    ExportBrowseInput,
+    ExportBrowsePage,
     ExportCreate,
     ExportPage,
     ExportReview,
@@ -116,6 +122,12 @@ from koinon_sdk.external_file_reviews import (
 )
 from koinon_sdk.external_reviews import ExternalReviewDecision, ExternalReviewInput, ExternalReviewView
 from koinon_sdk.glossary import GlossaryPage, GlossaryTermCreate, GlossaryTermRead, GlossaryTermUpdate
+from koinon_sdk.history_browse import (
+    HistoryBrowseInput,
+    HistoryBrowsePage,
+    MessageBrowseInput,
+    MessageBrowsePage,
+)
 from koinon_sdk.identity import (
     IdentityActivation,
     IdentityGroupPage,
@@ -233,8 +245,11 @@ from koinon_sdk.platform_health import PlatformHealth, SystemInformation
 from koinon_sdk.proposals import CatalogProposal, ProposalConfirmation, ProposalRevision
 from koinon_sdk.provenance import TableProvenance, TableSnapshotPage
 from koinon_sdk.query_batch_client import QueryBatchClientMixin
+from koinon_sdk.reader_reads_client import ReaderReadsMixin
 from koinon_sdk.sharing import (
     Share,
+    ShareBrowseInput,
+    ShareBrowsePage,
     ShareCreate,
     SharedConversation,
     SharePage,
@@ -251,7 +266,13 @@ class ApiError(Exception):
         self.transaction_id = request_id
 
 
-class KoinonClient(BulkClientMixin, QueryBatchClientMixin, CommunicationsClientMixin):
+class KoinonClient(
+    BulkClientMixin,
+    QueryBatchClientMixin,
+    CommunicationsClientMixin,
+    ContentSourcesClientMixin,
+    ReaderReadsMixin,
+):
     def __init__(
         self,
         base_url: str,
@@ -434,12 +455,18 @@ class KoinonClient(BulkClientMixin, QueryBatchClientMixin, CommunicationsClientM
         )
 
     async def _download(
-        self, path: str, *, params: dict[str, str] | None = None, if_none_match: str | None = None
+        self,
+        path: str,
+        *,
+        params: dict[str, str] | None = None,
+        if_none_match: str | None = None,
+        method: str = "GET",
+        json: Any = None,
     ) -> BinaryDownload:
         headers = await self._headers()
         if if_none_match is not None:
             headers["If-None-Match"] = if_none_match
-        response = await self._http.get(path, headers=headers, params=params)
+        response = await self._http.request(method, path, headers=headers, params=params, json=json)
         if response.status_code != 304:
             await self._check(response)
         disposition = response.headers.get("Content-Disposition", "")
@@ -580,6 +607,11 @@ class KoinonClient(BulkClientMixin, QueryBatchClientMixin, CommunicationsClientM
             )
         )
 
+    async def browse_catalog(self, tenant_id: str, value: CatalogBrowseInput) -> CatalogBrowseOutput:
+        return CatalogBrowseOutput.model_validate(
+            await self._request("POST", self._tenant(tenant_id) + "/catalog/browse", json=self._input(value))
+        )
+
     async def catalog(self, tenant_id: str, **filters: Unpack[CatalogFilter]) -> Page[CatalogEntry]:
         return Page[CatalogEntry].model_validate(
             await self._request("GET", self._tenant(tenant_id) + "/catalog", params=filters)
@@ -680,7 +712,9 @@ class KoinonClient(BulkClientMixin, QueryBatchClientMixin, CommunicationsClientM
     async def search(self, tenant_id: str, question: str, **context: Unpack[SearchContext]) -> SearchResponse:
         return SearchResponse.model_validate(
             await self._request(
-                "POST", self._tenant(tenant_id) + "/search", json={"question": question, **context}
+                "POST",
+                self._tenant(tenant_id) + "/search",
+                json=self._input(SearchRequest(question=question, **context)),
             )
         )
 
@@ -691,7 +725,7 @@ class KoinonClient(BulkClientMixin, QueryBatchClientMixin, CommunicationsClientM
             await self._request(
                 "POST",
                 self._tenant(tenant_id) + "/query",
-                json={"dataset_id": dataset_id, "question": question, **context},
+                json=self._input(QueryRequest(dataset_id=dataset_id, question=question, **context)),
             )
         )
 
@@ -2355,6 +2389,11 @@ class KoinonClient(BulkClientMixin, QueryBatchClientMixin, CommunicationsClientM
             await self._request("POST", self._tenant(tenant_id) + "/exports", json=self._input(value))
         )
 
+    async def browse_exports(self, tenant_id: str, value: ExportBrowseInput) -> ExportBrowsePage:
+        return ExportBrowsePage.model_validate(
+            await self._request("POST", self._tenant(tenant_id) + "/exports/browse", json=self._input(value))
+        )
+
     async def exports(self, tenant_id: str, **filters: Unpack[ExportFilter]) -> ExportPage:
         return ExportPage.model_validate(
             await self._request("GET", self._tenant(tenant_id) + "/exports", params=filters)
@@ -2381,6 +2420,29 @@ class KoinonClient(BulkClientMixin, QueryBatchClientMixin, CommunicationsClientM
     async def create_share(self, tenant_id: str, value: ShareCreate) -> Share:
         return Share.model_validate(
             await self._request("POST", self._tenant(tenant_id) + "/shares", json=self._input(value))
+        )
+
+    async def browse_shares(self, tenant_id: str, value: ShareBrowseInput) -> ShareBrowsePage:
+        return ShareBrowsePage.model_validate(
+            await self._request("POST", self._tenant(tenant_id) + "/shares/browse", json=self._input(value))
+        )
+
+    async def browse_threads(self, tenant_id: str, value: HistoryBrowseInput) -> HistoryBrowsePage:
+        return HistoryBrowsePage.model_validate(
+            await self._request(
+                "POST", self._tenant(tenant_id) + "/chat/threads/browse", json=self._input(value)
+            )
+        )
+
+    async def browse_messages(
+        self, tenant_id: str, thread_id: str, value: MessageBrowseInput
+    ) -> MessageBrowsePage:
+        return MessageBrowsePage.model_validate(
+            await self._request(
+                "POST",
+                self._tenant(tenant_id) + "/chat/threads/" + quote(thread_id, safe="") + "/messages/browse",
+                json=self._input(value),
+            )
         )
 
     async def shares(self, tenant_id: str, **filters: Unpack[ShareFilter]) -> SharePage:

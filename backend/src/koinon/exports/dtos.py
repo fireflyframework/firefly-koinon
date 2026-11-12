@@ -13,6 +13,7 @@ from koinon.evidence.dtos import (
     SourceReference,
     StoredResult,
 )
+from koinon.integrations.content_sources.read_dtos import ReaderSourceSelection
 
 
 class Input(BaseModel):
@@ -98,3 +99,27 @@ class ExportPage(Frozen):
     page: int
     page_size: int
     pages: int
+
+
+class ExportBrowseInput(Input):
+    q: str = Field(default="", max_length=512)
+    status: Literal["all", "ready", "cancelled", "expired"] = "all"
+    page_size: int = Field(default=25, ge=1, le=100)
+    cursor: str | None = Field(default=None, max_length=128)
+    reader_source_connections: list[ReaderSourceSelection] | None = Field(default=None, max_length=100)
+
+    @field_validator("reader_source_connections")
+    @classmethod
+    def unique_connections(cls, values):
+        if values is not None and len({(value.provider, value.external_tenant) for value in values}) != len(
+            values
+        ):
+            raise ValueError("Select one connection per provider and external tenant")
+        return values
+
+
+class ExportBrowsePage(Frozen):
+    items: tuple[Export, ...]
+    next_cursor: str | None = None
+    total: None = None
+    total_is_exact: Literal[False] = False

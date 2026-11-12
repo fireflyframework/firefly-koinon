@@ -2,6 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Select with KOINON_CONFIG_FILE. Secrets stay in your external secret store.
 koinon:
+  answers:
+    release_proofs:
+      # Enable after migrations and explicit role provisioning; keep recorded reads unexposed.
+      # API and worker inject different primary DATABASE_URL credentials into separate processes.
+      enabled: false
+      api_role: koinon_catalog
+      publisher_role: koinon_answer_publisher
   security:
     issuer: ${KOINON_OIDC_ISSUER}
     client_id: ${KOINON_OIDC_CLIENT_ID}

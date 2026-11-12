@@ -144,6 +144,23 @@
     "finalize_publication",
     "acknowledge_commit"
   ],
+  "CalendarScheduleKind": [
+    "calendar"
+  ],
+  "CatalogBrowseInputView": [
+    "raw",
+    "library"
+  ],
+  "CatalogBrowseInputSort": [
+    "name",
+    "kind",
+    "created_at",
+    "updated_at"
+  ],
+  "CatalogBrowseInputOrder": [
+    "asc",
+    "desc"
+  ],
   "CatalogProposalKind": [
     "catalog"
   ],
@@ -431,6 +448,12 @@
     "bounded",
     "unknown"
   ],
+  "ExportBrowseInputStatus": [
+    "all",
+    "ready",
+    "cancelled",
+    "expired"
+  ],
   "ExternalFileCleanupReviewStatus": [
     "purging",
     "purged"
@@ -625,6 +648,11 @@
     "partial",
     "unavailable"
   ],
+  "HistoryBrowseInputStatus": [
+    "active",
+    "archived",
+    "all"
+  ],
   "IdentityCheckStatus": [
     "unconfigured",
     "unknown",
@@ -659,6 +687,9 @@
   "IndexActivateInputRecovery": [
     "finish",
     "restore_previous"
+  ],
+  "IntervalScheduleKind": [
+    "interval"
   ],
   "InvitationStatus": [
     "pending",
@@ -777,6 +808,20 @@
   "KnowledgeVersionViewPublication": [
     "draft",
     "published"
+  ],
+  "ManualScheduleKind": [
+    "manual"
+  ],
+  "MappingReviewInputRemovalPolicy": [
+    "retire",
+    "pause_for_review"
+  ],
+  "MappingReviewInputHierarchy": [
+    "preserve",
+    "flatten"
+  ],
+  "MappingReviewOutputStatus": [
+    "reviewed"
   ],
   "McpConnectionDescriptorTransport": [
     "streamable-http"
@@ -1019,6 +1064,11 @@
     "spreadsheet_safe",
     "exact"
   ],
+  "ReaderSourceSelectionProvider": [
+    "sharepoint",
+    "onedrive",
+    "google_drive"
+  ],
   "ReplaceDocumentAction": [
     "replace_document"
   ],
@@ -1050,6 +1100,111 @@
   "ShareRecipientPolicy": [
     "organization_current_acl"
   ],
+  "ShareBrowseInputStatus": [
+    "all",
+    "active",
+    "revoked",
+    "expired"
+  ],
+  "SourceConnectionOutputStatus": [
+    "pending",
+    "connected",
+    "reconnect_required",
+    "disconnected"
+  ],
+  "SourceControlOutputAction": [
+    "sync",
+    "pause",
+    "resume",
+    "cancel",
+    "retry",
+    "retire"
+  ],
+  "SourceControlOutputDisposition": [
+    "queued",
+    "paused",
+    "active",
+    "stopping",
+    "reconciling",
+    "retired"
+  ],
+  "SourceControlReceiptKind": [
+    "control"
+  ],
+  "SourceItemOutputKind": [
+    "file",
+    "folder",
+    "shortcut"
+  ],
+  "SourceLocationOutputKind": [
+    "site",
+    "drive"
+  ],
+  "SourceMappingOutputStatus": [
+    "reviewed",
+    "active",
+    "paused",
+    "reconnect_required",
+    "retired"
+  ],
+  "SourceMappingPresentationUnavailableReason": [
+    "access_denied",
+    "reconnect_required",
+    "unavailable"
+  ],
+  "SourceMappingValidationItemCollision": [
+    "none",
+    "source_name",
+    "destination_name",
+    "local_edit"
+  ],
+  "SourceMappingValidationItemAction": [
+    "create",
+    "replace",
+    "move",
+    "skip"
+  ],
+  "SourceMappingValidationOutputState": [
+    "scanning",
+    "verifying",
+    "checking_changes",
+    "complete",
+    "blocked",
+    "stale",
+    "cleaning",
+    "abandoned",
+    "expired"
+  ],
+  "SourceMappingValidationOutputReasonCode": [
+    "SOURCE_NAME_COLLISION",
+    "SOURCE_DESTINATION_COLLISION",
+    "SOURCE_LOCAL_EDIT",
+    "SOURCE_CHANGED",
+    "SOURCE_AUTHORITY_CHANGED",
+    "SOURCE_SCAN_LIMIT_EXCEEDED",
+    "SOURCE_VALIDATION_CAPACITY",
+    "SOURCE_UNAVAILABLE",
+    "SOURCE_VALIDATION_REFRESH_REQUIRED",
+    "SOURCE_INVALID_SELECTION"
+  ],
+  "SourcePolicyOperationOutputSchema": [
+    "koinon.source-policy-operation.v1"
+  ],
+  "SourcePolicyOperationOutputAction": [
+    "review",
+    "apply"
+  ],
+  "SourcePolicyOperationOutputDisposition": [
+    "reviewed",
+    "accepted"
+  ],
+  "SourcePolicyReceiptKind": [
+    "policy"
+  ],
+  "SourceProviderCapabilityUnavailableReason": [
+    "disabled",
+    "not_configured"
+  ],
   "SourceReferenceKind": [
     "document",
     "dataset",
@@ -1059,6 +1214,41 @@
     "available",
     "changed",
     "unverified"
+  ],
+  "SourceReviewPageRootKind": [
+    "file",
+    "folder"
+  ],
+  "SourceRunItemKind": [
+    "file",
+    "folder",
+    "deleted",
+    "unknown"
+  ],
+  "SourceRunItemStatus": [
+    "observed",
+    "downloading",
+    "processing",
+    "synchronized",
+    "searchable",
+    "skipped",
+    "conflict",
+    "retired",
+    "failed",
+    "indeterminate"
+  ],
+  "SourceRunOutputStatus": [
+    "queued",
+    "running",
+    "reconciling",
+    "reconnect_required",
+    "succeeded",
+    "partial",
+    "failed",
+    "cancelled"
+  ],
+  "SourceScheduleCapabilityCalendarTimezones": [
+    "iana"
   ],
   "SqlAttemptReceiptExecutionKind": [
     "imported_snapshot",

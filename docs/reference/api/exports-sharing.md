@@ -12,14 +12,19 @@ Use the linked wire models for field constraints. Operation metadata does not en
 - [Review](#exportcontroller-review) (POST)
 - [Create](#exportcontroller-create) (POST)
 - [List](#exportcontroller-list) (GET)
+- [Browse](#exportcontroller-browse) (POST)
 - [Get](#exportcontroller-get) (GET)
 - [Download](#exportcontroller-download) (GET)
 - [Cancel](#exportcontroller-cancel) (DELETE)
+- [Get read](#exportreadcontroller-get-read) (POST)
+- [Download read](#exportreadcontroller-download-read) (POST)
 - [Review](#sharecontroller-review) (POST)
 - [Create](#sharecontroller-create) (POST)
 - [List](#sharecontroller-list) (GET)
+- [Browse](#sharecontroller-browse) (POST)
 - [Get](#sharecontroller-get) (GET)
 - [Revoke](#sharecontroller-revoke) (DELETE)
+- [Get read](#sharereadcontroller-get-read) (POST)
 
 <!-- operation: ExportController.review -->
 <a id="exportcontroller-review"></a>
@@ -150,6 +155,48 @@ No operation-specific headers are declared in the canonical metadata.
 
 Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
 
+<!-- operation: ExportController.browse -->
+<a id="exportcontroller-browse"></a>
+## Browse
+
+```http
+POST /api/v1/tenants/{tenant_id}/exports/browse
+```
+
+Contract operation: `ExportController.browse`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `browse_exports` |
+| TypeScript | `exports.browse` |
+| Java | `client.exports.browse` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[ExportBrowseInput]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`ExportBrowseInput`](../models/exportbrowseinput.md) |
+| Response schema | [`ExportBrowsePage`](../models/exportbrowsepage.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
 <!-- operation: ExportController.get -->
 <a id="exportcontroller-get"></a>
 ## Get
@@ -267,6 +314,92 @@ These are the declared path, query and body arguments. Multipart and binary inpu
 | Response schema | No response body |
 | Success status | `204` |
 | Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: ExportReadController.get_read -->
+<a id="exportreadcontroller-get-read"></a>
+## Get read
+
+```http
+POST /api/v1/tenants/{tenant_id}/exports/{export_id}/read
+```
+
+Contract operation: `ExportReadController.get_read`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `read_export` |
+| TypeScript | `exports.read` |
+| Java | `client.exports.read` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `export_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[ReaderReadInput]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`ReaderReadInput`](../models/readerreadinput.md) |
+| Response schema | [`Export`](../models/export.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: ExportReadController.download_read -->
+<a id="exportreadcontroller-download-read"></a>
+## Download read
+
+```http
+POST /api/v1/tenants/{tenant_id}/exports/{export_id}/download/read
+```
+
+Contract operation: `ExportReadController.download_read`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `read_export_download` |
+| TypeScript | `exports.readDownload` |
+| Java | `client.exports.readDownload` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `export_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[ReaderReadInput]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`ReaderReadInput`](../models/readerreadinput.md) |
+| Response schema | [`BinaryDownload`](../models/binarydownload.md) |
+| Success status | `200` |
+| Declared encoding | `binary` |
 
 Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
 
@@ -405,6 +538,48 @@ No operation-specific headers are declared in the canonical metadata.
 
 Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
 
+<!-- operation: ShareController.browse -->
+<a id="sharecontroller-browse"></a>
+## Browse
+
+```http
+POST /api/v1/tenants/{tenant_id}/shares/browse
+```
+
+Contract operation: `ShareController.browse`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `browse_shares` |
+| TypeScript | `shares.browse` |
+| Java | `client.shares.browse` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[ShareBrowseInput]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`ShareBrowseInput`](../models/sharebrowseinput.md) |
+| Response schema | [`ShareBrowsePage`](../models/sharebrowsepage.md) |
+| Success status | `200` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
 <!-- operation: ShareController.get -->
 <a id="sharecontroller-get"></a>
 ## Get
@@ -479,6 +654,49 @@ These are the declared path, query and body arguments. Multipart and binary inpu
 | Request schema | No request schema declared |
 | Response schema | No response body |
 | Success status | `204` |
+| Declared encoding | `application/json` |
+
+Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.
+
+### Headers
+
+No operation-specific headers are declared in the canonical metadata.
+
+Authentication and resource bounds still apply. See [request behavior](../sdk-api.md#request-behavior) and the [SDK runtime reference](../sdk-runtime.md).
+
+<!-- operation: ShareReadController.get_read -->
+<a id="sharereadcontroller-get-read"></a>
+## Get read
+
+```http
+POST /api/v1/tenants/{tenant_id}/shares/{share_id}/read
+```
+
+Contract operation: `ShareReadController.get_read`.
+
+| SDK | Method |
+| --- | --- |
+| Python | `read_share` |
+| TypeScript | `shares.read` |
+| Java | `client.shares.read` |
+
+### Parameters
+
+These are the declared path, query and body arguments. Multipart and binary inputs are described by their request schema below. SDK argument names may follow each language’s conventions.
+
+| Name | Location | Declared type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `tenant_id` | path | `PathVar[str]` | Yes | Not specified |
+| `share_id` | path | `PathVar[str]` | Yes | Not specified |
+| `body` | body | `Valid[Body[ReaderReadInput]]` | Yes | Not specified |
+
+### Request and response
+
+| Contract | Value |
+| --- | --- |
+| Request schema | [`ReaderReadInput`](../models/readerreadinput.md) |
+| Response schema | [`SharedConversation`](../models/sharedconversation.md) |
+| Success status | `200` |
 | Declared encoding | `application/json` |
 
 Encoding identifies the upload, stream or download format when applicable; otherwise it is JSON. It is not a declaration that a GET request has a body.

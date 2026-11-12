@@ -185,6 +185,12 @@ export interface AttachmentView {
 }
 export interface AuditValue {
 }
+export interface AuthorSummary {
+ "subject": string;
+ "display_name": string;
+ "avatar_data_url"?: string | null;
+ "avatar_version"?: string | null;
+}
 export interface AuthorizedApplication {
  "id": string;
  "client_id": string;
@@ -211,6 +217,7 @@ export interface AvailabilityCapability {
  "reason"?: string;
 }
 export interface AvailabilityRequest {
+ "reader_source_connections"?: Array<ReaderSourceSelection> | null;
  "asset_ids": Array<string>;
  "workspace_id"?: string | null;
 }
@@ -289,6 +296,54 @@ export interface BulkRecoveryAction {
  "expected_revision": number;
  "operation": "retry_processing" | "finalize_publication" | "acknowledge_commit";
 }
+export interface CalendarSchedule {
+ "kind": "calendar";
+ "timezone": string;
+ "time": string;
+ "weekdays"?: Array<number>;
+}
+export interface CatalogBrowseInput {
+ "parent_id"?: string | null;
+ "workspace_id"?: string | null;
+ "project_id"?: string | null;
+ "kind"?: string | null;
+ "include_archived"?: boolean;
+ "view"?: "raw" | "library";
+ "q"?: string;
+ "status"?: string | null;
+ "format"?: string | null;
+ "tag"?: string | null;
+ "page_size"?: number;
+ "sort"?: "name" | "kind" | "created_at" | "updated_at";
+ "order"?: "asc" | "desc";
+ "cursor"?: string | null;
+ "reader_source_connections"?: Array<ReaderSourceSelection> | null;
+}
+export interface CatalogBrowseOutput {
+ "items": Array<BrowseCatalogEntry>;
+ "actors": Record<string,AuthorSummary>;
+ "next_cursor": string | null;
+ "summaries"?: Record<string,BrowseCatalogSummary>;
+ "total"?: null;
+ "total_is_exact"?: false;
+}
+export interface BrowseCatalogEntry {
+ "created_by"?: string | null;
+ "updated_by"?: string | null;
+ "id": string;
+ "tenant_id": string;
+ "kind": string;
+ "name": string;
+ "parent_id"?: string | null;
+ "workspace_id"?: string | null;
+ "project_id"?: string | null;
+ "description"?: string;
+ "status": string;
+ "system_managed"?: boolean;
+ "metadata"?: Record<string,Json>;
+ "created_at": string;
+ "updated_at"?: string | null;
+}
 export interface CatalogProposal {
  "id": string;
  "run_id": string;
@@ -310,6 +365,19 @@ export interface CatalogProposalBefore {
 export interface CatalogProposalPatch {
  "name"?: string | null;
  "description"?: string | null;
+}
+export interface BrowseCatalogSummary {
+ "child_count"?: number | null;
+ "document_count"?: number | null;
+ "dataset_count"?: number | null;
+ "table_count"?: number | null;
+ "row_count"?: number | null;
+ "column_count"?: number | null;
+ "page_count"?: number | null;
+ "size_bytes"?: number | null;
+ "format"?: string | null;
+ "language"?: string | null;
+ "tags"?: Array<string>;
 }
 export interface BatchQueryClarificationFrame {
  "questions": Array<string>;
@@ -367,6 +435,7 @@ export interface CoordinateCellPosition {
  "column": number;
 }
 export interface CoordinateCellRequest {
+ "reader_source_connections"?: Array<ReaderSourceSelection> | null;
  "snapshot_id": string;
  "cells": Array<CoordinateCellPosition>;
 }
@@ -500,6 +569,14 @@ export interface DeliveryRecoveryOptions {
  "contact_revision"?: number | null;
  "possible_original_late_arrival"?: true;
 }
+export interface DocumentChunksReadInput {
+ "reader_source_connections"?: Array<ReaderSourceSelection> | null;
+ "offset"?: number;
+ "limit"?: number;
+ "page"?: number | null;
+ "section"?: string | null;
+ "q"?: string | null;
+}
 export interface DocumentEvidence {
  "kind"?: "document_passage";
  "source": SourceReference;
@@ -615,6 +692,12 @@ export interface DocumentPartSummary {
  "offset_basis"?: string | null;
  "created_at": string;
 }
+export interface DocumentPartsReadInput {
+ "reader_source_connections"?: Array<ReaderSourceSelection> | null;
+ "page"?: number;
+ "page_size"?: number;
+ "kind"?: "artifact" | "section" | "chunk" | "page" | null;
+}
 export interface DocumentVersion {
  "document_id": string;
  "catalog_source_id": string;
@@ -673,6 +756,19 @@ export interface Export {
  "truncated"?: boolean | null;
  "created_at": string;
  "expires_at": string;
+}
+export interface ExportBrowseInput {
+ "q"?: string;
+ "status"?: "all" | "ready" | "cancelled" | "expired";
+ "page_size"?: number;
+ "cursor"?: string | null;
+ "reader_source_connections"?: Array<ReaderSourceSelection> | null;
+}
+export interface ExportBrowsePage {
+ "items": Array<Export>;
+ "next_cursor"?: string | null;
+ "total"?: null;
+ "total_is_exact"?: false;
 }
 export interface ExportCreate {
  "review_id": string;
@@ -996,6 +1092,34 @@ export interface HealthSummary {
  "unknown"?: number;
  "disabled"?: number;
 }
+export interface HistoryBrowseInput {
+ "q"?: string;
+ "page_size"?: number;
+ "cursor"?: string | null;
+ "status"?: "active" | "archived" | "all";
+ "folder_id"?: string | null;
+ "workspace_id"?: string | null;
+ "project_id"?: string | null;
+ "unfiled"?: boolean;
+ "reader_source_connections"?: Array<ReaderSourceSelection> | null;
+}
+export interface HistoryBrowsePage {
+ "items": Array<HistoryThreadOutput>;
+ "next_cursor"?: string | null;
+ "total"?: null;
+ "total_is_exact"?: false;
+}
+export interface HistoryThreadOutput {
+ "id": string;
+ "title": string;
+ "title_source": "default" | "manual" | "ai";
+ "revision": number;
+ "folder_id": string | null;
+ "archived_at": string | null;
+ "scope": BrowseKnowledgeScope;
+ "created_at": string;
+ "updated_at": string;
+}
 export interface IdentityActivation {
  "expected_revision": number;
  "validation_id": string;
@@ -1153,6 +1277,10 @@ export interface IndexRevisionInput {
  "expected_revision": number;
 }
 export type Input = Record<string,never>;
+export interface IntervalSchedule {
+ "kind": "interval";
+ "seconds": number;
+}
 export type JsonValue = Json;
 export interface KeycloakCredential {
  "kind": "keycloak";
@@ -1412,6 +1540,12 @@ export interface KnowledgeNumberBounds {
  "maximum": number;
 }
 export type KnowledgePolicyValue = Record<string,never>;
+export interface BrowseKnowledgeScope {
+ "workspace_id"?: string | null;
+ "project_id"?: string | null;
+ "collection_id"?: string | null;
+ "asset_ids"?: Array<string> | null;
+}
 export interface KnowledgeVersionView {
  "item_id": string;
  "version": number;
@@ -1425,6 +1559,34 @@ export interface KnowledgeVersionView {
  "operation_id": string;
  "author_subject": string;
  "committed_at": string;
+}
+export interface LineageReadInput {
+ "reader_source_connections"?: Array<ReaderSourceSelection> | null;
+ "asset_id"?: string | null;
+}
+export interface ManualSchedule {
+ "kind"?: "manual";
+}
+export interface MappingReviewInput {
+ "connection_id": string;
+ "drive_id": string;
+ "root_id": string;
+ "destination": BulkDestination;
+ "recursive": boolean;
+ "removal_policy": "retire" | "pause_for_review";
+ "schema_version"?: 1;
+ "mode"?: "document" | "dataset";
+ "hierarchy"?: "preserve" | "flatten";
+ "excluded_ids"?: Array<string>;
+ "formats"?: Array<string>;
+ "schedule"?: ManualSchedule | IntervalSchedule | CalendarSchedule;
+ "replacement_resolutions"?: Array<ReplacementResolutionInput>;
+}
+export interface MappingReviewOutput {
+ "id": string;
+ "revision": number;
+ "status"?: "reviewed";
+ "expires_at": string;
 }
 export interface McpActivityCounts {
  "requests": ObservedCount;
@@ -1569,6 +1731,17 @@ export interface MemoryTurnReference {
 }
 export interface MemoryValue {
 }
+export interface MessageBrowseInput {
+ "page_size"?: number;
+ "cursor"?: string | null;
+ "reader_source_connections"?: Array<ReaderSourceSelection> | null;
+}
+export interface MessageBrowsePage {
+ "items": Array<Record<string,Json>>;
+ "next_cursor"?: string | null;
+ "total"?: null;
+ "total_is_exact"?: false;
+}
 export interface MessageSelection {
  "thread_id": string;
  "message_ids": Array<string>;
@@ -1657,6 +1830,9 @@ export interface ObservedCount {
  "value"?: number | null;
  "status": "observed" | "partial" | "unavailable";
  "reason"?: string | null;
+}
+export interface OperationInput {
+ "operation_id": string;
 }
 export interface OrganizationBranding {
  "tenant_id": string;
@@ -1912,6 +2088,7 @@ export interface ProcessingActivity {
  "availability": AssetAvailability;
 }
 export interface ProcessingRequest {
+ "reader_source_connections"?: Array<ReaderSourceSelection> | null;
  "page"?: number;
  "page_size"?: number;
  "workspace_id"?: string | null;
@@ -2065,6 +2242,28 @@ export interface QueryResultExportInput {
  "format": "parquet" | "csv" | "jsonl";
  "csv_mode"?: "spreadsheet_safe" | "exact";
 }
+export interface ReaderPageInput {
+ "reader_source_connections"?: Array<ReaderSourceSelection> | null;
+ "page"?: number;
+ "page_size"?: number;
+}
+export interface ReaderReadInput {
+ "reader_source_connections"?: Array<ReaderSourceSelection> | null;
+}
+export interface ReaderSelectionInput {
+ "expected_revision": number;
+ "operation_id": string;
+ "connections": Array<ReaderSourceSelection>;
+}
+export interface ReaderSelectionOutput {
+ "revision": number;
+ "connections": Array<ReaderSourceSelection>;
+}
+export interface ReaderSourceSelection {
+ "provider": "sharepoint" | "onedrive" | "google_drive";
+ "external_tenant"?: string | null;
+ "connection_id": string;
+}
 export interface ReplaceDocument {
  "expected_source_version_id"?: string | null;
  "expected_extraction_id"?: string | null;
@@ -2080,6 +2279,19 @@ export interface ReplaceTable {
  "dataset_id": string;
  "table_id": string;
  "expected_snapshot_id": string;
+}
+export interface ReplacementMemberInput {
+ "new_locator": string;
+ "previous_table_id": string | null;
+}
+export interface ReplacementResolutionInput {
+ "object_id": string;
+ "remote_version": string;
+ "content_sha256": string;
+ "baseline_sha256": string;
+ "new_locator_set_sha256": string;
+ "replacements": Array<ReplacementMemberInput>;
+ "removed_table_ids"?: Array<string>;
 }
 export interface ResultColumn {
  "name": string;
@@ -2117,6 +2329,19 @@ export interface Share {
  "created_at": string;
  "expires_at": string;
  "revoked_at"?: string | null;
+}
+export interface ShareBrowseInput {
+ "q"?: string;
+ "status"?: "all" | "active" | "revoked" | "expired";
+ "page_size"?: number;
+ "cursor"?: string | null;
+ "reader_source_connections"?: Array<ReaderSourceSelection> | null;
+}
+export interface ShareBrowsePage {
+ "items": Array<Share>;
+ "next_cursor"?: string | null;
+ "total"?: null;
+ "total_is_exact"?: false;
 }
 export interface ShareCreate {
  "review_id": string;
@@ -2158,6 +2383,306 @@ export interface SharedConversation {
  "source_manifest_complete": boolean;
  "identity"?: ConversationIdentity | null;
 }
+export interface SnapshotHistoryReadInput {
+ "reader_source_connections"?: Array<ReaderSourceSelection> | null;
+ "cursor"?: string | null;
+ "page_size"?: number;
+}
+export interface SnapshotPageReadInput {
+ "reader_source_connections"?: Array<ReaderSourceSelection> | null;
+ "page"?: number;
+ "page_size"?: number;
+ "snapshot_id": string;
+}
+export interface SnapshotReadInput {
+ "reader_source_connections"?: Array<ReaderSourceSelection> | null;
+ "snapshot_id": string;
+}
+export interface SourceAccountOutput {
+ "provider": "sharepoint" | "onedrive" | "google_drive";
+ "subject": string;
+ "tenant_id": string | null;
+}
+export interface SourceAuthorizationCompletion {
+ "challenge_id": string;
+ "state": string;
+ "code": string;
+}
+export interface SourceAuthorizationInput {
+ "provider": "sharepoint" | "onedrive" | "google_drive";
+}
+export interface SourceAuthorizationOutput {
+ "connection_id": string;
+ "challenge_id": string;
+ "authorization_url": string;
+ "callback_uri": string;
+ "expires_at": string;
+}
+export interface SourceCapabilitiesOutput {
+ "accounts_available": boolean;
+ "inbound_only"?: true;
+ "synchronization_available": boolean;
+ "providers": Array<SourceProviderCapability>;
+ "modes": Array<"document" | "dataset">;
+ "formats": Array<SourceFormatCapability>;
+ "schedule": SourceScheduleCapability;
+}
+export interface SourceConnectionOutput {
+ "id": string;
+ "provider": "sharepoint" | "onedrive" | "google_drive";
+ "status": "pending" | "connected" | "reconnect_required" | "disconnected";
+ "revision": number;
+ "account": SourceAccountOutput | null;
+ "display_name"?: string | null;
+ "display_address"?: string | null;
+ "display_address_verified"?: boolean;
+ "synchronization_available"?: boolean;
+}
+export interface SourceConnectionPage {
+ "items": Array<SourceConnectionOutput>;
+ "next_cursor": string | null;
+ "synchronization_available"?: boolean;
+}
+export interface SourceConnectionRevision {
+ "expected_revision": number;
+}
+export interface SourceControlInput {
+ "operation_id": string;
+ "expected_revision": number;
+}
+export interface SourceControlOutput {
+ "operation_id": string;
+ "receipt_id": string;
+ "action": "sync" | "pause" | "resume" | "cancel" | "retry" | "retire";
+ "control_revision": number;
+ "run_id"?: string | null;
+ "disposition": "queued" | "paused" | "active" | "stopping" | "reconciling" | "retired";
+}
+export interface SourceControlReceipt {
+ "kind"?: "control";
+ "receipt": SourceControlOutput;
+}
+export interface SourceDestinationPresentation {
+ "segments": Array<SourceDestinationSegment>;
+}
+export interface SourceDestinationSegment {
+ "id": string;
+ "kind": string;
+ "name": string;
+}
+export interface SourceDiscoveredMember {
+ "locator": string;
+ "name": string;
+ "ambiguous": boolean;
+}
+export interface SourceExistingPolicyReviewInput {
+ "operation_id": string;
+ "connection_id": string;
+ "drive_id": string;
+ "root_id": string;
+ "destination": BulkDestination;
+ "recursive": boolean;
+ "removal_policy": "retire" | "pause_for_review";
+ "schema_version"?: 1;
+ "mode"?: "document" | "dataset";
+ "hierarchy"?: "preserve" | "flatten";
+ "excluded_ids"?: Array<string>;
+ "formats"?: Array<string>;
+ "schedule"?: ManualSchedule | IntervalSchedule | CalendarSchedule;
+ "replacement_resolutions"?: Array<ReplacementResolutionInput>;
+ "validation_id"?: string | null;
+ "expected_revision": number;
+}
+export interface SourceFolderPage {
+ "folder": SourceItemOutput;
+ "items": Array<SourceItemOutput>;
+ "next_cursor": string | null;
+}
+export interface SourceFormatCapability {
+ "extension": string;
+ "mode": "document" | "dataset";
+}
+export interface SourceItemOutput {
+ "item_id": string;
+ "name": string;
+ "kind": "file" | "folder" | "shortcut";
+ "version": string | null;
+ "size_bytes": number | null;
+ "mime_type": string;
+ "parents": Array<string>;
+ "can_download": boolean | null;
+ "modified_at": string | null;
+}
+export interface SourceLocationOutput {
+ "id": string;
+ "name": string;
+ "kind": "site" | "drive";
+}
+export interface SourceLocationPage {
+ "items": Array<SourceLocationOutput>;
+ "next_cursor": string | null;
+}
+export interface SourceMappingOutput {
+ "id": string;
+ "revision": number;
+ "policy_revision": number | null;
+ "latest_review_revision": number;
+ "control_revision": number | null;
+ "connection_id": string;
+ "policy": MappingReviewInput;
+ "presentation": SourceMappingPresentation;
+ "status": "reviewed" | "active" | "paused" | "reconnect_required" | "retired";
+ "next_run_at": string | null;
+ "can_pause": boolean;
+ "can_resume": boolean;
+ "can_retire": boolean;
+ "can_sync": boolean;
+}
+export interface SourceMappingPage {
+ "items": Array<SourceMappingSummary>;
+ "next_cursor": string | null;
+}
+export interface SourceMappingPresentation {
+ "source_root"?: SourceRootPresentation | null;
+ "destination"?: SourceDestinationPresentation | null;
+ "unavailable_reason"?: "access_denied" | "reconnect_required" | "unavailable" | null;
+}
+export interface SourceMappingSummary {
+ "id": string;
+ "status": "reviewed" | "active" | "paused" | "reconnect_required" | "retired";
+ "connection_id": string;
+ "policy_revision": number | null;
+ "latest_review_revision": number;
+ "control_revision": number | null;
+ "next_run_at": string | null;
+ "presentation": SourceMappingPresentation;
+}
+export interface SourceMappingValidationAbandonInput {
+ "expected_revision": number;
+}
+export interface SourceMappingValidationContinueInput {
+ "expected_revision": number;
+ "continuation_token": string;
+}
+export interface SourceMappingValidationInput {
+ "connection_id": string;
+ "drive_id": string;
+ "root_id": string;
+ "destination": BulkDestination;
+ "recursive": boolean;
+ "removal_policy": "retire" | "pause_for_review";
+ "schema_version"?: 1;
+ "mode"?: "document" | "dataset";
+ "hierarchy"?: "preserve" | "flatten";
+ "excluded_ids"?: Array<string>;
+ "formats"?: Array<string>;
+ "schedule"?: ManualSchedule | IntervalSchedule | CalendarSchedule;
+ "replacement_resolutions"?: Array<ReplacementResolutionInput>;
+ "operation_id": string;
+ "mapping_id"?: string | null;
+ "expected_revision"?: number | null;
+}
+export interface SourceMappingValidationItem {
+ "item_id": string;
+ "name": string;
+ "kind": "file" | "folder" | "shortcut";
+ "version": string | null;
+ "filename": string;
+ "export_mime": string | null;
+ "reason": string | null;
+ "relative_path": Array<string>;
+ "destination_relative_path": Array<string>;
+ "size_bytes": number | null;
+ "collision": "none" | "source_name" | "destination_name" | "local_edit";
+ "action": "create" | "replace" | "move" | "skip";
+}
+export interface SourceMappingValidationItemPage {
+ "validation_id": string;
+ "revision": number;
+ "items": Array<SourceMappingValidationItem>;
+ "visible_count": number;
+ "next_cursor": string | null;
+ "total"?: number | null;
+}
+export interface SourceMappingValidationOutput {
+ "validation_id": string;
+ "revision": number;
+ "state": "scanning" | "verifying" | "checking_changes" | "complete" | "blocked" | "stale" | "cleaning" | "abandoned" | "expired";
+ "expires_at": string;
+ "continuation_token"?: string | null;
+ "enumeration_complete": boolean;
+ "observed_count"?: number | null;
+ "total"?: number | null;
+ "manifest_sha256"?: string | null;
+ "reason_code"?: "SOURCE_NAME_COLLISION" | "SOURCE_DESTINATION_COLLISION" | "SOURCE_LOCAL_EDIT" | "SOURCE_CHANGED" | "SOURCE_AUTHORITY_CHANGED" | "SOURCE_SCAN_LIMIT_EXCEEDED" | "SOURCE_VALIDATION_CAPACITY" | "SOURCE_UNAVAILABLE" | "SOURCE_VALIDATION_REFRESH_REQUIRED" | "SOURCE_INVALID_SELECTION" | null;
+}
+export interface SourcePolicyApplyInput {
+ "operation_id": string;
+ "expected_revision": number;
+ "review_id": string;
+ "review_digest": string;
+}
+export interface SourcePolicyOperationOutput {
+ "schema"?: "koinon.source-policy-operation.v1";
+ "receipt_id": string;
+ "operation_id": string;
+ "action": "review" | "apply";
+ "mapping_id": string;
+ "policy_id": string;
+ "expected_policy_revision": number | null;
+ "result_policy_revision": number;
+ "review_digest": string;
+ "review_expires_at": string;
+ "disposition": "reviewed" | "accepted";
+}
+export interface SourcePolicyReceipt {
+ "kind"?: "policy";
+ "receipt": SourcePolicyOperationOutput;
+}
+export interface SourcePolicyReviewInput {
+ "operation_id": string;
+ "connection_id": string;
+ "drive_id": string;
+ "root_id": string;
+ "destination": BulkDestination;
+ "recursive": boolean;
+ "removal_policy": "retire" | "pause_for_review";
+ "schema_version"?: 1;
+ "mode"?: "document" | "dataset";
+ "hierarchy"?: "preserve" | "flatten";
+ "excluded_ids"?: Array<string>;
+ "formats"?: Array<string>;
+ "schedule"?: ManualSchedule | IntervalSchedule | CalendarSchedule;
+ "replacement_resolutions"?: Array<ReplacementResolutionInput>;
+ "validation_id"?: string | null;
+}
+export interface SourcePreviewItem {
+ "item_id": string;
+ "name": string;
+ "kind": string;
+ "version": string | null;
+ "filename": string;
+ "export_mime": string | null;
+ "reason": string | null;
+ "ancestry": Array<string>;
+ "relative_path": Array<string>;
+ "destination_relative_path": Array<string>;
+ "collision": "none" | "source_name" | "destination_name" | "local_edit";
+ "size_bytes": number | null;
+ "action": "create" | "replace" | "move" | "skip";
+}
+export interface SourcePreviousMember {
+ "table_id": string;
+ "catalog_table_id": string;
+ "locator": string;
+ "name": string;
+}
+export interface SourceProviderCapability {
+ "provider": "sharepoint" | "onedrive" | "google_drive";
+ "display_name": string;
+ "consent_available": boolean;
+ "unavailable_reason": "disabled" | "not_configured" | null;
+}
 export interface SourceReference {
  "id": string;
  "asset_id": string;
@@ -2182,6 +2707,85 @@ export interface SourceReference {
  "quote"?: string | null;
  "current_revision"?: string | null;
  "availability"?: "available" | "changed" | "unverified";
+}
+export interface SourceReplacementPreview {
+ "object_id": string;
+ "remote_version": string;
+ "content_sha256": string;
+ "baseline_sha256": string;
+ "new_locator_set_sha256": string;
+ "parser_fingerprint": string;
+ "previous_members": Array<SourcePreviousMember>;
+ "new_members": Array<SourceDiscoveredMember>;
+}
+export interface SourceReplacementPreviewInput {
+ "expected_revision": number;
+ "remote_version": string;
+}
+export interface SourceReviewPage {
+ "review_id": string;
+ "validation_id"?: string | null;
+ "root_kind"?: "file" | "folder";
+ "policy_revision": number;
+ "review_digest": string;
+ "expires_at": string;
+ "items": Array<SourcePreviewItem>;
+ "next_cursor": string | null;
+ "enumeration_complete": boolean;
+ "total": number | null;
+ "observed_count": number | null;
+ "known_bytes": number | null;
+ "unknown_size_count": number | null;
+ "can_apply": boolean;
+ "destination": SourceDestinationPresentation;
+}
+export interface SourceRootPresentation {
+ "name": string;
+ "relative_path": Array<string>;
+}
+export interface SourceRunItem {
+ "id": string;
+ "object_id": string;
+ "generation": number;
+ "remote_version": string | null;
+ "kind": "file" | "folder" | "deleted" | "unknown";
+ "name": string;
+ "relative_path": Array<string>;
+ "status": "observed" | "downloading" | "processing" | "synchronized" | "searchable" | "skipped" | "conflict" | "retired" | "failed" | "indeterminate";
+ "error_code": string | null;
+ "source_id": string | null;
+ "asset_id": string | null;
+ "attempt_id": string | null;
+ "updated_at": string;
+}
+export interface SourceRunItemPage {
+ "items": Array<SourceRunItem>;
+ "next_cursor": string | null;
+}
+export interface SourceRunOutput {
+ "id": string;
+ "mapping_id": string;
+ "policy_revision": number;
+ "control_revision": number;
+ "status": "queued" | "running" | "reconciling" | "reconnect_required" | "succeeded" | "partial" | "failed" | "cancelled";
+ "stopping": boolean;
+ "retry_of_run_id": string | null;
+ "counters": Record<string,number>;
+ "enumeration_complete": boolean;
+ "created_at": string;
+ "finished_at": string | null;
+ "can_cancel": boolean;
+ "can_retry": boolean;
+}
+export interface SourceRunPage {
+ "items": Array<SourceRunOutput>;
+ "next_cursor": string | null;
+}
+export interface SourceScheduleCapability {
+ "min_interval_seconds": number;
+ "max_interval_seconds": number;
+ "calendar_timezones"?: "iana";
+ "max_calendar_weekdays"?: 7;
 }
 export interface SqlAttemptReceipt {
  "result_id": string;
@@ -2375,6 +2979,14 @@ export interface TableSnapshotPage {
  "has_next": boolean;
  "has_previous": boolean;
  "current_snapshot_id": string | null;
+}
+export interface TableSnapshotReadPage {
+ "items": Array<TableSnapshotSummary>;
+ "next_cursor": string | null;
+ "total"?: null;
+ "pages"?: null;
+ "total_is_exact"?: false;
+ "current_snapshot_id"?: string | null;
 }
 export interface TableSnapshotSummary {
  "dataset_id": string;

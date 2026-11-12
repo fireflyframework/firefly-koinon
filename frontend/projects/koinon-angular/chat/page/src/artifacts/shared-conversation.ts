@@ -15,12 +15,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import {
-  KoinonButton,
-  KoinonDatePipe,
-  KoinonSkeleton,
-  KoinonTextPipe,
-} from '@fireflyframework/koinon-angular';
+import { KoinonButton, KoinonDatePipe, KoinonSkeleton, KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench/core';
 import type {
   ConversationMessage,
   Presentation,

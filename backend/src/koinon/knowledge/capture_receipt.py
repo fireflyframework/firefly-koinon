@@ -86,6 +86,36 @@ class NativeEvidenceReceipt:
         self.catalog_search_empty = False
         self.authorize_empty_search: Callable[[], Awaitable[Any]] | None = None
         self.closed = False
+        self.requires_source_authority = False
+        self.source_candidate_admission: Callable[..., Awaitable[Any]] | None = None
+        self.source_pin_authorization: Callable[..., Awaitable[Any]] | None = None
+        self.structured_admission: Callable[..., Awaitable[Any]] | None = None
+        self.structured_source_operation = None
+        self.structured_source_manifest: dict[str, str] = {}
+
+    async def admit_document_candidates(self, pins):
+        from flycanon.core.services.query.provenance import current
+
+        scope = current()
+        if not self.requires_source_authority:
+            return pins
+        if self.source_candidate_admission is None or scope is None or scope.observer is not self:
+            raise ServiceUnavailableException(
+                "Source candidate authority is unavailable", code="EVIDENCE_UNAVAILABLE"
+            )
+        return await self.source_candidate_admission(pins, scope)
+
+    async def authorize_document_pins(self, pins):
+        from flycanon.core.services.query.provenance import current
+
+        scope = current()
+        if not self.requires_source_authority:
+            return
+        if self.source_pin_authorization is None or scope is None or scope.observer is not self:
+            raise ServiceUnavailableException(
+                "Exact source authority is unavailable", code="EVIDENCE_UNAVAILABLE"
+            )
+        await self.source_pin_authorization(pins, scope)
 
     def empty_catalog_search(self, subject, tenant_id, authorize):
         if (

@@ -2,9 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, SecretStr
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
 from koinon.assistants.connections import ModelParameters
+from koinon.integrations.content_sources.read_dtos import ReaderSourceSelection, validate_selections
 
 
 class Input(BaseModel):
@@ -53,6 +54,13 @@ class RunInput(Input):
     message: str = Field(min_length=1, max_length=32000)
     scope: KnowledgeScope = Field(default_factory=KnowledgeScope)
     client_request_id: str = Field(min_length=1, max_length=255)
+    reader_source_connections: list[ReaderSourceSelection] | None = Field(default=None, max_length=100)
     attachment_ids: list[Annotated[str, Field(min_length=1, max_length=64)]] = Field(
         default_factory=list, max_length=10
     )
+
+    @model_validator(mode="after")
+    def unique_source_choices(self):
+        if self.reader_source_connections is not None:
+            validate_selections(tuple(self.reader_source_connections))
+        return self

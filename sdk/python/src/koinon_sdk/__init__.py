@@ -84,6 +84,7 @@ from koinon_sdk.bulk_queries import (
     QueryBatchView,
     QueryManifestItem,
 )
+from koinon_sdk.catalog_browse import CatalogBrowseInput, CatalogBrowseOutput
 from koinon_sdk.client import (
     ApiError,
     KoinonClient,
@@ -236,6 +237,8 @@ from koinon_sdk.exact import (
 from koinon_sdk.exports import (
     ConversationExportInput,
     Export,
+    ExportBrowseInput,
+    ExportBrowsePage,
     ExportCreate,
     ExportPage,
     ExportReview,
@@ -488,6 +491,7 @@ from koinon_sdk.provenance import (
     TableSnapshotPage,
     TableSnapshotSummary,
 )
+from koinon_sdk.reader_sources import ReaderSelectionInput, ReaderSelectionOutput, ReaderSourceSelection
 from koinon_sdk.sharing import (
     Share,
     ShareCreate,
@@ -501,6 +505,13 @@ from koinon_sdk.streaming import (
 )
 
 __all__ = [
+    "CatalogBrowseInput",
+    "CatalogBrowseOutput",
+    "ExportBrowseInput",
+    "ExportBrowsePage",
+    "ReaderSelectionInput",
+    "ReaderSelectionOutput",
+    "ReaderSourceSelection",
     "KnowledgeModeCurrentView",
     "KnowledgeModeIndexRecovery",
     "KnowledgeModeRecoveryPage",

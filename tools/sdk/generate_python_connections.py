@@ -12,6 +12,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCES = {
+    "source_validation": "backend/src/koinon/integrations/content_sources/mapping_validation_dtos.py",
+    "source_mapping": "backend/src/koinon/integrations/content_sources/mapping_dtos.py",
+    "source_sync": "backend/src/koinon/integrations/content_sources/sync_dtos.py",
+    "document_reads": "backend/src/koinon/knowledge/document_history/read_dtos.py",
+    "provenance_reads": "backend/src/koinon/knowledge/provenance/read_dtos.py",
+    "history_browse": "backend/src/koinon/assistants/history/browse_dtos.py",
+    "reader_sources": "backend/src/koinon/integrations/content_sources/read_dtos.py",
+    "catalog_browse": "backend/src/koinon/catalog/browse_dtos.py",
+    "content_sources": "backend/src/koinon/integrations/content_sources/api_dtos.py",
     "platform_health": "backend/src/koinon/platform/dtos.py",
     "availability": "backend/src/koinon/knowledge/availability/dtos.py",
     "communications": "backend/src/koinon/communications/dtos.py",
@@ -54,6 +63,10 @@ HEADER = (
 
 def render(source):
     tree = ast.parse(source.read_text())
+    if source.name == "browse_dtos.py" and source.parent.name == "catalog":
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Name) and node.id in {"CatalogEntryOutput", "MemberActor"}:
+                node.id = {"CatalogEntryOutput": "CatalogEntry", "MemberActor": "AuthorSummary"}[node.id]
     if source.parent.name == "evidence":
         for node in ast.walk(tree):
             if isinstance(node, ast.Name) and node.id == "Presentation":
@@ -87,6 +100,12 @@ def render(source):
         declarations.append(limit)
     inputs = {"StrictInput", "Input"}
     for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name == "MappingCandidate":
+            continue
+        if source.parent.name == "content_sources" and source.name == "read_dtos.py" and isinstance(node, ast.ClassDef) and node.name not in {
+            "ReaderSourceSelection", "ReaderSelectionInput", "ReaderSelectionOutput", "ReaderReadInput", "ReaderPageInput"
+        }:
+            continue
         if source.parent.name == "memory" and isinstance(node, ast.ClassDef) and node.name not in {
             "MemoryValue", "MemoryTurnReference", "MemoryReceipt"
         }:
@@ -116,6 +135,8 @@ def render(source):
             )
             frozen = any(isinstance(item, ast.Assign) and isinstance(item.value, ast.Call) and any(keyword.arg == "frozen" and isinstance(keyword.value, ast.Constant) and keyword.value.value is True for keyword in item.value.keywords) for item in node.body)
             is_input = (
+                node.name == "ReaderSourceSelection"
+                or
                 node.name in inputs
                 or node.name.endswith("Input")
                 or (has_input_config and not frozen)
@@ -127,7 +148,7 @@ def render(source):
                 ast.Name(
                     id="InputModel" if is_input else "ResponseModel", ctx=ast.Load()
                 )
-                if base in {"StrictInput", "BaseModel"}
+                if base in {"StrictInput", "BaseModel"} or (source.name in {"mapping_dtos.py", "sync_dtos.py", "mapping_validation_dtos.py"} and base in {"Input", "Output"})
                 else original
                 for base, original in zip(bases, node.bases, strict=True)
             ]
@@ -216,7 +237,11 @@ def render(source):
     declared = {node.name for node in module.body if isinstance(node, ast.ClassDef)}
     declared.update(target.id for node in module.body if isinstance(node, ast.Assign) for target in node.targets if isinstance(target, ast.Name))
     names -= declared
+    available["koinon_sdk.bulk"] = ["Digest", "BulkDestination"]
+    available["koinon_sdk.source_mapping"] = ["MappingReviewInput"]
+    available["koinon_sdk.provenance"] = ["TableSnapshotSummary"]
     available["koinon_sdk.communications"] = ["DeliveryStatus"]
+    available["koinon_sdk.reader_sources"] = ["ReaderSourceSelection", "ReaderReadInput", "ReaderPageInput"]
     available["koinon_sdk.activity"] = ["ActivitySummary", "ActivityWindow"]
     available["koinon_sdk.organization_branding"] = ["BrandingValues"]
     available["koinon_sdk.evidence"] = ["ConversationIdentity", "ConversationMessage", "Frozen", "Identifier", "Revision", "SourceReference", "StoredResult"]
@@ -226,7 +251,7 @@ def render(source):
     available["koinon_sdk.memory"] = ["MemoryReceipt"]
     available["koinon_sdk.answer_release"] = ["AnswerRelease"]
     available["koinon_sdk.product_help"] = ["ProductHelpContext"]
-    available["koinon_sdk.models"] = ["ClarificationFrame", "UsageSummary"]
+    available["koinon_sdk.models"] = ["ClarificationFrame", "UsageSummary", "CatalogEntry", "CatalogSummary", "AuthorSummary", "KnowledgeScope"]
     available["koinon_sdk.corporate_profiles"] = [
         "CorporatePresentationSummary", "CorporateProfileFieldCapability", "CorporateProfileSyncPolicy"
     ]

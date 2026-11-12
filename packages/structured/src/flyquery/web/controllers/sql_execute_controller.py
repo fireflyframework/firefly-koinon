@@ -33,6 +33,7 @@ import logging
 import time
 import uuid
 from collections.abc import AsyncIterator
+from copy import copy
 from typing import Any
 
 from pyfly.container import rest_controller
@@ -49,8 +50,8 @@ from flyquery.core.services.execution.duckdb_executor import (
     ExecutionResult,
 )
 from flyquery.core.services.execution.scope_guard import ScopeGuard, ScopeGuardError
-from flyquery.core.services.execution.table_resolver import TableResolver
-from flyquery.core.services.query.provenance import direct, request_context
+from flyquery.core.services.execution.table_resolver import ProductTableResolver, TableResolver
+from flyquery.core.services.query.provenance import direct, reject_product_legacy, request_context
 from flyquery.core.services.query.query_repository import QueryRepository
 from flyquery.core.services.query.result_uploader import ResultUploader
 from flyquery.core.services.storage.object_store import ObjectStore
@@ -136,6 +137,23 @@ class SqlExecuteController:
         self._scope_guard = scope_guard
         self._executor = executor
 
+    async def prepare_execute(self, request, body):
+        """Prepare a product SELECT privately without an outer database unit."""
+        from flyquery.core.services.query.prepared import DeferredQueries, PreparedQuery, no_query_unit
+
+        no_query_unit()
+        prepared = PreparedQuery()
+        controller = copy(self)
+        controller._prepared = prepared
+        controller._query_repo = DeferredQueries(prepared)
+        controller._table_repo = ProductTableResolver(self._session_factory, self._settings)
+        try:
+            prepared.seal(await controller.execute(request, body))
+            return prepared
+        except BaseException:
+            await prepared.abort_preparation(self._object_store)
+            raise
+
     # ------------------------------------------------------------------
     # POST /api/v1/sql:execute  (sync)
     # ------------------------------------------------------------------
@@ -213,14 +231,22 @@ class SqlExecuteController:
                 elapsed_ms=elapsed,
             )
 
-        async with infrastructure_unit(self._session_factory) as db_session:
-            resolver = TableResolver(session=db_session, settings=self._settings)
+        if getattr(self, "_prepared", None) is not None:
+            resolver = ProductTableResolver(self._session_factory, self._settings)
             attached = await resolver.resolve(body.dataset_id, list(ast.table_refs))
+        else:
+            async with infrastructure_unit(self._session_factory) as db_session:
+                resolver = TableResolver(session=db_session, settings=self._settings)
+                attached = await resolver.resolve(body.dataset_id, list(ast.table_refs))
         # For DML: identify which referenced tables are DERIVED.
         # Lives outside the resolver session because the repo owns its
         # own session boundary.
-        derived_tables = await _resolve_derived_tables_via_repo(
-            self._table_repo, body.dataset_id, ast.table_refs, attached
+        derived_tables = (
+            {}
+            if getattr(self, "_prepared", None) is not None
+            else await _resolve_derived_tables_via_repo(
+                self._table_repo, body.dataset_id, ast.table_refs, attached
+            )
         )
 
         result = await self._executor.execute(body.sql, attached, derived_tables or None)
@@ -303,6 +329,7 @@ class SqlExecuteController:
                 query_repo=self._query_repo,
                 settings=self._settings,
             )
+            uploader._prepared = getattr(self, "_prepared", None)
             await uploader.upload(
                 query_id=query_id,
                 result=result,
@@ -368,6 +395,7 @@ class SqlExecuteController:
         request: SqlExecuteRequest,
     ) -> AsyncIterator[bytes]:
         """Async generator yielding SSE frames for the sql:execute pipeline."""
+        reject_product_legacy()
         start_ms = _now_ms()
 
         await self._assert_direct_sql_enabled(workspace_id)

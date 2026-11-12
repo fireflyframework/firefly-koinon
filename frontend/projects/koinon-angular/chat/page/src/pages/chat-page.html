@@ -104,6 +104,8 @@
         }
       </div>
     </div>
+    @if(!sourceSelectorOpen()){<ffk-button variant="quiet" (click)="sourceSelectorOpen.set(true)">{{'Sources for answers'|ffkText}}</ffk-button>}
+    @defer(when sourceSelectorOpen()) { @if(sourceSelectorOpen()){<ffk-reader-source-selector [openInitially]="true" [disabled]="a.running()||a.pending()" (selectionChange)="selectReaderSources($event)"/>} }
     <div class="conversation-scroll" #messageViewport (scroll)="trackScroll()">
       @if (a.pending() && !a.messages().length) {
         <div

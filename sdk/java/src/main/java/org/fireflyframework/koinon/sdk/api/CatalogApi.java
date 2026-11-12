@@ -10,6 +10,10 @@ import org.fireflyframework.koinon.sdk.model.*;
 public final class CatalogApi {
 private final Transport transport; private final String prefix;
 public CatalogApi(Transport transport,String tenantId){this.transport=Objects.requireNonNull(transport);this.prefix="/tenants/"+Transport.id(tenantId);}
+public CatalogBrowseOutput browse(CatalogBrowseInput input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.json("POST",prefix+"/catalog/browse",input,options,transport.type(CatalogBrowseOutput.class));}
+public CatalogBrowseOutput browse(CatalogBrowseInput input){return browse(input,RequestOptions.defaults());}
+public CompletableFuture<CatalogBrowseOutput> browseAsync(CatalogBrowseInput input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.jsonAsync("POST",prefix+"/catalog/browse",input,options,transport.type(CatalogBrowseOutput.class));}
+public CompletableFuture<CatalogBrowseOutput> browseAsync(CatalogBrowseInput input){return browseAsync(input,RequestOptions.defaults());}
 public Page<CatalogEntry> list(CatalogFilter filter,RequestOptions options){Objects.requireNonNull(options);options=Objects.requireNonNull(filter).applyTo(options);return transport.json("GET",prefix+"/catalog",null,options,transport.pageType(CatalogEntry.class));}
 public Page<CatalogEntry> list(CatalogFilter filter){return list(filter,RequestOptions.defaults());}
 public Page<CatalogEntry> list(){return list(CatalogFilter.empty(),RequestOptions.defaults());}
@@ -52,6 +56,10 @@ public CatalogEntry move(String entryId,CatalogMove input,RequestOptions options
 public CatalogEntry move(String entryId,CatalogMove input){return move(entryId,input,RequestOptions.defaults());}
 public CompletableFuture<CatalogEntry> moveAsync(String entryId,CatalogMove input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.jsonAsync("POST",prefix+"/catalog/"+Transport.id(entryId)+"/move",input,options,transport.type(CatalogEntry.class));}
 public CompletableFuture<CatalogEntry> moveAsync(String entryId,CatalogMove input){return moveAsync(entryId,input,RequestOptions.defaults());}
+public CatalogEntry read(String entryId,ReaderReadInput input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.json("POST",prefix+"/catalog/"+Transport.id(entryId)+"/read",input,options,transport.type(CatalogEntry.class));}
+public CatalogEntry read(String entryId,ReaderReadInput input){return read(entryId,input,RequestOptions.defaults());}
+public CompletableFuture<CatalogEntry> readAsync(String entryId,ReaderReadInput input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.jsonAsync("POST",prefix+"/catalog/"+Transport.id(entryId)+"/read",input,options,transport.type(CatalogEntry.class));}
+public CompletableFuture<CatalogEntry> readAsync(String entryId,ReaderReadInput input){return readAsync(entryId,input,RequestOptions.defaults());}
 public AvailabilityResponse availability(AvailabilityRequest input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.json("POST",prefix+"/catalog/availability",input,options,transport.type(AvailabilityResponse.class));}
 public AvailabilityResponse availability(AvailabilityRequest input){return availability(input,RequestOptions.defaults());}
 public CompletableFuture<AvailabilityResponse> availabilityAsync(AvailabilityRequest input,RequestOptions options){Objects.requireNonNull(options);Objects.requireNonNull(input);return transport.jsonAsync("POST",prefix+"/catalog/availability",input,options,transport.type(AvailabilityResponse.class));}

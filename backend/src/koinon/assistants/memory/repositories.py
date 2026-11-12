@@ -234,7 +234,18 @@ class ChatMemoryRepository(Repository[ChatMemoryManifest, str]):
     @transactional(
         datasource="primary", propagation=Propagation.REQUIRED, read_only=True, read_from_primary=True
     )
-    async def candidates(self, subject, tenant_id, run, *, folder_id, project_enabled, limit):
+    async def candidates(
+        self,
+        subject,
+        tenant_id,
+        run,
+        *,
+        folder_id,
+        project_enabled,
+        limit,
+        identities_only=False,
+        allowed_run_ids=None,
+    ):
         statement = self._candidates(subject, tenant_id).where(ChatRun.created_at < run.created_at)
         statement = statement.where(
             or_(
@@ -247,6 +258,10 @@ class ChatMemoryRepository(Repository[ChatMemoryManifest, str]):
             if project_enabled
             else ChatThread.id == run.thread_id
         )
+        if allowed_run_ids is not None:
+            statement = statement.where(ChatRun.id.in_(allowed_run_ids))
+        if identities_only:
+            statement = statement.with_only_columns(ChatRun.id, maintain_column_froms=True)
         rows = (
             await self._require_session().execute(
                 statement.order_by(
@@ -254,7 +269,9 @@ class ChatMemoryRepository(Repository[ChatMemoryManifest, str]):
                 ).limit(min(80, limit))
             )
         ).all()
-        return tuple(MemoryCandidate(*row) for row in rows)
+        return (
+            tuple(row[0] for row in rows) if identities_only else tuple(MemoryCandidate(*row) for row in rows)
+        )
 
     @transactional(
         datasource="primary", propagation=Propagation.REQUIRED, read_only=True, read_from_primary=True

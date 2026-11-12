@@ -1,5 +1,7 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
+import { registerKoinonSpanish as registerPanelSpanish } from '@fireflyframework/koinon-angular/workbench/core';
+import { PANEL_SPANISH } from '../foundations/panel-spanish.generated';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -55,6 +57,7 @@ registerKoinonSpanish({
   'The preview uses your browser’s PDF or image viewer. Download the original if it cannot be displayed.':
     'La vista previa utiliza el visor de PDF o imágenes de tu navegador. Descarga el original si no se puede mostrar.',
 });
+registerPanelSpanish(PANEL_SPANISH);
 @Component({
   selector: 'ffk-document-viewer',
   imports: [KoinonSidePanel, KoinonButton, KoinonSkeleton, KoinonTextPipe, KoinonDatePipe],

@@ -138,7 +138,7 @@
           </details>
         }
       </div>
-      <div class="dialog-actions">
+      <ng-container *ngTemplateOutlet="w.sessionNoticePlacement==='account'?w.sessionNotice:null;context:{surface:'dialog'}"/><div class="dialog-actions">
         @if (view()?.uncertain || view()?.observationFailed) {
           <ffk-button variant="quiet" (click)="check()" [disabled]="!!view()?.busy">{{
             'Try updating status' | ffkText
@@ -225,7 +225,7 @@
               [entries]="w.allEntries()"
               [currentId]="w.formParent"
               [revealId]="treeStart()"
-              [contextKey]="w.f.tenantId()"
+              [contextKey]="w.f.readerContextKey() + w.f.readerRevision()"
               [error]="w.f.error()"
               [loadChildren]="w.loadTreeChildren"
               [selectableKinds]="w.uploadFolderKinds"
@@ -370,7 +370,7 @@
           </p>
         }
       </div>
-      <div class="dialog-actions">
+      <ng-container *ngTemplateOutlet="w.sessionNoticePlacement==='account'?w.sessionNotice:null;context:{surface:'dialog'}"/><div class="dialog-actions">
         <ffk-button variant="quiet" (click)="w.closeDialog()">{{
           (view()?.busy ? 'Continue in background' : 'Cancel') | ffkText
         }}</ffk-button>
@@ -401,3 +401,4 @@
 } @else if (!error()) {
   <ffk-skeleton width="80%" height="24px" [label]="'Opening panel' | ffkText" />
 }
+@if(!runtime()) {<ng-container *ngTemplateOutlet="w.sessionNoticePlacement==='account'?w.sessionNotice:null;context:{surface:'dialog'}"/>}

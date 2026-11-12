@@ -59,6 +59,7 @@ source_versions = immutable(
     Column("actor", Text),
     Column("predecessor_id", String(36)),
     Column("expected_extraction_id", String(36)),
+    Column("source_publication_json", JSON(none_as_null=True)),
     constraints=(UniqueConstraint("tenant_id", "workspace_id", "operation_id"),),
 )
 source_extractions = immutable(

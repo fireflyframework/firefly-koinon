@@ -243,6 +243,39 @@ def build(output: Path, profile: DeploymentProfile | None = None, *, include_app
             }
         )
         variants["portable"] = portable
+        if profile.gemini_redirect_uri is not None:
+            gemini = {
+                k: v for k, v in generic.items() if not k.startswith(".claude-plugin/")
+            }
+            gemini["gemini-extension.json"] = json_bytes(
+                {
+                    "name": "koinon",
+                    "version": VERSION,
+                    "description": identity()["description"],
+                    "mcpServers": {
+                        "koinon": {
+                            "httpUrl": profile.server_url,
+                            "oauth": {
+                                "enabled": True,
+                                "clientId": profile.public_client_id,
+                                "redirectUri": profile.gemini_redirect_uri,
+                                "scopes": list(profile.scopes),
+                            },
+                        }
+                    },
+                }
+            )
+            gemini["README.md"] = (
+                b"# firefly koinon for Gemini CLI\n\n"
+                b"This extension contains canonical skills and a Streamable HTTP OAuth profile. "
+                b"Your operator must register the exact public client, loopback redirect URI and scopes "
+                b"from gemini-extension.json. Install the extracted directory with Gemini CLI extension "
+                b"controls, restart the CLI, and authenticate with /mcp auth koinon. "
+                b"Installation does not grant access or approve content publication. "
+                b"Graphical MCP Apps review support and live account linking are not qualified by this build. "
+                b"No credentials, commands, hooks or automatic approval settings are included.\n"
+            )
+            variants["gemini"] = gemini
         if include_app:
             registered = {
                 k: v for k, v in generic.items() if not k.startswith(".claude-plugin/")

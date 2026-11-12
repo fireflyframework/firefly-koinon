@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 
 from pyfly.container import service
 
+from koinon.integrations.content_sources.read_requests import source_entry_read
 from koinon.knowledge.availability.adapter import NativeAvailabilityAdapter
 from koinon.knowledge.availability.dtos import AssetAvailability, AvailabilityRequest, AvailabilityResponse
 from koinon.knowledge.availability.repository import AvailabilityRepository
@@ -31,53 +32,58 @@ class KnowledgeAvailabilityService:
             return await self.records.load(tenant_id, entries)
 
     async def observe(self, subject: str, tenant_id: str, data: AvailabilityRequest) -> AvailabilityResponse:
-        before = await self._snapshot(subject, tenant_id, data.asset_ids, data.workspace_id)
-        first = await self.native.observe(subject, tenant_id, before)
-        second = await self.native.observe(subject, tenant_id, before)
-        after = await self._snapshot(subject, tenant_id, data.asset_ids, data.workspace_id)
-        items = {}
-        for identifier, selected in before.items():
-            current = after.get(identifier)
-            observed = first.get(identifier)
-            if current != selected or observed != second.get(identifier):
-                items[identifier] = AssetAvailability.model_validate(
-                    {
-                        key: {"state": "unknown", "reason": "OBSERVATION_CHANGED"}
-                        for key in ("read", "search", "query")
-                    }
+        async with source_entry_read(
+            self.knowledge, subject, tenant_id, data.asset_ids, connections=data.reader_source_connections
+        ):
+            before = await self._snapshot(subject, tenant_id, data.asset_ids, data.workspace_id)
+            first = await self.native.observe(subject, tenant_id, before)
+            second = await self.native.observe(subject, tenant_id, before)
+            after = await self._snapshot(subject, tenant_id, data.asset_ids, data.workspace_id)
+            items = {}
+            for identifier, selected in before.items():
+                current = after.get(identifier)
+                observed = first.get(identifier)
+                if current != selected or observed != second.get(identifier):
+                    items[identifier] = AssetAvailability.model_validate(
+                        {
+                            key: {"state": "unknown", "reason": "OBSERVATION_CHANGED"}
+                            for key in ("read", "search", "query")
+                        }
+                    )
+                    continue
+                value = (
+                    {key: observed[key] for key in ("read", "search", "query", "revision")}
+                    if observed
+                    else {}
                 )
-                continue
-            value = (
-                {key: observed[key] for key in ("read", "search", "query", "revision")} if observed else {}
-            )
-            phase = selected["phase"]
-            if phase == "unknown" and observed:
-                phase = observed.get("phase", "unknown")
-            if (
-                observed
-                and observed["read"]["state"] == "ready"
-                and observed["search"]["state"] != "ready"
-                and selected.get("index_phase") in {"queued", "indexing"}
-            ):
-                phase = selected["index_phase"]
-                value["search"] = {"state": "pending", "reason": "INDEX_WORK_RECORDED"}
-            attempt = selected["latest_attempt"]
-            if (
-                phase == "unknown"
-                and observed
-                and any(observed[key]["state"] == "ready" for key in ("read", "query"))
-            ):
-                phase = "complete"
-            if attempt is not None and (attempt["state"] != "complete" or phase == "unknown"):
-                phase = attempt["state"]
-            if selected["blocked"] and selected["kind"] in {"dataset", "table"}:
-                value["query"] = {"state": "pending", "reason": "INTAKE_NOT_COMPLETE"}
-                if phase == "complete":
-                    phase = "unknown"
-            items[identifier] = AssetAvailability.model_validate(
-                {**value, "phase": phase, "latest_attempt": attempt}
-            )
-        return AvailabilityResponse(observed_at=datetime.now(UTC), items=items)
+                phase = selected["phase"]
+                if phase == "unknown" and observed:
+                    phase = observed.get("phase", "unknown")
+                if (
+                    observed
+                    and observed["read"]["state"] == "ready"
+                    and observed["search"]["state"] != "ready"
+                    and selected.get("index_phase") in {"queued", "indexing"}
+                ):
+                    phase = selected["index_phase"]
+                    value["search"] = {"state": "pending", "reason": "INDEX_WORK_RECORDED"}
+                attempt = selected["latest_attempt"]
+                if (
+                    phase == "unknown"
+                    and observed
+                    and any(observed[key]["state"] == "ready" for key in ("read", "query"))
+                ):
+                    phase = "complete"
+                if attempt is not None and (attempt["state"] != "complete" or phase == "unknown"):
+                    phase = attempt["state"]
+                if selected["blocked"] and selected["kind"] in {"dataset", "table"}:
+                    value["query"] = {"state": "pending", "reason": "INTAKE_NOT_COMPLETE"}
+                    if phase == "complete":
+                        phase = "unknown"
+                items[identifier] = AssetAvailability.model_validate(
+                    {**value, "phase": phase, "latest_attempt": attempt}
+                )
+            return AvailabilityResponse(observed_at=datetime.now(UTC), items=items)
 
     async def processing(self, subject, tenant_id, data):
         from koinon.catalog.errors import AccessDenied
@@ -107,7 +113,10 @@ class KnowledgeAvailabilityService:
                 await self.observe(
                     subject,
                     tenant_id,
-                    AvailabilityRequest(asset_ids=list(dict.fromkeys(row["resource_id"] for row in visible))),
+                    AvailabilityRequest(
+                        asset_ids=list(dict.fromkeys(row["resource_id"] for row in visible)),
+                        reader_source_connections=data.reader_source_connections,
+                    ),
                 )
             )
             if visible

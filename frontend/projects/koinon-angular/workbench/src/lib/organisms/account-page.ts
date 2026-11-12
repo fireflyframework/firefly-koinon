@@ -15,16 +15,18 @@ import { KoinonTextPipe, registerKoinonSpanish } from '@fireflyframework/koinon-
 import { PANEL_SPANISH } from '../foundations/panel-spanish.generated';
 import { KoinonIcon } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonAccountPanel } from './account-panel';
+import { KoinonConnectedSources } from '@fireflyframework/koinon-angular/workbench/sources';
 import {NgComponentOutlet} from '@angular/common';
 import {KOINON_COMMUNICATIONS_LOADER} from '../services/chat-loader';
 import {KoinonFacade} from '@fireflyframework/koinon-angular/workbench/core';
 import {signal,type Type} from '@angular/core';
 interface NotificationTarget {kind:'invitation'|'workspace'|'access'|'none';id:string}
-type AccountSection = 'profile' | 'tokens' | 'applications' | 'notifications' | 'notification-preferences';
+type AccountSection = 'profile' | 'tokens' | 'applications' | 'notifications' | 'notification-preferences' | 'connected-sources';
 registerKoinonSpanish(PANEL_SPANISH);
+registerKoinonSpanish({'Connected sources':'Fuentes conectadas','Notification preferences':'Preferencias de notificaciones'});
 @Component({
   selector: 'ffk-account-page',
-  imports: [NgComponentOutlet,KoinonTextPipe, KoinonIcon, KoinonAccountPanel],
+  imports: [KoinonConnectedSources,NgComponentOutlet,KoinonTextPipe, KoinonIcon, KoinonAccountPanel],
   templateUrl: './account-page.html',
   styleUrl: './account-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -67,6 +69,7 @@ export class KoinonAccountPage implements OnChanges {
     { id: 'notifications', label: 'Notifications', icon: 'bell' },
     { id: 'notification-preferences', label: 'Notification preferences', icon: 'settings' },
     { id: 'tokens', label: 'API tokens', icon: 'shield' },
+    { id: 'connected-sources', label: 'Connected sources', icon: 'link' },
     { id: 'applications', label: 'Authorized applications', icon: 'link' },
   ];
   title() {

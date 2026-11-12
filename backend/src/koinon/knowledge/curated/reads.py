@@ -2,16 +2,19 @@
 # SPDX-License-Identifier: Apache-2.0
 """Native bodies with immutable receipts and current source-root authorization."""
 
+from contextlib import asynccontextmanager
 from math import ceil
 
 from pydantic import TypeAdapter
-from pyfly.container import service
+from pyfly.container import Provider, service
 from pyfly.data.relational.datasource_registry import DataSourceRegistry
 from pyfly.data.transaction import infrastructure_unit
 from pyfly.kernel import InvalidRequestException, ServiceUnavailableException
 from sqlalchemy import select
 
 from koinon.catalog.errors import AccessDenied
+from koinon.integrations.content_sources.read_capabilities import curated_identity
+from koinon.integrations.content_sources.read_service import SourceReader
 from koinon.knowledge.adapters import native_scope
 from koinon.knowledge.curated.authority import CuratedAuthority, digest
 from koinon.knowledge.curated.domain_entities import CuratedCommitRow, CuratedEvidenceRow, CuratedHeadRow
@@ -36,11 +39,20 @@ def unavailable():
 @service(name="knowledge.curated.reads")
 class CuratedKnowledgeReads:
     def __init__(
-        self, authority: CuratedAuthority, native: NativeCuratedKnowledge, datasources: DataSourceRegistry
+        self,
+        authority: CuratedAuthority,
+        native: NativeCuratedKnowledge,
+        datasources: DataSourceRegistry,
+        source_reader: Provider[SourceReader | None] | None = None,
     ):
         self.authority, self.native, self.datasources = authority, native, datasources
+        self.source_reader = source_reader
 
     async def scope(self, subject, tenant_id, item_id):
+        reader = self.source_reader.get() if self.source_reader is not None else None
+        admitted = curated_identity(subject, tenant_id, item_id)
+        if reader is not None and admitted is None:
+            await reader.entries(subject, tenant_id, (item_id,))
         entry = await self.authority.catalog.get(subject, tenant_id, item_id)
         if entry.kind != "knowledge_item" or not entry.parent_id:
             raise unavailable()
@@ -85,7 +97,23 @@ class CuratedKnowledgeReads:
                 )
             ):
                 raise unavailable()
+            if admitted is not None and (state.native_workspace_id, state.native_item_id, state.workspace_id, entry.workspace_id) != (
+                admitted.native_workspace_id,
+                admitted.native_item_id,
+                admitted.canonical_workspace_id,
+                admitted.canonical_workspace_id,
+            ):
+                raise unavailable()
             return entry, state
+
+    @asynccontextmanager
+    async def source_scope(self, subject, tenant, selections):
+        reader = self.source_reader.get() if self.source_reader is not None else None
+        if reader is None:
+            yield
+            return
+        async with reader.curated_read(subject, tenant, tuple(selections)):
+            yield
 
     async def recorded(self, session, tenant_id, state, selected):
         from flycanon.models.entities.knowledge_version import KnowledgeVersionRow
@@ -146,6 +174,19 @@ class CuratedKnowledgeReads:
         return row, commit, receipt, evidence, body
 
     async def version(self, subject, tenant_id, item_id, version=None):
+        reader = self.source_reader.get() if self.source_reader is not None else None
+        admitted = curated_identity(subject, tenant_id, item_id, version)
+        if admitted is not None:
+            result = await self._version(subject, tenant_id, item_id, admitted.version)
+            if result.selected_version.version_id != admitted.version_id:
+                raise unavailable()
+            return result
+        if reader is None:
+            return await self._version(subject, tenant_id, item_id, version)
+        async with self.source_scope(subject, tenant_id, ((item_id, version),)):
+            return await self.version(subject, tenant_id, item_id, version)
+
+    async def _version(self, subject, tenant_id, item_id, version=None):
         entry, state = await self.scope(subject, tenant_id, item_id)
         selected = version if version is not None else state.serving_version or state.head_version
         if type(selected) is not int or selected < 1 or selected > state.head_version:

@@ -23,9 +23,15 @@ class SnapshotFixture(ConversationOutputPort):
     private = False
     origin_tokens = ()
 
-    async def authorize_output(self, subject, tenant_id, thread_id, message_ids, *, snapshot=None):
+    async def authorize_output(
+        self, subject, tenant_id, thread_id, message_ids, *, snapshot=None, reader_subject=None
+    ):
         assert subject == "owner" and tenant_id == "north"
+        if reader_subject is not None:
+            assert isinstance(reader_subject, str) and reader_subject and reader_subject != subject
+        self.last_reader_subject = reader_subject or subject
         if snapshot is not None:
+            assert snapshot.owner_subject == subject
             assert all(message.text == "Reviewed answer" for message in snapshot.messages)
 
     async def snapshot(self, subject, tenant_id, thread_id, message_ids):

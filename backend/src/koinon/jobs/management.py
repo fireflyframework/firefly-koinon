@@ -21,6 +21,8 @@ class JobManagementService:
         await self.catalog.list(subject, tenant_id, kind="workspace")
         visible = []
         for job in await self.jobs.repository.find_all(tenant_id=tenant_id):
+            if job.kind == "content.source.reconcile":
+                continue
             try:
                 await self.catalog.get(subject, tenant_id, job.resource_id)
             except AccessDenied:
@@ -31,7 +33,7 @@ class JobManagementService:
     @transactional(read_only=True)
     async def get(self, subject: str, tenant_id: str, job_id: str) -> dict:
         rows = await self.jobs.repository.find_all(id=job_id, tenant_id=tenant_id)
-        if not rows:
+        if not rows or rows[0].kind == "content.source.reconcile":
             raise AccessDenied("Job is not accessible in this context", code="ACCESS_DENIED")
         await self.catalog.get(subject, tenant_id, rows[0].resource_id)
         return job_dto(rows[0])
@@ -39,7 +41,7 @@ class JobManagementService:
     @transactional
     async def cancel(self, subject: str, tenant_id: str, job_id: str) -> dict:
         rows = await self.jobs.repository.find_all(id=job_id, tenant_id=tenant_id)
-        if not rows:
+        if not rows or rows[0].kind == "content.source.reconcile":
             raise AccessDenied("Job is not accessible in this context", code="ACCESS_DENIED")
         resource = await self.catalog.get(subject, tenant_id, rows[0].resource_id)
         permissions = await self.catalog.permissions(subject, tenant_id, resource.workspace_id)

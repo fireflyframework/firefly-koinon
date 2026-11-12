@@ -6,11 +6,12 @@ import hashlib
 
 import httpx
 import pytest
+from pyfly.client import HttpxClientAdapter
+
 from koinon.integrations.content_sources.dtos import Account, Cursor, SourceScope
 from koinon.integrations.content_sources.errors import SourceError
 from koinon.integrations.content_sources.google_drive import GoogleDriveSource
 from koinon.integrations.content_sources.microsoft import OneDriveSource, SharePointSource
-from pyfly.client import HttpxClientAdapter
 
 
 class Tokens:
@@ -88,6 +89,7 @@ async def test_source_transport_accepts_vendor_free_native_stream_port():
     from contextlib import asynccontextmanager
 
     import pyfly.client as native_client
+
     from koinon.integrations.content_sources.transport import SourceTransport
 
     response_port = getattr(native_client, "StreamingHttpResponsePort", None)
@@ -281,6 +283,41 @@ async def test_provider_failures_never_become_deletions(status, code):
             await source.changes()
     assert "must-not-escape" not in str(caught.value)
     assert caught.value.retry_after == (12 if status == 429 else None)
+    assert not getattr(caught.value, "definitive_read_denial", False)
+
+
+@pytest.mark.parametrize(
+    "cls,provider,body",
+    [
+        (GoogleDriveSource, "google_drive", {"id": "f1", "trashed": True}),
+        (OneDriveSource, "onedrive", {"id": "f1", "deleted": {}}),
+    ],
+)
+@pytest.mark.parametrize(
+    "kind", ["masked404", "deleted", "wrong_target", "generic404", "outage", "throttled"]
+)
+async def test_only_a_known_target_read_classifies_definitive_unreadability(cls, provider, body, kind):
+    status = {"masked404": 404, "generic404": 404, "outage": 503, "throttled": 429}.get(kind, 200)
+    if kind == "wrong_target":
+        body = {**body, "id": "another"}
+    async with cls(
+        SourceScope(Account(provider, "reader"), "drive"),
+        Tokens(),
+        http_client=HttpxClientAdapter(
+            transport=httpx.MockTransport(lambda request: httpx.Response(status, json=body)),
+            owns_transport=True,
+            trust_env=False,
+        ),
+        owns_http_client=True,
+    ) as source:
+        with pytest.raises(SourceError) as caught:
+            if kind == "generic404":
+                await source.children("folder")
+            else:
+                await source.get_item("f1")
+    assert getattr(caught.value, "definitive_read_denial", False) == (kind in {"masked404", "deleted"})
+    if kind in {"masked404", "deleted", "generic404"}:
+        assert caught.value.code == "unavailable"
 
 
 async def test_google_removed_stays_ambiguous_and_shared_drive_cursor_is_explicit():

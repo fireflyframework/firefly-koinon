@@ -3,8 +3,28 @@
 """Native immutable identities; binary content stays behind native ports."""
 
 import builtins
+import re
 from dataclasses import dataclass, field
 from typing import Any, Literal
+
+
+@dataclass(frozen=True, slots=True)
+class SourcePublicationBinding:
+    """Exact immutable producer evidence; this value does not grant authorization."""
+
+    attempt_id: str
+    descriptor_sha256: str
+    schema: str = field(default="koinon.source-publication-binding.v1", init=False)
+
+    def __post_init__(self):
+        if (
+            type(self.attempt_id) is not str
+            or not 1 <= len(self.attempt_id) <= 64
+            or any(ord(character) < 33 or ord(character) > 126 for character in self.attempt_id)
+            or type(self.descriptor_sha256) is not str
+            or re.fullmatch(r"[a-f0-9]{64}", self.descriptor_sha256) is None
+        ):
+            raise ValueError("A bounded source attempt and lowercase publication digest are required")
 
 
 @dataclass(frozen=True)

@@ -1,3 +1,4 @@
+import type {SnapshotHistoryReadInput,TableSnapshotReadPage,ReaderReadInput,ReaderPageInput,DocumentChunksReadInput,DocumentPartsReadInput,LineageReadInput,SnapshotReadInput,SnapshotPageReadInput} from './generated.js';
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
 import {createLazyExternalReviewsApi} from './external-review-loader.js';
@@ -10,6 +11,7 @@ import {createLazyOrganizationPeopleApi} from './organization-loader.js';
 import {createLazyCorporateProfilesApi} from './corporate-profile-loader.js';
 export type {CorporateProfilesApi} from './corporate-profiles.js';
 export type {OrganizationPeopleApi} from './organization-people.js';
+import type {CatalogBrowseInput,CatalogBrowseOutput,ExportBrowseInput,ExportBrowsePage,ShareBrowseInput,ShareBrowsePage} from './generated.js';
 import type {McpConnectionDescriptor} from './generated.js';
 import type {McpOAuthClient,McpOAuthClientCredential,McpOAuthClientInput,McpOAuthClientPage,McpOAuthClientPatch,McpOAuthClientReadiness,McpOAuthClientRevision} from './generated.js';
 import type {McpOAuthClientFilter} from './types.js';
@@ -150,6 +152,9 @@ export class KoinonClient {
   this.organizationChat=this.organizationSettings<OrganizationChatSettings,OrganizationChatSettingsInput,true>('/chat/settings',true);
   this.structured={glossary:glossary(false),agentGlossary:glossary(true)};
   this.exports={
+   read:(tenantId:string,exportId:string,input:ReaderReadInput,options:RequestOptions={})=>transport.request<Export>('POST',`${tenant(tenantId)}/exports/${id(exportId)}/read`,{...options,body:input}),
+   readDownload:(tenantId:string,exportId:string,input:ReaderReadInput,options:RequestOptions={})=>transport.request<BinaryDownload>('POST',`${tenant(tenantId)}/exports/${id(exportId)}/download/read`,{...options,body:input,responseType:'download'}),
+   browse:(tenantId:string,input:ExportBrowseInput={},options:RequestOptions={})=>transport.request<ExportBrowsePage>('POST',`${tenant(tenantId)}/exports/browse`,{...options,body:input}),
    review:(tenantId:string,input:ExportReviewRequest,options:RequestOptions={})=>transport.request<ExportReview>('POST',`${tenant(tenantId)}/exports/reviews`,{...options,body:input}),
    create:(tenantId:string,input:ExportCreate,options:RequestOptions={})=>transport.request<Export>('POST',`${tenant(tenantId)}/exports`,{...options,body:input}),
    list:(tenantId:string,options:RequestOptions&{query?:ExportFilter}={})=>transport.request<ExportPage>('GET',`${tenant(tenantId)}/exports`,options),
@@ -158,6 +163,8 @@ export class KoinonClient {
    cancel:(tenantId:string,exportId:string,options:RequestOptions={})=>transport.request<void>('DELETE',`${tenant(tenantId)}/exports/${id(exportId)}`,options),
   };
   this.shares={
+   read:(tenantId:string,shareId:string,input:ReaderReadInput,options:RequestOptions={})=>transport.request<SharedConversation>('POST',`${tenant(tenantId)}/shares/${id(shareId)}/read`,{...options,body:input}),
+   browse:(tenantId:string,input:ShareBrowseInput={},options:RequestOptions={})=>transport.request<ShareBrowsePage>('POST',`${tenant(tenantId)}/shares/browse`,{...options,body:input}),
    review:(tenantId:string,input:ShareReviewInput,options:RequestOptions={})=>transport.request<ShareReview>('POST',`${tenant(tenantId)}/shares/reviews`,{...options,body:input}),
    create:(tenantId:string,input:ShareCreate,options:RequestOptions={})=>transport.request<Share>('POST',`${tenant(tenantId)}/shares`,{...options,body:input}),
    list:(tenantId:string,options:RequestOptions&{query?:ShareFilter}={})=>transport.request<SharePage>('GET',`${tenant(tenantId)}/shares`,options),
@@ -242,6 +249,8 @@ export class KoinonClient {
   };
   this.chat=createLazyChatApi(transport);
   this.catalog={
+   read:(tenantId:string,entryId:string,input:ReaderReadInput,options:RequestOptions={})=>transport.request<CatalogEntry>('POST',`${tenant(tenantId)}/catalog/${id(entryId)}/read`,{...options,body:input}),
+   browse:(tenantId:string,input:CatalogBrowseInput={},options:RequestOptions={})=>transport.request<CatalogBrowseOutput>('POST',`${tenant(tenantId)}/catalog/browse`,{...options,body:input}),
    list:(tenantId:string,filter:CatalogFilter={},options:RequestOptions={})=>transport.request<Page<CatalogEntry>>('GET',`${tenant(tenantId)}/catalog`,{...options,query:{...filter}}),
    create:(tenantId:string,entry:EntryCreate,options:RequestOptions={})=>transport.request<CatalogEntry>('POST',`${tenant(tenantId)}/catalog`,{...options,body:entry}),
    get:(tenantId:string,entryId:string,options:RequestOptions={})=>transport.request<CatalogEntry>('GET',`${tenant(tenantId)}/catalog/${id(entryId)}`,options),
@@ -254,6 +263,14 @@ export class KoinonClient {
   this.sources={uploadFile:(tenantId:string,input:SourceUploadInput,options:RequestOptions={})=>{const body=multipart(input.file,input.filename);for(const key of ['workspace_id','project_id','parent_id','mode'] as const)body.set(key,input[key]);return transport.request<UploadResponse>('POST',`${tenant(tenantId)}/sources/upload`,{...options,body});},upload:(tenantId:string,form:FormData,options:RequestOptions={})=>transport.request<UploadResponse>('POST',`${tenant(tenantId)}/sources/upload`,{...options,body:form})};
   const versionPath=(tenantId:string,documentId:string,versionId?:string)=>`${tenant(tenantId)}/documents/${id(documentId)}/versions${versionId===undefined?'':'/'+id(versionId)}`;
   this.documents={
+   readChunks:(tenantId:string,documentId:string,input:DocumentChunksReadInput,options:RequestOptions={})=>transport.request<DocumentChunks>('POST',`${tenant(tenantId)}/documents/${id(documentId)}/chunks/read`,{...options,body:input}),
+   readOriginal:(tenantId:string,documentId:string,input:ReaderReadInput,options:RequestOptions={})=>transport.request<BinaryDownload>('POST',`${tenant(tenantId)}/documents/${id(documentId)}/original/read`,{...options,body:input,responseType:'download'}),
+   readVersions:(tenantId:string,documentId:string,input:ReaderPageInput,options:RequestOptions={})=>transport.request<DocumentVersionPage>('POST',versionPath(tenantId,documentId)+'/read',{...options,body:input}),
+   readVersion:(tenantId:string,documentId:string,versionId:string,input:ReaderReadInput,options:RequestOptions={})=>transport.request<DocumentVersion>('POST',versionPath(tenantId,documentId,versionId)+'/read',{...options,body:input}),
+   readExtractions:(tenantId:string,documentId:string,versionId:string,input:ReaderPageInput,options:RequestOptions={})=>transport.request<DocumentExtractionPage>('POST',versionPath(tenantId,documentId,versionId)+'/extractions/read',{...options,body:input}),
+   readParts:(tenantId:string,documentId:string,versionId:string,extractionId:string,input:DocumentPartsReadInput,options:RequestOptions={})=>transport.request<DocumentPartPage>('POST',versionPath(tenantId,documentId,versionId)+'/extractions/'+id(extractionId)+'/parts/read',{...options,body:input}),
+   readPart:(tenantId:string,documentId:string,versionId:string,extractionId:string,partId:string,input:ReaderReadInput,options:RequestOptions={})=>transport.request<DocumentPartContent>('POST',versionPath(tenantId,documentId,versionId)+'/extractions/'+id(extractionId)+'/parts/'+id(partId)+'/read',{...options,body:input}),
+   readVersionOriginal:(tenantId:string,documentId:string,versionId:string,input:ReaderReadInput,options:RequestOptions={})=>transport.request<BinaryDownload>('POST',versionPath(tenantId,documentId,versionId)+'/original/read',{...options,body:input,responseType:'download'}),
    versions:(tenantId:string,documentId:string,filter:{page?:number;page_size?:number}={},options:RequestOptions={})=>transport.request<DocumentVersionPage>('GET',versionPath(tenantId,documentId),{...options,query:{...filter}}),
    version:(tenantId:string,documentId:string,versionId:string,options:RequestOptions={})=>transport.request<DocumentVersion>('GET',versionPath(tenantId,documentId,versionId),options),
    extractions:(tenantId:string,documentId:string,versionId:string,filter:{page?:number;page_size?:number}={},options:RequestOptions={})=>transport.request<DocumentExtractionPage>('GET',versionPath(tenantId,documentId,versionId)+'/extractions',{...options,query:{...filter}}),
@@ -273,11 +290,19 @@ export class KoinonClient {
    cancel:(tenantId:string,intentId:string,expectedRevision:number,options:RequestOptions={})=>transport.request<KnowledgeIntent>('POST',`${tenant(tenantId)}/knowledge-intents/${id(intentId)}/cancel`,{...options,body:{expected_revision:expectedRevision}}),
   };
   this.knowledgeItems={
+   read:(tenantId:string,itemId:string,input:ReaderReadInput,options:RequestOptions={})=>transport.request<KnowledgeItemView>('POST',`${tenant(tenantId)}/knowledge-items/${id(itemId)}/read`,{...options,body:input}),
+   readVersion:(tenantId:string,itemId:string,version:number,input:ReaderReadInput,options:RequestOptions={})=>transport.request<KnowledgeItemView>('POST',`${tenant(tenantId)}/knowledge-items/${id(itemId)}/versions/${version}/read`,{...options,body:input}),
    list:(tenantId:string,filter:{workspace_id?:string;project_id?:string;destination_id?:string;q?:string;page?:number;page_size?:number}={},options:RequestOptions={})=>transport.request<KnowledgeItemPage>('GET',`${tenant(tenantId)}/knowledge-items`,{...options,query:{...filter}}),
    get:(tenantId:string,itemId:string,options:RequestOptions={})=>transport.request<KnowledgeItemView>('GET',`${tenant(tenantId)}/knowledge-items/${id(itemId)}`,options),
    version:(tenantId:string,itemId:string,version:number,options:RequestOptions={})=>transport.request<KnowledgeItemView>('GET',`${tenant(tenantId)}/knowledge-items/${id(itemId)}/versions/${version}`,options),
   };
   this.dataset={
+   readSchema:(tenantId:string,datasetId:string,input:ReaderReadInput,options:RequestOptions={})=>transport.request<DatasetSchema>('POST',`${tenant(tenantId)}/datasets/${id(datasetId)}/schema/read`,{...options,body:input}),
+   readTableProvenance:(tenantId:string,datasetId:string,tableId:string,input:SnapshotReadInput,options:RequestOptions={})=>transport.request<TableProvenance>('POST',`${tenant(tenantId)}/datasets/${id(datasetId)}/tables/${id(tableId)}/provenance/read`,{...options,body:input}),
+   readTableSnapshots:(tenantId:string,datasetId:string,tableId:string,input:SnapshotHistoryReadInput,options:RequestOptions={})=>transport.request<TableSnapshotReadPage>('POST',`${tenant(tenantId)}/datasets/${id(datasetId)}/tables/${id(tableId)}/snapshots/read`,{...options,body:input}),
+   readTableCoordinates:(tenantId:string,datasetId:string,tableId:string,input:SnapshotReadInput,options:RequestOptions={})=>transport.request<TableCoordinateManifest>('POST',`${tenant(tenantId)}/datasets/${id(datasetId)}/tables/${id(tableId)}/coordinates/read`,{...options,body:input}),
+   readTableCoordinateRows:(tenantId:string,datasetId:string,tableId:string,input:SnapshotPageReadInput,options:RequestOptions={})=>transport.request<TableRowRangePage>('POST',`${tenant(tenantId)}/datasets/${id(datasetId)}/tables/${id(tableId)}/coordinates/rows/read`,{...options,body:input}),
+   readTableCoordinateColumns:(tenantId:string,datasetId:string,tableId:string,input:SnapshotPageReadInput,options:RequestOptions={})=>transport.request<TableColumnBindingPage>('POST',`${tenant(tenantId)}/datasets/${id(datasetId)}/tables/${id(tableId)}/coordinates/columns/read`,{...options,body:input}),
    appendFile:(tenantId:string,datasetId:string,file:Blob,idempotencyKey:string,options:RequestOptions&{filename?:string}={})=>transport.request<DatasetFileAppendResult>('POST',`${tenant(tenantId)}/datasets/${id(datasetId)}/files`,{...options,body:multipart(file,options.filename),headers:{...options.headers,'Idempotency-Key':idempotencyKey}}),
    tableCoordinates:(tenantId:string,datasetId:string,tableId:string,snapshotId:string,options:RequestOptions={})=>transport.request<TableCoordinateManifest>('GET',`${tenant(tenantId)}/datasets/${id(datasetId)}/tables/${id(tableId)}/coordinates`,{...options,query:{snapshot_id:snapshotId}}),
    tableCoordinateCells:(tenantId:string,datasetId:string,tableId:string,input:CoordinateCellRequest,options:RequestOptions={})=>transport.request<TableCoordinateSelection>('POST',`${tenant(tenantId)}/datasets/${id(datasetId)}/tables/${id(tableId)}/coordinates/cells`,{...options,body:input}),
@@ -316,6 +341,7 @@ export class KoinonClient {
  capabilities(options:RequestOptions={}){return this.options.transport.request<Capabilities>('GET','/capabilities',options);}
  search(tenantId:string,request:SearchRequest,options:RequestOptions={}){return this.options.transport.request<SearchResponse>('POST',`${tenant(tenantId)}/search`,{...options,body:request});}
  query(tenantId:string,request:QueryRequest,options:RequestOptions={}){return this.options.transport.request<QueryResponse>('POST',`${tenant(tenantId)}/query`,{...options,body:request});}
+ readLineage(tenantId:string,input:LineageReadInput,options:RequestOptions={}){return this.options.transport.request<Lineage>('POST',`${tenant(tenantId)}/lineage/read`,{...options,body:input});}
  lineage(tenantId:string,assetId?:string,options:RequestOptions={}){return this.options.transport.request<Lineage>('GET',`${tenant(tenantId)}/lineage`,{...options,query:assetId?{asset_id:assetId}:{}});}
 }
 export {exactDecimal,exactInteger} from './exact.js';

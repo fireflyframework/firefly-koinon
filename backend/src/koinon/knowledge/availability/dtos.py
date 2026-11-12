@@ -7,6 +7,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from koinon.integrations.content_sources.read_dtos import ReaderReadInput
+
 AvailabilityState = Literal["ready", "pending", "unavailable", "unknown", "not_applicable"]
 ProcessingPhase = Literal[
     "unknown",
@@ -20,7 +22,7 @@ ProcessingPhase = Literal[
 ]
 
 
-class AvailabilityRequest(BaseModel):
+class AvailabilityRequest(ReaderReadInput):
     model_config = ConfigDict(extra="forbid")
     asset_ids: list[Annotated[str, Field(strict=True, min_length=1, max_length=64)]] = Field(
         min_length=1, max_length=100
@@ -73,7 +75,7 @@ class AvailabilityResponse(BaseModel):
     items: dict[str, AssetAvailability]
 
 
-class ProcessingRequest(BaseModel):
+class ProcessingRequest(ReaderReadInput):
     model_config = ConfigDict(extra="forbid")
     page: int = Field(default=1, ge=1, le=100000, strict=True)
     page_size: int = Field(default=25, ge=1, le=50, strict=True)

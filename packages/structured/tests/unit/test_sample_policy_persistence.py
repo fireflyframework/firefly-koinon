@@ -11,6 +11,62 @@ import pytest
 from flyquery.core.services.ingestion.stages import sample
 
 
+@pytest.mark.parametrize("denied", ["sample_read", "sample_write", None])
+async def test_sampling_authorizes_native_reads_and_privacy_writes(monkeypatch, denied):
+    from contextlib import asynccontextmanager
+
+    snapshot, column = uuid.uuid4(), uuid.uuid4()
+    state = {"phase": None, "reads": 0, "writes": 0}
+
+    class DeniedError(Exception):
+        pass
+
+    class Guard:
+        @asynccontextmanager
+        async def unit(self, phase, target):
+            assert target.tenant_id == "native" and target.snapshot_id == snapshot
+            if phase == "sample_write":
+                assert target.object_id == column
+            if phase == denied:
+                raise DeniedError
+            state["phase"] = phase
+            try:
+                yield
+            finally:
+                state["phase"] = None
+
+    async def columns(*args):
+        assert state["phase"] == "sample_read"
+        state["reads"] += 1
+        return [{"id": column, "qualified_name": "records.note", "column_name": "note", "pii_tag": "EMAIL"}]
+
+    async def persist(*args):
+        assert state["phase"] == "sample_write" and args[1] == []
+        state["writes"] += 1
+
+    monkeypatch.setattr(sample, "_load_columns", columns)
+    monkeypatch.setattr(sample, "_persist_samples", persist)
+    invocation = sample.run_sample(
+        tenant_id="native",
+        snapshot_id=snapshot,
+        parquet_key="owned.parquet",
+        session_factory=Mock(),
+        settings=SimpleNamespace(pii_scanner="regex", pii_policy_samples="redact", sample_n=10),
+        guard=Guard(),
+    )
+    if denied:
+        with pytest.raises(DeniedError):
+            await invocation
+    else:
+        await invocation
+    assert (state["reads"], state["writes"]) == {
+        "sample_read": (0, 0),
+        "sample_write": (1, 0),
+        None: (1, 1),
+    }[denied]
+    assert state["phase"] is None
+
+
 @pytest.mark.parametrize("policy", ["redact", "reject"])
 @pytest.mark.parametrize("values", [["fixture@example.test"], ["ordinary", "fixture@example.test"]])
 async def test_original_pii_finding_applies_policy_before_sample_persistence(monkeypatch, policy, values):
@@ -23,6 +79,7 @@ async def test_original_pii_finding_applies_policy_before_sample_persistence(mon
                 {
                     "id": column_id,
                     "qualified_name": "records.note",
+                    "column_name": "note",
                     "pii_tag": None,
                     "description": "Synthetic text",
                     "data_type": "VARCHAR",
@@ -75,6 +132,7 @@ async def test_sampling_retains_clean_values_and_explicit_opt_out(
                 {
                     "id": uuid.uuid4(),
                     "qualified_name": "records.note",
+                    "column_name": "note",
                     "pii_tag": None,
                     "description": "Synthetic text",
                     "data_type": "VARCHAR",
@@ -87,7 +145,7 @@ async def test_sampling_retains_clean_values_and_explicit_opt_out(
     apply = AsyncMock()
     monkeypatch.setattr(sample, "_persist_samples", persist)
     monkeypatch.setattr(sample, "_apply_tag_and_policy", apply, raising=False)
-    await sample.run_sample(
+    result = await sample.run_sample(
         tenant_id="native",
         snapshot_id=uuid.uuid4(),
         parquet_key="owned.parquet",
@@ -95,6 +153,7 @@ async def test_sampling_retains_clean_values_and_explicit_opt_out(
         settings=SimpleNamespace(pii_scanner=scanner, pii_policy_samples=policy, sample_n=10),
     )
     assert persist.await_args.args[1] == expected
+    assert result["sampled_columns"] == (1 if expected else 0)
     if policy == "warn":
         assert apply.await_args.kwargs["policy"] == "warn"
     else:
@@ -110,6 +169,7 @@ async def test_previously_tagged_column_denies_profile_fallback_without_reading_
                 {
                     "id": uuid.uuid4(),
                     "qualified_name": "records.note",
+                    "column_name": "note",
                     "pii_tag": "EMAIL",
                     "description": "Synthetic text",
                     "data_type": "VARCHAR",

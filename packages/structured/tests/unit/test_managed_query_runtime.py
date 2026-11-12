@@ -57,6 +57,111 @@ def make_factory(module, sessions, monkeypatch, *, settings=None):
     return factory, built
 
 
+async def test_product_operation_has_no_ambient_transaction_and_rejects_joining(tmp_path, monkeypatch):
+    from pyfly.data.transaction import current_unit_of_work
+    from pyfly.kernel import ServiceUnavailableException
+
+    module = runtime_module()
+    registry = DataSourceRegistry(
+        Config(
+            {"pyfly": {"data": {"relational": {"url": f"sqlite+aiosqlite:///{tmp_path / 'operation.db'}"}}}}
+        )
+    )
+    factory, _ = make_factory(module, registry.primary.sessionmaker, monkeypatch)
+    try:
+        assert callable(getattr(factory, "operation", None)), "Product runtime needs a session-free operation"
+        async with factory.operation(settings_overrides={"rrf_k": 93}) as runtime:
+            assert current_unit_of_work() is None
+            assert runtime.session is None
+            assert runtime.settings.rrf_k == 93
+            assert runtime.executor is factory._executor
+        async with TransactionTemplate(registry.primary).transaction():
+            with pytest.raises(ServiceUnavailableException, match="ambient"):
+                async with factory.operation():
+                    pytest.fail("An ambient product transaction must be rejected")
+        from types import SimpleNamespace
+        from uuid import uuid4
+
+        from flyquery.core.services.query import provenance
+
+        observer = SimpleNamespace(structured_source_operation=object(), scope=lambda *args: None)
+        with (
+            provenance.observe(
+                observer, tenant_id="tenant", workspace_id=uuid4(), dataset_id=uuid4(), actor="reader"
+            ),
+            pytest.raises(ServiceUnavailableException, match="product"),
+        ):
+            async with factory.unit():
+                pytest.fail("Product authority must never fall back to legacy native units")
+    finally:
+        await registry.close()
+
+
+async def test_product_table_denial_never_reads_snapshot_paths(monkeypatch):
+    from contextlib import asynccontextmanager
+    from types import SimpleNamespace
+    from uuid import uuid4
+
+    from pyfly.kernel import ServiceUnavailableException
+
+    from flyquery.core.services.execution import table_resolver
+    from flyquery.core.services.query import provenance
+
+    calls = []
+    table, snapshot = uuid4(), uuid4()
+
+    class Session:
+        async def execute(self, statement, parameters):
+            calls.append(str(statement))
+            return SimpleNamespace(mappings=lambda: [{"table_id": table, "snapshot_id": snapshot}])
+
+    @asynccontextmanager
+    async def unit(*args, **kwargs):
+        yield Session()
+
+    async def deny(kind, rows):
+        assert kind == "table" and rows == [{"table_id": table, "snapshot_id": snapshot}]
+        raise ServiceUnavailableException("Denied exact snapshot")
+
+    assert hasattr(table_resolver, "ProductTableResolver"), "SQL resolution needs source admission"
+    monkeypatch.setattr(table_resolver, "infrastructure_unit", unit)
+    monkeypatch.setattr(provenance, "admit_rows", deny)
+    resolver = table_resolver.ProductTableResolver(object(), FlyquerySettings())
+    with pytest.raises(ServiceUnavailableException, match="Denied exact snapshot"):
+        await resolver.resolve(uuid4(), ["orders"])
+    assert len(calls) == 1 and "parquet_object_key" not in calls[0]
+
+
+@pytest.mark.parametrize("streaming", [False, True])
+async def test_product_direct_sql_cannot_enter_legacy_controller(streaming):
+    from types import SimpleNamespace
+    from uuid import uuid4
+
+    from pyfly.kernel import ServiceUnavailableException
+
+    from flyquery.core.services.query import provenance
+    from flyquery.interfaces.sql_execute import SqlExecuteRequest
+    from flyquery.web.controllers.sql_execute_controller import SqlExecuteController
+
+    observer = SimpleNamespace(structured_source_operation=object(), scope=lambda *args: None)
+    body = SqlExecuteRequest(dataset_id=uuid4(), sql="SELECT 1")
+    controller = SqlExecuteController.__new__(SqlExecuteController)
+    with (
+        provenance.observe(
+            observer, tenant_id="tenant", workspace_id=uuid4(), dataset_id=body.dataset_id, actor="reader"
+        ),
+        pytest.raises(ServiceUnavailableException, match="product"),
+    ):
+        if streaming:
+            stream = controller._stream_events(ctx=object(), workspace_id=uuid4(), request=body)
+            try:
+                await anext(stream)
+            finally:
+                await stream.aclose()
+        else:
+            await controller.execute(SimpleNamespace(), body)
+
+
 @pytest.mark.parametrize("failure", [RuntimeError, asyncio.CancelledError])
 async def test_runtime_joins_named_native_transaction_and_preserves_rollback(tmp_path, monkeypatch, failure):
     module = runtime_module()

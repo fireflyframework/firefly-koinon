@@ -50,6 +50,23 @@ def format_expression(entry):
     )
 
 
+def entry_format(entry):
+    """Apply the SQL format rules after reader authority permits metadata hydration."""
+    metadata = entry.metadata_json or {}
+    explicit, mime = metadata.get("format"), metadata.get("media_type")
+    if isinstance(explicit, str) and explicit.strip().lower() in FORMATS:
+        return explicit.strip().lower()
+    if isinstance(mime, str):
+        for key, value in FORMATS.items():
+            if mime.strip().lower() == value:
+                return key
+    if entry.kind in {"document", "dataset", "source"}:
+        for key in FORMATS:
+            if entry.name.lower().endswith("." + key):
+                return key
+    return None
+
+
 def metadata_label(value):
     if isinstance(value, str):
         value = value.strip()
@@ -84,10 +101,10 @@ def summary(entry, counts, file_format, source_metadata=None):
         size = recorded_number(inherited, "size_bytes", "bytes")
     return CatalogSummary.model_validate(
         {
-            "child_count": counts.get("total", 0) if folder else None,
-            "document_count": counts.get("document", 0) if folder else None,
-            "dataset_count": counts.get("dataset", 0) if folder else None,
-            "table_count": counts.get("table", 0) if entry.kind == "dataset" else None,
+            "child_count": counts.get("total", 0) if folder and counts is not None else None,
+            "document_count": counts.get("document", 0) if folder and counts is not None else None,
+            "dataset_count": counts.get("dataset", 0) if folder and counts is not None else None,
+            "table_count": counts.get("table", 0) if entry.kind == "dataset" and counts is not None else None,
             "row_count": recorded_number(metadata, "row_count"),
             "column_count": recorded_number(metadata, "column_count"),
             "page_count": recorded_number(metadata, "page_count"),

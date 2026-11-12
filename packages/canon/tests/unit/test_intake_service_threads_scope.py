@@ -266,3 +266,36 @@ class TestIndexServiceScopeKwargsRequired:
             "IndexService.replace_for_source must not default workspace_id -- "
             "forgotten scope kwargs silently corrupted the RLS write path."
         )
+
+
+@pytest.mark.asyncio
+async def test_versioned_replacement_enters_publication_guard(request_dto):
+    from contextlib import asynccontextmanager
+
+    service, _ = _make_intake(indexer=MagicMock())
+    events = []
+
+    @asynccontextmanager
+    async def guard():
+        events.append("admitted")
+        yield
+        events.append("committed")
+
+    class Pipeline:
+        async def run(self, **values):
+            async with values["publication_guard"]():
+                events.append("publish")
+            return "replacement"
+
+    service._lineage_pipeline = Pipeline()
+    result = await service.replace(
+        source_id="source",
+        request=request_dto,
+        content=b"replacement",
+        tenant_id="acme",
+        workspace_id="ws-A",
+        logical_source_key="canonical",
+        publication_guard=guard,
+    )
+    assert result == "replacement"
+    assert events == ["admitted", "publish", "committed"]

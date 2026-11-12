@@ -9,8 +9,8 @@ import {
   Output,
 } from '@angular/core';
 import type { AttachmentHistorySummary } from '@fireflyframework/koinon-sdk';
-import { KoinonTextPipe } from '@fireflyframework/koinon-angular';
-import { KoinonCodeBlock } from '@fireflyframework/koinon-angular/workbench';
+import { KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonCodeBlock } from '@fireflyframework/koinon-angular/workbench/panels';
 import { fencedParts, type FencedPart } from './fenced-parts';
 type Part =
   | (Extract<FencedPart, { kind: 'code' }> & { file?: never })

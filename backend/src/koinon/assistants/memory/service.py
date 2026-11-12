@@ -31,6 +31,8 @@ from koinon.catalog.errors import AccessDenied
 from koinon.catalog.service import ROLE_PERMISSIONS, CatalogService
 from koinon.evidence.dtos import SourceReference
 from koinon.evidence.ports import SourceResolverPort
+from koinon.integrations.content_sources.errors import SourceError
+from koinon.integrations.content_sources.read_service import SourceReader
 from koinon.organization_chat.memory_policy import effective_memory_policy
 from koinon.security.authority import PRIMARY_POLICY_UNIT
 
@@ -51,9 +53,11 @@ class PersonalConversationMemory(ChatMemoryAccess):
         catalog: CatalogService,
         settings: AssistantSettings,
         sources: Provider[SourceResolverPort | None],
+        source_reader: Provider[SourceReader | None] | None = None,
     ):
         self.repository, self.authority_repository = repository, authority
         self.assistants, self.catalog, self.settings, self.sources = assistants, catalog, settings, sources
+        self.source_reader = source_reader
         self._current_admissions: OrderedDict[tuple[str, str, str | None, str], None] = OrderedDict()
 
     def deployment_digest(self):
@@ -303,8 +307,12 @@ class PersonalConversationMemory(ChatMemoryAccess):
             item.availability != "unverified" for item in resolved
         )
 
-    async def authorize(self, subject: str, tenant_id: str, run_id: str, *, captures=()):
-        return (await self.authorize_many(subject, tenant_id, (run_id,), captures=captures))[run_id]
+    async def authorize(self, subject: str, tenant_id: str, run_id: str, *, captures=(), reader_subject=None):
+        return (
+            await self.authorize_many(
+                subject, tenant_id, (run_id,), captures=captures, reader_subject=reader_subject
+            )
+        )[run_id]
 
     async def query_context(self, subject: str, tenant_id: str, run_id: str) -> dict:
         generation = await self.repository.generation(run_id)
@@ -374,6 +382,8 @@ class PersonalConversationMemory(ChatMemoryAccess):
             and policy.max_history_messages > 0
             and not attachment_refs
         )
+        reader = self.source_reader.get() if self.source_reader is not None else None
+        source_operation = None
         candidates = (
             ()
             if budget <= 0 or policy.max_history_messages == 0
@@ -384,8 +394,33 @@ class PersonalConversationMemory(ChatMemoryAccess):
                 folder_id=folder.id if folder else None,
                 project_enabled=project,
                 limit=80,
+                **({"identities_only": True} if reader else {}),
             )
         )
+        if reader is not None:
+            admitted = []
+            for candidate_id in candidates:
+                try:
+                    checked = await reader.runs(
+                        subject, run.tenant_id, (candidate_id,), operation=source_operation
+                    )
+                except SourceError as error:
+                    if error.code == "size_exceeded":
+                        raise
+                    continue
+                except AccessDenied:
+                    continue
+                source_operation = checked
+                admitted.append(candidate_id)
+            candidates = await self.repository.candidates(
+                subject,
+                run.tenant_id,
+                run,
+                folder_id=folder.id if folder else None,
+                project_enabled=project,
+                limit=80,
+                allowed_run_ids=tuple(admitted),
+            )
         selected = []
         dependencies = {}
         project_turns = 0
@@ -560,6 +595,8 @@ class PersonalConversationMemory(ChatMemoryAccess):
                     created_at=value.created_at,
                 )
             )
+        if source_operation is not None:
+            await source_operation.release()
         return messages
 
     @transactional(
@@ -615,7 +652,7 @@ class PersonalConversationMemory(ChatMemoryAccess):
         from types import SimpleNamespace
 
         assistants = self.assistants.get()
-        await assistants.thread(subject, tenant_id, evidence.thread_id)
+        await assistants.thread_identity(subject, tenant_id, evidence.thread_id)
         await assistants.validate_scope(subject, tenant_id, evidence.scope)
         for row in evidence.results:
             for asset_id in row.payload.get("asset_ids", []):
@@ -623,9 +660,22 @@ class PersonalConversationMemory(ChatMemoryAccess):
         origin = SimpleNamespace(access_token_id=evidence.origin_token_id, scope=evidence.scope)
         await assistants.origin_authority(subject, tenant_id, origin, evidence.results, include_run=False)
 
-    async def authorize_result(self, subject, tenant_id, run_id, result_id, expected_sha256):
+    async def authorize_result(
+        self, subject, tenant_id, run_id, result_id, expected_sha256, *, reader_subject=None
+    ):
         from koinon.assistants.memory.projections import MemoryCurrentResult
 
+        reader = self.source_reader.get() if self.source_reader is not None else None
+        source_operation = (
+            await reader.runs(
+                reader_subject or subject,
+                tenant_id,
+                (run_id,),
+                **({"owner": subject} if reader_subject else {}),
+            )
+            if reader
+            else None
+        )
         record = await self.repository.result_context(subject, tenant_id, run_id, result_id)
         if record is None:
             raise unavailable()
@@ -693,6 +743,8 @@ class PersonalConversationMemory(ChatMemoryAccess):
         )
         if before != authorized or authorized != after:
             raise unavailable()
+        if source_operation is not None:
+            await source_operation.release()
 
     @transactional(
         name=PRIMARY_POLICY_UNIT,
@@ -754,7 +806,7 @@ class PersonalConversationMemory(ChatMemoryAccess):
     async def validate_current(self, subject, tenant_id, values):
         assistants = self.assistants.get()
         for value in values:
-            await assistants.thread(subject, tenant_id, value.thread_id)
+            await assistants.thread_identity(subject, tenant_id, value.thread_id)
             await assistants.validate_scope(subject, tenant_id, value.scope)
             await assistants.authorize_results(
                 subject, tenant_id, value.run_id, require_memory=False, result_rows=value.results
@@ -777,12 +829,30 @@ class PersonalConversationMemory(ChatMemoryAccess):
             output.append(replace(value, results=rows, asset_ids=tuple(sorted(assets))))
         return tuple(output)
 
-    async def authorize_many(self, subject: str, tenant_id: str, run_ids: tuple[str, ...], *, captures=()):
+    async def authorize_many(
+        self, subject: str, tenant_id: str, run_ids: tuple[str, ...], *, captures=(), reader_subject=None
+    ):
         identifiers = tuple(dict.fromkeys(run_ids))
         if not identifiers:
             return {}
         if len(identifiers) > 51:
             raise AccessDenied("Request a smaller conversation page", code="MEMORY_PAGE_TOO_WIDE")
+        from koinon.assistants.run_sources import consume_memory_admission
+
+        reader = self.source_reader.get() if self.source_reader is not None else None
+        queue_admitted = await consume_memory_admission(
+            reader_subject or subject, tenant_id, identifiers, captures=captures, reader=reader
+        )
+        source_operation = (
+            await reader.runs(
+                reader_subject or subject,
+                tenant_id,
+                identifiers,
+                **({"owner": subject} if reader_subject else {}),
+            )
+            if reader and not queue_admitted
+            else None
+        )
         rows = await self.repository.active_manifests(subject, tenant_id, identifiers)
         if {row[0] for row in rows} != set(identifiers):
             raise unavailable()
@@ -872,4 +942,6 @@ class PersonalConversationMemory(ChatMemoryAccess):
                 historical=historical,
                 availability=current[value.generation_id].availability if historical else None,
             )
+        if source_operation is not None:
+            await source_operation.release()
         return output

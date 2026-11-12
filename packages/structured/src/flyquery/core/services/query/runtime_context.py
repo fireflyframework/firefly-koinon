@@ -12,7 +12,7 @@ from flyquery.core.services.examples.auto_learner import AutoLearner
 from flyquery.core.services.execution.ast_classifier import AstClassifier
 from flyquery.core.services.execution.duckdb_executor import DuckDBExecutor
 from flyquery.core.services.execution.scope_guard import ScopeGuard
-from flyquery.core.services.execution.table_resolver import TableResolver
+from flyquery.core.services.execution.table_resolver import ProductTableResolver, TableResolver
 from flyquery.core.services.query.query_repository import QueryRepository
 from flyquery.core.services.query.query_service import QueryService
 from flyquery.core.services.query.result_uploader import ResultUploader
@@ -22,12 +22,12 @@ from flyquery.core.services.retrieval.reranker import Reranker
 
 @dataclass(frozen=True)
 class StructuredQueryRuntime:
-    session: AsyncSession
+    session: AsyncSession | None
     settings: FlyquerySettings
     pipeline: QueryService
     retriever: HybridRetriever
     reranker: Reranker
-    table_resolver: TableResolver
+    table_resolver: TableResolver | ProductTableResolver
     ast_classifier: AstClassifier
     scope_guard: ScopeGuard
     executor: DuckDBExecutor

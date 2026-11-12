@@ -24,7 +24,7 @@ from typing import Any
 
 from pyfly.data.relational.datasource_registry import DataSourceRegistry
 from pyfly.data.transaction import infrastructure_unit
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from flycanon.models.entities.source import SourceRow
@@ -47,6 +47,33 @@ class SourceRepository:
     def session_factory(self) -> async_sessionmaker[AsyncSession]:
         """Registry-owned factory for product transaction composition."""
         return self._session_factory
+
+    async def candidate_pins(self, source_ids, *, tenant_id, workspace_id, statuses=None):
+        """Resolve bounded source identities before any RLM display metadata is loaded."""
+        from flycanon.core.services.query.provenance import DocumentCandidatePin
+        from flycanon.models.entities.source_lineage import source_heads
+
+        statement = (
+            select(SourceRow.id, source_heads.c.version_id, source_heads.c.extraction_id)
+            .outerjoin(
+                source_heads,
+                and_(
+                    source_heads.c.source_id == SourceRow.id,
+                    source_heads.c.tenant_id == SourceRow.tenant_id,
+                    source_heads.c.workspace_id == SourceRow.workspace_id,
+                ),
+            )
+            .where(
+                SourceRow.tenant_id == tenant_id,
+                SourceRow.workspace_id == workspace_id,
+                SourceRow.id.in_(source_ids),
+            )
+        )
+        if statuses:
+            statement = statement.where(SourceRow.status.in_(statuses))
+        async with self.session() as session:
+            rows = (await session.execute(statement)).all()
+        return tuple(DocumentCandidatePin("", row.id, row.version_id, row.extraction_id) for row in rows)
 
     @property
     def engine(self) -> AsyncEngine | None:

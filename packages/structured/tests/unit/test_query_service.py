@@ -164,6 +164,31 @@ class _FakeQueryRepo:
         pass
 
 
+async def test_prepared_firewall_result_is_private_until_single_publication():
+    from pyfly.kernel import ServiceUnavailableException
+
+    class Repository(_FakeQueryRepo):
+        async def create_query(self, **fields):
+            self.created_queries.append(fields)
+            return fields["query_id"]
+
+    repository = Repository()
+    service = _make_service(query_repo=repository)
+    assert callable(getattr(service, "prepare_answer", None)), "Queries need explicit preparation"
+    prepared = await service.prepare_answer(
+        tenant_id="tenant",
+        workspace_id=uuid.uuid4(),
+        dataset_id=uuid.uuid4(),
+        question="Count",
+        scopes=set(),
+    )
+    assert repository.created_queries == []
+    assert prepared.answer.execution_status == "REJECTED_BY_FIREWALL"
+    with pytest.raises(ServiceUnavailableException, match="publication unit"):
+        await service.publish(prepared)
+    assert repository.created_queries == []
+
+
 class _FakeResultUploader:
     """Stub result uploader that records calls."""
 
@@ -714,6 +739,18 @@ async def test_conversation_reuses_the_actual_first_snapshot_after_reingestion(t
         table_resolver=resolver,
     )
     svc._conversation_service = conversation
+    original_retrieve = svc._retriever.retrieve
+    observed_pins = []
+
+    def bind_snapshot_pins(pins):
+        observed_pins.append(dict(pins))
+
+    async def retrieve_with_pinned_history(*args, **kwargs):
+        assert observed_pins[-1] == (conversation.turn["snapshot_pins_json"] if conversation.turn else {})
+        return await original_retrieve(*args, **kwargs)
+
+    svc._retriever.bind_snapshot_pins = bind_snapshot_pins
+    svc._retriever.retrieve = retrieve_with_pinned_history
     arguments = {
         "tenant_id": "ten-a",
         "workspace_id": uuid.uuid4(),
@@ -732,6 +769,41 @@ async def test_conversation_reuses_the_actual_first_snapshot_after_reingestion(t
     assert second.preview == [{"total": 10}]
     assert second.snapshot_pins == first.snapshot_pins
     assert conversation.turn["snapshot_pins_json"] == first.snapshot_pins
+
+
+@pytest.mark.asyncio
+async def test_failed_preparation_removes_only_its_private_artifact():
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+
+    from flyquery.config import FlyquerySettings
+    from flyquery.core.services.query.result_uploader import ResultUploader
+
+    class Learner:
+        def deferred(self, prepared):
+            class Deferred:
+                async def maybe_propose(self, **kwargs):
+                    raise RuntimeError("draft failed")
+
+            return Deferred()
+
+    svc = _make_service()
+    store = SimpleNamespace(put=AsyncMock(), delete=AsyncMock())
+    svc._result_uploader = ResultUploader(store, svc._query_repo, FlyquerySettings())
+    svc._auto_learner = Learner()
+    # Exercise the failure after the private object has actually been written.
+    svc._settings.autolearn_enabled = True
+    with pytest.raises(RuntimeError, match="draft failed"):
+        await svc.prepare_answer(
+            tenant_id="ten-a",
+            workspace_id=uuid.uuid4(),
+            dataset_id=uuid.uuid4(),
+            question="count",
+            scopes={"flyquery.query:read", "flyquery.examples:author"},
+        )
+    assert store.put.await_count == 1
+    store.delete.assert_awaited_once_with(store.put.await_args.args[0])
+    assert not svc._query_repo.created_queries
 
 
 @pytest.mark.asyncio

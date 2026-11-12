@@ -34,6 +34,7 @@ from flyquery.models.entities.ops import (  # noqa: F401,E402
     IngestEvent,
     IngestJob,
 )
+from flyquery.models.entities.provenance import SourceMetadataProvenance  # noqa: F401,E402
 from flyquery.models.entities.queries import (  # noqa: F401,E402
     Conversation,
     ConversationTurn,
@@ -57,6 +58,7 @@ from flyquery.models.entities.workspace import Workspace  # noqa: F401,E402
 
 __all__ = [
     "Base",
+    "SourceMetadataProvenance",
     "Workspace",
     "Dataset",
     "File",

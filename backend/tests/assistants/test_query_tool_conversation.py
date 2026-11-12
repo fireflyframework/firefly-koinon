@@ -3,6 +3,8 @@
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
+from test_service import assistants as assistants
+
 from koinon.assistants.execution import AssistantExecutor
 from koinon.assistants.tool_offering import AssistantToolAvailability
 from koinon.knowledge.capture_dtos import CapturedEvidence
@@ -43,7 +45,7 @@ def recorded_policy():
     return OrganizationKnowledgeSnapshot.model_validate({**value, "digest": snapshot_digest(value)})
 
 
-async def test_query_tool_does_not_pass_root_thread_id_as_a_native_conversation():
+async def test_query_tool_does_not_pass_root_thread_id_as_a_native_conversation(assistants):
     run = SimpleNamespace(
         id="run",
         attempts=1,
@@ -68,6 +70,8 @@ async def test_query_tool_does_not_pass_root_thread_id_as_a_native_conversation(
     )
     executor = object.__new__(AssistantExecutor)
     executor.assistants = SimpleNamespace(
+        source_reader=None,
+        runs=assistants[0].runs,
         catalog=catalog,
         validate_scope=AsyncMock(),
         settings=SimpleNamespace(tool_result_tokens=4096),
@@ -89,7 +93,10 @@ async def test_query_tool_does_not_pass_root_thread_id_as_a_native_conversation(
     executor.tool_availability = AssistantToolAvailability(
         executor.assistants.catalog, SimpleNamespace(validate_scope=AsyncMock(return_value=run.scope))
     )
-    tool = (await executor.tools("run", "worker", ["query_dataset"]))[0]
+    offering = await executor.tool_availability.resolve(
+        thread.subject, run.tenant_id, run.scope, ["query_dataset"]
+    )
+    tool = (await executor.tools("run", "worker", ["query_dataset"], offering=offering))[0]
     result = await tool.execute(dataset_id="dataset", question="Sum total")
     assert current_snapshot("issuer|reader", "tenant") is None
     assert result["evidence_id"] == "evidence"
@@ -102,7 +109,7 @@ async def test_query_tool_does_not_pass_root_thread_id_as_a_native_conversation(
     catalog.authorize.assert_awaited_with("issuer|reader", "tenant", "query:execute", "workspace")
 
 
-async def test_cancelled_native_query_retains_audit_receipt_without_converting_cancellation():
+async def test_cancelled_native_query_retains_audit_receipt_without_converting_cancellation(assistants):
     import asyncio
 
     import pytest
@@ -132,6 +139,8 @@ async def test_cancelled_native_query_retains_audit_receipt_without_converting_c
     native = SimpleNamespace(query=AsyncMock(side_effect=stopped))
     executor = object.__new__(AssistantExecutor)
     executor.assistants = SimpleNamespace(
+        source_reader=None,
+        runs=assistants[0].runs,
         catalog=SimpleNamespace(
             get=AsyncMock(
                 return_value=SimpleNamespace(
@@ -164,7 +173,10 @@ async def test_cancelled_native_query_retains_audit_receipt_without_converting_c
         assert current_snapshot("issuer|reader", "tenant") == recorded_policy()
 
     executor.queue.observation.side_effect = record_observation
-    tool = (await executor.tools("run", "worker", ["query_dataset"]))[0]
+    offering = await executor.tool_availability.resolve(
+        thread.subject, run.tenant_id, run.scope, ["query_dataset"]
+    )
+    tool = (await executor.tools("run", "worker", ["query_dataset"], offering=offering))[0]
     with pytest.raises(asyncio.CancelledError) as raised:
         await tool.execute(dataset_id="dataset", question="Question")
     assert raised.value is stopped

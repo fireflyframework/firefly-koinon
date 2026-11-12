@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from typing import Literal
 
-from pydantic import AwareDatetime, Field
+from pydantic import AwareDatetime, Field, field_validator
 
 from koinon.evidence.dtos import (
     ConversationIdentity,
@@ -13,6 +13,7 @@ from koinon.evidence.dtos import (
     SourceReference,
 )
 from koinon.exports.dtos import Input, MessageSelection
+from koinon.integrations.content_sources.read_dtos import ReaderSourceSelection
 
 
 class ShareReviewInput(MessageSelection):
@@ -68,3 +69,27 @@ class SharePage(Frozen):
     page: int
     page_size: int
     pages: int
+
+
+class ShareBrowseInput(Input):
+    q: str = Field(default="", max_length=512)
+    status: Literal["all", "active", "revoked", "expired"] = "all"
+    page_size: int = Field(default=25, ge=1, le=100)
+    cursor: str | None = Field(default=None, max_length=128)
+    reader_source_connections: list[ReaderSourceSelection] | None = Field(default=None, max_length=100)
+
+    @field_validator("reader_source_connections")
+    @classmethod
+    def unique_connections(cls, values):
+        if values is not None and len({(value.provider, value.external_tenant) for value in values}) != len(
+            values
+        ):
+            raise ValueError("Select one connection per provider and external tenant")
+        return values
+
+
+class ShareBrowsePage(Frozen):
+    items: tuple[Share, ...]
+    next_cursor: str | None = None
+    total: None = None
+    total_is_exact: Literal[False] = False

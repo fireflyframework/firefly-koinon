@@ -40,12 +40,19 @@ from __future__ import annotations
 
 import logging
 import uuid
+from contextlib import nullcontext
+from hashlib import sha256
 from typing import TYPE_CHECKING
 
 import sqlalchemy as sa
 from pyfly.data.transaction import infrastructure_unit
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from flyquery.core.services.ingestion.lineage import (
+    StructuredStageGuard,
+    StructuredStagePhase,
+    StructuredStageTarget,
+)
 from flyquery.core.services.retrieval.embedder import (
     Embedder,
     NullEmbedder,
@@ -65,6 +72,7 @@ async def run_embed(
     session_factory: async_sessionmaker[AsyncSession],
     settings: FlyquerySettings | None = None,
     embedder: Embedder | None = None,
+    guard: StructuredStageGuard | None = None,
 ) -> dict:
     """Execute Stage 9: embed + index.
 
@@ -94,7 +102,12 @@ async def run_embed(
         embedder = build_embedder(settings) if settings is not None else NullEmbedder()
 
     # Load all schema_objects for this snapshot
-    async with infrastructure_unit(session_factory) as s:
+    async with (
+        guard.unit(StructuredStagePhase.EMBED_READ, StructuredStageTarget(tenant_id, snapshot_id))
+        if guard is not None
+        else nullcontext(),
+        infrastructure_unit(session_factory) as s,
+    ):
         result = await s.execute(
             sa.text(
                 # profile_json/sample_values_json are pulled in so the embed
@@ -120,21 +133,32 @@ async def run_embed(
     # of one per row. For tiny snapshots this is the same; for hundreds
     # of columns it cuts wall-clock dramatically.
     embed_texts = [_build_embed_text(row) for row in rows]
+    targets = tuple(
+        StructuredStageTarget(
+            tenant_id, snapshot_id, object_id=row["id"], input_sha256=sha256(text.encode()).hexdigest()
+        )
+        for row, text in zip(rows, embed_texts, strict=True)
+    )
+    if guard is not None and targets:
+        await guard.before_model(targets)
     vectors: list[list[float] | None] = await embedder.embed_batch(embed_texts) if rows else []
 
     embeddings_written = 0
-    for row, embed_text, vector in zip(rows, embed_texts, vectors, strict=True):
+    for row, embed_text, vector, target in zip(rows, embed_texts, vectors, targets, strict=True):
         if vector is not None:
             embeddings_written += 1
-        await _update_object(
-            object_id=row["id"],
-            embed_vector=vector,
-            model_name=embedder.model if vector is not None else None,
-            embed_text=embed_text,
-            tenant_id=tenant_id,
-            session_factory=session_factory,
-            source_hash=row.get("embedding_source_hash"),
-        )
+        async with (
+            guard.unit(StructuredStagePhase.EMBED_WRITE, target) if guard is not None else nullcontext()
+        ):
+            await _update_object(
+                object_id=row["id"],
+                embed_vector=vector,
+                model_name=embedder.model if vector is not None else None,
+                embed_text=embed_text,
+                tenant_id=tenant_id,
+                session_factory=session_factory,
+                source_hash=row.get("embedding_source_hash"),
+            )
 
     logger.info(
         "stage=embed snapshot_id=%s objects=%d embeddings_written=%d model=%s",

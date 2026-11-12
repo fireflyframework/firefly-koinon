@@ -36,6 +36,7 @@ function setup(request: KoinonTransport['request']) {
     authRequired: signal(false),
     context: signal({ subject: 'issuer|admin', tenants: [], workspaces: [] }),
     entries: signal([]),
+    readerSources: signal<null | []>(null),
   };
   const transport: KoinonTransport = {
     request,
@@ -59,12 +60,12 @@ const settle = async () => {
   TestBed.tick();
 };
 afterEach(() => vi.useRealTimers());
-it('debounces real scoped catalog requests and preserves observed totals', async () => {
+it('debounces reader-aware catalog requests without exposing a total', async () => {
   vi.useFakeTimers();
   const calls: RequestOptions[] = [];
   const { search } = setup(async <T>(method: unknown, path: string, options?: RequestOptions) => {
-    expect(method).toBe('GET');
-    expect(path).toBe('/tenants/north/catalog');
+    expect(method).toBe('POST');
+    expect(path).toBe('/tenants/north/catalog/browse');
     calls.push(options!);
     return { items: [entry()], total: 43, page: 1, page_size: 8, pages: 6 } as T;
   });
@@ -77,18 +78,19 @@ it('debounces real scoped catalog requests and preserves observed totals', async
   search.setQuery('policy');
   await settle();
   expect(calls).toHaveLength(1);
-  expect(calls[0].query).toEqual({
+  expect(calls[0].body).toEqual({
     q: 'policy',
     workspace_id: 'space',
     project_id: 'project',
     view: 'library',
-    page: 1,
+    cursor: undefined,
+    reader_source_connections: null,
     page_size: 8,
     sort: 'name',
     order: 'asc',
   });
   expect(calls[0].signal).toBeInstanceOf(AbortSignal);
-  expect(search.page().total).toBe(43);
+  expect(search.page().total).toBeUndefined();
 });
 it('aborts and hides stale scope responses even when the transport ignores abort', async () => {
   vi.useFakeTimers();
@@ -141,26 +143,28 @@ it('fences visible entries on principal, project and client changes and cancels 
   await vi.advanceTimersByTimeAsync(500);
   expect(search.page().items).toEqual([]);
 });
-it('requests only selected server pages without inventing totals or crawling the catalog', async () => {
+it('continues an empty page only on request and clears cursors on reader changes', async () => {
   vi.useFakeTimers();
-  const pages: number[] = [];
-  const { search } = setup(async <T>(_method: unknown, _path: string, options?: RequestOptions) => {
-    const page = Number(options!.query!['page']);
-    pages.push(page);
-    return { items: [entry('page-' + page)], page, page_size: 8, pages: 20, total: 153 } as T;
+  const pages: (string|undefined)[] = [];
+  const { search, facade } = setup(async <T>(_method: unknown, _path: string, options?: RequestOptions) => {
+    const cursor = (options!.body as {cursor?:string}).cursor;
+    pages.push(cursor);
+    return { items: cursor ? [entry('later-page')] : [], actors:{}, next_cursor:cursor ? null : 'opaque', total:null } as T;
   });
   search.setOpen(true);
   search.setQuery('page');
   await settle();
-  await search.goToPage(2);
-  expect(pages).toEqual([1, 2]);
-  expect(search.page().total).toBe(153);
-  await search.goToPage(100);
-  expect(pages).toEqual([1, 2]);
-  search.setQuery('new');
+  expect(search.page().next_cursor).toBe('opaque');
+  await search.nextPage();
+  expect(pages).toEqual([undefined, 'opaque']);
+  expect(search.page().items.map(row=>row.id)).toEqual(['later-page']);
+  expect(search.page().total).toBeUndefined();
+  await search.nextPage();
+  expect(pages).toHaveLength(2);
+  facade.readerSources.set([]);
   expect(search.page().items).toEqual([]);
   await settle();
-  expect(pages).toEqual([1, 2, 1]);
+  expect(pages).toEqual([undefined, 'opaque', undefined]);
 });
 it('does not search without current tenant, catalog permission, query or open state', async () => {
   vi.useFakeTimers();

@@ -62,10 +62,26 @@ async def test_api_session_identifier_comes_only_from_native_request(lifecycle):
         await controller.begin("tenant", SourceAuthorizationInput(provider="google_drive"), unauthenticated)
 
 
+async def test_policy_items_use_the_current_native_browser_session():
+    from koinon.integrations.content_sources.mapping_api import SourceMappingController
+
+    async def items(actor, tenant, review_id, *, limit, cursor, browser_session=None):
+        if browser_session != "browser-a":
+            raise ForbiddenException("The review belongs to another browser session")
+        assert (actor, tenant, review_id, limit, cursor) == ("issuer|alice", "tenant", "review", 25, None)
+        return SimpleNamespace(model_dump=lambda **options: {"review_id": review_id})
+
+    controller = SourceMappingController(SimpleNamespace(items=items), None)
+    assert await controller.items("tenant", "review", request()) == {"review_id": "review"}
+    with pytest.raises(ForbiddenException):
+        await controller.items("tenant", "review", request(session="browser-b"))
+
+
 async def test_changed_read_authority_has_retryable_read_conflict_without_replay():
+    from pyfly.kernel import ConflictException
+
     from koinon.integrations.content_sources.controllers import _safe
     from koinon.integrations.content_sources.errors import SourceError
-    from pyfly.kernel import ConflictException
 
     calls = []
 

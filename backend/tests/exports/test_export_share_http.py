@@ -4,6 +4,8 @@ import importlib.util
 import json
 from pathlib import Path
 
+import pytest
+
 spec = importlib.util.spec_from_file_location(
     "export_share_web_fixture", Path(__file__).resolve().parents[1] / "web/conftest.py"
 )
@@ -11,6 +13,55 @@ assert spec and spec.loader
 native = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(native)
 client = native.client
+
+
+@pytest.mark.parametrize(
+    "code,status",
+    [
+        ("access_denied", 403),
+        ("authority_changed", 409),
+        ("reconnect_required", 409),
+        ("unavailable", 503),
+        ("throttled", 503),
+    ],
+)
+def test_export_source_failures_have_sanitized_native_http_errors(client, monkeypatch, code, status):
+    from koinon.exports.service import KnowledgeExports
+    from koinon.integrations.content_sources.errors import SourceError
+
+    service = client.native_app.state.context.get_bean(KnowledgeExports)
+
+    async def denied(*args, **kwargs):
+        error = SourceError(code, retry_after=30)
+        error.args = ("https://private.example/?token=secret",)
+        raise error
+
+    monkeypatch.setattr(service, "get", denied)
+    response = client.get("/api/v1/tenants/north/exports/saved", headers=native.bearer("viewer"))
+    assert response.status_code == status
+    assert response.json()["code"] == "SOURCE_" + code.upper()
+    assert "private.example" not in response.text and "secret" not in response.text
+
+
+def test_native_export_browse_contract_has_unknown_total_and_explicit_selection(client):
+    headers, selection = selected_message(client)
+    base = "/api/v1/tenants/north/exports"
+    preview = client.post(
+        base + "/reviews", headers=headers, json={**selection, "kind": "conversation", "format": "json"}
+    )
+    assert preview.status_code == 201, preview.text
+    created = client.post(
+        base,
+        headers=headers,
+        json={"review_id": preview.json()["id"], "expected_revision": preview.json()["revision"]},
+    )
+    assert created.status_code == 201, created.text
+    response = client.post(base + "/browse", headers=headers, json={"reader_source_connections": []})
+    assert response.status_code == 200, response.text
+    assert [item["id"] for item in response.json()["items"]] == [created.json()["id"]]
+    assert response.json()["total"] is None and response.json()["total_is_exact"] is False
+    assert response.json()["next_cursor"] is None
+    assert client.post(base + "/browse", headers=headers, json={"page_size": 101}).status_code == 422
 
 
 def selected_message(client):

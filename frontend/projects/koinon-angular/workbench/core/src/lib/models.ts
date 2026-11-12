@@ -1,5 +1,5 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
-import type { ResourceKind } from '@fireflyframework/koinon-sdk';
+import type { CatalogEntry, CatalogBrowseOutput, Page, ResourceKind } from '@fireflyframework/koinon-sdk';
 export type KoinonView =
   | 'catalog'
   | 'sources'
@@ -56,4 +56,39 @@ export const NAVIGATION: { id: KoinonView; label: string; icon: string; group: s
   { id: 'advanced', label: 'Structured tools', icon: 'code', group: 'administration' },
 ];
 
-export interface FolderPageState {ids:string[];page?:number;pages?:number;total?:number;}
+export interface FolderPageState {ids:string[];page?:number;pages?:number;total?:number;next_cursor?:string|null;}
+
+/** Adapt authorized browse results without inventing totals or numbered pages. */
+export function catalogBrowsePage(result: CatalogBrowseOutput): Page<CatalogEntry> {
+  return {
+    items: result.items.map(entry => {
+      if (!Object.hasOwn(KIND_LABELS, entry.kind)) throw Error('The catalog returned an unsupported resource kind.');
+      return {
+        ...entry, kind: entry.kind as ResourceKind, description: entry.description ?? '',
+        metadata: entry.metadata ?? {}, parent_id: entry.parent_id ?? null,
+        workspace_id: entry.workspace_id ?? null, project_id: entry.project_id ?? null,
+        created_by: entry.created_by ?? undefined, updated_by: entry.updated_by ?? undefined,
+        updated_at: entry.updated_at ?? undefined,
+      };
+    }),
+    actors: Object.fromEntries(Object.entries(result.actors ?? {}).map(([id, actor]) => [id, {...actor, avatar_data_url: actor.avatar_data_url ?? null, avatar_version: actor.avatar_version ?? null}])),
+    summaries: Object.fromEntries(result.items.flatMap(({id}) => {
+      const summary = result.summaries?.[id];
+      if (!summary) return [];
+      return [[id, {
+        child_count: summary.child_count ?? null,
+        document_count: summary.document_count ?? null,
+        dataset_count: summary.dataset_count ?? null,
+        table_count: summary.table_count ?? null,
+        row_count: summary.row_count ?? null,
+        column_count: summary.column_count ?? null,
+        page_count: summary.page_count ?? null,
+        size_bytes: summary.size_bytes ?? null,
+        format: summary.format ?? null,
+        language: summary.language ?? null,
+        tags: summary.tags ?? [],
+      }]];
+    })),
+    next_cursor: result.next_cursor ?? null,
+  };
+}

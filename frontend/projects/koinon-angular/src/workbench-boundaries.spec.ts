@@ -6,6 +6,11 @@ import * as legacy from '@fireflyframework/koinon-angular';
 import * as workbench from '@fireflyframework/koinon-angular/workbench';
 import * as core from '@fireflyframework/koinon-angular/workbench/core';
 import * as page from '@fireflyframework/koinon-angular/workbench/page';
+import * as startup from '@fireflyframework/koinon-angular/workbench/startup';
+import * as library from '@fireflyframework/koinon-angular/workbench/library';
+import * as bootstrap from '@fireflyframework/koinon-angular/workbench/bootstrap';
+import * as chatState from '@fireflyframework/koinon-angular/chat/state';
+import { KoinonOrganizationDirectory } from '@fireflyframework/koinon-angular/workbench/directory';
 import * as panels from '@fireflyframework/koinon-angular/workbench/panels';
 import { availabilitySession } from '@fireflyframework/koinon-angular/workbench/availability';
 import { availabilitySession as internalSession } from '../workbench/src/lib/services/availability-session';
@@ -28,6 +33,26 @@ describe('independent workbench entrypoints', () => {
       expect(workbench[key]).toBe(panels[key]);
       expect(legacy[key]).toBe(panels[key]);
     }
+  });
+
+  it('preserves injection and component identities across startup and compatibility exports', () => {
+    expect(startup.KoinonWorkbench).toBe(page.KoinonWorkbench);
+    expect(startup.KoinonFontLoader).toBe(page.KoinonFontLoader);
+    expect(startup.KOINON_SETTINGS_LOADER).toBe(page.KOINON_SETTINGS_LOADER);
+    expect(page.KoinonOrganizationDirectory).toBe(KoinonOrganizationDirectory);
+    expect(workbench.KoinonOrganizationDirectory).toBe(KoinonOrganizationDirectory);
+    for (const key of ['KoinonLibraryTemplate', 'KoinonResourceList', 'KoinonBreadcrumb'] as const) {
+      expect(startup[key]).toBe(library[key]);
+      expect(page[key]).toBe(library[key]);
+      expect(workbench[key]).toBe(library[key]);
+      expect(legacy[key]).toBe(library[key]);
+    }
+    expect(startup.KoinonSearchField).toBe(core.KoinonSearchField);
+    expect(startup.KoinonPagination).toBe(core.KoinonPagination);
+    expect(startup.KoinonWorkbench).toBe(bootstrap.KoinonWorkbench);
+    expect(startup.KoinonAssistant).toBe(bootstrap.KoinonAssistant);
+    expect(legacy.KoinonConversationGroups).toBe(chatState.KoinonConversationGroups);
+    expect(legacy.KoinonEvidenceGroups).toBe(chatState.KoinonEvidenceGroups);
   });
 
   it('shares the client, language and one availability session across entrypoints', () => {

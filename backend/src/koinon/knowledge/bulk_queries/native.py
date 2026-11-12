@@ -4,16 +4,19 @@ from uuid import UUID
 
 from pydantic import ValidationError
 from pyfly.container import service
-from pyfly.data.relational.sqlalchemy import Propagation, transactional
+from pyfly.data.relational.sqlalchemy import transactional
 from pyfly.kernel import ConflictException
 
 from koinon.knowledge.adapters import native_scope
-from koinon.knowledge.bulk.authority import token_identity
 from koinon.knowledge.bulk_queries.authority import QueryBatchAuthority
 from koinon.knowledge.bulk_queries.dtos import BatchQueryOutcome
 from koinon.knowledge.bulk_queries.entities import QueryBatchReference
 from koinon.knowledge.bulk_queries.native_repository import NativeQueryRepository, receipt_of
-from koinon.knowledge.bulk_queries.native_values import QueryOperationIdentity, QueryOperationReceipt
+from koinon.knowledge.bulk_queries.native_values import (
+    NativeCommitDescriptor,
+    QueryOperationIdentity,
+    QueryOperationReceipt,
+)
 from koinon.knowledge.bulk_queries.queue import QueryBatchQueue, QueryLease
 from koinon.knowledge.bulk_queries.repositories import QueryBatchRepository
 from koinon.knowledge.capture_receipt import NativeEvidenceReceipt
@@ -46,12 +49,69 @@ class BulkQueryNative:
             connections_sha256=lease.connections_sha256,
         )
 
-    async def inspect(self, lease: QueryLease) -> tuple[str, QueryOperationReceipt | None]:
-        identity = self.identity(lease)
+    async def inspect_commit_metadata(self, lease: QueryLease):
         with native_scope("structured", lease.tenant_id, lease.native_workspace_id, lease.subject):
+            return await self.operations.inspect_commit_metadata(self.identity(lease))
+
+    async def authorized_result(self, identity: QueryOperationIdentity, descriptor: NativeCommitDescriptor):
+        """Hydrate only after the caller admits the descriptor's exact manifest."""
+        with native_scope("structured", identity.tenant_id, str(identity.workspace_id), identity.subject):
             async with self.operations.read() as unit:
+                status, observed = await self.operations.inspect_commit_metadata(identity)
+                if status != "committed" or observed != descriptor:
+                    raise ConflictException(
+                        "Native commit metadata differs", code="BULK_QUERY_RECEIPT_CONFLICT"
+                    )
                 row = await unit.row(identity)
-                return (row.status, receipt_of(row)) if row is not None else ("absent", None)
+                receipt = receipt_of(row) if row is not None else None
+                if receipt is None:
+                    raise ConflictException("Native receipt unavailable", code="BULK_QUERY_RECEIPT_CONFLICT")
+                return receipt
+
+    @transactional
+    async def acknowledge_commit_metadata(self, lease: QueryLease, descriptor: NativeCommitDescriptor):
+        """Record an immutable native outcome without exercising source-reader rights."""
+        descriptor = NativeCommitDescriptor.model_validate(descriptor)
+        if descriptor.operation_id != UUID(lease.item_id):
+            raise ConflictException("Query receipt owner differs", code="BULK_QUERY_RECEIPT_CONFLICT")
+        await self.authority.shared.authority_lock(lease.tenant_id, lease.subject, lease.token_id)
+        batch = await self.records.scoped(
+            lease.tenant_id, lease.subject, lease.token_id, lease.batch_id, lock=True
+        )
+        item = await self.records.recovery_item(lease)
+        job = await self.records.job(lease.job_id)
+        if (
+            batch is None
+            or item is None
+            or job is None
+            or item.job_id != job.id
+            or batch.workspace_id != lease.workspace_id
+            or job.resource_id != lease.dataset_id
+            or job.payload != {"batch_id": lease.batch_id, "item_id": lease.item_id}
+            or job.attempts != lease.attempt
+            or (job.worker_id is not None and job.worker_id != lease.worker_id)
+        ):
+            raise ConflictException("Query worker lost its current generation", code="BULK_LEASE_LOST")
+        status, observed = await self.inspect_commit_metadata(lease)
+        if status != "committed" or observed != descriptor:
+            raise ConflictException("Native commit metadata differs", code="BULK_QUERY_RECEIPT_CONFLICT")
+        encoded = descriptor.model_dump(mode="json", by_alias=True)
+        if item.native_commit_json is not None:
+            if item.native_commit_json != encoded:
+                raise ConflictException(
+                    "Query commit metadata is immutable", code="BULK_QUERY_RECEIPT_CONFLICT"
+                )
+            return
+        if item.result_query_id is not None and item.result_query_id != str(descriptor.query_id):
+            raise ConflictException("Query result identity differs", code="BULK_QUERY_RECEIPT_CONFLICT")
+        await self.records.store_commit_metadata(item.id, descriptor)
+        job.status, job.progress = descriptor.outcome, 100
+        job.error = None if descriptor.outcome == "succeeded" else "BULK_QUERY_NOT_EXECUTED"
+        job.lease_until = None
+        job.worker_id = None
+        job.result = {"batch_id": batch.id, "item_id": item.id, "dataset_id": item.dataset_id}
+        batch.revision += 1
+        await self.records.flush()
 
     async def _references(self, lease: QueryLease, receipt: QueryOperationReceipt) -> None:
         item = await self.records.item(lease.batch_id, lease.item_id)
@@ -126,57 +186,3 @@ class BulkQueryNative:
                 "Native query lacks a complete receipt", code="BULK_QUERY_RECEIPT_REQUIRED"
             )
         return committed
-
-    @transactional(propagation=Propagation.REQUIRES_NEW)
-    async def acknowledge(self, lease: QueryLease, receipt: QueryOperationReceipt) -> None:
-        await self.authority.workspace(lease.subject, lease.tenant_id, lease.workspace_id, write=True)
-        item = await self.records.item(lease.batch_id, lease.item_id)
-        if item is None:
-            raise ConflictException("Query item unavailable", code="BULK_QUERY_SCOPE_CHANGED")
-        await self.authority.item(lease.subject, lease.tenant_id, lease.workspace_id, item, write=True)
-        await self.records.fenced(lease.tenant_id, lease.item_id, lease.worker_id, lease.attempt)
-        await self.acknowledge_committed(lease, receipt)
-
-    @transactional
-    async def acknowledge_committed(self, lease: QueryLease, receipt: QueryOperationReceipt) -> None:
-        await self.authority.workspace(lease.subject, lease.tenant_id, lease.workspace_id, write=True)
-        candidate = await self.records.item(lease.batch_id, lease.item_id)
-        if candidate is None:
-            raise ConflictException("Query item unavailable", code="BULK_QUERY_SCOPE_CHANGED")
-        await self.authority.item(lease.subject, lease.tenant_id, lease.workspace_id, candidate, write=True)
-        batch = await self.records.scoped(
-            lease.tenant_id, lease.subject, token_identity(), lease.batch_id, lock=True
-        )
-        item = await self.records.item(lease.batch_id, lease.item_id, lock=True)
-        if batch is None or item is None or receipt.identity != self.identity(lease):
-            raise ConflictException("Query receipt owner differs", code="BULK_QUERY_RECEIPT_CONFLICT")
-        if item.result_json is not None:
-            if item.result_json != receipt.result.model_dump(mode="json"):
-                raise ConflictException("Query result is immutable", code="BULK_QUERY_RECEIPT_CONFLICT")
-            return
-        status, observed = await self.inspect(lease)
-        if status != "committed" or observed != receipt:
-            raise ConflictException(
-                "Only an existing native query commit may be acknowledged", code="BULK_QUERY_RECEIPT_CONFLICT"
-            )
-        await self._references(lease, receipt)
-        job = await self.records.job(item.job_id)
-        if job is None:
-            raise ConflictException("Query job unavailable", code="BULK_QUERY_RECEIPT_CONFLICT")
-        item.result_json = receipt.result.model_dump(mode="json")
-        item.status = "succeeded" if receipt.result.execution_status in {"OK", "REFINED_OK"} else "failed"
-        item.error_code = (
-            None
-            if item.status == "succeeded"
-            else "BULK_QUERY_CLARIFICATION_REQUIRED"
-            if receipt.result.clarification
-            else "BULK_QUERY_NOT_EXECUTED"
-        )
-        job.status = item.status
-        job.progress = 100
-        job.error = item.error_code
-        job.lease_until = None
-        job.worker_id = None
-        job.result = {"batch_id": batch.id, "item_id": item.id, "dataset_id": item.dataset_id}
-        batch.revision += 1
-        await self.records.flush()

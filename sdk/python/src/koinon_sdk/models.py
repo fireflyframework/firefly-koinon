@@ -9,6 +9,7 @@ from koinon_sdk.attachments import AttachmentCapabilities
 from koinon_sdk.evidence import SourceReference
 from koinon_sdk.organization_knowledge import OrganizationKnowledgeSnapshot
 from koinon_sdk.proposals import CatalogProposal, ProposalUpdate
+from koinon_sdk.reader_sources import ReaderSourceSelection
 
 
 class AuthorSummary(ResponseModel):
@@ -791,11 +792,21 @@ class AgentInput(InputModel):
 
 
 class RunInput(InputModel):
+    reader_source_connections: list[ReaderSourceSelection] | None = Field(default=None, max_length=100)
     attachment_ids: list[str] = Field(default_factory=list, max_length=10)
     agent_id: str
     message: str
     scope: KnowledgeScope | None = None
     client_request_id: str
+
+    @model_validator(mode="after")
+    def unique_source_accounts(self):
+        choices = self.reader_source_connections
+        if choices is not None and len({(item.provider, item.external_tenant) for item in choices}) != len(
+            choices
+        ):
+            raise ValueError("Choose at most one account for each provider and organization")
+        return self
 
 
 class UserProfile(ResponseModel):

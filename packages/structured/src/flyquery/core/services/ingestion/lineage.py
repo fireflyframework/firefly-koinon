@@ -4,11 +4,13 @@
 
 import json
 from asyncio import CancelledError
-from contextlib import asynccontextmanager, contextmanager
+from contextlib import AbstractAsyncContextManager, asynccontextmanager, contextmanager
 from contextvars import ContextVar
 from dataclasses import asdict, dataclass
+from enum import StrEnum
 from hashlib import sha256
 from typing import Any, Protocol
+from uuid import UUID
 
 from pyfly.kernel import ConflictException, ForbiddenException, ServiceUnavailableException
 
@@ -30,6 +32,42 @@ class LineageConflict(ConflictException, LineageError):
 
 class LineageSink(Protocol):
     async def emit(self, event: str, **values: Any) -> Any: ...
+
+
+class StructuredStagePhase(StrEnum):
+    RECONCILE_READ = "reconcile_read"
+    RECONCILE_WRITE = "reconcile_write"
+    SAMPLE_READ = "sample_read"
+    SAMPLE_WRITE = "sample_write"
+    PROFILE_READ = "profile_read"
+    PROFILE_WRITE = "profile_write"
+    EMBED_READ = "embed_read"
+    EMBED_WRITE = "embed_write"
+
+
+@dataclass(frozen=True, slots=True)
+class StructuredStageTarget:
+    tenant_id: str
+    snapshot_id: UUID | None
+    table_id: UUID | None = None
+    object_id: UUID | None = None
+    input_sha256: str | None = None
+
+
+class StructuredStageGuard(Protocol):
+    def unit(
+        self, phase: StructuredStagePhase, target: StructuredStageTarget
+    ) -> AbstractAsyncContextManager[None]: ...
+
+    async def before_model(self, targets: tuple[StructuredStageTarget, ...]) -> None: ...
+
+
+def schema_column_name(qualified_name: str, parent_qualified_name: str | None) -> str:
+    """Recover a literal column name only from its proven snapshot table prefix."""
+    prefix = f"{parent_qualified_name}." if parent_qualified_name else None
+    if prefix is None or not qualified_name.startswith(prefix) or len(qualified_name) == len(prefix):
+        raise LineageConflict("The schema column has no unambiguous table identity")
+    return qualified_name[len(prefix) :]
 
 
 @dataclass

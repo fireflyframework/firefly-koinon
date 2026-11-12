@@ -38,6 +38,8 @@ export class KoinonTableCoordinates {
       this.facade.workspaceId(),
       this.facade.projectId(),
       this.facade.context()?.subject,
+      this.facade.readerSources(),
+      this.facade.readerRevision(),
       this.clients.revision(),
       this.facade.authRequired(),
       this.facade.permissions().has('catalog:read'),
@@ -123,7 +125,7 @@ export class KoinonTableCoordinates {
       const t = selected.target;
       const result = await this.clients
         .get()
-        .dataset.tableCoordinates(selected.tenantId, t.datasetId, t.tableId, t.snapshotId, {
+        .dataset.readTableCoordinates(selected.tenantId, t.datasetId, t.tableId,{snapshot_id:t.snapshotId,reader_source_connections:this.facade.readerSources()}, {
           signal,
         });
       this.validateManifest(result, selected);
@@ -167,10 +169,7 @@ export class KoinonTableCoordinates {
       const t = selected.target;
       const result = await this.clients
         .get()
-        .dataset.tableCoordinateRows(selected.tenantId, t.datasetId, t.tableId, t.snapshotId, {
-          query: { page, page_size: 25 },
-          signal,
-        });
+        .dataset.readTableCoordinateRows(selected.tenantId, t.datasetId, t.tableId,{snapshot_id:t.snapshotId,page,page_size:25,reader_source_connections:this.facade.readerSources()},{signal});
       this.validatePage(result, selected, page, result.items.length);
       let end = 0;
       if (
@@ -200,10 +199,7 @@ export class KoinonTableCoordinates {
       const t = selected.target;
       const result = await this.clients
         .get()
-        .dataset.tableCoordinateColumns(selected.tenantId, t.datasetId, t.tableId, t.snapshotId, {
-          query: { page, page_size: 25 },
-          signal,
-        });
+        .dataset.readTableCoordinateColumns(selected.tenantId, t.datasetId, t.tableId,{snapshot_id:t.snapshotId,page,page_size:25,reader_source_connections:this.facade.readerSources()},{signal});
       this.validatePage(result, selected, page, result.items.length);
       let previous = -1;
       if (
@@ -253,7 +249,7 @@ export class KoinonTableCoordinates {
           selected.tenantId,
           t.datasetId,
           t.tableId,
-          { snapshot_id: t.snapshotId, cells: [{ row: r - 1, column: c - 1 }] },
+          { snapshot_id: t.snapshotId, cells: [{ row: r - 1, column: c - 1 }],reader_source_connections:this.facade.readerSources() },
           { signal },
         );
       this.validateManifest(result.manifest, selected, true);

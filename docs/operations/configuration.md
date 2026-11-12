@@ -48,12 +48,22 @@ principal does not receive a matching cookie's expiry. These browser observation
 are separate from the personal-token and MCP OAuth lifetimes in the headless SDKs.
 Subsequent requests always run normal authentication and authorization checks.
 
-`pyfly.session.ttl` is the native store lifetime in seconds, default `1800`.
+`pyfly.session.ttl` is the native store lifetime in seconds, default `28800`
+(eight hours). An explicit deployment value takes precedence; for example,
+`pyfly.session.ttl: 1800` retains a thirty-minute lifetime.
 It applies when a session is saved, replaced or renamed; reading expiry does not
 renew it. A reissued cookie's `Max-Age` and `HttpSession.last_accessed` are not
-authoritative remaining lifetime. There is no new idle or hard timeout policy,
-refresh-token grant, membership extension or identity-provider policy change in
-this UI. Keep the deployment's reviewed lifetime and secure cookie configuration.
+authoritative remaining lifetime. Existing sessions keep their stored expiry
+until a legitimate save, replacement or renewal; changing the default does not
+retroactively extend them.
+
+This setting does not introduce an idle or absolute login-age policy, a
+refresh-token grant, or a membership extension. Identity-provider policies still
+apply during sign-in, but this setting does not add back-channel logout or
+continuously propagate provider logout and sign-in-frequency policies to existing
+Koinon sessions. Browser sessions remain separate from MCP session, personal-token,
+and OAuth 2.0 token lifetimes. Keep the deployment's reviewed lifetime and secure
+cookie configuration.
 
 ## PostgreSQL TLS by driver
 
@@ -104,7 +114,7 @@ Bootstrap and other operator commands that construct Koinon's application contex
 ## Bounded settings
 
 | Alias | Default | Accepted range |
-|---|---:|---:|
+| --- | ---: | ---: |
 | `KOINON_DATABASE_POOL_SIZE` | 5 | 1–100 |
 | `KOINON_DATABASE_POOL_MAX_OVERFLOW` | 0 | 0–100 |
 | `KOINON_DATABASE_POOL_TIMEOUT` | 5 s | 0.1–120 s |

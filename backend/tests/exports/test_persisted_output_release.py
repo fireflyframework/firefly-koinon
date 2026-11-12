@@ -25,7 +25,6 @@ reviews = module.reviews
 @pytest.mark.parametrize("kind", ["export", "share"])
 async def test_persisted_legacy_assistant_text_cannot_transfer_without_output_authority(reviews, kind):
     evidence, _, context = reviews
-    evidence.outputs = None
     if kind == "export":
         service = context.get_bean(KnowledgeExports)
         preview = await service.preview(
@@ -44,6 +43,7 @@ async def test_persisted_legacy_assistant_text_cannot_transfer_without_output_au
             "owner", "north", ShareCreate(review_id=preview.id, expected_revision=preview.revision)
         )
         transfer = service.read
+    evidence.outputs = None
     repository = context.get_bean(EvidenceReviewRepository)
     before = copy.deepcopy((await repository.find_by_id(preview.id)).snapshot_json)
     with pytest.raises(ServiceUnavailableException) as error:

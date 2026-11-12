@@ -1,10 +1,10 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
-import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
+import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench/core';
 import { COMMUNICATION_RUNTIME_SPANISH } from './spanish';
 registerKoinonSpanish(COMMUNICATION_RUNTIME_SPANISH);
 import type { Signal } from '@angular/core';
 import { DestroyRef, Injectable, computed, effect, inject, signal } from '@angular/core';
-import { KoinonClientContext, KoinonFacade } from '@fireflyframework/koinon-angular';
+import { KoinonClientContext, KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonError } from '@fireflyframework/koinon-sdk';
 import {
   createCommunicationsApi,

@@ -120,6 +120,19 @@ def test_generated_title_never_overwrites_manual_or_stale_revision(client):
     url = BASE + "/threads/" + conversation["id"]
     generated = client.get(url, headers=bearer()).json()
     assert generated["title_source"] == "ai" and generated["revision"] == 2
+
+    async def stored_source():
+        return (await history.assistants.threads.find_by_id(conversation["id"])).title_source
+
+    assert client.portal.call(stored_source) == "user_prompt"
+    assert (
+        client.patch(
+            url,
+            headers=bearer(),
+            json={"expected_revision": 2, "title_source": "user_prompt", "title": "Forged origin"},
+        ).status_code
+        == 422
+    )
     assert (
         client.patch(
             url, headers=bearer(), json={"title": "My own title", "expected_revision": 2}
@@ -129,6 +142,27 @@ def test_generated_title_never_overwrites_manual_or_stale_revision(client):
     assert client.portal.call(apply, "Late AI title", 2) is False
     assert client.portal.call(apply, "Another AI title", 3) is False
     assert client.get(url, headers=bearer()).json()["title"] == "My own title"
+
+
+def test_reader_history_browse_has_no_exact_total_and_rejects_identity_fields(client):
+    conversation = thread(client, title="My conversation")
+    response = client.post(
+        BASE + "/threads/browse",
+        headers=bearer(),
+        json={"reader_source_connections": [], "q": "My conversation"},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["total"] is None and response.json()["total_is_exact"] is False
+    assert response.json()["items"][0]["id"] == conversation["id"]
+    messages = client.post(
+        BASE + "/threads/" + conversation["id"] + "/messages/browse",
+        headers=bearer(),
+        json={"reader_source_connections": []},
+    )
+    assert messages.status_code == 200, messages.text
+    assert messages.json() == {"items": [], "next_cursor": None, "total": None, "total_is_exact": False}
+    forged = client.post(BASE + "/threads/browse", headers=bearer(), json={"owner": "another"})
+    assert forged.status_code == 422
 
 
 def test_folder_scope_cannot_broaden_conversation_and_failed_move_rolls_back(client):

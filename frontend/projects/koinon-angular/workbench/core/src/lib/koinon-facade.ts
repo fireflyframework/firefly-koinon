@@ -1,5 +1,5 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, effect, inject, Injectable, signal, untracked } from '@angular/core';
 import {
   type KoinonClient,
   KoinonError,
@@ -7,6 +7,8 @@ import {
   type Capabilities,
   type CatalogEntry,
   type CatalogFilter,
+  type CatalogBrowseInput,
+  type ReaderSourceSelection,
   type Page,
   type ContextResponse,
   type DatasetSchema,
@@ -23,7 +25,8 @@ import {
   type SearchResponse,
 } from '@fireflyframework/koinon-sdk';
 import { KOINON_TENANT_RESOLVER } from './client-provider';
-import type {FolderPageState} from './models';
+import {catalogBrowsePage, type FolderPageState} from './models';
+import {isFolder} from './services/library-tree';
 import { KoinonClientContext } from './services/client-context';
 
 @Injectable()
@@ -39,11 +42,30 @@ export class KoinonFacade {
   readonly projectId = signal('');
   readonly parentId = signal('');
   readonly entries = signal<CatalogEntry[]>([]);
+  readonly readerSources = signal<ReaderSourceSelection[] | null>(null);
+  readonly readerRevision = signal(0);
+  private readonly childCursors = new Map<string, {page:number;next:string|null}>();
+  readonly readerContextKey = computed(()=>JSON.stringify([this.context()?.subject,this.tenantId(),this.authRequired(),[...this.permissions()].sort(),this.readerSources()]));
+  private observedContext:ContextResponse|null|undefined;
+  private observedReaderKey:string|undefined;
+  constructor(){
+    effect(()=>{
+      const context=this.context(),key=this.readerContextKey();
+      untracked(()=>{
+        if(this.observedReaderKey!==undefined && (key!==this.observedReaderKey || context!==this.observedContext)){
+          ++this.revision;this.clearReaderState();this.pending.set(false);
+        }
+        this.observedReaderKey=key;this.observedContext=context;
+      });
+    });
+  }
   readonly libraryPage=signal<Page<CatalogEntry>>({items:[]});
   readonly libraryFilter=signal<CatalogFilter>({view:"library",page:1,page_size:25,q:"",sort:"name",order:"asc"});
   readonly archivedPage=signal<Page<CatalogEntry>>({items:[]});
   readonly archivedFilter=signal<CatalogFilter>({page:1,page_size:25,q:"",sort:"name",order:"asc"});
   readonly selected = signal<CatalogEntry | null>(null);
+  private selectionRevision=0;
+  setSelection(entry:CatalogEntry|null){++this.selectionRevision;this.selected.set(entry);}
   readonly error = signal('');
   readonly pending = signal(false);
   readonly initializing = signal(true);
@@ -82,6 +104,8 @@ export class KoinonFacade {
     ++this.initialization;
     ++this.revision;
     this.context.set(null);
+    this.readerSources.set(null);
+    this.clearReaderState();
     this.libraryPage.set({items:[]});
     this.archivedPage.set({items:[]});
     this.entries.set([]);
@@ -99,6 +123,7 @@ export class KoinonFacade {
   async revalidateSession(subject:string):Promise<boolean>{
     const initialization=++this.initialization;
     ++this.revision;
+    this.clearReaderState();
     try{
       const context=await this.api().context();
       if(initialization!==this.initialization)return false;
@@ -138,10 +163,12 @@ export class KoinonFacade {
   }
   async selectTenant(id: string): Promise<void> {
     const revision = ++this.revision;
+    if (id !== this.tenantId()) this.readerSources.set(null);
     this.tenantId.set(id);
     this.workspaceId.set('');
     this.projectId.set('');
     this.parentId.set('');
+    this.clearReaderState();
     this.entries.set([]);
     this.libraryPage.set({items:[]});
     this.libraryFilter.set({view:"library",page:1,page_size:25,q:"",sort:"name",order:"asc"});
@@ -153,14 +180,16 @@ export class KoinonFacade {
       this.pending.set(false);
       return;
     }
+    const context=this.context(),key=this.readerContextKey();
+    const current=()=>revision===this.revision && context===this.context() && key===this.readerContextKey();
     this.pending.set(true);
     try {
-      const result = await this.api().catalog.list(id,this.libraryQuery());
-      if (revision === this.revision) this.acceptLibraryPage(result);
+      const result = await this.api().catalog.browse(id,this.libraryQuery());
+      if (current()) this.acceptLibraryPage(catalogBrowsePage(result));
     } catch (error) {
-      if (revision === this.revision) this.error.set(this.message(error));
+      if (current()) this.error.set(this.message(error));
     } finally {
-      if (revision === this.revision) this.pending.set(false);
+      if (current()) this.pending.set(false);
     }
   }
   async setWorkspace(id: string): Promise<void> {
@@ -171,29 +200,68 @@ export class KoinonFacade {
     this.clearResults();
     await this.loadLibrary({page:1,q:"",kind:undefined,status:undefined,tag:undefined,format:undefined});
   }
-  private libraryQuery():CatalogFilter {
-    const filter=this.libraryFilter();
+  private libraryQuery(cursor?:string):CatalogBrowseInput {
+    const filter={...this.libraryFilter()};
+    delete filter.page;
     const home=!this.parentId()&&!this.workspaceId()&&!this.projectId();
-    return {...filter,kind:home?'workspace':filter.kind,parent_id:this.parentId()||undefined,workspace_id:this.workspaceId()||undefined};
+    return {...filter,kind:home?'workspace':filter.kind,parent_id:this.parentId()||undefined,workspace_id:this.workspaceId()||undefined,cursor,reader_source_connections:this.readerSources()};
   }
-  async refresh(): Promise<void> {
+  async refresh(cursor?:string): Promise<void> {
+    const selectedId=this.selected()?.id,selectionRevision=this.selectionRevision;
     const revision = ++this.revision;
+    this.clearReaderState();
+    this.notice.set('');
+    const tenantId=this.tenantId(), context=this.context(), key=this.readerContextKey();
+    const selection=this.readerSources(), parentId=this.parentId()||this.projectId()||this.workspaceId();
+    const current=()=>revision===this.revision && context===this.context() && key===this.readerContextKey();
     this.pending.set(true);
     this.error.set('');
     try {
-      const page = await this.api().catalog.list(
+      const page = await this.api().catalog.browse(
         this.tenantId(),
-        this.libraryQuery(),
+        this.libraryQuery(cursor),
       );
-      if (revision === this.revision) this.acceptLibraryPage(page);
+      if (!current()) return;
+      const ancestors:CatalogEntry[]=[];
+      let id=parentId;
+      while(id){
+        if(ancestors.length>=16 || ancestors.some(row=>row.id===id))throw new Error('The folder path could not be verified.');
+        const entry=await this.api().catalog.read(tenantId,id,{reader_source_connections:selection});
+        if(!current())return;
+        if(entry.id!==id || entry.tenant_id!==tenantId || !isFolder(entry))throw new Error('The folder path could not be verified.');
+        ancestors.push(entry);id=entry.parent_id??'';
+      }
+      const result=catalogBrowsePage(page),retained=result.items.find(row=>row.id===selectedId);
+      const canRestore=()=>selectionRevision===this.selectionRevision && this.selected()===null;
+      const schema=retained?.kind==='dataset' && canRestore()?await this.api().dataset.readSchema(tenantId,retained.id,{reader_source_connections:selection}):null;
+      if(current()){
+        this.acceptLibraryPage(result);
+        this.entries.update(rows=>[...new Map([...rows,...ancestors].map(row=>[row.id,row])).values()]);
+        if(selectedId && canRestore()){
+          this.selected.set(retained??null);this.schema.set(schema);
+          if(!retained)this.notice.set('The available items changed.');
+        }
+      }
     } catch (error) {
-      if (revision === this.revision) this.error.set(this.message(error));
+      if (current()) this.error.set(this.message(error));
     } finally {
-      if (revision === this.revision) this.pending.set(false);
+      if (current()) this.pending.set(false);
     }
   }
-  private acceptLibraryPage(page:Page<CatalogEntry>){this.libraryPage.set(page);this.entries.update(rows=>[...new Map([...rows,...page.items].map(x=>[x.id,x])).values()]);}
+  private acceptLibraryPage(page:Page<CatalogEntry>){this.libraryPage.set({...page,page_size:this.libraryFilter().page_size});this.entries.set(page.items);}
   async loadLibrary(filter:CatalogFilter={}):Promise<void>{this.libraryFilter.update(current=>({...current,...filter,view:'library'}));await this.refresh();}
+  async nextLibraryPage():Promise<void>{const cursor=this.libraryPage().next_cursor;if(cursor&&!this.pending())await this.refresh(cursor);}
+  async selectReaderSources(selection:ReaderSourceSelection[]|null):Promise<void>{
+    this.readerSources.set(selection?.map(row=>({...row}))??null);
+    this.observedReaderKey=this.readerContextKey();this.observedContext=this.context();
+    await this.refresh();
+  }
+  private clearReaderState():void{
+    this.observedReaderKey=this.readerContextKey();this.observedContext=this.context();
+    this.readerRevision.update(value=>value+1);
+    this.childCursors.clear();
+    this.libraryPage.set({items:[]});this.entries.set([]);this.selected.set(null);this.clearResults();
+  }
   private clearResults(): void {
     this.archivedPage.set({items:[]});
     this.archivedFilter.set({page:1,page_size:25,q:"",sort:"name",order:"asc"});
@@ -211,23 +279,24 @@ export class KoinonFacade {
     apply: (value: T) => void,
     notice = '',
   ): Promise<boolean> {
-    const revision = this.revision;
+    const revision = this.revision, context=this.context(), key=this.readerContextKey();
+    const current=()=>revision===this.revision && context===this.context() && key===this.readerContextKey();
     this.pending.set(true);
     this.error.set('');
     this.notice.set('');
     try {
       const result = await operation();
-      if (revision === this.revision) {
+      if (current()) {
         apply(result);
         this.notice.set(notice);
         return true;
       }
       return false;
     } catch (error) {
-      if (revision === this.revision) this.error.set(this.message(error));
+      if (current()) this.error.set(this.message(error));
       return false;
     } finally {
-      if (revision === this.revision) this.pending.set(false);
+      if (current()) this.pending.set(false);
     }
   }
   async create(input: EntryCreate): Promise<boolean> {
@@ -257,7 +326,13 @@ export class KoinonFacade {
   private scopeStamp(){return JSON.stringify([this.tenantId(),this.workspaceId(),this.parentId()]);}
   private async finishMutation(done:boolean,scope:string){if(!done||scope!==this.scopeStamp())return false;await this.loadLibrary({page:1});return scope===this.scopeStamp();}
   async archive(entry:CatalogEntry):Promise<boolean>{const scope=this.scopeStamp();const done=await this.action(()=>this.api().catalog.archive(this.tenantId(),entry.id),archived=>{this.entries.update(rows=>[...rows.filter(x=>x.id!==archived.id),archived]);},'Archived');const confirmed=await this.finishMutation(done,scope);if(confirmed)this.selected.set(null);return confirmed;}
-  async loadArchived(filter:CatalogFilter={}){this.archivedFilter.update(current=>({...current,...filter}));return this.action(()=>this.api().catalog.list(this.tenantId(),{...this.archivedFilter(),workspace_id:this.workspaceId()||undefined,view:'raw',include_archived:true,status:'archived'}),page=>this.archivedPage.set(page));}
+  async loadArchived(filter:CatalogFilter={},cursor?:string){
+    this.archivedFilter.update(current=>({...current,...filter}));
+    const query={...this.archivedFilter()};delete query.page;
+    this.archivedPage.set({items:[]});
+    return this.action(()=>this.api().catalog.browse(this.tenantId(),{...query,cursor,workspace_id:this.workspaceId()||undefined,view:'raw',include_archived:true,status:'archived',reader_source_connections:this.readerSources()}),page=>this.archivedPage.set({...catalogBrowsePage(page),page_size:this.archivedFilter().page_size}));
+  }
+  async nextArchivedPage(){const cursor=this.archivedPage().next_cursor;if(cursor&&!this.pending())await this.loadArchived({},cursor);}
   async restore(entry:CatalogEntry):Promise<boolean>{const scope=this.scopeStamp();const done=await this.action(()=>this.api().catalog.restore(this.tenantId(),entry.id),restored=>{this.entries.update(rows=>[...rows.filter(x=>x.id!==restored.id),restored]);},'Restored');return this.finishMutation(done,scope);}
   async loadCapabilities(): Promise<void> {
     try {
@@ -289,6 +364,7 @@ export class KoinonFacade {
         this.api().search(this.tenantId(), {
           question,
           answer,
+          reader_source_connections: this.readerSources(),
           ...(this.workspaceId() ? { workspace_id: this.workspaceId() } : {}),
           ...(this.projectId() ? { project_id: this.projectId() } : {}),
           limit: 20,
@@ -302,16 +378,18 @@ export class KoinonFacade {
         this.api().query(this.tenantId(), {
           dataset_id: datasetId,
           question,
+          reader_source_connections: this.readerSources(),
           ...(conversationId ? { conversation_id: conversationId } : {}),
         }),
       (result) => this.queryResult.set(result),
     );
   }
   async loadSchema(datasetId: string): Promise<boolean> {
+    const selectionRevision=this.selectionRevision;
     this.schema.set(null);
     return this.action(
-      () => this.api().dataset.schema(this.tenantId(), datasetId),
-      (schema) => this.schema.set(schema),
+      () => this.api().dataset.readSchema(this.tenantId(), datasetId,{reader_source_connections:this.readerSources()}),
+      (schema) => {if(selectionRevision===this.selectionRevision)this.schema.set(schema);},
     );
   }
   async loadJobs(): Promise<boolean> {
@@ -328,9 +406,10 @@ export class KoinonFacade {
     );
   }
   async loadLineage(assetId?: string): Promise<boolean> {
+    const selectionRevision=this.selectionRevision;this.lineage.set(null);
     return this.action(
-      () => this.api().lineage(this.tenantId(), assetId),
-      (value) => this.lineage.set(value),
+      () => this.api().readLineage(this.tenantId(),{asset_id:assetId,reader_source_connections:this.readerSources()}),
+      (value) => {if(selectionRevision===this.selectionRevision)this.lineage.set(value);},
     );
   }
   async loadMembers(): Promise<boolean> {
@@ -379,15 +458,21 @@ export class KoinonFacade {
   async loadChildren(parentId:string,page=1):Promise<FolderPageState|null>{
     const parent=[...(this.context()?.workspaces??[]),...this.entries()].find(x=>x.id===parentId);
     const workspaceId=parent?.kind==='workspace'?parent.id:parent?.workspace_id;
+    const observed=this.childCursors.get(parentId);
+    if(page!==1 && (!observed?.next || page!==observed.page+1))return null;
     let pagination:FolderPageState|null=null;
-    const done=await this.action(()=>this.api().catalog.list(this.tenantId(),{view:'library',parent_id:parentId||undefined,kind:parentId?undefined:'workspace',page,page_size:100,...(workspaceId?{workspace_id:workspaceId}:{})}),result=>{
-      this.entries.update(rows=>[...new Map([...rows,...result.items].map(x=>[x.id,x])).values()]);pagination={ids:result.items.map(x=>x.id),page:result.page,pages:result.pages,total:result.total};
+    const done=await this.action(()=>this.api().catalog.browse(this.tenantId(),{view:'library',parent_id:parentId||undefined,kind:parentId?undefined:'workspace',cursor:page===1?undefined:observed?.next,page_size:100,reader_source_connections:this.readerSources(),...(workspaceId?{workspace_id:workspaceId}:{})}),value=>{
+      const result=catalogBrowsePage(value);
+      this.entries.update(rows=>[...new Map([...rows,...result.items].map(x=>[x.id,x])).values()]);
+      this.childCursors.set(parentId,{page,next:result.next_cursor??null});
+      pagination={ids:result.items.map(x=>x.id),page,next_cursor:result.next_cursor};
     });return done?pagination:null;
   }
   async loadResource(id: string): Promise<boolean> {
+    const selectionRevision=++this.selectionRevision;this.selected.set(null);
     return this.action(
       async () => {
-        const entry = await this.api().catalog.get(this.tenantId(), id);
+        const entry = await this.api().catalog.read(this.tenantId(), id,{reader_source_connections:this.readerSources()});
         if (this.workspaceId() && entry.workspace_id !== this.workspaceId())
           throw new Error('The resource is outside the selected workspace.');
         if (this.projectId() && entry.project_id !== this.projectId())
@@ -395,6 +480,7 @@ export class KoinonFacade {
         return entry;
       },
       (entry) => {
+        if(selectionRevision!==this.selectionRevision)return;
         this.selected.set(entry);
         if (!this.entries().some((x) => x.id === entry.id))
           this.entries.update((rows) => [...rows, entry]);

@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 """Native dataset receipts share the existing Structured lifecycle and model scopes."""
 
+from contextlib import asynccontextmanager
 from uuid import UUID
 
+from flyquery.core.services.ingestion import lineage
 from pyfly.container import Provider, service
 from pyfly.data.relational.sqlalchemy import Isolation, Propagation, transactional
 from pyfly.kernel import ConflictException, ServiceUnavailableException
@@ -15,7 +17,10 @@ from koinon.knowledge.bulk.queue import BulkLease, BulkQueue
 from koinon.knowledge.bulk.repositories import BulkRepository
 from koinon.knowledge.bulk.structured_dtos import StructuredOperationIdentity, StructuredOperationState
 from koinon.knowledge.bulk.structured_pipeline import StructuredBulkPipeline
-from koinon.knowledge.bulk.structured_repository import StructuredBulkRepository
+from koinon.knowledge.bulk.structured_repository import (
+    SourceStructuredReceiptIdentity,
+    StructuredBulkRepository,
+)
 from koinon.knowledge.service import KnowledgeFacade
 from koinon.security.authority import PRIMARY_POLICY_UNIT
 
@@ -37,6 +42,40 @@ class DatasetBulkNative:
             queue,
             facades,
         )
+
+    @asynccontextmanager
+    async def producer(self, lease, identity, *, resume=False):
+        providers = getattr(self.queue, "source_writers", None)
+        writer = providers.get() if providers is not None else None
+        admission = await writer.admission_for(lease) if writer is not None else None
+        if writer is not None and admission is not None:
+            async with writer.structured_producer(
+                admission,
+                execution=lease,
+                operation=identity,
+                publication=lambda: self.queue.publication(lease),
+            ) as producer:
+                with lineage.observe(producer):
+                    yield producer
+            return
+        if resume:
+            yield None
+            return
+        facade = self.facades.get()
+        if facade is None:
+            raise ServiceUnavailableException(
+                "Native dataset resources unavailable", code="BULK_NATIVE_REQUIRED"
+            )
+        async with facade.domains.structured_lineage(
+            tenant_id=lease.tenant_id,
+            workspace_id=str(identity.workspace_id),
+            actor=lease.subject,
+            catalog_workspace_id=lease.destination.workspace_id,
+            dataset_id=str(identity.dataset_id),
+            source_catalog_id=lease.source_id,
+            operation="upload",
+        ):
+            yield None
 
     @transactional(
         datasource="primary",
@@ -92,6 +131,8 @@ class DatasetBulkNative:
             object_key=receipt.object_key,
             file_version_id=state.identity.catalog_file_version_id,
             native_file_id=str(receipt.file_id),
+            source_attempt_id=receipt.source_attempt_id,
+            source_publication_sha256=receipt.source_publication_sha256,
             tables=tuple(
                 NativeTableCommit(
                     catalog_table_id=t.catalog_table_id,
@@ -108,10 +149,61 @@ class DatasetBulkNative:
         identity = await self.identity(lease)
         with native_scope("structured", lease.tenant_id, str(identity.workspace_id), lease.subject):
             async with self.operations.read() as unit:
-                state = await unit.get(identity)
-        if state is None:
-            return NativeObservation("absent")
-        return NativeObservation(state.status, self.receipt(state) if state.status == "committed" else None)
+                return await unit.inspect_receipt(identity)
+
+    @transactional(
+        datasource="primary",
+        name=PRIMARY_POLICY_UNIT,
+        propagation=Propagation.REQUIRES_NEW,
+        isolation=Isolation.SERIALIZABLE,
+        read_only=True,
+        read_from_primary=True,
+    )
+    async def source_receipt_identity(self, lease: BulkLease) -> SourceStructuredReceiptIdentity | None:
+        if not await self.records.source_owned(lease.tenant_id, lease.item_id):
+            return None
+        row = await self.records.source_receipt_reservation(
+            lease.tenant_id,
+            lease.subject,
+            lease.batch_id,
+            lease.item_id,
+        )
+        if (
+            row is None
+            or row.mode != "dataset"
+            or (row.source_id, row.asset_id, row.sha256, row.size_bytes)
+            != (lease.source_id, lease.asset_id, lease.sha256, lease.size_bytes)
+        ):
+            raise ConflictException("Source dataset reservation differs", code="BULK_NATIVE_RECEIPT_CONFLICT")
+        try:
+            return SourceStructuredReceiptIdentity(
+                operation_id=UUID(row.id),
+                tenant_id=lease.tenant_id,
+                workspace_id=UUID(row.native_workspace_id),
+                dataset_id=UUID(row.dataset_id),
+                file_id=UUID(row.file_id),
+                actor=lease.subject,
+                catalog_source_id=row.source_id,
+                catalog_dataset_id=row.asset_id,
+                catalog_file_version_id=row.catalog_file_version_id,
+                sha256=row.sha256,
+                size_bytes=row.size_bytes,
+                source_attempt_id=row.source_attempt_id,
+                source_publication_sha256=row.source_publication_sha256,
+            )
+        except (TypeError, ValueError, AttributeError):
+            raise ConflictException(
+                "Source dataset reservation differs",
+                code="BULK_NATIVE_RECEIPT_CONFLICT",
+            ) from None
+
+    async def inspect_committed(self, lease: BulkLease) -> NativeObservation:
+        identity = await self.source_receipt_identity(lease)
+        if identity is None:
+            return await self.inspect(lease)
+        with native_scope("structured", lease.tenant_id, str(identity.workspace_id), lease.subject):
+            async with self.operations.read() as unit:
+                return await unit.inspect_source_receipt(identity)
 
     async def execute(self, lease: BulkLease, content: bytes) -> NativeCommit:
         identity = await self.identity(lease)
@@ -130,20 +222,15 @@ class DatasetBulkNative:
                 roles=("structured.embedding",),
                 catalog_workspace_id=lease.destination.workspace_id,
             ),
-            facade.domains.structured_lineage(
-                tenant_id=lease.tenant_id,
-                workspace_id=str(identity.workspace_id),
-                actor=lease.subject,
-                catalog_workspace_id=lease.destination.workspace_id,
-                dataset_id=str(identity.dataset_id),
-                source_catalog_id=lease.source_id,
-                operation="upload",
-            ),
+            self.producer(lease, identity) as producer,
         ):
-            await self.pipeline.prepare(lease, identity, content)
-            return self.receipt(await self.pipeline.finalize(lease, identity))
+            arguments = {"_source_producer": producer} if producer is not None else {}
+            await self.pipeline.prepare(lease, identity, content, **arguments)
+            return self.receipt(await self.pipeline.finalize(lease, identity, **arguments))
 
     async def finalize_prepared(self, lease: BulkLease) -> NativeCommit:
         identity = await self.identity(lease)
         with native_scope("structured", lease.tenant_id, str(identity.workspace_id), lease.subject):
-            return self.receipt(await self.pipeline.finalize(lease, identity))
+            async with self.producer(lease, identity, resume=True) as producer:
+                arguments = {"_source_producer": producer} if producer is not None else {}
+                return self.receipt(await self.pipeline.finalize(lease, identity, **arguments))

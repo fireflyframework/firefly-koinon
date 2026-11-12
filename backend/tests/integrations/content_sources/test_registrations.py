@@ -1,6 +1,7 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
 import pytest
+
 from koinon.integrations.content_sources.errors import SourceError
 from koinon.integrations.content_sources.registrations import SourceRegistrations
 from koinon.integrations.content_sources.settings import ContentSourceSettings
@@ -75,8 +76,9 @@ async def test_owned_native_oauth_exchange_preserves_validated_loopback_callback
     from urllib.parse import parse_qs
 
     import httpx
-    from koinon.integrations.content_sources import oauth as source_oauth
     from pyfly.oauth2 import OAuth2Client, generate_pkce
+
+    from koinon.integrations.content_sources import oauth as source_oauth
 
     config = source_oauth.SourceOAuthConfig(
         "google_drive", "client", "http://127.0.0.1:19000/callback", allow_loopback_http=True

@@ -53,6 +53,10 @@ export class AvailabilitySession {
       this.facade.workspaceId(),
       this.facade.projectId(),
       this.facade.parentId(),
+      this.facade.readerSources(),
+      this.facade.readerRevision(),
+      this.facade.authRequired(),
+      [...this.facade.permissions()].sort(),
     ]);
   }
   get(id: string) {
@@ -115,7 +119,7 @@ export class AvailabilitySession {
   private async load() {
     const transport = this.clients.getTransport();
     const tenant = this.facade.tenantId();
-    if (!transport || !tenant || !this.facade.context()?.subject || !this.refs.size || this.denied) return true;
+    if (!transport || !tenant || !this.facade.context()?.subject || this.facade.authRequired() || !this.facade.permissions().has('catalog:read') || !this.refs.size || this.denied) return true;
     if (this.request) { this.pending = true; return true; }
     this.pending = false;
     const controller = new AbortController();
@@ -136,6 +140,7 @@ export class AvailabilitySession {
           tenant,
           {
             asset_ids: ids.slice(offset, offset + 100),
+            reader_source_connections:this.facade.readerSources(),
             ...(this.facade.workspaceId() ? { workspace_id: this.facade.workspaceId() } : {}),
           },
           { signal: controller.signal },

@@ -3,7 +3,7 @@
 """Generated wire fields.
 
 Source: backend/src/koinon/knowledge/provenance/coordinate_dtos.py
-SHA256: bd7050f2b37ce5a8c2ce0411c1707f7109cc28372e177ab3a1a919f0e78ada8f
+SHA256: 398a434f3b15cd5522b0068ac17f1267bf24b9265a609322e65a1d8e5cf260df
 
 Server authorization and semantic validation remain authoritative.
 """
@@ -13,6 +13,7 @@ from typing import Annotated, Literal
 from pydantic import Field, StrictBool, StrictFloat, StrictInt, StrictStr
 
 from koinon_sdk.evidence import Frozen, Identifier, Revision
+from koinon_sdk.reader_sources import ReaderReadInput
 
 Position = Annotated[int, Field(strict=True, ge=0, le=9007199254740991)]
 PathPart = Annotated[str, Field(strict=True, max_length=4096)] | Position
@@ -45,7 +46,7 @@ class CoordinateDependency(Frozen):
     version: Label | None
 
 
-class CoordinateCellRequest(Frozen):
+class CoordinateCellRequest(ReaderReadInput, Frozen):
     snapshot_id: Identifier
     cells: tuple[CoordinateCellPosition, ...] = Field(min_length=1, max_length=1000)
 

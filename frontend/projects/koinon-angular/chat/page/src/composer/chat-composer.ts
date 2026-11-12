@@ -22,10 +22,10 @@ import { FormsModule } from '@angular/forms';
 import { CdkMenu, CdkMenuItem } from '@angular/cdk/menu';
 import { Overlay, type OverlayRef } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
-import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
+import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonFileFormats } from '@fireflyframework/koinon-angular/workbench/core';
 import { formatFileSize } from '@fireflyframework/koinon-angular/workbench/core';
-import { KoinonIcon, KoinonTextPipe } from '@fireflyframework/koinon-angular';
+import { KoinonIcon, KoinonTextPipe } from '@fireflyframework/koinon-angular/workbench/core';
 import type { ComposerAttachment } from './composer-models';
 registerKoinonSpanish({
   'Some files were not accepted. Review their details before sending.':

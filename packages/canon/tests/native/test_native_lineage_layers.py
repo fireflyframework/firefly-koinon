@@ -19,6 +19,36 @@ def layers():
     return importlib.import_module(name)
 
 
+def test_intake_receipt_sql_never_selects_protected_filename_or_full_extraction_projection():
+    from sqlalchemy.dialects.postgresql import dialect
+    from flycanon.core.services.sources.lineage.dtos import DocumentScope
+    from flycanon.models.repositories.lineage.statements import statement
+
+    scope = DocumentScope("tenant", "workspace", "actor")
+    expected = {
+        "version": {
+            "id",
+            "source_id",
+            "artifact_id",
+            "logical_key",
+            "predecessor_id",
+            "expected_extraction_id",
+        },
+        "artifact": {"id", "source_id", "sha256", "bytes", "object_key"},
+        "extraction": {"id", "source_id", "version_id", "n_chunks"},
+    }
+    for entity, keys in expected.items():
+        query = statement(layers().LineageQuery(entity, scope, projection="intake_receipt"))
+        assert set(query.selected_columns.keys()) == keys
+        sql = str(query.compile(dialect=dialect(), compile_kwargs={"literal_binds": True}))
+        assert "filename" not in sql and "metadata" not in sql
+        assert "tenant_id = 'tenant'" in sql and "workspace_id = 'workspace'" in sql
+        if entity == "extraction":
+            assert "->> 'n_chunks'" in sql
+    full = statement(layers().LineageQuery("extraction", scope))
+    assert "projection" in full.selected_columns.keys()
+
+
 async def test_managed_lineage_uses_the_injected_persistence_override():
     port = layers().LineagePersistence
     persistence = SimpleNamespace(require_schema=AsyncMock())

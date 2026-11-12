@@ -43,6 +43,53 @@ class NativeStructuredLineage(StructuredSnapshotLineagePort):
     def __init__(self, datasources: DataSourceRegistry):
         self.datasources = datasources
 
+    async def read_table_identities(
+        self, *, actor, tenant_id, workspace_id, dataset_id, table_id, page=1, page_size=25
+    ):
+        from koinon.knowledge.adapters import native_scope
+        from koinon.knowledge.lineage.dtos import SnapshotIdentityPage
+
+        if (
+            type(page) is not int
+            or not 1 <= page <= 1000000
+            or type(page_size) is not int
+            or not 1 <= page_size <= 100
+        ):
+            raise InvalidRequestException("Choose a bounded history page", code="INVALID_PAGE")
+        with native_scope("structured", tenant_id, workspace_id, actor):
+            async with infrastructure_unit(self.datasources.get("structured"), read_only=True) as session:
+                table = (
+                    await session.execute(
+                        select(Table.id, Table.current_snapshot_id).where(
+                            Table.id == UUID(table_id),
+                            Table.tenant_id == tenant_id,
+                            Table.workspace_id == UUID(workspace_id),
+                            Table.dataset_id == UUID(dataset_id),
+                        )
+                    )
+                ).one_or_none()
+                if table is None:
+                    raise denied()
+                identifiers = tuple(
+                    await session.scalars(
+                        select(SchemaSnapshot.id)
+                        .where(
+                            SchemaSnapshot.table_id == table.id,
+                            SchemaSnapshot.tenant_id == tenant_id,
+                            SchemaSnapshot.workspace_id == UUID(workspace_id),
+                            SchemaSnapshot.dataset_id == UUID(dataset_id),
+                        )
+                        .order_by(SchemaSnapshot.taken_at.desc(), SchemaSnapshot.id.desc())
+                        .offset((page - 1) * page_size)
+                        .limit(page_size)
+                    )
+                )
+                return SnapshotIdentityPage(
+                    tuple(str(value) for value in identifiers),
+                    len(identifiers) == page_size,
+                    str(table.current_snapshot_id) if table.current_snapshot_id else None,
+                )
+
     def sink(
         self,
         *,

@@ -389,6 +389,25 @@ def test_code_only_discovery_uses_configured_urls_and_never_claims_registration(
     assert "testserver" not in str(metadata)
 
 
+def test_issuer_relative_metadata_matches_canonical_stateless_discovery(oauth):
+    canonical = oauth.get("/.well-known/oauth-authorization-server/oauth2/mcp")
+    relative = oauth.get("/oauth2/mcp/.well-known/oauth-authorization-server")
+    assert relative.status_code == canonical.status_code == 200
+    assert relative.json() == canonical.json()
+    assert relative.headers["cache-control"] == canonical.headers["cache-control"] == "no-store"
+    assert "set-cookie" not in relative.headers
+    oauth.cookies.clear()
+    anonymous = oauth.get("/oauth2/mcp/.well-known/oauth-authorization-server")
+    assert anonymous.status_code == 200 and anonymous.json() == canonical.json()
+    assert "set-cookie" not in anonymous.headers
+
+
+def test_disabled_oauth_does_not_expose_issuer_relative_metadata(client):
+    canonical = client.get("/.well-known/oauth-authorization-server/oauth2/mcp")
+    relative = client.get("/oauth2/mcp/.well-known/oauth-authorization-server")
+    assert relative.status_code == canonical.status_code == 404
+
+
 def test_consent_code_exchange_and_existing_token_revocation(oauth):
     page = authorize(oauth)
     assert "Test Chat Client" in page.text and "Research" in page.text and "catalog:read" in page.text

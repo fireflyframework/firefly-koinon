@@ -18,6 +18,62 @@ def add(controller, group, methods):
         mapping[controller + "." + key] = (group, value)
 
 
+add("CatalogReadController", "CatalogApi", {"catalog_get_read": "read"})
+add("KnowledgeReadController", "DatasetsApi", {"schema_read": "readSchema"})
+add("KnowledgeReadController", "KnowledgeApi", {"lineage_read": "readLineage"})
+add("KnowledgeReadController", "DocumentsApi", {"document_chunks_read": "readChunks"})
+add("KnowledgeReadController", "DocumentsApi", {"document_original_read": "readOriginal"})
+add("DocumentHistoryReadController", "DocumentsApi", {"versions_read": "readVersions"})
+add("DocumentHistoryReadController", "DocumentsApi", {"version_read": "readVersion"})
+add("DocumentHistoryReadController", "DocumentsApi", {"extractions_read": "readExtractions"})
+add("DocumentHistoryReadController", "DocumentsApi", {"parts_read": "readParts"})
+add("DocumentHistoryReadController", "DocumentsApi", {"part_read": "readPart"})
+add("DocumentHistoryReadController", "DocumentsApi", {"original_read": "readVersionOriginal"})
+add("TableProvenanceReadController", "DatasetsApi", {"snapshot_read": "readTableProvenance"})
+add("TableProvenanceReadController", "DatasetsApi", {"history_read": "readTableSnapshots"})
+add("TableProvenanceReadController", "DatasetsApi", {"manifest_read": "readTableCoordinates"})
+add("TableProvenanceReadController", "DatasetsApi", {"rows_read": "readTableCoordinateRows"})
+add("TableProvenanceReadController", "DatasetsApi", {"columns_read": "readTableCoordinateColumns"})
+add("CuratedKnowledgeReadController", "KnowledgeItemsApi", {"get_read": "read"})
+add("CuratedKnowledgeReadController", "KnowledgeItemsApi", {"version_read": "readVersion"})
+add("ExportReadController", "ExportsApi", {"get_read": "read"})
+add("ExportReadController", "ExportsApi", {"download_read": "readDownload"})
+add("ShareReadController", "SharesApi", {"get_read": "read"})
+add("ChatHistoryReadController", "ChatApi", {"thread_read": "read"})
+
+add("ContentConnectionsController", "ContentSourcesApi", {"list":"list", "get":"get", "disconnect":"disconnect", "sites":"sites", "drives":"drives", "children":"children"})
+add("SourceCapabilitiesController", "ContentSourcesApi", {"get": "capabilities"})
+add("SourceMappingController", "ContentSourcesApi", {"mappings_page": "mappings"})
+add("SourceMappingController", "ContentSourcesApi", {"get": "mapping"})
+add("SourceMappingController", "ContentSourcesApi", {"runs": "runs"})
+add("SourceMappingController", "ContentSourcesApi", {"initial_operation": "initialOperation"})
+add("SourceMappingController", "ContentSourcesApi", {"operation": "operation"})
+add("SourceMappingController", "ContentSourcesApi", {"run": "run"})
+add("SourceMappingController", "ContentSourcesApi", {"run_items": "runItems"})
+add("SourceMappingController", "ContentSourcesApi", {"cancel": "cancelRun"})
+add("SourceMappingController", "ContentSourcesApi", {"retry": "retryRun"})
+add("SourceMappingController", "ContentSourcesApi", {"review": "reviewMapping"})
+add("SourceMappingController", "ContentSourcesApi", {"items": "reviewItems"})
+add("SourceMappingController", "ContentSourcesApi", {"create": "createMapping"})
+add("SourceMappingController", "ContentSourcesApi", {"revise": "reviseMapping"})
+add("SourceMappingController", "ContentSourcesApi", {"apply": "applyMapping"})
+add("SourceMappingController", "ContentSourcesApi", {"sync": "syncMapping"})
+add("SourceMappingController", "ContentSourcesApi", {"pause": "pauseMapping"})
+add("SourceMappingController", "ContentSourcesApi", {"resume": "resumeMapping"})
+add("SourceMappingController", "ContentSourcesApi", {"retire": "retireMapping"})
+
+add("SourceMappingValidationController", "ContentSourcesApi", {"begin": "beginValidation"})
+add("SourceMappingValidationController", "ContentSourcesApi", {"receipt": "validationReceipt"})
+add("SourceMappingValidationController", "ContentSourcesApi", {"status": "validation"})
+add("SourceMappingValidationController", "ContentSourcesApi", {"advance": "advanceValidation"})
+add("SourceMappingValidationController", "ContentSourcesApi", {"items": "validationItems"})
+add("SourceMappingValidationController", "ContentSourcesApi", {"abandon": "abandonValidation"})
+
+add("SourceReaderSelectionController", "ContentSourcesApi", {"get":"readerSelection", "replace":"replaceReaderSelection"})
+add("CatalogController", "CatalogApi", {"catalog_browse":"browse"})
+add("ExportController", "ExportsApi", {"browse":"browse"})
+
+
 add("FileBatchController", "FileBatchesApi", {"capabilities":"capabilities", "create":"create", "list":"list",
     "get":"get", "items":"items", "content":"upload", "receipt":"receipt", "submit":"submit",
     "cancel":"cancel", "reconcile":"reconcile", "recover_original":"recoverOriginal", "processing_recovery":"processingRecovery", "recover_processing":"recoverProcessing"})
@@ -194,13 +250,13 @@ add(
 
 
 add("ChatAttachmentsController", "ChatAttachmentsApi", {"capabilities":"capabilities", "upload":"upload", "list_files":"list", "get":"get", "original":"original", "chunks":"chunks", "cancel":"cancel", "retry":"retry", "delete":"remove", "knowledge":"promote"})
-add("ChatHistoryController", "ChatApi", {"thread":"get", "patch_thread":"update", "delete_thread":"delete", "title_suggestion":"suggestTitle"})
+add("ChatHistoryController", "ChatApi", {"browse":"browse", "browse_messages":"browseMessages", "thread":"get", "patch_thread":"update", "delete_thread":"delete", "title_suggestion":"suggestTitle"})
 add("ChatHistoryController", "ChatFoldersApi", {"folders":"list", "create_folder":"create", "folder":"get", "patch_folder":"update", "delete_folder":"delete"})
 add("KnowledgeIndexesController", "KnowledgeIndexesApi", {"list_indexes":"list", "choices":"choices", "choice":"choice", "get":"get", "plan":"plan", "create":"create", "activate":"activate", "cancel":"cancel", "resume":"resume"})
 add("CorporateIdentityController", "IdentityApi", {"list":"list", "create":"create", "get":"get", "update":"update", "test":"test", "test_status":"testStatus", "groups":"groups", "mappings":"mappings", "mapping_create":"createMapping", "mapping_update":"updateMapping", "mapping_remove":"removeMapping", "activate":"activate", "disable":"disable"})
 
 add("ExportController", "ExportsApi", {"review":"review", "create":"create", "list":"list", "get":"get", "download":"download", "cancel":"cancel"})
-add("ShareController", "SharesApi", {"review":"review", "create":"create", "list":"list", "get":"get", "revoke":"revoke"})
+add("ShareController", "SharesApi", {"browse":"browse", "review":"review", "create":"create", "list":"list", "get":"get", "revoke":"revoke"})
 add("EvidenceController", "EvidenceApi", {"conversation":"conversation"})
 
 add("CatalogProposalController", "ChatProposalsApi", {"get":"get", "confirm":"confirm", "cancel":"cancel"})
@@ -214,6 +270,17 @@ def upper(s):
 
 
 filters = {
+"SourceMappingValidationController.items": "SourceValidationItemsFilter",
+"SourceMappingController.mappings_page": "SourceMappingsPageFilter",
+"SourceMappingController.runs": "SourceRunsFilter",
+"SourceMappingController.initial_operation": "SourceInitialOperationFilter",
+"SourceMappingController.operation": "SourceOperationFilter",
+"SourceMappingController.run_items": "SourceRunItemsFilter",
+"SourceMappingController.items": "SourceItemsFilter",
+    "ContentConnectionsController.list": "SourceConnectionFilter",
+    "ContentConnectionsController.sites": "SourceSiteFilter",
+    "ContentConnectionsController.drives": "SourceDriveFilter",
+    "ContentConnectionsController.children": "SourceFolderFilter",
     "KnowledgeModeController.targets": "KnowledgeModeTargetFilter",
     "KnowledgeModeController.recoveries": "KnowledgeModeRecoveryFilter",
     "CatalogController.catalog_archive": "CatalogLifecycleFilter",
@@ -499,6 +566,7 @@ for group, operations in groups.items():
                     + json.dumps(op["method"])
                     + ","
                     + path_expr
+                    + (",input" if request else "")
                     + ",options)"
                 )
             if encoding == "multipart/form-data":
@@ -657,8 +725,9 @@ for group, operations in groups.items():
                     + setup
                     + "return transport.download"
                     + suffix
-                    + '("GET",'
+                    + '(' + json.dumps(op["method"]) + ','
                     + path_expr
+                    + (",input" if request else "")
                     + ",target,maxBytes,options);}\n"
                 )
     body += "}\n"

@@ -20,6 +20,21 @@ class SourceCredentialVault:
     def __init__(self, settings: ContentSourceSettings):
         self.settings = settings
 
+    @staticmethod
+    def _limits(purpose: str) -> tuple[int, int]:
+        envelope = {
+            "validation-request": 2097152,
+            "validation-root": 1048576,
+            "validation-checkpoint": 1048576,
+            "validation-walk": 8388608,
+            "validation-entry": 16384,
+        }.get(purpose)
+        if envelope is None:
+            return 262144, 524288
+        # The installed cipher encodes salt(16), nonce(12), ciphertext and tag(16)
+        # as base64; our envelope prepends one version byte.
+        return ((envelope - 1) // 4) * 3 - 44, envelope
+
     def _cipher(self, tenant_id: str, owner: str, connection_id: str, purpose: str):
         context = [bounded(value) for value in (tenant_id, owner, connection_id, purpose)]
         try:
@@ -38,19 +53,26 @@ class SourceCredentialVault:
 
     def encrypt(self, tenant_id: str, owner: str, connection_id: str, purpose: str, value: dict) -> bytes:
         payload = json.dumps(value, separators=(",", ":"))
-        if len(payload.encode()) > 262144:
+        plain_limit, envelope_limit = self._limits(purpose)
+        if len(payload.encode()) > plain_limit:
             raise ValueError("Source credential exceeds the envelope limit")
-        return b"\x01" + self._cipher(tenant_id, owner, connection_id, purpose).encrypt(payload).encode(
+        envelope = b"\x01" + self._cipher(tenant_id, owner, connection_id, purpose).encrypt(payload).encode(
             "ascii"
         )
+        if len(envelope) > envelope_limit:
+            raise ValueError("Source credential exceeds the envelope limit")
+        return envelope
 
     def decrypt(self, tenant_id: str, owner: str, connection_id: str, purpose: str, envelope: bytes) -> dict:
         try:
-            if not envelope or envelope[0] != 1 or len(envelope) > 524288:
+            plain_limit, envelope_limit = self._limits(purpose)
+            if not envelope or envelope[0] != 1 or len(envelope) > envelope_limit:
                 raise ValueError
             payload = self._cipher(tenant_id, owner, connection_id, purpose).decrypt(
                 envelope[1:].decode("ascii")
             )
+            if len(payload.encode()) > plain_limit:
+                raise ValueError
             value = json.loads(payload)
             if not isinstance(value, dict):
                 raise ValueError

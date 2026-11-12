@@ -7,8 +7,26 @@ from typing import Literal
 
 from pyfly.config.properties.data import parse_bool
 from pyfly.core import Config
+from sqlalchemy import text
+from sqlalchemy.engine import make_url
 
 ProcessRole = Literal["api", "worker"]
+
+
+async def verify_isolated_process_identity(session, username: str) -> None:
+    """Check a direct ordinary login; feature readiness owns its exact function grants."""
+    row = (
+        await session.execute(
+            text(
+                "SELECT current_user,session_user,r.rolcanlogin,r.rolsuper,r.rolinherit,r.rolcreatedb,"
+                "r.rolcreaterole,r.rolreplication,r.rolbypassrls,"
+                "EXISTS(SELECT FROM pg_auth_members m WHERE m.member=r.oid OR m.roleid=r.oid) "
+                "FROM pg_roles r WHERE r.rolname=current_user"
+            )
+        )
+    ).one()
+    if tuple(row) != (username, username, True, False, False, False, False, False, False, False):
+        raise ValueError("Process database identity must be an isolated ordinary login")
 
 
 def process_configuration(values: dict, *, role: ProcessRole | None = None) -> dict:
@@ -19,6 +37,25 @@ def process_configuration(values: dict, *, role: ProcessRole | None = None) -> d
         raise ValueError("koinon.process.role must match the api or worker entrypoint")
     worker = selected == "worker"
     result.setdefault("koinon", {}).setdefault("process", {})["role"] = selected
+    proof = Config(result).get("koinon.answers.release_proofs", {})
+    if parse_bool(proof.get("enabled", False), "koinon.answers.release_proofs.enabled"):
+        api_role = proof.get("api_role", "koinon_catalog")
+        publisher_role = proof.get("publisher_role", "koinon_answer_publisher")
+        if (
+            not all(
+                isinstance(name, str) and 1 <= len(name.encode()) <= 63 for name in (api_role, publisher_role)
+            )
+            or api_role == publisher_role
+        ):
+            raise ValueError("Answer proof roles must be distinct bounded database identities")
+        try:
+            primary = make_url(Config(result).get("pyfly.data.relational.url", ""))
+        except Exception:
+            raise ValueError("Answer proof process role requires its primary database connection") from None
+        if primary.get_backend_name() != "postgresql" or primary.username != (
+            publisher_role if worker else api_role
+        ):
+            raise ValueError("Answer proof process role does not match its primary database identity")
     scheduling = result.setdefault("pyfly", {}).setdefault("scheduling", {})
     scheduling["enabled"] = worker
     effective = Config(result).get("pyfly.scheduling.enabled")

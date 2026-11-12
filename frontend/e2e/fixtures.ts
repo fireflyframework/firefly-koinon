@@ -160,6 +160,10 @@ export async function mockService(
         visibility: 'administrators',
         revision: 0,
       });
+    if (path === '/branding/defaults')return respond({});
+    if (path.endsWith('/branding'))return respond({tenant_id:'tenant-one',schema_version:1,revision:0,branding:{}});
+    if (path.endsWith('/notifications/unread-count'))return respond({unread:0});
+    if (path.endsWith('/organization/people/me/presentation'))return respond({tenant_id:'tenant-one',subject:'synthetic.reviewer',status:'not_configured',display_name:'Alex Rivera'});
     if (path === '/context') return respond(context);
     if (path.endsWith('/chat/settings')) {
       const id = options.organizationAgent ?? null;
@@ -251,7 +255,8 @@ export async function mockService(
     }
     if (request.method() === 'GET')
       reads.push({ path, query: Object.fromEntries(url.searchParams) });
-    if (request.method() !== 'GET') {
+    if(request.method()==='POST' && (path.endsWith('/catalog/browse')||path.endsWith('/read')))observations.push({path,body:request.postDataJSON()});
+    if (request.method() !== 'GET' && !path.endsWith('/catalog/browse') && !path.endsWith('/read')) {
       let body: unknown;
       try {
         body = request.postDataJSON();
@@ -273,8 +278,11 @@ export async function mockService(
         page_size: Number(url.searchParams.get('page_size') || 25),
         pages: 0,
       });
-    if (path.endsWith('/catalog')) {
-      if (request.method() === 'POST') {
+    if (path.endsWith('/catalog') || path.endsWith('/catalog/browse')) {
+      const browse=path.endsWith('/catalog/browse');
+      const browseInput=browse ? request.postDataJSON() : null;
+      if(browse){for(const [key,value] of Object.entries(browseInput))if(value!==null&&value!==undefined&&key!=='reader_source_connections')url.searchParams.set(key,String(value));}
+      if (request.method() === 'POST' && !browse) {
         const body = request.postDataJSON();
         const created = entry(
           'created-' + rows.length,
@@ -354,7 +362,10 @@ export async function mockService(
             String(b[sort as keyof CatalogEntry] || ''),
           ) * order,
       );
-      const page = Number(url.searchParams.get('page') || 1),
+      const cursor=browseInput?.cursor as string|undefined;
+      if(cursor && !/^fixture-[0-9]+$/.test(cursor))return respond({message:'This list has changed. Load the latest items.'},409);
+      if(browseInput?.reader_source_connections?.length===0)selected=selected.filter(row=>!row.metadata['source_imported']);
+      const page = cursor ? Number(cursor.slice(8)) : Number(url.searchParams.get('page') || 1),
         page_size = Number(url.searchParams.get('page_size') || 25),
         total = selected.length;
       return respond({
@@ -367,10 +378,7 @@ export async function mockService(
             ),
         ),
         actors: options.actors ?? {},
-        total,
-        page,
-        page_size,
-        pages: Math.max(1, Math.ceil(total / page_size)),
+        ...(browse ? {total:null,total_is_exact:false,next_cursor:page*page_size<total?'fixture-'+(page+1):null} : {total,page,page_size,pages:Math.max(1,Math.ceil(total/page_size))}),
       });
     }
     if (path.includes('/catalog/') && (path.endsWith('/archive') || path.endsWith('/restore'))) {
@@ -387,9 +395,11 @@ export async function mockService(
       return respond(row);
     }
     if (path.includes('/catalog/')) {
-      const id = path.split('/').pop();
+      const reader=path.endsWith('/read') && request.method()==='POST';
+      const id = reader?path.split('/').at(-2):path.split('/').pop();
       const row = rows.find((item) => item.id === id);
       if (!row) return respond({ detail: 'Resource is not accessible' }, 404);
+      if(reader && request.postDataJSON().reader_source_connections?.length===0 && row.metadata['source_imported'])return respond({detail:'Resource is not accessible'},404);
       if (request.method() === 'PATCH') {
         Object.assign(row, request.postDataJSON());
         return respond(row);
@@ -485,7 +495,7 @@ export async function mockService(
         max_attempts: 3,
         updated_at: '2026-10-26T09:02:00Z',
       });
-    if (path.endsWith('/lineage'))
+    if (path.endsWith('/lineage') || path.endsWith('/lineage/read'))
       return respond({
         nodes: [
           { id: 'source-one', label: 'Policy and service records', kind: 'source' },
@@ -553,4 +563,22 @@ export async function setDarkAppearance(page: Page, spanish = false) {
       exact: true,
     }),
   ).not.toBeVisible();
+}
+
+/** Controlled accounts prove request intent; they do not qualify a live provider. */
+export async function mockReaderAccounts(page: Page) {
+  const account=(id:string)=>({id,provider:'google_drive',status:'connected',display_name:id,account:{provider:'google_drive',subject:id,tenant_id:null}});
+  await page.route('**/bff/api/v1/tenants/*/content-sources/**',route=>{
+    const path=new URL(route.request().url()).pathname;
+    if(route.request().method()!=='GET')throw Error('Reader choice must not change saved preferences');
+    return route.fulfill({json:path.endsWith('/reader-selection')?{revision:1,connections:[{provider:'google_drive',connection_id:'reader-b',external_tenant:null}]}:{items:[account('reader-a'),account('reader-b')],next_cursor:null}});
+  });
+}
+export async function chooseReaderMode(page:Page,mode:'local'|'explicit'){
+  await page.getByRole('button',{name:/^Sources for Library/}).click();
+  await page.getByRole('radio',{name:mode==='local'?'Use local knowledge only':'Choose accounts for this request',exact:true}).check();
+  if(mode==='explicit')await page.getByRole('checkbox',{name:/reader-a/}).check();
+  await page.getByRole('button',{name:'Apply',exact:true}).click();
+  await expect(page.getByRole('radio')).toHaveCount(0);
+  return mode==='local'?[]:[{provider:'google_drive',external_tenant:null,connection_id:'reader-a'}];
 }

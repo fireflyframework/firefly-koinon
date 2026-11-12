@@ -19,6 +19,125 @@ from __future__ import annotations
 import pytest
 
 
+async def test_rename_authority_denial_is_not_an_optional_model_failure(monkeypatch):
+    from types import SimpleNamespace
+    from uuid import uuid4
+
+    from flyquery.core.agents import rename_detection_agent
+    from flyquery.core.services.ingestion.lineage import StructuredStageTarget
+    from flyquery.core.services.ingestion.stages.reconcile import _invoke_rename_agent
+
+    sent = []
+
+    async def run(prompt):
+        sent.append(prompt)
+        return SimpleNamespace(output=SimpleNamespace(items=[]))
+
+    monkeypatch.setattr(
+        rename_detection_agent, "build_rename_detection_agent", lambda _: SimpleNamespace(run=run)
+    )
+
+    class Denied(Exception):
+        pass
+
+    class Guard:
+        async def before_model(self, targets):
+            assert len(targets) == 2 and all(len(target.input_sha256) == 64 for target in targets)
+            raise Denied
+
+    with pytest.raises(Denied):
+        await _invoke_rename_agent(
+            old_name="old",
+            candidate_names=["new", "other"],
+            prev_detail=[],
+            new_columns={"new": "TEXT", "other": "TEXT"},
+            settings=object(),
+            guard=Guard(),
+            model_targets=(
+                StructuredStageTarget("tenant", uuid4()),
+                StructuredStageTarget("tenant", uuid4()),
+            ),
+        )
+    assert sent == []
+
+
+@pytest.mark.parametrize("denied", ["reconcile_write", "reconcile_read", None])
+async def test_reconcile_guards_snapshot_writes_and_predecessor_lookup(monkeypatch, denied):
+    from contextlib import asynccontextmanager
+    from types import SimpleNamespace
+    from uuid import uuid4
+
+    from flyquery.core.services.ingestion.stages import reconcile
+
+    snapshot, table = uuid4(), uuid4()
+    state = {"phase": None, "writes": 0, "reads": 0}
+
+    class Denied(Exception):
+        pass
+
+    class Guard:
+        @asynccontextmanager
+        async def unit(self, phase, target):
+            assert target.tenant_id == "tenant" and target.table_id == table
+            assert target.snapshot_id == (None if phase == "reconcile_read" else snapshot)
+            if phase == denied:
+                raise Denied
+            state["phase"] = phase
+            try:
+                yield
+            finally:
+                state["phase"] = None
+
+    class Session:
+        async def execute(self, statement, values):
+            assert state["phase"] == "reconcile_write"
+            state["writes"] += 1
+
+    @asynccontextmanager
+    async def native(_):
+        assert state["phase"] == "reconcile_write"
+        yield Session()
+
+    async def previous(*args):
+        assert state["phase"] == "reconcile_read"
+        state["reads"] += 1
+        return None
+
+    async def bind(*args, **kwargs):
+        assert state["phase"] == "reconcile_write" and kwargs["snapshot_id"] == snapshot
+
+    monkeypatch.setattr(reconcile, "infrastructure_unit", native)
+    monkeypatch.setattr(reconcile, "_get_latest_ready_snapshot", previous)
+    monkeypatch.setattr(reconcile.lineage, "emit", bind)
+    invocation = reconcile.run_reconcile(
+        tenant_id="tenant",
+        workspace_id=uuid4(),
+        dataset_id=uuid4(),
+        actor="actor",
+        triggered_by="test",
+        session_factory=object(),
+        snapshot_id=snapshot,
+        guard=Guard(),
+        parsed=SimpleNamespace(
+            table_id=table,
+            qualified_name="dataset.table",
+            parquet_key="owned.parquet",
+            result=SimpleNamespace(columns=[], n_rows_actual=0, parquet_byte_size=0, coordinates={}),
+        ),
+    )
+    if denied:
+        with pytest.raises(Denied):
+            await invocation
+    else:
+        assert (await invocation).snapshot_id == snapshot
+    assert (state["reads"], state["writes"]) == {
+        "reconcile_write": (0, 0),
+        "reconcile_read": (0, 1),
+        None: (1, 2),
+    }[denied]
+    assert state["phase"] is None
+
+
 class TestRenameDetectionAgent:
     def test_agent_models_importable(self):
         from flyquery.core.agents.rename_detection_agent import (

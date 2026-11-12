@@ -13,6 +13,7 @@ from koinon.assistants.memory.service import PersonalConversationMemory, unavail
 from koinon.evidence.access import EvidenceAccess
 from koinon.evidence.dtos import SourceReference
 from koinon.evidence.ports import TransitiveSourceResolverPort
+from koinon.integrations.content_sources.read_service import SourceReader
 
 
 @service(name="assistants.memory_egress")
@@ -22,9 +23,11 @@ class MemoryEgress:
         memory: Provider[PersonalConversationMemory],
         repository: MemoryEgressRepository,
         access: Provider[EvidenceAccess | None],
+        source_reader: Provider[SourceReader | None] | None = None,
     ):
         self.memory, self.repository = memory, repository
         self.access = access
+        self.source_reader = source_reader
 
     async def bind(self, subject, tenant_id, selections):
         memory = self.memory.get()
@@ -101,6 +104,12 @@ class MemoryEgress:
             return False
         if len(bindings) > 200:
             raise unavailable()
+        reader_service = self.source_reader.get() if self.source_reader is not None else None
+        source_operation = (
+            await reader_service.memory(reader_subject or subject, tenant_id, bindings, owner=subject)
+            if reader_service
+            else None
+        )
         memory = self.memory.get()
         run_ids = tuple(dict.fromkeys(item.run_id for item in bindings))
         pins = {pin.id: pin.sha256 for binding in bindings for pin in binding.results}
@@ -236,6 +245,8 @@ class MemoryEgress:
         after = await observe()
         if before != validated or validated != after:
             raise unavailable()
+        if source_operation:
+            await source_operation.release()
         return remembered
 
     async def transfer_policies(self, owner, reader, tenant_id, values, evidence):

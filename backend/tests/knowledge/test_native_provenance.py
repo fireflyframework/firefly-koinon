@@ -21,6 +21,52 @@ def pipeline_fixture():
     return module
 
 
+async def test_structured_identity_admission_rejects_mixed_versions_before_authority_lookup():
+    from koinon.integrations.content_sources.errors import SourceError
+    from koinon.knowledge.native_provenance import StructuredSourceAdmission
+
+    workspace, dataset, table, old, new = (str(uuid4()) for _ in range(5))
+    receipt = NativeEvidenceReceipt("owner", "tenant")
+    admission = StructuredSourceAdmission(
+        receipt,
+        SimpleNamespace(tenant="tenant", actor="owner"),
+        "asset",
+        SimpleNamespace(native_workspace_id=workspace, native_id=dataset),
+    )
+    admission._snapshots = AsyncMock()
+    scope = SimpleNamespace(tenant_id="tenant", workspace_id=workspace, dataset_id=dataset, actor="owner")
+    with pytest.raises(SourceError, match="version_changed"):
+        await admission.admit(
+            "schema",
+            (
+                {"table_id": table, "snapshot_id": old},
+                {"table_id": table, "snapshot_id": new},
+            ),
+            scope,
+        )
+    admission._snapshots.assert_not_awaited()
+    assert receipt.structured_source_manifest == {}
+
+
+async def test_structured_source_manifest_bound_applies_across_all_retrieval_stages():
+    from koinon.integrations.content_sources.errors import SourceError
+    from koinon.knowledge.native_provenance import StructuredSourceAdmission
+
+    receipt = NativeEvidenceReceipt("owner", "tenant")
+    receipt.structured_source_manifest = {str(uuid4()): str(uuid4()) for _ in range(500)}
+    admission = StructuredSourceAdmission(
+        receipt,
+        SimpleNamespace(tenant="tenant", actor="owner"),
+        "asset",
+        SimpleNamespace(native_workspace_id=str(uuid4()), native_id=str(uuid4())),
+    )
+    admission._read = AsyncMock(return_value=[])
+    with pytest.raises(SourceError, match="size_exceeded"):
+        await admission._snapshots({str(uuid4()): str(uuid4())})
+    admission._read.assert_not_awaited()
+    assert len(receipt.structured_source_manifest) == 500
+
+
 async def test_product_pipeline_records_native_context_before_each_model_and_rejects_unpinned_schema(
     tmp_path,
 ):
@@ -198,10 +244,21 @@ async def test_sql_receipt_observes_real_execution_failure_repair_and_validation
 
 async def test_document_premodel_attests_exact_chunk_and_rejects_missing_identity_before_model():
     from flycanon.core.services.query.provenance import before_model, observe
+    from flycanon.core.services.retrieval.retrieval_service import Hit
 
     receipt = NativeEvidenceReceipt("owner", "tenant")
     receipt.authorize_model = AsyncMock(return_value=True)
-    hit = SimpleNamespace(chunk_id="chunk", source_id="source", content="Exact text 😀", metadata={"page": 2})
+    hit = Hit(
+        chunk_id="chunk",
+        source_id="source",
+        knowledge_item_id=None,
+        knowledge_version=None,
+        content="Exact text 😀",
+        score=1.0,
+        bm25_rank=1,
+        vector_rank=None,
+        metadata={"page": 2},
+    )
     with observe(receipt, tenant_id="tenant", workspace_id="workspace", dataset_id="", actor="owner"):
         await before_model(
             "answer", "actual system+question+text", [hit], tenant_id="tenant", workspace_id="workspace"

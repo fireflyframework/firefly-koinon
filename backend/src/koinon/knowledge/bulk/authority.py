@@ -1,9 +1,12 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
+from dataclasses import dataclass
+
 from pyfly.container import service
 from pyfly.kernel import ConflictException
 from pyfly.security.context import SecurityContext
 from pyfly.security.context_holder import SecurityContextHolder
+from sqlalchemy import select
 
 from koinon.catalog.ancestry import MAX_FOLDER_ANCESTRY, validated_ancestry
 from koinon.catalog.entities import CatalogEntry
@@ -11,7 +14,19 @@ from koinon.catalog.errors import AccessDenied, InvalidHierarchy
 from koinon.catalog.service import PARENTS, ROLE_PERMISSIONS, CatalogService
 from koinon.knowledge.bulk.dataset_dtos import DatasetReservation
 from koinon.knowledge.bulk.dtos import BulkDestination
+from koinon.knowledge.bulk.ports import SourceIntakeAdmission
 from koinon.knowledge.bulk.repositories import BulkRepository
+
+
+@dataclass(frozen=True, slots=True)
+class SourceDestinationIdentity:
+    id: str
+    tenant_id: str
+    kind: str
+    parent_id: str | None
+    workspace_id: str | None
+    project_id: str | None
+    status: str
 
 
 def execution_context(subject: str, token_id: str | None) -> SecurityContext:
@@ -40,6 +55,132 @@ def token_identity() -> str | None:
 class BulkAuthority:
     def __init__(self, catalog: CatalogService, records: BulkRepository):
         self.catalog, self.records = catalog, records
+
+    async def source_item(self, admission: SourceIntakeAdmission, batch, item) -> None:
+        """Exact initial-intake identities for a producer that already owns its source fence."""
+        from koinon.integrations.content_sources.import_entities import SourceImportAttempt
+        from koinon.integrations.content_sources.sync_entities import SourceImportedAsset
+
+        session = self.records._require_session()
+        if len(admission.items) != 1:
+            raise AccessDenied("Source intake identity differs", code="ACCESS_DENIED")
+        pin = admission.items[0]
+        attempt = await session.scalar(
+            select(SourceImportAttempt.id)
+            .join(
+                SourceImportedAsset,
+                SourceImportedAsset.initial_attempt_id == SourceImportAttempt.id,
+            )
+            .where(
+                SourceImportAttempt.tenant_id == admission.tenant_id,
+                SourceImportAttempt.mapping_id == admission.mapping_id,
+                SourceImportAttempt.object_id == pin.object_id,
+                SourceImportAttempt.generation == pin.generation,
+                SourceImportAttempt.intake_item_id == item.id,
+                SourceImportAttempt.source_id == item.source_id,
+                SourceImportAttempt.asset_id == item.asset_id,
+                SourceImportAttempt.sha256 == item.sha256,
+                SourceImportAttempt.size_bytes == item.size_bytes,
+                SourceImportedAsset.tenant_id == admission.tenant_id,
+                SourceImportedAsset.source_id == item.source_id,
+                SourceImportedAsset.asset_id == item.asset_id,
+            )
+        )
+        rows = (
+            await session.execute(
+                select(
+                    CatalogEntry.id,
+                    CatalogEntry.parent_id,
+                    CatalogEntry.kind,
+                    CatalogEntry.status,
+                    CatalogEntry.workspace_id,
+                    CatalogEntry.project_id,
+                    CatalogEntry.metadata_json["sha256"].as_string(),
+                )
+                .where(
+                    CatalogEntry.tenant_id == admission.tenant_id,
+                    CatalogEntry.id.in_((item.source_id, item.asset_id)),
+                )
+                .order_by(CatalogEntry.id)
+            )
+        ).all()
+        local = {row.id: row for row in rows}
+        source, asset = local.get(item.source_id), local.get(item.asset_id)
+        if (
+            attempt is None
+            or source is None
+            or asset is None
+            or item.batch_id != batch.id
+            or item.ordinal != 0
+            or source.kind != "source"
+            or asset.kind != item.mode
+            or source.parent_id != admission.destination[2]
+            or asset.parent_id != source.id
+            or any(
+                (row.workspace_id, row.project_id) != admission.destination[:2]
+                or row.status != "pending"
+                or row[6] != item.sha256
+                for row in rows
+            )
+        ):
+            raise AccessDenied("Source intake identity differs", code="ACCESS_DENIED")
+
+    async def source_destination(self, admission: SourceIntakeAdmission) -> None:
+        """Private producer authority; no reader permission or protected catalog output is granted."""
+        subject, tenant = admission.owner, admission.tenant_id
+        token = token_identity()
+        if token and self.catalog.restriction is None:
+            raise AccessDenied("Original token cannot be verified", code="TOKEN_UNAVAILABLE")
+        await self.records.authority_lock(tenant, subject, token)
+        session = self.records._require_session()
+        observed: dict[str, SourceDestinationIdentity] = {}
+
+        async def read(identifier: str) -> SourceDestinationIdentity:
+            if identifier not in observed:
+                row = (
+                    await session.execute(
+                        select(
+                            CatalogEntry.id,
+                            CatalogEntry.tenant_id,
+                            CatalogEntry.kind,
+                            CatalogEntry.parent_id,
+                            CatalogEntry.workspace_id,
+                            CatalogEntry.project_id,
+                            CatalogEntry.status,
+                        ).where(CatalogEntry.tenant_id == tenant, CatalogEntry.id == identifier)
+                    )
+                ).one_or_none()
+                if row is None:
+                    raise AccessDenied("Source destination is unavailable", code="ACCESS_DENIED")
+                observed[identifier] = SourceDestinationIdentity(*row)
+            return observed[identifier]
+
+        parent = await read(admission.destination[2])
+        try:
+            chain = await validated_ancestry(parent, read, PARENTS)
+        except InvalidHierarchy:
+            raise AccessDenied("Source destination is unavailable", code="ACCESS_DENIED") from None
+        if (
+            parent.kind not in {"collection", "corpus"}
+            or not 3 <= len(chain) <= MAX_FOLDER_ANCESTRY
+            or (chain[-1].id, chain[-2].id) != admission.destination[:2]
+            or chain[-2].kind != "project"
+        ):
+            raise AccessDenied("Source destination ancestry differs", code="ACCESS_DENIED")
+        # The tenant lock serializes catalog mutations; lock ancestor rows in stable ID order too.
+        await session.execute(
+            select(CatalogEntry.id)
+            .where(
+                CatalogEntry.tenant_id == tenant,
+                CatalogEntry.id.in_(sorted(observed)),
+            )
+            .order_by(CatalogEntry.id)
+            .with_for_update(read=True)
+        )
+        for permission in ("catalog:write", "ingest:write"):
+            await self.catalog.authorize(subject, tenant, permission, admission.destination[0])
+        if self.catalog.restriction:
+            await self.catalog.restriction.resource(subject, parent, write=True, parent_reader=read)
 
     async def read_bounds(self, subject: str, tenant: str) -> dict:
         if token_identity() and self.catalog.restriction is None:
@@ -72,7 +213,9 @@ class BulkAuthority:
             "allowed_resources": grant.resource_ids if grant else None,
         }
 
-    async def destination(self, subject: str, tenant: str, target: BulkDestination, *, write: bool) -> None:
+    async def destination(
+        self, subject: str, tenant: str, target: BulkDestination, *, write: bool
+    ) -> tuple[CatalogEntry, ...]:
         token = token_identity()
         if token and self.catalog.restriction is None:
             raise AccessDenied("Original token cannot be verified", code="TOKEN_UNAVAILABLE")
@@ -107,6 +250,7 @@ class BulkAuthority:
                 await self.catalog.authorize(subject, tenant, permission, target.workspace_id)
         if self.catalog.restriction:
             await self.catalog.restriction.resource(subject, parent, write=write)
+        return tuple(chain)
 
     async def item(
         self, subject: str, tenant: str, source_id: str, asset_id: str, target: BulkDestination, digest: str

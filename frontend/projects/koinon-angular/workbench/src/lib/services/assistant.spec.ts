@@ -7,6 +7,7 @@ import {
   type HttpMethod,
   type RequestOptions,
   type ChatMessage,
+  type ReaderSourceSelection,
 } from '@fireflyframework/koinon-sdk';
 import { provideKoinonClient } from '../client-provider';
 import { KoinonFacade } from '../koinon-facade';
@@ -29,6 +30,19 @@ const message = (id: string, text: string): ChatMessage => ({
   artifacts: [],
   created_at: '2026-10-26',
 });
+for(const choice of [null,[],[{provider:'google_drive',connection_id:'personal-account',external_tenant:null}]] as (ReaderSourceSelection[]|null)[]){
+  it(`captures ${choice===null?'saved':choice.length?'explicit':'local-only'} source selection in the submitted run`,async()=>{
+    let body:unknown;
+    const transport:KoinonTransport={request:async<T>(method:HttpMethod,path:string,options?:RequestOptions)=>{
+      if(method==='POST'&&path.endsWith('/runs'))body=options?.body;
+      return (path.endsWith('/chat/settings')?defaultChatSettings(path):path.endsWith('/agents')?{items:[{id:'agent',status:'ready'}]}:path.endsWith('/chat/threads')?(method==='POST'?{id:'thread',scope:{},revision:1}:{items:[]}):path.endsWith('/runs')?{run_id:'run',message_id:'answer'}:path.endsWith('/messages')?{items:[message('answer','Authorized answer')]}:{id:'thread',scope:{},revision:1})as T;
+    },stream:()=>{throw Error('Completed answer must not stream');}};
+    TestBed.configureTestingModule({providers:[KoinonFacade,KoinonAssistant,...provideKoinonClient(new KoinonClient({transport}),transport)]});
+    TestBed.inject(KoinonFacade).tenantId.set('tenant');const assistant=TestBed.inject(KoinonAssistant);await assistant.initialize();
+    expect(await assistant.send('Read my sources',[],choice)).toBe(true);
+    if(choice===null)expect(body).not.toHaveProperty('reader_source_connections');else expect(body).toMatchObject({reader_source_connections:choice});
+  });
+}
 describe('persisted assistant runs', () => {
   it('handles reset without erasing other messages and reloads canonical completion', async () => {
     let reload = 0,

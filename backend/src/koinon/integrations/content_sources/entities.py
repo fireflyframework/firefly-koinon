@@ -5,7 +5,7 @@
 from datetime import UTC, datetime
 
 from pyfly.data.relational.sqlalchemy import Base, UtcDateTime
-from sqlalchemy import JSON, CheckConstraint, ForeignKey, Index, LargeBinary, String
+from sqlalchemy import JSON, CheckConstraint, ForeignKey, Index, LargeBinary, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 
@@ -13,6 +13,7 @@ class PersonalSourceConnection(Base):
     __tablename__ = "koinon_content_connections"
     __table_args__ = (
         Index("ix_content_connection_owner", "tenant_id", "owner"),
+        UniqueConstraint("tenant_id", "owner", "id", name="uq_content_connection_tenant_owner"),
         CheckConstraint("provider in ('sharepoint','onedrive','google_drive')", name="ck_content_provider"),
         CheckConstraint(
             "status in ('pending','connected','reconnect_required','disconnected')",

@@ -19,6 +19,79 @@ from __future__ import annotations
 import pytest
 
 
+@pytest.mark.parametrize("denied", ["profile_read", "profile_write", None])
+async def test_profile_authorizes_reads_and_computed_output(monkeypatch, denied):
+    from contextlib import asynccontextmanager
+    from types import SimpleNamespace
+    from uuid import uuid4
+
+    from flyquery.core.services.ingestion.stages import profile
+
+    snapshot, column = uuid4(), uuid4()
+    state = {"phase": None, "reads": 0, "writes": 0}
+
+    class DeniedError(Exception):
+        pass
+
+    class Guard:
+        @asynccontextmanager
+        async def unit(self, phase, target):
+            assert target.tenant_id == "native" and target.snapshot_id == snapshot
+            if phase == "profile_write":
+                assert target.object_id == column
+            if phase == denied:
+                raise DeniedError
+            state["phase"] = phase
+            try:
+                yield
+            finally:
+                state["phase"] = None
+
+    async def columns(*args):
+        assert state["phase"] == "profile_read"
+        state["reads"] += 1
+        return [
+            {
+                "id": column,
+                "qualified_name": "records.amount",
+                "column_name": "amount",
+                "data_type": "INTEGER",
+            }
+        ]
+
+    async def compute(function, *args):
+        assert state["phase"] is None
+        return {"distinct_count": 2} if function is profile._profile_column_sync else {}
+
+    async def persist(*args):
+        assert state["phase"] == "profile_write" and args[1] == {"distinct_count": 2}
+        state["writes"] += 1
+
+    monkeypatch.setattr(profile, "_load_columns", columns)
+    monkeypatch.setattr(profile, "run_native", compute)
+    monkeypatch.setattr(profile, "_persist_profile", persist)
+    invocation = profile.run_profile(
+        tenant_id="native",
+        snapshot_id=snapshot,
+        parquet_key="owned.parquet",
+        n_rows_actual=2,
+        session_factory=object(),
+        settings=SimpleNamespace(profile_row_threshold=10),
+        guard=Guard(),
+    )
+    if denied:
+        with pytest.raises(DeniedError):
+            await invocation
+    else:
+        assert (await invocation)["columns_profiled"] == 1
+    assert (state["reads"], state["writes"]) == {
+        "profile_read": (0, 0),
+        "profile_write": (1, 0),
+        None: (1, 1),
+    }[denied]
+    assert state["phase"] is None
+
+
 class TestProfileTypeHelpers:
     """Test numeric/temporal type detection helpers."""
 

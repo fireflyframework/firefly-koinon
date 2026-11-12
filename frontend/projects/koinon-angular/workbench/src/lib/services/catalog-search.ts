@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import type { CatalogEntry, ContextResponse, Page } from '@fireflyframework/koinon-sdk';
+import { catalogBrowsePage } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonI18n } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonClientContext } from '@fireflyframework/koinon-angular/workbench/core';
@@ -39,6 +40,7 @@ export class KoinonCatalogSearch {
       this.facade.workspaceId(),
       this.facade.projectId(),
       this.facade.context()?.subject,
+      this.facade.readerSources(),
       this.clients.revision(),
       this.canSearch(),
       this.query().trim(),
@@ -93,7 +95,7 @@ export class KoinonCatalogSearch {
       if (!opened || !allowed || !query) return;
       untracked(() => this.loading.set({ key, context }));
       const timer = setTimeout(() => {
-        void this.load(1, { key, context });
+        void this.load(undefined, { key, context });
       }, 250);
       onCleanup(() => {
         clearTimeout(timer);
@@ -117,21 +119,13 @@ export class KoinonCatalogSearch {
   isCurrent(entry: CatalogEntry): boolean {
     return this.page().items.some((item) => item === entry) && this.inScope(entry);
   }
-  async goToPage(page: number): Promise<void> {
-    const observed = this.page();
-    if (
-      this.pending() ||
-      !Number.isInteger(page) ||
-      page < 1 ||
-      observed.pages === undefined ||
-      page > observed.pages ||
-      page === observed.page
-    )
-      return;
-    await this.load(page, this.snapshot());
+  async nextPage(): Promise<void> {
+    const cursor = this.page().next_cursor;
+    if (this.pending() || !cursor) return;
+    await this.load(cursor, this.snapshot());
   }
   async retry(): Promise<void> {
-    await this.load(1, this.snapshot());
+    await this.load(undefined, this.snapshot());
   }
   private snapshot(): SearchSnapshot {
     return { key: this.key(), context: this.facade.context() };
@@ -158,7 +152,7 @@ export class KoinonCatalogSearch {
     this.read = undefined;
     this.loading.set(null);
   }
-  private async load(page: number, snapshot: SearchSnapshot): Promise<void> {
+  private async load(cursor: string | undefined, snapshot: SearchSnapshot): Promise<void> {
     if (!this.current(snapshot) || !this.query().trim()) return;
     this.cancel();
     const sequence = this.sequence,
@@ -167,26 +161,26 @@ export class KoinonCatalogSearch {
     this.result.set(null);
     this.loading.set(snapshot);
     try {
-      const result = await this.clients.get().catalog.list(
+      const result = catalogBrowsePage(await this.clients.get().catalog.browse(
         this.facade.tenantId(),
         {
           q: this.query().trim(),
           workspace_id: this.facade.workspaceId() || undefined,
           project_id: this.facade.projectId() || undefined,
           view: 'library',
-          page,
+          cursor,
+          reader_source_connections: this.facade.readerSources(),
           page_size: PAGE_SIZE,
           sort: 'name',
           order: 'asc',
         },
         { signal: controller.signal },
-      );
+      ));
       if (sequence !== this.sequence || !this.current(snapshot) || controller.signal.aborted)
         return;
       if (
         result.items.length > PAGE_SIZE ||
-        result.items.some((entry) => !this.inScope(entry)) ||
-        (result.page !== undefined && result.page !== page)
+        result.items.some((entry) => !this.inScope(entry))
       )
         throw Error('Search returned a result outside the current scope or requested page.');
       this.result.set({ ...snapshot, page: result, error: '' });

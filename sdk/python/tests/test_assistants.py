@@ -8,6 +8,31 @@ import pytest
 from koinon_sdk import ApiError, KoinonClient, ProviderInput, RunInput
 
 
+@pytest.mark.parametrize("choices", [None, [], [{"provider": "google_drive", "connection_id": "reader"}]])
+async def test_run_preserves_saved_explicit_and_local_source_intent(choices):
+    requests = []
+
+    def handle(request):
+        requests.append(json.loads(request.content))
+        return httpx.Response(200, json={"run_id": "r", "message_id": "m", "event_cursor": "0"})
+
+    value = RunInput(
+        agent_id="agent",
+        message="Question",
+        client_request_id="request",
+        **({"reader_source_connections": choices} if choices is not None else {}),
+    )
+    async with KoinonClient(
+        "https://brain.invalid/api/v1", token_provider=lambda: "reader", transport=httpx.MockTransport(handle)
+    ) as client:
+        result = await client.submit_run("north", "thread", value)
+    assert result.run_id == "r"
+    if choices is None:
+        assert "reader_source_connections" not in requests[0]
+    else:
+        assert requests[0]["reader_source_connections"] == choices
+
+
 @pytest.mark.parametrize(
     "method,operation,args,body,suffix,response",
     [

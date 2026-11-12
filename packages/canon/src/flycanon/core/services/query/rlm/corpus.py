@@ -192,6 +192,17 @@ class CanonDocStore:
                     "A current document provenance observer is required", code="EVIDENCE_UNAVAILABLE"
                 )
             return self._load_pages(key)
+        meta = self._sources[key]
+        provenance.authorize_document_pins_sync(
+            (
+                provenance.DocumentCandidatePin(
+                    "",
+                    str(meta.source_id),
+                    meta.source_version_id,
+                    meta.ingestion_extraction_id,
+                ),
+            )
+        )
         with scope.lock:
             provenance.authority(scope)
             meta = self._sources[key]
@@ -456,9 +467,16 @@ class CanonCorpusBuilder:
             )
         if selected is not None:
             for start in range(0, len(selected), 200):
+                identifiers = selected[start : start + 200]
+                if provenance.candidate_mode():
+                    pins = await self._sources.candidate_pins(
+                        identifiers, tenant_id=tenant_id, workspace_id=workspace_id, statuses=f.statuses
+                    )
+                    admitted = await provenance.admit_document_candidates(pins)
+                    identifiers = [pin.source_id for pin in admitted]
                 rows.extend(
                     await self._sources.get_many_scoped(
-                        selected[start : start + 200],
+                        identifiers,
                         tenant_id=tenant_id,
                         workspace_id=workspace_id,
                         statuses=f.statuses,
@@ -466,6 +484,10 @@ class CanonCorpusBuilder:
                 )
             rows.sort(key=_source_order, reverse=True)
             return [row for row in rows if matches(row)]
+        if provenance.candidate_mode():
+            raise ServiceUnavailableException(
+                "A bounded admitted source selection is required", code="EVIDENCE_UNAVAILABLE"
+            )
         offset = 0
         page = 200
         while True:

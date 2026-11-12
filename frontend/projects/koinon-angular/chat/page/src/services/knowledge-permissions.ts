@@ -1,6 +1,6 @@
 // Copyright 2026 Firefly Software Foundation
 // SPDX-License-Identifier: Apache-2.0
-import type { KoinonFacade } from '@fireflyframework/koinon-angular';
+import type { KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
 
 export function canCurateKnowledge(facade: KoinonFacade, workspaceId: string) {
   const permissions = new Set(facade.permissions());

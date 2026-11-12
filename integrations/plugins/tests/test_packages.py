@@ -152,6 +152,80 @@ def test_existing_app_variant_requires_real_operator_supplied_mapping(tmp_path):
     assert not (app / "mcp.json").exists()
 
 
+def test_gemini_profile_uses_exact_explicit_callback_and_canonical_skills(tmp_path):
+    callback = "http://localhost:9876/oauth/callback"
+    configured = profile(gemini_redirect_uri=callback)
+    first = build(tmp_path / "first", configured)
+    second = build(tmp_path / "second", configured)
+    assert first == second
+    root = tmp_path / "first/gemini"
+    manifest = json.loads((root / "gemini-extension.json").read_text())
+    assert manifest["name"] == "koinon"
+    assert manifest["mcpServers"] == {
+        "koinon": {
+            "httpUrl": configured.server_url,
+            "oauth": {
+                "enabled": True,
+                "clientId": configured.public_client_id,
+                "redirectUri": callback,
+                "scopes": ["catalog:read"],
+            },
+        }
+    }
+    assert (root / "skills/koinon-evidence/SKILL.md").read_bytes() == catalog_files()[
+        "skills/koinon-evidence/SKILL.md"
+    ]
+    assert validate_package(root)["gemini_manifest"] == "documented_strict_structure"
+    build(tmp_path / "without", profile())
+    assert not (tmp_path / "without/gemini").exists()
+
+
+@pytest.mark.parametrize(
+    "callback",
+    [
+        "https://other.example/oauth/callback",
+        "http://localhost/oauth/callback",
+        "http://localhost:8765/callback",
+        "http://localhost:8765/oauth/callback?token=private",
+        "http://private@localhost:8765/oauth/callback",
+        "http://localhost:8765/oauth/callback#private",
+        "http://localhost:0/oauth/callback",
+    ],
+)
+def test_gemini_callback_rejects_unregistered_shapes_without_echoing_secrets(callback):
+    with pytest.raises(ValueError) as error:
+        profile(gemini_redirect_uri=callback)
+    assert "private" not in str(error.value)
+
+
+@pytest.mark.parametrize(
+    "tamper", ["headers", "command", "clientSecret", "redirectUri", "enabled", "hook"]
+)
+def test_gemini_validation_rejects_credential_execution_and_authentication_changes(
+    tmp_path, tamper
+):
+    build(
+        tmp_path / "built",
+        profile(gemini_redirect_uri="http://localhost:9876/oauth/callback"),
+    )
+    root = tmp_path / "built/gemini"
+    path = root / "gemini-extension.json"
+    value = json.loads(path.read_text())
+    server = value["mcpServers"]["koinon"]
+    if tamper == "hook":
+        (root / "hooks").mkdir()
+        (root / "hooks/hooks.json").write_text('{"hooks": {}}')
+    elif tamper in {"headers", "command"}:
+        server[tamper] = (
+            {"Authorization": "Bearer fixture"} if tamper == "headers" else "run"
+        )
+    else:
+        server["oauth"][tamper] = False if tamper == "enabled" else "private"
+    path.write_text(json.dumps(value))
+    with pytest.raises(ValueError):
+        validate_package(root)
+
+
 def test_existing_output_is_preserved_and_not_overwritten(tmp_path):
     out = tmp_path / "existing"
     out.mkdir()

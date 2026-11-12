@@ -77,6 +77,20 @@ it('opens an account deep link without rewriting unrelated address state', () =>
   expect(service.view()).toBe('chat');
   expect(entries).toEqual([]);
 });
+it('restores connected sources independently of assistant authorization', () => {
+  const { service, pop } = environment('/app/account/connected-sources');
+  expect(service.section()).toBe('connected-sources');
+  pop('/app/account/applications');
+  expect(service.section()).toBe('applications');
+  pop('/app/account/connected-sources');
+  expect(service.section()).toBe('connected-sources');
+});
+it('restores the synchronization location under Library on browser history', () => {
+  const {service,pop}=environment('/app/library/synchronization');
+  expect(service.view()).toBe('synchronization');
+  pop('/app/library');expect(service.view()).toBe('library');
+  pop('/app/library/synchronization');expect(service.view()).toBe('synchronization');
+});
 it('records section navigation within the deployment base and preserves query/fragment', () => {
   const { service, entries, window } = environment();
   service.open('tokens');

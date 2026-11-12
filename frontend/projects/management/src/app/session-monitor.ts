@@ -65,7 +65,7 @@ export class SessionMonitor {
       until: performance.now() + 120000,
     };
     this.renewing.set(true);
-    this.message.set('Complete sign-in in the new window. This page will keep your work.');
+    this.message.set('Complete sign-in in the new window, then return here.');
     // No opener relationship, return URL, token or request body is handed to the sign-in window.
     window.open(
       '/oauth2/authorization/koinon',
@@ -95,6 +95,7 @@ export class SessionMonitor {
         this.attempt = null;
         this.renewing.set(false);
         await this.workbench.f.revalidateSession(previous.subject);
+        if (this.stopped) return;
         this.message.set('Your account changed. The previous draft was cleared.');
       } else if (
         this.attempt &&
@@ -108,8 +109,11 @@ export class SessionMonitor {
         const expected = this.attempt.subject;
         this.attempt = null;
         this.renewing.set(false);
-        if (await this.workbench.f.revalidateSession(expected)) {
+        const allowed = await this.workbench.f.revalidateSession(expected);
+        if (this.stopped) return;
+        if (allowed) {
           const restored = wasExpired && (await this.draft.restore());
+          if (this.stopped) return;
           this.message.set(
             restored
               ? 'Session renewed. Review your Library draft and any earlier request before saving.'
@@ -141,6 +145,7 @@ export class SessionMonitor {
     this.draft.clear();
     this.clock.clear();
     this.remaining.set(null);
+    this.renewing.set(false);
     this.message.set('');
     this.sessions.renewalHandler = undefined;
   }

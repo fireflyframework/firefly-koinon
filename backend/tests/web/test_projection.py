@@ -2,6 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 import pytest
 from conftest import bearer
+from flyquery.web.controllers.agent.query_controller import AgentQueryController
+from flyquery.web.controllers.agent.sql_execute_controller import AgentSqlExecuteController
+from flyquery.web.controllers.query_controller import QueryController
+from flyquery.web.controllers.sql_execute_controller import SqlExecuteController
 from pyfly.container import rest_controller
 from pyfly.web import get_mapping, post_mapping, request_mapping
 from starlette.requests import Request
@@ -44,6 +48,50 @@ def test_original_controller_dependencies_resolve_to_public_projection():
     assert type(resolved.delegate) is public
     assert type(resolved.delegate) is not browser
     assert OriginalController.__pyfly_request_mapping__ == "/api/v1/probe"
+
+
+@pytest.mark.parametrize(
+    "client, paths",
+    [
+        (
+            (QueryController, "structured"),
+            ("/query", "/query:batch", "/query:explain", "/query:validate", "/query/stream"),
+        ),
+        ((SqlExecuteController, "structured"), ("/sql:execute", "/sql:execute/stream")),
+        (
+            (AgentQueryController, "structured"),
+            (
+                "/agent/query",
+                "/agent/query:batch",
+                "/agent/query:explain",
+                "/agent/query:validate",
+                "/agent/query/stream",
+            ),
+        ),
+        ((AgentSqlExecuteController, "structured"), ("/agent/sql:execute", "/agent/sql:execute/stream")),
+    ],
+    indirect=["client"],
+)
+def test_mounted_native_query_actions_require_product_operation_qualification(client, paths):
+    headers = {**bearer(), "X-Tenant-ID": "north", "X-Workspace-ID": client.workspace_id}
+    reached = []
+    for suffix in paths:
+        path = "/api/v1/structured" + suffix
+        route = next(route for route in client.native_app.routes if getattr(route, "path", None) == path)
+        original = route.app
+
+        async def reached_handler(scope, receive, send):
+            reached.append(scope["path"])
+            raise AssertionError("Unqualified product execution reached native handler")
+
+        route.app = reached_handler
+        try:
+            response = client.post(path, headers=headers, json={"question": "private imported content"})
+            assert response.status_code == 503, response.text
+            assert response.json()["code"] == "LEGACY_OPERATION_UNQUALIFIED"
+            assert not reached
+        finally:
+            route.app = original
 
 
 @pytest.mark.parametrize("client", [OriginalController], indirect=True)

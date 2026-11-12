@@ -13,6 +13,8 @@ class SourceMapping(Base):
     __tablename__ = "koinon_content_mappings"
     __table_args__ = (
         Index("ix_content_mapping_owner", "tenant_id", "owner", "status"),
+        UniqueConstraint("tenant_id", "id", name="uq_content_mapping_tenant"),
+        UniqueConstraint("tenant_id", "owner", "id", name="uq_content_mapping_owner_identity"),
         CheckConstraint("revision BETWEEN 1 AND 2147483647", name="ck_content_mapping_revision"),
         CheckConstraint(
             "status in ('reviewed','active','paused','reconnect_required','retired')",
@@ -47,6 +49,7 @@ class SourceObject(Base):
     __tablename__ = "koinon_content_objects"
     __table_args__ = (
         UniqueConstraint("tenant_id", "mapping_id", "item_id", name="uq_content_mapping_object"),
+        UniqueConstraint("tenant_id", "mapping_id", "id", name="uq_content_object_tenant_mapping"),
         CheckConstraint("generation BETWEEN 1 AND 2147483647", name="ck_content_object_generation"),
         CheckConstraint("mapping_revision BETWEEN 1 AND 2147483647", name="ck_content_object_mapping"),
         CheckConstraint(
@@ -61,5 +64,15 @@ class SourceObject(Base):
     generation: Mapped[int] = mapped_column(default=1)
     mapping_revision: Mapped[int] = mapped_column()
     remote_version: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    remote_parent_id: Mapped[str | None] = mapped_column(String(1024))
+    remote_name: Mapped[str | None] = mapped_column(String(1024))
+    remote_kind: Mapped[str | None] = mapped_column(String(32))
+    remote_ancestry_json: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    last_complete_scan_generation: Mapped[int | None]
+    published_native_version_id: Mapped[str | None] = mapped_column(String(64))
+    published_local_revision: Mapped[str | None] = mapped_column(String(128))
+    published_sha256: Mapped[str | None] = mapped_column(String(64))
+    expected_local_revision: Mapped[str | None] = mapped_column(String(128))
+    expected_sha256: Mapped[str | None] = mapped_column(String(64))
     state: Mapped[str] = mapped_column(String(32), default="pending")
     updated_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=lambda: datetime.now(UTC))

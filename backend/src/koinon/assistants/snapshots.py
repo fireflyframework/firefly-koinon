@@ -17,6 +17,7 @@ from koinon.assistants.memory.egress import MemoryEgress
 from koinon.assistants.memory.egress_dtos import MemoryConversationSnapshot
 from koinon.assistants.memory.projections import MemoryOutputCapture
 from koinon.assistants.service import AssistantService
+from koinon.assistants.source_reads import current_history_reader, source_history
 from koinon.catalog.errors import AccessDenied
 from koinon.evidence.dtos import ConversationMessage, ConversationSnapshot, Presentation, SourceReference
 from koinon.evidence.ports import ConversationOutputPort, ConversationSnapshotPort
@@ -42,6 +43,7 @@ class ConversationSnapshots(ConversationSnapshotPort, ConversationOutputPort):
 
     # Final memory/output checks own fresh primary units; do not retain an enclosing connection.
     @transactional(propagation=Propagation.NOT_SUPPORTED, read_only=True, read_from_primary=True)
+    @source_history(transfer=True)
     async def authorize_output(
         self,
         subject: str,
@@ -50,6 +52,7 @@ class ConversationSnapshots(ConversationSnapshotPort, ConversationOutputPort):
         message_ids: list[str],
         *,
         snapshot: ConversationSnapshot | None = None,
+        reader_subject: str | None = None,
     ) -> None:
         issuer, _, sub = subject.partition("|")
         # The caller separately checks the transfer reader. This port checks the recorded owner
@@ -110,7 +113,9 @@ class ConversationSnapshots(ConversationSnapshotPort, ConversationOutputPort):
 
     async def _origin(self, subject, tenant_id, run):
         await self.assistants.validate_scope(subject, tenant_id, run.scope)
-        await self.assistants.authorize_results(subject, tenant_id, run.id)
+        await self.assistants.authorize_results(
+            subject, tenant_id, run.id, reader_subject=current_history_reader(subject)
+        )
         if not run.access_token_id:
             return
         repository = self.tokens.get()
@@ -136,7 +141,9 @@ class ConversationSnapshots(ConversationSnapshotPort, ConversationOutputPort):
             SecurityContext(user_id=sub, attributes={"iss": issuer, "sub": sub, "koinon_token_id": token.id})
         ):
             await self.assistants.validate_scope(subject, tenant_id, run.scope)
-            await self.assistants.authorize_results(subject, tenant_id, run.id)
+            await self.assistants.authorize_results(
+                subject, tenant_id, run.id, reader_subject=current_history_reader(subject)
+            )
 
     async def _sources(self, subject, tenant_id, run, message):
         from koinon.answers.receipts import verified_release
@@ -230,6 +237,7 @@ class ConversationSnapshots(ConversationSnapshotPort, ConversationOutputPort):
         return tuple(references[key] for key in sorted(references)), tuple(result_ids), complete
 
     @transactional(propagation=Propagation.NOT_SUPPORTED, read_only=True, read_from_primary=True)
+    @source_history()
     async def snapshot(
         self, subject: str, tenant_id: str, thread_id: str, message_ids: list[str]
     ) -> ConversationSnapshot:

@@ -1,5 +1,5 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
-import { TestBed } from '@angular/core/testing';
+import { TestBed, DeferBlockState, DeferBlockBehavior } from '@angular/core/testing';
 import {
   KoinonClient,
   KoinonError,
@@ -25,6 +25,7 @@ const workspace = {
 };
 async function mount(
   handler: (method: HttpMethod, path: string, options?: RequestOptions) => Promise<unknown>,
+  deferBlockBehavior = DeferBlockBehavior.Playthrough,
 ) {
   const transport: KoinonTransport = {
     stream: () => {
@@ -34,6 +35,7 @@ async function mount(
       handler(method, path, options) as Promise<T>,
   };
   await TestBed.configureTestingModule({
+    deferBlockBehavior,
     imports: [KoinonWorkbench],
     providers: provideKoinonClient(new KoinonClient({ transport }), transport),
   }).compileComponents();
@@ -42,6 +44,27 @@ async function mount(
   return fixture;
 }
 describe('embedded knowledge workbench', () => {
+  it('keeps navigation available while the Library body loads or fails', async () => {
+    const fixture = await mount(async (_method, path) =>
+      path === '/context'
+        ? {
+            subject: 'reader',
+            tenants: [{ id: 'tenant-one', name: 'North', roles: ['viewer'], permissions: ['catalog:read'] }],
+            memberships: [],
+            workspaces: [workspace],
+          }
+        : path === '/capabilities' ? { providers: [], features: [] } : { items: [workspace] },
+      DeferBlockBehavior.Manual,
+    );
+    const root = fixture.nativeElement.shadowRoot as ShadowRoot;
+    const blocks = await fixture.getDeferBlocks();
+    expect(root.querySelector('.library-main ffk-library-template')).toBeNull();
+    await blocks[0].render(DeferBlockState.Loading);
+    expect(root.querySelector('.library-main [role="status"]')?.getAttribute('aria-label')).toContain('Loading library');
+    await blocks[0].render(DeferBlockState.Error);
+    expect(root.querySelector('.library-main [role="alert"]')?.textContent).toContain('Refresh this page and try again');
+    expect(root.querySelector('ffk-shell nav')).not.toBeNull();
+  });
   it('rechecks document read permission and current Library membership before opening the reader', async () => {
     const fixture = await mount(async (_method, path) =>
       path === '/context'
@@ -316,7 +339,7 @@ it('keeps an organization load failure visible after navigating from Chat', asyn
         memberships: [],
         workspaces: [],
       };
-    if (path === '/tenants/tenant-two/catalog')
+    if (path === '/tenants/tenant-two/catalog/browse')
       throw new KoinonError(503, 'UNAVAILABLE', 'Organization temporarily unavailable');
     return { items: [] };
   });
@@ -338,7 +361,7 @@ it('resets organization and navigation immediately without clobbering a later Ch
         memberships: [],
         workspaces: [],
       };
-    if (path === '/tenants/tenant-two/catalog')
+    if (path === '/tenants/tenant-two/catalog/browse')
       return new Promise((resolve) => {
         complete = resolve;
       });
@@ -465,7 +488,7 @@ it('dismisses administrator pages when current organization authority is revoked
 it('refuses to submit an archive from a stale dialog for a protected system root', async () => {
   const writes: string[] = [];
   const fixture = await mount(async (method, path) => {
-    if (method !== 'GET') writes.push(path);
+    if (method !== 'GET' && !path.endsWith('/catalog/browse')) writes.push(path);
     return path === '/context' ? {subject:'admin',tenants:[{id:'tenant-one',name:'Team',roles:['admin'],permissions:['catalog:read','catalog:write','members:write']}],memberships:[],workspaces:[workspace]} : {items:[]};
   });
   fixture.componentInstance.f.selected.set({...workspace,kind:'workspace',system_managed:true} as typeof workspace & {kind:'workspace';system_managed:boolean});

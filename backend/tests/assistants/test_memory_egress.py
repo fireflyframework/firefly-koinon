@@ -150,7 +150,27 @@ async def test_saved_export_rechecks_memory_after_creation(assistants):
     reviews.settings = EvidenceSettings()
     reviews.catalog = SimpleNamespace(_lock_tenant=AsyncMock(), _audit=AsyncMock())
     reviews.claim = AsyncMock(return_value=review)
-    reviews.reviews = SimpleNamespace(find_by_id=AsyncMock(return_value=review))
+    from koinon.evidence.reviews import PreparedReviewClaim, digest
+
+    reviews.prepare_claim = AsyncMock(
+        return_value=PreparedReviewClaim(
+            review,
+            None,
+            review.revision,
+            digest(
+                {
+                    "request": review.request_json,
+                    "snapshot": review.snapshot_json,
+                    "manifest": review.manifest_json,
+                }
+            ),
+        )
+    )
+    reviews.claim_local = AsyncMock(return_value=review)
+    reviews.source_reader = None
+    reviews.reviews = SimpleNamespace(
+        find_by_id=AsyncMock(return_value=review), find_all=AsyncMock(return_value=[review])
+    )
     reviews.access = SimpleNamespace(check=AsyncMock())
     reviews.memory = SimpleNamespace(get=lambda: egress)
     reviews.outputs = SimpleNamespace(get=lambda: assistants[1].get_bean(ConversationOutputPort))

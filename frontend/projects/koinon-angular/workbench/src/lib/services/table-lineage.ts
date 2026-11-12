@@ -4,7 +4,7 @@ import { Injectable, computed, effect, inject, signal, untracked, DestroyRef } f
 import type {
   ContextResponse,
   TableProvenance,
-  TableSnapshotPage,
+  TableSnapshotReadPage,
 } from '@fireflyframework/koinon-sdk';
 import { KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonClientContext } from '@fireflyframework/koinon-angular/workbench/core';
@@ -32,12 +32,14 @@ export class KoinonTableLineage {
       this.facade.workspaceId(),
       this.facade.projectId(),
       this.facade.context()?.subject,
+      this.facade.readerSources(),
+      this.facade.readerRevision(),
       this.clients.revision(),
       this.facade.authRequired(),
       this.facade.permissions().has('catalog:read'),
     ]),
   );
-  private readonly page = signal<TableSnapshotPage | null>(null);
+  private readonly page = signal<TableSnapshotReadPage | null>(null);
   private readonly version = signal<TableProvenance | null>(null);
   private readonly failure = signal('');
   private readonly loading = signal(false);
@@ -45,7 +47,7 @@ export class KoinonTableLineage {
   private sequence = 0;
   private read?: AbortController;
   private lastVersion = '';
-  private lastPage = 1;
+  private lastCursor: string|undefined;
   readonly target = computed(() =>
     this.current(this.selected()) ? this.selected()!.target : null,
   );
@@ -91,6 +93,7 @@ export class KoinonTableLineage {
     this.failure.set('');
     this.showingVersion.set(false);
     this.lastVersion = '';
+    this.lastCursor = undefined;
   }
   async open(target: TableLineageTarget) {
     this.close();
@@ -99,19 +102,14 @@ export class KoinonTableLineage {
       this.close();
       return;
     }
-    await this.load(1);
+    await this.load();
     if (target.snapshotId && this.target()) await this.selectVersion(target.snapshotId);
   }
-  async goToPage(page: number) {
-    if (
-      this.pending() ||
-      !Number.isInteger(page) ||
-      page < 1 ||
-      page > (this.history()?.pages ?? 0)
-    )
-      return;
+  async nextPage() {
+    const cursor=this.history()?.next_cursor;
+    if(this.pending() || !cursor)return;
     this.showingVersion.set(false);
-    await this.load(page);
+    await this.load(cursor);
   }
   back() {
     this.cancel();
@@ -121,7 +119,7 @@ export class KoinonTableLineage {
   }
   async retry() {
     if (this.detailOpen()) await this.selectVersion(this.lastVersion);
-    else await this.load(this.lastPage);
+    else await this.load(this.lastCursor);
   }
   async selectVersion(snapshotId: string) {
     if (!snapshotId || snapshotId.length > 64) return;
@@ -132,7 +130,7 @@ export class KoinonTableLineage {
       const { datasetId, tableId } = selected.target;
       const result = await this.clients
         .get()
-        .dataset.tableProvenance(this.facade.tenantId(), datasetId, tableId, snapshotId, {
+        .dataset.readTableProvenance(this.facade.tenantId(), datasetId, tableId,{snapshot_id:snapshotId,reader_source_connections:this.facade.readerSources()}, {
           signal,
         });
       if (
@@ -148,24 +146,20 @@ export class KoinonTableLineage {
       return () => this.version.set(result);
     });
   }
-  private async load(page: number) {
-    this.lastPage = page;
+  private async load(cursor?: string) {
+    this.lastCursor = cursor;
     this.version.set(null);
     this.page.set(null);
     await this.request(async (selected, signal) => {
       const { datasetId, tableId } = selected.target;
       const result = await this.clients
         .get()
-        .dataset.tableSnapshots(this.facade.tenantId(), datasetId, tableId, {
-          query: { page, page_size: 25 },
-          signal,
-        });
+        .dataset.readTableSnapshots(this.facade.tenantId(), datasetId, tableId, {cursor,page_size:25,reader_source_connections:this.facade.readerSources()},{signal});
       if (
-        result.page !== page ||
-        result.page_size !== 25 ||
-        !Number.isSafeInteger(result.total) ||
-        result.total < 0 ||
-        result.pages !== Math.ceil(result.total / 25) ||
+        (result.total ?? null)!==null ||
+        (result.pages ?? null)!==null ||
+        Boolean(result.total_is_exact) ||
+        (result.next_cursor!==null && !/^[A-Za-z0-9_-]{43}$/.test(result.next_cursor)) ||
         result.items.length > 25 ||
         new Set(result.items.map((item) => item.snapshot_id)).size !== result.items.length ||
         result.items.some((item) => item.dataset_id !== datasetId || item.table_id !== tableId)

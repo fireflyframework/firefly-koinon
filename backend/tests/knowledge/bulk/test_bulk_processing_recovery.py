@@ -397,6 +397,7 @@ async def test_committed_recovery_uses_original_context_through_real_primary_ack
         bulk.catalog, bulk.context.get_bean(DomainBindingRepository), SimpleNamespace(), KnowledgeSettings()
     )
     port.facades, port.inspect = SimpleNamespace(get=lambda: facade), inspect
+    port.inspect_committed = inspect
     bulk.service.intakes = SimpleNamespace(get=lambda: port)
     before = await bulk.service.get("issuer|editor", "north", batch_id)
     result = await bulk.service.recover_processing(

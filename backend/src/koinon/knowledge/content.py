@@ -97,7 +97,23 @@ class ContentUpdates:
         return chain
 
     @transactional(datasource="primary")
-    async def _version(self, subject, tenant, parent, operation, filename, content):
+    async def _version(
+        self,
+        subject,
+        tenant,
+        parent,
+        operation,
+        filename,
+        content,
+        *,
+        _source_admission=None,
+        _source_write=None,
+        _source_create_id=None,
+    ):
+        if (_source_write is None) != (_source_create_id is None):
+            raise ConflictException(
+                "Source publication authority is required", code="SOURCE_PUBLICATION_DENIED"
+            )
         version = await self.knowledge.catalog.create(
             subject,
             tenant,
@@ -105,8 +121,23 @@ class ContentUpdates:
             name=filename,
             parent_id=parent,
             metadata={"operation": operation, "sha256": sha256(content).hexdigest(), "bytes": len(content)},
+            **(
+                {"_source_write": _source_write, "_source_create_id": _source_create_id}
+                if _source_write is not None
+                else {}
+            ),
         )
-        version = await self.knowledge.catalog.update(subject, tenant, version.id, {"status": "pending"})
+        version = await self.knowledge.catalog.update(
+            subject,
+            tenant,
+            version.id,
+            {"status": "pending"},
+            **(
+                {"_source_write": _source_write, "_source_parent_id": parent}
+                if _source_write is not None
+                else {}
+            ),
+        )
         await mark_content_attempt(self.knowledge.catalog.catalog_repository, version, operation)
         await self.knowledge.catalog._audit(
             subject,
@@ -115,6 +146,8 @@ class ContentUpdates:
             version.id,
             {"operation": operation, "state": "unknown"},
         )
+        if _source_admission is not None:
+            await _source_admission(version)
         return version
 
     @transactional(datasource="primary")
@@ -282,6 +315,8 @@ class ContentUpdates:
         _on_version=None,
         expected_source_version_id=None,
         expected_extraction_id=None,
+        _publication_guard=None,
+        _source_admission=None,
     ):
         chain, binding, entries = await self._document_scope(subject, tenant, document_id)
         self.knowledge._validate_file(filename, content)
@@ -296,6 +331,7 @@ class ContentUpdates:
             "document.reingest" if force_reingest else "document.replace",
             filename,
             content,
+            **({"_source_admission": _source_admission} if _source_admission is not None else {}),
         )
         if _on_version is not None:
             await _on_version(version)
@@ -324,6 +360,7 @@ class ContentUpdates:
                 authorize_commit=authorize_commit,
                 expected_source_version_id=expected_source_version_id,
                 expected_extraction_id=expected_extraction_id,
+                **({"_publication_guard": _publication_guard} if _publication_guard is not None else {}),
             )
             for entry in entries.values():
                 metadata = {

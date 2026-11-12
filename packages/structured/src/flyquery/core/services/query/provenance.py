@@ -51,6 +51,34 @@ def current():
     return scope
 
 
+async def admit_rows(kind, rows):
+    """Authorize detached identity rows before their protected columns are read."""
+    from flyquery.core.services.query.prepared import no_query_unit
+
+    no_query_unit()
+    scope = current()
+    callback = getattr(scope.observer, "structured_admission", None) if scope is not None else None
+    if callback is None:
+        raise ServiceUnavailableException(
+            "Structured source admission is required", code="EVIDENCE_UNAVAILABLE"
+        )
+    original = tuple(dict(row) for row in rows)
+    selected = tuple(await callback(kind, original, scope))
+    if any(row not in original for row in selected) or len(selected) > len(original):
+        raise ServiceUnavailableException(
+            "Structured admission changed identities", code="EVIDENCE_UNAVAILABLE"
+        )
+    return selected
+
+
+def reject_product_legacy():
+    scope = current()
+    if scope is not None and getattr(scope.observer, "structured_source_operation", None) is not None:
+        raise ServiceUnavailableException(
+            "A product query requires prepared publication", code="QUERY_UNIT_INVALID"
+        )
+
+
 async def before_model(stage, prompt, bundle, *, tenant_id, workspace_id, dataset_id, execution=None):
     scope = current()
     if scope is None:
@@ -130,6 +158,8 @@ def execution(operation):
         scope.observer.sql_classified(identifier, classification.classification)
         token = _attempt.set(identifier)
         try:
+            if getattr(scope.observer, "structured_source_operation", None) is not None:
+                await scope.observer.authorize()
             result = await operation(self, sql, attached_tables, *args, **kwargs)
             scope.observer.sql_executed(identifier, result)
             return result
@@ -145,6 +175,8 @@ def execution(operation):
 def direct(operation):
     @wraps(operation)
     async def tracked(self, request, body, *args, **kwargs):
+        if getattr(self, "_prepared", None) is None:
+            reject_product_legacy()
         scope = current()
         if scope is None:
             return await operation(self, request, body, *args, **kwargs)

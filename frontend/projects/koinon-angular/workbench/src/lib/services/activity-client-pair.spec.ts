@@ -473,3 +473,52 @@ it('observes jobs with their own request and clears them when administrator memb
     vi.useRealTimers();
   }
 });
+
+it('reloads the default summary when profile time zone arrives during the first request', async () => {
+  const requests: { zone: string; resolve: (value: ActivitySummary) => void }[] = [];
+  const transport: KoinonTransport = {
+    request: <T>(_method: HttpMethod, _path: string, options?: RequestOptions) =>
+      new Promise<T>((resolve) => {
+        requests.push({
+          zone: (options?.body as { time_zone: string }).time_zone,
+          resolve: (value) => resolve(value as T),
+        });
+      }),
+    stream: async function* () { yield* []; },
+  };
+  const { fixture } = setup(transport);
+  fixture.componentInstance.i18n.apply({ locale: 'en-US', time_zone: 'America/Los_Angeles', response_language: 'en' });
+  fixture.detectChanges();
+  await vi.waitFor(() => expect(requests).toHaveLength(1));
+  fixture.componentInstance.i18n.apply({ locale: 'en-US', time_zone: 'UTC', response_language: 'en' });
+  TestBed.tick();
+  await vi.waitFor(() => expect(requests).toHaveLength(2));
+  expect(requests.map(request => request.zone)).toEqual(['America/Los_Angeles', 'UTC']);
+  requests[1].resolve(summary(2));
+  requests[0].resolve(summary(9));
+  await fixture.whenStable();
+  expect(fixture.componentInstance.summary()?.knowledge.created.value).toBe(2);
+});
+
+it('keeps an edited reporting window unsubmitted when profile time zone changes', async () => {
+  const requests: unknown[] = [];
+  const transport: KoinonTransport = {
+    request: async <T>(_method: HttpMethod, _path: string, options?: RequestOptions) => {
+      requests.push(options?.body);
+      return summary(3) as T;
+    },
+    stream: async function* () { yield* []; },
+  };
+  const { fixture } = setup(transport);
+  fixture.componentInstance.i18n.apply({ locale: 'en-US', time_zone: 'America/Los_Angeles', response_language: 'en' });
+  fixture.detectChanges();
+  await fixture.whenStable();
+  const draft = { start_at: '2026-10-01T00:00:00Z', end_at: '2026-10-03T00:00:00Z', time_zone: 'America/Los_Angeles' };
+  fixture.componentInstance.window = draft;
+  fixture.componentInstance.i18n.apply({ locale: 'en-US', time_zone: 'UTC', response_language: 'en' });
+  TestBed.tick();
+  await fixture.whenStable();
+  expect(requests).toHaveLength(1);
+  expect(fixture.componentInstance.window).toBe(draft);
+  expect(fixture.componentInstance.summary()?.knowledge.created.value).toBe(3);
+});

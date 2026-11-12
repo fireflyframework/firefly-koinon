@@ -20,7 +20,7 @@ import { KoinonAccountMenu } from './account-menu';
 import { KoinonPoweredBy } from '../atoms/powered-by';
 import { KoinonIcon } from '@fireflyframework/koinon-angular/workbench/core';
 import { KoinonSearchField } from '../molecules/search-field';
-export type PrimaryDestination = 'library' | 'chat' | 'my-activity' | 'activity' | 'settings';
+export type PrimaryDestination = 'library' | 'chat' | 'my-activity' | 'activity' | 'settings' | 'synchronization';
 export interface OrganizationOption {
   id: string;
   name: string;

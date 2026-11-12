@@ -29,8 +29,8 @@
           <button
             type="button"
             class="nav-item"
-            [class.active]="!personalAccount && destination === item.id"
-            [attr.aria-current]="!personalAccount && destination === item.id ? 'page' : null"
+            [class.active]="!personalAccount && (destination === item.id || (destination === 'synchronization' && item.id === 'library'))"
+            [attr.aria-current]="!personalAccount && (destination === item.id || (destination === 'synchronization' && item.id === 'library')) ? 'page' : null"
             (click)="go(item.id)"
           >
             <ffk-icon [name]="item.icon" /><span>{{ item.label | ffkText }}</span>
@@ -87,6 +87,7 @@
         <ffk-icon [name]="theme === 'light' ? 'moon' : 'sun'" />
       </button>
       @if (showNavigation) {
+        <ng-content select="[ffkHeaderAccountStatus]" />
         <button
           class="account-avatar"
           #avatarButton
@@ -190,8 +191,8 @@
           <button
             type="button"
             class="nav-item"
-            [class.active]="!personalAccount && destination === item.id"
-            [attr.aria-current]="!personalAccount && destination === item.id ? 'page' : null"
+            [class.active]="!personalAccount && (destination === item.id || (destination === 'synchronization' && item.id === 'library'))"
+            [attr.aria-current]="!personalAccount && (destination === item.id || (destination === 'synchronization' && item.id === 'library')) ? 'page' : null"
             (click)="go(item.id)"
           >
             <ffk-icon [name]="item.icon" /><span>{{ item.label | ffkText }}</span>

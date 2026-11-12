@@ -22,3 +22,34 @@ def current_release_context(payload: dict, reset_sequence: int) -> bool:
         and isinstance(seal, str)
         and payload.get("context_sha256") == context_hash(seal, recorded)
     )
+
+
+def active_result_rows(rows, *, reset: int | None, run_id: str, artifacts):
+    """Select persisted results with the original assistant history semantics."""
+    rows = [
+        row
+        for row in rows
+        if row.kind != "answer_release" or current_release_context(row.payload, reset or 0)
+    ]
+    if reset is None:
+        return rows
+    ids = {value["id"] for value in artifacts or [] if value.get("run_id") == run_id and value.get("id")}
+    generations = [
+        row
+        for row in rows
+        if row.kind == "generation" and row.payload["generation"]["start_sequence"] >= reset
+    ]
+    current = (
+        max(generations, key=lambda row: (row.payload["generation"]["start_sequence"], row.created_at))
+        if generations
+        else None
+    )
+    return [
+        row
+        for row in rows
+        if row.id in ids
+        or row.kind == "answer_release"
+        and row.payload.get("generation_id") is None
+        or current is not None
+        and (row.id == current.id or row.payload.get("generation_id") == current.id)
+    ]

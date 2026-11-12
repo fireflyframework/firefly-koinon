@@ -45,6 +45,8 @@ import json
 import uuid
 
 import sqlalchemy as sa
+from pyfly.data.transaction import infrastructure_unit
+from pyfly.kernel import ServiceUnavailableException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from flyquery.core.services.query import provenance
@@ -152,3 +154,73 @@ class TableResolver:
             {"ds": dataset_id, "names": list(table_names)},
         )
         return {r["name"]: str(r["current_snapshot_id"]) for r in rows.mappings()}
+
+
+class ProductTableResolver:
+    """Resolve exact snapshot paths only after detached identity admission."""
+
+    def __init__(self, sessions, settings):
+        self._sessions, self._settings = sessions, settings
+        self._pins = {}
+
+    def bind_snapshot_pins(self, pins):
+        self._pins = dict(pins)
+
+    async def _read(self, statement, parameters):
+        async with infrastructure_unit(self._sessions, read_only=True) as session:
+            result = await session.execute(sa.text(statement), parameters)
+            return [dict(row) for row in result.mappings()]
+
+    async def _tables(self, dataset_id, table_names, pins=None):
+        pins = self._pins if pins is None else pins
+        if not table_names:
+            return []
+        if len(table_names) > 500:
+            raise ServiceUnavailableException("Too many query tables", code="EVIDENCE_UNAVAILABLE")
+        identities = await self._read(
+            """SELECT t.id AS table_id,ss.id AS snapshot_id
+            FROM flyquery_tables t JOIN flyquery_schema_snapshots ss ON ss.table_id=t.id
+              AND ss.id=COALESCE((CAST(:pins AS jsonb)->>t.name)::uuid,t.current_snapshot_id)
+            WHERE t.dataset_id=:ds AND t.name=ANY(:names) AND t.is_active=true AND ss.status='READY'""",
+            {"ds": dataset_id, "names": table_names, "pins": json.dumps(pins or {})},
+        )
+        selected = await provenance.admit_rows("table", identities)
+        if list(selected) != identities:
+            raise ServiceUnavailableException(
+                "A required SQL snapshot was denied", code="EVIDENCE_UNAVAILABLE"
+            )
+        if not selected:
+            return []
+        values = json.dumps([{key: str(value) for key, value in row.items()} for row in selected])
+        rows = await self._read(
+            """SELECT t.id AS table_id,t.name,t.kind,ss.id AS snapshot_id,ss.parquet_object_key
+            FROM flyquery_tables t JOIN flyquery_schema_snapshots ss ON ss.table_id=t.id
+            JOIN jsonb_to_recordset(CAST(:pins AS jsonb)) AS p(table_id uuid,snapshot_id uuid)
+              ON t.id=p.table_id AND ss.id=p.snapshot_id
+            WHERE t.dataset_id=:ds AND t.is_active=true AND ss.status='READY'""",
+            {"ds": dataset_id, "pins": values},
+        )
+        if {(row["table_id"], row["snapshot_id"]) for row in rows} != {
+            (row["table_id"], row["snapshot_id"]) for row in selected
+        }:
+            raise ServiceUnavailableException("Admitted SQL snapshots changed", code="EVIDENCE_UNAVAILABLE")
+        return rows
+
+    async def resolve(self, dataset_id, table_names, object_store_base=None, pins=None):
+        from flyquery.core.services.storage.object_store_factory import storage_base
+
+        rows = await self._tables(dataset_id, table_names, pins)
+        provenance.resolved(dataset_id, rows)
+        base = (object_store_base or storage_base(self._settings)).rstrip("/")
+        return {row["name"]: f"{base}/{row['parquet_object_key']}" for row in rows}
+
+    async def table_kinds_by_name(self, dataset_id, table_names):
+        return {row["name"]: row["kind"] for row in await self._tables(dataset_id, table_names)}
+
+    async def list_kinds_for_dataset_by_names(self, dataset_id, table_names):
+        return [
+            {"name": row["name"], "kind": row["kind"]} for row in await self._tables(dataset_id, table_names)
+        ]
+
+    async def current_snapshots(self, dataset_id, table_names):
+        return {row["name"]: str(row["snapshot_id"]) for row in await self._tables(dataset_id, table_names)}

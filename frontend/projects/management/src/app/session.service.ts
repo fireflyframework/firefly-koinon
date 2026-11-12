@@ -1,7 +1,6 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
 import { AccountNavigation } from './account-navigation';
 import type { KoinonWorkbench } from '@fireflyframework/koinon-angular/workbench';
 import type { SessionMonitor } from './session-monitor';
@@ -25,36 +24,18 @@ export class SessionService {
   async signOut(): Promise<boolean> {
     this.error.set('');
     try {
-      await firstValueFrom(
-        this.http.post(
-          '/logout',
-          {},
-          { withCredentials: true, responseType: 'text', timeout: 10000 },
-        ),
-      );
-    } catch {
-      // Native logout may clear the cookie before a followed redirect fails.
-    }
-    try {
-      const current = await firstValueFrom(
-        this.http.get<{ authenticated?: boolean }>('/auth/me', {
-          withCredentials: true,
-          timeout: 5000,
-        }),
-      );
-      this.error.set(
-        current.authenticated === true
-          ? 'You are still signed in. Try signing out again.'
-          : 'Sign-out could not be confirmed. Reload this page or try again.',
-      );
-    } catch (error) {
-      if (error instanceof HttpErrorResponse && error.status === 401) {
-        void this.runtime?.then((monitor) => monitor.stop());
-        this.navigation.clearPending();
-        return true;
+      const { signOut } = await import('./session-sign-out');
+      const error = await signOut(this.http);
+      if (error) {
+        this.error.set(error);
+        return false;
       }
+      void this.runtime?.then((monitor) => monitor.stop());
+      this.navigation.clearPending();
+      return true;
+    } catch {
       this.error.set('Sign-out could not be confirmed. Reload this page or try again.');
+      return false;
     }
-    return false;
   }
 }

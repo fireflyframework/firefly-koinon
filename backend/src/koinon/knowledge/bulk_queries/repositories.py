@@ -1,11 +1,12 @@
 # Copyright 2026 Firefly Software Foundation
 # SPDX-License-Identifier: Apache-2.0
 from datetime import timedelta
+from types import SimpleNamespace
 
 from pyfly.container import repository
 from pyfly.data.relational.sqlalchemy import Repository
 from pyfly.kernel import ConflictException, ServiceUnavailableException
-from sqlalchemy import and_, exists, func, literal, or_, select
+from sqlalchemy import and_, exists, func, literal, or_, select, update
 from sqlalchemy.orm import aliased
 
 from koinon.assistants.entities import Provider
@@ -21,6 +22,99 @@ from koinon.knowledge.entities import DomainBinding
 
 @repository(name="knowledge.bulk_queries.repository")
 class QueryBatchRepository(Repository[QueryBatch, str]):
+    async def items_metadata(self, batch_id: str):
+        columns = [column for column in QueryBatchItem.__table__.columns if column.name != "result_json"]
+        rows = await self._require_session().execute(
+            select(*columns)
+            .where(QueryBatchItem.batch_id == batch_id)
+            .order_by(QueryBatchItem.ordinal, QueryBatchItem.id)
+            .limit(21)
+        )
+        return [SimpleNamespace(**dict(row)) for row in rows.mappings()]
+
+    async def result_identity(self, batch_id: str, item_id: str):
+        row = (
+            (
+                await self._require_session().execute(
+                    select(
+                        QueryBatchItem.dataset_id,
+                        func.coalesce(
+                            QueryBatchItem.native_commit_json["query_id"].as_string(),
+                            QueryBatchItem.result_json["query_id"].as_string(),
+                        ).label("query_id"),
+                        QueryBatchItem.native_commit_json,
+                        QueryBatchItem.status,
+                        QueryBatchItem.error_code,
+                        QueryBatchItem.native_workspace_id,
+                        QueryBatchItem.native_dataset_id,
+                        QueryBatchItem.question,
+                        QueryBatchItem.connection_json,
+                        QueryBatchItem.policy_json["digest"].as_string().label("policy_digest"),
+                    ).where(QueryBatchItem.batch_id == batch_id, QueryBatchItem.id == item_id)
+                )
+            )
+            .mappings()
+            .one_or_none()
+        )
+        return SimpleNamespace(**dict(row)) if row is not None else None
+
+    async def recovery_item(self, lease):
+        row = (
+            (
+                await self._require_session().execute(
+                    select(
+                        QueryBatchItem.id,
+                        QueryBatchItem.job_id,
+                        QueryBatchItem.dataset_id,
+                        QueryBatchItem.native_commit_json,
+                        QueryBatchItem.status,
+                        QueryBatchItem.result_json["query_id"].as_string().label("result_query_id"),
+                    )
+                    .where(
+                        QueryBatchItem.id == lease.item_id,
+                        QueryBatchItem.batch_id == lease.batch_id,
+                        QueryBatchItem.dataset_id == lease.dataset_id,
+                        QueryBatchItem.question == lease.question,
+                        QueryBatchItem.native_workspace_id == lease.native_workspace_id,
+                        QueryBatchItem.native_dataset_id == lease.native_dataset_id,
+                        QueryBatchItem.policy_json["digest"].as_string() == lease.policy.digest,
+                    )
+                    .with_for_update()
+                )
+            )
+            .mappings()
+            .one_or_none()
+        )
+        return SimpleNamespace(**dict(row)) if row is not None else None
+
+    async def store_commit_metadata(self, item_id, descriptor):
+        await self._require_session().execute(
+            update(QueryBatchItem)
+            .where(QueryBatchItem.id == item_id)
+            .values(
+                native_commit_json=descriptor.model_dump(mode="json", by_alias=True),
+                status=descriptor.outcome,
+                error_code=None if descriptor.outcome == "succeeded" else "BULK_QUERY_NOT_EXECUTED",
+            )
+        )
+
+    async def item_metadata(self, batch_id, item_id, *, lock=False):
+        columns = [column for column in QueryBatchItem.__table__.columns if column.name != "result_json"]
+        statement = select(
+            *columns, QueryBatchItem.result_json["query_id"].as_string().label("result_query_id")
+        ).where(QueryBatchItem.batch_id == batch_id, QueryBatchItem.id == item_id)
+        if lock:
+            statement = statement.with_for_update()
+        row = (await self._require_session().execute(statement)).mappings().one_or_none()
+        return SimpleNamespace(**dict(row)) if row is not None else None
+
+    async def set_item_state(self, item_id, status, error_code):
+        await self._require_session().execute(
+            update(QueryBatchItem)
+            .where(QueryBatchItem.id == item_id)
+            .values(status=status, error_code=error_code)
+        )
+
     async def flush(self) -> None:
         await self._require_session().flush()
 
@@ -155,19 +249,26 @@ class QueryBatchRepository(Repository[QueryBatch, str]):
             int(await session.scalar(active.where(QueryBatch.subject == subject)) or 0),
         )
 
-    async def page(self, batch_id: str, page: int, page_size: int) -> tuple[list[QueryBatchItem], int]:
+    async def page(self, batch_id: str, page: int, page_size: int):
         session = self._require_session()
         where = QueryBatchItem.batch_id == batch_id
         total = int(await session.scalar(select(func.count()).select_from(QueryBatchItem).where(where)) or 0)
-        rows = await session.scalars(
-            select(QueryBatchItem)
+        columns = [column for column in QueryBatchItem.__table__.columns if column.name != "result_json"]
+        rows = await session.execute(
+            select(
+                *columns,
+                func.coalesce(
+                    QueryBatchItem.native_commit_json["query_id"].as_string(),
+                    QueryBatchItem.result_json["query_id"].as_string(),
+                ).label("query_id"),
+            )
             .where(where)
             .order_by(QueryBatchItem.ordinal, QueryBatchItem.id)
             .offset((page - 1) * page_size)
             .limit(page_size)
             .execution_options(populate_existing=True)
         )
-        return list(rows.all()), total
+        return [SimpleNamespace(**dict(row)) for row in rows.mappings()], total
 
     async def visible_page(
         self,

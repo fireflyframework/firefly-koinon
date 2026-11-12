@@ -43,6 +43,13 @@ class AutoLearner:
     def __init__(self, examples_service: Any) -> None:
         self._service = examples_service
 
+    def deferred(self, prepared):
+        """Prepare optional embeddings now and stage the draft's local insert."""
+        from flyquery.core.services.examples.examples_service import ExamplesService
+        from flyquery.core.services.query.prepared import DeferredExamples
+
+        return AutoLearner(ExamplesService(DeferredExamples(prepared), self._service._embedder))
+
     async def maybe_propose(
         self,
         *,

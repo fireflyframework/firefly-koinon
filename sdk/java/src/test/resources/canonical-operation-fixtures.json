@@ -460,6 +460,62 @@
     "idempotency": false
   },
   {
+    "operation": "CatalogController.catalog_browse",
+    "group": "CatalogApi",
+    "group_scoped": true,
+    "method": "browse",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/catalog/browse",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "CatalogBrowseInput",
+    "response": "CatalogBrowseOutput",
+    "body": {
+      "items": [
+        {
+          "created_by": "created_by-value",
+          "updated_by": "updated_by-value",
+          "id": "id-value",
+          "tenant_id": "tenant_id-value",
+          "kind": "kind-value",
+          "name": "name-value",
+          "parent_id": "parent_id-value",
+          "workspace_id": "workspace_id-value",
+          "project_id": "project_id-value",
+          "description": "description-value",
+          "status": "status-value",
+          "system_managed": false,
+          "metadata": {
+            "example": {
+              "decimal": "12345678901234567890.12345678901234567890",
+              "integer": "9007199254740993"
+            }
+          },
+          "created_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "actors": {
+        "example": {
+          "subject": "subject-value",
+          "display_name": "display_name-value",
+          "avatar_data_url": "avatar_data_url-value",
+          "avatar_version": "avatar_version-value"
+        }
+      },
+      "next_cursor": "next_cursor-value",
+      "total": null,
+      "total_is_exact": false
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
     "operation": "CatalogController.catalog_list",
     "group": "CatalogApi",
     "group_scoped": true,
@@ -798,6 +854,48 @@
     "query": {},
     "filter": null,
     "request": "CatalogMove",
+    "response": "CatalogEntry",
+    "body": {
+      "created_by": "created_by-value",
+      "updated_by": "updated_by-value",
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "kind": "kind-value",
+      "name": "name-value",
+      "parent_id": "parent_id-value",
+      "workspace_id": "workspace_id-value",
+      "project_id": "project_id-value",
+      "description": "description-value",
+      "status": "status-value",
+      "system_managed": false,
+      "metadata": {
+        "example": {
+          "decimal": "12345678901234567890.12345678901234567890",
+          "integer": "9007199254740993"
+        }
+      },
+      "created_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "CatalogReadController.catalog_get_read",
+    "group": "CatalogApi",
+    "group_scoped": true,
+    "method": "read",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/catalog/entry_id value/read",
+    "ids": {
+      "tenant_id": "tenant value",
+      "entry_id": "entry_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ReaderReadInput",
     "response": "CatalogEntry",
     "body": {
       "created_by": "created_by-value",
@@ -2782,6 +2880,83 @@
     "idempotency": false
   },
   {
+    "operation": "ChatHistoryController.browse",
+    "group": "ChatApi",
+    "group_scoped": true,
+    "method": "browse",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/chat/threads/browse",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "HistoryBrowseInput",
+    "response": "HistoryBrowsePage",
+    "body": {
+      "items": [
+        {
+          "id": "id-value",
+          "title": "title-value",
+          "title_source": "default",
+          "revision": 1,
+          "folder_id": "folder_id-value",
+          "archived_at": "2026-10-27T12:34:56Z",
+          "scope": {
+            "workspace_id": "workspace_id-value",
+            "project_id": "project_id-value",
+            "collection_id": "collection_id-value",
+            "asset_ids": [
+              "asset_ids-value"
+            ]
+          },
+          "created_at": "2026-10-27T12:34:56Z",
+          "updated_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "next_cursor": "next_cursor-value",
+      "total": null,
+      "total_is_exact": false
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "ChatHistoryController.browse_messages",
+    "group": "ChatApi",
+    "group_scoped": true,
+    "method": "browseMessages",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/chat/threads/thread_id value/messages/browse",
+    "ids": {
+      "tenant_id": "tenant value",
+      "thread_id": "thread_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "MessageBrowseInput",
+    "response": "MessageBrowsePage",
+    "body": {
+      "items": [
+        {
+          "example": {
+            "decimal": "12345678901234567890.12345678901234567890",
+            "integer": "9007199254740993"
+          }
+        }
+      ],
+      "next_cursor": "next_cursor-value",
+      "total": null,
+      "total_is_exact": false
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
     "operation": "ChatHistoryController.folders",
     "group": "ChatFoldersApi",
     "group_scoped": true,
@@ -3117,6 +3292,44 @@
     "response": "void",
     "body": null,
     "status": 204,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "ChatHistoryReadController.thread_read",
+    "group": "ChatApi",
+    "group_scoped": true,
+    "method": "read",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/chat/threads/thread_id value/read",
+    "ids": {
+      "tenant_id": "tenant value",
+      "thread_id": "thread_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ReaderReadInput",
+    "response": "ChatThread",
+    "body": {
+      "revision": 1,
+      "title_source": "default",
+      "folder_id": "folder_id-value",
+      "archived_at": "archived_at-value",
+      "id": "id-value",
+      "title": "title-value",
+      "scope": {
+        "workspace_id": "workspace_id-value",
+        "project_id": "project_id-value",
+        "collection_id": "collection_id-value",
+        "asset_ids": [
+          "asset_ids-value"
+        ]
+      },
+      "created_at": "2026-10-27T12:34:56Z",
+      "updated_at": "2026-10-27T12:34:56Z"
+    },
+    "status": 200,
     "encoding": "application/json",
     "precondition": false,
     "idempotency": false
@@ -6406,6 +6619,45 @@
     "idempotency": false
   },
   {
+    "operation": "ExportController.browse",
+    "group": "ExportsApi",
+    "group_scoped": true,
+    "method": "browse",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/exports/browse",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ExportBrowseInput",
+    "response": "ExportBrowsePage",
+    "body": {
+      "items": [
+        {
+          "id": "id-value",
+          "kind": "conversation",
+          "format": "markdown",
+          "title": "title-value",
+          "status": "ready",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "completeness": "selected_messages",
+          "row_count": 1,
+          "truncated": false,
+          "created_at": "2026-10-27T12:34:56Z",
+          "expires_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "next_cursor": "next_cursor-value",
+      "total": null,
+      "total_is_exact": false
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
     "operation": "ExportController.get",
     "group": "ExportsApi",
     "group_scoped": true,
@@ -6476,6 +6728,1326 @@
     "response": "void",
     "body": null,
     "status": 204,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "ExportReadController.get_read",
+    "group": "ExportsApi",
+    "group_scoped": true,
+    "method": "read",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/exports/export_id value/read",
+    "ids": {
+      "tenant_id": "tenant value",
+      "export_id": "export_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ReaderReadInput",
+    "response": "Export",
+    "body": {
+      "id": "id-value",
+      "kind": "conversation",
+      "format": "markdown",
+      "title": "title-value",
+      "status": "ready",
+      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "completeness": "selected_messages",
+      "row_count": 1,
+      "truncated": false,
+      "created_at": "2026-10-27T12:34:56Z",
+      "expires_at": "2026-10-27T12:34:56Z"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "ExportReadController.download_read",
+    "group": "ExportsApi",
+    "group_scoped": true,
+    "method": "readDownload",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/exports/export_id value/download/read",
+    "ids": {
+      "tenant_id": "tenant value",
+      "export_id": "export_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ReaderReadInput",
+    "response": "BinaryDownload",
+    "body": null,
+    "status": 200,
+    "encoding": "binary",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceCapabilitiesController.get",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "capabilities",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/content-sources/capabilities",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "SourceCapabilitiesOutput",
+    "body": {
+      "accounts_available": false,
+      "inbound_only": true,
+      "synchronization_available": false,
+      "providers": [
+        {
+          "provider": "sharepoint",
+          "display_name": "display_name-value",
+          "consent_available": false,
+          "unavailable_reason": "disabled"
+        }
+      ],
+      "modes": [
+        "document"
+      ],
+      "formats": [
+        {
+          "extension": "extension-value",
+          "mode": "document"
+        }
+      ],
+      "schedule": {
+        "min_interval_seconds": 1,
+        "max_interval_seconds": 1,
+        "calendar_timezones": "iana",
+        "max_calendar_weekdays": 7
+      }
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "ContentConnectionsController.list",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "list",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/content-sources/connections",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {
+      "cursor": "cursor value",
+      "limit": 2
+    },
+    "filter": "SourceConnectionFilter",
+    "request": null,
+    "response": "SourceConnectionPage",
+    "body": {
+      "items": [
+        {
+          "id": "id-value",
+          "provider": "sharepoint",
+          "status": "pending",
+          "revision": 1,
+          "account": {
+            "provider": "sharepoint",
+            "subject": "subject-value",
+            "tenant_id": "tenant_id-value"
+          },
+          "display_name": "display_name-value",
+          "display_address": "display_address-value",
+          "display_address_verified": false,
+          "synchronization_available": false
+        }
+      ],
+      "next_cursor": "next_cursor-value",
+      "synchronization_available": false
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "ContentConnectionsController.get",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "get",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/content-sources/connections/connection_id value",
+    "ids": {
+      "tenant_id": "tenant value",
+      "connection_id": "connection_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "SourceConnectionOutput",
+    "body": {
+      "id": "id-value",
+      "provider": "sharepoint",
+      "status": "pending",
+      "revision": 1,
+      "account": {
+        "provider": "sharepoint",
+        "subject": "subject-value",
+        "tenant_id": "tenant_id-value"
+      },
+      "display_name": "display_name-value",
+      "display_address": "display_address-value",
+      "display_address_verified": false,
+      "synchronization_available": false
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "ContentConnectionsController.disconnect",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "disconnect",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/content-sources/connections/connection_id value/disconnect",
+    "ids": {
+      "tenant_id": "tenant value",
+      "connection_id": "connection_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "SourceConnectionRevision",
+    "response": "SourceConnectionOutput",
+    "body": {
+      "id": "id-value",
+      "provider": "sharepoint",
+      "status": "pending",
+      "revision": 1,
+      "account": {
+        "provider": "sharepoint",
+        "subject": "subject-value",
+        "tenant_id": "tenant_id-value"
+      },
+      "display_name": "display_name-value",
+      "display_address": "display_address-value",
+      "display_address_verified": false,
+      "synchronization_available": false
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "ContentConnectionsController.sites",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "sites",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/content-sources/connections/connection_id value/sites",
+    "ids": {
+      "tenant_id": "tenant value",
+      "connection_id": "connection_id value"
+    },
+    "query": {
+      "q": "q value",
+      "cursor": "cursor value"
+    },
+    "filter": "SourceSiteFilter",
+    "request": null,
+    "response": "SourceLocationPage",
+    "body": {
+      "items": [
+        {
+          "id": "id-value",
+          "name": "name-value",
+          "kind": "site"
+        }
+      ],
+      "next_cursor": "next_cursor-value"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "ContentConnectionsController.drives",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "drives",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/content-sources/connections/connection_id value/drives",
+    "ids": {
+      "tenant_id": "tenant value",
+      "connection_id": "connection_id value"
+    },
+    "query": {
+      "site_id": "site_id value",
+      "cursor": "cursor value"
+    },
+    "filter": "SourceDriveFilter",
+    "request": null,
+    "response": "SourceLocationPage",
+    "body": {
+      "items": [
+        {
+          "id": "id-value",
+          "name": "name-value",
+          "kind": "site"
+        }
+      ],
+      "next_cursor": "next_cursor-value"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "ContentConnectionsController.children",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "children",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/content-sources/connections/connection_id value/children",
+    "ids": {
+      "tenant_id": "tenant value",
+      "connection_id": "connection_id value"
+    },
+    "query": {
+      "drive_id": "drive_id value",
+      "folder_id": "folder_id value",
+      "cursor": "cursor value"
+    },
+    "filter": "SourceFolderFilter",
+    "request": null,
+    "response": "SourceFolderPage",
+    "body": {
+      "folder": {
+        "item_id": "item_id-value",
+        "name": "name-value",
+        "kind": "file",
+        "version": "version-value",
+        "size_bytes": 1,
+        "mime_type": "mime_type-value",
+        "parents": [
+          "parents-value"
+        ],
+        "can_download": false,
+        "modified_at": "modified_at-value"
+      },
+      "items": [
+        {
+          "item_id": "item_id-value",
+          "name": "name-value",
+          "kind": "file",
+          "version": "version-value",
+          "size_bytes": 1,
+          "mime_type": "mime_type-value",
+          "parents": [
+            "parents-value"
+          ],
+          "can_download": false,
+          "modified_at": "modified_at-value"
+        }
+      ],
+      "next_cursor": "next_cursor-value"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingController.mappings_page",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "mappings",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/content-sources/mappings",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {
+      "limit": 2,
+      "cursor": "cursor value"
+    },
+    "filter": "SourceMappingsPageFilter",
+    "request": null,
+    "response": "SourceMappingPage",
+    "body": {
+      "items": [
+        {
+          "id": "id-value",
+          "status": "reviewed",
+          "connection_id": "connection_id-value",
+          "policy_revision": 1,
+          "latest_review_revision": 1,
+          "control_revision": 1,
+          "next_run_at": "2026-10-27T12:34:56Z",
+          "presentation": {
+            "source_root": {
+              "name": "name-value",
+              "relative_path": [
+                "relative_path-value"
+              ]
+            },
+            "destination": {
+              "segments": [
+                {
+                  "id": "id-value",
+                  "kind": "kind-value",
+                  "name": "name-value"
+                }
+              ]
+            },
+            "unavailable_reason": "access_denied"
+          }
+        }
+      ],
+      "next_cursor": "next_cursor-value"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingController.get",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "mapping",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/content-sources/mappings/mapping_id value",
+    "ids": {
+      "tenant_id": "tenant value",
+      "mapping_id": "mapping_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "SourceMappingOutput",
+    "body": {
+      "id": "id-value",
+      "revision": 1,
+      "policy_revision": 1,
+      "latest_review_revision": 1,
+      "control_revision": 1,
+      "connection_id": "connection_id-value",
+      "policy": {
+        "connection_id": "connection_id-value",
+        "drive_id": "drive_id-value",
+        "root_id": "root_id-value",
+        "destination": {
+          "workspace_id": "workspace_id-value",
+          "project_id": "project_id-value",
+          "parent_id": "parent_id-value"
+        },
+        "recursive": false,
+        "removal_policy": "retire",
+        "schema_version": 1,
+        "mode": "document",
+        "hierarchy": "preserve",
+        "excluded_ids": [
+          "excluded_ids-value"
+        ],
+        "formats": [
+          "formats-value"
+        ],
+        "schedule": {
+          "kind": "manual"
+        },
+        "replacement_resolutions": [
+          {
+            "object_id": "object_id-value",
+            "remote_version": "remote_version-value",
+            "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "baseline_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "new_locator_set_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "replacements": [
+              {
+                "new_locator": "new_locator-value",
+                "previous_table_id": "previous_table_id-value"
+              }
+            ],
+            "removed_table_ids": [
+              "removed_table_ids-value"
+            ]
+          }
+        ]
+      },
+      "presentation": {
+        "source_root": {
+          "name": "name-value",
+          "relative_path": [
+            "relative_path-value"
+          ]
+        },
+        "destination": {
+          "segments": [
+            {
+              "id": "id-value",
+              "kind": "kind-value",
+              "name": "name-value"
+            }
+          ]
+        },
+        "unavailable_reason": "access_denied"
+      },
+      "status": "reviewed",
+      "next_run_at": "2026-10-27T12:34:56Z",
+      "can_pause": false,
+      "can_resume": false,
+      "can_retire": false,
+      "can_sync": false
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingController.runs",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "runs",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/content-sources/mappings/mapping_id value/runs",
+    "ids": {
+      "tenant_id": "tenant value",
+      "mapping_id": "mapping_id value"
+    },
+    "query": {
+      "limit": 2,
+      "cursor": "cursor value"
+    },
+    "filter": "SourceRunsFilter",
+    "request": null,
+    "response": "SourceRunPage",
+    "body": {
+      "items": [
+        {
+          "id": "id-value",
+          "mapping_id": "mapping_id-value",
+          "policy_revision": 1,
+          "control_revision": 1,
+          "status": "queued",
+          "stopping": false,
+          "retry_of_run_id": "retry_of_run_id-value",
+          "counters": {
+            "example": 1
+          },
+          "enumeration_complete": false,
+          "created_at": "2026-10-27T12:34:56Z",
+          "finished_at": "2026-10-27T12:34:56Z",
+          "can_cancel": false,
+          "can_retry": false
+        }
+      ],
+      "next_cursor": "next_cursor-value"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingController.initial_operation",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "initialOperation",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/content-sources/operations/operation_id value",
+    "ids": {
+      "tenant_id": "tenant value",
+      "operation_id": "operation_id value"
+    },
+    "query": {
+      "action": "action value"
+    },
+    "filter": "SourceInitialOperationFilter",
+    "request": null,
+    "response": "SourceOperationReceipt",
+    "body": {
+      "kind": "policy",
+      "receipt": {
+        "schema": "koinon.source-policy-operation.v1",
+        "receipt_id": "receipt_id-value",
+        "operation_id": "operation_id-value",
+        "action": "review",
+        "mapping_id": "mapping_id-value",
+        "policy_id": "policy_id-value",
+        "expected_policy_revision": 1,
+        "result_policy_revision": 1,
+        "review_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "review_expires_at": "2026-10-27T12:34:56Z",
+        "disposition": "reviewed"
+      }
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingController.operation",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "operation",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/content-sources/mappings/mapping_id value/operations/operation_id value",
+    "ids": {
+      "tenant_id": "tenant value",
+      "mapping_id": "mapping_id value",
+      "operation_id": "operation_id value"
+    },
+    "query": {
+      "action": "action value"
+    },
+    "filter": "SourceOperationFilter",
+    "request": null,
+    "response": "SourceOperationReceipt",
+    "body": {
+      "kind": "policy",
+      "receipt": {
+        "schema": "koinon.source-policy-operation.v1",
+        "receipt_id": "receipt_id-value",
+        "operation_id": "operation_id-value",
+        "action": "review",
+        "mapping_id": "mapping_id-value",
+        "policy_id": "policy_id-value",
+        "expected_policy_revision": 1,
+        "result_policy_revision": 1,
+        "review_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "review_expires_at": "2026-10-27T12:34:56Z",
+        "disposition": "reviewed"
+      }
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingController.run",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "run",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/content-sources/runs/run_id value",
+    "ids": {
+      "tenant_id": "tenant value",
+      "run_id": "run_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "SourceRunOutput",
+    "body": {
+      "id": "id-value",
+      "mapping_id": "mapping_id-value",
+      "policy_revision": 1,
+      "control_revision": 1,
+      "status": "queued",
+      "stopping": false,
+      "retry_of_run_id": "retry_of_run_id-value",
+      "counters": {
+        "example": 1
+      },
+      "enumeration_complete": false,
+      "created_at": "2026-10-27T12:34:56Z",
+      "finished_at": "2026-10-27T12:34:56Z",
+      "can_cancel": false,
+      "can_retry": false
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingController.run_items",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "runItems",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/content-sources/runs/run_id value/items",
+    "ids": {
+      "tenant_id": "tenant value",
+      "run_id": "run_id value"
+    },
+    "query": {
+      "limit": 2,
+      "cursor": "cursor value"
+    },
+    "filter": "SourceRunItemsFilter",
+    "request": null,
+    "response": "SourceRunItemPage",
+    "body": {
+      "items": [
+        {
+          "id": "id-value",
+          "object_id": "object_id-value",
+          "generation": 1,
+          "remote_version": "remote_version-value",
+          "kind": "file",
+          "name": "name-value",
+          "relative_path": [
+            "relative_path-value"
+          ],
+          "status": "observed",
+          "error_code": "error_code-value",
+          "source_id": "source_id-value",
+          "asset_id": "asset_id-value",
+          "attempt_id": "attempt_id-value",
+          "updated_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "next_cursor": "next_cursor-value"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingController.cancel",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "cancelRun",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/content-sources/runs/run_id value/cancel",
+    "ids": {
+      "tenant_id": "tenant value",
+      "run_id": "run_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "SourceControlInput",
+    "response": "SourceControlOutput",
+    "body": {
+      "operation_id": "operation_id-value",
+      "receipt_id": "receipt_id-value",
+      "action": "sync",
+      "control_revision": 1,
+      "run_id": "run_id-value",
+      "disposition": "queued"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingController.retry",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "retryRun",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/content-sources/runs/run_id value/retry",
+    "ids": {
+      "tenant_id": "tenant value",
+      "run_id": "run_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "SourceControlInput",
+    "response": "SourceControlOutput",
+    "body": {
+      "operation_id": "operation_id-value",
+      "receipt_id": "receipt_id-value",
+      "action": "sync",
+      "control_revision": 1,
+      "run_id": "run_id-value",
+      "disposition": "queued"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingController.review",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "reviewMapping",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/content-sources/mapping-reviews",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "SourcePolicyReviewInput",
+    "response": "SourcePolicyOperationOutput",
+    "body": {
+      "schema": "koinon.source-policy-operation.v1",
+      "receipt_id": "receipt_id-value",
+      "operation_id": "operation_id-value",
+      "action": "review",
+      "mapping_id": "mapping_id-value",
+      "policy_id": "policy_id-value",
+      "expected_policy_revision": 1,
+      "result_policy_revision": 1,
+      "review_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "review_expires_at": "2026-10-27T12:34:56Z",
+      "disposition": "reviewed"
+    },
+    "status": 201,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingController.items",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "reviewItems",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/content-sources/mapping-reviews/review_id value/items",
+    "ids": {
+      "tenant_id": "tenant value",
+      "review_id": "review_id value"
+    },
+    "query": {
+      "limit": 2,
+      "cursor": "cursor value"
+    },
+    "filter": "SourceItemsFilter",
+    "request": null,
+    "response": "SourceReviewPage",
+    "body": {
+      "review_id": "review_id-value",
+      "policy_revision": 1,
+      "review_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "expires_at": "2026-10-27T12:34:56Z",
+      "items": [
+        {
+          "item_id": "item_id-value",
+          "name": "name-value",
+          "kind": "kind-value",
+          "version": "version-value",
+          "filename": "filename-value",
+          "export_mime": "export_mime-value",
+          "reason": "reason-value",
+          "ancestry": [
+            "ancestry-value"
+          ],
+          "relative_path": [
+            "relative_path-value"
+          ],
+          "destination_relative_path": [
+            "destination_relative_path-value"
+          ],
+          "collision": "none",
+          "size_bytes": 1,
+          "action": "create"
+        }
+      ],
+      "next_cursor": "next_cursor-value",
+      "enumeration_complete": false,
+      "total": 1,
+      "observed_count": 1,
+      "known_bytes": 1,
+      "unknown_size_count": 1,
+      "can_apply": false,
+      "destination": {
+        "segments": [
+          {
+            "id": "id-value",
+            "kind": "kind-value",
+            "name": "name-value"
+          }
+        ]
+      }
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingController.create",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "createMapping",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/content-sources/mappings",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "SourcePolicyApplyInput",
+    "response": "SourcePolicyOperationOutput",
+    "body": {
+      "schema": "koinon.source-policy-operation.v1",
+      "receipt_id": "receipt_id-value",
+      "operation_id": "operation_id-value",
+      "action": "review",
+      "mapping_id": "mapping_id-value",
+      "policy_id": "policy_id-value",
+      "expected_policy_revision": 1,
+      "result_policy_revision": 1,
+      "review_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "review_expires_at": "2026-10-27T12:34:56Z",
+      "disposition": "reviewed"
+    },
+    "status": 201,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingController.revise",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "reviseMapping",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/content-sources/mappings/mapping_id value/reviews",
+    "ids": {
+      "tenant_id": "tenant value",
+      "mapping_id": "mapping_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "SourceExistingPolicyReviewInput",
+    "response": "SourcePolicyOperationOutput",
+    "body": {
+      "schema": "koinon.source-policy-operation.v1",
+      "receipt_id": "receipt_id-value",
+      "operation_id": "operation_id-value",
+      "action": "review",
+      "mapping_id": "mapping_id-value",
+      "policy_id": "policy_id-value",
+      "expected_policy_revision": 1,
+      "result_policy_revision": 1,
+      "review_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "review_expires_at": "2026-10-27T12:34:56Z",
+      "disposition": "reviewed"
+    },
+    "status": 201,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingController.apply",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "applyMapping",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/content-sources/mappings/mapping_id value/apply",
+    "ids": {
+      "tenant_id": "tenant value",
+      "mapping_id": "mapping_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "SourcePolicyApplyInput",
+    "response": "SourcePolicyOperationOutput",
+    "body": {
+      "schema": "koinon.source-policy-operation.v1",
+      "receipt_id": "receipt_id-value",
+      "operation_id": "operation_id-value",
+      "action": "review",
+      "mapping_id": "mapping_id-value",
+      "policy_id": "policy_id-value",
+      "expected_policy_revision": 1,
+      "result_policy_revision": 1,
+      "review_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "review_expires_at": "2026-10-27T12:34:56Z",
+      "disposition": "reviewed"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingController.sync",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "syncMapping",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/content-sources/mappings/mapping_id value/sync",
+    "ids": {
+      "tenant_id": "tenant value",
+      "mapping_id": "mapping_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "SourceControlInput",
+    "response": "SourceControlOutput",
+    "body": {
+      "operation_id": "operation_id-value",
+      "receipt_id": "receipt_id-value",
+      "action": "sync",
+      "control_revision": 1,
+      "run_id": "run_id-value",
+      "disposition": "queued"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingController.pause",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "pauseMapping",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/content-sources/mappings/mapping_id value/pause",
+    "ids": {
+      "tenant_id": "tenant value",
+      "mapping_id": "mapping_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "SourceControlInput",
+    "response": "SourceControlOutput",
+    "body": {
+      "operation_id": "operation_id-value",
+      "receipt_id": "receipt_id-value",
+      "action": "sync",
+      "control_revision": 1,
+      "run_id": "run_id-value",
+      "disposition": "queued"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingController.resume",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "resumeMapping",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/content-sources/mappings/mapping_id value/resume",
+    "ids": {
+      "tenant_id": "tenant value",
+      "mapping_id": "mapping_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "SourceControlInput",
+    "response": "SourceControlOutput",
+    "body": {
+      "operation_id": "operation_id-value",
+      "receipt_id": "receipt_id-value",
+      "action": "sync",
+      "control_revision": 1,
+      "run_id": "run_id-value",
+      "disposition": "queued"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingController.retire",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "retireMapping",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/content-sources/mappings/mapping_id value/retire",
+    "ids": {
+      "tenant_id": "tenant value",
+      "mapping_id": "mapping_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "SourceControlInput",
+    "response": "SourceControlOutput",
+    "body": {
+      "operation_id": "operation_id-value",
+      "receipt_id": "receipt_id-value",
+      "action": "sync",
+      "control_revision": 1,
+      "run_id": "run_id-value",
+      "disposition": "queued"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingValidationController.begin",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "beginValidation",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/content-sources/mapping-validations",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "SourceMappingValidationInput",
+    "response": "SourceMappingValidationOutput",
+    "body": {
+      "validation_id": "validation_id-value",
+      "revision": 1,
+      "state": "scanning",
+      "expires_at": "2026-10-27T12:34:56Z",
+      "continuation_token": "continuation_token-value",
+      "enumeration_complete": false,
+      "observed_count": 1,
+      "total": 1,
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "reason_code": "SOURCE_NAME_COLLISION"
+    },
+    "status": 201,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingValidationController.receipt",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "validationReceipt",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/content-sources/mapping-validations/operations/operation_id value",
+    "ids": {
+      "tenant_id": "tenant value",
+      "operation_id": "operation_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "SourceMappingValidationOutput",
+    "body": {
+      "validation_id": "validation_id-value",
+      "revision": 1,
+      "state": "scanning",
+      "expires_at": "2026-10-27T12:34:56Z",
+      "continuation_token": "continuation_token-value",
+      "enumeration_complete": false,
+      "observed_count": 1,
+      "total": 1,
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "reason_code": "SOURCE_NAME_COLLISION"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingValidationController.status",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "validation",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/content-sources/mapping-validations/validation_id value",
+    "ids": {
+      "tenant_id": "tenant value",
+      "validation_id": "validation_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "SourceMappingValidationOutput",
+    "body": {
+      "validation_id": "validation_id-value",
+      "revision": 1,
+      "state": "scanning",
+      "expires_at": "2026-10-27T12:34:56Z",
+      "continuation_token": "continuation_token-value",
+      "enumeration_complete": false,
+      "observed_count": 1,
+      "total": 1,
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "reason_code": "SOURCE_NAME_COLLISION"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingValidationController.advance",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "advanceValidation",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/content-sources/mapping-validations/validation_id value/continue",
+    "ids": {
+      "tenant_id": "tenant value",
+      "validation_id": "validation_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "SourceMappingValidationContinueInput",
+    "response": "SourceMappingValidationOutput",
+    "body": {
+      "validation_id": "validation_id-value",
+      "revision": 1,
+      "state": "scanning",
+      "expires_at": "2026-10-27T12:34:56Z",
+      "continuation_token": "continuation_token-value",
+      "enumeration_complete": false,
+      "observed_count": 1,
+      "total": 1,
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "reason_code": "SOURCE_NAME_COLLISION"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingValidationController.items",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "validationItems",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/content-sources/mapping-validations/validation_id value/items",
+    "ids": {
+      "tenant_id": "tenant value",
+      "validation_id": "validation_id value"
+    },
+    "query": {
+      "cursor": "cursor value",
+      "limit": 2
+    },
+    "filter": "SourceValidationItemsFilter",
+    "request": null,
+    "response": "SourceMappingValidationItemPage",
+    "body": {
+      "validation_id": "validation_id-value",
+      "revision": 1,
+      "items": [
+        {
+          "item_id": "item_id-value",
+          "name": "name-value",
+          "kind": "file",
+          "version": "version-value",
+          "filename": "filename-value",
+          "export_mime": "export_mime-value",
+          "reason": "reason-value",
+          "relative_path": [
+            "relative_path-value"
+          ],
+          "destination_relative_path": [
+            "destination_relative_path-value"
+          ],
+          "size_bytes": 1,
+          "collision": "none",
+          "action": "create"
+        }
+      ],
+      "visible_count": 1,
+      "next_cursor": "next_cursor-value",
+      "total": 1
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceMappingValidationController.abandon",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "abandonValidation",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/content-sources/mapping-validations/validation_id value/abandon",
+    "ids": {
+      "tenant_id": "tenant value",
+      "validation_id": "validation_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "SourceMappingValidationAbandonInput",
+    "response": "SourceMappingValidationOutput",
+    "body": {
+      "validation_id": "validation_id-value",
+      "revision": 1,
+      "state": "scanning",
+      "expires_at": "2026-10-27T12:34:56Z",
+      "continuation_token": "continuation_token-value",
+      "enumeration_complete": false,
+      "observed_count": 1,
+      "total": 1,
+      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "reason_code": "SOURCE_NAME_COLLISION"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceReaderSelectionController.get",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "readerSelection",
+    "http": "GET",
+    "path": "/api/v1/tenants/tenant value/content-sources/reader-selection",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": null,
+    "response": "ReaderSelectionOutput",
+    "body": {
+      "revision": 1,
+      "connections": [
+        {
+          "provider": "sharepoint",
+          "external_tenant": "external_tenant-value",
+          "connection_id": "connection_id-value"
+        }
+      ]
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "SourceReaderSelectionController.replace",
+    "group": "ContentSourcesApi",
+    "group_scoped": true,
+    "method": "replaceReaderSelection",
+    "http": "PUT",
+    "path": "/api/v1/tenants/tenant value/content-sources/reader-selection",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ReaderSelectionInput",
+    "response": "ReaderSelectionOutput",
+    "body": {
+      "revision": 1,
+      "connections": [
+        {
+          "provider": "sharepoint",
+          "external_tenant": "external_tenant-value",
+          "connection_id": "connection_id-value"
+        }
+      ]
+    },
+    "status": 200,
     "encoding": "application/json",
     "precondition": false,
     "idempotency": false
@@ -9694,6 +11266,127 @@
     "idempotency": false
   },
   {
+    "operation": "CuratedKnowledgeReadController.get_read",
+    "group": "KnowledgeItemsApi",
+    "group_scoped": true,
+    "method": "read",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/knowledge-items/item_id value/read",
+    "ids": {
+      "tenant_id": "tenant value",
+      "item_id": "item_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ReaderReadInput",
+    "response": "KnowledgeItemView",
+    "body": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "workspace_id": "workspace_id-value",
+      "project_id": "project_id-value",
+      "destination_id": "destination_id-value",
+      "head_version": 1,
+      "serving_version": 1,
+      "selected_version": {
+        "item_id": "item_id-value",
+        "version": 1,
+        "version_id": "version_id-value",
+        "publication": "draft",
+        "serving": false,
+        "content": {
+          "title": "title-value",
+          "body": "body-value",
+          "summary": "summary-value",
+          "domain": "legal",
+          "tags": [
+            "tags-value"
+          ]
+        },
+        "evidence": [
+          {
+            "kind": "user_statement",
+            "text": "text-value",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "author_subject": "author_subject-value",
+            "recorded_at": "2026-10-27T12:34:56Z",
+            "authority": "user_authored"
+          }
+        ],
+        "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "operation_id": "operation_id-value",
+        "author_subject": "author_subject-value",
+        "committed_at": "2026-10-27T12:34:56Z"
+      }
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "CuratedKnowledgeReadController.version_read",
+    "group": "KnowledgeItemsApi",
+    "group_scoped": true,
+    "method": "readVersion",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/knowledge-items/item_id value/versions/2/read",
+    "ids": {
+      "tenant_id": "tenant value",
+      "item_id": "item_id value",
+      "version": 2
+    },
+    "query": {},
+    "filter": null,
+    "request": "ReaderReadInput",
+    "response": "KnowledgeItemView",
+    "body": {
+      "id": "id-value",
+      "tenant_id": "tenant_id-value",
+      "workspace_id": "workspace_id-value",
+      "project_id": "project_id-value",
+      "destination_id": "destination_id-value",
+      "head_version": 1,
+      "serving_version": 1,
+      "selected_version": {
+        "item_id": "item_id-value",
+        "version": 1,
+        "version_id": "version_id-value",
+        "publication": "draft",
+        "serving": false,
+        "content": {
+          "title": "title-value",
+          "body": "body-value",
+          "summary": "summary-value",
+          "domain": "legal",
+          "tags": [
+            "tags-value"
+          ]
+        },
+        "evidence": [
+          {
+            "kind": "user_statement",
+            "text": "text-value",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "author_subject": "author_subject-value",
+            "recorded_at": "2026-10-27T12:34:56Z",
+            "authority": "user_authored"
+          }
+        ],
+        "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "operation_id": "operation_id-value",
+        "author_subject": "author_subject-value",
+        "committed_at": "2026-10-27T12:34:56Z"
+      }
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
     "operation": "DatasetFilesController.append",
     "group": "DatasetsApi",
     "group_scoped": true,
@@ -9957,6 +11650,236 @@
     "query": {},
     "filter": null,
     "request": null,
+    "response": "BinaryDownload",
+    "body": null,
+    "status": 200,
+    "encoding": "binary",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "DocumentHistoryReadController.versions_read",
+    "group": "DocumentsApi",
+    "group_scoped": true,
+    "method": "readVersions",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/documents/document_id value/versions/read",
+    "ids": {
+      "tenant_id": "tenant value",
+      "document_id": "document_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ReaderPageInput",
+    "response": "DocumentVersionPage",
+    "body": {
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1,
+      "has_next": false,
+      "has_previous": false,
+      "items": [
+        {
+          "document_id": "document_id-value",
+          "catalog_source_id": "catalog_source_id-value",
+          "native_source_id": "native_source_id-value",
+          "source_version_id": "source_version_id-value",
+          "filename": "filename-value",
+          "media_type": "media_type-value",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "byte_size": 1,
+          "actor": "actor-value",
+          "created_at": "2026-10-27T12:34:56Z",
+          "predecessor_source_version_id": "predecessor_source_version_id-value"
+        }
+      ]
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "DocumentHistoryReadController.version_read",
+    "group": "DocumentsApi",
+    "group_scoped": true,
+    "method": "readVersion",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/documents/document_id value/versions/source_version_id value/read",
+    "ids": {
+      "tenant_id": "tenant value",
+      "document_id": "document_id value",
+      "source_version_id": "source_version_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ReaderReadInput",
+    "response": "DocumentVersion",
+    "body": {
+      "document_id": "document_id-value",
+      "catalog_source_id": "catalog_source_id-value",
+      "native_source_id": "native_source_id-value",
+      "source_version_id": "source_version_id-value",
+      "filename": "filename-value",
+      "media_type": "media_type-value",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "byte_size": 1,
+      "actor": "actor-value",
+      "created_at": "2026-10-27T12:34:56Z",
+      "predecessor_source_version_id": "predecessor_source_version_id-value"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "DocumentHistoryReadController.extractions_read",
+    "group": "DocumentsApi",
+    "group_scoped": true,
+    "method": "readExtractions",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/documents/document_id value/versions/source_version_id value/extractions/read",
+    "ids": {
+      "tenant_id": "tenant value",
+      "document_id": "document_id value",
+      "source_version_id": "source_version_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ReaderPageInput",
+    "response": "DocumentExtractionPage",
+    "body": {
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1,
+      "has_next": false,
+      "has_previous": false,
+      "items": [
+        {
+          "document_id": "document_id-value",
+          "catalog_source_id": "catalog_source_id-value",
+          "native_source_id": "native_source_id-value",
+          "source_version_id": "source_version_id-value",
+          "extraction_id": "extraction_id-value",
+          "purpose": "purpose-value",
+          "coverage": "coverage-value",
+          "normalized_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": "2026-10-27T12:34:56Z",
+          "predecessor_extraction_id": "predecessor_extraction_id-value"
+        }
+      ]
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "DocumentHistoryReadController.parts_read",
+    "group": "DocumentsApi",
+    "group_scoped": true,
+    "method": "readParts",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/documents/document_id value/versions/source_version_id value/extractions/extraction_id value/parts/read",
+    "ids": {
+      "tenant_id": "tenant value",
+      "document_id": "document_id value",
+      "source_version_id": "source_version_id value",
+      "extraction_id": "extraction_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "DocumentPartsReadInput",
+    "response": "DocumentPartPage",
+    "body": {
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1,
+      "has_next": false,
+      "has_previous": false,
+      "items": [
+        {
+          "document_id": "document_id-value",
+          "catalog_source_id": "catalog_source_id-value",
+          "native_source_id": "native_source_id-value",
+          "source_version_id": "source_version_id-value",
+          "extraction_id": "extraction_id-value",
+          "source_part_id": "source_part_id-value",
+          "kind": "artifact",
+          "ordinal": 1,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "recorded_page": 1,
+          "page_basis": "recorded_loader",
+          "char_start": 1,
+          "char_end": 1,
+          "offset_basis": "offset_basis-value",
+          "created_at": "2026-10-27T12:34:56Z"
+        }
+      ]
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "DocumentHistoryReadController.part_read",
+    "group": "DocumentsApi",
+    "group_scoped": true,
+    "method": "readPart",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/documents/document_id value/versions/source_version_id value/extractions/extraction_id value/parts/source_part_id value/read",
+    "ids": {
+      "tenant_id": "tenant value",
+      "document_id": "document_id value",
+      "source_version_id": "source_version_id value",
+      "extraction_id": "extraction_id value",
+      "source_part_id": "source_part_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ReaderReadInput",
+    "response": "DocumentPartContent",
+    "body": {
+      "document_id": "document_id-value",
+      "catalog_source_id": "catalog_source_id-value",
+      "native_source_id": "native_source_id-value",
+      "source_version_id": "source_version_id-value",
+      "extraction_id": "extraction_id-value",
+      "source_part_id": "source_part_id-value",
+      "kind": "chunk",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "text": "text-value",
+      "recorded_page": 1,
+      "page_basis": "recorded_loader",
+      "raw_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "normalized_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "DocumentHistoryReadController.original_read",
+    "group": "DocumentsApi",
+    "group_scoped": true,
+    "method": "readVersionOriginal",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/documents/document_id value/versions/source_version_id value/original/read",
+    "ids": {
+      "tenant_id": "tenant value",
+      "document_id": "document_id value",
+      "source_version_id": "source_version_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ReaderReadInput",
     "response": "BinaryDownload",
     "body": null,
     "status": 200,
@@ -11809,6 +13732,501 @@
     },
     "status": 200,
     "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "TableProvenanceReadController.snapshot_read",
+    "group": "DatasetsApi",
+    "group_scoped": true,
+    "method": "readTableProvenance",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/datasets/dataset_id value/tables/table_id value/provenance/read",
+    "ids": {
+      "tenant_id": "tenant value",
+      "dataset_id": "dataset_id value",
+      "table_id": "table_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "SnapshotReadInput",
+    "response": "TableProvenance",
+    "body": {
+      "dataset_id": "dataset_id-value",
+      "table_id": "table_id-value",
+      "native_dataset_id": "native_dataset_id-value",
+      "native_table_id": "native_table_id-value",
+      "snapshot_id": "snapshot_id-value",
+      "status": "recorded",
+      "snapshot_status": "PARTIAL",
+      "level": "file_section",
+      "operation": "upload",
+      "predecessor_snapshot_id": "predecessor_snapshot_id-value",
+      "artifact": {
+        "id": "id-value",
+        "original_filename": "original_filename-value",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "byte_size": 1,
+        "file_format": "file_format-value",
+        "compression": "compression-value",
+        "actor": "actor-value",
+        "admitted_at": "2026-10-27T12:34:56Z"
+      },
+      "sheet_or_json_path": "sheet_or_json_path-value",
+      "table_label": "table_label-value",
+      "parquet_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "parquet_byte_size": 1,
+      "schema_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "row_count": 1,
+      "actor": "actor-value",
+      "recorded_at": "2026-10-27T12:34:56Z",
+      "run_id": "run_id-value",
+      "reader_implementation": "reader_implementation-value",
+      "reader_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "parser_parameters": {
+        "example": {
+          "decimal": "12345678901234567890.12345678901234567890",
+          "integer": "9007199254740993"
+        }
+      },
+      "steps": [
+        {
+          "id": "id-value",
+          "ordinal": 1,
+          "kind": "kind-value",
+          "implementation": "implementation-value",
+          "implementation_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "output_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "parameters": {
+            "example": {
+              "decimal": "12345678901234567890.12345678901234567890",
+              "integer": "9007199254740993"
+            }
+          },
+          "actor": "actor-value",
+          "recorded_at": "2026-10-27T12:34:56Z"
+        }
+      ]
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "TableProvenanceReadController.history_read",
+    "group": "DatasetsApi",
+    "group_scoped": true,
+    "method": "readTableSnapshots",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/datasets/dataset_id value/tables/table_id value/snapshots/read",
+    "ids": {
+      "tenant_id": "tenant value",
+      "dataset_id": "dataset_id value",
+      "table_id": "table_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "SnapshotHistoryReadInput",
+    "response": "TableSnapshotReadPage",
+    "body": {
+      "items": [
+        {
+          "dataset_id": "dataset_id-value",
+          "table_id": "table_id-value",
+          "native_dataset_id": "native_dataset_id-value",
+          "native_table_id": "native_table_id-value",
+          "snapshot_id": "snapshot_id-value",
+          "status": "recorded",
+          "snapshot_status": "PARTIAL",
+          "level": "file_section",
+          "operation": "upload",
+          "predecessor_snapshot_id": "predecessor_snapshot_id-value",
+          "artifact": {
+            "id": "id-value",
+            "original_filename": "original_filename-value",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "byte_size": 1,
+            "file_format": "file_format-value",
+            "compression": "compression-value",
+            "actor": "actor-value",
+            "admitted_at": "2026-10-27T12:34:56Z"
+          },
+          "sheet_or_json_path": "sheet_or_json_path-value",
+          "table_label": "table_label-value",
+          "parquet_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "parquet_byte_size": 1,
+          "schema_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "row_count": 1,
+          "actor": "actor-value",
+          "recorded_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "next_cursor": "next_cursor-value",
+      "total": null,
+      "pages": null,
+      "total_is_exact": false,
+      "current_snapshot_id": "current_snapshot_id-value"
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "TableProvenanceReadController.manifest_read",
+    "group": "DatasetsApi",
+    "group_scoped": true,
+    "method": "readTableCoordinates",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/datasets/dataset_id value/tables/table_id value/coordinates/read",
+    "ids": {
+      "tenant_id": "tenant value",
+      "dataset_id": "dataset_id value",
+      "table_id": "table_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "SnapshotReadInput",
+    "response": "TableCoordinateManifest",
+    "body": {
+      "dataset_id": "dataset_id-value",
+      "table_id": "table_id-value",
+      "native_dataset_id": "native_dataset_id-value",
+      "native_table_id": "native_table_id-value",
+      "snapshot_id": "snapshot_id-value",
+      "status": "complete",
+      "index_base": 1,
+      "row_count": 1,
+      "column_count": 1,
+      "artifact_id": "artifact_id-value",
+      "run_id": "run_id-value",
+      "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "mapping_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "source_format": "source_format-value",
+      "source_variant": "source_variant-value",
+      "row_kind": "record",
+      "source_sheet": "source_sheet-value",
+      "source_path": [
+        "source_path-value"
+      ],
+      "parser_decisions": [
+        {
+          "name": "name-value",
+          "value": "value-value"
+        }
+      ],
+      "dependencies": [
+        {
+          "name": "name-value",
+          "version": "version-value"
+        }
+      ],
+      "reason_code": "reason_code-value",
+      "rejected_source_rows": [
+        1
+      ]
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "TableProvenanceReadController.rows_read",
+    "group": "DatasetsApi",
+    "group_scoped": true,
+    "method": "readTableCoordinateRows",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/datasets/dataset_id value/tables/table_id value/coordinates/rows/read",
+    "ids": {
+      "tenant_id": "tenant value",
+      "dataset_id": "dataset_id value",
+      "table_id": "table_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "SnapshotPageReadInput",
+    "response": "TableRowRangePage",
+    "body": {
+      "manifest": {
+        "dataset_id": "dataset_id-value",
+        "table_id": "table_id-value",
+        "native_dataset_id": "native_dataset_id-value",
+        "native_table_id": "native_table_id-value",
+        "snapshot_id": "snapshot_id-value",
+        "status": "complete",
+        "index_base": 1,
+        "row_count": 1,
+        "column_count": 1,
+        "artifact_id": "artifact_id-value",
+        "run_id": "run_id-value",
+        "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "mapping_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "source_format": "source_format-value",
+        "source_variant": "source_variant-value",
+        "row_kind": "record",
+        "source_sheet": "source_sheet-value",
+        "source_path": [
+          "source_path-value"
+        ],
+        "parser_decisions": [
+          {
+            "name": "name-value",
+            "value": "value-value"
+          }
+        ],
+        "dependencies": [
+          {
+            "name": "name-value",
+            "version": "version-value"
+          }
+        ],
+        "reason_code": "reason_code-value",
+        "rejected_source_rows": [
+          1
+        ]
+      },
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1,
+      "has_next": false,
+      "has_previous": false,
+      "items": [
+        {
+          "output_start": 1,
+          "count": 1,
+          "source_start": 1,
+          "source_stride": 1
+        }
+      ]
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "TableProvenanceReadController.columns_read",
+    "group": "DatasetsApi",
+    "group_scoped": true,
+    "method": "readTableCoordinateColumns",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/datasets/dataset_id value/tables/table_id value/coordinates/columns/read",
+    "ids": {
+      "tenant_id": "tenant value",
+      "dataset_id": "dataset_id value",
+      "table_id": "table_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "SnapshotPageReadInput",
+    "response": "TableColumnBindingPage",
+    "body": {
+      "manifest": {
+        "dataset_id": "dataset_id-value",
+        "table_id": "table_id-value",
+        "native_dataset_id": "native_dataset_id-value",
+        "native_table_id": "native_table_id-value",
+        "snapshot_id": "snapshot_id-value",
+        "status": "complete",
+        "index_base": 1,
+        "row_count": 1,
+        "column_count": 1,
+        "artifact_id": "artifact_id-value",
+        "run_id": "run_id-value",
+        "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "mapping_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "source_format": "source_format-value",
+        "source_variant": "source_variant-value",
+        "row_kind": "record",
+        "source_sheet": "source_sheet-value",
+        "source_path": [
+          "source_path-value"
+        ],
+        "parser_decisions": [
+          {
+            "name": "name-value",
+            "value": "value-value"
+          }
+        ],
+        "dependencies": [
+          {
+            "name": "name-value",
+            "version": "version-value"
+          }
+        ],
+        "reason_code": "reason_code-value",
+        "rejected_source_rows": [
+          1
+        ]
+      },
+      "total": 1,
+      "page": 1,
+      "page_size": 1,
+      "pages": 1,
+      "has_next": false,
+      "has_previous": false,
+      "items": [
+        {
+          "output_position": 1,
+          "source_field_index": 1,
+          "source_path": [
+            "source_path-value"
+          ],
+          "source_type": "source_type-value",
+          "header_cells": [
+            {
+              "row": 1,
+              "column": 1
+            }
+          ]
+        }
+      ]
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "KnowledgeReadController.schema_read",
+    "group": "DatasetsApi",
+    "group_scoped": true,
+    "method": "readSchema",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/datasets/dataset_id value/schema/read",
+    "ids": {
+      "tenant_id": "tenant value",
+      "dataset_id": "dataset_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ReaderReadInput",
+    "response": "DatasetSchema",
+    "body": {
+      "tables": [
+        {
+          "sheet_or_json_path": "sheet_or_json_path-value",
+          "id": "id-value",
+          "name": "name-value",
+          "snapshot_id": "snapshot_id-value",
+          "columns": [
+            {
+              "id": "id-value",
+              "name": "name-value",
+              "data_type": "data_type-value",
+              "description": "description-value",
+              "pii_tag": "pii_tag-value"
+            }
+          ]
+        }
+      ]
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "KnowledgeReadController.lineage_read",
+    "group": "KnowledgeApi",
+    "group_scoped": true,
+    "method": "readLineage",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/lineage/read",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "LineageReadInput",
+    "response": "Lineage",
+    "body": {
+      "nodes": [
+        {
+          "id": "id-value",
+          "label": "label-value",
+          "kind": "kind-value"
+        }
+      ],
+      "edges": [
+        {
+          "source": "source-value",
+          "target": "target-value",
+          "label": "label-value"
+        }
+      ]
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "KnowledgeReadController.document_chunks_read",
+    "group": "DocumentsApi",
+    "group_scoped": true,
+    "method": "readChunks",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/documents/document_id value/chunks/read",
+    "ids": {
+      "tenant_id": "tenant value",
+      "document_id": "document_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "DocumentChunksReadInput",
+    "response": "DocumentChunks",
+    "body": {
+      "document_id": "document_id-value",
+      "source_id": "source_id-value",
+      "native_source_id": "native_source_id-value",
+      "source_version_id": "source_version_id-value",
+      "extraction_id": "extraction_id-value",
+      "items": [
+        {
+          "id": "id-value",
+          "index": 1,
+          "total_chunks": 1,
+          "text": "text-value",
+          "char_start": 1,
+          "char_end": 1,
+          "page": 1,
+          "section_path": "section_path-value",
+          "embedding_model": "embedding_model-value"
+        }
+      ],
+      "offset": 1,
+      "limit": 1,
+      "total": 1,
+      "next_offset": 1
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "KnowledgeReadController.document_original_read",
+    "group": "DocumentsApi",
+    "group_scoped": true,
+    "method": "readOriginal",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/documents/document_id value/original/read",
+    "ids": {
+      "tenant_id": "tenant value",
+      "document_id": "document_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ReaderReadInput",
+    "response": "BinaryDownload",
+    "body": null,
+    "status": 200,
+    "encoding": "binary",
     "precondition": false,
     "idempotency": false
   },
@@ -14412,6 +16830,42 @@
     "idempotency": false
   },
   {
+    "operation": "ShareController.browse",
+    "group": "SharesApi",
+    "group_scoped": true,
+    "method": "browse",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/shares/browse",
+    "ids": {
+      "tenant_id": "tenant value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ShareBrowseInput",
+    "response": "ShareBrowsePage",
+    "body": {
+      "items": [
+        {
+          "id": "id-value",
+          "title": "title-value",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "status": "active",
+          "recipient_policy": "organization_current_acl",
+          "created_at": "2026-10-27T12:34:56Z",
+          "expires_at": "2026-10-27T12:34:56Z",
+          "revoked_at": "2026-10-27T12:34:56Z"
+        }
+      ],
+      "next_cursor": "next_cursor-value",
+      "total": null,
+      "total_is_exact": false
+    },
+    "status": 200,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
     "operation": "ShareController.get",
     "group": "SharesApi",
     "group_scoped": true,
@@ -14517,6 +16971,95 @@
     "response": "void",
     "body": null,
     "status": 204,
+    "encoding": "application/json",
+    "precondition": false,
+    "idempotency": false
+  },
+  {
+    "operation": "ShareReadController.get_read",
+    "group": "SharesApi",
+    "group_scoped": true,
+    "method": "read",
+    "http": "POST",
+    "path": "/api/v1/tenants/tenant value/shares/share_id value/read",
+    "ids": {
+      "tenant_id": "tenant value",
+      "share_id": "share_id value"
+    },
+    "query": {},
+    "filter": null,
+    "request": "ReaderReadInput",
+    "response": "SharedConversation",
+    "body": {
+      "share": {
+        "id": "id-value",
+        "title": "title-value",
+        "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "status": "active",
+        "recipient_policy": "organization_current_acl",
+        "created_at": "2026-10-27T12:34:56Z",
+        "expires_at": "2026-10-27T12:34:56Z",
+        "revoked_at": "2026-10-27T12:34:56Z"
+      },
+      "messages": [
+        {
+          "id": "id-value",
+          "role": "user",
+          "text": "text-value",
+          "status": "completed",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "private_derived": false,
+          "source_ids": [
+            "source_ids-value"
+          ],
+          "result_ids": [
+            "result_ids-value"
+          ],
+          "created_at": "2026-10-27T12:34:56Z",
+          "presentation": {
+            "locale": "locale-value",
+            "time_zone": "time_zone-value",
+            "response_language": "response_language-value"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "id": "id-value",
+          "asset_id": "asset_id-value",
+          "source_id": "source_id-value",
+          "title": "title-value",
+          "kind": "document",
+          "knowledge_item_id": "knowledge_item_id-value",
+          "knowledge_version_id": "knowledge_version_id-value",
+          "knowledge_version": 1,
+          "source_version_id": "source_version_id-value",
+          "extraction_id": "extraction_id-value",
+          "source_part_id": "source_part_id-value",
+          "source_part_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "recorded_page": 1,
+          "page_basis": "recorded_loader",
+          "used_revision": "used_revision-value",
+          "snapshot_id": "snapshot_id-value",
+          "query_id": "query_id-value",
+          "chunk_id": "chunk_id-value",
+          "page": 1,
+          "section": "section-value",
+          "quote": "quote-value",
+          "current_revision": "current_revision-value",
+          "availability": "available"
+        }
+      ],
+      "source_manifest_complete": false,
+      "identity": {
+        "product_name": "product_name-value",
+        "assistant_name": "assistant_name-value",
+        "branding_revision": 1,
+        "branding_origin": "deployment",
+        "branding_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    "status": 200,
     "encoding": "application/json",
     "precondition": false,
     "idempotency": false

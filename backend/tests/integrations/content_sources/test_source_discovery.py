@@ -4,9 +4,10 @@
 
 import httpx
 import pytest
+from pyfly.client import HttpxClientAdapter
+
 from koinon.integrations.content_sources.dtos import Account
 from koinon.integrations.content_sources.errors import SourceError
-from pyfly.client import HttpxClientAdapter
 
 
 class Tokens:

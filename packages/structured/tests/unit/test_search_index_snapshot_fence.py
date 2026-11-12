@@ -52,8 +52,18 @@ def inventory_database():
         connection.execute("CREATE MACRO convert_to(value, encoding) AS value")
         connection.execute("CREATE MACRO encode(value, encoding) AS value")
         connection.create_function("@@", lambda content, query: True, ["VARCHAR", "VARCHAR"], "BOOLEAN")
-        connection.create_function("jsonb_build_object", lambda *args: json.dumps(dict(zip(args[::2], args[1::2], strict=True)), default=str), return_type="VARCHAR", null_handling="special")
-        connection.create_function("jsonb_build_array", lambda *args: json.dumps(args, default=str), return_type="VARCHAR", null_handling="special")
+        connection.create_function(
+            "jsonb_build_object",
+            lambda *args: json.dumps(dict(zip(args[::2], args[1::2], strict=True)), default=str),
+            return_type="VARCHAR",
+            null_handling="special",
+        )
+        connection.create_function(
+            "jsonb_build_array",
+            lambda *args: json.dumps(args, default=str),
+            return_type="VARCHAR",
+            null_handling="special",
+        )
         connection.execute("""CREATE TABLE flyquery_tables (
             id UUID, dataset_id UUID, tenant_id VARCHAR, workspace_id UUID,
             current_snapshot_id UUID, is_active BOOLEAN)""")
@@ -72,12 +82,31 @@ def inventory_database():
             for kind, suffix in (("TABLE", ""), ("COLUMN", ".total")):
                 connection.execute(
                     "INSERT INTO flyquery_schema_objects VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                    [uuid4(), table, snapshot, "tenant", workspace, kind, name + suffix, "Total", "INTEGER",
-                     active, "{}", "[11]", "{}", "[]", "total", [0.1, 0.2, 0.3]],
+                    [
+                        uuid4(),
+                        table,
+                        snapshot,
+                        "tenant",
+                        workspace,
+                        kind,
+                        name + suffix,
+                        "Total",
+                        "INTEGER",
+                        active,
+                        "{}",
+                        "[11]",
+                        "{}",
+                        "[]",
+                        "total",
+                        [0.1, 0.2, 0.3],
+                    ],
                 )
 
         current_table, current, stale = uuid4(), uuid4(), uuid4()
-        connection.execute("INSERT INTO flyquery_tables VALUES (?,?,?,?,?,?)", [current_table, dataset, "tenant", workspace, current, True])
+        connection.execute(
+            "INSERT INTO flyquery_tables VALUES (?,?,?,?,?,?)",
+            [current_table, dataset, "tenant", workspace, current, True],
+        )
         objects(current_table, current, "owned.current")
         objects(current_table, stale, "a_retired.previous")
         objects(current_table, current, "a_hidden.object", active=False)
@@ -87,7 +116,10 @@ def inventory_database():
             (dataset, True, None, "a_unpublished.table"),
         ):
             table = uuid4()
-            connection.execute("INSERT INTO flyquery_tables VALUES (?,?,?,?,?,?)", [table, table_dataset, "tenant", workspace, snapshot_pointer, active])
+            connection.execute(
+                "INSERT INTO flyquery_tables VALUES (?,?,?,?,?,?)",
+                [table, table_dataset, "tenant", workspace, snapshot_pointer, active],
+            )
             objects(table, snapshot_pointer or uuid4(), name)
         session = Session(connection)
 
@@ -95,19 +127,29 @@ def inventory_database():
             from sqlalchemy import text
 
             await session.execute(
-                text(OBJECTS_SQL + """INSERT INTO flyquery_embedding_vectors
-                    SELECT :space,kind,id,source_hash,:tenant,:workspace,[0.1,0.2,0.3]::vector FROM objects"""),
+                text(
+                    OBJECTS_SQL
+                    + """INSERT INTO flyquery_embedding_vectors
+                    SELECT :space,kind,id,source_hash,:tenant,:workspace,[0.1,0.2,0.3]::vector FROM objects"""
+                ),
                 {"space": space, "tenant": "tenant", "workspace": workspace},
             )
 
-        yield SearchIndex(session), dataset, SimpleNamespace(storage_dimensions=3, space_id=space, versioned=True), populate_vectors
+        yield (
+            SearchIndex(session),
+            dataset,
+            SimpleNamespace(storage_dimensions=3, space_id=space, versioned=True),
+            populate_vectors,
+        )
     finally:
         context.var.reset(context.token)
         connection.close()
 
 
 @pytest.mark.parametrize("path", ["inventory", "values", "bm25", "inline_vector", "versioned_vector"])
-async def test_schema_reads_admit_only_current_objects_of_active_dataset_tables(inventory_database, monkeypatch, path):
+async def test_schema_reads_admit_only_current_objects_of_active_dataset_tables(
+    inventory_database, monkeypatch, path
+):
     index, dataset, binding, populate_vectors = inventory_database
     if path == "inventory":
         rows = await index.all_schema_objects(dataset)
@@ -119,7 +161,10 @@ async def test_schema_reads_admit_only_current_objects_of_active_dataset_tables(
     elif path == "bm25":
         rows = await index.bm25_schema_objects("total", dataset)
     else:
-        monkeypatch.setattr("flyquery.core.agents.model_bindings.embedding_for", lambda _: binding if path == "versioned_vector" else None)
+        monkeypatch.setattr(
+            "flyquery.core.agents.model_bindings.embedding_for",
+            lambda _: binding if path == "versioned_vector" else None,
+        )
         if path == "versioned_vector":
             await populate_vectors()
         rows = await index.vector_schema_objects([0.1, 0.2, 0.3], dataset)
@@ -127,3 +172,43 @@ async def test_schema_reads_admit_only_current_objects_of_active_dataset_tables(
     if path == "inventory":
         table = next(row for row in rows if row.metadata["kind"] == "TABLE")
         assert table.metadata["columns"] == ["total"]
+
+
+async def test_product_schema_denial_precedes_hydration_and_closes_candidate_unit(
+    inventory_database, monkeypatch
+):
+    from contextlib import asynccontextmanager
+
+    from flyquery.core.services.query import provenance
+    from flyquery.core.services.retrieval import search_index
+
+    index, dataset, _, _ = inventory_database
+    state = {"open": False, "statements": []}
+    original = index._session.execute
+
+    async def execute(statement, parameters=None):
+        state["statements"].append(str(statement))
+        return await original(statement, parameters)
+
+    index._session.execute = execute
+
+    @asynccontextmanager
+    async def unit(*args, **kwargs):
+        state["open"] = True
+        try:
+            yield index._session
+        finally:
+            state["open"] = False
+
+    async def deny(kind, rows):
+        assert not state["open"]
+        assert rows and all(set(row) <= {"id", "table_id", "snapshot_id", "score"} for row in rows)
+        return ()
+
+    assert hasattr(search_index, "ProductSearchIndex"), "Product reads need identity admission"
+    monkeypatch.setattr(search_index, "infrastructure_unit", unit)
+    monkeypatch.setattr(provenance, "admit_rows", deny)
+    product = search_index.ProductSearchIndex(object())
+    assert await product.all_schema_objects(dataset) == []
+    assert len(state["statements"]) == 1
+    assert "description" not in state["statements"][0]

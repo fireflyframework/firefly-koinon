@@ -127,7 +127,7 @@ it('keeps the editor unavailable through delayed saved-history initialization, t
   expect(fixture.nativeElement.querySelector('.send-button').disabled).toBe(false);
   const send = vi.spyOn(assistant, 'send').mockResolvedValue(false);
   await fixture.componentInstance.submit();
-  expect(send).toHaveBeenCalledWith('New question after history is ready', []);
+  expect(send).toHaveBeenCalledWith('New question after history is ready', [], null);
 });
 
 it('preserves editor identity, focus and draft across same-context message and tool updates', async () => {

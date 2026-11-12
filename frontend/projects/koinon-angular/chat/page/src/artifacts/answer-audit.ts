@@ -15,16 +15,8 @@ import {
   signal,
   computed,
 } from '@angular/core';
-import {
-  KoinonButton,
-  KoinonCodeBlock,
-  KoinonDatePipe,
-  KoinonIcon,
-  KoinonSidePanel,
-  KoinonSkeleton,
-  KoinonTextPipe,
-  KoinonValuePipe,
-} from '@fireflyframework/koinon-angular';
+import { KoinonButton, KoinonDatePipe, KoinonIcon, KoinonSkeleton, KoinonTextPipe, KoinonValuePipe } from '@fireflyframework/koinon-angular/workbench/core';
+import { KoinonCodeBlock, KoinonSidePanel } from '@fireflyframework/koinon-angular/workbench/panels';
 import type {
   ChatMessage,
   Citation,
@@ -36,7 +28,7 @@ import type {
   SourceReference,
   ToolActivity,
 } from '@fireflyframework/koinon-sdk';
-import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
+import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench/core';
 import { AUDIT_RESULT_SPANISH } from './answer-audit-spanish';
 import { KoinonOpenUiArtifact } from '@fireflyframework/koinon-angular/chat/evidence';
 import { KoinonAnswerAuditState } from './answer-audit-state';

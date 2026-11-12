@@ -20,7 +20,7 @@ import uuid
 from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, Float, Integer, String, text
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, Float, ForeignKey, Integer, String, text
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP, TSVECTOR, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -131,6 +131,9 @@ class SchemaObject(Base):
 
 class Relation(Base):
     __tablename__ = "flyquery_relations"
+    source_provenance_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("flyquery_metadata_provenance.id"), nullable=True, default=None
+    )
     __table_args__ = (
         CheckConstraint("kind IN ('HEURISTIC','AGENT_PROPOSED','MANUAL')", name="ck_relations_kind"),
         CheckConstraint("status IN ('PROPOSED','APPROVED','REJECTED')", name="ck_relations_status"),

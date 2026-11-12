@@ -15,6 +15,7 @@ Required means the key must be present. Nullable means its value may be `null`; 
 
 | Field | Type | Required | Default |
 | --- | --- | --- | --- |
+| `reader_source_connections` | Array of [`ReaderSourceSelection`](readersourceselection.md) or `null` | No | `null` |
 | `question` | `string` | Yes | Not specified |
 | `workspace_id` | `string` or `null` | No | `null` |
 | `project_id` | `string` or `null` | No | `null` |
@@ -27,6 +28,13 @@ Required means the key must be present. Nullable means its value may be `null`; 
 
 - Additional properties: not permitted
 
+## Field constraints
+
+### reader_source_connections
+
+- anyOf branch 1 (Array of [`ReaderSourceSelection`](readersourceselection.md)): Maximum items: `100`
+
+
 ## Exact JSON Schema
 
 This is a schema definition, not an example request. It preserves all declared keywords, including constraints not summarized above.
@@ -37,6 +45,22 @@ This is a schema definition, not an example request. It preserves all declared k
     {
       "additionalProperties": false,
       "properties": {
+        "reader_source_connections": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ReaderSourceSelection"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reader Source Connections"
+        },
         "question": {
           "title": "Question",
           "type": "string"

@@ -1,7 +1,7 @@
 // Copyright 2026 Firefly Software Foundation SPDX-License-Identifier: Apache-2.0
 import { Component, inject, signal } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
-import { KoinonFontLoader, KoinonWorkbench } from '@fireflyframework/koinon-angular/workbench/page';
+import { KoinonFontLoader, KoinonWorkbench } from '@fireflyframework/koinon-angular/workbench/bootstrap';
 import { SessionService } from './session.service';
 import { SessionNotice } from './session-notice';
 import type { BrandingValues } from '@fireflyframework/koinon-sdk';
@@ -17,14 +17,15 @@ import {readNavigationPreference,saveNavigationPreference} from './navigation-pr
   template: `@if (session.error()) {
       <div class="session-error" role="alert">{{ session.error() }}</div>
     }
-    <ng-template #sessionNotice>
+    <ng-template #sessionNotice let-surface="surface">
       @defer (on idle) {
-        <app-session-notice [workbench]="workbench" />
+        <app-session-notice [workbench]="workbench" [surface]="surface" />
       }
     </ng-template>
     <ffk-workbench
       #workbench
       [sessionNotice]="sessionNotice"
+      sessionNoticePlacement="account"
       [managementBaseUrl]="managementBaseUrl"
       (brandingChange)="applyIdentity($event)"
       [navigationCollapsed]="navigationCollapsed()"

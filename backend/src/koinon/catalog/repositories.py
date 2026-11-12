@@ -9,6 +9,7 @@ from sqlalchemy.sql.elements import ColumnElement
 
 from koinon.catalog.entities import AuditEvent, CatalogEntry, Membership, Tenant
 from koinon.knowledge.curated.entities import CuratedCatalogState, CuratedSourceRoot
+from koinon.security.authority import primary_authority
 
 
 def curated_admission(tenant_id, allowed_workspaces, allowed_resources, allowed_assets):
@@ -76,6 +77,39 @@ def curated_admission(tenant_id, allowed_workspaces, allowed_resources, allowed_
     return or_(entry.kind != "knowledge_item", visible)
 
 
+def local_catalog_entries(tenant_id, entry):
+    """Legacy totals and ancestor summaries contain no imported or derived source entries."""
+    from koinon.integrations.content_sources.sync_entities import SourceFolderPublication, SourceImportedAsset
+
+    marker = SourceImportedAsset
+    roots = (
+        select(marker.asset_id.label("id"))
+        .where(marker.tenant_id == tenant_id)
+        .union(
+            select(marker.source_id.label("id")).where(marker.tenant_id == tenant_id),
+            select(SourceFolderPublication.local_folder_id.label("id")).where(
+                SourceFolderPublication.tenant_id == tenant_id
+            ),
+        )
+        .subquery()
+    )
+    hidden = select(roots.c.id, literal(0).label("depth")).cte("catalog_source_hidden", recursive=True)
+    child = aliased(CatalogEntry)
+    hidden = hidden.union_all(
+        select(child.id, hidden.c.depth + 1)
+        .join(hidden, child.parent_id == hidden.c.id)
+        .where(child.tenant_id == tenant_id, hidden.c.depth < 16)
+    )
+    derived = exists(
+        select(CuratedSourceRoot.id).where(
+            CuratedSourceRoot.item_id == entry.id,
+            CuratedSourceRoot.tenant_id == tenant_id,
+            CuratedSourceRoot.source_asset_id.in_(select(hidden.c.id)),
+        )
+    )
+    return and_(entry.id.not_in(select(hidden.c.id)), ~derived)
+
+
 @repository
 class TenantRepository(Repository[Tenant, str]):
     """Tenant identities."""
@@ -141,6 +175,52 @@ class MembershipRepository(Repository[Membership, str]):
 
 @repository
 class CatalogRepository(Repository[CatalogEntry, str]):
+    async def local_list(self, **filters):
+        statement = select(CatalogEntry).where(
+            *(getattr(CatalogEntry, key) == value for key, value in filters.items()),
+            local_catalog_entries(filters["tenant_id"], CatalogEntry),
+        )
+        return list(await self._require_session().scalars(statement))
+
+    async def ancestry_identities(self, tenant_id):
+        from types import SimpleNamespace
+
+        rows = (
+            (
+                await self._require_session().execute(
+                    select(CatalogEntry.id, CatalogEntry.parent_id, CatalogEntry.status).where(
+                        CatalogEntry.tenant_id == tenant_id
+                    )
+                )
+            )
+            .mappings()
+            .all()
+        )
+        return tuple(SimpleNamespace(**dict(row)) for row in rows)
+
+    async def identity(self, tenant_id: str, entry_id: str):
+        """Read only the fields needed to authorize a catalog path."""
+        from types import SimpleNamespace
+
+        row = (
+            (
+                await self._require_session().execute(
+                    select(
+                        CatalogEntry.id,
+                        CatalogEntry.tenant_id,
+                        CatalogEntry.workspace_id,
+                        CatalogEntry.project_id,
+                        CatalogEntry.parent_id,
+                        CatalogEntry.kind,
+                        CatalogEntry.status,
+                    ).where(CatalogEntry.tenant_id == tenant_id, CatalogEntry.id == entry_id)
+                )
+            )
+            .mappings()
+            .first()
+        )
+        return SimpleNamespace(**dict(row)) if row is not None else None
+
     """Scoped catalog entries shared by both domains."""
 
     async def ancestry_rows(
@@ -279,12 +359,16 @@ class CatalogRepository(Repository[CatalogEntry, str]):
         page_size=100,
         sort="name",
         order="asc",
+        _include_imported=False,
+        _identities_only=False,
     ):
         entry = CatalogEntry
         predicates: list[ColumnElement[bool]] = [
             entry.tenant_id == tenant_id,
             curated_admission(tenant_id, allowed_workspaces, allowed_resources, allowed_assets),
         ]
+        if not _include_imported:
+            predicates.append(local_catalog_entries(tenant_id, entry))
         if allowed_workspaces is not None:
             predicates.append(entry.workspace_id.in_(allowed_workspaces))
         if allowed_assets is not None:
@@ -406,19 +490,32 @@ class CatalogRepository(Repository[CatalogEntry, str]):
                     ]
                 )
             )
-        statement = select(entry).where(*predicates)
+        statement = select(entry.id if _identities_only else entry).where(*predicates)
         session = self._require_session()
-        total = int((await session.scalar(select(func.count()).select_from(statement.subquery()))) or 0)
+        total = (
+            None
+            if _identities_only
+            else int((await session.scalar(select(func.count()).select_from(statement.subquery()))) or 0)
+        )
         sort_column = func.lower(entry.name) if sort == "name" else getattr(entry, sort)
         ordered = sort_column.desc() if order == "desc" else sort_column.asc()
         folders = case((entry.kind.in_(["workspace", "project", "collection", "corpus"]), 0), else_=1)
         rows = (
             await session.scalars(
-                statement.order_by(folders, ordered, func.lower(entry.name), entry.id)
+                statement.order_by(
+                    *(
+                        (entry.id,)
+                        if _identities_only
+                        else (folders, ordered, func.lower(entry.name), entry.id)
+                    )
+                )
                 .offset((page - 1) * page_size)
                 .limit(page_size)
             )
         ).all()
+        if _identities_only:
+            return {"items": list(rows), "scan_full": len(rows) == page_size}
+        assert total is not None
         summaries = await self._page_summaries(rows, visible)
         return {
             "summaries": summaries,
@@ -504,6 +601,21 @@ class CatalogRepository(Repository[CatalogEntry, str]):
 class AuditRepository(Repository[AuditEvent, str]):
     """Append-only application audit records."""
 
+    @primary_authority()
+    async def local_list(self, tenant_id):
+        from koinon.catalog.audit_history import AuditHistoryEvent, bounded_audit_query, eligible_events
+
+        events = eligible_events(tenant_id)
+        session = self._require_session()
+        async with bounded_audit_query(session):
+            rows = (
+                await session.execute(
+                    select(*[events.c[name] for name in AuditHistoryEvent.__dataclass_fields__])
+                )
+            ).mappings()
+            return [AuditHistoryEvent(**row) for row in rows]
+
+    @primary_authority()
     async def find_page(
         self,
         tenant_id,
@@ -518,26 +630,29 @@ class AuditRepository(Repository[AuditEvent, str]):
         sort="created_at",
         order="desc",
         members=None,
+        identities_only=False,
     ):
+        from koinon.catalog.audit_history import AuditHistoryEvent, bounded_audit_query, eligible_events
         from koinon.profiles.entities import Profile
 
-        predicates = [AuditEvent.tenant_id == tenant_id]
+        events = eligible_events(tenant_id)
+        event = events.c
+        predicates = []
         if action:
-            predicates.append(AuditEvent.action == action)
+            predicates.append(event.action == action)
         if subject:
-            predicates.append(AuditEvent.subject == subject)
+            predicates.append(event.subject == subject)
         if start:
-            predicates.append(AuditEvent.created_at >= start)
+            predicates.append(event.created_at >= start)
         if end:
-            predicates.append(AuditEvent.created_at < end)
+            predicates.append(event.created_at < end)
         statement = (
-            select(AuditEvent)
-            .outerjoin(Profile, Profile.subject == AuditEvent.subject)
+            select(event.id)
+            .select_from(events)
+            .outerjoin(Profile, Profile.subject == event.subject)
             .outerjoin(
                 CatalogEntry,
-                and_(
-                    CatalogEntry.id == AuditEvent.resource_id, CatalogEntry.tenant_id == AuditEvent.tenant_id
-                ),
+                and_(CatalogEntry.id == event.catalog_resource_id, CatalogEntry.tenant_id == event.tenant_id),
             )
         )
         from koinon.corporate_profiles.expressions import presentation_joins
@@ -547,17 +662,17 @@ class AuditRepository(Repository[AuditEvent, str]):
             OrganizationPersonRecord,
             and_(
                 OrganizationPersonRecord.tenant_id == tenant_id,
-                OrganizationPersonRecord.subject == AuditEvent.subject,
+                OrganizationPersonRecord.subject == event.subject,
             ),
         )
-        statement, display_name = presentation_joins(statement, AuditEvent.subject, tenant_id, Profile)
+        statement, display_name = presentation_joins(statement, event.subject, tenant_id, Profile)
         if members is not None:
             display_name = case(
                 (
                     exists(
                         select(members.c.subject).where(
                             members.c.tenant_id == tenant_id,
-                            members.c.subject == AuditEvent.subject,
+                            members.c.subject == event.subject,
                             members.c.active.is_(True),
                         )
                     ),
@@ -573,26 +688,42 @@ class AuditRepository(Repository[AuditEvent, str]):
                         column.ilike(f"%{escaped}%", escape="\\")
                         for column in (
                             display_name,
-                            AuditEvent.action,
+                            event.action,
                             CatalogEntry.name,
-                            AuditEvent.resource_id,
-                            AuditEvent.subject,
+                            event.resource_id,
+                            event.subject,
                         )
                     )
                 )
             )
         statement = statement.where(*predicates)
         session = self._require_session()
-        total = int((await session.scalar(select(func.count()).select_from(statement.subquery()))) or 0)
-        column = AuditEvent.created_at if sort == "created_at" else AuditEvent.action
-        ordered = column.desc() if order == "desc" else column.asc()
-        rows = (
-            await session.scalars(
-                statement.order_by(ordered, AuditEvent.id).offset((page - 1) * page_size).limit(page_size)
+        async with bounded_audit_query(session):
+            total = int((await session.scalar(select(func.count()).select_from(statement.subquery()))) or 0)
+            column = event.created_at if sort == "created_at" else event.action
+            ordered = column.desc() if order == "desc" else column.asc()
+            columns = (
+                [event.id]
+                if identities_only
+                else [event[name] for name in AuditHistoryEvent.__dataclass_fields__]
             )
-        ).all()
+            rows = (
+                (
+                    await session.execute(
+                        statement.with_only_columns(*columns)
+                        .order_by(ordered, event.id)
+                        .offset((page - 1) * page_size)
+                        .limit(page_size)
+                    )
+                )
+                .mappings()
+                .all()
+            )
+            items = (
+                [row["id"] for row in rows] if identities_only else [AuditHistoryEvent(**row) for row in rows]
+            )
         return {
-            "items": list(rows),
+            "items": items,
             "total": total,
             "page": page,
             "page_size": page_size,

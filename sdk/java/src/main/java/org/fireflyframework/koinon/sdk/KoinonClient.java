@@ -33,6 +33,9 @@ public final class KoinonClient implements AutoCloseable {
 
   public McpApi mcp() { return new McpApi(transport); }
 
+  /** Source management requires verified owner identity; personal tokens and headless consent are unsupported. */
+  public ContentSourcesApi contentSources(String tenant) { return new ContentSourcesApi(transport, tenant); }
+
   public McpOAuthClientsApi mcpOAuthClients(String tenant) { return new McpOAuthClientsApi(transport, tenant); }
 
   public ExternalReviewsApi externalReviews(String tenant) { return new ExternalReviewsApi(transport, tenant); }

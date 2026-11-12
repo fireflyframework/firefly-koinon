@@ -128,7 +128,8 @@ async def test_destination_editor_cannot_review_another_owners_connection(review
     assert review.state.calls == []
 
 
-async def test_nested_library_folder_is_rejected_without_flattening_or_remote_reads(review):
+@pytest.mark.parametrize("matching_project", [True, False])
+async def test_nested_library_folder_review_preserves_and_checks_ancestry(review, matching_project):
     nested = await review.context.get_bean(CatalogService).create(
         "issuer|alice",
         "tenant",
@@ -137,11 +138,23 @@ async def test_nested_library_folder_is_rejected_without_flattening_or_remote_re
         parent_id=review.request.destination.parent_id,
     )
     target = review.request.destination.model_copy(update={"parent_id": nested.id})
-    with pytest.raises(AccessDenied, match="ancestry differs"):
-        await review.service.review(
-            "issuer|alice", "tenant", review.request.model_copy(update={"destination": target})
-        )
-    assert review.state.calls == [] and await rows(review) == []
+    if not matching_project:
+        target = target.model_copy(update={"project_id": "unrelated-project"})
+        with pytest.raises(AccessDenied, match="ancestry differs"):
+            await review.service.review(
+                "issuer|alice", "tenant", review.request.model_copy(update={"destination": target})
+            )
+        assert review.state.calls == [] and await rows(review) == []
+        return
+
+    result = await review.service.review(
+        "issuer|alice", "tenant", review.request.model_copy(update={"destination": target})
+    )
+    stored = (await rows(review))[0]
+    assert stored.id == result.id and stored.status == "reviewed"
+    assert stored.parent_id == nested.id
+    assert stored.project_id == target.project_id and stored.workspace_id == target.workspace_id
+    assert review.state.calls == ["root", "selected", "root", "selected"]
 
 
 @pytest.mark.parametrize("change", ["membership", "destination", "grant", "scopes", "configuration"])

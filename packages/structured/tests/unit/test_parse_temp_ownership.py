@@ -72,6 +72,7 @@ def allocated_outputs(monkeypatch, tmp_path):
     [
         "success",
         "reservation",
+        "replacement_staging",
         "skip",
         "cancel_materialise",
         "cancel_step",
@@ -145,6 +146,19 @@ async def test_parse_transfers_only_returned_outputs(monkeypatch, tmp_path, allo
     )
     if scenario == "reupload_failure":
         args["existing_table_id"] = uuid4()
+    if scenario == "replacement_staging":
+        retained_table_id = uuid4()
+
+        async def reserve_tables(proposed):
+            assert len(proposed) == 1
+            return (retained_table_id,)
+
+        args.update(
+            reserve_tables=reserve_tables,
+            max_tables=16,
+            extract_only=True,
+            _defer_table_bindings=True,
+        )
     if scenario.startswith("cancel"):
         with pytest.raises(asyncio.CancelledError):
             await parse.run_parse(**args)
@@ -159,7 +173,11 @@ async def test_parse_transfers_only_returned_outputs(monkeypatch, tmp_path, allo
             assert len(returned) == 1
             assert Path(returned[0].local_parquet_path).read_bytes() == b"small local output"
             assert paths == [Path(returned[0].local_parquet_path)]
-    if scenario not in {"success", "reservation"}:
+            if scenario == "replacement_staging":
+                assert returned[0].table_id == retained_table_id
+                assert inserted == 0, "preparation must not upsert the retained table's file binding"
+                parse._update_table_file.assert_not_awaited()
+    if scenario not in {"success", "reservation", "replacement_staging"}:
         assert paths and all(not path.exists() for path in paths)
     assert source.read_bytes() == b"caller original"
     assert store.blobs["original"] == b"caller original"
@@ -171,6 +189,7 @@ async def test_parse_transfers_only_returned_outputs(monkeypatch, tmp_path, allo
 async def test_registered_reader_accepts_reserved_empty_private_output(tmp_path, file_format):
     import pyarrow as pa
     import pyarrow.parquet as pq
+
     from flyquery.core.services.ingestion.reader import TableExtractionRules
     from flyquery.core.services.ingestion.reader_factory import get_reader
 
@@ -239,6 +258,7 @@ async def test_stage_native_consumers_finish_before_cancellation_returns(monkeyp
     import duckdb
     import pyarrow as pa
     import pyarrow.parquet as pq
+
     from flyquery.core.services.ingestion.stages import parse, profile, sample
 
     source = tmp_path / "owned.parquet"
@@ -275,6 +295,7 @@ async def test_stage_native_consumers_finish_before_cancellation_returns(monkeyp
             {
                 "id": uuid4(),
                 "qualified_name": "orders.amount",
+                "column_name": "amount",
                 "data_type": "INTEGER",
                 "pii_tag": "NONE",
                 "description": None,
@@ -321,6 +342,7 @@ async def test_stage_native_consumers_finish_before_cancellation_returns(monkeyp
 
 async def test_failed_native_rename_reclaims_only_its_private_sidecar(monkeypatch, tmp_path):
     import duckdb
+
     from flyquery.core.services.ingestion.stages import parse
 
     source = tmp_path / "owned.parquet"

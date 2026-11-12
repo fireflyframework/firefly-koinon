@@ -370,7 +370,8 @@ async def test_canonical_dataset_query_borrows_only_read_authority_even_for_an_a
         return {"query_id": str(uuid4()), "execution_status": "OK", "sql": "SELECT 1", "snapshot_pins": {}}
 
     @asynccontextmanager
-    async def unit(*, settings_overrides=None):
+    async def unit(*, settings_overrides=None, with_conversation=False):
+        assert not with_conversation
         yield SimpleNamespace(pipeline=SimpleNamespace(answer=answer))
 
     services = {DatasetService: datasets, StructuredQueryRuntimeFactory: SimpleNamespace(unit=unit)}

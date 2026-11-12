@@ -6,6 +6,7 @@ import { KoinonShell } from '../organisms/shell';
   imports: [KoinonShell],
   template: `<ffk-shell
     ><button ffkHeaderNotifications>Open notifications</button>
+    <button ffkHeaderAccountStatus>Session status</button>
     <p>Knowledge content</p></ffk-shell
   >`,
 })
@@ -20,4 +21,11 @@ it('projects a host-provided notification trigger into header actions without mo
   expect(fixture.nativeElement.querySelector('main')?.textContent).not.toContain(
     'Open notifications',
   );
+});
+it('projects account status immediately before the avatar without adding content to the page', () => {
+  const fixture = TestBed.createComponent(HeaderSlotHost);
+  fixture.detectChanges();
+  const status = fixture.nativeElement.querySelector('.header-actions [ffkHeaderAccountStatus]');
+  expect(status?.nextElementSibling?.classList.contains('account-avatar')).toBe(true);
+  expect(fixture.nativeElement.querySelector('main')?.textContent).not.toContain('Session status');
 });

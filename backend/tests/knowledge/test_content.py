@@ -36,6 +36,38 @@ def updates(context):
     return ContentUpdates(facade)
 
 
+async def test_source_producer_admission_failure_rolls_back_version_before_native_work(context):
+    from pyfly.data.transaction import current_unit_of_work
+
+    service = updates(context)
+    _, catalog, domains, _, _ = context
+    uploaded = await upload(context)
+    document = uploaded["assets"][0]["id"]
+    admitted = []
+
+    async def source_admission(version):
+        unit = current_unit_of_work("primary")
+        assert unit is not None and not unit.completed
+        assert (await catalog.get("issuer|admin", "north", version.id)).status == "pending"
+        admitted.append(version.id)
+        raise RuntimeError("source generation changed")
+
+    with pytest.raises(RuntimeError, match="source generation changed"):
+        await service.document(
+            "issuer|admin",
+            "north",
+            document,
+            filename="new.txt",
+            content=b"new",
+            expected_sha256="a" * 64,
+            acknowledge_chunk_invalidation=True,
+            _source_admission=source_admission,
+        )
+    assert len(admitted) == 1
+    assert not await catalog.list("issuer|admin", "north", kind="index_version")
+    domains.replace_document.assert_not_awaited()
+
+
 async def test_extra_source_alias_requires_its_own_review_even_when_the_editor_can_write_it(context):
     from pyfly.kernel import ConflictException
 

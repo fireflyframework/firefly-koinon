@@ -87,6 +87,7 @@ from flycanon.core.services.sources.intake_transforms import (
     first_text,
     merge_artifacts,
 )
+from flycanon.core.services.sources.lineage.dtos import SourcePublicationBinding
 from flycanon.core.services.sources.lineage.pipeline import DocumentLineagePipeline
 from flycanon.core.services.sources.lineage.ports import PublicationGuard, StageAuthorization
 from flycanon.core.services.storage.object_store import ObjectStore
@@ -222,8 +223,11 @@ class IntakeService:
         publication_guard: PublicationGuard | None = None,
         validate_processing: StageAuthorization | None = None,
         validate_publication: StageAuthorization | None = None,
+        source_publication: SourcePublicationBinding | None = None,
     ) -> SourceRow:
         """Run the full intake pipeline and return the populated row."""
+        if source_publication is not None and logical_source_key is None:
+            raise ValueError("A publication binding requires a versioned source")
         if logical_source_key is not None:
             if self._lineage_pipeline is None:
                 raise RuntimeError("Provide the managed DocumentLineagePipeline for versioned source intake")
@@ -242,6 +246,7 @@ class IntakeService:
                 publication_guard=publication_guard,
                 validate_processing=validate_processing,
                 validate_publication=validate_publication,
+                source_publication=source_publication,
             )
         artifacts = await self._binary_normalizer.normalise(
             content,
@@ -421,6 +426,8 @@ class IntakeService:
         expected_source_version_id: str | None = None,
         expected_extraction_id: str | None = None,
         authorize_commit=None,
+        publication_guard: PublicationGuard | None = None,
+        source_publication: SourcePublicationBinding | None = None,
     ) -> SourceRow:
         """Re-ingest an existing source in place, preserving the row id.
 
@@ -449,6 +456,8 @@ class IntakeService:
         ``None`` in the provenance graph; out of scope for this
         commit to repair).
         """
+        if source_publication is not None and logical_source_key is None:
+            raise ValueError("A publication binding requires a versioned source")
         if logical_source_key is not None:
             if self._lineage_pipeline is None:
                 raise RuntimeError("Provide the managed DocumentLineagePipeline for versioned source intake")
@@ -467,6 +476,8 @@ class IntakeService:
                 expected_extraction_id=expected_extraction_id,
                 authorize_commit=authorize_commit,
                 correlation_id=correlation_id,
+                **({"publication_guard": publication_guard} if publication_guard is not None else {}),
+                **({"source_publication": source_publication} if source_publication is not None else {}),
             )
         existing = await self._sources.get(
             source_id,

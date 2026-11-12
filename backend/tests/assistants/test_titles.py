@@ -238,6 +238,7 @@ def title_protocol_fixture(factory, *, kind, mode, profile=None):
         thread=AsyncMock(return_value=SimpleNamespace(revision=1, scope={})),
         validate_scope=AsyncMock(return_value={}),
         owned_run=AsyncMock(),
+        authorize_prompt_run=AsyncMock(),
         runs=SimpleNamespace(
             recent_title_runs=AsyncMock(
                 return_value=[SimpleNamespace(id="run", scope={}, user_message_id="message")]
@@ -253,16 +254,26 @@ def title_protocol_fixture(factory, *, kind, mode, profile=None):
     )
     models = SimpleNamespace(build_with_secret=Mock(return_value=model))
     service = TitleService(assistants, models, SimpleNamespace(resolve=lambda _type: factory))
+    # These protocol unit cases isolate model construction; database admission is covered
+    # by the real-context tests above and the native source-history suite.
+    from functools import partial
+
+    service.propose = partial(service._propose, before_model=AsyncMock())
     return SimpleNamespace(
         service=service, agent=agent, provider=provider, model=model, models=models, requests=requests
     )
 
 
 @pytest.fixture
-async def title_factory():
+async def title_factory(monkeypatch):
+    from contextlib import nullcontext
+
     from pyfly.agentic.config import AgenticConfig
     from pyfly.agentic.runtime import AgenticRuntime
 
+    # Protocol-only fixtures have no repository or captured history. Real-context title
+    # tests exercise the mandatory boundary, including cancellation and revocation.
+    monkeypatch.setattr("koinon.assistants.title_service._title_model_boundary", nullcontext)
     async with AgenticRuntime(AgenticConfig(default_model="test", plugin_auto_discover=False)) as runtime:
         yield runtime.agent_factory
 

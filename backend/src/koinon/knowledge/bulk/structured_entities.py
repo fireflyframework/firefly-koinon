@@ -5,7 +5,7 @@ from uuid import UUID
 
 from flyquery.models.entities import Base
 from pyfly.data.relational.sqlalchemy import UtcDateTime
-from sqlalchemy import JSON, BigInteger, CheckConstraint, ForeignKey, String, Uuid
+from sqlalchemy import JSON, BigInteger, CheckConstraint, ForeignKey, Index, String, Uuid, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from koinon.knowledge.bulk.entities import now
@@ -14,6 +14,14 @@ from koinon.knowledge.bulk.entities import now
 class StructuredBulkOperation(Base):
     __tablename__ = "flyquery_bulk_operations"
     __table_args__ = (
+        Index(
+            "uq_structured_bulk_initial_dataset",
+            "dataset_id",
+            unique=True,
+            postgresql_where=text("operation_kind='initial'"),
+            sqlite_where=text("operation_kind='initial'"),
+        ),
+        Index("ix_structured_bulk_dataset", "tenant_id", "workspace_id", "dataset_id", "id"),
         CheckConstraint("status IN ('admitted','prepared','committed')", name="ck_structured_bulk_status"),
         CheckConstraint(
             "status = 'admitted' OR (plan_json IS NOT NULL AND prepared_json IS NOT NULL)",
@@ -32,7 +40,12 @@ class StructuredBulkOperation(Base):
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
     tenant_id: Mapped[str] = mapped_column(String(512))
     workspace_id: Mapped[UUID] = mapped_column(Uuid)
-    dataset_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("flyquery_datasets.id"), unique=True)
+    dataset_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("flyquery_datasets.id"))
+    operation_kind: Mapped[str] = mapped_column(String(16), default="initial", server_default="initial")
+    baseline_json: Mapped[dict | None] = mapped_column(JSON(none_as_null=True), nullable=True, default=None)
+    baseline_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True, default=None)
+    source_attempt_id: Mapped[str | None] = mapped_column(String(64), nullable=True, default=None)
+    source_publication_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True, default=None)
     file_id: Mapped[UUID] = mapped_column(Uuid, unique=True)
     actor: Mapped[str] = mapped_column(String(512))
     catalog_source_id: Mapped[str] = mapped_column(String(64))

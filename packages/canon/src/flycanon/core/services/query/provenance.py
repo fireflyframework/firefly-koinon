@@ -3,14 +3,124 @@
 """Optional caller-owned pre-model document receipts; no standalone runtime policy."""
 
 from asyncio import Task, current_task, get_running_loop, run_coroutine_threadsafe
+from collections.abc import Awaitable
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from functools import wraps
 from threading import RLock, get_ident
-from typing import Any
+from typing import Any, cast
 
 from pyfly.kernel import ServiceUnavailableException
+
+
+@dataclass(frozen=True, slots=True)
+class DocumentCandidatePin:
+    """A ranked immutable identity, deliberately without content or display metadata."""
+
+    chunk_id: str
+    source_id: str
+    source_version_id: str | None
+    extraction_id: str | None
+    source_part_id: str | None = None
+    score: float = 0.0
+
+
+def candidate_mode() -> bool:
+    from flycanon.core.agents.model_bindings import current_scope
+
+    scope = current()
+    binding = current_scope()
+    if scope is not None and hasattr(scope.observer, "requires_source_authority"):
+        return scope.observer.requires_source_authority
+    return bool(
+        binding is not None
+        and binding.required
+        or scope is not None
+        and callable(getattr(scope.observer, "admit_document_candidates", None))
+    )
+
+
+def hit_pins(hits) -> tuple[DocumentCandidatePin, ...]:
+    return tuple(
+        DocumentCandidatePin(
+            hit.chunk_id,
+            hit.source_id,
+            hit.metadata.get("source_version_id"),
+            hit.metadata.get("extraction_id"),
+            hit.metadata.get("source_part_id"),
+            float(hit.score),
+        )
+        for hit in hits
+        if hit.metadata.get("source_kind") != "knowledge_version"
+    )
+
+
+async def admit_document_candidates(
+    pins: tuple[DocumentCandidatePin, ...],
+) -> tuple[DocumentCandidatePin, ...]:
+    scope = current()
+    hook = getattr(scope.observer, "admit_document_candidates", None) if scope else None
+    if not callable(hook):
+        if candidate_mode():
+            raise ServiceUnavailableException(
+                "Document candidate authority is required", code="EVIDENCE_UNAVAILABLE"
+            )
+        return pins
+    admitted = tuple(await cast(Awaitable[tuple[DocumentCandidatePin, ...]], hook(pins)))
+    if len(set(admitted)) != len(admitted) or not set(admitted).issubset(set(pins)):
+        raise ServiceUnavailableException(
+            "Document candidate authority widened its input", code="EVIDENCE_UNAVAILABLE"
+        )
+    if current() is not scope:
+        raise ServiceUnavailableException("Document authority scope expired", code="EVIDENCE_UNAVAILABLE")
+    return admitted
+
+
+async def authorize_document_pins(pins: tuple[DocumentCandidatePin, ...]) -> None:
+    scope = current()
+    hook = getattr(scope.observer, "authorize_document_pins", None) if scope else None
+    if not callable(hook):
+        if candidate_mode():
+            raise ServiceUnavailableException(
+                "Exact document authority is required", code="EVIDENCE_UNAVAILABLE"
+            )
+        return
+    await cast(Awaitable[None], hook(pins))
+    if current() is not scope:
+        raise ServiceUnavailableException("Document authority scope expired", code="EVIDENCE_UNAVAILABLE")
+
+
+def authorize_document_pins_sync(pins: tuple[DocumentCandidatePin, ...]) -> None:
+    """Bridge a leased RLM worker to the owning request loop before a cached or exact read."""
+    scope = current()
+    if scope is None or not candidate_mode():
+        return
+    try:
+        task = current_task()
+    except RuntimeError:
+        task = None
+    if task is scope.task:
+        raise ServiceUnavailableException(
+            "Source reads require the leased worker", code="EVIDENCE_UNAVAILABLE"
+        )
+
+    async def delegated():
+        task = current_task()
+        if not scope.active or task is None:
+            raise ServiceUnavailableException("Document authority scope expired", code="EVIDENCE_UNAVAILABLE")
+        scope.authority_tasks.add(task)
+        try:
+            await authorize_document_pins(pins)
+        finally:
+            scope.authority_tasks.discard(task)
+
+    future = run_coroutine_threadsafe(delegated(), scope.loop)
+    try:
+        future.result(timeout=30)
+    except BaseException:
+        future.cancel()
+        raise
 
 
 @dataclass
@@ -22,6 +132,7 @@ class Observation:
     task: Task[Any]
     active: bool = True
     threads: set = field(default_factory=set)
+    authority_tasks: set = field(default_factory=set)
     lock: Any = field(default_factory=RLock)
     source_ids: set = field(default_factory=set)
     knowledge_ids: set[str] = field(default_factory=set)
@@ -56,7 +167,9 @@ def current():
             task = current_task()
         except RuntimeError:
             task = None
-        if not scope.active or (task is not scope.task and get_ident() not in scope.threads):
+        if not scope.active or (
+            task is not scope.task and task not in scope.authority_tasks and get_ident() not in scope.threads
+        ):
             raise ServiceUnavailableException(
                 "Native provenance scope has expired", code="EVIDENCE_UNAVAILABLE"
             )
@@ -77,6 +190,7 @@ async def before_model(stage, prompt, hits, *, tenant_id, workspace_id):
     if (tenant_id, str(workspace_id)) != (scope.tenant_id, scope.workspace_id):
         raise ServiceUnavailableException("Native provenance scope mismatch", code="EVIDENCE_UNAVAILABLE")
     await scope.observer.authorize()
+    await authorize_document_pins(hit_pins(hits))
     scope.observer.document_model(stage, prompt, hits, scope)
 
 
@@ -252,6 +366,16 @@ async def corpus(docs):
                 raise ServiceUnavailableException(
                     "Native corpus provenance is missing", code="EVIDENCE_UNAVAILABLE"
                 )
+            await authorize_document_pins(
+                (
+                    DocumentCandidatePin(
+                        "",
+                        str(source.source_id),
+                        source.source_version_id,
+                        source.ingestion_extraction_id,
+                    ),
+                )
+            )
             scope.source_ids.add(str(source.source_id))
             scope.observer.document_origin(str(source.source_id), source.filename)
             entries.append({"filing_id": key, "filename": source.filename, "title": source.title})

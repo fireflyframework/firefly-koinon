@@ -7,11 +7,8 @@ import type {
   AttachmentView,
   AttachmentHistorySummary,
 } from '@fireflyframework/koinon-sdk';
-import {
-  KoinonAssistant,
-  KoinonClientContext,
-  KoinonFacade,
-} from '@fireflyframework/koinon-angular';
+import { KoinonAssistant } from '@fireflyframework/koinon-angular/workbench/bootstrap';
+import { KoinonClientContext, KoinonFacade } from '@fireflyframework/koinon-angular/workbench/core';
 import type { ComposerAttachment } from '../composer/composer-models';
 interface DraftFile {
   key: string;

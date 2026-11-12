@@ -33,6 +33,13 @@
   gap: 4px;
   flex-wrap: wrap;
 }
+.mobile-location-actions { display:none; position:relative; }
+.mobile-location-actions summary { cursor:pointer; padding:12px; min-height:44px; box-sizing:border-box; color:var(--ui-text); }
+.mobile-location-actions > div { position:absolute; right:0; z-index:20; width:min(260px,75vw); padding:8px; border:1px solid var(--ui-line); border-radius:8px; background:var(--ui-surface); }
+.mobile-location-actions button { display:block; width:100%; min-height:44px; padding:10px 12px; text-align:left; font:inherit; color:var(--ui-text); background:none; border:0; border-radius:8px; cursor:pointer; }
+.mobile-location-actions button:hover { background:var(--ui-subtle); }
+.mobile-location-actions :is(summary,button):focus-visible { outline:2px solid var(--ui-accent); outline-offset:2px; }
+@container koinon-library (max-width:760px) { .location-actions {display:none;} .mobile-location-actions {display:block;} }
 .library-heading {
   display: flex;
   align-items: center;
@@ -271,18 +278,18 @@ button:focus-visible {
   }
   .library-toolbar {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 12px;
     padding: 12px 8px;
   }
   .name-filter {
-    grid-column: 1 / 3;
+    grid-column: 1 / -1;
     grid-row: 1;
     min-width: 0;
   }
   .location-menu {
-    grid-column: 3;
-    grid-row: 1;
+    grid-column: 2;
+    grid-row: 2;
   }
   .filter-options {
     grid-column: 1;
@@ -293,12 +300,12 @@ button:focus-visible {
     grid-row: 3;
   }
   .mobile-sort {
-    grid-column: 2;
-    grid-row: 2;
+    grid-column: 1;
+    grid-row: 3;
   }
   .item-count {
-    grid-column: 3;
-    grid-row: 2;
+    grid-column: 2;
+    grid-row: 3;
   }
   .sort {
     font-size: 11px;
@@ -326,8 +333,13 @@ button:focus-visible {
     grid-column: 1 / -1;
     grid-row: 3;
   }
-  .sort:not(.mobile-sort) {
+  .item-count {
+    grid-column: 1 / -1;
     grid-row: 4;
+    justify-self: end;
+  }
+  .sort:not(.mobile-sort) {
+    grid-row: 5;
   }
 }
 

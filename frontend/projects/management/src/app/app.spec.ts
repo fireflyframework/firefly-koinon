@@ -20,7 +20,7 @@ describe('browser session boundary', () => {
     const service = TestBed.inject(SessionService);
     const cleared = vi.spyOn(TestBed.inject(AccountNavigation), 'clearPending');
     const result = service.signOut();
-    const request = TestBed.inject(HttpTestingController).expectOne('/logout');
+    const request = await vi.waitFor(() => TestBed.inject(HttpTestingController).expectOne('/logout'));
     expect(request.request.method).toBe('POST');
     expect(request.request.withCredentials).toBe(true);
     expect(request.request.responseType).toBe('text');
@@ -37,7 +37,7 @@ describe('browser session boundary', () => {
     const service = TestBed.inject(SessionService);
     const cleared = vi.spyOn(TestBed.inject(AccountNavigation), 'clearPending');
     const result = service.signOut();
-    const request = TestBed.inject(HttpTestingController).expectOne('/logout');
+    const request = await vi.waitFor(() => TestBed.inject(HttpTestingController).expectOne('/logout'));
     request.flush({ detail: 'Unavailable' }, { status: 503, statusText: 'Service unavailable' });
     (await vi.waitFor(() => TestBed.inject(HttpTestingController).expectOne('/auth/me'))).flush({
       authenticated: true,
@@ -49,9 +49,7 @@ describe('browser session boundary', () => {
   it('recognizes a cleared session even when the native logout redirect target fails', async () => {
     const service = TestBed.inject(SessionService);
     const result = service.signOut();
-    TestBed.inject(HttpTestingController)
-      .expectOne('/logout')
-      .flush('Not found', { status: 404, statusText: 'Not found' });
+    (await vi.waitFor(() => TestBed.inject(HttpTestingController).expectOne('/logout'))).flush('Not found', { status: 404, statusText: 'Not found' });
     (await vi.waitFor(() => TestBed.inject(HttpTestingController).expectOne('/auth/me'))).flush(
       {},
       { status: 401, statusText: 'Unauthorized' },
@@ -62,9 +60,7 @@ describe('browser session boundary', () => {
   it('accepts a native HTML redirect response only after checking the authenticated session', async () => {
     const service = TestBed.inject(SessionService);
     const result = service.signOut();
-    TestBed.inject(HttpTestingController)
-      .expectOne('/logout')
-      .flush('<!doctype html><title>Signed out</title>');
+    (await vi.waitFor(() => TestBed.inject(HttpTestingController).expectOne('/logout'))).flush('<!doctype html><title>Signed out</title>');
     (await vi.waitFor(() => TestBed.inject(HttpTestingController).expectOne('/auth/me'))).flush(
       {},
       { status: 401, statusText: 'Unauthorized' },
@@ -74,9 +70,7 @@ describe('browser session boundary', () => {
   it('reports unknown verification honestly without claiming that the cookie was retained', async () => {
     const service = TestBed.inject(SessionService);
     const result = service.signOut();
-    TestBed.inject(HttpTestingController)
-      .expectOne('/logout')
-      .flush(null, { status: 204, statusText: 'No content' });
+    (await vi.waitFor(() => TestBed.inject(HttpTestingController).expectOne('/logout'))).flush(null, { status: 204, statusText: 'No content' });
     (await vi.waitFor(() => TestBed.inject(HttpTestingController).expectOne('/auth/me'))).flush(
       {},
       { status: 503, statusText: 'Unavailable' },

@@ -15,7 +15,13 @@ class JobRepository(Repository[Job, str]):
         session = self._require_session()
         now = datetime.now(UTC)
         ordinary = Job.kind.not_in(
-            ["knowledge.bulk.intake", "knowledge.bulk.query", "knowledge.mode", "knowledge.index"]
+            [
+                "knowledge.bulk.intake",
+                "knowledge.bulk.query",
+                "knowledge.mode",
+                "knowledge.index",
+                "content.source.reconcile",
+            ]
         )
         expired = and_(ordinary, Job.status == "running", Job.lease_until < now)
         await session.execute(

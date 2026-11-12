@@ -90,3 +90,22 @@ class CatalogSummary(BaseModel):
     format: str | None = None
     language: str | None = None
     tags: list[str] = Field(default_factory=list)
+
+
+class CatalogEntryOutput(BaseModel):
+    model_config = ConfigDict(frozen=True)
+    id: str
+    tenant_id: str
+    kind: str
+    name: str
+    parent_id: str | None
+    workspace_id: str | None
+    project_id: str | None
+    description: str
+    status: str
+    created_by: str
+    updated_by: str | None
+    system_managed: bool | None = None
+    metadata: dict
+    created_at: datetime
+    updated_at: datetime

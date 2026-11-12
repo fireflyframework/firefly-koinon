@@ -23,7 +23,7 @@ from contextlib import asynccontextmanager
 
 from pyfly.data.relational.datasource_registry import DataSourceRegistry
 from pyfly.data.transaction import infrastructure_unit
-from sqlalchemy import and_, column, delete, func, select, table, text
+from sqlalchemy import and_, column, delete, func, or_, select, table, text
 from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
@@ -85,6 +85,104 @@ class ChunkRepository:
             rows = list(result.scalars().all())
             await provenance.database(session, rows)
             return rows
+
+    @staticmethod
+    def _candidate_join():
+        from flycanon.models.entities.source_lineage import source_heads, source_parts
+
+        chunk = KnowledgeChunkRow
+        head_match = and_(
+            source_heads.c.tenant_id == chunk.tenant_id,
+            source_heads.c.workspace_id == chunk.workspace_id,
+            source_heads.c.source_id == chunk.source_id,
+        )
+        part_match = and_(
+            source_parts.c.tenant_id == chunk.tenant_id,
+            source_parts.c.workspace_id == chunk.workspace_id,
+            source_parts.c.source_id == chunk.source_id,
+            source_parts.c.projection_chunk_id == chunk.id,
+            source_parts.c.extraction_id == source_heads.c.extraction_id,
+            source_parts.c.kind == "chunk",
+        )
+        return source_heads, source_parts, head_match, part_match
+
+    async def candidate_pins(self, chunk_ids, *, tenant_id, workspace_id):
+        """Read only identities before the caller performs remote authorization."""
+        if not chunk_ids:
+            return ()
+        head, part, head_match, part_match = self._candidate_join()
+        statement = (
+            select(
+                KnowledgeChunkRow.id,
+                KnowledgeChunkRow.source_id,
+                head.c.version_id,
+                head.c.extraction_id,
+                part.c.id.label("part_id"),
+            )
+            .outerjoin(head, head_match)
+            .outerjoin(part, part_match)
+            .where(
+                KnowledgeChunkRow.tenant_id == tenant_id,
+                KnowledgeChunkRow.workspace_id == workspace_id,
+                KnowledgeChunkRow.id.in_(chunk_ids),
+            )
+        )
+        async with infrastructure_unit(self._session_factory) as session:
+            rows = (await session.execute(statement)).all()
+        pins = tuple(
+            provenance.DocumentCandidatePin(
+                row.id, row.source_id, row.version_id, row.extraction_id, row.part_id
+            )
+            for row in rows
+        )
+        if len({pin.chunk_id for pin in pins}) != len(pins) or any(
+            (pin.source_version_id is not None or pin.extraction_id is not None) and not pin.source_part_id
+            for pin in pins
+        ):
+            from pyfly.kernel import ServiceUnavailableException
+
+            raise ServiceUnavailableException(
+                "Exact document candidates are unavailable", code="EVIDENCE_UNAVAILABLE"
+            )
+        by_id = {pin.chunk_id: pin for pin in pins}
+        return tuple(by_id[identifier] for identifier in chunk_ids if identifier in by_id)
+
+    async def get_pinned_chunks(self, pins, *, tenant_id, workspace_id):
+        """Hydrate exactly the admitted extraction; a changed projection never substitutes."""
+        if not pins:
+            return []
+        from pyfly.kernel import ServiceUnavailableException
+
+        head, part, head_match, part_match = self._candidate_join()
+        predicates = [
+            and_(
+                KnowledgeChunkRow.id == pin.chunk_id,
+                KnowledgeChunkRow.source_id == pin.source_id,
+                head.c.version_id == pin.source_version_id,
+                head.c.extraction_id == pin.extraction_id,
+                part.c.id == pin.source_part_id,
+                *([KnowledgeChunkRow.content == part.c.text] if pin.source_part_id else []),
+            )
+            for pin in pins
+        ]
+        statement = (
+            select(KnowledgeChunkRow)
+            .outerjoin(head, head_match)
+            .outerjoin(part, part_match)
+            .where(
+                KnowledgeChunkRow.tenant_id == tenant_id,
+                KnowledgeChunkRow.workspace_id == workspace_id,
+                or_(*predicates),
+            )
+        )
+        async with infrastructure_unit(self._session_factory) as session:
+            rows = list((await session.scalars(statement)).all())
+            if len(rows) != len(pins) or {row.id for row in rows} != {pin.chunk_id for pin in pins}:
+                raise ServiceUnavailableException(
+                    "The admitted document extraction changed", code="EVIDENCE_UNAVAILABLE"
+                )
+            await provenance.database(session, rows)
+        return rows
 
     async def reindex_sources(self, batch, *, tenant_id: str, workspace_id: str, lock: bool = False):
         statement = (

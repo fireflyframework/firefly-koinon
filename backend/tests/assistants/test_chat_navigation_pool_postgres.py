@@ -3,9 +3,12 @@
 """Concurrent scoped navigation must not hold the whole pool while authorizing."""
 
 import asyncio
+import traceback
+from time import perf_counter
 
 import pytest
 from pyfly.data.relational.datasource_registry import DataSourceRegistry
+from sqlalchemy import event
 from test_memory_authority_postgres import pg_assistants as pg_assistants
 from test_service import configured
 
@@ -54,6 +57,17 @@ async def test_scoped_navigation_shares_authority_connection_and_observes_revoca
         return await validate(*args, **kwargs)
 
     monkeypatch.setattr(policy, "validate_scope", synchronized_validation)
+    timings = []
+    engine = context.get_bean(DataSourceRegistry).primary.engine.sync_engine
+
+    def before(connection, cursor, statement, parameters, execution_context, executemany):
+        execution_context.history_started = perf_counter()
+
+    def after(connection, cursor, statement, parameters, execution_context, executemany):
+        timings.append(round(perf_counter() - execution_context.history_started, 3))
+
+    event.listen(engine, "before_cursor_execute", before)
+    event.listen(engine, "after_cursor_execute", after)
     async with asyncio.timeout(15):
         results = await asyncio.gather(
             assistant.configuration_service.agent_page("issuer|admin", "north", **scope),
@@ -63,7 +77,18 @@ async def test_scoped_navigation_shares_authority_connection_and_observes_revoca
             history.get_thread("issuer|admin", "north", thread["id"]),
             return_exceptions=True,
         )
-    assert not [result for result in results if isinstance(result, BaseException)], results
+    event.remove(engine, "before_cursor_execute", before)
+    event.remove(engine, "after_cursor_execute", after)
+    failures = [
+        (index, traceback.format_tb(result.__traceback__))
+        for index, result in enumerate(results)
+        if isinstance(result, BaseException)
+    ]
+    if failures:
+        print("History query timings", timings)
+        for index, trace in failures:
+            print("Failed navigation", index, "".join(trace))
+    assert not failures, (failures, max(timings, default=0), sum(timings))
     assert [result["total"] for result in results[:3]] == [1, 1, 1]
     assert results[3]["id"] == folder["id"] and results[4]["id"] == thread["id"]
     assert pool.checkedout() == 0

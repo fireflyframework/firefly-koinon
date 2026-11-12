@@ -15,13 +15,14 @@ from pydantic import ValidationError
 from pyfly.container import repository
 from pyfly.data.transaction import infrastructure_unit
 from pyfly.kernel import ConflictException, PayloadTooLargeException
-from sqlalchemy import exists, select
+from sqlalchemy import exists, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from koinon.knowledge.bulk.structured_repository import StructuredBulkRepository
 from koinon.knowledge.bulk_queries.dtos import BatchQueryOutcome
 from koinon.knowledge.bulk_queries.native_entities import NativeQueryOperation
 from koinon.knowledge.bulk_queries.native_values import (
+    NativeCommitDescriptor,
     QueryOperationIdentity,
     QueryOperationReceipt,
     QuerySnapshotReference,
@@ -176,6 +177,7 @@ class NativeQueryUnit:
                         Query.execution_status,
                         Query.row_count,
                         Query.elapsed_ms,
+                        Query.table_id_snapshot_pins_json,
                     ).where(
                         Query.id == value.query_id,
                         Query.tenant_id == identity.tenant_id,
@@ -197,8 +199,19 @@ class NativeQueryUnit:
             or value.knowledge_settings_snapshot.digest != identity.policy_sha256
         ):
             raise conflict()
+        manifest = query["table_id_snapshot_pins_json"]
+        if not isinstance(manifest, dict) or len(manifest) > 500:
+            raise conflict()
+        try:
+            if any(str(UUID(key)) != key or str(UUID(pin)) != pin for key, pin in manifest.items()):
+                raise conflict()
+        except (TypeError, ValueError, AttributeError):
+            raise conflict() from None
+        snapshots = await self.snapshots(identity, value)
+        if any(manifest.get(str(pin.table_id)) != str(pin.snapshot_id) for pin in snapshots):
+            raise conflict()
         receipt = QueryOperationReceipt(
-            identity=identity, result=value, snapshots=await self.snapshots(identity, value)
+            identity=identity, result=value, snapshots=snapshots, source_manifest=manifest
         )
         try:
             encoded = json.dumps(
@@ -219,6 +232,71 @@ class NativeQueryUnit:
 class NativeQueryRepository:
     def __init__(self, resources: StructuredBulkRepository):
         self.resources = resources
+
+    async def inspect_commit_metadata(self, identity: QueryOperationIdentity):
+        """Project immutable commit facts without hydrating any protected result."""
+        async with self.read() as unit:
+            row = (
+                (
+                    await unit.session.execute(
+                        text("""
+                SELECT o.status,
+                  (o.tenant_id=:tenant AND o.subject=:subject AND o.workspace_id=:workspace
+                   AND o.dataset_id=:dataset AND o.catalog_workspace_id=:catalog_workspace
+                   AND o.catalog_dataset_id=:catalog_dataset AND o.question=:question
+                   AND o.policy_sha256=:policy AND o.connections_sha256=:connections
+                   AND (o.status='admitted' OR (
+                     o.status='committed' AND q.id=o.query_id AND q.tenant_id=o.tenant_id
+                     AND q.workspace_id=o.workspace_id AND q.dataset_id=o.dataset_id
+                     AND q.finalised_at IS NOT NULL
+                     AND o.receipt_json::jsonb->'identity'=CAST(:identity AS jsonb)
+                     AND o.receipt_json::jsonb->'result'->>'query_id'=q.id::text
+                     AND o.receipt_json::jsonb->'result'->>'execution_status'=q.execution_status
+                     AND o.receipt_json::jsonb->'source_manifest'=q.table_id_snapshot_pins_json
+                     AND jsonb_typeof(o.receipt_json::jsonb->'source_manifest')='object'
+                     AND q.execution_status IN ('OK','REFINED_OK','FAILED','REJECTED_BY_FIREWALL')
+                   ))) AS valid,
+                  o.id AS operation_id,o.query_id,
+                  public.koinon_json_sha256(o.receipt_json::jsonb->'identity') AS identity_sha256,
+                  public.koinon_json_sha256(o.receipt_json::jsonb) AS receipt_sha256,
+                  public.koinon_json_sha256(o.receipt_json::jsonb->'source_manifest') AS manifest_sha256,
+                  CASE WHEN q.execution_status IN ('OK','REFINED_OK')
+                    THEN 'succeeded' ELSE 'failed' END AS outcome
+                FROM flyquery_bulk_query_operations o
+                LEFT JOIN flyquery_queries q ON q.id=o.query_id
+                WHERE o.id=:operation AND o.tenant_id=:tenant
+            """),
+                        {
+                            "operation": identity.operation_id,
+                            "tenant": identity.tenant_id,
+                            "subject": identity.subject,
+                            "workspace": identity.workspace_id,
+                            "dataset": identity.dataset_id,
+                            "catalog_workspace": identity.catalog_workspace_id,
+                            "catalog_dataset": identity.catalog_dataset_id,
+                            "question": identity.question,
+                            "policy": identity.policy_sha256,
+                            "connections": identity.connections_sha256,
+                            "identity": json.dumps(identity.model_dump(mode="json")),
+                        },
+                    )
+                )
+                .mappings()
+                .one_or_none()
+            )
+        if row is None:
+            return "absent", None
+        if row["valid"] is not True:
+            raise conflict()
+        if row["status"] == "admitted":
+            return "admitted", None
+        try:
+            descriptor = NativeCommitDescriptor.model_validate(
+                {key: row[key] for key in NativeCommitDescriptor.model_fields if key != "schema_"}
+            )
+        except ValidationError:
+            raise conflict() from None
+        return "committed", descriptor
 
     async def legacy_query_metadata(
         self, query_id: UUID, tenant_id: str, workspace_id: UUID

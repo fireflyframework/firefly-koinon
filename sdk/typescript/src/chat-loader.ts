@@ -19,6 +19,8 @@ export function createLazyChatApi(transport: KoinonTransport): ChatApi {
     async (...args: Args): Promise<Result> =>
       select(await load())(...args);
   return {
+    browse: delegate((api) => api.browse),
+    browseMessages: delegate((api) => api.browseMessages),
     proposals: {
       get: delegate((api) => api.proposals.get),
       confirm: delegate((api) => api.proposals.confirm),
@@ -50,6 +52,7 @@ export function createLazyChatApi(transport: KoinonTransport): ChatApi {
       retry: delegate((api) => api.attachments.retry),
       remove: delegate((api) => api.attachments.remove),
     },
+    read: delegate((api) => api.read),
     get: delegate((api) => api.get),
     update: delegate((api) => api.update),
     delete: delegate((api) => api.delete),

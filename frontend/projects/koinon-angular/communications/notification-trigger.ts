@@ -7,8 +7,8 @@ import {
   Output,
   inject,
 } from '@angular/core';
-import { KoinonI18n } from '@fireflyframework/koinon-angular';
-import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench';
+import { KoinonI18n } from '@fireflyframework/koinon-angular/workbench/core';
+import { registerKoinonSpanish } from '@fireflyframework/koinon-angular/workbench/core';
 registerKoinonSpanish({
   Notifications: 'Notificaciones',
   unread: 'sin leer',

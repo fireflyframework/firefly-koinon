@@ -35,7 +35,9 @@ def recorded_attempt(tenant_id):
 
 
 async def mark_content_attempt(records, version: CatalogEntry, operation: str, state="unknown") -> None:
-    if operation not in {"document.replace", "document.reingest", "table.reupload", "table.reingest"}:
+    if operation not in {
+        "document.replace", "document.reingest", "dataset.replace", "table.reupload", "table.reingest"
+    }:
         raise ValueError("Unknown content operation")
     if state not in {"unknown", "complete", "failed"}:
         raise ValueError("Unknown content outcome")

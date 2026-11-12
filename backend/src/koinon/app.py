@@ -19,10 +19,13 @@ from koinon import __version__
 from koinon.api.controllers.audit import AuditController
 from koinon.api.controllers.catalog import CatalogController
 from koinon.api.controllers.catalog_hierarchy import CatalogHierarchyController
+from koinon.api.controllers.catalog_reads import CatalogReadController
 from koinon.api.controllers.context import ContextController
 from koinon.api.controllers.jobs import JobController
 from koinon.api.controllers.memberships import MembershipController
 from koinon.configuration import ApplicationConfiguration
+from koinon.integrations.content_sources.errors import SourceError
+from koinon.integrations.content_sources.read_errors import source_problem
 from koinon.mcp.connection import McpConnectionService
 from koinon.mcp.controllers import McpConnectionController
 from koinon.mcp.endpoints import resolve_mcp_configuration
@@ -67,6 +70,7 @@ def create_application(config: dict, *, role: ProcessRole = "api"):
     defaults = {
         "koinon": {"knowledge": {"require_connections": True}},
         "pyfly": {
+            "session": {"ttl": 28800},
             "cqrs": {"enabled": True},
             "agentic": {"enabled": True},
             "cache": {"enabled": True, "provider": "postgres", "postgres": {"datasource": "primary"}},
@@ -141,10 +145,23 @@ def create_application(config: dict, *, role: ProcessRole = "api"):
     ):
         if role == "api" or cls not in (AuthController, HealthController, LegacyMembershipFilter):
             context.register_bean(cls)
+    from koinon.integrations.content_sources.configuration import (
+        register_source_accounts,
+        register_source_synchronization,
+    )
+    from koinon.integrations.content_sources.settings import ContentSourceSettings
+
+    register_source_accounts(context, values, controllers=role == "api")
+    if context.get_bean(ContentSourceSettings).synchronization_enabled:
+        register_source_synchronization(context, controllers=role == "api")
+    from koinon.answers.configuration import register_release_proofs
+
+    register_release_proofs(context, values)
     for cls in (
         ContextController,
         McpConnectionController,
         CatalogController,
+        CatalogReadController,
         CatalogHierarchyController,
         MembershipController,
         AuditController,
@@ -230,8 +247,13 @@ def create_application(config: dict, *, role: ProcessRole = "api"):
         docs_enabled=False,
         actuator_enabled=False,
     )
+    from koinon.integrations.content_sources.read_requests import private_reader_problem
+
     for exception in (PyFlyException, ValidationError, JSONDecodeError):
-        app.add_exception_handler(exception, global_exception_handler)
+        app.add_exception_handler(
+            exception, private_reader_problem if role == "api" else global_exception_handler
+        )
+    app.add_exception_handler(SourceError, source_problem)
     register_domain_problems(app)
     from koinon.communications.http import install_communications
 
@@ -302,4 +324,8 @@ def create_application(config: dict, *, role: ProcessRole = "api"):
         install_oauth(app, context)
     app.state.context = context
     app.state.capability_registry = registry
+    if role == "api":
+        from koinon.integrations.content_sources.read_requests import PrivateReaderResponses
+
+        app.add_middleware(PrivateReaderResponses)
     return app

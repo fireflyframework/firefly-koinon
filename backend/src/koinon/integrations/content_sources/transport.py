@@ -14,6 +14,7 @@ import re
 from collections.abc import AsyncIterable, AsyncIterator, Iterator
 from contextlib import asynccontextmanager, contextmanager
 from contextvars import ContextVar
+from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import Any
 from urllib.parse import urlsplit
@@ -28,6 +29,47 @@ from koinon.integrations.content_sources.errors import ErrorCode, SourceError
 from koinon.integrations.content_sources.ports import AsyncByteSink, DelegatedTokenSource
 
 _SOURCE_HTTP: ContextVar[bool] = ContextVar("koinon_source_http", default=False)
+
+
+@dataclass
+class _OperationDeadline:
+    until: float
+    parent: _OperationDeadline | None = None
+    open: bool = True
+    transports: set[int] = field(default_factory=set)
+
+
+_OPERATION_DEADLINE: ContextVar[_OperationDeadline | None] = ContextVar(
+    "koinon_source_operation_deadline", default=None
+)
+
+
+@contextmanager
+def source_operation_deadline(deadline: float) -> Iterator[_OperationDeadline]:
+    """An inherited inner operation may shorten, never reset, the admitted deadline."""
+    previous = _OPERATION_DEADLINE.get()
+    state = _OperationDeadline(min(previous.until, deadline) if previous is not None else deadline, previous)
+    token = _OPERATION_DEADLINE.set(state)
+    try:
+        yield state
+    finally:
+        state.open = False
+        _OPERATION_DEADLINE.reset(token)
+
+
+def _remaining_operation() -> float | None:
+    state = _OPERATION_DEADLINE.get()
+    if state is None:
+        return None
+    ancestor = state
+    while ancestor is not None:
+        if not ancestor.open:
+            raise SourceError("timeout")
+        ancestor = ancestor.parent
+    remaining = state.until - asyncio.get_running_loop().time()
+    if remaining <= 0:
+        raise SourceError("timeout")
+    return remaining
 
 
 class _SourceLogFilter(logging.Filter):
@@ -144,6 +186,7 @@ class SourceTransport:
         self.download_hosts = checked_hosts(download_hosts)
         self._owns_client = http_client is None or owns_http_client
         self._lifecycle = ClientLifecycle()
+        self._operation_deadlines: list[_OperationDeadline] = []
         self.client: StreamingHttpClientPort = (
             http_client
             if http_client is not None
@@ -155,11 +198,21 @@ class SourceTransport:
     async def aclose(self) -> None:
         if self._owns_client:
             await self._lifecycle.aclose(self.client.stop)
+        for deadline in self._operation_deadlines:
+            deadline.transports.discard(id(self))
+        self._operation_deadlines.clear()
 
     @asynccontextmanager
     async def request(
         self, url: str, *, authenticated: bool = True, transfer: bool = False
     ) -> AsyncIterator[StreamingHttpResponsePort]:
+        _remaining_operation()
+        deadline = _OPERATION_DEADLINE.get()
+        while deadline is not None:
+            deadline.transports.add(id(self))
+            if not any(existing is deadline for existing in self._operation_deadlines):
+                self._operation_deadlines.append(deadline)
+            deadline = deadline.parent
         host = self.host if authenticated else redirect_host(url)
         if host is None or (not authenticated and host not in self.download_hosts):
             raise SourceError("unsafe_url")
@@ -174,7 +227,11 @@ class SourceTransport:
             headers["Authorization"] = "Bearer " + token
         try:
             with self._lifecycle.operation(), _private_http():
-                async with asyncio.timeout(self.transfer_timeout if transfer else self.timeout):
+                remaining = _remaining_operation()
+                timeout = self.transfer_timeout if transfer else self.timeout
+                if remaining is not None:
+                    timeout = min(timeout, remaining)
+                async with asyncio.timeout(timeout):
                     async with self.client.stream(
                         "GET",
                         url,
@@ -185,10 +242,18 @@ class SourceTransport:
                         suppress_authorization=not authenticated,
                         sanitize_errors=True,
                         timeout={
-                            "connect": self.connect_timeout,
-                            "read": self.read_timeout,
-                            "write": self.read_timeout,
-                            "pool": self.connect_timeout,
+                            "connect": self.connect_timeout
+                            if remaining is None
+                            else min(self.connect_timeout, remaining),
+                            "read": self.read_timeout
+                            if remaining is None
+                            else min(self.read_timeout, remaining),
+                            "write": self.read_timeout
+                            if remaining is None
+                            else min(self.read_timeout, remaining),
+                            "pool": self.connect_timeout
+                            if remaining is None
+                            else min(self.connect_timeout, remaining),
                         },
                     ) as response:
                         if response.headers.get("content-encoding", "identity").lower() != "identity":
@@ -216,7 +281,9 @@ class SourceTransport:
         retry = response.headers.get("retry-after", "")
         seconds = min(int(retry), 86400) if len(retry) <= 6 and retry.isdecimal() else None
         raise SourceError(
-            codes.get(status, "invalid_response"), retry_after=seconds if status == 429 else None
+            codes.get(status, "invalid_response"),
+            retry_after=seconds if status == 429 else None,
+            http_status=status,
         )
 
     @staticmethod

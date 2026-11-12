@@ -25,6 +25,10 @@ function fixture(transport: KoinonTransport) {
     workspaceId: signal('workspace'),
     projectId: signal('project'),
     parentId: signal('folder'),
+    readerSources: signal<null|[]>(null),
+    readerRevision: signal(0),
+    permissions: signal(new Set(['catalog:read'])),
+    authRequired: signal(false),
   };
   const client = { revision, getTransport: () => pair() };
   return {
@@ -125,6 +129,7 @@ describe('bounded current-actor availability', () => {
     expect(request.mock.calls[0]![2].body).toEqual({
       asset_ids: ['one', 'two'],
       workspace_id: 'workspace',
+      reader_source_connections:null,
     });
     await vi.waitFor(() => expect(state.get('one')?.search?.state).toBe('pending'));
     one();
@@ -183,4 +188,17 @@ describe('bounded current-actor availability', () => {
     expect(state.get('one')).toBeUndefined();
     stop();
   });
+});
+
+it('uses local-only availability and immediately hides observations when reader choice changes',async()=>{
+  vi.useFakeTimers();
+  const request=vi.fn(async(_method:string,_path:string,_options:RequestOptions)=>({observed_at:'now',items:{one:value}}));
+  const {state,scope}=fixture({request} as unknown as KoinonTransport);
+  scope.readerSources.set([]);state.sync();const stop=state.watch('one');
+  await vi.advanceTimersByTimeAsync(0);
+  expect(state.get('one')).toBeDefined();
+  expect(request.mock.calls[0][2].body).toMatchObject({reader_source_connections:[]});
+  scope.readerSources.set(null);
+  expect(state.get('one')).toBeUndefined();
+  stop();
 });

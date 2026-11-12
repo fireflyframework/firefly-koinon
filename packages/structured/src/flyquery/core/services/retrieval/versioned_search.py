@@ -23,15 +23,35 @@ def parameters(binding, embedding, limit):
     }
 
 
-async def schema_rows(session, binding, embedding, dataset_id, limit):
-    params = {**parameters(binding, embedding, limit), "ds": dataset_id}
+async def schema_rows(
+    session, binding, embedding, dataset_id, limit, *, identity_only=False, snapshot_pins=None
+):
+    import json
+
+    params = {
+        **parameters(binding, embedding, limit),
+        "ds": dataset_id,
+        "pins": json.dumps(snapshot_pins or {}),
+    }
     await session.execute(text("SET LOCAL hnsw.iterative_scan='strict_order'"))
+    projection = (
+        "o.id,o.table_id,o.snapshot_id"
+        if identity_only
+        else (
+            "o.id,o.qualified_name,o.description,o.data_type,o.table_id,o.kind,o.snapshot_id,"
+            "o.profile_json,o.sample_values_json,o.governance_json"
+        )
+    )
+    snapshot = (
+        "COALESCE(CAST(CAST(:pins AS jsonb)->>t.qualified_name AS uuid), t.current_snapshot_id)"
+        if snapshot_pins
+        else "t.current_snapshot_id"
+    )
     rows = await session.execute(
         text(
             OBJECTS_SQL
-            + """
-        SELECT o.id,o.qualified_name,o.description,o.data_type,o.table_id,o.kind,o.snapshot_id,
-               o.profile_json,o.sample_values_json,o.governance_json,
+            + f"""
+        SELECT {projection},
                1-(v.embedding <=> CAST(:emb AS vector)) AS score
         FROM flyquery_schema_objects o JOIN flyquery_tables t ON t.id=o.table_id
         JOIN objects fresh ON fresh.id=o.id AND fresh.kind='schema'
@@ -39,7 +59,7 @@ async def schema_rows(session, binding, embedding, dataset_id, limit):
           AND v.object_id=o.id AND v.content_hash=fresh.source_hash
           AND v.tenant_id=:tenant AND v.workspace_id=:workspace
         WHERE t.dataset_id=:ds AND t.is_active=true AND o.is_active=true
-          AND o.snapshot_id=t.current_snapshot_id
+          AND o.snapshot_id={snapshot}
         ORDER BY v.embedding <=> CAST(:emb AS vector) LIMIT :lim
     """
         ),
@@ -48,7 +68,7 @@ async def schema_rows(session, binding, embedding, dataset_id, limit):
     return rows.mappings().all()
 
 
-async def example_rows(session, binding, embedding, workspace_id, dataset_id, limit):
+async def example_rows(session, binding, embedding, workspace_id, dataset_id, limit, *, identity_only=False):
     params = parameters(binding, embedding, limit)
     if str(params["workspace"]) != str(workspace_id):
         raise ValueError("Example retrieval workspace differs from its native scope")
@@ -56,11 +76,12 @@ async def example_rows(session, binding, embedding, workspace_id, dataset_id, li
     if dataset_id is not None:
         params["ds"] = dataset_id
     await session.execute(text("SET LOCAL hnsw.iterative_scan='strict_order'"))
+    projection = "e.id" if identity_only else "e.id,e.question,e.generated_sql"
     rows = await session.execute(
         text(
             OBJECTS_SQL
-            + """
-        SELECT e.id,e.question,e.generated_sql,1-(v.embedding <=> CAST(:emb AS vector)) AS score
+            + f"""
+        SELECT {projection},1-(v.embedding <=> CAST(:emb AS vector)) AS score
         FROM flyquery_examples e JOIN objects fresh ON fresh.id=e.id AND fresh.kind='example'
         JOIN flyquery_embedding_vectors v ON v.set_id=:set_id AND v.kind='example'
           AND v.object_id=e.id AND v.content_hash=fresh.source_hash
